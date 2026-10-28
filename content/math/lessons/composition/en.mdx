@@ -1,0 +1,280 @@
+---
+slug: composition
+topic: math.cat.composition
+title: Composition
+subtitle: Doing one function and then another — why order matters, why brackets don't, and how this simple idea opens the door to category theory.
+level: g9-12
+ages: Ages 14–18
+minutes: 50
+order: 5
+objectives:
+  - Compute composites $g \circ f$ and state their domain and codomain
+  - Show by example that composition is not commutative
+  - Prove that composition is associative and that identity functions are neutral
+  - Prove that composites of injections (surjections, bijections) are injections (surjections, bijections)
+  - Describe sets and functions as a first example of a category
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.Composition.comp_assoc
+  - Lumenary.Composition.id_comp
+  - Lumenary.Composition.comp_id
+  - Lumenary.Composition.comp_not_comm
+  - Lumenary.Composition.injective_comp
+  - Lumenary.Composition.surjective_comp
+  - Lumenary.Composition.bijective_comp
+  - Lumenary.Category.typesCategory
+compute: [composition_check]
+trails: [arrows-that-compose, products-by-maps]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="One thing after another">
+
+To convert a price from Kenyan shillings to Indian rupees, a travel app might first convert shillings to US dollars, then dollars to rupees. To edit a photo, you might rotate it and then crop it. To make chapati, you mix, then knead, then roll, then cook.
+
+Each step is a function, and doing them in sequence produces a new function. This act of chaining is called **composition**. It is one of the simplest ideas in mathematics — and, as we'll see, one of the deepest.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="The composite of two functions">
+
+<Definition term="composition">
+
+If $f : A \to B$ and $g : B \to C$, their **composite** $g \circ f : A \to C$ is the function
+
+$$
+(g \circ f)(x) = g\big(f(x)\big).
+$$
+
+Read $g \circ f$ as "$g$ after $f$": apply $f$ first, then $g$.
+
+</Definition>
+
+The composite only makes sense when the codomain of $f$ matches the domain of $g$ — the output of the first step must be a valid input for the second.
+
+<Definition term="identity function">
+
+For every set $A$, the **identity function** $\mathrm{id}_A : A \to A$ is defined by $\mathrm{id}_A(x) = x$. It does nothing — and that turns out to be important.
+
+</Definition>
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: composition machines">
+
+<CompositionMachine />
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Order matters">
+
+Let $f(x) = x + 1$ and $g(x) = 2x$, both from $\Z$ to $\Z$. Then
+
+$$
+(g \circ f)(x) = 2(x + 1) = 2x + 2, \qquad (f \circ g)(x) = 2x + 1.
+$$
+
+At $x = 0$ these give $2$ and $1$. So $g \circ f \neq f \circ g$: **composition is not commutative**.
+
+</Example>
+
+<Example title="A three-step chain">
+
+Let $h(x) = x^2$ as well. Then $(h \circ g \circ f)(x) = h(g(f(x))) = \big(2(x + 1)\big)^2 = 4(x + 1)^2$. At $x = 2$: $f(2) = 3$, $g(3) = 6$, $h(6) = 36$.
+
+</Example>
+
+<Example title="Undoing">
+
+Let $p(x) = x + 5$ and $q(x) = x - 5$. Then $q \circ p = \mathrm{id}_\Z$ and $p \circ q = \mathrm{id}_\Z$: each undoes the other. Functions like this are called **inverses** of one another.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The laws of composition">
+
+<Theorem name="associativity">
+
+For all $f : A \to B$, $g : B \to C$, $h : C \to D$: $\quad h \circ (g \circ f) = (h \circ g) \circ f$.
+
+</Theorem>
+
+<Proof>
+
+Both sides are functions from $A$ to $D$, so we compare them at an arbitrary $x \in A$:
+
+$$
+\big(h \circ (g \circ f)\big)(x) = h\big((g \circ f)(x)\big) = h\big(g(f(x))\big), \qquad \big((h \circ g) \circ f\big)(x) = (h \circ g)\big(f(x)\big) = h\big(g(f(x))\big).
+$$
+
+They agree at every $x$, so they are the same function.
+
+</Proof>
+
+Because of associativity we can safely write $h \circ g \circ f$ with no brackets at all.
+
+<Theorem name="identity laws">
+
+For every $f : A \to B$: $\quad f \circ \mathrm{id}_A = f$ and $\mathrm{id}_B \circ f = f$.
+
+</Theorem>
+
+<Proof>
+
+$(f \circ \mathrm{id}_A)(x) = f(\mathrm{id}_A(x)) = f(x)$ and $(\mathrm{id}_B \circ f)(x) = \mathrm{id}_B(f(x)) = f(x)$ for every $x \in A$.
+
+</Proof>
+
+<Theorem name="composites of injections">
+
+If $f : A \to B$ and $g : B \to C$ are both injective, then $g \circ f$ is injective.
+
+</Theorem>
+
+<Proof>
+
+Suppose $(g \circ f)(x) = (g \circ f)(y)$, i.e. $g(f(x)) = g(f(y))$. Since $g$ is injective, $f(x) = f(y)$. Since $f$ is injective, $x = y$.
+
+</Proof>
+
+The same pattern of reasoning shows that composites of surjections are surjective, and therefore composites of bijections are bijective.
+
+<Narrator who="chloe">
+
+Look how the proof "peels" the functions in reverse order: first we use that $g$ is injective, then $f$. The outermost function is dealt with first. You'll see this peeling everywhere.
+
+</Narrator>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Composition in Lean">
+
+In Lean, $g \circ f$ is written `g ∘ f`, and it is *defined* as `fun x => g (f x)`. That makes associativity true **by definition** — Lean accepts the proof `rfl`, "both sides are literally the same":
+
+<Lean decl="Lumenary.Composition.comp_assoc" />
+
+<Lean decl="Lumenary.Composition.id_comp" />
+
+<Lean decl="Lumenary.Composition.comp_not_comm" />
+
+<Lean decl="Lumenary.Composition.injective_comp" />
+
+<Lean decl="Lumenary.Composition.surjective_comp" />
+
+<Narrator who="gideon">
+
+Notice the axiom lists. Associativity and the identity laws need **no axioms at all**: they follow from how functions compute. Precise definitions can make deep-looking facts almost automatic.
+
+</Narrator>
+
+</Section>
+
+<Section id="computation" kind="computation" title="Checking every function on a small set">
+
+<Narrator who="margaret">
+
+On a three-element set there are $3^3 = 27$ functions to itself, so $27^3 = 19\,683$ triples $(f, g, h)$. A computer can check associativity for every one of them — and hunt for a pair that doesn't commute.
+
+</Narrator>
+
+<Python id="composition_check" />
+
+</Section>
+
+<Section id="categories" kind="categories" title="The first category">
+
+Step back and look at what we have:
+
+- **objects**: sets $A, B, C, \dots$;
+- **arrows** between them: functions $f : A \to B$;
+- a way to **compose** arrows when they line up: $g \circ f$;
+- an **identity** arrow $\mathrm{id}_A$ for every object;
+
+and two laws: composition is **associative**, and identities are **neutral**. Any collection of objects and arrows with these features is called a **category**. Sets and functions form the category usually called $\mathbf{Set}$.
+
+This is not just a new name. Groups with homomorphisms, vector spaces with linear maps, shapes with continuous maps, even the integers ordered by $\le$ — each of these forms a category, and theorems proved about categories in general apply to all of them at once.
+
+In Lean, types and functions form a category in exactly this sense. The proofs of the laws are the ones you saw above:
+
+<Lean decl="Lumenary.Category.typesCategory" />
+
+<Analogy>
+
+Our earlier "machines" picture is a helpful analogy, but a category is defined only by objects, arrows, composition, identities and the two laws. Many categories have arrows that are not functions at all — for example, in a category built from an ordered set, there is an arrow $a \to b$ exactly when $a \le b$.
+
+</Analogy>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Reading $g \circ f$ as "$g$ first".** It means $f$ first, then $g$ — the function written closest to $x$ in $g(f(x))$ acts first.
+
+</Misconception>
+
+<Misconception>
+
+**"Composition is multiplication of formulas."** $(g \circ f)(x)$ means substituting $f(x)$ into $g$; it is not $g(x) \cdot f(x)$.
+
+</Misconception>
+
+<Misconception>
+
+**"If $g \circ f$ is injective, both $f$ and $g$ must be."** Only $f$ must be. Try $f : \{1\} \to \{1, 2\}$ with $f(1) = 1$ and $g : \{1, 2\} \to \{1\}$: $g \circ f$ is injective, but $g$ is not.
+
+</Misconception>
+
+<Misconception>
+
+**"Associative means commutative."** Associativity is about *brackets* ($h \circ (g \circ f)$ vs $(h \circ g) \circ f$); commutativity is about *order*. Composition has the first property but not the second.
+
+</Misconception>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="arrows-that-compose" />
+
+<Trail slug="products-by-maps" />
+
+</Section>
+
+<Section id="sets" kind="sets" title="Set-theoretic connection">
+
+In terms of graphs (sets of ordered pairs), the composite of $f \subseteq A \times B$ and $g \subseteq B \times C$ is
+
+$$
+g \circ f = \{\, (a, c) \in A \times C \mid \text{there is } b \in B \text{ with } (a, b) \in f \text{ and } (b, c) \in g \,\}.
+$$
+
+The same formula composes arbitrary **relations**, not just functions — and relations with this composition form another category, usually called $\mathbf{Rel}$.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Repeating and chaining transformations is old: geometers and astronomers combined rotations and reflections long before there was a word for composition.
+- In the 19th century, Évariste Galois, Arthur Cayley and others studied **groups** of permutations and transformations, where composition is the basic operation.
+- **Samuel Eilenberg** and **Saunders Mac Lane** introduced categories in 1945, in a paper on "natural equivalences" in algebraic topology. Their idea — study objects through the arrows between them — has since spread across mathematics, computer science and logic.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- F. William Lawvere and Stephen H. Schanuel, *Conceptual Mathematics: A First Introduction to Categories* (2nd edition, 2009) — written for beginners.
+- Tom Leinster, *Basic Category Theory* (2014) — free to read online.
+- Emily Riehl, *Category Theory in Context* (2016).
+
+</Section>

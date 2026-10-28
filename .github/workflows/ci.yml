@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify-and-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install elan (Lean toolchain manager)
+        run: |
+          curl -sSfL https://elan.lean-lang.org/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Set up Python environment
+        run: |
+          python -m venv compute/.venv
+          compute/.venv/bin/pip install -r compute/requirements.txt
+
+      - name: Compile Lean library and write verification report
+        run: npm run verify:lean
+
+      - name: Run and test computational experiments
+        run: npm run verify:compute
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Content, graph, registry and i18n tests
+        run: npm test
+
+      - name: Build static site
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: out/
