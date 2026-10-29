@@ -1,0 +1,682 @@
+---
+slug: measure-theoretic-probability
+topic: math.prob.measure-theoretic-probability
+title: Measure-theoretic probability
+subtitle: Kolmogorov's axioms turn chance into measure — "almost surely" becomes a precise statement, a conditional expectation becomes a random variable, and the great limit theorems become theorems.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7031
+objectives:
+  - Work with probability spaces, independence and the four modes of convergence, and know which implies which (with counterexamples)
+  - Prove the Borel–Cantelli lemmas and the strong law of large numbers under a fourth-moment hypothesis, and state Etemadi's general version
+  - Define conditional expectation through the Radon–Nikodym theorem, prove its main properties and recognise it as an orthogonal projection
+  - Prove the optional stopping theorem and Doob's martingale convergence theorem via upcrossings, and apply them
+  - Prove the central limit theorem from Lévy's continuity theorem using characteristic functions
+narrators: []
+lean:
+  - Lumenary.MeasureTheoreticProbability.borel_cantelli_first
+  - Lumenary.MeasureTheoreticProbability.borel_cantelli_second
+  - Lumenary.MeasureTheoreticProbability.zero_one_law
+  - Lumenary.MeasureTheoreticProbability.weak_law
+  - Lumenary.MeasureTheoreticProbability.strong_law
+  - Lumenary.MeasureTheoreticProbability.cond_exp_set_integral
+  - Lumenary.MeasureTheoreticProbability.cond_exp_tower
+  - Lumenary.MeasureTheoreticProbability.cond_exp_pull_out
+  - Lumenary.MeasureTheoreticProbability.cond_exp_indep
+  - Lumenary.MeasureTheoreticProbability.martingale_integral_eq
+  - Lumenary.MeasureTheoreticProbability.martingale_convergence
+  - Lumenary.MeasureTheoreticProbability.levy_continuity
+  - Lumenary.MeasureTheoreticProbability.central_limit
+compute: [measure_theoretic_probability_borel_cantelli, measure_theoretic_probability_polya_urn, measure_theoretic_probability_clt_charfun]
+trails: [will-the-walker-return]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What does “almost surely” mean?">
+
+Toss a fair coin forever and record the proportion of heads after $n$ tosses. In 1909 Émile Borel proved that this proportion tends to $\tfrac12$ "with probability one". What can that mean? The sequence HHHH… is a perfectly possible outcome, and so are uncountably many other sequences whose proportion of heads tends to $\tfrac13$, or oscillates forever. The claim is that all these exceptional sequences together form an event of probability zero — not an empty event, but a negligible one.
+
+To say this we need a probability on the space $\{0, 1\}^{\N}$ of all infinite toss sequences, an uncountable set on which every single sequence has probability $0$. The event "the proportion converges to $\tfrac12$" is built from infinitely many tosses by countably many unions and intersections, so the probability must be **countably additive**. This is precisely measure theory.
+
+A second puzzle concerns conditioning on events of probability zero. Choose a point uniformly on the Earth's surface and condition on its lying on the Greenwich meridian (an event of probability $0$). Is its latitude then uniformly distributed? Computed as a limit of thin longitude wedges the answer is "no, it has density proportional to $\cos(\text{latitude})$"; computed with thin bands of constant width around the meridian, "yes". This is the **Borel–Kolmogorov paradox**. Kolmogorov's way out (1933) was to condition not on single events but on **σ-algebras** — on information — and to define the conditional expectation as a random variable, determined up to null sets by the Radon–Nikodym theorem. This lesson builds that theory and proves with it the three pillars of classical probability: the strong law of large numbers, the martingale convergence theorem and the central limit theorem.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A dictionary, and σ-algebras as information">
+
+Kolmogorov's *Grundbegriffe der Wahrscheinlichkeitsrechnung* (1933) is a translation table. Every probabilistic notion is a measure-theoretic one with a new name — and the probabilist's interest lies in the questions the new names suggest.
+
+| Probability | Measure theory |
+| --- | --- |
+| sample space $\Omega$, events $\mathcal F$ | a set with a σ-algebra |
+| probability $P$ | a measure with $P(\Omega) = 1$ |
+| random variable $X$ | a measurable function $\Omega \to \R$ |
+| law (distribution) of $X$ | the pushforward measure $\mu_X = P \circ X^{-1}$ on $\R$ |
+| expectation $\mathbb E[X]$ | the integral $\int_\Omega X \, dP$ |
+| independence | product measure |
+| almost surely (a.s.) | almost everywhere |
+| conditional expectation $\mathbb E[X \mid \mathcal G]$ | a Radon–Nikodym derivative; an orthogonal projection in $L^2$ |
+
+The genuinely new idea is to read a sub-σ-algebra $\mathcal G \subseteq \mathcal F$ as **information**: the events whose occurrence an observer can decide. A random variable is $\mathcal G$-measurable when the observer can compute its value. As time passes, information grows: a **filtration** $\mathcal F_0 \subseteq \mathcal F_1 \subseteq \cdots$. The conditional expectation $\mathbb E[X \mid \mathcal G]$ is the observer's best guess of $X$ — itself a random quantity, because it depends on what the observer has seen.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="probability space, random variable, law">
+
+A **probability space** is a measure space $(\Omega, \mathcal F, P)$ with $P(\Omega) = 1$. A **random variable** is a measurable $X : \Omega \to \R$; its **law** is the Borel probability measure $\mu_X(B) = P(X \in B)$ and its **distribution function** is $F_X(x) = P(X \le x)$. The **expectation** of an integrable $X$ is $\mathbb E[X] = \int X \, dP$, and for Borel $g$ with $g(X)$ integrable, $\mathbb E[g(X)] = \int_\R g \, d\mu_X$ (change of variables).
+
+</Definition>
+
+<Definition term="independence">
+
+Sub-σ-algebras $\mathcal G_1, \dots, \mathcal G_n \subseteq \mathcal F$ are **independent** if $P(A_1 \cap \dots \cap A_n) = P(A_1) \cdots P(A_n)$ for all $A_i \in \mathcal G_i$; an infinite family is independent if every finite subfamily is. Random variables are independent if the σ-algebras $\sigma(X_i) = \{X_i^{-1}(B)\}$ are; events are independent if their indicators are. By Dynkin's π–λ theorem it suffices to check the product rule on generating π-systems, so $X_1, \dots, X_n$ are independent if and only if $P(X_1 \le x_1, \dots, X_n \le x_n) = \prod_i F_{X_i}(x_i)$, i.e. if and only if their joint law is the product measure $\mu_{X_1} \otimes \cdots \otimes \mu_{X_n}$.
+
+</Definition>
+
+<Definition term="modes of convergence">
+
+Let $X, X_1, X_2, \dots$ be random variables. Then $X_n \to X$
+
+- **almost surely** if $P(\{\omega : X_n(\omega) \to X(\omega)\}) = 1$;
+- **in probability** if $P(|X_n - X| > \varepsilon) \to 0$ for every $\varepsilon > 0$;
+- **in $L^p$** ($p \ge 1$) if $\mathbb E|X_n - X|^p \to 0$;
+- **in distribution** (or weakly) if $\mathbb E[f(X_n)] \to \mathbb E[f(X)]$ for every bounded continuous $f : \R \to \R$; equivalently, $F_{X_n}(x) \to F_X(x)$ at every point $x$ where $F_X$ is continuous.
+
+The first three need the variables to live on one probability space; convergence in distribution is a statement about the laws $\mu_{X_n}$ only.
+
+</Definition>
+
+<Definition term="characteristic function">
+
+The **characteristic function** of $X$ is $\varphi_X(t) = \mathbb E[e^{itX}] = \int_\R e^{itx} \, d\mu_X(x)$ for $t \in \R$ — the Fourier transform of its law, defined for every random variable since $|e^{itX}| = 1$.
+
+</Definition>
+
+<Definition term="conditional expectation">
+
+Let $X$ be integrable and $\mathcal G \subseteq \mathcal F$ a sub-σ-algebra. A **conditional expectation** of $X$ given $\mathcal G$ is a random variable $Y$ such that
+
+1. $Y$ is $\mathcal G$-measurable and integrable, and
+2. $\displaystyle \int_G Y \, dP = \int_G X \, dP$ for every $G \in \mathcal G$.
+
+It exists and is unique up to almost-sure equality (theorem below); we write $Y = \mathbb E[X \mid \mathcal G]$, and $\mathbb E[X \mid Z] = \mathbb E[X \mid \sigma(Z)]$. Conditional probability is $P(A \mid \mathcal G) = \mathbb E[\mathbf 1_A \mid \mathcal G]$.
+
+</Definition>
+
+<Definition term="filtration, martingale, stopping time">
+
+A **filtration** is an increasing sequence $\mathcal F_0 \subseteq \mathcal F_1 \subseteq \cdots \subseteq \mathcal F$. A process $(M_n)$ is **adapted** if each $M_n$ is $\mathcal F_n$-measurable. An adapted process of integrable variables is a **martingale** if $\mathbb E[M_{n+1} \mid \mathcal F_n] = M_n$ a.s. for all $n$, a **supermartingale** if $\mathbb E[M_{n+1} \mid \mathcal F_n] \le M_n$, and a **submartingale** if $\ge$. A **stopping time** is a random variable $T : \Omega \to \{0, 1, 2, \dots\} \cup \{\infty\}$ with $\{T = n\} \in \mathcal F_n$ for every $n$: whether to stop now can be decided from the information available now. A process $(H_n)_{n \ge 1}$ is **predictable** if each $H_n$ is $\mathcal F_{n-1}$-measurable.
+
+</Definition>
+
+By the tower property (below), the martingale condition for one step implies $\mathbb E[M_m \mid \mathcal F_n] = M_n$ for all $m \ge n$; this is Mathlib's definition.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and counterexamples">
+
+<Example title="Infinitely many coin tosses are Lebesgue measure">
+
+Let $\Omega = [0, 1)$ with Lebesgue measure and let $d_n(\omega) \in \{0, 1\}$ be the $n$-th binary digit of $\omega$ (choosing the expansion not ending in $1$s). The event $\{d_1 = a_1, \dots, d_n = a_n\}$ is a dyadic interval of length $2^{-n}$, so $P(d_1 = a_1, \dots, d_n = a_n) = 2^{-n} = \prod_{k \le n} P(d_k = a_k)$: the digits are independent fair coin tosses. So the infinite product of fair coins exists, and Borel's theorem says that **almost every real number has asymptotically half its binary digits equal to $1$**. (In general, infinite products of probability spaces exist by the Kolmogorov extension theorem.)
+
+</Example>
+
+<Example title="The modes of convergence are different">
+
+On $\Omega = [0, 1)$ with Lebesgue measure:
+
+- $X_n = n \, \mathbf 1_{(0, 1/n)} \to 0$ almost surely (at every point) but not in $L^1$: $\mathbb E X_n = 1$.
+- The "typewriter" indicators of $[0, 1), [0, \tfrac12), [\tfrac12, 1), [0, \tfrac14), \dots$ tend to $0$ in $L^1$ and in probability, but converge at no point.
+- If $X$ is standard normal and $X_n = -X$, then $X_n \to X$ in distribution (they have the same law) but $P(|X_n - X| > 1) = P(|X| > \tfrac12)$ does not tend to $0$.
+
+A cleaner probabilistic example of convergence in probability without almost-sure convergence uses independence: if $A_1, A_2, \dots$ are independent with $P(A_n) = 1/n$, then $\mathbf 1_{A_n} \to 0$ in probability, but by the second Borel–Cantelli lemma (below) infinitely many $A_n$ occur almost surely, so $\mathbf 1_{A_n} \not\to 0$ a.s.
+
+</Example>
+
+<Example title="Conditioning on a partition">
+
+Let $\mathcal G$ be generated by a partition $\Omega = B_1 \sqcup \dots \sqcup B_k$ with $P(B_i) > 0$. Every $\mathcal G$-measurable function is constant on each $B_i$, and condition 2 with $G = B_i$ forces the constant:
+
+$$
+\mathbb E[X \mid \mathcal G] = \sum_{i=1}^k \frac{\mathbb E[X \mathbf 1_{B_i}]}{P(B_i)} \, \mathbf 1_{B_i},
+$$
+
+the elementary conditional expectations "glued together". For two fair dice $X_1, X_2$, $\mathbb E[X_1 + X_2 \mid X_1] = X_1 + \tfrac72$: a random variable, equal to $\tfrac{15}{2}$ on the event $\{X_1 = 4\}$. With a joint density $f(x, y)$, $\mathbb E[X \mid Y] = h(Y)$ where $h(y) = \int x f(x, y)\, dx \big/ \int f(x, y) \, dx$ wherever the denominator is positive; changing $h$ on a $\mu_Y$-null set changes nothing. That freedom is exactly what dissolves the Borel–Kolmogorov paradox: conditioning on the null event $\{Y = y\}$ is meaningful only through the whole family $y \mapsto h(y)$, which depends on the σ-algebra (the variable $Y$), not on the event alone.
+
+</Example>
+
+<Example title="Martingales">
+
+1. **Sums.** If $\xi_1, \xi_2, \dots$ are independent and integrable with mean $0$, and $\mathcal F_n = \sigma(\xi_1, \dots, \xi_n)$, then $S_n = \xi_1 + \dots + \xi_n$ is a martingale: $\mathbb E[S_{n+1} \mid \mathcal F_n] = S_n + \mathbb E[\xi_{n+1}] = S_n$. If moreover $\mathbb E \xi_i^2 = \sigma^2$, then $S_n^2 - n\sigma^2$ is a martingale.
+2. **Products.** If $\xi_i \ge 0$ are independent with $\mathbb E \xi_i = 1$, then $M_n = \xi_1 \cdots \xi_n$ is a martingale (likelihood ratios in statistics are of this form).
+3. **Doob martingales.** For integrable $X$ and any filtration, $M_n = \mathbb E[X \mid \mathcal F_n]$ is a martingale — the sequence of ever better guesses of $X$.
+4. **Pólya's urn.** An urn holds one red and one blue ball; repeatedly draw a ball and return it together with another of the same colour. If $R_n$ is the number of red balls after $n$ draws, the fraction $M_n = R_n/(n + 2)$ satisfies $\mathbb E[M_{n+1} \mid \mathcal F_n] = \frac{R_n}{n+2} \cdot \frac{R_n + 1}{n+3} + \frac{n + 2 - R_n}{n+2} \cdot \frac{R_n}{n+3} = \frac{R_n}{n+2}$: a martingale.
+
+</Example>
+
+</Section>
+
+<Section id="limit-laws" kind="proof" title="Borel–Cantelli, the zero–one law and the laws of large numbers">
+
+For events $A_n$, the event "infinitely many $A_n$ occur" is $\limsup_n A_n = \bigcap_{n \ge 1} \bigcup_{k \ge n} A_k$.
+
+<Theorem name="First Borel–Cantelli lemma">
+
+If $\sum_n P(A_n) < \infty$, then $P(\limsup_n A_n) = 0$: almost surely only finitely many of the $A_n$ occur.
+
+</Theorem>
+
+<Proof>
+
+For every $n$, $\limsup_k A_k \subseteq \bigcup_{k \ge n} A_k$, so by countable subadditivity $P(\limsup_k A_k) \le \sum_{k \ge n} P(A_k)$. The right side is the tail of a convergent series and tends to $0$ as $n \to \infty$.
+
+</Proof>
+
+<Theorem name="Second Borel–Cantelli lemma">
+
+If the events $A_n$ are independent and $\sum_n P(A_n) = \infty$, then $P(\limsup_n A_n) = 1$.
+
+</Theorem>
+
+<Proof>
+
+It suffices to show $P\big(\bigcap_{k \ge n} A_k^c\big) = 0$ for each $n$, since the complement of $\limsup A_k$ is $\bigcup_n \bigcap_{k \ge n} A_k^c$. The complements $A_k^c$ are independent too, so for $N \ge n$, using $1 - x \le e^{-x}$,
+
+$$
+P\Big(\bigcap_{k=n}^N A_k^c\Big) = \prod_{k=n}^N \big(1 - P(A_k)\big) \le \exp\Big(-\sum_{k=n}^N P(A_k)\Big) \xrightarrow[N \to \infty]{} 0.
+$$
+
+By continuity from above, $P\big(\bigcap_{k \ge n} A_k^c\big) = \lim_N P\big(\bigcap_{k=n}^N A_k^c\big) = 0$.
+
+</Proof>
+
+Independence cannot be dropped: if $A_n = A$ for a single event with $P(A) = \tfrac12$, the sum diverges but $P(\limsup A_n) = \tfrac12$. In the second lemma, $\limsup A_n$ is a **tail event**: it does not depend on any finitely many of the $A_n$. That its probability is $0$ or $1$ is no accident.
+
+<Theorem name="Kolmogorov's zero–one law">
+
+Let $\mathcal F_1, \mathcal F_2, \dots$ be independent σ-algebras and $\mathcal T = \bigcap_n \sigma(\mathcal F_n, \mathcal F_{n+1}, \dots)$ the tail σ-algebra. Then $P(T) \in \{0, 1\}$ for every $T \in \mathcal T$.
+
+</Theorem>
+
+<Proof>
+
+For each $n$, $\sigma(\mathcal F_1, \dots, \mathcal F_n)$ is independent of $\sigma(\mathcal F_{n+1}, \dots) \supseteq \mathcal T$. Hence $\mathcal T$ is independent of the union $\bigcup_n \sigma(\mathcal F_1, \dots, \mathcal F_n)$, a π-system generating $\sigma(\mathcal F_1, \mathcal F_2, \dots)$, and by the π–λ theorem of the whole of $\sigma(\mathcal F_1, \mathcal F_2, \dots) \supseteq \mathcal T$. So $T$ is independent of itself: $P(T) = P(T \cap T) = P(T)^2$.
+
+</Proof>
+
+For independent $X_n$ the events "$\sum X_n$ converges" and "$\frac1n \sum_{k \le n} X_k$ converges" are tail events, so each has probability $0$ or $1$; the laws of large numbers say which.
+
+<Theorem name="Relations between the modes of convergence">
+
+(a) Almost-sure convergence implies convergence in probability. (b) Convergence in probability implies almost-sure convergence of a subsequence. (c) Convergence in $L^p$ implies convergence in probability. (d) Convergence in probability implies convergence in distribution.
+
+</Theorem>
+
+<Proof>
+
+(a) Fix $\varepsilon > 0$ and let $E_n = \bigcup_{m \ge n} \{|X_m - X| > \varepsilon\}$. These decrease to a subset of $\{X_m \not\to X\}$, which is null; by continuity from above $P(|X_n - X| > \varepsilon) \le P(E_n) \to 0$.
+
+(b) Choose $n_1 < n_2 < \cdots$ with $P(|X_{n_k} - X| > 2^{-k}) \le 2^{-k}$. By the first Borel–Cantelli lemma, almost surely $|X_{n_k} - X| \le 2^{-k}$ for all large $k$, so $X_{n_k} \to X$ a.s.
+
+(c) Markov's inequality: $P(|X_n - X| > \varepsilon) \le \varepsilon^{-p} \, \mathbb E|X_n - X|^p$.
+
+(d) Let $f$ be bounded and continuous, and suppose $\mathbb E f(X_n) \not\to \mathbb E f(X)$; pass to a subsequence along which $|\mathbb E f(X_n) - \mathbb E f(X)| \ge \delta > 0$. By (b) a further subsequence converges a.s., so $f(X_n) \to f(X)$ a.s. along it, and dominated convergence (with the bound $\sup |f|$) gives $\mathbb E f(X_n) \to \mathbb E f(X)$ — a contradiction.
+
+</Proof>
+
+<Theorem name="Weak law of large numbers (Chebyshev)">
+
+Let $X_1, X_2, \dots$ be pairwise independent with $\mathbb E X_i = \mu$ and $\operatorname{Var} X_i = \sigma^2 < \infty$, and $\bar X_n = \frac1n (X_1 + \dots + X_n)$. Then $P(|\bar X_n - \mu| \ge \varepsilon) \le \dfrac{\sigma^2}{n \varepsilon^2}$, so $\bar X_n \to \mu$ in probability.
+
+</Theorem>
+
+<Proof>
+
+Pairwise independent square-integrable variables are uncorrelated, so $\operatorname{Var}(X_1 + \dots + X_n) = \sum_i \operatorname{Var} X_i = n\sigma^2$ and $\operatorname{Var} \bar X_n = \sigma^2/n$. Chebyshev's inequality $P(|Y - \mathbb E Y| \ge \varepsilon) \le \operatorname{Var} Y/\varepsilon^2$ (Markov applied to $(Y - \mathbb E Y)^2$) finishes the proof.
+
+</Proof>
+
+<Theorem name="Strong law of large numbers (fourth-moment version)">
+
+Let $X_1, X_2, \dots$ be independent and identically distributed with $\mathbb E X_1^4 < \infty$ and $\mathbb E X_1 = \mu$. Then $\bar X_n \to \mu$ almost surely.
+
+</Theorem>
+
+<Proof>
+
+Replacing $X_i$ by $X_i - \mu$ we may assume $\mu = 0$. Expand $\mathbb E S_n^4 = \sum_{i, j, k, l \le n} \mathbb E[X_i X_j X_k X_l]$. By independence and $\mathbb E X_i = 0$, every term in which some index appears exactly once vanishes. What remains are the $n$ terms $\mathbb E X_i^4$ and, for each of the $\binom{n}{2}$ pairs $i \ne j$, the $\binom42 = 6$ arrangements of $X_i^2 X_j^2$:
+
+$$
+\mathbb E S_n^4 = n \, \mathbb E X_1^4 + 3n(n-1) \big(\mathbb E X_1^2\big)^2 \le C n^2,
+$$
+
+where $C = \mathbb E X_1^4 + 3 (\mathbb E X_1^2)^2$ is finite (note $(\mathbb E X_1^2)^2 \le \mathbb E X_1^4$). By Markov's inequality applied to $S_n^4$,
+
+$$
+P\big(|S_n/n| > \varepsilon\big) = P\big(S_n^4 > \varepsilon^4 n^4\big) \le \frac{C n^2}{\varepsilon^4 n^4} = \frac{C}{\varepsilon^4 n^2},
+$$
+
+which is summable. By the first Borel–Cantelli lemma, almost surely $|S_n/n| \le \varepsilon$ for all large $n$. Intersecting these almost-sure events over $\varepsilon = 1, \frac12, \frac13, \dots$ gives $S_n/n \to 0$ almost surely.
+
+</Proof>
+
+The fourth moment is a convenience, not a necessity. Kolmogorov (1930) proved the strong law for i.i.d. integrable variables, and **Etemadi (1981)** found a short proof that needs only pairwise independence: truncate $X_i$ at level $i$, prove convergence along the geometric subsequence $n_k = \lfloor \alpha^k \rfloor$ with Chebyshev and Borel–Cantelli, and interpolate using $X_i \ge 0$ (Durrett, §2.4). Integrability is necessary: if $\mathbb E|X_1| = \infty$, then $\sum_n P(|X_n| > n) = \infty$, so by the second Borel–Cantelli lemma $|X_n| > n$ infinitely often and $\bar X_n$ diverges almost surely. Mathlib proves Etemadi's version (see the formal section).
+
+</Section>
+
+<Section id="conditional-expectation" kind="proof" title="Conditional expectation">
+
+<Theorem name="Existence and uniqueness of conditional expectation">
+
+For every integrable $X$ and every sub-σ-algebra $\mathcal G \subseteq \mathcal F$ there is a conditional expectation $\mathbb E[X \mid \mathcal G]$, and any two agree almost surely.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* First let $X \ge 0$. On the measurable space $(\Omega, \mathcal G)$ define $\nu(G) = \int_G X \, dP$ for $G \in \mathcal G$. It is a finite measure (countable additivity is monotone convergence), and it is absolutely continuous with respect to the restriction $P|_{\mathcal G}$: if $P(G) = 0$ then $\nu(G) = 0$. By the **Radon–Nikodym theorem** on $(\Omega, \mathcal G)$ there is a $\mathcal G$-measurable $Y \ge 0$ with $\nu(G) = \int_G Y \, dP$ for all $G \in \mathcal G$, and $\int Y \, dP = \nu(\Omega) = \mathbb E X < \infty$. For general $X$ apply this to $X^+$ and $X^-$ and subtract.
+
+*Uniqueness.* Let $Y, Y'$ both satisfy the definition and $G_k = \{Y - Y' > 1/k\} \in \mathcal G$. Then $0 = \int_{G_k} (Y - Y') \, dP \ge P(G_k)/k$, so $P(G_k) = 0$ and $P(Y > Y') = P\big(\bigcup_k G_k\big) = 0$. By symmetry $Y = Y'$ a.s.
+
+</Proof>
+
+The point of the construction is that $\mathbb E[X \mid \mathcal G]$ is the density of the measure "$X$ restricted to the information $\mathcal G$" — it is measurable with respect to $\mathcal G$, not $\mathcal F$, which is why the Radon–Nikodym theorem is applied on the smaller σ-algebra.
+
+<Theorem name="Properties of conditional expectation">
+
+Let $X, X'$ be integrable and $\mathcal G, \mathcal H \subseteq \mathcal F$ sub-σ-algebras. Almost surely:
+
+1. (linearity) $\mathbb E[aX + bX' \mid \mathcal G] = a \, \mathbb E[X \mid \mathcal G] + b \, \mathbb E[X' \mid \mathcal G]$;
+2. (positivity) if $X \ge 0$ then $\mathbb E[X \mid \mathcal G] \ge 0$; hence $|\mathbb E[X \mid \mathcal G]| \le \mathbb E[|X| \mid \mathcal G]$;
+3. $\mathbb E\big[\mathbb E[X \mid \mathcal G]\big] = \mathbb E X$, and $\mathbb E[X \mid \mathcal G] = X$ if $X$ is $\mathcal G$-measurable;
+4. (tower) if $\mathcal H \subseteq \mathcal G$ then $\mathbb E\big[\mathbb E[X \mid \mathcal G] \mid \mathcal H\big] = \mathbb E[X \mid \mathcal H]$;
+5. (taking out what is known) if $Z$ is $\mathcal G$-measurable and $ZX$ is integrable, then $\mathbb E[ZX \mid \mathcal G] = Z \, \mathbb E[X \mid \mathcal G]$;
+6. (independence) if $\sigma(X)$ is independent of $\mathcal G$, then $\mathbb E[X \mid \mathcal G] = \mathbb E X$;
+7. (conditional Jensen) if $\phi$ is convex and $\phi(X)$ is integrable, then $\phi\big(\mathbb E[X \mid \mathcal G]\big) \le \mathbb E[\phi(X) \mid \mathcal G]$.
+
+</Theorem>
+
+<Proof>
+
+Each identity is proved by checking that the right side is measurable for the right σ-algebra and has the right integrals, and then invoking uniqueness.
+
+(1) The right side is $\mathcal G$-measurable and its integral over $G \in \mathcal G$ is $a \int_G X + b \int_G X'$. (2) If $Y = \mathbb E[X \mid \mathcal G]$ and $G = \{Y < 0\}$, then $0 \le \int_G X = \int_G Y \le 0$, so $P(G) = 0$. (3) Take $G = \Omega$; and $X$ itself satisfies the definition when it is $\mathcal G$-measurable.
+
+(4) The left side is $\mathcal H$-measurable, and for $H \in \mathcal H \subseteq \mathcal G$: $\int_H \mathbb E[\mathbb E[X \mid \mathcal G] \mid \mathcal H] = \int_H \mathbb E[X \mid \mathcal G] = \int_H X$.
+
+(5) For $Z = \mathbf 1_B$ with $B \in \mathcal G$ and any $G \in \mathcal G$: $\int_G \mathbf 1_B \, \mathbb E[X \mid \mathcal G] = \int_{G \cap B} \mathbb E[X \mid \mathcal G] = \int_{G \cap B} X = \int_G \mathbf 1_B X$, since $G \cap B \in \mathcal G$. By linearity the identity holds for simple $\mathcal G$-measurable $Z$. For $X \ge 0$ and $Z \ge 0$ take simple $Z_k \uparrow Z$ and use monotone convergence on both sides (the conditional version follows from the defining integrals); the general case follows by splitting $Z$ and $X$ into positive and negative parts.
+
+(6) The constant $\mathbb E X$ is $\mathcal G$-measurable, and for $G \in \mathcal G$, independence gives $\int_G X = \mathbb E[X \mathbf 1_G] = \mathbb E X \cdot P(G) = \int_G \mathbb E X$.
+
+(7) A convex $\phi$ is the supremum of countably many affine functions $\ell_k(x) = a_k x + b_k$ with $\ell_k \le \phi$. By (1) and (2), $\mathbb E[\phi(X) \mid \mathcal G] \ge a_k \mathbb E[X \mid \mathcal G] + b_k$ almost surely for each $k$; take the supremum over the countably many $k$.
+
+</Proof>
+
+<Theorem name="Conditional expectation is an orthogonal projection">
+
+If $X \in L^2(\Omega, \mathcal F, P)$, then $\mathbb E[X \mid \mathcal G]$ is the orthogonal projection of $X$ onto the closed subspace $L^2(\Omega, \mathcal G, P)$. In particular it minimises $\mathbb E(X - Z)^2$ over all $\mathcal G$-measurable square-integrable $Z$, and
+
+$$
+\operatorname{Var} X = \mathbb E\big[\operatorname{Var}(X \mid \mathcal G)\big] + \operatorname{Var}\big(\mathbb E[X \mid \mathcal G]\big), \qquad \operatorname{Var}(X \mid \mathcal G) := \mathbb E\big[(X - \mathbb E[X \mid \mathcal G])^2 \mid \mathcal G\big].
+$$
+
+</Theorem>
+
+<Proof>
+
+Let $Y = \mathbb E[X \mid \mathcal G]$. By conditional Jensen with $\phi(x) = x^2$, $Y^2 \le \mathbb E[X^2 \mid \mathcal G]$, so $\mathbb E Y^2 \le \mathbb E X^2$ and $Y \in L^2(\mathcal G)$. (That subspace is closed because $L^2(\mathcal G)$ is complete by Riesz–Fischer.) For bounded $\mathcal G$-measurable $Z$, by (3) and (5),
+
+$$
+\mathbb E[(X - Y) Z] = \mathbb E\big[\mathbb E[(X - Y) Z \mid \mathcal G]\big] = \mathbb E\big[Z \, (\mathbb E[X \mid \mathcal G] - Y)\big] = 0.
+$$
+
+Bounded functions are dense in $L^2(\mathcal G)$, so $X - Y \perp L^2(\mathcal G)$: $Y$ is the orthogonal projection, and for any $Z \in L^2(\mathcal G)$ Pythagoras gives $\mathbb E(X - Z)^2 = \mathbb E(X - Y)^2 + \mathbb E(Y - Z)^2$. Taking $Z = \mathbb E X$ (a constant) gives $\operatorname{Var} X = \mathbb E(X - Y)^2 + \operatorname{Var} Y$, and $\mathbb E(X - Y)^2 = \mathbb E[\operatorname{Var}(X \mid \mathcal G)]$ by (3).
+
+</Proof>
+
+This is in fact how Mathlib constructs conditional expectation: first as the orthogonal projection on $L^2$, then extended by continuity to $L^1$ — the Radon–Nikodym route and the Hilbert-space route give the same object.
+
+</Section>
+
+<Section id="martingales" kind="proof" title="Martingales: stopping and convergence">
+
+Fix a filtration $(\mathcal F_n)$. For a martingale $(M_n)$ and a predictable process $(H_n)$, the **martingale transform** is
+
+$$
+(H \cdot M)_n = \sum_{k=1}^n H_k (M_k - M_{k-1}), \qquad (H \cdot M)_0 = 0.
+$$
+
+Think of $M_k - M_{k-1}$ as the outcome of the $k$-th fair game and $H_k$ as the stake, chosen with the information available before the game.
+
+<Theorem name="You cannot beat a fair game">
+
+If $(M_n)$ is a martingale and $(H_n)$ is predictable and bounded, then $(H \cdot M)$ is a martingale; in particular $\mathbb E (H \cdot M)_n = 0$. If $(M_n)$ is a supermartingale and $0 \le H_n \le c$, then $(H \cdot M)$ is a supermartingale and $\mathbb E (H \cdot M)_n \le 0$.
+
+</Theorem>
+
+<Proof>
+
+$(H \cdot M)_n$ is adapted and integrable (as $H$ is bounded). Taking out what is known, $\mathbb E[H_{n+1}(M_{n+1} - M_n) \mid \mathcal F_n] = H_{n+1} \big(\mathbb E[M_{n+1} \mid \mathcal F_n] - M_n\big)$, which is $0$ for a martingale and $\le 0$ for a supermartingale with $H_{n+1} \ge 0$.
+
+</Proof>
+
+A martingale has constant expectation, $\mathbb E M_n = \mathbb E M_0$ (take expectations in $\mathbb E[M_{n+1} \mid \mathcal F_n] = M_n$). Can a cleverly chosen *random* time do better?
+
+<Theorem name="Optional stopping theorem (bounded stopping times)">
+
+If $(M_n)$ is a martingale and $T$ is a stopping time with $T \le N$ for a constant $N$, then $\mathbb E M_T = \mathbb E M_0$. For a supermartingale, $\mathbb E M_T \le \mathbb E M_0$.
+
+</Theorem>
+
+<Proof>
+
+Write $M_T - M_0 = \sum_{k=1}^N \mathbf 1_{\{T \ge k\}} (M_k - M_{k-1})$. The stake $H_k = \mathbf 1_{\{T \ge k\}} = 1 - \mathbf 1_{\{T \le k - 1\}}$ is $\mathcal F_{k-1}$-measurable because $T$ is a stopping time. So $M_T - M_0 = (H \cdot M)_N$ has expectation $0$ (respectively $\le 0$) by the previous theorem.
+
+</Proof>
+
+<Example title="Gambler's ruin">
+
+A simple symmetric random walk $S_n$ starts at $a \in \{1, \dots, N - 1\}$ and stops at the first time $T$ it hits $0$ or $N$. Both $S_n$ and $S_n^2 - n$ are martingales. One checks $\mathbb E T < \infty$ (from any state, $N$ consecutive steps up end the game, so $P(T > kN) \le (1 - 2^{-N})^k$). Apply optional stopping at the bounded times $T \wedge n$ and let $n \to \infty$: $|S_{T \wedge n}| \le N$ allows dominated convergence, and $T \wedge n \uparrow T$ allows monotone convergence. From $\mathbb E S_T = a$ we get $P(S_T = N) = a/N$, and from $\mathbb E[S_T^2 - T] = a^2$ we get $\mathbb E T = N^2 \cdot \frac aN - a^2 = a(N - a)$. Without some such control, optional stopping fails: the walk started at $0$ and stopped when it first hits $1$ stops almost surely, at $S_T = 1 \ne 0$ — but $\mathbb E T = \infty$.
+
+</Example>
+
+Now let $a \lt b$ and let $U_N[a, b]$ be the number of **upcrossings** of $[a, b]$ completed by $M_0, \dots, M_N$: the number of times the path passes from below $a$ to above $b$.
+
+<Theorem name="Doob's upcrossing inequality">
+
+If $(M_n)$ is a supermartingale, then $(b - a) \, \mathbb E\, U_N[a, b] \le \mathbb E\big[(M_N - a)^-\big]$.
+
+</Theorem>
+
+<Proof>
+
+Use the strategy "buy when the price drops below $a$, hold until it rises above $b$, then sell": $H_1 = \mathbf 1_{\{M_0 \lt a\}}$ and $H_n = \mathbf 1_{\{H_{n-1} = 1,\, M_{n-1} \le b\}} + \mathbf 1_{\{H_{n-1} = 0,\, M_{n-1} \lt a\}}$. It is predictable with values in $\{0, 1\}$. Each completed upcrossing earns at least $b - a$, and the last, possibly incomplete, holding period loses at most $(M_N - a)^-$. So
+
+$$
+(H \cdot M)_N \ge (b - a) \, U_N[a, b] - (M_N - a)^-.
+$$
+
+Since $\mathbb E (H \cdot M)_N \le 0$ for a supermartingale, the inequality follows.
+
+</Proof>
+
+<Theorem name="Doob's martingale convergence theorem">
+
+If $(M_n)$ is a supermartingale (in particular, a martingale) with $\sup_n \mathbb E|M_n| \lt \infty$, then $M_n$ converges almost surely to a finite limit $M_\infty$ with $\mathbb E|M_\infty| \lt \infty$.
+
+</Theorem>
+
+<Proof>
+
+For rationals $a \lt b$, $U_N[a, b] \uparrow U_\infty[a, b]$, and by monotone convergence and the upcrossing inequality
+
+$$
+(b - a) \, \mathbb E \, U_\infty[a, b] \le \sup_N \mathbb E (M_N - a)^- \le \sup_N \mathbb E |M_N| + |a| \lt \infty,
+$$
+
+so $U_\infty[a, b] \lt \infty$ almost surely. On the event $\{\liminf M_n \lt a \lt b \lt \limsup M_n\}$ the path crosses $[a, b]$ upwards infinitely often, so this event is null. The union over the countably many rational pairs is null, hence $\liminf M_n = \limsup M_n$ almost surely: the limit $M_\infty$ exists in $[-\infty, \infty]$. By Fatou's lemma $\mathbb E|M_\infty| \le \liminf \mathbb E |M_n| \lt \infty$, so $M_\infty$ is finite a.s.
+
+</Proof>
+
+Three remarks. First, a non-negative supermartingale is automatically $L^1$-bounded ($\mathbb E|M_n| = \mathbb E M_n \le \mathbb E M_0$), so it always converges. Second, convergence need not hold in $L^1$: if $\xi_i$ are independent with $P(\xi_i = 0) = P(\xi_i = 2) = \tfrac12$, the product martingale $M_n = \xi_1 \cdots \xi_n$ is $0$ from the first zero onwards, so $M_n \to 0$ a.s., while $\mathbb E M_n = 1$. $L^1$ convergence holds exactly when the martingale is **uniformly integrable**, and then $M_n = \mathbb E[M_\infty \mid \mathcal F_n]$. Third, **Lévy's upward theorem**: for integrable $X$, $\mathbb E[X \mid \mathcal F_n] \to \mathbb E[X \mid \mathcal F_\infty]$ almost surely and in $L^1$, where $\mathcal F_\infty = \sigma\big(\bigcup_n \mathcal F_n\big)$.
+
+<Example title="Pólya's urn converges to a uniform limit">
+
+The urn fraction $M_n \in [0, 1]$ is a bounded martingale, so it converges almost surely to some $M_\infty$. Its law is uniform on $[0, 1]$: by induction, $P(R_n = k) = \frac{1}{n+1}$ for $k = 1, \dots, n + 1$, because
+$P(R_{n+1} = k) = \frac{1}{n+1}\Big(\frac{k - 1}{n+2} + \frac{n + 2 - k}{n + 2}\Big) = \frac{1}{n+2}$.
+So $M_n$ is uniform on $\{\frac{1}{n+2}, \dots, \frac{n+1}{n+2}\}$, and the almost-sure limit (hence the limit in distribution) is uniform. The limit is genuinely random: each urn settles down, but different urns settle at different values.
+
+</Example>
+
+<Example title="Random signs">
+
+Let $\varepsilon_k = \pm 1$ be independent fair signs. Then $S_n = \sum_{k \le n} \varepsilon_k / k$ is a martingale with $\mathbb E S_n^2 = \sum_{k \le n} 1/k^2 \le \pi^2/6$, hence $L^1$-bounded (Cauchy–Schwarz). So the random harmonic series $\sum \pm 1/k$ converges almost surely — although $\sum 1/k$ diverges.
+
+</Example>
+
+</Section>
+
+<Section id="clt" kind="proof" title="Characteristic functions and the central limit theorem">
+
+Characteristic functions have the following properties (Durrett, §3.3): $\varphi_X(0) = 1$, $|\varphi_X| \le 1$ and $\varphi_X$ is uniformly continuous; $\varphi_{aX + b}(t) = e^{itb} \varphi_X(at)$; if $X$ and $Y$ are independent, $\varphi_{X + Y} = \varphi_X \varphi_Y$ (because $e^{itX}$ and $e^{itY}$ are independent); $\varphi_X$ **determines the law** of $X$ (an inversion formula recovers $\mu_X$); and if $\mathbb E|X|^k \lt \infty$ then $\varphi_X$ is $k$ times continuously differentiable with $\varphi_X^{(k)}(0) = i^k \, \mathbb E X^k$. For a standard Gaussian $Z$, $\varphi_Z(t) = e^{-t^2/2}$: differentiating under the integral and integrating by parts gives $\varphi_Z'(t) = -t \varphi_Z(t)$ with $\varphi_Z(0) = 1$.
+
+<Theorem name="Lévy's continuity theorem">
+
+Random variables $X_n$ converge in distribution to $X$ if and only if $\varphi_{X_n}(t) \to \varphi_X(t)$ for every $t \in \R$.
+
+</Theorem>
+
+"Only if" is immediate, since $x \mapsto e^{itx}$ is bounded and continuous. For "if", one shows that the laws are **tight** (the behaviour of $\varphi_{X_n}$ near $0$ controls $P(|X_n| > K)$), extracts weakly convergent subsequences by Prokhorov's theorem, and identifies every subsequential limit through its characteristic function (Durrett, §3.3; Billingsley, §26). We use the theorem without proof here; Mathlib proves it (formal section).
+
+<Theorem name="Lemma (Taylor bounds)">
+
+For real $x$: $\big|e^{ix} - \big(1 + ix - \tfrac{x^2}{2}\big)\big| \le \min\big(\tfrac{|x|^3}{6}, x^2\big)$. And for complex numbers with $|z_k|, |w_k| \le 1$: $\big|\prod_{k=1}^n z_k - \prod_{k=1}^n w_k\big| \le \sum_{k=1}^n |z_k - w_k|$.
+
+</Theorem>
+
+<Proof>
+
+Integrating by parts, $e^{ix} - \sum_{k=0}^m \frac{(ix)^k}{k!} = \frac{i^{m+1}}{m!} \int_0^x (x - s)^m e^{is} \, ds$, whose modulus is at most $|x|^{m+1}/(m+1)!$. With $m = 2$ this gives the bound $|x|^3/6$. With $m = 1$, $|e^{ix} - 1 - ix| \le x^2/2$, so $|e^{ix} - 1 - ix + x^2/2| \le x^2/2 + x^2/2 = x^2$. For the products, induct on $n$: $\prod_{k \le n} z_k - \prod_{k \le n} w_k = z_n \big(\prod_{k \lt n} z_k - \prod_{k \lt n} w_k\big) + (z_n - w_n) \prod_{k \lt n} w_k$, and every factor outside the brackets has modulus at most $1$.
+
+</Proof>
+
+<Theorem name="Central limit theorem">
+
+Let $X_1, X_2, \dots$ be independent and identically distributed with $\mathbb E X_1 = 0$ and $\mathbb E X_1^2 = 1$. Then $S_n/\sqrt n \to Z$ in distribution, where $Z$ is standard normal: $P(S_n/\sqrt n \le x) \to \Phi(x) = \frac{1}{\sqrt{2\pi}} \int_{-\infty}^x e^{-s^2/2} \, ds$ for every $x$.
+
+</Theorem>
+
+<Proof>
+
+Let $\varphi = \varphi_{X_1}$. By the lemma with $x = tX_1$, taking expectations,
+
+$$
+\Big|\varphi(t) - \Big(1 - \frac{t^2}{2}\Big)\Big| \le \mathbb E \min\Big(\frac{|t|^3 |X_1|^3}{6}, t^2 X_1^2\Big) = t^2 \, \mathbb E \min\Big(\frac{|t| \, |X_1|^3}{6}, X_1^2\Big).
+$$
+
+As $t \to 0$ the random variable inside the last expectation tends to $0$ and is dominated by $X_1^2$, which is integrable; so by dominated convergence $\varphi(t) = 1 - \frac{t^2}{2} + o(t^2)$. (This uses only a finite second moment.)
+
+By independence $\varphi_{S_n/\sqrt n}(t) = \varphi(t/\sqrt n)^n$. Fix $t$ and take $n \ge t^2/2$, so that $|1 - t^2/(2n)| \le 1$. The product lemma gives
+
+$$
+\Big|\varphi\big(t/\sqrt n\big)^n - \Big(1 - \frac{t^2}{2n}\Big)^n\Big| \le n \, \Big|\varphi\big(t/\sqrt n\big) - 1 + \frac{t^2}{2n}\Big| = n \cdot o\Big(\frac{t^2}{n}\Big) \xrightarrow[n \to \infty]{} 0,
+$$
+
+and $(1 - t^2/(2n))^n \to e^{-t^2/2} = \varphi_Z(t)$. By Lévy's continuity theorem $S_n/\sqrt n \to Z$ in distribution. Since $\Phi$ is continuous, the distribution functions converge at every $x$.
+
+</Proof>
+
+For general mean $\mu$ and variance $\sigma^2 \in (0, \infty)$, apply the theorem to $(X_i - \mu)/\sigma$. The **Lindeberg–Feller theorem** drops identical distribution: for independent triangular arrays it suffices that no single summand carries a non-negligible share of the variance (Lindeberg's condition). The **Berry–Esseen theorem** quantifies the speed: $\sup_x |P(S_n/\sqrt n \le x) - \Phi(x)| \le C \, \mathbb E|X_1|^3/\sqrt n$ with an absolute constant $C \lt 0.48$ (Shevtsova, 2011); for fair $\pm1$ steps the rate $1/\sqrt n$ is attained (see the computation below).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Probability in Lean and Mathlib">
+
+Mathlib's probability library is built exactly on Kolmogorov's dictionary: a probability space is a `MeasureSpace` with `IsProbabilityMeasure`, a random variable is a measurable function, `μ[X]` is the integral, and independence (`iIndepFun`, `X ⟂ᵢ[μ] Y`) is phrased through σ-algebras. Our first theorem mirrors the human proof of the first Borel–Cantelli lemma line by line — limsup inside a tail union, subadditivity, tails of a convergent series tend to $0$:
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.borel_cantelli_first" />
+
+The second lemma and Kolmogorov's zero–one law are Mathlib theorems. Note how the hypotheses mirror the statements above: `iIndepSet` for independence of the events, `iIndep` for independence of σ-algebras, and `MeasurableSet[limsup 𝓕 atTop] T` for membership in the tail σ-algebra.
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.borel_cantelli_second" />
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.zero_one_law" />
+
+The weak law with Chebyshev's explicit rate is proved here from two library facts — the variance of a sum of pairwise independent variables is the sum of the variances, and Chebyshev's inequality — exactly as in the human proof. Etemadi's strong law is a large Mathlib development (truncation, geometric subsequences, interpolation); we cite it for real-valued variables:
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.weak_law" />
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.strong_law" />
+
+Mathlib writes `μ[X | 𝒢]` for the conditional expectation. It is a *function* `Ω → ℝ`, not a number, and identities between conditional expectations hold `=ᵐ[μ]`, almost everywhere — the formal statements cannot fall into the misconception that a conditional expectation is a number. The defining property, the tower property, taking out what is known, and independence:
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.cond_exp_set_integral" />
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.cond_exp_tower" />
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.cond_exp_pull_out" />
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.cond_exp_indep" />
+
+A martingale (`Martingale M 𝓕 μ`: adapted, and `μ[M j | 𝓕 i] =ᵐ[μ] M i` for `i ≤ j`) has constant expectation; the proof integrates the defining identity. Doob's convergence theorem, proved in Mathlib through the upcrossing inequality as above, is then cited:
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.martingale_integral_eq" />
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.martingale_convergence" />
+
+Finally Lévy's continuity theorem and the central limit theorem, both recent additions to Mathlib. The CLT's proof in Mathlib follows the lesson's: `charFun_inv_sqrt_mul_sum` computes the characteristic function of the normalised sum as $\varphi(t/\sqrt n)^n$, a second-order Taylor expansion of $\varphi$ gives the limit $e^{-t^2/2}$, and Lévy's theorem concludes.
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.levy_continuity" />
+
+<Lean decl="Lumenary.MeasureTheoreticProbability.central_limit" />
+
+**Not formalised here:** the fourth-moment proof of the strong law (we cite Mathlib's stronger theorem instead), the Radon–Nikodym construction of conditional expectation (Mathlib uses the $L^2$-projection route), optional stopping and the upcrossing inequality (in Mathlib as `Submartingale.expected_stoppedValue_mono` and `Submartingale.mul_integral_upcrossingsBefore_le_integral_pos_part`), and the Taylor-bound lemma.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: Borel–Cantelli, Pólya's urn and the CLT">
+
+The first experiment compares independent events with $P(A_n) = 1/n$ and $P(B_n) = 1/n^2$. The expected number of occurrences in each dyadic block $[2^k, 2^{k+1})$ is computed exactly: about $\ln 2$ for the $A_n$, forever, and a geometrically shrinking amount for the $B_n$. Seeded simulations up to $n = 2^{16}$ show the $A_n$ still occurring at large $n$ while the $B_n$ stop after a few indices — the two Borel–Cantelli lemmas side by side.
+
+<Python id="measure_theoretic_probability_borel_cantelli" />
+
+The second computes the law of Pólya's urn exactly with fractions (uniform, as proved above), checks the martingale identity for every state up to $n = 30$, and simulates urns: each settles, at a different random level.
+
+<Python id="measure_theoretic_probability_polya_urn" />
+
+The third measures how fast $\cos(t/\sqrt n)^n$, the characteristic function of a normalised sum of fair $\pm1$ steps, approaches $e^{-t^2/2}$: the error is about $t^4 e^{-t^2/2}/(12n)$, as the Taylor expansion $\log \cos s = -s^2/2 - s^4/12 + \cdots$ predicts. The distribution functions converge more slowly, at the Berry–Esseen rate $1/\sqrt n$, because $S_n$ is lattice-valued.
+
+<Python id="measure_theoretic_probability_clt_charfun" />
+
+All three are evidence, not proof: exact arithmetic on finitely many cases, seeded simulations of finite horizons, and floating-point evaluation on finite grids.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Watching the limit theorems">
+
+Move the slider: the curve is the characteristic function $\cos(t/\sqrt n)^n$ of $S_n/\sqrt n$ for fair $\pm1$ steps, and the dashed comparison is $e^{-t^2/2}$. Pointwise convergence of these curves is, by Lévy's theorem, the central limit theorem. Notice that for small $n$ the curve is periodic — the law of $S_n/\sqrt n$ lives on a lattice — and that the period $2\pi\sqrt n$ runs off to infinity.
+
+<FunctionPlot
+  fns={["cos(x/sqrt(n))^n", "exp(-x^2/2)"]}
+  labels={["φₙ(t) = cos(t/√n)ⁿ", "e^(−t²/2)"]}
+  params={[{ name: "n", min: 1, max: 60, step: 1, value: 2 }]}
+  x={[-12, 12]}
+  y={[-1.1, 1.1]}
+  xLabel="t"
+  title="Characteristic functions converge: the CLT through Fourier eyes"
+/>
+
+The strong law along one path, and the central limit theorem as a histogram: the running proportion of heads settles at $\tfrac12$ (each run is one $\omega$), and the Galton board's binomial counts take the normal shape.
+
+<ChanceLab experiments={["coin", "galton"]} trials={2000} title="The strong law and the central limit theorem" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Convergence in probability and almost-sure convergence are the same thing."** Almost-sure convergence is about individual sample paths: for almost every $\omega$, the sequence of numbers $X_n(\omega)$ converges. Convergence in probability is about the sequence of numbers $P(|X_n - X| > \varepsilon)$, and says nothing about any single path. Independent events with $P(A_n) = 1/n$ give indicators tending to $0$ in probability, yet almost every path has infinitely many $1$s (second Borel–Cantelli lemma). Almost-sure convergence implies convergence in probability, and convergence in probability implies almost-sure convergence along a subsequence — no more.
+
+</Misconception>
+
+<Misconception>
+
+**"A conditional expectation is a number."** $\mathbb E[X \mid A]$ for an event with $P(A) > 0$ is a number, but $\mathbb E[X \mid \mathcal G]$ is a $\mathcal G$-measurable random variable, defined only up to null sets: $\mathbb E[X_1 + X_2 \mid X_1] = X_1 + \tfrac72$ for two dice. Treating it as a number leads to errors such as $\mathbb E[ZX \mid \mathcal G] = \mathbb E[Z] \, \mathbb E[X \mid \mathcal G]$ instead of $Z \, \mathbb E[X \mid \mathcal G]$, and to paradoxes when conditioning on events of probability zero.
+
+</Misconception>
+
+<Misconception>
+
+**"A martingale that converges almost surely converges in mean."** The product martingale of independent $\xi_i \in \{0, 2\}$ converges to $0$ almost surely while $\mathbb E M_n = 1$ for every $n$. Uniform integrability is exactly what is missing. Likewise "$\mathbb E M_T = \mathbb E M_0$ for every stopping time" is false: the simple random walk stopped at its first visit to $1$ has $M_T = 1$.
+
+</Misconception>
+
+<Misconception>
+
+**"Pairwise independent means independent."** Toss two fair coins and let $C$ be the event that they agree. The events $\{\text{first is heads}\}$, $\{\text{second is heads}\}$, $C$ are pairwise independent, but any two of them determine the third. Chebyshev's weak law and Etemadi's strong law need only pairwise independence; the second Borel–Cantelli lemma as proved here and Kolmogorov's zero–one law need full independence.
+
+</Misconception>
+
+<Misconception>
+
+**"Convergence in distribution means the random variables get close."** It is a statement about laws only: $X_n = -X$ converges in distribution to a standard normal $X$ without ever getting close to it. When the limit is a constant $c$, however, convergence in distribution does imply convergence in probability to $c$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Conditioning is projecting">
+
+On $L^2(\Omega, \mathcal F, P)$, a Hilbert space, $\mathbb E[\,\cdot \mid \mathcal G]$ is the orthogonal projection onto the closed subspace of $\mathcal G$-measurable functions; constants form the line onto which $\mathbb E$ projects, and the variance is a squared distance. The law of total variance $\operatorname{Var} X = \mathbb E \operatorname{Var}(X \mid \mathcal G) + \operatorname{Var} \mathbb E[X \mid \mathcal G]$ is Pythagoras' theorem, the tower property says that projecting onto a subspace and then onto a smaller one equals projecting onto the smaller one, and a martingale with $\mathbb E M_n^2$ bounded is a sequence of projections of one vector onto growing subspaces — whose increments are **orthogonal**, so $\mathbb E M_n^2 = \mathbb E M_0^2 + \sum_k \mathbb E (M_k - M_{k-1})^2$. Least-squares regression and the Kalman filter are this geometry in practice. See <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Fourier transforms and differentiation theorems">
+
+The characteristic function is the Fourier transform of a measure, and the proof of the central limit theorem is Fourier analysis: convolution of laws becomes multiplication, and the Gaussian solves the fixed-point equation $\varphi(t/\sqrt 2)^2 = \varphi(t)$ of the normalised convolution square, and among laws with finite variance the centred Gaussians are the only solutions. Martingales, in turn, prove theorems of real analysis. Take $f \in L^1[0, 1)$ and let $\mathcal F_n$ be generated by the dyadic intervals of length $2^{-n}$. Then $\mathbb E[f \mid \mathcal F_n](x)$ is the average of $f$ over the dyadic interval containing $x$, a martingale; by Lévy's upward theorem it converges to $\mathbb E[f \mid \mathcal F_\infty] = f$ almost everywhere. That is a dyadic **Lebesgue differentiation theorem**, and Doob's maximal inequality is a dyadic Hardy–Littlewood maximal inequality — the start of a long dialogue with <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="The space of probability measures">
+
+Convergence in distribution is convergence in a topology: the weak (narrow) topology on the set $\mathcal P(S)$ of Borel probability measures on a metric space $S$, in which $\mu_n \to \mu$ when $\int f \, d\mu_n \to \int f \, d\mu$ for all bounded continuous $f$. The **portmanteau theorem** gives equivalent forms: $\limsup \mu_n(F) \le \mu(F)$ for closed $F$, or $\liminf \mu_n(U) \ge \mu(U)$ for open $U$. On a separable metric space this topology is metrised by the Lévy–Prokhorov metric, and **Prokhorov's theorem** (1956) says that on a Polish space a family of probability measures is relatively compact if and only if it is tight. When $S$ is compact, $\mathcal P(S)$ is itself compact: by the Riesz representation theorem it is a weak-* closed subset of the unit ball of $C(S)^*$, compact by Banach–Alaoglu. Lévy's continuity theorem is proved exactly by this compactness, and **Skorokhod's representation theorem** turns weak convergence on a Polish space back into almost-sure convergence of suitably chosen random variables.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Normal numbers and the Gaussian law of prime factors">
+
+Read the binary digits of a uniformly random $x \in [0, 1)$ as coin tosses: the strong law says that almost every real number has asymptotically equal frequencies of $0$s and $1$s, and applying it to blocks of digits in every base gives **Borel's normal number theorem** (1909) — almost every real number is normal in every base. Yet no one has proved that $\sqrt 2$, $\pi$ or $e$ is normal in any base: "almost all" is not "this one".
+
+Integers behave like random variables too. Let $\omega(n)$ be the number of distinct prime factors of $n$. Hardy and Ramanujan (1917) showed that $\omega(n)$ is usually close to $\log \log n$, and Turán (1934) reproved it by a Chebyshev-type variance bound, treating divisibility by different primes as nearly independent events. The **Erdős–Kac theorem** (1940) is a central limit theorem: for $n$ chosen uniformly from $\{1, \dots, N\}$, $\frac{\omega(n) - \log\log N}{\sqrt{\log\log N}}$ converges in distribution to a standard normal as $N \to \infty$. See <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Zero–one laws, randomness and the limits of measure">
+
+"Probability zero" is not "impossible" — HHHH… is a possible outcome — but logic can say which individual sequences deserve to be called random. Martin-Löf (1966) defined a binary sequence to be random if it avoids every effectively null set (every set covered by a uniformly computable sequence of open sets of measure at most $2^{-k}$). Each Martin-Löf random sequence satisfies the strong law of large numbers, the law of the iterated logarithm and every other almost-sure law whose exceptional set is effectively null, although no computable sequence is random.
+
+Logic also shows why probability is defined on a σ-algebra rather than on all subsets. Vitali's construction (using the axiom of choice) gives a subset of $[0, 1)$ with no translation-invariant probability. Even without invariance, Banach and Kuratowski (1929) showed under the continuum hypothesis that no countably additive probability on all subsets of $[0, 1]$ vanishes on points, and Ulam (1930) showed that such a measure would force $2^{\aleph_0}$ to be at least a weakly inaccessible (real-valued measurable) cardinal — so ZFC cannot prove it exists. See <TopicLink id="math.found.axiom-of-choice">the axiom of choice</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="will-the-walker-return" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Gerolamo Cardano**'s *Liber de ludo aleae* (written in the 16th century, printed 1663) and the correspondence of **Blaise Pascal** and **Pierre de Fermat** (1654) began the mathematics of chance; **Christiaan Huygens** (1657) introduced expectation.
+- **Jacob Bernoulli**'s *Ars Conjectandi* (1713) proved the first weak law of large numbers; **Abraham de Moivre** (1733) found the normal approximation to the binomial, and **Pierre-Simon Laplace** (1812) extended it. **Pafnuty Chebyshev** (1867) proved his inequality and a general weak law; his students **Andrey Markov** and **Aleksandr Lyapunov** developed dependent chains and, with characteristic functions, a general central limit theorem (Lyapunov, 1901).
+- **Émile Borel** (1909) proved the strong law for coin tossing and the normal number theorem; **Francesco Paolo Cantelli** (1917) proved the lemma now bearing both names, and a strong law under fourth moments. **Jarl Waldemar Lindeberg** (1922) proved his general central limit theorem; **Paul Lévy** (1925) developed characteristic functions and the continuity theorem, and studied martingale-like sums in the 1930s.
+- **Johann Radon** (1913) and **Otto Nikodym** (1930) proved the theorem behind conditional expectation. **Andrey Kolmogorov**'s *Grundbegriffe* (1933) gave the axioms, the extension theorem, the definition of conditional expectation and the zero–one law; he had proved the strong law for i.i.d. integrable variables in 1930. **Aleksandr Khinchin** proved the law of the iterated logarithm (1924) and, with Kolmogorov, convergence criteria for random series.
+- **Jean Ville** (1939) named martingales, after a betting strategy; **Joseph Doob** developed their theory, including the upcrossing inequality and the convergence and optional stopping theorems, in *Stochastic Processes* (1953). **Paul Erdős** and **Mark Kac** (1940) brought the central limit theorem into number theory; **Yuri Prokhorov** (1956) and **Anatoliy Skorokhod** (1956) laid the foundations of weak convergence; **Nasrollah Etemadi** (1981) gave the elementary proof of the strong law under pairwise independence.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- David Williams, *Probability with Martingales* (1991) — the shortest route from measure theory to martingales; the upcrossing proof above follows it.
+- Rick Durrett, *Probability: Theory and Examples* (5th ed., 2019) — the standard graduate text: laws of large numbers, CLT, martingales, Brownian motion.
+- Patrick Billingsley, *Probability and Measure* (3rd ed., 1995) — measure theory and probability developed together, with weak convergence in depth.
+- Olav Kallenberg, *Foundations of Modern Probability* (2nd ed., 2002) — a comprehensive, concise reference.
+- Geoffrey Grimmett and David Stirzaker, *Probability and Random Processes* (3rd ed., 2001) — many worked examples and exercises.
+- A. N. Kolmogorov, *Foundations of the Theory of Probability* (1933; English translation 1950) — short and still readable.
+- Mark Kac, *Statistical Independence in Probability, Analysis and Number Theory* (1959) — Rademacher functions, normal numbers and the Erdős–Kac theorem.
+
+</Section>

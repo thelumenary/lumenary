@@ -14,7 +14,7 @@ const pathways = PathwaysFile.parse(json("content/math/graph/pathways.json")).pa
 const byId = new Map(graph.topics.map((t) => [t.id, t]));
 const lean = LeanReport.parse(json("content/verification/lean-report.json"));
 const compute = ComputeReport.parse(json("content/verification/compute-report.json"));
-const lessons = dirs("content/math/lessons");
+const lessons = dirs("content/math/lessons").filter((d) => exists(`content/math/lessons/${d}/en.mdx`));
 const trails = dirs("content/math/trails");
 const lvl = (l: string) => LEVEL_IDS.indexOf(l as (typeof LEVEL_IDS)[number]);
 const hash = (s: string) => crypto.createHash("sha256").update(s).digest("hex").slice(0, 12);
@@ -71,8 +71,12 @@ describe("knowledge graph", () => {
 });
 
 describe("pathways", () => {
-  it("has the eight required pathways", () => {
-    expect(pathways.map((p) => p.id).sort()).toEqual(["accelerated-secondary", "adult-beginner", "applied-math", "cs-formal-methods", "graduate-prep", "k12-conventional", "math-major", "research-prep"]);
+  it("has the eight required pathways, plus specialisations", () => {
+    const ids = pathways.map((p) => p.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ["accelerated-secondary", "adult-beginner", "applied-math", "cs-formal-methods", "graduate-prep", "k12-conventional", "math-major", "research-prep"]) expect(ids).toContain(id);
+    // Higher mathematics is not only foundations: geometry, topology, analysis, algebra and physics each have a route.
+    for (const id of ["geometry-topology", "analysis-dynamics", "algebra-number-theory", "mathematical-physics"]) expect(ids).toContain(id);
   });
 
   it("orders milestones consistently with prerequisites", () => {

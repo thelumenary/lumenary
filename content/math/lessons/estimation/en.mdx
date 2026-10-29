@@ -1,0 +1,445 @@
+---
+slug: estimation
+topic: math.analysis.estimation
+title: Estimation and rounding
+subtitle: A good estimate is not a wild guess — it is a quick, reasoned answer that tells you how far off it might be.
+level: g3-5
+ages: Ages 8–11
+minutes: 35
+order: 2009
+objectives:
+  - Round whole numbers to the nearest ten, hundred or thousand, and decimals to the nearest whole number or tenth, explaining the rule for halfway cases
+  - Estimate sums, differences and products before calculating, and use estimates to check answers
+  - Give lower and upper bounds for a quantity, such as "between $300$ and $400$", and combine bounds
+  - Explain why rounding to the nearest ten changes a number by at most $5$, and how rounding errors can add up
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.Estimation.roundTen
+  - Lumenary.Estimation.round_examples
+  - Lumenary.Estimation.roundTen_multiple
+  - Lumenary.Estimation.roundTen_error
+  - Lumenary.Estimation.gap
+  - Lumenary.Estimation.roundTen_nearest
+  - Lumenary.Estimation.add_bounds
+  - Lumenary.Estimation.bounds_example
+  - Lumenary.Estimation.sub_bounds
+  - Lumenary.Estimation.mul_bounds
+  - Lumenary.Estimation.shopping
+  - Lumenary.Estimation.product_estimate
+  - Lumenary.Estimation.round_each_step_differs
+  - Lumenary.Estimation.rounded_total_error
+  - Lumenary.Estimation.error_bound_reached
+  - Lumenary.Estimation.double_rounding
+compute: [estimation_accumulated_error, estimation_halfway_rules]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Is there enough money?">
+
+Wanjiru is at a market in Nairobi with a **1000-shilling** note. She wants a bag of rice for $289$ shillings, cooking oil for $412$ shillings and tomatoes for $198$ shillings. Before she reaches the stall, she wants to know: is $1000$ shillings enough?
+
+Meanwhile her brother Kwame is doing homework. His calculator says $39 \times 61 = 1379$. Does that look right?
+
+Neither of them needs the exact answer straight away. They need a quick answer they can **trust**. That is what estimation is for. You will use the place value and multiplication from <TopicLink id="math.number.whole-number-arithmetic">whole-number arithmetic</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Rounding on the number line">
+
+Where is $37$? It lies between the tens $30$ and $40$, and it is **closer to $40$**: only $3$ away, while $30$ is $7$ away. So we say $37$ **rounded to the nearest ten** is $40$.
+
+<Figure caption="37 lies between 30 and 40. It is 3 away from 40 and 7 away from 30, so it rounds to 40. The halfway point is 35.">
+<svg viewBox="0 0 520 130" role="img" aria-label="A number line from 30 to 40. The number 37 is marked; a short bracket of length 3 joins it to 40, and a longer bracket of length 7 joins it to 30. A dashed line marks the halfway point 35.">
+  <line x1="25" y1="80" x2="495" y2="80" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <g stroke="var(--ink-2)" strokeWidth="1.5">
+    <line x1="40" y1="70" x2="40" y2="90" strokeWidth="2.5" />
+    <line x1="84" y1="74" x2="84" y2="86" />
+    <line x1="128" y1="74" x2="128" y2="86" />
+    <line x1="172" y1="74" x2="172" y2="86" />
+    <line x1="216" y1="74" x2="216" y2="86" />
+    <line x1="304" y1="74" x2="304" y2="86" />
+    <line x1="348" y1="74" x2="348" y2="86" />
+    <line x1="392" y1="74" x2="392" y2="86" />
+    <line x1="436" y1="74" x2="436" y2="86" />
+    <line x1="480" y1="70" x2="480" y2="90" strokeWidth="2.5" />
+  </g>
+  <line x1="260" y1="50" x2="260" y2="95" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="4 4" />
+  <path d="M348 62 L348 56 L480 56 L480 62" fill="none" stroke="var(--formal)" strokeWidth="2" />
+  <path d="M40 36 L40 30 L348 30 L348 36" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <circle cx="348" cy="80" r="7" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <g fontSize="14" textAnchor="middle" fill="var(--ink-2)">
+    <text x="40" y="112">30</text>
+    <text x="260" y="112">35</text>
+    <text x="348" y="112" fontWeight="700">37</text>
+    <text x="480" y="112">40</text>
+    <text x="414" y="50">3</text>
+    <text x="194" y="24">7</text>
+    <text x="260" y="44" fontSize="12">halfway</text>
+  </g>
+</svg>
+</Figure>
+
+Every number between $30$ and $40$ is closer to one of the two tens, except the **halfway** number $35$, which is exactly $5$ from each. We need a rule for that case. The usual school rule is: **halfway rounds up**, so $35$ rounds to $40$.
+
+Below, the straight line shows each number $n$ and the staircase shows $n$ rounded to the nearest ten. Move $n$ and watch the gap between the two dots:
+
+<FunctionPlot
+  fns={["x", "10*round(x/10)"]}
+  labels={["the number", "rounded to the nearest ten"]}
+  params={[{ name: "n", min: 0, max: 100, step: 1, value: 37, label: "n" }]}
+  points={[["n", "n", "n"], ["n", "10*round(n/10)", "rounded"]]}
+  x={[0, 100]}
+  y={[0, 105]}
+  xLabel="n"
+  yLabel="value"
+  editable={false}
+  title="Rounding to the nearest ten"
+  subtitle="The gap between the dots is the rounding error. How big can it get?"
+/>
+
+<Narrator who="chloe">
+
+The staircase never strays far from the straight line. I think the gap can never be more than $5$. Can we be *sure*, for every number, not just the ones we tried? The proof is below.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="The words we need">
+
+<Definition term="rounding">
+
+**Rounding** replaces a number by a nearby, simpler number. Rounding to the **nearest ten** means choosing the multiple of $10$ closest to the number. Rounding to the nearest hundred, thousand, whole number or tenth works the same way. When a number is exactly halfway, we round **up**: $35 \to 40$, $250 \to 300$, $2.5 \to 3$.
+
+</Definition>
+
+<Definition term="estimate and error">
+
+An **estimate** is an approximate value, found by reasoning. Its **error** is the difference between the estimate and the exact value. We write $\approx$ for "is approximately equal to", as in $289 + 412 + 198 \approx 900$.
+
+</Definition>
+
+<Definition term="lower and upper bounds">
+
+A **lower bound** for a quantity is a number we know the quantity is **at least**. An **upper bound** is a number we know it is **at most**. "Between $700$ and $1000$" gives both.
+
+</Definition>
+
+<Note>
+
+Halfway-rounds-up is a **convention**, an agreed rule, not a law of nature. Some scientists and computers use a different rule, "round half to even". Margaret compares the rules below.
+
+</Note>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Rounding to different places">
+
+Round $4372$:
+
+- to the nearest **ten**: it is between $4370$ and $4380$, closer to $4370$. So $4372 \approx 4370$.
+- to the nearest **hundred**: between $4300$ and $4400$, and $72 > 50$, so $4372 \approx 4400$.
+- to the nearest **thousand**: between $4000$ and $5000$, closer to $4000$.
+
+Some roundings cross into a new place: $2950$ rounded to the nearest hundred is $3000$ (halfway rounds up), and $996$ rounded to the nearest ten is $1000$.
+
+</Example>
+
+<Example title="Rounding decimals">
+
+$3.46$ lies between $3.4$ and $3.5$, and it is closer to $3.5$. So to the nearest **tenth**, $3.46 \approx 3.5$. To the nearest **whole number**, $3.46$ lies between $3$ and $4$ and is closer to $3$, because $0.46$ is less than a half. Careful: it is **not** $4$, even though $3.5$ would round to $4$ (see the misconceptions).
+
+</Example>
+
+<Example title="Estimating before calculating">
+
+- $289 + 412 + 198 \approx 300 + 400 + 200 = 900$. (Exactly: $899$.)
+- $812 - 389 \approx 800 - 400 = 400$. (Exactly: $423$.)
+- $48 \times 52 \approx 50 \times 50 = 2500$. (Exactly: $2496$.) Rounding one factor up and the other down often gives a close estimate.
+
+</Example>
+
+<Example title="Checking a calculator">
+
+Kwame's calculator says $39 \times 61 = 1379$. But $39 \times 61 \approx 40 \times 60 = 2400$. The answer $1379$ is nowhere near, so something went wrong (perhaps a key was pressed wrongly). The exact answer is $2379$.
+
+</Example>
+
+<Example title="Bounds for Wanjiru's shopping">
+
+Each price lies between two hundreds:
+
+$$
+200 \le 289 \le 300, \qquad 400 \le 412 \le 500, \qquad 100 \le 198 \le 200.
+$$
+
+Adding the lower bounds and the upper bounds:
+
+$$
+700 \le 289 + 412 + 198 \le 1000.
+$$
+
+The total is at most $1000$, so Wanjiru's note is **certainly** enough. The estimate $900$ alone could not promise that, because some prices were rounded *down*.
+
+</Example>
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: errors and decimals">
+
+**The rounding error.** This graph shows the error (the rounded number minus the number itself) for every number from $0$ to $100$. The two flat lines are at $5$ and $-5$. Does the error ever escape?
+
+<FunctionPlot
+  fns={["10*round(x/10) - x", "5", "-5"]}
+  labels={["rounding error", "5", "−5"]}
+  x={[0, 100]}
+  y={[-7, 7]}
+  xLabel="n"
+  yLabel="error"
+  editable={false}
+  title="The error of rounding to the nearest ten"
+/>
+
+**Rounding decimals.** Put the numbers on a line and choose $10$ parts for each whole, so the tick marks are tenths. Which tenth is each number closest to?
+
+<FractionBars mode="line" fractions={["0.46", "0.75", "1.35", "1.92"]} title="Decimals between the tenths" />
+
+</Section>
+
+<Section id="why" kind="proof" title="Why rounding and bounds work">
+
+### Rounding to the nearest ten changes a number by at most 5
+
+<Theorem name="the rounding error">
+
+Rounding a number to the nearest ten changes it by at most $5$.
+
+</Theorem>
+
+<Proof>
+
+Any number lies between two neighbouring tens, which are $10$ apart (for example $30$ and $40$). If it is in the lower half of that gap, it is at most $5$ above the lower ten, and it rounds down to it. If it is in the upper half, it is at most $5$ below the upper ten, and it rounds up to it. Either way it moves at most $5$, which is half of $10$.
+
+</Proof>
+
+For whole numbers we can say exactly how far: rounding moves a number **up by at most $5$** (as with $35 \to 40$) or **down by at most $4$** (as with $34 \to 30$). In the same way, rounding to the nearest hundred changes a number by at most $50$, and rounding to the nearest tenth by at most $0.05$.
+
+### Bounds add up
+
+<Theorem name="adding bounds">
+
+If $30 \le a \le 40$ and $20 \le b \le 30$, then $50 \le a + b \le 70$.
+
+</Theorem>
+
+<Proof>
+
+Making either number bigger makes the sum bigger. So the smallest $a + b$ can be is when both numbers are as small as possible, $30 + 20 = 50$. The largest is when both are as large as possible, $40 + 30 = 70$.
+
+</Proof>
+
+The same works with any bounds: add the lower bounds to get a lower bound, and add the upper bounds to get an upper bound. Multiplying works the same way for whole numbers: $30 \times 20 \le a \times b \le 40 \times 30$.
+
+**Subtracting is different!** To make $a - b$ as **large** as possible, take the largest $a$ and the **smallest** $b$: at most $40 - 20 = 20$. To make it as small as possible, take the smallest $a$ and the largest $b$: at least $30 - 30 = 0$. For differences, the bounds work **crosswise**.
+
+### Rounding errors can add up
+
+If you round several numbers before adding, each one may be off by up to $5$. So with $3$ numbers the total may be off by up to $3 \times 5 = 15$. Rounding the total **once** is off by at most $5$.
+
+- $15 + 15 + 15 = 45$, which rounds to $50$. Rounding first: $20 + 20 + 20 = 60$, which is $15$ too much. The worst case really happens.
+- $14 + 14 + 14 = 42$, which rounds to $40$. Rounding first: $10 + 10 + 10 = 30$. Rounding at every step gave a **different** final answer.
+
+Most of the time errors partly cancel, because some numbers are rounded up and others down. But "most of the time" is not "always", and Margaret measures how often below.
+
+### How far off is a product estimate?
+
+The area model from <TopicLink id="math.number.whole-number-arithmetic">whole-number arithmetic</TopicLink> tells us exactly. Since $39 = 40 - 1$ and $61 = 60 + 1$,
+
+$$
+\begin{aligned}
+39 \times 61 &= (40 - 1) \times (60 + 1) \\
+&= 40 \times 60 + 40 \times 1 - 1 \times 60 - 1 \times 1 \\
+&= 2400 + 40 - 60 - 1 = 2379.
+\end{aligned}
+$$
+
+The estimate $2400$ was only $21$ too big. Small changes to the factors make small changes to the product, and the distributive law measures them.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Gideon's precise statements">
+
+<Narrator who="gideon">
+
+"Close enough" is not precise. "Changes the number by at most $5$" is. Decide: true or false?
+
+</Narrator>
+
+1. "Rounding $35$ to the nearest ten gives $40$." — **True,** by the halfway-rounds-up rule.
+2. "Rounding a whole number to the nearest ten never changes it by more than $5$." — **True.** The proof is above.
+3. "Rounding at every step never changes the final rounded answer." — **False.** $14 + 14 + 14$: rounding first gives $30$, but $42$ rounds to $40$.
+4. "If $30 \le a \le 40$ and $20 \le b \le 30$, then $a - b \le 10$." — **False.** $a = 40$ and $b = 20$ give $20$.
+5. "$3.46$ rounded to the nearest whole number is $4$." — **False.** It is $3$.
+
+<ForGrownUps title="the same ideas in Lean, a proof checker">
+
+Lean's division of whole numbers throws away the remainder, so "add $5$, then knock off the ones digit" rounds to the nearest ten with halves going up:
+
+<Lean decl="Lumenary.Estimation.roundTen" />
+
+<Lean decl="Lumenary.Estimation.round_examples" />
+
+**How far rounding moves a number.** The result is a multiple of ten, it moves the number up by at most $5$ or down by at most $4$, and no multiple of ten is closer:
+
+<Lean decl="Lumenary.Estimation.roundTen_multiple" />
+
+<Lean decl="Lumenary.Estimation.roundTen_error" />
+
+<Lean decl="Lumenary.Estimation.gap" />
+
+<Lean decl="Lumenary.Estimation.roundTen_nearest" />
+
+**Bounds.** Adding bounds (a library fact), the example from the lesson, the crosswise rule for differences, products, and Wanjiru's shopping:
+
+<Lean decl="Lumenary.Estimation.add_bounds" />
+
+<Lean decl="Lumenary.Estimation.bounds_example" />
+
+<Lean decl="Lumenary.Estimation.sub_bounds" />
+
+<Lean decl="Lumenary.Estimation.mul_bounds" />
+
+<Lean decl="Lumenary.Estimation.shopping" />
+
+<Lean decl="Lumenary.Estimation.product_estimate" />
+
+**Errors add up.** Rounding at each step can change the answer. For any list of $k$ numbers, rounding first moves the total by at most $5 \times k$, and that bound can be reached:
+
+<Lean decl="Lumenary.Estimation.round_each_step_differs" />
+
+<Lean decl="Lumenary.Estimation.rounded_total_error" />
+
+<Lean decl="Lumenary.Estimation.error_bound_reached" />
+
+**Rounding twice.** Decimals are written as whole numbers of hundredths, so $3.46$ is $346$:
+
+<Lean decl="Lumenary.Estimation.double_rounding" />
+
+Many of these proofs end with `omega`, a part of Lean that can decide any statement about whole numbers built from $+$, $-$, $\le$ and division by fixed numbers. It is a genuine proof search: Lean checks every step it produces. What is *not* formalised here: real decimals (we use hundredths instead), and the general theorem for rounding to any place value.
+
+</ForGrownUps>
+
+</Section>
+
+<Section id="computation" kind="computation" title="Margaret measures the errors">
+
+<Narrator who="margaret">
+
+The proof says rounding first can be off by up to $5$ for every number. But how far off is it *usually*? I checked every list of three numbers below $60$, and then I made thousands of random shopping lists.
+
+</Narrator>
+
+<Python id="estimation_accumulated_error" />
+
+The worst case grows in step with the number of items. The **typical** error grows much more slowly, because errors up and down partly cancel. The random lists are **statistical evidence**: a different seed would give slightly different numbers, but the worst-case bound is a theorem.
+
+<Narrator who="margaret">
+
+And here is something that surprises grown-ups too. Python's own `round()` does **not** use the school rule for halves!
+
+</Narrator>
+
+<Python id="estimation_halfway_rules" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Your turn">
+
+Take your time. You can open a hint whenever you like.
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Things that trip people up">
+
+<Misconception>
+
+**"An estimate is just a guess."** A guess can be anything. An estimate comes from reasoning, like rounding to friendly numbers, and good estimates come with bounds that say how far off they could be.
+
+</Misconception>
+
+<Misconception>
+
+**"Rounding at every step of a calculation never changes the final answer."** It can: $14 + 14 + 14 = 42 \approx 40$, but $10 + 10 + 10 = 30$. Each rounding adds a small error, and small errors can pile up.
+
+</Misconception>
+
+<Misconception>
+
+**Rounding in two steps.** "$3.46$ rounds to $3.5$, and $3.5$ rounds to $4$, so $3.46$ rounds to $4$." No: round the **original** number once. $3.46$ is less than $3.5$, so to the nearest whole number it is $3$.
+
+</Misconception>
+
+<Misconception>
+
+**"Rounding means chopping off digits."** Chopping $4372$ to $4300$ is not rounding to the nearest hundred; $4372$ is closer to $4400$. Always ask which multiple is *nearest*.
+
+</Misconception>
+
+<Misconception>
+
+**"An estimate that is not exactly right is wrong."** An estimate is supposed to be approximate. It is a good estimate if it is close enough for its purpose, like knowing that $1000$ shillings is enough.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="analysis" title="Bounds are the analyst's everyday tool">
+
+Much of higher mathematics works by squeezing an unknown number between a lower and an upper bound, then pushing the bounds closer together. Archimedes trapped $\pi$ between $3\tfrac{10}{71}$ and $3\tfrac17$ in exactly this way. When the error can be made as small as we like, the bounds pin the number down completely. That idea, a **limit**, is the heart of calculus (<TopicLink id="math.analysis.intro-calculus">calculus</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Computers round all the time">
+
+A computer stores most numbers with a fixed number of binary digits, so it rounds almost every time it calculates with fractions or decimals. Usually the error is tiny, but over millions of steps errors can grow. That is why `0.1 + 0.2` is not exactly `0.3` on most computers. **Numerical analysis** is the study of how such errors build up and how to keep them small (<TopicLink id="math.comp.numerical-methods">numerical methods</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Every measurement is an estimate">
+
+No ruler, scale or clock is perfect, so scientists report measurements with their uncertainty. A pencil measured as "$12.3$ cm to the nearest millimetre" is really known only to be between $12.25$ cm and $12.35$ cm: a lower and an upper bound. Scientists also make quick "back-of-the-envelope" estimates to check whether an idea is even possible before doing the hard calculation.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="sets" kind="sets" title="Rounding sorts numbers into groups">
+
+Rounding to the nearest ten sorts the whole numbers into groups. The numbers that round to $40$ are $\{35, 36, 37, 38, 39, 40, 41, 42, 43, 44\}$. The numbers that round to $50$ are $\{45, \dots, 54\}$, and so on. Every whole number lands in exactly one group, and the groups never overlap. A sorting like this is a **partition** (<TopicLink id="math.found.sets">sets</TopicLink>). A pair of bounds describes a set too: "between $700$ and $1000$" is the set of all numbers $x$ with $700 \le x \le 1000$.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Greece.** Archimedes, in *Measurement of a Circle* (3rd century BCE), drew polygons inside and outside a circle and proved that $3\tfrac{10}{71} < \pi < 3\tfrac17$. It is one of the earliest uses of lower and upper bounds. Eratosthenes estimated the size of the Earth from the angles of shadows in Syene and Alexandria.
+- **China.** Liu Hui (3rd century CE) refined the polygon method. Zu Chongzhi (5th century CE) showed that $3.1415926 < \pi < 3.1415927$, a record that stood for almost a thousand years.
+- **India.** In the *Āryabhaṭīya* (499 CE), Āryabhaṭa gave $\pi \approx \tfrac{62832}{20000} = 3.1416$ and called the value *āsanna*, "approximate". He said clearly that it was an estimate.
+- **Central Asia.** In 1424 Jamshīd al-Kāshī, working in Samarkand, computed $\pi$ correctly to $16$ decimal places. He worked out in advance how accurate each step had to be, so that the rounding errors could not spoil the final answer.
+- **The 20th century.** The physicist Enrico Fermi was famous for quick, reasoned estimates of quantities that seemed impossible to work out. Such questions are now called **Fermi problems**.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Lawrence Weinstein and John A. Adam, *Guesstimation* (2008). Estimation puzzles for curious teenagers and adults.
+- Sanjoy Mahajan, *Street-Fighting Mathematics* (2010). The art of educated guessing, for grown-ups.
+- George Pólya, *How to Solve It* (1945). A classic on problem solving, including checking whether an answer is reasonable.
+
+</Section>

@@ -1,0 +1,300 @@
+{
+  "lesson": "computational-reproducibility",
+  "exercises": [
+    {
+      "id": "computational-reproducibility-honest-reports",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Which of these reports state their evidence **honestly**? (Choose all that apply.)",
+      "options": [
+        {
+          "id": "a",
+          "label": "\"With seed 7, NumPy 1.26.4 and $10^6$ samples, our Monte Carlo estimate is $0.7466 \\pm 0.0011$ (95% confidence interval).\"",
+          "correct": true,
+          "feedback": "Honest: it names the generator version, the seed and the sample size, and reports a statistical claim with its confidence level."
+        },
+        {
+          "id": "b",
+          "label": "\"We checked the conjecture for all $n \\le 10^9$; it is therefore true.\"",
+          "correct": false,
+          "feedback": "The search (with its stated bound) is good experimental evidence, but \"therefore true\" claims a proof that the search cannot give."
+        },
+        {
+          "id": "c",
+          "label": "\"Interval arithmetic with outward rounding shows $1.41421356 \\lt \\sqrt 2 \\lt 1.41421357$.\"",
+          "correct": true,
+          "feedback": "Honest: a correctly implemented interval computation with outward rounding proves the enclosure (relative to the correctness of the implementation)."
+        },
+        {
+          "id": "d",
+          "label": "\"Our formula agrees with the computed value to 15 digits, which proves it.\"",
+          "correct": false,
+          "feedback": "Agreement to many digits is strong numerical evidence, not proof — recall $e^{\\pi\\sqrt{163}}$, which agrees with an integer to 12 decimal places."
+        },
+        {
+          "id": "e",
+          "label": "\"Summed in double precision; the result is exact because floating point is deterministic.\"",
+          "correct": false,
+          "feedback": "Deterministic does not mean exact: each addition rounds. A numerical result needs an error bound, such as Theorem 2."
+        }
+      ],
+      "hints": [
+        "For each report, ask: is it exact, numerical, statistical or experimental — and does it claim more than that?",
+        "An honest numerical or statistical claim comes with a bound or a confidence level, and enough detail (seed, version) to repeat it."
+      ],
+      "solution": "(a) and (c). (a) is a statistical claim with its confidence level and everything needed to repeat it. (c) is a rigorous enclosure. (b) and (d) upgrade experimental or numerical evidence to proof, and (e) confuses determinism with exactness."
+    },
+    {
+      "id": "computational-reproducibility-absorption",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "C",
+      "prompt": "In IEEE double precision ($p = 53$), let `x = 1e16`. What does `(x + 1) - x` evaluate to?",
+      "answer": 0,
+      "feedback": [
+        {
+          "match": "1",
+          "message": "That is the exact answer. But near $10^{16}$ consecutive doubles are $2$ apart (since $2^{53} \\approx 9.007 \\times 10^{15}$), so $10^{16} + 1$ is not representable. Which neighbour does it round to?"
+        },
+        {
+          "match": "2",
+          "message": "Close: the spacing of doubles near $10^{16}$ is $2$. But $10^{16} + 1$ lies exactly halfway between $10^{16}$ and $10^{16} + 2$; round-to-nearest breaks ties towards the neighbour with an even significand."
+        }
+      ],
+      "hints": [
+        "Doubles between $2^{53}$ and $2^{54}$ are spaced $2$ apart, and $2^{53} \\approx 9.007 \\times 10^{15}$.",
+        "$10^{16} + 1$ is a tie between two doubles; IEEE rounds ties to the one whose significand is even."
+      ],
+      "solution": "Between $2^{53} \\approx 9.007\\times 10^{15}$ and $2^{54}$ the doubles are the even integers. $10^{16} + 1$ is halfway between $10^{16}$ and $10^{16} + 2$, and round-half-to-even chooses $10^{16}$ (its significand is even). So `x + 1 == x` and `(x + 1) - x` is $0$. The small addend has been *absorbed* — the reason why summation order matters."
+    },
+    {
+      "id": "computational-reproducibility-cancellation",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In double precision, `1 - math.cos(1e-8)` evaluates to `0.0`, although $1 - \\cos(10^{-8}) \\approx 5 \\times 10^{-17}$. Which explanation is correct?",
+      "options": [
+        {
+          "id": "a",
+          "label": "`math.cos(1e-8)` is correctly rounded to `1.0`, because doubles next to $1$ are about $10^{-16}$ apart; the subtraction is then exact and reveals that earlier rounding.",
+          "correct": true,
+          "feedback": "Yes. By Sterbenz's lemma the subtraction of nearby floats is exact. All the information was lost when $\\cos x$ was rounded."
+        },
+        {
+          "id": "b",
+          "label": "Subtracting two nearly equal numbers is itself an inaccurate floating-point operation.",
+          "correct": false,
+          "feedback": "This is the common belief, but Sterbenz's lemma shows the subtraction is exact when $y/2 \\le x \\le 2y$. Cancellation exposes errors; it does not create them."
+        },
+        {
+          "id": "c",
+          "label": "The library's cosine function has a bug.",
+          "correct": false,
+          "feedback": "No: the nearest double to $\\cos(10^{-8}) = 1 - 5 \\times 10^{-17} + \\cdots$ really is $1$."
+        },
+        {
+          "id": "d",
+          "label": "No floating-point formula can compute this quantity accurately.",
+          "correct": false,
+          "feedback": "The rearranged formula $2\\sin^2(x/2)$ computes it to nearly full relative accuracy."
+        }
+      ],
+      "hints": [
+        "What is the spacing of doubles just below $1$?",
+        "Is $1 - \\hat c$ exact when $\\hat c$ is a double close to $1$?"
+      ],
+      "solution": "(a). Doubles just below $1$ are spaced $2^{-53} \\approx 1.1 \\times 10^{-16}$ apart, so the correctly rounded value of $\\cos(10^{-8})$ is $1$. The subtraction $1 - 1$ is exact (Sterbenz). The cure is to avoid forming $\\cos x$ at all: $1 - \\cos x = 2\\sin^2(x/2)$."
+    },
+    {
+      "id": "computational-reproducibility-why-sum-abs",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Theorem 2 bounds the error of recursive summation by $\\gamma_n \\sum |x_i|$, not by $\\gamma_n |\\sum x_i|$. Why can the bound **not** be improved to a multiple of $|\\sum x_i|$?",
+      "options": [
+        {
+          "id": "a",
+          "label": "Because of cancellation: the exact sum can be $0$ while the partial sums, and hence the rounding errors, are large.",
+          "correct": true,
+          "feedback": "Right. For example $\\mathrm{fl}((1 + 10^{-16}) - 1) = 0$ while the exact sum is $10^{-16}$: the error is about the *size of the partial sums*, which no multiple of the tiny exact sum can cover."
+        },
+        {
+          "id": "b",
+          "label": "Because absolute values make the proof easier, but the stronger bound is also true.",
+          "correct": false,
+          "feedback": "The stronger bound is false: take data whose exact sum is tiny or zero but whose partial sums are large."
+        },
+        {
+          "id": "c",
+          "label": "Because the bound must also hold for complex numbers.",
+          "correct": false,
+          "feedback": "The theorem is about real numbers; the issue is cancellation, which already happens over the reals."
+        },
+        {
+          "id": "d",
+          "label": "Because the rounding errors $\\delta_k$ might all have the same sign.",
+          "correct": false,
+          "feedback": "The signs of the $\\delta_k$ matter little; the problem is that $s_k \\delta_k$ is proportional to the partial sum $s_k$."
+        }
+      ],
+      "hints": [
+        "In the proof the new error is $e_{k-1}(1 + \\delta_k) + s_k \\delta_k$. What is $s_k$ compared with the final sum?",
+        "Try the data $1,\\ 10^{-16},\\ -1$."
+      ],
+      "solution": "(a). The rounding error committed at step $k$ is $s_k\\delta_k$, proportional to the partial sum, not the final sum. With $x = (1, 10^{-16}, -1)$ the computed result is $0$, while the exact sum is $10^{-16}$: a relative error of $100\\%$. The relative error of a sum is governed by the condition number $\\sum|x_i|/|\\sum x_i|$."
+    },
+    {
+      "id": "computational-reproducibility-interval",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Using interval multiplication, compute $[-1, 2] \\cdot [-1, 2]$. What is the **lower endpoint** of the result?",
+      "answer": -2,
+      "feedback": [
+        {
+          "match": "0",
+          "message": "$0$ is the minimum of $x^2$ on $[-1, 2]$. But interval multiplication treats the two factors as independent: it takes the smallest of $(-1)(-1), (-1)(2), (2)(-1), (2)(2)$."
+        },
+        {
+          "match": "1",
+          "message": "Check all four endpoint products: $(-1)(-1) = 1$, $(-1)\\cdot 2 = -2$, $2 \\cdot (-1) = -2$, $2 \\cdot 2 = 4$."
+        }
+      ],
+      "hints": [
+        "$[a,b]\\cdot[c,d] = [\\min P, \\max P]$ with $P = \\{ac, ad, bc, bd\\}$.",
+        "Compute the four products $(-1)(-1), (-1)(2), (2)(-1), (2)(2)$."
+      ],
+      "solution": "The products are $1, -2, -2, 4$, so $[-1,2]\\cdot[-1,2] = [-2, 4]$, and the lower endpoint is $-2$. This is a valid enclosure of $\\{xy : x, y \\in [-1, 2]\\}$, but as an enclosure of $\\{x^2 : x \\in [-1,2]\\} = [0, 4]$ it is too wide — the **dependency problem**. Writing $x^2$ as a single operation (an interval square function) gives the sharp $[0, 4]$."
+    },
+    {
+      "id": "computational-reproducibility-gcd-certificate",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "A program you do not trust outputs: $\\gcd(1071, 462) = 21$, with certificate $x = -3$, $y = 7$. What can you conclude?",
+      "options": [
+        {
+          "id": "a",
+          "label": "The claim is proved: $1071\\cdot(-3) + 462\\cdot 7 = 21$, and $21$ divides both $1071 = 51 \\cdot 21$ and $462 = 22 \\cdot 21$.",
+          "correct": true,
+          "feedback": "Exactly: by the Bézout-certificate theorem these three checks prove $21 = \\gcd(1071, 462)$, whatever the program did."
+        },
+        {
+          "id": "b",
+          "label": "Nothing, unless we rerun Euclid's algorithm ourselves.",
+          "correct": false,
+          "feedback": "The point of a certificate is that you do not have to redo the search: two divisions and a linear combination suffice."
+        },
+        {
+          "id": "c",
+          "label": "The certificate is invalid, because Bézout coefficients must be positive.",
+          "correct": false,
+          "feedback": "Bézout coefficients are integers of either sign; one of them is usually negative."
+        },
+        {
+          "id": "d",
+          "label": "The certificate only shows that $21$ is *a* common divisor.",
+          "correct": false,
+          "feedback": "Divisibility alone would show that; the identity $21 = 1071x + 462y$ adds that every common divisor divides $21$, so $21$ is the greatest."
+        }
+      ],
+      "hints": [
+        "Check the three conditions of the Bézout-certificate theorem.",
+        "Why does $d = ax + by$ show that every common divisor of $a$ and $b$ divides $d$?"
+      ],
+      "solution": "(a). $1071 \\cdot (-3) + 462 \\cdot 7 = -3213 + 3234 = 21$, and $21 \\mid 1071$, $21 \\mid 462$. Any common divisor of $1071$ and $462$ divides $21$, and $21$ is itself a common divisor, so it is the gcd. Checking took a few multiplications — far less than trusting the program."
+    },
+    {
+      "id": "computational-reproducibility-lean-bound",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "In the Lean module, `fsum x δ n` is the floating-point recursive sum of `x 0, …, x n` with rounding errors `δ`. Which statement correctly formalises Theorem 2?",
+      "options": [
+        {
+          "id": "a",
+          "label": "`∀ u, 0 ≤ u → (∀ k, |δ k| ≤ u) → |fsum x δ n - ∑ i ∈ range (n+1), x i| ≤ ((1+u)^n - 1) * ∑ i ∈ range (n+1), |x i|`",
+          "correct": true,
+          "feedback": "Correct — this is `fsum_error` (with `u` and its hypotheses as arguments)."
+        },
+        {
+          "id": "b",
+          "label": "`|fsum x δ n - ∑ i ∈ range (n+1), x i| ≤ ((1+u)^n - 1) * ∑ i ∈ range (n+1), |x i|` with no hypothesis on `δ`",
+          "correct": false,
+          "feedback": "Without `|δ k| ≤ u` the rounding errors could be anything, and the statement is false. The hypothesis is the standard model."
+        },
+        {
+          "id": "c",
+          "label": "`∀ u, 0 ≤ u → (∀ k, |δ k| ≤ u) → |fsum x δ n - ∑ i ∈ range (n+1), x i| ≤ u * |∑ i ∈ range (n+1), x i|`",
+          "correct": false,
+          "feedback": "This is far too strong: it would forbid the error from growing with `n`, and it uses `|Σ xᵢ|`, which cancellation can make zero."
+        },
+        {
+          "id": "d",
+          "label": "`∃ δ, fsum x δ n = ∑ i ∈ range (n+1), x i`",
+          "correct": false,
+          "feedback": "True (take all `δ k = 0`) but says nothing about rounding: a vacuous statement."
+        }
+      ],
+      "hints": [
+        "A formal statement needs every hypothesis of the human theorem.",
+        "Which option would become false if the rounding errors were huge? Which is trivially true?"
+      ],
+      "solution": "(a). It quantifies over the unit roundoff `u`, assumes the standard model `|δ k| ≤ u` for every step, and bounds the error by `((1+u)^n - 1) Σ |xᵢ|`. Option (b) drops the hypothesis, (c) claims a false bound, and (d) is vacuous."
+    },
+    {
+      "id": "computational-reproducibility-five-years",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "You want a colleague to be able to regenerate every figure of your paper in five years' time. Which is the best plan?",
+      "options": [
+        {
+          "id": "a",
+          "label": "A versioned repository with a lock file of exact dependency versions, recorded seeds, tests, one command that rebuilds everything, and a release archived with a DOI.",
+          "correct": true,
+          "feedback": "Yes: code, environment, randomness and data are all pinned or recorded, and the archive keeps it findable."
+        },
+        {
+          "id": "b",
+          "label": "A `requirements.txt` saying `numpy>=1.20` and the notebook as it was last run.",
+          "correct": false,
+          "feedback": "A lower bound is not a pin: in five years it will install a different NumPy. And a notebook's saved state may not match its code."
+        },
+        {
+          "id": "c",
+          "label": "High-resolution images of all the figures in the supplementary material.",
+          "correct": false,
+          "feedback": "Images preserve results, not the computation: nobody can check or extend them."
+        },
+        {
+          "id": "d",
+          "label": "A detailed description of the algorithms in the paper; the code is not needed.",
+          "correct": false,
+          "feedback": "Descriptions omit details (tolerances, seeds, edge cases). An independent reimplementation is valuable — as replication — but it is not reproduction."
+        }
+      ],
+      "hints": [
+        "List everything a computation depends on: code, data, environment, randomness.",
+        "Which option pins all of them?"
+      ],
+      "solution": "(a). Reproduction needs the exact code (version control), the exact environment (lock file or container), the randomness (seeds), the data (with checksums), a single command, and a durable archive (a DOI from a repository such as Zenodo)."
+    },
+    {
+      "id": "computational-reproducibility-python-kahan",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Implement Kahan's compensated summation `kahan_sum(xs)`. Keep a running sum `s` and a compensation `c` for the low-order bits lost so far: for each `x`, set `y = x - c`, `t = s + y`, `c = (t - s) - y`, `s = t`. The tests compare your result with the exact rational sum.",
+      "starter": "def kahan_sum(xs):\n    s = 0.0\n    for x in xs:\n        s += x\n    return s\n",
+      "tests": "from fractions import Fraction\nimport random\nassert kahan_sum([]) == 0.0\nassert kahan_sum([1.0, 2.0, 3.0]) == 6.0\nassert kahan_sum([0.1] * 10) == 1.0, 'plain summation gives 0.9999999999999999'\nrng = random.Random(1)\nxs = [rng.uniform(-1, 1) * 10 ** rng.randint(-5, 5) for _ in range(2000)]\nexact = sum(Fraction(x) for x in xs)\ntotal = sum(abs(x) for x in xs)\nerror = abs(Fraction(kahan_sum(xs)) - exact)\nassert error <= Fraction(4 * 2 ** -53 * total), float(error)\nprint('All tests passed!')\n",
+      "hints": [
+        "The starter is plain recursive summation; it fails the test with ten copies of `0.1`.",
+        "Initialise `s = 0.0` and `c = 0.0`, and update both inside the loop exactly as in the prompt. Algebraically `c` would always be $0$; in floating point it captures the rounding error of `s + y`."
+      ],
+      "solution": "```python\ndef kahan_sum(xs):\n    s = 0.0\n    c = 0.0\n    for x in xs:\n        y = x - c\n        t = s + y\n        c = (t - s) - y\n        s = t\n    return s\n```\n\nIn exact arithmetic `c` is always $0$; in floating point, `(t - s) - y` recovers (the negative of) the part of `y` that was lost when forming `t`, and the next step adds it back. Kahan's method has error at most $(2u + O(nu^2))\\sum|x_i|$, essentially independent of $n$, compared with $\\gamma_{n-1}\\sum|x_i|$ for plain summation. Beware: an optimising compiler that treats floating-point addition as associative would simplify `c` to $0$ — one reason such reorderings are forbidden by default."
+    }
+  ]
+}

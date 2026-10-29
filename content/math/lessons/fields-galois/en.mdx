@@ -1,0 +1,578 @@
+---
+slug: fields-galois
+topic: math.algebra.fields-galois
+title: Fields and Galois theory
+subtitle: Measure field extensions by their dimension and study their symmetries. The tower law settles two of the classical Greek construction problems, finite fields exist in exactly the prime-power sizes, and Galois's correspondence explains why the quintic has no formula.
+level: ug2
+ages: Undergraduate
+minutes: 150
+order: 6011
+objectives:
+  - Compute degrees of field extensions with the tower law, and find minimal polynomials of algebraic numbers
+  - Prove that doubling the cube and trisecting a $60^\circ$ angle with straightedge and compass are impossible
+  - Construct the finite fields $\mathbb{F}_{p^n}$ and prove that there is exactly one of each prime-power order up to isomorphism
+  - State the fundamental theorem of Galois theory, prove its key steps, and apply it to $\Q(\sqrt2, \sqrt3)$, $\Q(\sqrt[3]{2}, \omega)$ and $\mathbb{F}_{p^n}$
+  - Outline why the general quintic is not solvable by radicals, and show that $x^5 - 4x + 2$ has Galois group $S_5$
+narrators: []
+lean:
+  - Lumenary.FieldsGalois.tower_law
+  - Lumenary.FieldsGalois.field_hom_injective
+  - Lumenary.FieldsGalois.zmod_sq_not_field
+  - Lumenary.FieldsGalois.sqrt_two_irreducible
+  - Lumenary.FieldsGalois.finrank_sqrt_two
+  - Lumenary.FieldsGalois.cube_two_irreducible
+  - Lumenary.FieldsGalois.no_cube_root_two
+  - Lumenary.FieldsGalois.finite_field_card
+  - Lumenary.FieldsGalois.frobenius_add
+  - Lumenary.FieldsGalois.galois_field_card
+  - Lumenary.FieldsGalois.finite_field_unique
+  - Lumenary.FieldsGalois.units_cyclic
+  - Lumenary.FieldsGalois.fixed_field_antitone
+  - Lumenary.FieldsGalois.fixing_subgroup_antitone
+  - Lumenary.FieldsGalois.galois_connection
+  - Lumenary.FieldsGalois.card_aut_le_finrank
+  - Lumenary.FieldsGalois.artin
+  - Lumenary.FieldsGalois.card_gal
+  - Lumenary.FieldsGalois.fundamental_theorem
+  - Lumenary.FieldsGalois.solvable_of_radical_root
+  - Lumenary.FieldsGalois.s5_not_solvable
+compute: [fields_galois_irreducible_counts, fields_galois_frobenius_cycles]
+trails: [clock-arithmetic]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Formulas, constructions and symmetry">
+
+Babylonian scribes solved quadratic problems nearly four thousand years ago, and Muḥammad ibn Mūsā al-Khwārizmī systematised the method in Baghdad in the ninth century. Cubic equations resisted much longer. ʿUmar al-Khayyām solved them geometrically, with intersecting conics, in the eleventh century. Scipione del Ferro and Niccolò Tartaglia found a formula in radicals in sixteenth-century Italy, Gerolamo Cardano published it in 1545, and Lodovico Ferrari reduced the quartic to a cubic. Then, for two and a half centuries, every attempt at the quintic failed. Paolo Ruffini (1799) and Niels Henrik Abel (1824) showed why: there is no general formula. Évariste Galois found the deeper reason before he died, aged twenty, in 1832. Whether the roots of a polynomial can be expressed by radicals depends on the **group of symmetries of its roots**.
+
+A second set of ancient questions came from Greek geometry. With straightedge and compass, can one *double the cube* (construct $\sqrt[3]{2}$), *trisect an arbitrary angle*, or *construct a regular heptagon*? All three are impossible, proved by Pierre Wantzel in 1837. The proof is a short argument about the **degree** of a field extension, which is a dimension in the sense of <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>. In the same circle of ideas, Carl Friedrich Gauss showed in 1796, aged nineteen, that the regular 17-gon *can* be constructed.
+
+This lesson builds the theory that answers both sets of questions. Fields are studied through their extensions, which are measured by degree; finite fields are built and classified; and Galois's correspondence between intermediate fields and subgroups is stated and applied. We use the language of <TopicLink id="math.algebra.quotients">quotient rings</TopicLink> throughout: $K[x]/(f)$ is the field obtained by adjoining a root of an irreducible $f$.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Adjoining a root, and permuting roots">
+
+Start with $\Q$ and adjoin $\sqrt2$. The field $\Q(\sqrt 2)$ consists of all $a + b\sqrt2$ with $a, b \in \Q$: closed under the field operations, since $\frac{1}{a + b\sqrt2} = \frac{a - b\sqrt2}{a^2 - 2b^2}$. As a vector space over $\Q$ it has basis $1, \sqrt2$, so it has **degree** $2$. The map $a + b\sqrt2 \mapsto a - b\sqrt2$ is a field automorphism fixing $\Q$. It swaps the two roots of $x^2 - 2$, and nothing in the algebra of $\Q$ can tell $\sqrt2$ from $-\sqrt2$.
+
+Now adjoin a root of $x^3 - 2$. Its three roots are $\sqrt[3]2$, $\omega\sqrt[3]2$ and $\omega^2\sqrt[3]2$, where $\omega = e^{2\pi i/3}$. Over $\Q$ these roots are indistinguishable too, and the smallest field containing all three, $\Q(\sqrt[3]2, \omega)$, has degree $6$. Its automorphisms permute the three roots in all $3! = 6$ possible ways. Each subgroup of this symmetry group fixes an intermediate field. The rotation subgroup of order $3$ fixes $\Q(\omega)$, and each reflection fixes one of the three cubic fields $\Q(\omega^k \sqrt[3]2)$. Galois's theorem says that this matching of subgroups with intermediate fields is a perfect, inclusion-reversing dictionary.
+
+<ComplexPlane mode="roots" z={[2, 0]} n={3} title="The roots of x³ = 2" subtitle="Three roots on a circle of radius ∛2. The Galois group of x³ − 2 permutes them like the symmetries of this triangle: all six permutations occur." />
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Extensions, degrees and Galois groups">
+
+All rings are commutative with $1$. Recall that a ring homomorphism out of a field is injective (Proposition 3 of <TopicLink id="math.algebra.rings">rings</TopicLink>), so a homomorphism $K \to L$ of fields lets us regard $K$ as a subfield of $L$.
+
+<Definition term="field extension and degree">
+
+A **field extension** $L/K$ is a field $L$ containing $K$ as a subfield. Then $L$ is a vector space over $K$, and its dimension $[L : K] = \dim_K L$ is the **degree**. The extension is **finite** if $[L : K] \lt \infty$. A field $M$ with $K \subseteq M \subseteq L$ is an **intermediate field**.
+
+</Definition>
+
+<Definition term="algebraic elements and minimal polynomials">
+
+$\alpha \in L$ is **algebraic** over $K$ if $f(\alpha) = 0$ for some non-zero $f \in K[x]$, and **transcendental** otherwise. The **minimal polynomial** $m_\alpha \in K[x]$ of an algebraic $\alpha$ is the monic polynomial of least degree with $m_\alpha(\alpha) = 0$. $K(\alpha)$ is the smallest subfield of $L$ containing $K$ and $\alpha$, and $K(\alpha_1, \dots, \alpha_n)$ is defined in the same way.
+
+</Definition>
+
+<Definition term="splitting fields, normal and separable">
+
+A **splitting field** of $f \in K[x]$ is an extension $L$ in which $f$ factors into linear factors and which is generated over $K$ by the roots of $f$. A polynomial is **separable** if its roots in a splitting field are distinct. A finite extension $L/K$ is **normal** if every irreducible polynomial in $K[x]$ with a root in $L$ splits in $L$, and **separable** if every element's minimal polynomial is separable.
+
+</Definition>
+
+<Definition term="characteristic and Frobenius">
+
+The **characteristic** of a field is the least $n \ge 1$ with $n \cdot 1 = 0$, or $0$ if there is none. It is $0$ or a prime $p$, because $\Z/n\Z$ embeds in a field only if it is a domain. The **prime field** is the smallest subfield, either $\Q$ or $\mathbb{F}_p = \Z/p\Z$. In characteristic $p$ the **Frobenius** map is $x \mapsto x^p$.
+
+</Definition>
+
+<Definition term="automorphism group, fixed field, Galois extension">
+
+For an extension $L/K$, $\operatorname{Aut}(L/K)$ is the group of field automorphisms $\sigma : L \to L$ with $\sigma(a) = a$ for all $a \in K$. For a subgroup $H$ of automorphisms of $L$, the **fixed field** is $L^H = \{x \in L \mid \sigma(x) = x \text{ for all } \sigma \in H\}$. A finite extension $L/K$ is **Galois** if it is normal and separable. Equivalently (Theorem 9), $|\operatorname{Aut}(L/K)| = [L : K]$, or again, $L$ is the splitting field over $K$ of a separable polynomial. Then $\operatorname{Gal}(L/K) = \operatorname{Aut}(L/K)$ is its **Galois group**, and the Galois group of a separable polynomial $f$ is that of its splitting field.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="A gallery of extensions">
+
+<Example title="Quadratic and biquadratic extensions">
+
+$\C = \R(i)$ has degree $2$ over $\R$, with basis $1, i$. $\Q(\sqrt2, \sqrt3)$ has degree $4$ over $\Q$, with basis $1, \sqrt2, \sqrt3, \sqrt6$ (see the exercises). Its automorphisms send $\sqrt2 \mapsto \pm\sqrt2$ and $\sqrt3 \mapsto \pm\sqrt3$ independently, giving $\operatorname{Gal} \cong \Z/2 \times \Z/2$. It equals $\Q(\sqrt2 + \sqrt3)$, a **primitive element**, whose minimal polynomial is $x^4 - 10x^2 + 1$.
+
+</Example>
+
+<Example title="A non-normal extension">
+
+$\Q(\sqrt[3]2) \subset \R$ has degree $3$, since $x^3 - 2$ is irreducible (Theorem 3 below). It contains one root of $x^3 - 2$ but not the two complex ones, so it is not normal. An automorphism must send $\sqrt[3]2$ to a cube root of $2$ *in* $\Q(\sqrt[3]2)$, and there is only one, so $\operatorname{Aut}(\Q(\sqrt[3]2)/\Q)$ is trivial: smaller than the degree. The splitting field is $\Q(\sqrt[3]2, \omega)$, of degree $6$.
+
+</Example>
+
+<Example title="Cyclotomic fields">
+
+$\zeta_n = e^{2\pi i/n}$ generates $\Q(\zeta_n)$, the splitting field of $x^n - 1$. For a prime $p$, the minimal polynomial of $\zeta_p$ is $\Phi_p(x) = x^{p-1} + \dots + x + 1$, which is irreducible (apply Eisenstein's criterion to $\Phi_p(x + 1)$). So $[\Q(\zeta_p) : \Q] = p - 1$. The automorphism $\sigma_a : \zeta_p \mapsto \zeta_p^a$ is defined for each $a \in (\Z/p\Z)^\times$, and $\operatorname{Gal}(\Q(\zeta_p)/\Q) \cong (\Z/p\Z)^\times$, which is cyclic.
+
+</Example>
+
+<Example title="Transcendental and infinite extensions">
+
+$\pi$ and $e$ are transcendental over $\Q$ (Lindemann 1882, Hermite 1873), so $\Q(\pi) \cong \Q(t)$, the field of rational functions, and $[\Q(\pi) : \Q] = \infty$. $\R/\Q$ is infinite too, since $\R$ is uncountable and every finite extension of $\Q$ is countable. The algebraic numbers $\overline{\Q} \subset \C$ form an algebraic extension of $\Q$ of infinite degree.
+
+</Example>
+
+<Example title="Finite fields and an inseparable extension">
+
+$\mathbb{F}_4 = \mathbb{F}_2[x]/(x^2 + x + 1)$ has degree $2$ over $\mathbb{F}_2$, and Frobenius $\alpha \mapsto \alpha^2 = \alpha + 1$ is its non-trivial automorphism. Separability can fail only in characteristic $p$. Over $K = \mathbb{F}_p(t)$, the polynomial $x^p - t$ is irreducible, and in a splitting field it becomes $(x - t^{1/p})^p$, with a single root of multiplicity $p$.
+
+</Example>
+
+</Section>
+
+<Section id="degrees" kind="proof" title="Degrees, minimal polynomials and constructions">
+
+<Theorem name="Theorem 1 (tower law)">
+
+If $K \subseteq M \subseteq L$ are fields, then $[L : K] = [L : M]\,[M : K]$, in the sense that both sides are finite or both are infinite. If $(m_i)$ is a basis of $M$ over $K$ and $(l_j)$ a basis of $L$ over $M$, then $(m_i l_j)$ is a basis of $L$ over $K$.
+
+</Theorem>
+
+<Proof>
+
+*Spanning.* For $x \in L$ write $x = \sum_j b_j l_j$ with $b_j \in M$, and each $b_j = \sum_i a_{ij} m_i$ with $a_{ij} \in K$. Then $x = \sum_{i,j} a_{ij}\, m_i l_j$. *Independence.* If $\sum_{i,j} a_{ij} m_i l_j = 0$ with $a_{ij} \in K$, then $\sum_j \big(\sum_i a_{ij} m_i\big) l_j = 0$ with coefficients in $M$, so each $\sum_i a_{ij} m_i = 0$, and so each $a_{ij} = 0$. Count the basis. (If either factor is infinite, the same argument produces arbitrarily large independent sets in $L$.)
+
+</Proof>
+
+<Theorem name="Theorem 2 (simple algebraic extensions)">
+
+Let $\alpha \in L$ be algebraic over $K$. Then: (a) $m_\alpha$ is irreducible, and $f(\alpha) = 0 \iff m_\alpha \mid f$; (b) $K(\alpha) = K[\alpha] \cong K[x]/(m_\alpha)$, with $x \mapsto \alpha$; (c) $[K(\alpha) : K] = \deg m_\alpha$, with basis $1, \alpha, \dots, \alpha^{d-1}$. Conversely, a monic irreducible $f \in K[x]$ with $f(\alpha) = 0$ is the minimal polynomial.
+
+</Theorem>
+
+<Proof>
+
+The evaluation map $\varepsilon : K[x] \to L$, $f \mapsto f(\alpha)$, is a ring homomorphism with image $K[\alpha]$. Its kernel is a non-zero ideal of the PID $K[x]$, so it is $(m)$ for the monic polynomial $m$ of least degree in it, which is $m_\alpha$. This gives the divisibility in (a). The image $K[\alpha]$ is a subring of a field, hence a domain, so $(m_\alpha)$ is a prime ideal; it is non-zero, hence maximal in the PID $K[x]$, and $m_\alpha$ is irreducible. By the first isomorphism theorem $K[\alpha] \cong K[x]/(m_\alpha)$, which is a field. So $K[\alpha]$ is a field containing $K$ and $\alpha$, and therefore equals $K(\alpha)$. Part (c) is Corollary 10 of the quotients lesson. Finally, if $f$ is monic irreducible with $f(\alpha) = 0$, then $m_\alpha \mid f$ forces $f = m_\alpha$.
+
+</Proof>
+
+Consequences: $\alpha$ is algebraic iff $[K(\alpha) : K] \lt \infty$. Every element of a finite extension is algebraic, since $1, \alpha, \alpha^2, \dots$ cannot all be independent. If $\alpha, \beta$ are algebraic, then $[K(\alpha, \beta) : K] \le [K(\alpha) : K][K(\beta) : K]$ by the tower law, so $\alpha \pm \beta$, $\alpha\beta$ and $\alpha/\beta$ are algebraic. The algebraic numbers form a field.
+
+<Theorem name="Theorem 3 (two irreducible cubics)">
+
+$x^3 - 2$ and $8x^3 - 6x - 1$ are irreducible over $\Q$. Hence $[\Q(\sqrt[3]2) : \Q] = 3$ and $[\Q(\cos 20^\circ) : \Q] = 3$.
+
+</Theorem>
+
+<Proof>
+
+A cubic that factors over $\Q$ has a linear factor, hence a rational root. *Rational root test:* if $\frac{r}{s}$ in lowest terms is a root of $a_3x^3 + \dots + a_0 \in \Z[x]$, then $r \mid a_0$ and $s \mid a_3$. For $x^3 - 2$ the candidates $\pm 1, \pm 2$ give $-1, -3, 6, -10$, never $0$. For $8x^3 - 6x - 1$ the candidates are $\pm 1, \pm \frac12, \pm\frac14, \pm\frac18$, and evaluation gives $1, -3, -3, 1, -\frac{19}{8}, \frac{3}{8}, -\frac{111}{64}, -\frac{17}{64}$: never $0$. Finally $\cos 3\theta = 4\cos^3\theta - 3\cos\theta$ with $\theta = 20^\circ$ gives $4c^3 - 3c = \frac12$, i.e. $8c^3 - 6c - 1 = 0$ for $c = \cos 20^\circ$. Apply Theorem 2.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Wantzel: constructible numbers)">
+
+If a real number $c$ can be constructed from $0$ and $1$ with straightedge and compass, then $[\Q(c) : \Q]$ is a power of $2$. Consequently the cube cannot be doubled, the angle $60^\circ$ cannot be trisected, and the regular heptagon cannot be constructed.
+
+</Theorem>
+
+<Proof>
+
+A construction produces points step by step, each an intersection of two lines or circles drawn through points already constructed. Let $F_k$ be the field generated over $\Q$ by the coordinates of the points after $k$ steps. A line through two points with coordinates in $F$ has an equation $ax + by = c$ with $a, b, c \in F$. A circle has an equation $x^2 + y^2 + dx + ey + f = 0$ with $d, e, f \in F$. Intersecting two lines means solving linear equations, so the new coordinates lie in $F$. Intersecting a line and a circle means substituting the line into the circle, which gives a quadratic equation over $F$. Two circles reduce to this case, since subtracting their equations gives a line. So each step has $[F_{k+1} : F_k] \in \{1, 2\}$, and by the tower law $[F_n : \Q] = 2^m$. If $c$ is a coordinate of a constructed point, then $\Q \subseteq \Q(c) \subseteq F_n$, and $[\Q(c) : \Q]$ divides $2^m$ (tower law again).
+
+Doubling a cube of volume $1$ means constructing $\sqrt[3]2$, of degree $3$. Trisecting $60^\circ$ would construct $\cos 20^\circ$, of degree $3$. A regular heptagon would give $\cos\frac{2\pi}{7}$, a root of the irreducible cubic $8x^3 + 4x^2 - 4x - 1$. None of these degrees is a power of $2$.
+
+</Proof>
+
+The converse direction, together with Gauss's analysis of cyclotomic fields, gives the **Gauss–Wantzel theorem**: the regular $n$-gon is constructible iff $n = 2^k p_1 \cdots p_r$ with distinct **Fermat primes** $p_i = 2^{2^j} + 1$. The only known Fermat primes are $3, 5, 17, 257, 65537$; whether there are more is an open problem. Squaring the circle (constructing $\sqrt\pi$) is impossible for a different reason: Lindemann's 1882 theorem that $\pi$ is transcendental, which is not part of Galois theory.
+
+</Section>
+
+<Section id="finite-fields" kind="proof" title="Finite fields">
+
+<Theorem name="Theorem 5 (existence and uniqueness of splitting fields)">
+
+Every $f \in K[x]$ of degree $n \ge 1$ has a splitting field $L$ with $[L : K] \le n!$, and any two splitting fields of $f$ over $K$ are isomorphic over $K$.
+
+</Theorem>
+
+<Proof>
+
+*Existence* (Kronecker). Let $g$ be an irreducible factor of $f$. Then $K_1 = K[x]/(g)$ is a field containing $K$ and a root $\bar x$ of $f$, with $[K_1 : K] = \deg g \le n$. Over $K_1$, $f = (x - \bar x)f_1$ with $\deg f_1 = n - 1$. Induct on $n$ and use the tower law. *Uniqueness* (sketch). An isomorphism $\varphi : K \to K'$ extends to $K[x]/(g) \to K'[x]/(g^\varphi)$, sending the root to any chosen root of $g^\varphi$. Inducting on the degree, it extends to an isomorphism of splitting fields. Full details: Dummit and Foote, Theorem 13.27.
+
+</Proof>
+
+<Theorem name="Theorem 6 (finite fields)">
+
+Let $F$ be a finite field.
+
+1. $F$ has prime characteristic $p$, contains $\mathbb{F}_p$, and has $p^n$ elements where $n = [F : \mathbb{F}_p]$.
+2. Frobenius $\phi(x) = x^p$ is an automorphism of $F$.
+3. For every prime power $q = p^n$ there is a field with $q$ elements, namely the splitting field of $X^q - X$ over $\mathbb{F}_p$, which consists exactly of the roots of that polynomial. It is unique up to isomorphism, and is denoted $\mathbb{F}_q$.
+4. $\mathbb{F}_q^\times$ is cyclic of order $q - 1$.
+5. The subfields of $\mathbb{F}_{p^n}$ are exactly one $\mathbb{F}_{p^d}$ for each divisor $d$ of $n$.
+6. $\operatorname{Gal}(\mathbb{F}_{p^n}/\mathbb{F}_p)$ is cyclic of order $n$, generated by $\phi$.
+
+</Theorem>
+
+<Proof>
+
+(1) The characteristic is not $0$, since $F$ is finite, so it is a prime $p$, and the image of $\Z$ is $\mathbb{F}_p$. As an $\mathbb{F}_p$-vector space of dimension $n$, $F$ has $p^n$ elements.
+
+(2) $(xy)^p = x^py^p$, and $(x + y)^p = \sum_k \binom{p}{k}x^ky^{p-k} = x^p + y^p$, because $p \mid \binom pk$ for $0 \lt k \lt p$. A field homomorphism is injective, and an injective self-map of a finite set is bijective.
+
+(3) $f = X^q - X$ has derivative $qX^{q-1} - 1 = -1$, so $\gcd(f, f') = 1$ and $f$ has $q$ distinct roots in a splitting field $E$. The roots form the fixed set of the ring homomorphism $\phi^n : x \mapsto x^{q}$, so they are closed under $+$, $\times$ and inverses: they form a subfield with $q$ elements, which contains all roots of $f$ and hence equals $E$. For uniqueness, if $|F| = q$, then every $x \in F^\times$ satisfies $x^{q-1} = 1$ by Lagrange's theorem in the group $F^\times$, so every element of $F$ is a root of $f$. As $f$ has at most $q$ roots, $F$ is a splitting field of $f$ over $\mathbb{F}_p$, and Theorem 5 applies.
+
+(4) Let $N = q - 1$, and let $\psi(d)$ be the number of elements of order $d$ in $F^\times$. If $\psi(d) \ne 0$, take $g$ of order $d$. The $d$ powers of $g$ are roots of $X^d - 1$, which has at most $d$ roots in a field, so every element of order $d$ is a power of $g$, and exactly $\varphi(d)$ of those have order $d$. Thus $\psi(d) \le \varphi(d)$ for all $d \mid N$. But $\sum_{d \mid N}\psi(d) = N = \sum_{d \mid N}\varphi(d)$ (groups lesson, Proposition 4), so $\psi(d) = \varphi(d)$ for every $d \mid N$. In particular $\psi(N) = \varphi(N) \ge 1$: there is an element of order $N$.
+
+(5) If $K \subseteq \mathbb{F}_{p^n}$ with $[K : \mathbb{F}_p] = d$, then $n = d\,[\mathbb{F}_{p^n} : K]$, so $d \mid n$, and $K$ is the set of roots of $X^{p^d} - X$ by (3), so it is unique. Conversely, if $d \mid n$, then $p^d - 1 \mid p^n - 1$. So $X^{p^d} - X$ divides $X^{p^n} - X$, which splits into distinct linear factors in $\mathbb{F}_{p^n}$. Its $p^d$ roots form a subfield, by the argument in (3).
+
+(6) If $\phi^k = \mathrm{id}$ with $1 \le k \lt n$, all $p^n$ elements would be roots of $X^{p^k} - X$, which has only $p^k$ roots. So $\phi$ has order $n$, and $|\operatorname{Aut}(\mathbb{F}_{p^n}/\mathbb{F}_p)| \le [\mathbb{F}_{p^n} : \mathbb{F}_p] = n$ by Theorem 7. Hence the group is $\langle\phi\rangle \cong \Z/n\Z$.
+
+</Proof>
+
+Counting degrees in the factorisation $X^{p^n} - X = \prod_{d \mid n}\prod_{\deg f = d} f$ (over monic irreducible $f$) gives $p^n = \sum_{d \mid n} d\,N_p(d)$. Möbius inversion yields **Gauss's formula** for the number of monic irreducible polynomials of degree $n$ over $\mathbb{F}_p$:
+
+$$
+N_p(n) = \frac1n \sum_{d \mid n} \mu(d)\, p^{n/d} \;\gt\; 0 .
+$$
+
+So irreducible polynomials of every degree exist, and $\mathbb{F}_{p^n} = \mathbb{F}_p[x]/(f)$ for any irreducible $f$ of degree $n$. The first experiment checks the formula by sieving. Note that $\mathbb{F}_{p^2}$ is **not** $\Z/p^2\Z$, which has the nilpotent element $p$.
+
+</Section>
+
+<Section id="galois" kind="proof" title="The Galois correspondence">
+
+<Theorem name="Theorem 7 (automorphisms are bounded by the degree)">
+
+For a finite extension $L/K$, $|\operatorname{Aut}(L/K)| \le [L : K]$. For a simple extension $L = K(\alpha)$, the automorphisms correspond to the roots of $m_\alpha$ that lie in $L$.
+
+</Theorem>
+
+<Proof>
+
+*Simple case.* An automorphism $\sigma$ over $K$ is determined by $\sigma(\alpha)$, because $L = K[\alpha]$. And $m_\alpha(\sigma(\alpha)) = \sigma(m_\alpha(\alpha)) = 0$. Conversely, for each root $\beta \in L$ of $m_\alpha$, $K(\alpha) \cong K[x]/(m_\alpha) \cong K(\beta) \subseteq L$ gives an embedding $\alpha \mapsto \beta$. Since $[K(\beta) : K] = \deg m_\alpha = [L : K]$, it is onto $L$. So $|\operatorname{Aut}(L/K)|$ is the number of roots of $m_\alpha$ in $L$, which is at most $\deg m_\alpha = [L : K]$.
+
+*General case.* Distinct automorphisms $\sigma_1, \dots, \sigma_r$ are linearly independent over $L$ as functions $L \to L$ (**Dedekind's lemma**: take a shortest dependence $\sum c_i\sigma_i = 0$; substituting $yx$ for $x$ and subtracting $\sigma_1(y)$ times the original produces a shorter one). They are $K$-linear maps of the $K$-vector space $L$ of dimension $d = [L : K]$. The space of such maps, viewed as an $L$-vector space by post-multiplication, has dimension $d$ (a $K$-linear map is determined by its values on a basis). So $r \le d$.
+
+</Proof>
+
+<Theorem name="Theorem 8 (Artin)">
+
+Let $H$ be a finite group of automorphisms of a field $L$. Then $[L : L^H] = |H|$, and $\operatorname{Aut}(L/L^H) = H$.
+
+</Theorem>
+
+<Proof>
+
+Let $n = |H|$ and suppose $\alpha_1, \dots, \alpha_m \in L$ with $m \gt n$. The linear system $\sum_{j=1}^m \sigma(\alpha_j)\,x_j = 0$ ($\sigma \in H$) has $n$ equations and $m$ unknowns, so it has a non-zero solution in $L^m$. Choose one with the fewest non-zero entries, scaled so that some entry equals $1$. For $\tau \in H$, applying $\tau$ to the equations permutes them (as $\sigma$ runs over $H$, so does $\tau\sigma$), so $\tau(x)$ is again a solution. Then $x - \tau(x)$ is a solution with fewer non-zero entries (the scaled entry cancels), so it is $0$. Hence every $x_j \in L^H$, and the equation for $\sigma = \mathrm{id}$ is a non-trivial linear relation $\sum \alpha_j x_j = 0$ over $L^H$. So any $m \gt n$ elements are dependent, and $[L : L^H] \le n$. On the other hand $H \subseteq \operatorname{Aut}(L/L^H)$, so by Theorem 7, $n \le |\operatorname{Aut}(L/L^H)| \le [L : L^H] \le n$. All are equal, and $H = \operatorname{Aut}(L/L^H)$.
+
+</Proof>
+
+<Theorem name="Theorem 9 (characterisations of Galois extensions; stated)">
+
+For a finite extension $L/K$ the following are equivalent: (a) $L/K$ is normal and separable; (b) $L$ is the splitting field over $K$ of a separable polynomial; (c) $|\operatorname{Aut}(L/K)| = [L : K]$; (d) $L^{\operatorname{Aut}(L/K)} = K$. In characteristic $0$, and over finite fields, every irreducible polynomial is separable, and (a) reduces to normality.
+
+</Theorem>
+
+The equivalence of (c) and (d) follows from Artin's theorem: with $G = \operatorname{Aut}(L/K)$ we have $K \subseteq L^G$ and $[L : L^G] = |G|$, so by the tower law $|G| = [L : K] \iff L^G = K$. That (b) implies (c) is proved by counting the extensions of $\mathrm{id}_K$ step by step through a tower of simple extensions, as in Theorem 7. Each step offers as many choices as the degree, because the polynomial is separable. For the remaining implications see Stewart (2015), chapters 9–12, or Dummit and Foote, §14.1–14.2.
+
+<Theorem name="Theorem 10 (fundamental theorem of Galois theory)">
+
+Let $L/K$ be a finite Galois extension with group $G = \operatorname{Gal}(L/K)$.
+
+1. The maps $H \mapsto L^H$ and $M \mapsto \operatorname{Gal}(L/M)$ are mutually inverse, inclusion-reversing bijections between subgroups of $G$ and intermediate fields $K \subseteq M \subseteq L$.
+2. $[L : M] = |\operatorname{Gal}(L/M)|$ and $[M : K] = [G : \operatorname{Gal}(L/M)]$.
+3. $M/K$ is Galois iff $\operatorname{Gal}(L/M)$ is normal in $G$, and then $\operatorname{Gal}(M/K) \cong G/\operatorname{Gal}(L/M)$.
+
+</Theorem>
+
+<Proof>
+
+Both maps reverse inclusions: a larger group fixes less, and a larger field is fixed by fewer automorphisms. (1) For a subgroup $H$, Artin's theorem gives $\operatorname{Gal}(L/L^H) = H$. For an intermediate field $M$: $L$ is the splitting field over $K$ of a separable $f$, hence also over $M$, so $L/M$ is Galois and $L^{\operatorname{Gal}(L/M)} = M$ by Theorem 9(d). (2) Theorem 9(c) for $L/M$ gives the first equation; the tower law and Lagrange's theorem give the second.
+
+(3) (Sketch.) For $\sigma \in G$, $\operatorname{Gal}(L/\sigma M) = \sigma \operatorname{Gal}(L/M)\sigma^{-1}$. If $M/K$ is normal, then $\sigma M = M$ for all $\sigma$, since $\sigma$ permutes the roots of minimal polynomials of elements of $M$, which all lie in $M$. So $\operatorname{Gal}(L/M)$ is normal. Restriction $\sigma \mapsto \sigma|_M$ is then a homomorphism $G \to \operatorname{Aut}(M/K)$ with kernel $\operatorname{Gal}(L/M)$. Its image has order $[G : \operatorname{Gal}(L/M)] = [M : K]$, so $M/K$ is Galois and the first isomorphism theorem gives the isomorphism. Conversely, if $\operatorname{Gal}(L/M)$ is normal, then $\sigma M = M$ for all $\sigma$, and restriction gives $[M : K]$ automorphisms of $M/K$, so $M/K$ is Galois by Theorem 9(c).
+
+</Proof>
+
+<Example title="The splitting field of x³ − 2">
+
+$L = \Q(\sqrt[3]2, \omega)$ has degree $6$: $[\Q(\sqrt[3]2) : \Q] = 3$, and $\omega \notin \R$ has degree $2$ over $\Q(\sqrt[3]2) \subset \R$. Since $L/\Q$ is Galois, $|G| = 6$. $G$ acts faithfully on the three roots, numbered $1 = \sqrt[3]2$, $2 = \omega\sqrt[3]2$, $3 = \omega^2\sqrt[3]2$, so $G \cong S_3$ (complex conjugation is the transposition $(2\,3)$). The six subgroups of $S_3$ match six intermediate fields:
+
+| subgroup of $S_3$ | its order | fixed field | degree over $\Q$ | Galois over $\Q$? |
+| --- | --- | --- | --- | --- |
+| $\{e\}$ | 1 | $L$ | 6 | yes |
+| $\langle (2\,3) \rangle$ (fixes $\sqrt[3]2$) | 2 | $\Q(\sqrt[3]2)$ | 3 | no |
+| $\langle (1\,3) \rangle$ | 2 | $\Q(\omega\sqrt[3]2)$ | 3 | no |
+| $\langle (1\,2) \rangle$ | 2 | $\Q(\omega^2\sqrt[3]2)$ | 3 | no |
+| $A_3$ | 3 | $\Q(\omega)$ | 2 | yes |
+| $S_3$ | 6 | $\Q$ | 1 | yes |
+
+The three cubic fields are not Galois over $\Q$, matching the three non-normal subgroups of order $2$. $\Q(\omega) = \Q(\sqrt{-3})$ is Galois, matching the normal subgroup $A_3$, and $\operatorname{Gal}(\Q(\omega)/\Q) \cong S_3/A_3 \cong \Z/2$.
+
+</Example>
+
+<CommutativeDiagram
+  objects={[
+    { id: "L", tex: "\\Q(\\sqrt[3]{2}, \\omega)", row: 0, col: 1.5 },
+    { id: "A", tex: "\\Q(\\sqrt[3]{2})", row: 1, col: 0 },
+    { id: "B", tex: "\\Q(\\omega\\sqrt[3]{2})", row: 1, col: 1 },
+    { id: "C", tex: "\\Q(\\omega^2\\sqrt[3]{2})", row: 1, col: 2 },
+    { id: "W", tex: "\\Q(\\omega)", row: 1, col: 3 },
+    { id: "Q", tex: "\\Q", row: 2, col: 1.5 },
+  ]}
+  arrows={[
+    { from: "Q", to: "A", tex: "3", style: "hook" },
+    { from: "Q", to: "B", tex: "3", style: "hook" },
+    { from: "Q", to: "C", tex: "3", style: "hook", labelSide: "right" },
+    { from: "Q", to: "W", tex: "2", style: "hook", labelSide: "right" },
+    { from: "A", to: "L", tex: "2", style: "hook" },
+    { from: "B", to: "L", tex: "2", style: "hook" },
+    { from: "C", to: "L", tex: "2", style: "hook", labelSide: "right" },
+    { from: "W", to: "L", tex: "3", style: "hook", labelSide: "right" },
+  ]}
+  size="lg"
+  caption="The intermediate fields of $\Q(\sqrt[3]{2}, \omega)/\Q$, with the degree of each inclusion. Turned upside down, this is the lattice of subgroups of $S_3$."
+/>
+
+<Example title="Finite fields and a biquadratic field">
+
+For $\mathbb{F}_{p^n}/\mathbb{F}_p$, $G = \langle \phi \rangle \cong \Z/n$, whose subgroups $\langle \phi^d \rangle$ ($d \mid n$) fix exactly $\mathbb{F}_{p^d}$. This is Theorem 6(5) seen through Galois theory. For $\Q(\sqrt2, \sqrt3)$, the group $(\Z/2)^2$ has three subgroups of order $2$, matching the three quadratic subfields $\Q(\sqrt2)$, $\Q(\sqrt3)$, $\Q(\sqrt6)$. All are Galois, because every subgroup of an abelian group is normal.
+
+</Example>
+
+</Section>
+
+<Section id="radicals" kind="proof" title="Solvability by radicals">
+
+<Definition term="radical extension, solvable group">
+
+An extension $L/K$ is **radical** if there is a tower $K = K_0 \subseteq K_1 \subseteq \dots \subseteq K_r = L$ with $K_{i+1} = K_i(\alpha_i)$ and $\alpha_i^{n_i} \in K_i$. A polynomial $f \in K[x]$ is **solvable by radicals** if its splitting field is contained in a radical extension of $K$. A group $G$ is **solvable** if there is a chain $\{e\} = G_0 \trianglelefteq G_1 \trianglelefteq \dots \trianglelefteq G_s = G$ with each $G_{i+1}/G_i$ abelian.
+
+</Definition>
+
+<Theorem name="Theorem 11 (Galois's criterion; proof outlined)">
+
+Let $K$ have characteristic $0$ and $f \in K[x]$. Then $f$ is solvable by radicals if and only if $\operatorname{Gal}(f)$ is a solvable group.
+
+</Theorem>
+
+*Outline of "solvable by radicals ⇒ solvable group".* First adjoin enough roots of unity. This changes the Galois group only by passing to a subgroup and an abelian extension, and subgroups and quotients of solvable groups are solvable. Once $K$ contains the $n$-th roots of unity, adjoining an $n$-th root $\sqrt[n]{a}$ gives a Galois extension with abelian (indeed cyclic) group, since $\sigma(\sqrt[n]a) = \zeta_\sigma\sqrt[n]a$ and $\sigma \mapsto \zeta_\sigma$ is an injective homomorphism into the roots of unity. Making the radical tower Galois over $K$ and applying the fundamental theorem to it gives a chain of normal subgroups with abelian quotients, and the Galois group of $f$ is a quotient of the group of the tower. The converse uses **Kummer theory**: a cyclic extension of degree $n$ of a field containing the $n$-th roots of unity is generated by an $n$-th root. Full proofs: Stewart (2015), chapters 15–18; Dummit and Foote, §14.7. One direction is in Mathlib and is cited in the formal section.
+
+<Theorem name="Proposition 12 (S₅ is not solvable)">
+
+For $n \ge 5$, $S_n$ is not solvable.
+
+</Theorem>
+
+<Proof>
+
+We show that if $N \trianglelefteq H \le S_n$ with $H/N$ abelian and $H$ containing every 3-cycle, then $N$ contains every 3-cycle. Then no chain from $S_n$ down to $\{e\}$ with abelian quotients can exist. Given a 3-cycle $(a\,b\,c)$, choose $d, e$ distinct from $a, b, c$ (possible as $n \ge 5$). Following each of the five points shows that $(a\,b\,c) = x y x^{-1}y^{-1}$ with $x = (a\,b\,d)$ and $y = (a\,c\,e)$ (composing right to left). Since $H/N$ is abelian, every commutator of elements of $H$ lies in $N$ (Proposition 6 of quotients), so $(a\,b\,c) \in N$. Now in a chain $S_n = G_s \trianglerighteq G_{s-1} \trianglerighteq \dots \trianglerighteq G_0$ with abelian quotients, induction down the chain shows that every $G_i$ contains all 3-cycles, so $G_0 \ne \{e\}$.
+
+</Proof>
+
+<Example title="A quintic not solvable by radicals">
+
+Let $f = x^5 - 4x + 2$. It is irreducible by Eisenstein's criterion at $2$. Since $f'(x) = 5x^4 - 4$ vanishes only at $\pm(4/5)^{1/4} \approx \pm 0.946$, and $f(-0.946) \gt 0 \gt f(0.946)$, $f$ has exactly three real roots and a pair of complex conjugate roots. The Galois group $G \le S_5$ acts transitively on the five roots (irreducibility), so $5 \mid |G|$, and by Cauchy's theorem $G$ contains a 5-cycle. Complex conjugation restricts to an element of $G$ that swaps the two non-real roots and fixes the three real ones: a transposition. A 5-cycle and a transposition generate $S_5$, so $G = S_5$. This is not solvable, so the roots of $f$ cannot be expressed by radicals. By contrast, $x^5 - 2$ is solvable by radicals: its roots $\zeta_5^k\sqrt[5]2$ are radicals, and its Galois group has order $20$ and is solvable.
+
+</Example>
+
+The general quintic $x^5 + a_4x^4 + \dots + a_0$, with the $a_i$ independent indeterminates, has Galois group $S_5$ over $\Q(a_0, \dots, a_4)$. That is the Abel–Ruffini theorem: there is no formula in radicals for degree $5$ or more. It does not say that a particular quintic has non-radical roots — that depends on its Galois group.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Fields and Galois theory in Lean and Mathlib">
+
+Mathlib represents an extension $L/K$ by `[Field K] [Field L] [Algebra K L]`. The degree is `Module.finrank K L`, and `IntermediateField K L` is the lattice of intermediate fields. `K⟮α⟯` denotes $K(\alpha)$, and `minpoly K α` is the minimal polynomial. `Gal(L/K)` is notation for `L ≃ₐ[K] L`, the automorphisms over $K$, and `IsGalois K L` is "normal and separable". `GaloisField p n` is the splitting field of $X^{p^n} - X$ over `ZMod p`.
+
+The tower law, and the reason extensions can be treated as inclusions:
+
+<Lean decl="Lumenary.FieldsGalois.tower_law" />
+
+<Lean decl="Lumenary.FieldsGalois.field_hom_injective" />
+
+<Lean decl="Lumenary.FieldsGalois.zmod_sq_not_field" />
+
+Minimal polynomials and degrees. The irreducibility proofs use "a polynomial of degree $2$ or $3$ is irreducible iff it has no root" and the irrationality of $\sqrt2$ and $\sqrt[3]2$, rather than the rational root test of Theorem 3:
+
+<Lean decl="Lumenary.FieldsGalois.sqrt_two_irreducible" />
+
+<Lean decl="Lumenary.FieldsGalois.finrank_sqrt_two" />
+
+<Lean decl="Lumenary.FieldsGalois.cube_two_irreducible" />
+
+The algebraic half of Wantzel's theorem for doubling the cube. Any extension of $\Q$ of degree $2^k$ — in particular the field $F_n$ in the proof of Theorem 4 — contains no cube root of $2$:
+
+<Lean decl="Lumenary.FieldsGalois.no_cube_root_two" />
+
+Finite fields (Theorem 6), from Mathlib:
+
+<Lean decl="Lumenary.FieldsGalois.finite_field_card" />
+
+<Lean decl="Lumenary.FieldsGalois.frobenius_add" />
+
+<Lean decl="Lumenary.FieldsGalois.galois_field_card" />
+
+<Lean decl="Lumenary.FieldsGalois.finite_field_unique" />
+
+<Lean decl="Lumenary.FieldsGalois.units_cyclic" />
+
+The Galois correspondence. The order-reversing property and the Galois connection, and the inequality of Theorem 7 (via Mathlib's form of Dedekind's lemma), are proved here. Artin's theorem, Theorem 9(c) and the fundamental theorem are cited:
+
+<Lean decl="Lumenary.FieldsGalois.fixed_field_antitone" />
+
+<Lean decl="Lumenary.FieldsGalois.fixing_subgroup_antitone" />
+
+<Lean decl="Lumenary.FieldsGalois.galois_connection" />
+
+<Lean decl="Lumenary.FieldsGalois.card_aut_le_finrank" />
+
+<Lean decl="Lumenary.FieldsGalois.artin" />
+
+<Lean decl="Lumenary.FieldsGalois.card_gal" />
+
+<Lean decl="Lumenary.FieldsGalois.fundamental_theorem" />
+
+Solvability by radicals: the direction of Theorem 11 that matters for Abel–Ruffini, and Proposition 12 for $n = 5$:
+
+<Lean decl="Lumenary.FieldsGalois.solvable_of_radical_root" />
+
+<Lean decl="Lumenary.FieldsGalois.s5_not_solvable" />
+
+**What is and is not formalised.** Proved independently here: injectivity of field homomorphisms, $\Z/p^2\Z$ is not a field, the irreducibility of $x^2 - 2$ and $x^3 - 2$ over $\Q$, $[\Q(\sqrt2) : \Q] = 2$, the impossibility of a cube root of $2$ in a $2$-power extension, the antitone maps and Galois connection, and $|\operatorname{Aut}(L/K)| \le [L : K]$. Cited from Mathlib: the tower law, Theorem 6(1–4), Artin's theorem, $|\operatorname{Gal}| = [L : K]$, the fundamental theorem, one direction of Theorem 11 and the non-solvability of $S_5$. Not formalised: the geometric half of Theorem 4 (Mathlib has no notion of straightedge-and-compass constructibility), the trisection and heptagon cases, Theorem 10(3), and the computation that $x^5 - 4x + 2$ has Galois group $S_5$. Mathlib's `Polynomial.Gal.galActionHom_bijective_of_prime_degree'` contains the essential step, and combining it with the results above into a Lean proof that this polynomial is not solvable by radicals would be a good project.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting irreducibles and watching Frobenius">
+
+The first program sieves out the reducible monic polynomials over $\mathbb{F}_2$, $\mathbb{F}_3$ and $\mathbb{F}_5$, counts the irreducible ones, and compares with Gauss's formula and with the identity $p^n = \sum_{d \mid n} d\,N_p(d)$.
+
+<Python id="fields_galois_irreducible_counts" />
+
+The counts are exact and exhaustive, and the formula is a theorem; the table is a consistency check. Notice $N_2(n) \approx 2^n/n$: roughly one polynomial in $n$ is irreducible, a "prime number theorem" for polynomials over finite fields.
+
+The second program connects the two halves of the lesson. Reducing an integer polynomial modulo a prime $p$ (not dividing its discriminant) gives a Frobenius element in its Galois group, and the degrees of the irreducible factors mod $p$ are the cycle lengths of that element acting on the roots. The program factors four polynomials modulo all suitable primes below $2000$ and compares the frequencies of each factorisation pattern with the proportion of group elements of that cycle type.
+
+<Python id="fields_galois_frobenius_cycles" />
+
+Each factorisation is exact; the agreement of frequencies is **statistical evidence**, guaranteed in the limit by the **Chebotarev density theorem** (conjectured by Frobenius, proved by Nikolai Chebotarev in 1922). Two things stand out. $x^4 + 1$ is irreducible over $\Q$ but never irreducible modulo a prime, because its Galois group $(\Z/2)^2$ contains no 4-cycle. And for $x^5 - 4x + 2$ all seven cycle types of $S_5$ appear, including 5-cycles and transpositions, which is consistent with $G = S_5$. Statistics alone can never prove what a Galois group is, but they are how computer algebra systems first guess it.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: roots of unity">
+
+The $n$-th roots of unity form a regular $n$-gon, and the cyclotomic field $\Q(\zeta_n)$ is generated by them. Its Galois group permutes them by $\zeta \mapsto \zeta^a$ for $a$ coprime to $n$. Change $n$ and count the *primitive* roots, the ones that are not roots of unity of smaller order: there are $\varphi(n)$ of them, and that is $[\Q(\zeta_n) : \Q]$. For $n = 5$, the real part $\cos 72^\circ = \frac{\sqrt5 - 1}{4}$ lies in a quadratic field, so the pentagon is constructible. For $n = 7$, $\cos(2\pi/7)$ has degree $3$, and the heptagon is not.
+
+<ComplexPlane mode="roots" z={[1, 0]} n={7} title="Roots of unity and cyclotomic fields" subtitle="The 7th roots of unity: their real parts generate a cubic field, which is why the regular heptagon cannot be constructed." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Abel–Ruffini says no quintic can be solved by radicals."** It says there is no *general formula*. Particular quintics can be solvable: $x^5 - 2$ has root $\sqrt[5]2$, and $x^5 - 5x + 12$ has a solvable Galois group of order $10$. Galois's criterion decides each polynomial individually: solvable by radicals iff the Galois group is solvable.
+
+</Misconception>
+
+<Misconception>
+
+**"$\Z/p^2\Z$ is the field with $p^2$ elements."** $\Z/p^2\Z$ has the nilpotent element $p$ ($p \cdot p = 0$), so it is not even a domain. The field $\mathbb{F}_{p^2}$ has characteristic $p$ and is $\mathbb{F}_p[x]/(f)$ for an irreducible quadratic $f$ — for example $\mathbb{F}_9 = \mathbb{F}_3[i]$.
+
+</Misconception>
+
+<Misconception>
+
+**"The Galois group of a polynomial of degree $n$ is $S_n$."** It is a subgroup of $S_n$, often much smaller. $x^4 - 10x^2 + 1$ has Galois group $(\Z/2)^2$ of order $4$, not $24$; $\Phi_p$ has the cyclic group $(\Z/p)^\times$. "Generic" polynomials have group $S_n$, but special ones are the interesting ones.
+
+</Misconception>
+
+<Misconception>
+
+**"Every finite extension is Galois."** $\Q(\sqrt[3]2)/\Q$ has degree $3$ but only the identity automorphism, because the other two roots of $x^3 - 2$ are not real. Galois extensions are exactly those with as many automorphisms as their degree.
+
+</Misconception>
+
+<Misconception>
+
+**"Degrees of composite extensions multiply."** $[\Q(\alpha, \beta) : \Q] \le [\Q(\alpha) : \Q][\Q(\beta) : \Q]$, with equality only in good cases (for example coprime degrees). $\Q(\sqrt2, \sqrt8) = \Q(\sqrt 2)$ has degree $2$, not $4$, and $\Q(\sqrt[3]2, \omega\sqrt[3]2)$ has degree $6$, not $9$.
+
+</Misconception>
+
+<Misconception>
+
+**"Galois theory proves that the circle cannot be squared."** The tower-law argument shows that constructible numbers are algebraic of degree a power of $2$. To rule out $\sqrt\pi$ one needs Lindemann's theorem that $\pi$ is transcendental, proved by analysis (1882), not by Galois theory.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Galois theory is covering space theory">
+
+For a connected, locally path-connected space $B$, connected coverings $E \to B$ correspond to subgroups of $\pi_1(B)$, normal subgroups give regular (Galois) coverings, and the deck group of a regular covering is $\pi_1(B)/\pi_1(E)$ (see <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>). This is the same correspondence, and the analogy can be made exact. Let $B = \C \setminus \{\text{branch points}\}$, and consider the field $\C(t)$ with a polynomial $f(t, x)$. Its roots $x_1(t), \dots, x_n(t)$ form a covering of $B$, and the Galois group of $f$ over $\C(t)$ equals the **monodromy group**: the permutations of the roots obtained by following them around loops in $B$. For $x^3 - t$, a loop around $t = 0$ cycles the three cube roots. Grothendieck unified both pictures in the **étale fundamental group**. For a field $K$ it is the absolute Galois group $\operatorname{Gal}(\overline K/K)$, a profinite group with the Krull topology, in which the infinite Galois correspondence matches closed subgroups with intermediate fields.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Symmetry of roots and of figures">
+
+The Galois group of $x^4 - 2$ is the dihedral group $D_4$, acting on the four roots $\pm\sqrt[4]2, \pm i\sqrt[4]2$ exactly as the symmetries of the square they form in $\C$. This is a coincidence of the example, not a general rule: the Galois group need not preserve the geometry of the roots. Constructions with straightedge and compass are the geometric shadow of towers of quadratic extensions (Theorem 4). Felix Klein's *Lectures on the Icosahedron* (1884) connected the quintic to the rotation group of the icosahedron, which is $A_5$: the general quintic can be reduced to an equation whose Galois group is that symmetry group, and solved with elliptic modular functions (Hermite, Kronecker, 1858). Galois theory and geometry meet again in <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>, where function fields of curves are finite extensions of $\C(t)$.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Frobenius elements, Chebotarev and Kronecker–Weber">
+
+For a Galois extension $L/\Q$ and a prime $p$ not dividing its discriminant, the Frobenius automorphism of the finite residue fields lifts to a well-defined conjugacy class $\operatorname{Frob}_p \subseteq \operatorname{Gal}(L/\Q)$. The **Chebotarev density theorem** says every conjugacy class $C$ occurs for a proportion $|C|/|G|$ of primes, which the second experiment illustrates. For abelian extensions everything is explicit. The **Kronecker–Weber theorem** says every abelian extension of $\Q$ lies in a cyclotomic field $\Q(\zeta_n)$, and there $\operatorname{Frob}_p$ is $\zeta \mapsto \zeta^p$. Quadratic reciprocity follows: $\Q(\sqrt{\pm q}) \subset \Q(\zeta_q)$ (see <TopicLink id="math.number.elementary-number-theory">number theory</TopicLink>). Describing non-abelian Galois groups of $\Q$ through Frobenius elements is one of the aims of the <TopicLink id="math.number.langlands-programme">Langlands programme</TopicLink>. The **inverse Galois problem** — is every finite group a Galois group over $\Q$? — remains open. It is known for all solvable groups (Igor Shafarevich, 1954) and for many simple ones.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="A Galois connection is an adjunction">
+
+Order intermediate fields by inclusion and subgroups by reverse inclusion. Then $M \mapsto \operatorname{Gal}(L/M)$ and $H \mapsto L^H$ satisfy $M \subseteq L^H \iff H \subseteq \operatorname{Gal}(L/M)$, which is proved in Lean above. This makes them a **Galois connection**, which is an adjunction between posets regarded as categories (<TopicLink id="math.cat.adjunctions">adjunctions</TopicLink>). Every Galois connection restricts to a bijection between its "closed" elements; the fundamental theorem says that for a Galois extension *every* element is closed. Grothendieck's reformulation is an equivalence of categories: for a field $K$, finite étale $K$-algebras (finite products of finite separable extensions) correspond contravariantly to finite sets with a continuous action of $\operatorname{Gal}(K^{\mathrm{sep}}/K)$. Fields correspond to transitive actions, and subgroups appear as stabilisers.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Computing Galois groups">
+
+Galois groups can be computed. Factoring modulo many primes (the second experiment) reveals which cycle types occur, which often pins the group down. Resolvent polynomials and Stauduhar's method (1973) then certify the answer with exact arithmetic. Computer algebra systems compute Galois groups of polynomials of moderate degree routinely. Finite fields are the engine of modern computation. Reed–Solomon codes on CDs, QR codes and spacecraft links compute in $\mathbb{F}_{2^8}$, and the AES cipher is built on $\mathbb{F}_{2^8} = \mathbb{F}_2[x]/(x^8 + x^4 + x^3 + x + 1)$. Factoring polynomials over $\mathbb{F}_p$ (Berlekamp, 1967; Cantor–Zassenhaus, 1981) is fast. The experiment's distinct-degree factorisation is the first step of these algorithms.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Finite fields grow out of clock arithmetic. This optional trail starts there.
+
+<Trail slug="clock-arithmetic" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Solving equations.** Old Babylonian tablets (c. 1800 BCE) solve quadratic problems. Al-Khwārizmī's *al-Jabr* (c. 820) classified and solved quadratics. ʿUmar al-Khayyām (c. 1070) solved cubics geometrically by intersecting conics, and Sharaf al-Dīn al-Ṭūsī (12th century) analysed the number of positive roots. In Italy, del Ferro and Tartaglia found the cubic formula, Cardano published it in *Ars Magna* (1545) together with Ferrari's solution of the quartic, and Rafael Bombelli (1572) showed how complex numbers make the formula work even when all roots are real.
+- **Towards Galois.** Joseph-Louis Lagrange (1770–71) explained the known formulas by permutations of roots and resolvents. Gauss (1796, 1801) solved the cyclotomic equations by radicals and found the 17-gon. Ruffini (1799) and Abel (1824) proved the unsolvability of the general quintic. Évariste Galois (1830–32) gave the criterion in terms of groups. His memoir was rejected by the Paris Academy, he died after a duel in 1832, and Joseph Liouville published his work in 1846.
+- **Constructions.** Pierre Wantzel (1837) proved the impossibility of doubling the cube and trisecting the angle, and characterised constructible regular polygons. Ferdinand von Lindemann (1882) proved $\pi$ transcendental, settling the squaring of the circle.
+- **The modern theory.** Camille Jordan's *Traité des substitutions* (1870) presented Galois's theory systematically. Richard Dedekind and Leopold Kronecker recast it in terms of fields. Emil Artin's *Galois Theory* (1942) introduced the linear-algebra approach used here (Dedekind's lemma, Artin's theorem). Wolfgang Krull (1928) extended it to infinite extensions with a topology on the Galois group, and Alexander Grothendieck (*SGA 1*, 1960–61) unified it with covering spaces.
+- **Finite fields.** Galois himself introduced the fields $\mathbb{F}_{p^n}$ ("imaginaires de Galois") in 1830, and E. H. Moore (1893) proved that every finite field is one of them. Gauss had earlier counted irreducible polynomials modulo $p$ in unpublished work.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Ian Stewart, *Galois Theory* (4th edition, 2015) — history, constructions, and the full theory at this level.
+- Emil Artin, *Galois Theory* (1942; Dover reprint) — the classic short account via linear algebra.
+- David S. Dummit and Richard M. Foote, *Abstract Algebra* (3rd edition, 2004), chapters 13–14.
+- Harold M. Edwards, *Galois Theory* (1984) — follows Galois's own memoir.
+- Rudolf Lidl and Harald Niederreiter, *Introduction to Finite Fields and their Applications* (revised edition, 1994).
+- Jürgen Neukirch, *Algebraic Number Theory* (1999), chapter I — Frobenius elements and Chebotarev, for going further.
+
+</Section>

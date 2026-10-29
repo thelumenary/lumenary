@@ -175,7 +175,7 @@ export const TrailFrontmatter = z.object({
   slug: z.string(),
   title: z.string(),
   question: z.string(),
-  kind: z.enum(["algebraic", "modular", "quotient", "category", "set-theory", "logic", "analysis", "history"]),
+  kind: z.enum(["algebraic", "modular", "quotient", "category", "set-theory", "logic", "analysis", "history", "topology", "geometry", "number-theory", "probability", "computability", "physics"]),
   from: z.object({ lesson: z.string(), label: z.string() }),
   level: LevelId,
   hints: z.array(z.string()).min(1),
@@ -320,8 +320,10 @@ export const LeanReport = z.object({
       region: z.string().nullable(),
       usesSorry: z.boolean(),
       axioms: z.array(z.string()),
-      /** "library" = proof applies an existing library theorem; "independent" = proved here from more basic facts. */
+      /** "library" = proof applies an existing library theorem (core Lean or Mathlib); "independent" = proved here from more basic facts. */
       provenance: z.enum(["library", "independent", "definition"]),
+      /** "core" = core Lean only; "mathlib" = the declaration's file builds on Mathlib. */
+      foundation: z.enum(["core", "mathlib"]).default("core"),
     }),
   ),
   exercises: z.array(

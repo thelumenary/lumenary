@@ -1,0 +1,462 @@
+---
+slug: formalising-published-mathematics
+topic: math.comp.formalising-published-mathematics
+title: Formalising published mathematics
+subtitle: From a paper to a machine-checked proof — blueprints, hidden assumptions, trusted bases, and Zagier's one-sentence proof formalised lemma by lemma.
+level: research
+ages: Research (graduate background; some Lean)
+minutes: 130
+order: 8021
+objectives:
+  - Write a blueprint that breaks a published theorem into formalisable definitions and lemmas and records their dependencies
+  - Formalise a short published result — Zagier's one-sentence proof of Fermat's two-squares theorem — recording every gap and implicit assumption found along the way
+  - Identify the trusted base of a formal proof and check that a formal statement faithfully captures the published theorem
+  - Describe completed large formalisations, such as the odd order theorem, the Kepler conjecture and the Liquid Tensor Experiment, and what they did and did not verify
+  - Contribute to a large library such as Mathlib, and work in a collaborative formalisation project
+narrators: []
+lean:
+  - Lumenary.FormalisingPublishedMathematics.zagierSet
+  - Lumenary.FormalisingPublishedMathematics.zagier_facts
+  - Lumenary.FormalisingPublishedMathematics.mem_zagierSet
+  - Lumenary.FormalisingPublishedMathematics.zagierMap
+  - Lumenary.FormalisingPublishedMathematics.zagierMap_eq_one
+  - Lumenary.FormalisingPublishedMathematics.zagierMap_eq_two
+  - Lumenary.FormalisingPublishedMathematics.zagierMap_mapsTo
+  - Lumenary.FormalisingPublishedMathematics.zagierMap_involutive
+  - Lumenary.FormalisingPublishedMathematics.zagierMap_fixed_iff
+  - Lumenary.FormalisingPublishedMathematics.zagier_fixed_points
+  - Lumenary.FormalisingPublishedMathematics.card_mod_two_of_involution
+  - Lumenary.FormalisingPublishedMathematics.card_zagierSet_odd
+  - Lumenary.FormalisingPublishedMathematics.swapMap
+  - Lumenary.FormalisingPublishedMathematics.zagier_two_squares
+  - Lumenary.FormalisingPublishedMathematics.prime_one_mod_four
+  - Lumenary.FormalisingPublishedMathematics.two_squares_library
+  - Lumenary.FormalisingPublishedMathematics.primality_needed
+compute: [formalising_published_mathematics_zagier, formalising_published_mathematics_blueprint]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="One sentence, and a challenge">
+
+In 1990 Don Zagier published in the *American Mathematical Monthly* a paper whose entire mathematical content is one sentence:
+
+> The involution on the finite set $S = \{(x, y, z) \in \N^3 : x^2 + 4yz = p\}$ defined by
+> $$
+> (x, y, z) \mapsto \begin{cases} (x + 2z,\; z,\; y - x - z) & \text{if } x < y - z, \\ (2y - x,\; y,\; x - y + z) & \text{if } y - z < x < 2y, \\ (x - 2y,\; x - y + z,\; y) & \text{if } x > 2y \end{cases}
+> $$
+> has exactly one fixed point, so $|S|$ is odd and the involution defined by $(x, y, z) \mapsto (x, z, y)$ also has a fixed point.
+
+That sentence proves Fermat's theorem: *every prime $p \equiv 1 \pmod 4$ is a sum of two squares.* An expert reads it in a minute and checks it in ten. What would it take to convince a computer — a proof checker that knows nothing except the rules of logic and the definitions we give it? Every word must be justified: "the finite set", "involution", "exactly one", "so". This lesson does that, completely, and keeps a list of everything the sentence leaves unsaid.
+
+At the other end of the scale, in December 2020 Peter Scholze challenged the community to formalise a central theorem of the condensed mathematics he had developed with Dustin Clausen, saying that he was not fully confident that every detail of its intricate proof was right. A team led by Johan Commelin completed the *Liquid Tensor Experiment* in Lean in July 2022. Between these extremes lies a new mathematical practice: **turning published mathematics into machine-checked proofs**. It has its own methods (blueprints, libraries, collaboration at scale), its own failure modes (unfaithful statements, hidden axioms), and its own honest limits.
+
+This lesson assumes that you have formalised some undergraduate mathematics in Lean (<TopicLink id="math.comp.formal-proof-lean">formalising mathematics in Lean and Mathlib</TopicLink>), know the type theory underneath (<TopicLink id="math.found.type-theory">type theory and propositions as types</TopicLink>), and can reconstruct the omitted steps of a published proof (<TopicLink id="math.found.reading-literature">reading the mathematical literature</TopicLink>). Formalisation is that last skill pushed to its limit.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Three layers and a bridge">
+
+A formalisation has three layers, and it is useful to keep them apart.
+
+1. **The informal mathematics**: the paper, with its definitions, lemmas and proofs, written for human readers who fill in routine steps.
+2. **The formal statements**: definitions and theorem statements in the proof assistant's language. They are what the formalisation *claims*.
+3. **The formal proofs**: terms that the checker's kernel verifies against the statements.
+
+The kernel checks that layer 3 proves layer 2. **Nothing checks automatically that layer 2 says what layer 1 says** — that comparison is made by people. And layer 3 rarely mirrors layer 1 sentence by sentence: a formal proof fills every gap, often reorganises the argument, and usually replaces ad hoc constructions with general library results.
+
+The bridge between the layers is a **blueprint**: a document that lists the definitions and lemmas, links each informal statement to its formal counterpart, and records which items each one uses. Because "uses" is a relation, a blueprint is a directed graph, and a project's progress can be read off it: what is stated, what is proved, what is ready to be attacked because everything it depends on is done.
+
+<Analogy>
+
+A building's blueprint does not lay bricks, but it lets many builders work at once without colliding, and it shows the inspector what is supposed to be where. A mathematical blueprint does the same for a formalisation: it divides the work and makes the claims inspectable. The analogy stops at the inspection: a building inspector checks the bricks too, whereas a proof assistant checks every step mechanically and leaves people to inspect only the statements.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="blueprint">
+
+A **blueprint** for a formalisation project is a document that lists the definitions, lemmas and theorems to be formalised, gives for each an informal statement and proof and the name of its formal counterpart, and records the **dependency relation**: which earlier items each statement or proof uses. The dependency relation must be acyclic (a cycle would be a circular argument). An item is **ready** when everything it uses has been formalised.
+
+</Definition>
+
+<Definition term="faithful formal statement">
+
+A formal statement $\Phi$ is a **faithful** formalisation of an informal theorem $T$ if every reader who understands both agrees that $\Phi$ expresses $T$: same hypotheses (none dropped, none added that are not in $T$), same conclusion, and definitions that agree with standard usage. A statement whose hypotheses are contradictory is *vacuous*: it is provable and says nothing.
+
+</Definition>
+
+<Definition term="trusted base">
+
+The **trusted base** of a formal proof is what must be trusted for the check to mean anything: the proof checker's **kernel** (and the hardware and software it runs on), the **axioms** the proof uses, and the **formal statement** together with every definition it mentions. Everything else — tactics, automation, the proof itself, however long — is checked and need not be trusted.
+
+</Definition>
+
+<Definition term="de Bruijn criterion">
+
+A proof assistant satisfies the **de Bruijn criterion** if every proof it accepts can be exported as an explicit proof object and re-checked by a small, independently written checker. This keeps the trusted kernel small and lets sceptics re-verify a formalisation without trusting the large system that produced it.
+
+</Definition>
+
+In Lean 4, the axioms behind a declaration are listed by `#print axioms`. Mathematical work in Mathlib uses three: `propext` (propositional extensionality), `Quot.sound` (quotients) and `Classical.choice` (the axiom of choice). Any further axiom — including `sorryAx`, which records an unfinished proof — is visible there.
+
+</Section>
+
+<Section id="blueprint" kind="examples" title="A blueprint for Zagier's sentence">
+
+Here is the blueprint we used. Write $p = 4k + 1$, and let $\zeta$ be Zagier's map and $\sigma(x, y, z) = (x, z, y)$ the swap. Items are definitions (def), lemmas (lem) and the theorem (thm); the last column lists what each item uses.
+
+| Item | Informal statement | Lean name | Uses |
+| --- | --- | --- | --- |
+| def:S | $S = \{(x, y, z) \in \N^3 : x^2 + 4yz = p\}$ | `zagierSet` | — |
+| def:map | Zagier's piecewise map $\zeta$ | `zagierMap` | — |
+| def:swap | $\sigma(x, y, z) = (x, z, y)$ | `swapMap` | — |
+| lem:facts | on $S$: $x, y, z > 0$, $x \ne y - z$, $x \ne 2y$ | `zagier_facts` | def:S |
+| lem:finite | $S$ is finite (all coordinates at most $p$) | `mem_zagierSet` | def:S, lem:facts |
+| lem:cases | each case of $\zeta$ preserves $x^2 + 4yz$ | `zagierMap_eq_one`, … | def:map |
+| lem:mapsto | $\zeta$ maps $S$ to $S$ | `zagierMap_mapsTo` | lem:cases, lem:finite |
+| lem:invol | $\zeta(\zeta(t)) = t$ on $S$ | `zagierMap_involutive` | def:map, lem:facts, lem:finite |
+| lem:fixed | the only fixed point of $\zeta$ on $S$ is $(1, 1, k)$ | `zagier_fixed_points` | def:map, lem:facts, lem:finite |
+| lem:parity | an involution of a finite set has as many fixed points as elements, mod 2 | `card_mod_two_of_involution` | — |
+| lem:odd | $S$ has an odd number of elements | `card_zagierSet_odd` | lem:mapsto, lem:invol, lem:fixed, lem:parity |
+| thm:fermat | $p$ is a sum of two squares | `zagier_two_squares` | def:swap, lem:odd, lem:parity, lem:finite |
+
+The dependency graph, drawn without the arrows that follow from others by transitivity (an arrow $A \to B$ means "$B$ uses $A$"):
+
+<CommutativeDiagram
+  size="sm"
+  objects={[
+    { id: "S", tex: "\\text{def:S}", row: 0, col: 0 },
+    { id: "map", tex: "\\text{def:map}", row: 0, col: 2 },
+    { id: "parity", tex: "\\text{lem:parity}", row: 2, col: 4 },
+    { id: "swap", tex: "\\text{def:swap}", row: 4, col: 4 },
+    { id: "facts", tex: "\\text{lem:facts}", row: 1, col: 0 },
+    { id: "cases", tex: "\\text{lem:cases}", row: 1, col: 2 },
+    { id: "finite", tex: "\\text{lem:finite}", row: 2, col: 0 },
+    { id: "mapsto", tex: "\\text{lem:mapsto}", row: 3, col: 1 },
+    { id: "invol", tex: "\\text{lem:invol}", row: 3, col: 2 },
+    { id: "fixed", tex: "\\text{lem:fixed}", row: 3, col: 3 },
+    { id: "odd", tex: "\\text{lem:odd}", row: 4, col: 2 },
+    { id: "thm", tex: "\\text{thm:fermat}", row: 5, col: 3 },
+  ]}
+  arrows={[
+    { from: "S", to: "facts" },
+    { from: "facts", to: "finite" },
+    { from: "map", to: "cases" },
+    { from: "cases", to: "mapsto" },
+    { from: "finite", to: "mapsto" },
+    { from: "map", to: "invol" },
+    { from: "finite", to: "invol" },
+    { from: "map", to: "fixed" },
+    { from: "finite", to: "fixed" },
+    { from: "mapsto", to: "odd" },
+    { from: "invol", to: "odd" },
+    { from: "fixed", to: "odd" },
+    { from: "parity", to: "odd" },
+    { from: "odd", to: "thm" },
+    { from: "swap", to: "thm" },
+  ]}
+  caption="The blueprint's dependency graph (transitive reduction). The parity lemma and the swap are independent of the rest; the chain def:S → lem:facts → lem:finite → lem:mapsto → lem:odd → thm:fermat is a longest path."
+/>
+
+<Example title="What the sentence leaves unsaid">
+
+Formalising the blueprint brought the following to the surface. None of them is an error — Zagier's proof is correct — but each is a step a proof checker needs and a reader supplies silently.
+
+1. **"The finite set."** If $\N$ contains $0$ (as in Lean), $S$ is finite only because $p$ is not a perfect square: for $n = 9$ the triples $(3, 0, z)$ lie in $S$ for every $z$. For prime $p$, $y = 0$ or $z = 0$ would give $x^2 = p$; so all coordinates are positive and bounded by $p$. Lean needs an explicit bound to make $S$ a finite set.
+2. **Positivity.** $x > 0$ because $p$ is odd; $y, z > 0$ because $p$ is not a square. The case analysis silently uses all three.
+3. **The boundaries.** The three cases cover $x < y - z$, $y - z < x < 2y$ and $x > 2y$, but not $x = y - z$ or $x = 2y$. These never occur on $S$: $x = y - z$ gives $p = (x + 2z)^2$, a square, and $x = 2y$ gives $p = 4y(y + z)$, which is even.
+4. **Transcription.** In $\N$, Lean's subtraction is truncated ($2 - 5 = 0$). The formula $x - y + z$ must be written $x + z - y$, and the condition $x < y - z$ as $x + z < y$; on $S$ these agree with the paper.
+5. **"Involution", "exactly one fixed point".** Both are case analyses that the paper leaves to the reader: case 1 is sent to case 3 and back, case 2 to itself; fixed points force $x = y$, and then $x(x + 4z) = p$ forces $x = 1$ because $p$ is prime.
+6. **"So $|S|$ is odd."** This uses a lemma the sentence does not state: an involution of a finite set has as many fixed points as elements, modulo $2$.
+7. **The last step.** A fixed point of the swap is $(x, y, y)$, and then $p = x^2 + 4y^2 = x^2 + (2y)^2$ — the conclusion the sentence leaves to the reader.
+8. **The statement.** The formalised theorem is stated for $p = 4k + 1$; a separate one-line lemma converts it to "$p$ prime and $p \equiv 1 \pmod 4$".
+
+Primality is used in exactly two places — to exclude squares (items 1–3) and to force $x = 1$ (item 5) — and oddness once. For $n = 21 = 3 \cdot 7$ the map has two fixed points, $(1, 1, 5)$ and $(3, 3, 1)$, the parity argument collapses, and indeed $21$ is not a sum of two squares.
+
+</Example>
+
+<Figure caption="A windmill for $(x, y, z) = (3, 1, 5)$: a central $3 \times 3$ square and four $1 \times 5$ arms, of total area $3^2 + 4 \cdot 1 \cdot 5 = 29$. Every element of $S$ is such a windmill of area $p$. The swap $(x, y, z) \mapsto (x, z, y)$ is a reflection; its fixed points are windmills with square arms, and four $y \times y$ squares make one $2y \times 2y$ square — hence $p = x^2 + (2y)^2$.">
+<svg viewBox="0 0 202 202" role="img" aria-label="A pinwheel made of a central three by three square and four one by five rectangles">
+  <rect x="80" y="80" width="42" height="42" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="122" y="108" width="70" height="14" fill="var(--gold)" fillOpacity="0.35" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="108" y="10" width="14" height="70" fill="var(--gold)" fillOpacity="0.35" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="10" y="80" width="70" height="14" fill="var(--gold)" fillOpacity="0.35" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="80" y="122" width="14" height="70" fill="var(--gold)" fillOpacity="0.35" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <text x="101" y="106" fontSize="11" textAnchor="middle" fill="var(--ink-2)">x = 3</text>
+  <text x="157" y="140" fontSize="10" textAnchor="middle" fill="var(--ink-2)">1 × 5</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="proof" kind="proof" title="The proof, with nothing left out">
+
+Here is Zagier's argument written out in full, item by item, so that it can be compared line by line with the Lean code below. Throughout, $p = 4k + 1$ is prime and $S = \{(x, y, z) \in \N^3 : x^2 + 4yz = p\}$, with $0 \in \N$.
+
+<Theorem name="Lemma 1 (facts about S)">
+
+If $(x, y, z) \in S$, then $x, y, z \ge 1$, $x + z \ne y$ and $x \ne 2y$. Consequently $x, y, z \le p$, and $S$ is finite.
+
+</Theorem>
+
+<Proof>
+
+A prime is not a perfect square: if $m^2 = p$ then $m \mid p$, so $m \in \{1, p\}$, and neither $1^2$ nor $p^2$ equals $p$. If $x = 0$ then $p = 4yz \equiv 0 \pmod 4$, which is false. If $y = 0$ or $z = 0$ then $p = x^2$, a square. If $y = x + z$ then $p = x^2 + 4(x + z)z = (x + 2z)^2$. If $x = 2y$ then $p = 4y^2 + 4yz \equiv 0 \pmod 4$. Finally $x \le x^2 \le p$, and $y \le 4yz \le p$ because $z \ge 1$; similarly $z \le p$.
+
+</Proof>
+
+<Theorem name="Lemma 2 (the map preserves S)">
+
+Let $\zeta$ be Zagier's map, with the three cases as in the paper. For $t \in S$, $\zeta(t) \in S$.
+
+</Theorem>
+
+<Proof>
+
+By Lemma 1, every $t = (x, y, z) \in S$ falls in exactly one case, and the new coordinates are natural numbers. In case 1 ($x + z < y$): $(x + 2z)^2 + 4z(y - x - z) = x^2 + 4xz + 4z^2 + 4yz - 4xz - 4z^2 = x^2 + 4yz$. In case 2: $(2y - x)^2 + 4y(x + z - y) = 4y^2 - 4xy + x^2 + 4xy + 4yz - 4y^2 = x^2 + 4yz$. In case 3 ($x > 2y$): $(x - 2y)^2 + 4(x + z - y)y = x^2 - 4xy + 4y^2 + 4xy + 4yz - 4y^2 = x^2 + 4yz$.
+
+</Proof>
+
+<Theorem name="Lemma 3 (involution)">
+
+$\zeta(\zeta(t)) = t$ for every $t \in S$.
+
+</Theorem>
+
+<Proof>
+
+Let $t = (x, y, z)$; by Lemma 1, $x, y, z \ge 1$ and $t$ is not on a boundary. In case 1, $\zeta(t) = (x + 2z, z, y - x - z)$, and its first coordinate exceeds twice its second ($x + 2z > 2z$ since $x \ge 1$), so case 3 applies: $\zeta(\zeta(t)) = (x + 2z - 2z,\; (x + 2z) - z + (y - x - z),\; z) = (x, y, z)$. In case 3, $\zeta(t) = (x - 2y, x - y + z, y)$, and $(x - 2y) + y < x - y + z$ since $z \ge 1$, so case 1 applies and returns $(x, y, z)$. In case 2, $\zeta(t) = (2y - x, y, x - y + z)$ with $y - (x - y + z) = 2y - x - z < 2y - x$ (as $z \ge 1$) and $2y - x < 2y$ (as $x \ge 1$), so case 2 applies again and returns $(2y - (2y - x),\; y,\; (2y - x) - y + (x - y + z)) = (x, y, z)$.
+
+</Proof>
+
+<Theorem name="Lemma 4 (exactly one fixed point)">
+
+The only fixed point of $\zeta$ on $S$ is $(1, 1, k)$.
+
+</Theorem>
+
+<Proof>
+
+A fixed point in case 1 would have $x + 2z = x$, so $z = 0$; in case 3, $x - 2y = x$, so $y = 0$; both contradict Lemma 1. In case 2, $\zeta(t) = t$ means $2y - x = x$, that is $x = y$. Then $p = x^2 + 4xz = x(x + 4z)$, so $x \mid p$; since $x + 4z \ge 5 > 1$, $x \ne p$, hence $x = 1 = y$ and $1 + 4z = 4k + 1$, so $z = k$. Conversely $(1, 1, k) \in S$ is in case 2 and is fixed.
+
+</Proof>
+
+<Theorem name="Lemma 5 (parity)">
+
+If $f$ is an involution of a finite set $A$ (that is, $f(A) \subseteq A$ and $f(f(a)) = a$ for $a \in A$), then $|A| \equiv |\{a \in A : f(a) = a\}| \pmod 2$.
+
+</Theorem>
+
+<Proof>
+
+Strong induction on $|A|$. If $A = \varnothing$ both sides are $0$. Otherwise pick $a \in A$. If $f(a) = a$, then $f$ restricts to an involution of $A \setminus \{a\}$ (if $f(b) = a$ for $b \ne a$ then $b = f(f(b)) = f(a) = a$), which has one element and one fixed point fewer. If $f(a) \ne a$, then $f$ restricts to an involution of $A \setminus \{a, f(a)\}$, which has two elements fewer and the same fixed points (neither $a$ nor $f(a)$ is fixed, as $f(f(a)) = a \ne f(a)$). In both cases the induction hypothesis gives the claim.
+
+</Proof>
+
+<Theorem name="Theorem (Fermat; Zagier's proof)">
+
+Every prime $p \equiv 1 \pmod 4$ is a sum of two squares.
+
+</Theorem>
+
+<Proof>
+
+Write $p = 4k + 1$. By Lemmas 2–5, $|S| \equiv 1 \pmod 2$. The swap $\sigma(x, y, z) = (x, z, y)$ maps $S$ to $S$ and is an involution, so by Lemma 5 it has an odd number of fixed points — in particular one, $(x, y, y) \in S$. Then $p = x^2 + 4y^2 = x^2 + (2y)^2$.
+
+</Proof>
+
+The argument has a classical pedigree: the theorem was stated by Fermat in a letter of 1640 without proof and proved by Euler in the 1740s and 1750s; Zagier's sentence condenses a proof by Roger Heath-Brown (1984), which was in turn inspired by work of Liouville.
+
+</Section>
+
+<Section id="landscape" kind="human" title="Large formalisations: what they did and did not verify">
+
+Zagier's proof takes an afternoon to formalise. The projects below took years, and each taught the community something.
+
+- **The four colour theorem** (Georges Gonthier, with Benjamin Werner, Coq, completed 2005). Appel and Haken's 1976 proof, and the 1997 proof of Robertson, Sanders, Seymour and Thomas, rely on computer checks of many hundreds of configurations. Gonthier formalised the whole argument, *including* the computations, so that the computer-assisted part is checked by the same kernel as the rest. Formalising the statement required a precise combinatorial notion of planar map (hypermaps), because the topological statement about the plane had to be connected to a finite one.
+- **The odd order theorem** (Gonthier and a team of about fifteen, Coq with the Mathematical Components library, completed September 2012). Feit and Thompson's 1963 proof filled a 255-page issue of the *Pacific Journal of Mathematics*. The formalisation did not follow that paper line by line: it followed the later, reorganised accounts of Bender and Glauberman (1994) and Peterfalvi (2000), and along the way it built libraries of finite group theory, linear algebra and character theory that were then reused.
+- **The Kepler conjecture** (Thomas Hales and collaborators, the Flyspeck project in HOL Light and Isabelle, completed 2014, published 2017). Hales's proof (with Samuel Ferguson), announced in 1998 and published in the *Annals of Mathematics* in 2005, combined geometry with extensive computer calculations; the referees reported that they could not certify every part. Flyspeck formally verified the geometry, the enumeration of "tame" graphs, the linear programs, and the nonlinear inequalities proved by interval arithmetic.
+- **The Liquid Tensor Experiment** (Johan Commelin, Adam Topaz and many others, Lean 3 with mathlib, December 2020 to July 2022). It verified Clausen and Scholze's main theorem on liquid real vector spaces, a statement about Ext groups of condensed abelian groups. The team organised the work around a blueprint, formalised the key technical theorem first (by June 2021), and had to develop a substantial amount of condensed mathematics and homological algebra in Lean along the way. Scholze wrote that the process improved his own understanding of the proof.
+- **Recent and ongoing.** The sphere eversion project (Floris van Doorn, Patrick Massot and Oliver Nash, presented in 2023) formalised Gromov's h-principle for open ample relations and deduced Smale's sphere eversion; Massot's blueprint software grew out of it. In November 2023, Gowers, Green, Manners and Tao posted a proof of Marton's conjecture (the polynomial Freiman–Ruzsa conjecture), and a collaborative Lean project coordinated by Tao formalised it within about three weeks. Kevin Buzzard's project to formalise a proof of Fermat's Last Theorem in Lean began in 2024 and is ongoing.
+
+**What these projects verified.** In each case: that the formal statement follows from the axioms of the system, as checked by its kernel. **What they did not verify**: that the formal statement is the theorem mathematicians care about (people checked this, by reading the statements and the definitions they rest on); that the original paper's proof is correct as written (the formal proof may follow a different route, as with the odd order theorem); that the result is important; or anything about results the project did not formalise. Formalisation lowers the chance of error in what it covers almost to zero; it does not replace reading, refereeing and judgement.
+
+**Working on a library.** Contributing a formalisation to Mathlib adds constraints that a one-off project does not have: state results at their natural generality (for rings, not just $\Z$; for topological spaces, not just $\R$); reuse existing definitions rather than duplicating them; follow the naming and documentation conventions; and accept review. Mathlib's contributors review every change, and the library is continually refactored as better abstractions appear. A good first contribution fills a small, well-defined gap that a project of your own needed.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Zagier's proof in Lean">
+
+The module formalises the blueprint completely, in Lean 4 with Mathlib. Each blueprint item corresponds to one or a few declarations, and the proofs mirror the human proofs above.
+
+**The set and the facts the sentence uses silently.** We define $S$ as a finite set by filtering a box, and then show that for prime $p$ the box cuts nothing off.
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagierSet" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagier_facts" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.mem_zagierSet" />
+
+**The map.** The definition follows the paper's case order, with truncated subtraction handled as in item 4 of the list of gaps. Two of the three case lemmas:
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagierMap" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagierMap_eq_one" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagierMap_eq_two" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagierMap_mapsTo" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagierMap_involutive" />
+
+**Exactly one fixed point**, then the parity lemma, proved here by induction exactly as in Lemma 5:
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagierMap_fixed_iff" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagier_fixed_points" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.card_mod_two_of_involution" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.card_zagierSet_odd" />
+
+**The theorem.**
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.swapMap" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.zagier_two_squares" />
+
+**Checking the statement.** The formal theorem is stated for $p = 4k + 1$. To check faithfulness we derive the usual form, and compare it with Mathlib's theorem, whose proof is entirely different (it uses unique factorisation in the Gaussian integers $\Z[i]$) and whose hypothesis $p \% 4 \ne 3$ also covers $p = 2$. That two independent formal proofs reach statements we can compare by eye is itself a check on layer 2.
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.prime_one_mod_four" />
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.two_squares_library" />
+
+**A hypothesis cannot be dropped.** The formal counterpart of the remark about $21$:
+
+<Lean decl="Lumenary.FormalisingPublishedMathematics.primality_needed" />
+
+**What is and is not formalised.** Everything in Zagier's sentence is formalised, with every gap filled; `#print axioms` on `zagier_two_squares` reports only Lean's standard axioms (`propext`, `Classical.choice`, `Quot.sound`). The trusted base is therefore Lean's kernel, those axioms, and the statements above — in particular Mathlib's definition of `Nat.Prime`, which you can read. Not formalised here: the windmill picture, and the history. Mathlib's `Archive/ZagierTwoSquares.lean` (Jeremy Tan and Thomas Browning, 2023) contains another formalisation of the same proof, written differently; comparing two independent formalisations of one argument is instructive.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Testing before proving, and managing the blueprint">
+
+Before formalising, test every claim of the proof on many cases — it is cheap, and a failed test points straight at a missing hypothesis. The first experiment checks each assertion of Zagier's sentence for all primes $p \equiv 1 \pmod 4$ below $3000$, and then for composite $n \equiv 1 \pmod 4$, where it shows exactly which assertion fails.
+
+<Python id="formalising_published_mathematics_zagier" />
+
+Notice $n = 65 = 1^2 + 8^2$: the argument fails, yet the conclusion holds. A failed proof says nothing about the truth of its conclusion — and a passed test says nothing about cases not tested. Only the proof covers every prime.
+
+The second experiment treats the blueprint as a directed graph: it computes an order in which everything can be formalised, the items ready to work on now, the longest chain of dependencies (the minimum project length however many people help), and it detects a circular argument planted in a broken variant.
+
+<Python id="formalising_published_mathematics_blueprint" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Once a result is formalised, peer review is unnecessary."** The kernel checks that the formal proof proves the formal statement. Whether that statement — and every definition it uses — expresses the published theorem must still be checked by people, and so must everything a referee judges: correctness of the parts not formalised, originality, significance, exposition. Formalisation changes what reviewers need to check; it does not remove them.
+
+</Misconception>
+
+<Misconception>
+
+**"A formal proof follows the paper line by line."** Rarely. Formal proofs fill every gap, replace special arguments by general library results, and often restructure the argument — the odd order formalisation followed revised published proofs rather than the 1963 paper, and the Liquid Tensor Experiment reorganised parts of the argument as it went. Even our Zagier formalisation adds a parity lemma and a statement-conversion lemma that the sentence does not contain.
+
+</Misconception>
+
+<Misconception>
+
+**"Lean accepted it, so the published theorem is true."** Lean accepted the formal statement. A dropped hypothesis can make a statement false (and then no proof will be found); an added hypothesis can make it weaker than the published one; contradictory hypotheses make it vacuous. In the exercises you will meet a "formalisation" of Fermat's theorem that is provable precisely because it says nothing.
+
+</Misconception>
+
+<Misconception>
+
+**"No `sorry` means no assumptions."** A file can declare axioms, and a proof can depend on them. Always run `#print axioms` on the main theorems; anything beyond Lean's standard axioms must be justified and stated.
+
+</Misconception>
+
+<Misconception>
+
+**"The kernel could be wrong, so formal proofs are no more reliable than paper ones."** Kernels are small, heavily tested, and — under the de Bruijn criterion — their output can be re-checked by independent implementations. The residual risk is far smaller than the risk of an unnoticed gap in a long informal proof, though it is not zero, and honest reports say so.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="logic" title="What exactly has been verified">
+
+A formal proof shows that a sentence is derivable in a specific formal system — for Lean, a dependent type theory (the calculus of inductive constructions with a hierarchy of universes, quotients and the axiom of choice). That system is stronger than ZFC: its universes behave like inaccessible cardinals, and its consistency strength is roughly that of ZFC with one inaccessible cardinal for each universe (Werner 1997; Carneiro 2019). By Gödel's second incompleteness theorem no such system proves its own consistency, so "verified" always means "derivable in a system we have good reason to believe consistent". In practice the theorems of ordinary mathematics use far less than the system offers, and the question of *which* axioms a proof uses — visible through `#print axioms` — is a question of logic that formalisation makes precise. See <TopicLink id="math.found.type-theory">type theory</TopicLink> and <TopicLink id="math.found.large-cardinals">large cardinals</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Two proofs of one theorem">
+
+Zagier's proof is combinatorial; Mathlib's proof of `Nat.Prime.sq_add_sq` is algebraic: in the Gaussian integers $\Z[i]$, a Euclidean domain, a prime $p \equiv 1 \pmod 4$ divides $m^2 + 1 = (m + i)(m - i)$ for some $m$ (as $-1$ is a square mod $p$), but divides neither factor, so it is not prime in $\Z[i]$ and factors as $p = (a + bi)(a - bi) = a^2 + b^2$. The algebraic proof generalises to the arithmetic of number fields and binary quadratic forms (<TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>); the combinatorial one gives a different kind of insight — a parity — and was much faster to formalise from scratch. Large number-theory formalisations, such as the ongoing project on Fermat's Last Theorem, must build the algebraic route at full strength: modular forms, Galois representations, deformation theory.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="The involution principle and fast formalisation">
+
+The parity lemma is an instance of a general combinatorial principle: an involution pairs off the non-fixed elements, so $|A| \equiv |\mathrm{Fix}(f)| \pmod 2$; more generally, when a group of order $p^n$ acts on a finite set, the number of fixed points is congruent to the number of elements modulo $p$ (Mathlib's `MulAction.card_modEq_card_fixedPoints`). Such finite, explicit arguments formalise well, which is one reason combinatorics has seen spectacular formalisations: the four colour theorem, and the proof of the polynomial Freiman–Ruzsa conjecture, which went from preprint to complete Lean proof in weeks (see <TopicLink id="math.discrete.additive-extremal-combinatorics">additive combinatorics</TopicLink>) because its blueprint split it into many short, independent lemmas that dozens of contributors could take on in parallel.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="When the referees could not finish">
+
+The Kepler conjecture — no packing of equal balls in $\R^3$ has density greater than $\pi/\sqrt{18}$ — was proved by Hales by reducing it to a finite but enormous problem: a list of candidate local configurations, each eliminated by linear programming and interval arithmetic. The human-readable part could be refereed; the computational part could not be checked line by line by people. Flyspeck formalised both, turning a proof that was "99% certain" in the referees' judgement into one checked by a kernel. Geometry also shows the statement problem sharply: "packing" and "density" have to be defined for infinite configurations, and the formal definitions had to be checked against the classical ones.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Formalising the h-principle">
+
+Smale's theorem that a sphere can be turned inside out through immersions is a consequence of Gromov's h-principle: for open ample differential relations, every formal solution can be deformed to a genuine one. The proof by convex integration is analytic and geometric, with many estimates that informal accounts treat lightly. Its formalisation by van Doorn, Massot and Nash required differential topology that Mathlib lacked (smooth manifolds, parametric constructions, homotopies of maps) and showed that blueprints work as well for continuous, estimate-heavy mathematics as for algebra. See <TopicLink id="math.geom.differential-topology">differential topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Statements that live in a category of sheaves">
+
+The Liquid Tensor Experiment's main statement concerns Ext groups computed in the category of condensed abelian groups — sheaves of abelian groups on the site of profinite sets. Even *stating* it formally required a large slice of category theory (abelian categories, derived functors, sheaves on a site with a size-controlled set of covers) and careful handling of universe levels, since condensed sets involve "all profinite sets". It is a case study in how much infrastructure a faithful statement can require, and in why libraries matter: the infrastructure built for one project becomes part of everyone's foundations. See <TopicLink id="math.geom.sheaves">sheaves</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Automath and Mizar.** Nicolaas Govert de Bruijn began the Automath project in Eindhoven in 1967; L. S. van Benthem Jutting formalised Landau's *Grundlagen der Analysis* in it (1977). Andrzej Trybulec started Mizar in Poland in 1973; its Mizar Mathematical Library, built over decades in Białystok and elsewhere, was for a long time the largest body of formalised mathematics.
+- **LCF, HOL, Coq, Isabelle.** Robin Milner's LCF (1970s) introduced the design in which only a small kernel can create theorems. Descendants include HOL Light (John Harrison), Isabelle (Lawrence Paulson, 1986), and Coq (Thierry Coquand and Gérard Huet, from 1984, now called Rocq), based on the calculus of constructions.
+- **Lean and Mathlib.** Leonardo de Moura started Lean at Microsoft Research in 2013; Lean 4 (de Moura and Sebastian Ullrich, 2021) is both a proof assistant and a programming language. The community library mathlib began in 2017 and was ported to Lean 4 as Mathlib in 2023. Its contributors work in dozens of countries.
+- **Milestones.** Four colour theorem (2005), odd order theorem (2012), Kepler conjecture (2014), Liquid Tensor Experiment (2022), polynomial Freiman–Ruzsa conjecture (2023). Freek Wiedijk's list of "100 theorems" has tracked for two decades which famous theorems each system has formalised.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Jeremy Avigad and Patrick Massot, *Mathematics in Lean* (online book, 2020–) — the practical introduction to formalising mathematics in Lean and Mathlib.
+- Jeremy Avigad, Leonardo de Moura, Soonho Kong and Sebastian Ullrich, *Theorem Proving in Lean 4* (online book) — the logic and language underneath.
+- Don Zagier, "A one-sentence proof that every prime $p \equiv 1 \pmod 4$ is a sum of two squares", *American Mathematical Monthly* 97 (1990), 144.
+- The mathlib Community, "The Lean mathematical library", *Proceedings of CPP* (2020).
+- Thomas C. Hales, "Formal proof", and Georges Gonthier, "Formal proof — the four-color theorem", *Notices of the AMS* 55 (2008), in a special issue on formal proof.
+- Georges Gonthier et al., "A machine-checked proof of the odd order theorem", *Interactive Theorem Proving* (2013).
+- Thomas Hales et al., "A formal proof of the Kepler conjecture", *Forum of Mathematics, Pi* 5 (2017).
+- Floris van Doorn, Patrick Massot and Oliver Nash, "Formalising the h-principle and sphere eversion", *Proceedings of CPP* (2023).
+- Henk Barendregt and Freek Wiedijk, "The challenge of computer mathematics", *Philosophical Transactions of the Royal Society A* 363 (2005).
+- Robert Pollack, "How to believe a machine-checked proof", in *Twenty-Five Years of Constructive Type Theory* (1998).
+
+</Section>

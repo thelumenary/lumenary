@@ -123,6 +123,31 @@ export function getLessonList(locale: Locale) {
   return lessonSlugs().map((slug) => getLesson(slug, locale));
 }
 
+/** Lessons grouped by level, in curriculum order (levels in their canonical order; empty levels omitted). */
+export function getLessonsByLevel(locale: Locale) {
+  const groups = new Map<LevelId, LessonFrontmatter[]>();
+  for (const l of getLessonList(locale)) {
+    const fm = l.frontmatter;
+    groups.set(fm.level, [...(groups.get(fm.level) ?? []), fm]);
+  }
+  return LEVEL_IDS.filter((lvl) => groups.has(lvl)).map((lvl) => ({ level: lvl, lessons: groups.get(lvl)! }));
+}
+
+/** The lesson that cites declarations from each Lean module, keyed by module path relative to formal/ (e.g. "Lumenary/Sets.lean"). */
+export function lessonsByLeanFile(locale: Locale): Map<string, LessonFrontmatter> {
+  return cached(`lessonsByLeanFile:${locale}`, () => {
+    const report = getLeanReport();
+    const map = new Map<string, LessonFrontmatter>();
+    for (const l of getLessonList(locale)) {
+      for (const decl of l.frontmatter.lean) {
+        const file = report?.declarations.find((d) => d.name === decl)?.file?.replace(/^formal\//, "");
+        if (file && !map.has(file)) map.set(file, l.frontmatter);
+      }
+    }
+    return map;
+  });
+}
+
 export function lessonLocales(slug: string): Locale[] {
   const dir = path.join(LESSONS, slug);
   return fs

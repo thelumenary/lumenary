@@ -1,0 +1,491 @@
+---
+slug: optimisation
+topic: math.applied.optimisation
+title: Optimisation
+subtitle: Finding the best. Linear programs and the shadow prices hidden in their duals, why convexity turns every local minimum into a global one, Lagrange multipliers and the KKT conditions, and gradient descent with a proof of how fast it converges.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6039
+objectives:
+  - Formulate linear programs, solve them with the simplex method, and interpret the dual problem through weak and strong duality, complementary slackness and shadow prices
+  - Prove that every local minimum of a convex function is a global minimum, and recognise convex sets and functions
+  - Apply Lagrange multipliers and the KKT conditions, and prove that the KKT conditions are sufficient for convex problems
+  - Implement gradient descent and prove its $O(1/k)$ rate for convex functions with Lipschitz gradient; compare it with Newton's method
+  - Treat least-squares data fitting as a convex optimisation problem
+narrators: []
+lean:
+  - Lumenary.Optimisation.weak_duality
+  - Lumenary.Optimisation.optimality_certificate
+  - Lumenary.Optimisation.complementary_slackness
+  - Lumenary.Optimisation.local_min_convex_global
+  - Lumenary.Optimisation.local_min_convex_global_library
+  - Lumenary.Optimisation.convex_sublevel
+  - Lumenary.Optimisation.least_norm
+  - Lumenary.Optimisation.gradient_descent_rate
+  - Lumenary.Optimisation.gradient_descent_quadratic
+compute: [optimisation_simplex, optimisation_gradient_descent]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="The best possible">
+
+A furniture workshop in Kumasi makes two products. Each uses time in three workshops, each workshop has only so many hours a week, and each product earns a different profit. How many of each should it make? In 1939 Leonid Kantorovich, asked by a plywood trust in Leningrad how to allocate machines to materials, saw that such problems share one mathematical form, and that every solution comes with a set of hidden prices — what an extra hour of each scarce resource is worth. Today the same mathematics schedules airline crews, routes delivery vans through Jakarta, plans electricity generation and allocates vaccines.
+
+A different kind of optimisation runs on every phone. Training a machine-learning model means choosing millions of numbers to make an error as small as possible. Nobody can search all choices. Instead the computer repeatedly takes a small step downhill — **gradient descent**, an idea Cauchy published in 1847. Does it reach the bottom? How fast? And how could we ever know that a valley we have found is the lowest one, rather than a hollow halfway up the mountain?
+
+This lesson develops the core of the theory: **linear programming** and its **duality**, **convexity** (the property that makes "local" mean "global"), **Lagrange multipliers** and the **KKT conditions** for constraints, and **gradient descent** with a proof of its convergence rate.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Landscapes, corners and slopes">
+
+Picture the function to be minimised as a landscape. A **local minimum** is the bottom of some hollow; a **global minimum** is the lowest point anywhere. In a rugged landscape a hiker who always walks downhill can get stuck in a hollow far above the sea. In a **convex** landscape — a single bowl, with no ridges or false valleys — that cannot happen: every hollow is the bottom.
+
+A **linear program** maximises a linear function over a region cut out by linear inequalities, a convex polygon or polyhedron. The level sets of the objective are parallel lines; slide them in the direction of improvement, and the last point of the region they touch is a **corner** (or, in a tie, an edge). The simplex method walks from corner to corner along edges, always improving.
+
+With constraints, a minimum need not be a point where the slope vanishes. A ball rolling in a bowl that hits a wall comes to rest *against* the wall: there the downhill force is balanced by the wall pushing back, perpendicular to it. The size of that push is a **Lagrange multiplier**; it measures how much the optimum would improve if the wall moved. That is exactly Kantorovich's hidden price.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="optimisation problem, local and global minimum">
+
+An **optimisation problem** asks for $\min_{x \in S} f(x)$, where $f : \R^n \to \R$ is the **objective** and $S \subseteq \R^n$ the **feasible set** (maximising $f$ is minimising $-f$). A point $x^* \in S$ is a **global minimiser** if $f(x^*) \le f(x)$ for all $x \in S$, and a **local minimiser** if this holds for all $x \in S$ in some ball around $x^*$. The problem is **infeasible** if $S = \varnothing$ and **unbounded** if $\inf_S f = -\infty$.
+
+</Definition>
+
+<Definition term="linear program and its dual">
+
+A **linear program** (LP) optimises a linear function subject to finitely many linear equations and inequalities. In inequality form, the **primal** problem and its **dual** are
+
+$$
+\text{(P)}\quad \max\; c^{\mathsf T}x \;\text{ s.t. }\; Ax \le b,\; x \ge 0, \qquad\qquad \text{(D)}\quad \min\; b^{\mathsf T}y \;\text{ s.t. }\; A^{\mathsf T}y \ge c,\; y \ge 0,
+$$
+
+with $A$ an $m \times n$ matrix and inequalities between vectors meant entry by entry. A **vertex** of the feasible polyhedron is a feasible point at which $n$ linearly independent constraints are tight.
+
+</Definition>
+
+<Definition term="convex set, convex function">
+
+A set $C \subseteq \R^n$ is **convex** if $tx + (1 - t)y \in C$ whenever $x, y \in C$ and $0 \le t \le 1$. A function $f$ on a convex set is **convex** if
+
+$$
+f(tx + (1 - t)y) \le t f(x) + (1 - t) f(y) \qquad \text{for all } x, y \text{ and } 0 \le t \le 1,
+$$
+
+**strictly convex** if the inequality is strict for $x \neq y$ and $0 < t < 1$, and **$\mu$-strongly convex** if $f(x) - \frac\mu2\|x\|^2$ is convex. A differentiable $f$ is **$L$-smooth** if its gradient is $L$-Lipschitz: $\|\nabla f(x) - \nabla f(y)\| \le L\|x - y\|$.
+
+</Definition>
+
+<Definition term="Lagrangian and KKT conditions">
+
+For the problem $\min f(x)$ subject to $g_i(x) \le 0$ ($i = 1, \dots, m$) and $h_j(x) = 0$ ($j = 1, \dots, p$), with differentiable functions, the **Lagrangian** is $\mathcal L(x, \mu, \lambda) = f(x) + \sum_i \mu_i g_i(x) + \sum_j \lambda_j h_j(x)$. A point $x^*$ with multipliers $\mu, \lambda$ satisfies the **Karush–Kuhn–Tucker (KKT) conditions** if
+
+$$
+\nabla f(x^*) + \sum_i \mu_i \nabla g_i(x^*) + \sum_j \lambda_j \nabla h_j(x^*) = 0, \quad g_i(x^*) \le 0, \quad h_j(x^*) = 0, \quad \mu_i \ge 0, \quad \mu_i\, g_i(x^*) = 0.
+$$
+
+The last condition is **complementary slackness**: a multiplier can be non-zero only for a constraint that is tight.
+
+</Definition>
+
+<Definition term="gradient descent and Newton's method">
+
+**Gradient descent** with step size $\eta > 0$ iterates $x_{k+1} = x_k - \eta\nabla f(x_k)$. **Newton's method** iterates $x_{k+1} = x_k - \big(\nabla^2 f(x_k)\big)^{-1}\nabla f(x_k)$, using the Hessian matrix $\nabla^2 f$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="A production problem, solved by looking">
+
+The Kumasi workshop makes $x$ units of product 1 and $y$ of product 2, using $1$ hour of workshop A and $3$ of workshop C per unit of product 1, and $2$ hours of B and $2$ of C per unit of product 2. A, B and C have $4$, $12$ and $18$ hours a week, and the profits are $3$ and $5$ per unit:
+
+$$
+\max\; 3x + 5y \quad \text{s.t.}\quad x \le 4,\quad 2y \le 12,\quad 3x + 2y \le 18,\quad x, y \ge 0.
+$$
+
+The feasible region is a pentagon with vertices $(0, 0)$, $(4, 0)$, $(4, 3)$, $(2, 6)$, $(0, 6)$, where the objective takes the values $0, 12, 27, 36, 30$. The optimum is $(2, 6)$, with profit $36$: workshops B and C are fully used, while A has $2$ hours to spare. (The visualisation lets you slide the profit line.)
+
+</Example>
+
+<Example title="LPs without optimal solutions">
+
+$\max\; x$ subject to $x \le 0$ and $x \ge 1$ is **infeasible**. $\max\; x + y$ subject to $x - y \le 1$, $x, y \ge 0$ is **unbounded**: $(t + 1, t)$ is feasible for every $t \ge 0$, with objective $2t + 1$. A feasible LP whose objective is bounded always has an optimal solution, and if its feasible region has a vertex, one optimal solution is a vertex.
+
+</Example>
+
+<Example title="Convex and not convex">
+
+Convex functions: affine functions, $x^2$, $e^x$, $|x|$ and every norm, $-\log x$ on $(0, \infty)$, the maximum of finitely many convex functions, and $\|Aw - y\|^2$. Convex sets: half-spaces $\{a \cdot x \le b\}$, balls, polyhedra (intersections of finitely many half-spaces), and sublevel sets $\{f \le r\}$ of convex functions. Not convex: $x^3$, $\sin x$, the double well $x^4 - x^2$ (with two global minima $\pm 1/\sqrt2$ and a local maximum at $0$), and the annulus $1 \le \|x\| \le 2$. Note that $|x|$ is convex but not differentiable at its minimum.
+
+</Example>
+
+<Example title="A constrained minimum, by KKT">
+
+Minimise $(x - 2)^2 + (y - 2)^2$ — the squared distance to $(2, 2)$ — subject to $x + y \le 2$. The unconstrained minimiser $(2, 2)$ is infeasible, so the constraint will be tight. KKT: $(2(x - 2), 2(y - 2)) + \mu(1, 1) = 0$ gives $x = y = 2 - \mu/2$, and $x + y = 2$ gives $\mu = 2 \ge 0$, so $x^* = (1, 1)$ with minimum value $2$. The multiplier $\mu = 2$ is the rate at which the optimal value would fall if the constraint were relaxed to $x + y \le 2 + \varepsilon$ (it becomes $2 - 2\varepsilon + O(\varepsilon^2)$).
+
+</Example>
+
+</Section>
+
+<Section id="lp" kind="proof" title="Linear programming and duality">
+
+<Theorem name="Theorem 1 (weak duality)">
+
+If $x$ is feasible for (P) and $y$ is feasible for (D), then $c^{\mathsf T}x \le b^{\mathsf T}y$.
+
+</Theorem>
+
+<Proof>
+
+Using $x \ge 0$ with $c \le A^{\mathsf T}y$, and then $y \ge 0$ with $Ax \le b$:
+
+$$
+c^{\mathsf T}x \;\le\; (A^{\mathsf T}y)^{\mathsf T}x \;=\; y^{\mathsf T}(Ax) \;\le\; y^{\mathsf T}b.
+$$
+
+</Proof>
+
+<Theorem name="Corollary 2 (certificates and complementary slackness)">
+
+(a) If feasible $x$ and $y$ have $c^{\mathsf T}x = b^{\mathsf T}y$, both are optimal. (b) In that case $y_i\,(b - Ax)_i = 0$ for every $i$ and $x_j\,(A^{\mathsf T}y - c)_j = 0$ for every $j$. (c) If (P) is unbounded, (D) is infeasible, and vice versa.
+
+</Theorem>
+
+<Proof>
+
+(a) Every feasible $x'$ has $c^{\mathsf T}x' \le b^{\mathsf T}y = c^{\mathsf T}x$, and symmetrically for $y$. (b) Equality of the ends of the chain in Theorem 1 forces both inequalities to be equalities: $y^{\mathsf T}(b - Ax) = 0$ and $(A^{\mathsf T}y - c)^{\mathsf T}x = 0$. These are sums of non-negative products, so every product vanishes. (c) A dual-feasible $y$ would bound every primal value by $b^{\mathsf T}y$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (Farkas' lemma)">
+
+For a matrix $A$ and vector $b$, exactly one of the following holds: (i) $Ax = b$ for some $x \ge 0$; (ii) there is $y$ with $A^{\mathsf T}y \ge 0$ and $b^{\mathsf T}y < 0$.
+
+</Theorem>
+
+<Proof>
+
+Not both: otherwise $0 \le (A^{\mathsf T}y)^{\mathsf T}x = y^{\mathsf T}b < 0$. Suppose (i) fails, so $b \notin K = \{Ax : x \ge 0\}$. The cone $K$ is convex, and it is closed (a finitely generated cone is closed; this follows from Carathéodory's theorem, which writes each point of $K$ using linearly independent columns of $A$). Let $z_0$ be the point of $K$ nearest to $b$ (it exists since $K$ is closed), and put $y = z_0 - b \ne 0$. For $z \in K$ and $0 < t \le 1$, the point $z_0 + t(z - z_0)$ is in $K$ and is no closer to $b$; expanding $\|z_0 + t(z - z_0) - b\|^2 \ge \|y\|^2$ and letting $t \to 0$ gives $y^{\mathsf T}(z - z_0) \ge 0$. Taking $z = 0$ and $z = 2z_0$ gives $y^{\mathsf T}z_0 = 0$, so $y^{\mathsf T}z \ge 0$ for all $z \in K$ — in particular $A^{\mathsf T}y \ge 0$ — and $y^{\mathsf T}b = y^{\mathsf T}z_0 - \|y\|^2 < 0$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (strong duality)">
+
+If (P) has an optimal solution, then so does (D), and the optimal values are equal. The same holds with the roles of (P) and (D) exchanged.
+
+</Theorem>
+
+<Proof>
+
+*Sketch.* Let $p^*$ be the optimal value of (P) and $\varepsilon > 0$. The system $Ax \le b$, $x \ge 0$, $c^{\mathsf T}x \ge p^* + \varepsilon$ has no solution. Adding slack variables and applying Farkas' lemma gives $y \ge 0$ and $\tau \ge 0$ with $A^{\mathsf T}y \ge \tau c$ and $b^{\mathsf T}y < \tau(p^* + \varepsilon)$. Here $\tau > 0$, since $\tau = 0$ would contradict the feasibility of (P) by Theorem 1. Then $y/\tau$ is dual feasible with value below $p^* + \varepsilon$. Since $\varepsilon$ was arbitrary and Theorem 1 gives the reverse inequality, $\inf(D) = p^*$; a feasible LP whose objective is bounded attains its optimum. Full details are in Matoušek and Gärtner, chapter 6.
+
+</Proof>
+
+**The dual as prices.** In the workshop problem the dual solution is $y = (0, \tfrac32, 1)$: one more hour in workshop B would raise the maximum profit by $\tfrac32$, one more in C by $1$, and one more in A by nothing, since A already has slack (complementary slackness). Check: $b^{\mathsf T}y = 4 \cdot 0 + 12 \cdot \tfrac32 + 18 \cdot 1 = 36 = c^{\mathsf T}x^*$. These **shadow prices** are Kantorovich's "objectively determined valuations".
+
+**The simplex method.** An LP in inequality form with $b \ge 0$ starts at the vertex $x = 0$. At each step the method looks for a non-basic variable whose increase improves the objective (a positive **reduced cost**), increases it until the first constraint becomes tight (the **ratio test**), and pivots to that adjacent vertex. If no variable can improve the objective, the vertex is optimal, and the final tableau displays a dual solution satisfying Corollary 2(a). If an improving variable can be increased forever, the LP is unbounded. With Bland's smallest-index rule (1977) the method never cycles, so it terminates. Klee and Minty (1972) built LPs on which the classical rule visits exponentially many vertices, yet in practice the method is very fast, a phenomenon explained by Spielman and Teng's smoothed analysis (2004). Provably polynomial-time algorithms exist: Khachiyan's ellipsoid method (1979) and Karmarkar's interior-point method (1984). The first experiment runs the simplex method in exact arithmetic.
+
+</Section>
+
+<Section id="convexity" kind="proof" title="Convexity: local is global">
+
+<Theorem name="Theorem 5 (local minima of convex functions are global)">
+
+Let $f$ be convex on a convex set $C$. Every local minimiser of $f$ on $C$ is a global minimiser. The set of minimisers is convex, and if $f$ is strictly convex there is at most one.
+
+</Theorem>
+
+<Proof>
+
+Let $x$ be a local minimiser and $y \in C$. For $t \in (0, 1]$ the point $x + t(y - x) = (1 - t)x + ty$ lies in $C$, and for $t$ small enough it lies in the ball where $x$ is minimal. Then
+
+$$
+f(x) \le f\big((1 - t)x + ty\big) \le (1 - t)f(x) + t f(y),
+$$
+
+so $t f(x) \le t f(y)$, and dividing by $t > 0$ gives $f(x) \le f(y)$. The minimisers form the sublevel set $\{f \le \min f\}$, which is convex. If $x \ne y$ were both minimisers of a strictly convex $f$, their midpoint would have $f < \min f$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (first-order characterisation)">
+
+A differentiable $f$ on a convex open set is convex if and only if $f(y) \ge f(x) + \nabla f(x) \cdot (y - x)$ for all $x, y$. Consequently, for convex differentiable $f$ on $\R^n$, $\nabla f(x^*) = 0$ if and only if $x^*$ is a global minimiser.
+
+</Theorem>
+
+<Proof>
+
+If $f$ is convex, $\frac{f(x + t(y - x)) - f(x)}{t} \le f(y) - f(x)$ for $t \in (0, 1]$, by the definition with weights $1 - t$ and $t$; letting $t \to 0$ the left side tends to $\nabla f(x) \cdot (y - x)$. Conversely, given the inequality, put $z = tx + (1 - t)y$ and add $t$ times the inequality at $(z, x)$ to $1 - t$ times the inequality at $(z, y)$: the gradient terms cancel and leave $tf(x) + (1 - t)f(y) \ge f(z)$. The consequence: if $\nabla f(x^*) = 0$ the inequality gives $f(y) \ge f(x^*)$ for all $y$.
+
+</Proof>
+
+A twice-differentiable $f$ is convex exactly when its Hessian is positive semidefinite everywhere (by Theorem 6 applied along lines). Without convexity none of this holds: $x^3$ has $f'(0) = 0$ but no minimum, and $x^2 - y^2$ has a saddle at the origin.
+
+</Section>
+
+<Section id="kkt" kind="proof" title="Lagrange multipliers and the KKT conditions">
+
+From <TopicLink id="math.analysis.multivariable-calculus">multivariable calculus</TopicLink>: if $x^*$ is a local minimiser of $f$ subject to $h(x) = 0$ and $\nabla h(x^*) \ne 0$, then $\nabla f(x^*) = \lambda\nabla h(x^*)$ for some $\lambda$, because the gradient of $f$ must be perpendicular to the constraint surface. For example, the point of the plane $\langle a, x \rangle = b$ closest to the origin satisfies $2x = \lambda a$, so $x^* = \frac{b}{\|a\|^2}a$. Convexity turns this necessary condition into a proof of optimality: $x - x^*$ is orthogonal to $x^*$ for every feasible $x$, so $\|x\|^2 = \|x - x^*\|^2 + \|x^*\|^2 \ge \|x^*\|^2$. (This is the Lean theorem `least_norm`.)
+
+<Theorem name="Theorem 7 (KKT conditions)">
+
+Consider $\min f(x)$ subject to $g_i(x) \le 0$ and $h_j(x) = 0$, with continuously differentiable functions.
+
+(a) *Sufficiency.* If $f$ and every $g_i$ are convex, every $h_j$ is affine, and $(x^*, \mu, \lambda)$ satisfies the KKT conditions, then $x^*$ is a global minimiser.
+
+(b) *Necessity.* If $x^*$ is a local minimiser and a **constraint qualification** holds at $x^*$ — for example, the gradients of the tight constraints are linearly independent, or (for convex problems) some point satisfies all $g_i < 0$ strictly (Slater's condition) — then there are multipliers making the KKT conditions hold.
+
+</Theorem>
+
+<Proof>
+
+(a) Let $x$ be feasible. By Theorem 6 for $f$ and the KKT equation,
+
+$$
+f(x) \ge f(x^*) + \nabla f(x^*) \cdot (x - x^*) = f(x^*) - \sum_i \mu_i \nabla g_i(x^*) \cdot (x - x^*) - \sum_j \lambda_j \nabla h_j(x^*) \cdot (x - x^*).
+$$
+
+Since $h_j$ is affine, $\nabla h_j(x^*) \cdot (x - x^*) = h_j(x) - h_j(x^*) = 0$. By Theorem 6 for $g_i$, $\nabla g_i(x^*) \cdot (x - x^*) \le g_i(x) - g_i(x^*)$, and with $\mu_i \ge 0$ and $\mu_i g_i(x^*) = 0$ we get $-\mu_i \nabla g_i(x^*) \cdot (x - x^*) \ge -\mu_i g_i(x) \ge 0$. So $f(x) \ge f(x^*)$.
+
+(b) *Sketch.* Under linear independence of the active gradients, a first-order feasible direction $d$ that decreased $f$ could be followed along a curve of feasible points (implicit function theorem). So no such $d$ exists, and Farkas' lemma converts "no improving feasible direction" into the existence of $\mu \ge 0$ and $\lambda$. See Nocedal and Wright, chapter 12, or Boyd and Vandenberghe, chapter 5.
+
+</Proof>
+
+For a linear program, the KKT conditions are exactly primal feasibility, dual feasibility and complementary slackness (Corollary 2): the multipliers are the dual variables. Without a constraint qualification, necessity can fail: minimise $x$ subject to $x^2 \le 0$. The only feasible point is $0$, but $\nabla x = 1 \neq -\mu \cdot 0$ for every $\mu$.
+
+</Section>
+
+<Section id="gradient-descent" kind="proof" title="Gradient descent: a convergence proof">
+
+<Theorem name="Lemma 8 (descent lemma)">
+
+If $\nabla f$ is $L$-Lipschitz, then $f(y) \le f(x) + \nabla f(x) \cdot (y - x) + \frac L2\|y - x\|^2$. In particular, the step $x^+ = x - \frac1L\nabla f(x)$ gives $f(x^+) \le f(x) - \frac{1}{2L}\|\nabla f(x)\|^2$.
+
+</Theorem>
+
+<Proof>
+
+By the fundamental theorem of calculus along the segment and Cauchy–Schwarz,
+
+$$
+f(y) - f(x) - \nabla f(x) \cdot (y - x) = \int_0^1 \big(\nabla f(x + t(y - x)) - \nabla f(x)\big) \cdot (y - x)\,dt \le \int_0^1 Lt\|y - x\|^2\,dt = \frac L2 \|y - x\|^2.
+$$
+
+For $y = x^+$, the right-hand side becomes $f(x) - \frac1L\|\nabla f(x)\|^2 + \frac1{2L}\|\nabla f(x)\|^2$.
+
+</Proof>
+
+<Theorem name="Theorem 9 (rate of gradient descent)">
+
+Let $f$ be convex and $L$-smooth with a minimiser $x^*$, and let $x_{k+1} = x_k - \frac1L\nabla f(x_k)$. Then for every $k \ge 1$,
+
+$$
+f(x_k) - f(x^*) \le \frac{L\,\|x_0 - x^*\|^2}{2k}.
+$$
+
+</Theorem>
+
+<Proof>
+
+Write $g_k = \nabla f(x_k)$. By Lemma 8, $f(x_{k+1}) \le f(x_k) - \frac{1}{2L}\|g_k\|^2$; in particular the values decrease. By Theorem 6, $f(x_k) - f(x^*) \le g_k \cdot (x_k - x^*)$. Combining,
+
+$$
+f(x_{k+1}) - f(x^*) \le g_k \cdot (x_k - x^*) - \frac{1}{2L}\|g_k\|^2 = \frac L2\Big(\|x_k - x^*\|^2 - \|x_{k+1} - x^*\|^2\Big),
+$$
+
+where the equality is the expansion of $\|x_{k+1} - x^*\|^2 = \|(x_k - x^*) - \frac1L g_k\|^2$. Summing over $k = 0, \dots, n - 1$, the right-hand side telescopes to at most $\frac L2\|x_0 - x^*\|^2$. Since the values decrease, the left-hand sum is at least $n\,(f(x_n) - f(x^*))$.
+
+</Proof>
+
+Three remarks. **Step size.** For $f(x) = \frac L2 x^2$ the iteration is $x_{k+1} = (1 - \eta L)x_k$, which converges exactly when $0 < \eta < 2/L$. Larger steps overshoot and diverge, as the experiment and the cobweb diagram show. **Strong convexity.** If $f$ is also $\mu$-strongly convex, the gap shrinks geometrically, like $(1 - \mu/L)^k$. The ratio $L/\mu$, the **condition number**, governs the speed. **Faster methods.** Nesterov's accelerated gradient method (1983) achieves $O(1/k^2)$, which is optimal for first-order methods on this class. **Newton's method** minimises a quadratic in one step, since it jumps straight to the minimum of the local quadratic model, and converges quadratically near a minimiser with positive definite Hessian; but each step solves a linear system with the Hessian.
+
+**Data fitting.** Fitting a model $Aw \approx y$ to data by **least squares** means minimising $F(w) = \|Aw - y\|^2$, which is convex with gradient $2A^{\mathsf T}(Aw - y)$. By Theorem 6 its minimisers are exactly the solutions of the **normal equations** $A^{\mathsf T}Aw = A^{\mathsf T}y$, unique when $A$ has independent columns. Geometrically $Aw^*$ is the orthogonal projection of $y$ onto the column space of $A$. For huge data sets one runs (stochastic) gradient descent on $F$ instead of solving the normal equations, and the second experiment checks that both give the same line.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Optimisation in Lean and Mathlib">
+
+Mathlib has convex sets and functions (`Convex`, `ConvexOn`), local and global minima (`IsLocalMin`, `IsMinOn`), the dot product `⬝ᵥ` with the order lemmas needed for linear programming, and real inner product spaces. Weak duality and its corollaries, as in Theorem 1 and Corollary 2:
+
+<Lean decl="Lumenary.Optimisation.weak_duality" />
+
+<Lean decl="Lumenary.Optimisation.optimality_certificate" />
+
+<Lean decl="Lumenary.Optimisation.complementary_slackness" />
+
+Theorem 5, proved along the segment as above, then the one-line Mathlib version, and convexity of sublevel sets:
+
+<Lean decl="Lumenary.Optimisation.local_min_convex_global" />
+
+<Lean decl="Lumenary.Optimisation.local_min_convex_global_library" />
+
+<Lean decl="Lumenary.Optimisation.convex_sublevel" />
+
+The least-norm problem solved by the Lagrange condition, with Pythagoras as the certificate:
+
+<Lean decl="Lumenary.Optimisation.least_norm" />
+
+Theorem 9. The Lean statement takes the descent inequality (Lemma 8) and the convexity inequality (Theorem 6) as hypotheses about the iterates, and proves the rate exactly as above: the one-step bound, telescoping, and monotonicity. To show these hypotheses are not vacuous, the second theorem verifies them for every convex quadratic $f(x) = \frac a2 x^2$ with $0 < a \le L$ and deduces its rate.
+
+<Lean decl="Lumenary.Optimisation.gradient_descent_rate" />
+
+<Lean decl="Lumenary.Optimisation.gradient_descent_quadratic" />
+
+**What is and is not formalised.** Independent: Theorem 1, Corollary 2(a)–(b), Theorem 5, the least-norm problem, the rate argument of Theorem 9 and its quadratic instance. From Mathlib: the local-to-global principle and convex sublevel sets. Not formalised: Farkas' lemma and strong duality (Mathlib has related cone-duality results, but not the LP theorem in this form), the simplex method, the KKT theorem, Theorem 6, and Lemma 8 (the derivation of the descent inequality from a Lipschitz gradient). The Lean exercises ask for weak duality and the optimality certificate.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Simplex steps and descent rates">
+
+The first program implements the tableau simplex method with exact fractions and solves the workshop problem twice. With Dantzig's rule (enter the variable with the largest reduced profit) it visits $(0,0) \to (0,6) \to (2,6)$; with Bland's rule it takes the longer route $(0,0) \to (4,0) \to (4,3) \to (2,6)$. It then reads the shadow prices $(0, \tfrac32, 1)$ from the final tableau, checks strong duality and complementary slackness exactly, and detects an unbounded problem.
+
+<Python id="optimisation_simplex" />
+
+The second program runs gradient descent on a convex quadratic with $\mu = 2$ and $L = 7$. It compares the gap with the $O(1/k)$ bound of Theorem 9, which holds but is far from tight here, and with the geometric rate available for strongly convex functions. It shows that the step $1.9/L$ still converges while $2.1/L$ explodes, that Newton's method finishes in one step, and that gradient descent on the mean squared error recovers the least-squares line.
+
+<Python id="optimisation_gradient_descent" />
+
+The first program is exact for its problems. The second is floating-point evidence: it illustrates the theorems but does not prove them, and its gaps stop shrinking at about $10^{-16}$, the limit of double-precision arithmetic.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: corners, step sizes and false valleys">
+
+The three constraint lines of the workshop problem bound the feasible pentagon (the corners are marked). The fourth line is the profit level $3x + 5y = c$. Increase $c$: the line moves up and to the right, and the last corner of the pentagon it touches is the optimum $(2, 6)$, at $c = 36$.
+
+<FunctionPlot
+  mode="parametric"
+  fns={[["4", "t"], ["t", "6"], ["t", "9 - 1.5*t"], ["t", "(c - 3*t)/5"]]}
+  labels={["x = 4 (workshop A)", "2y = 12 (workshop B)", "3x + 2y = 18 (workshop C)", "profit 3x + 5y = c"]}
+  params={[{ name: "c", min: 0, max: 45, step: 1, value: 20 }]}
+  points={[[0, 0, "(0, 0)"], [4, 0, "(4, 0)"], [4, 3, "(4, 3)"], [2, 6, "(2, 6)"], [0, 6, "(0, 6)"]]}
+  t={[-1, 10]}
+  x={[-1, 8]}
+  y={[-1, 10]}
+  title="Sliding the profit line across the feasible region"
+/>
+
+Gradient descent on $f(x) = (x - 1)^2$ (so $L = 2$) is the iteration $x \mapsto x - 2h(x - 1)$. In the cobweb diagram, try $h = 0.25$ (steady convergence), $h = 0.5 = 1/L$ (one step, like Newton), $h = 0.9$ (oscillating convergence) and $h = 1.05 > 2/L$ (divergence).
+
+<SequenceLab mode="cobweb" fn="x - 2*h*(x - 1)" params={[{"name":"h","min":0.05,"max":1.1,"step":0.05,"value":0.25}]} x={[-1, 3]} x0={-0.5} N={30} title="Gradient descent as an iteration: the step size decides" />
+
+A non-convex landscape: the gradient flow $\dot{\mathbf x} = -\nabla f$ of the double well $f(x, y) = (x^2 - 1)^2 + y^2$ has two sinks at $(\pm 1, 0)$ and a saddle at the origin, also a critical point but not a minimum. Start trajectories near the $y$-axis and watch them choose a valley.
+
+<VectorField mode="phase" f="-4*x*(x^2 - 1)" g="-2*y" points={[[0.05, 1.5], [-0.05, 1.5], [1.8, -1], [-1.6, 1.2]]} x={[-2, 2]} y={[-2, 2]} title="Gradient flow of a double well: two minima and a saddle" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every critical point is a minimum."** $\nabla f(x) = 0$ is necessary for an unconstrained interior minimum, not sufficient: $x^3$ at $0$ is an inflection point, $-x^2$ has a maximum, and $x^2 - y^2$ (or the double well's origin) has a saddle. For *convex* functions every critical point is a global minimum (Theorem 6), which is one reason convexity is so valuable.
+
+</Misconception>
+
+<Misconception>
+
+**"Every linear program has an optimal solution."** An LP may be infeasible (constraints $x \le 0$ and $x \ge 1$) or unbounded ($\max x + y$ subject to $x - y \le 1$). What is true: a feasible LP with bounded objective attains its optimum, and by Corollary 2(c) the primal is unbounded only if the dual is infeasible.
+
+</Misconception>
+
+<Misconception>
+
+**"The optimum of an LP is always a single corner."** If the objective is parallel to an edge of the feasible region, the whole edge is optimal (the set of optimal solutions is convex, by Theorem 5). What is guaranteed is that *some* optimal solution is a vertex, when the region has vertices.
+
+</Misconception>
+
+<Misconception>
+
+**"A bigger step makes gradient descent faster."** For an $L$-smooth function, steps larger than $2/L$ can make the iterates diverge — the quadratic $\frac L2x^2$ already shows it — and steps near $2/L$ oscillate. The safe default $1/L$ is what Theorem 9 analyses. When $L$ is unknown, line searches or adaptive step sizes are used.
+
+</Misconception>
+
+<Misconception>
+
+**"Lagrange's condition $\nabla f = \lambda\nabla h$ identifies the minimum."** It is necessary (given a constraint qualification), not sufficient: it also holds at constrained maxima and saddle points. Sufficiency needs convexity (Theorem 7(a)) or second-order conditions. Conversely, without a constraint qualification a minimiser may have no multipliers at all, as the example $\min x$ subject to $x^2 \le 0$ shows.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Polyhedra, supporting hyperplanes and duality">
+
+A linear program lives on a convex polyhedron, and its optimum is where a hyperplane of constant objective **supports** the polyhedron: it touches the polyhedron, which lies entirely on one side. The Minkowski–Weyl theorem says that bounded polyhedra are exactly convex hulls of finitely many points, which is why optimising a linear function reduces to checking vertices. LP duality is a statement about separating and supporting hyperplanes (the proof of Farkas' lemma constructs one by projecting onto a convex cone), and in convex geometry the dual of a polytope containing the origin is its **polar**, with vertices and facets exchanged. The simplex method walks along the edge graph of the polyhedron. Whether that graph always has diameter polynomial in the number of facets is the **polynomial Hirsch conjecture**, still open; the original Hirsch conjecture was disproved by Francisco Santos in 2010.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Convex analysis and Fenchel duality">
+
+The **Legendre–Fenchel transform** $f^*(p) = \sup_x (p \cdot x - f(x))$ turns a convex function into another one, and $f^{**} = f$ for closed convex $f$ (Fenchel–Moreau). Weak and strong LP duality are special cases of **Fenchel–Rockafellar duality**, $\inf_x (f(x) + g(Ax)) = \sup_y(-f^*(A^{\mathsf T}y) - g^*(-y))$ under a constraint qualification. Non-differentiable convex functions such as $|x|$ or $\max_i a_i \cdot x$ have **subgradients** instead of gradients, and $0 \in \partial f(x^*)$ characterises their minima. In infinite dimensions, existence of minimisers rests on compactness (often weak compactness) and lower semicontinuity — the "direct method" of the calculus of variations. See <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Critical points and the shape of the landscape">
+
+**Morse theory** relates the critical points of a function to the topology of its domain. As $r$ increases, the sublevel set $\{f \le r\}$ changes its topology only when $r$ passes a critical value, and a non-degenerate critical point of index $k$ attaches a $k$-dimensional cell. Consequently a smooth function on a closed surface of genus $g$ with only non-degenerate critical points has at least $2 + 2g$ of them (the **Morse inequalities**: at least the sum of the Betti numbers), so every such function on a torus has at least four critical points. Saddles are therefore forced by topology, not just bad luck. The double well in the visualisation shows a one-dimensional version: two minima force a saddle between them, a **mountain-pass** point. See <TopicLink id="math.geom.differential-topology">differential topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Integer programs, flows and matchings">
+
+Requiring integer solutions makes optimisation much harder: integer linear programming is NP-hard. But for **totally unimodular** constraint matrices (Hoffman and Kruskal, 1956), such as incidence matrices of bipartite graphs and of directed networks, every vertex of the polyhedron is integral, so the LP solves the integer problem. LP duality then becomes combinatorial min–max theorems: the **max-flow min-cut theorem** (Ford and Fulkerson, 1956), **König's theorem** that in a bipartite graph the maximum matching equals the minimum vertex cover, and the assignment problem. In 1962 Kwan Mei-Ko (Guan Meigu) in China posed and solved the "Chinese postman problem" of the shortest closed route covering every street, now solved in general by matching. See <TopicLink id="math.discrete.graph-theory">graph theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Least squares, likelihood and stochastic gradients">
+
+If data satisfy $y_i = a_i \cdot w + \varepsilon_i$ with independent Gaussian errors, maximising the likelihood of $w$ is exactly minimising $\sum (y_i - a_i \cdot w)^2$: least squares is maximum likelihood (Gauss's justification, 1809). Other noise models give other convex objectives — Laplace noise gives least absolute deviations, logistic models give the convex log-loss of logistic regression. When the objective is an average over a huge data set, **stochastic gradient descent** uses the gradient on a random small batch, an unbiased but noisy estimate; with diminishing step sizes it converges in expectation for convex problems (Robbins and Monro, 1951, in the language of stochastic approximation). See <TopicLink id="math.prob.statistics">statistics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Least action, equilibrium and constraint forces">
+
+Nature optimises, at least in a mathematical sense. Fermat's principle (light takes the path of least time) gives Snell's law of refraction; mechanical equilibria are critical points of potential energy, stable ones being minima; and the laws of motion follow from making the action stationary (see <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>). Lagrange introduced his multipliers in the *Mécanique analytique* (1788) for exactly this: a multiplier is the force the constraint must exert. The KKT conditions are the same picture with walls that can push but not pull (so $\mu_i \ge 0$), and that exert no force when not touched ($\mu_i g_i = 0$). Gradient descent is the overdamped motion of a particle sliding downhill through treacle. These are heuristics and models; the theorems above stand on their proofs.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="What can be optimised efficiently">
+
+The dividing line in computational optimisation is roughly convex versus non-convex. Linear programs and, more generally, convex problems with efficiently computable constraints (such as semidefinite programs) can be solved to accuracy $\varepsilon$ in time polynomial in the size and $\log(1/\varepsilon)$ by interior-point methods (Nesterov and Nemirovski, 1994). Integer programming, and minimising general non-convex polynomials, are NP-hard. In machine learning, gradient methods on non-convex losses work remarkably well in practice, and why they do is an active research question. For first-order methods on $L$-smooth convex functions, Nesterov showed that $O(1/k^2)$ is the best possible worst-case rate, and his accelerated method attains it. See <TopicLink id="math.comp.complexity-theory">complexity theory</TopicLink> and <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Calculus of extremes.** Pierre de Fermat's method of *adequality* (1630s) found maxima and minima by what we would call setting the derivative to zero, and his principle of least time explained refraction. **Joseph-Louis Lagrange** introduced multipliers for constrained problems in his *Mécanique analytique* (1788). **Augustin-Louis Cauchy** proposed the method of steepest descent in 1847, for solving systems of equations from astronomy.
+- **Inequalities.** Joseph Fourier studied systems of linear inequalities in the 1820s (Fourier–Motzkin elimination), and **Gyula Farkas** proved his lemma around 1894–1902 in Kolozsvár (now Cluj-Napoca).
+- **Linear programming.** **Leonid Kantorovich** formulated linear programming and its dual valuations in Leningrad in 1939; he shared the 1975 Nobel prize in economics with Tjalling Koopmans for the theory of optimal allocation of resources. In the United States **George Dantzig** invented the simplex method in 1947, and **John von Neumann**, who had proved the minimax theorem for games in 1928, recognised LP duality the same year. George Stigler's "diet problem" (1945) was one of the first LPs solved by computation.
+- **Nonlinear and convex optimisation.** **William Karush** (1939, master's thesis, Chicago) and **Harold Kuhn** and **Albert Tucker** (1951) gave the conditions now named after them. Werner Fenchel and **R. Tyrrell Rockafellar** (*Convex Analysis*, 1970) built convex duality theory.
+- **Algorithms.** **Leonid Khachiyan** (Moscow, 1979) proved LPs solvable in polynomial time with the ellipsoid method. **Narendra Karmarkar**, born in Gwalior, India, introduced a practical polynomial-time interior-point method at Bell Labs in 1984, and **Yurii Nesterov** (1983) found the accelerated gradient method. Kwan Mei-Ko's 1962 Chinese postman problem is an early landmark of combinatorial optimisation.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Stephen Boyd and Lieven Vandenberghe, *Convex Optimization* (2004) — convex sets, functions, duality and KKT, with many applications (freely available from the authors).
+- Jorge Nocedal and Stephen J. Wright, *Numerical Optimization* (1999; 2nd ed. 2006) — gradient, Newton and quasi-Newton methods, KKT theory and constraint qualifications.
+- Jiří Matoušek and Bernd Gärtner, *Understanding and Using Linear Programming* (2007) — a lively account of LP, the simplex method, duality and Farkas' lemma.
+- Dimitris Bertsimas and John N. Tsitsiklis, *Introduction to Linear Optimization* (1997).
+- Yurii Nesterov, *Introductory Lectures on Convex Optimization* (2004; 2nd ed. *Lectures on Convex Optimization*, 2018) — complexity of first-order methods and acceleration.
+- Vašek Chvátal, *Linear Programming* (1983) — a classic, with combinatorial applications.
+
+</Section>

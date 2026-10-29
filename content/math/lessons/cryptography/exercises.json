@@ -1,0 +1,142 @@
+{
+  "lesson": "cryptography",
+  "exercises": [
+    {
+      "id": "cryptography-encrypt-small",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "A toy RSA public key is $(n, e) = (33, 3)$, where $33 = 3 \\cdot 11$. Encrypt the message $m = 5$: compute $c = m^e \\bmod n$.",
+      "answer": 26,
+      "feedback": [
+        { "match": "15", "message": "That is $5 \\cdot 3$. Encryption raises $m$ to the power $e$; it does not multiply by $e$." },
+        { "match": "125", "message": "Right power — now reduce modulo $33$." }
+      ],
+      "hints": [
+        "$5^3 = 125$.",
+        "$125 = 3 \\cdot 33 + 26$."
+      ],
+      "solution": "$5^3 = 125 = 3 \\cdot 33 + 26$, so $c = 26$."
+    },
+    {
+      "id": "cryptography-private-exponent",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "For the toy key $p = 5$, $q = 11$, $n = 55$ and $e = 3$, find the private exponent $d$ with $0 < d < 40$ and $ed \\equiv 1 \\pmod{(p - 1)(q - 1)}$.",
+      "answer": 27,
+      "feedback": [
+        { "match": "13", "message": "$3 \\cdot 13 = 39 \\equiv -1 \\pmod{40}$. Close: you want $+1$, so take $-13 \\equiv 27$." },
+        { "match": "37", "message": "Check: $3 \\cdot 37 = 111 = 2 \\cdot 40 + 31$. The modulus is $(p - 1)(q - 1) = 40$; look for $3d = 41$ or $81$ or $121$." }
+      ],
+      "hints": [
+        "$(p - 1)(q - 1) = 4 \\cdot 10 = 40$.",
+        "Which of $41, 81, 121, \\dots$ is divisible by $3$?"
+      ],
+      "solution": "$(p - 1)(q - 1) = 40$ and $3 \\cdot 27 = 81 = 2 \\cdot 40 + 1$, so $d = 27$. (Euclid: $40 = 13 \\cdot 3 + 1$, so $1 = 40 - 13 \\cdot 3$ and $d \\equiv -13 \\equiv 27$.)"
+    },
+    {
+      "id": "cryptography-decrypt-small",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "With the key $n = 55$, $e = 3$, $d = 27$, a ciphertext $c = 13$ arrives. Decrypt it: find $m = c^d \\bmod 55$. (Hint: you can check your answer by encrypting it.)",
+      "answer": 7,
+      "feedback": [
+        { "match": "13", "message": "Decryption must change the number unless $m = c$. Compute $13^{27} \\bmod 55$ by repeated squaring, or work modulo $5$ and $11$ separately." },
+        { "match": "42", "message": "Check by encrypting: $42^3 \\bmod 55$ is not $13$. Try working modulo $5$ and modulo $11$ and combining with the Chinese remainder theorem." }
+      ],
+      "hints": [
+        "Modulo $5$: $13 \\equiv 3$ and $3^4 \\equiv 1$, so $13^{27} \\equiv 3^{27} = 3^{24} \\cdot 3^3 \\equiv 27 \\equiv 2$. Do the same modulo $11$.",
+        "Modulo $11$: $13 \\equiv 2$ and $2^{10} \\equiv 1$, so $2^{27} \\equiv 2^7 = 128 \\equiv 7$. Which $m < 55$ is $2 \\bmod 5$ and $7 \\bmod 11$?"
+      ],
+      "solution": "Modulo $5$: $13^{27} \\equiv 3^{27} \\equiv 3^3 = 27 \\equiv 2$. Modulo $11$: $13^{27} \\equiv 2^{27} \\equiv 2^7 = 128 \\equiv 7$. The number below $55$ that is $\\equiv 7 \\pmod{11}$ and $\\equiv 2 \\pmod 5$ is $7$. Check: $7^3 = 343 = 6 \\cdot 55 + 13$. (Decrypting modulo $p$ and $q$ separately and recombining is exactly how real RSA implementations speed up decryption.)"
+    },
+    {
+      "id": "cryptography-dh-key",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Ama and Bolat use Diffie–Hellman with $p = 29$ and $g = 2$. Ama's secret is $a = 5$, Bolat's is $b = 12$. Ama sends $A = 2^5 \\bmod 29 = 3$ and Bolat sends $B = 2^{12} \\bmod 29 = 7$. What shared key do they compute?",
+      "answer": 16,
+      "feedback": [
+        { "match": "21", "message": "That is $A \\cdot B = 3 \\cdot 7$. The shared key is $B^a$ (or $A^b$), not a product of the public values." },
+        { "match": "10", "message": "That is $3 + 7$. Ama computes $B^a = 7^5 \\bmod 29$." }
+      ],
+      "hints": [
+        "Ama computes $B^a = 7^5 \\bmod 29$.",
+        "$7^2 = 49 \\equiv 20$, $7^4 \\equiv 400 \\equiv 23$, and $7^5 \\equiv 23 \\cdot 7 = 161$."
+      ],
+      "solution": "$7^5 \\bmod 29$: $7^2 \\equiv 20$, $7^4 \\equiv 20^2 = 400 = 13 \\cdot 29 + 23 \\equiv 23$, $7^5 \\equiv 23 \\cdot 7 = 161 = 5 \\cdot 29 + 16 \\equiv 16$. Bolat gets the same from $3^{12} \\bmod 29$, since both equal $2^{60} \\bmod 29$. The key is $16$."
+    },
+    {
+      "id": "cryptography-what-reveals-d",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "An attacker knows the public key $(n, e)$ of an RSA user. Which **additional** pieces of information would let the attacker compute the private exponent $d$ efficiently, with known methods? (Choose all that apply.)",
+      "options": [
+        { "id": "factors", "label": "the factors $p$ and $q$ of $n$", "correct": true, "feedback": "Yes: then $(p - 1)(q - 1)$ is known and $d$ is an inverse of $e$ modulo it, found by Euclid's algorithm." },
+        { "id": "phi", "label": "the number $\\varphi(n) = (p - 1)(q - 1)$", "correct": true, "feedback": "Yes — directly, and it even reveals $p$ and $q$: they are the roots of $x^2 - (n - \\varphi(n) + 1)x + n$." },
+        { "id": "pair", "label": "one message $m$ together with its ciphertext $m^e \\bmod n$", "correct": false, "feedback": "Anyone can produce such pairs by encrypting with the public key, so they give no extra information." },
+        { "id": "nothing", "label": "nothing more: $d$ can be computed from $n$ and $e$ by repeated squaring", "correct": false, "feedback": "Repeated squaring computes powers, not inverses modulo an unknown $\\varphi(n)$. Computing $d$ from $(n, e)$ is known to be as hard as factoring $n$." }
+      ],
+      "hints": [
+        "$d$ is the inverse of $e$ modulo $(p - 1)(q - 1)$. What do you need to know to compute that?",
+        "Information the attacker could generate alone, using only the public key, is worthless."
+      ],
+      "solution": "The factors, or $\\varphi(n)$, reveal $d$: with $\\varphi(n)$ known, Euclid's algorithm inverts $e$. Knowing $\\varphi(n)$ is equivalent to knowing the factors, since $p + q = n - \\varphi(n) + 1$ and $pq = n$. Plaintext–ciphertext pairs are free to anyone with the public key. Whether $(n, e)$ alone suffices is exactly the question of whether factoring is hard."
+    },
+    {
+      "id": "cryptography-small-message",
+      "type": "choice",
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "Textbook RSA with $e = 3$ and a 2048-bit modulus $n$ is used to send a 100-bit number $m$, as $c = m^3 \\bmod n$. What can an eavesdropper do?",
+      "options": [
+        { "id": "cube", "label": "Recover $m$ as the ordinary integer cube root of $c$", "correct": true, "feedback": "Yes: $m^3$ has at most 300 bits, which is less than $n$, so no reduction happened: $c = m^3$ exactly, and integer cube roots are easy to compute. Random padding prevents this." },
+        { "id": "nothing", "label": "Nothing, because recovering $m$ requires factoring $n$", "correct": false, "feedback": "Here factoring is not needed. Look at the sizes: is $m^3$ bigger than $n$?" },
+        { "id": "d", "label": "Compute $d$ from $c$ by Euclid's algorithm", "correct": false, "feedback": "Euclid's algorithm needs $(p - 1)(q - 1)$, which the eavesdropper does not know. But there is a much simpler attack." },
+        { "id": "fermat", "label": "Use Fermat's little theorem modulo $n$ to undo the cube", "correct": false, "feedback": "Fermat's theorem is about prime moduli, and $n$ is composite with unknown factors. The weakness here is the size of $m$." }
+      ],
+      "hints": [
+        "How many bits does $m^3$ have?",
+        "If $m^3 < n$, what is $m^3 \\bmod n$?"
+      ],
+      "solution": "$m < 2^{100}$ gives $m^3 < 2^{300} < n$, so $c = m^3$ as an integer and $m = \\sqrt[3]{c}$ is found by ordinary root extraction (for example by bisection). This is one of several reasons why real RSA pads messages with randomness before encrypting."
+    },
+    {
+      "id": "cryptography-lean-rsa",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "Which Lean statement is a **true** formalisation of RSA correctness, as proved in the lesson?",
+      "options": [
+        { "id": "a", "label": "`theorem t {p q e d : ℕ} (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) (hed : e * d ≡ 1 [MOD (p - 1) * (q - 1)]) (m : ℕ) : (m ^ e) ^ d ≡ m [MOD p * q]`", "correct": true, "feedback": "Yes — this is `rsa_correct`: distinct primes, the key condition, and every message $m$." },
+        { "id": "b", "label": "`theorem t {p q e d : ℕ} (hp : p.Prime) (hq : q.Prime) (hed : e * d ≡ 1 [MOD (p - 1) * (q - 1)]) (m : ℕ) : (m ^ e) ^ d ≡ m [MOD p * q]`", "correct": false, "feedback": "Without `p ≠ q` this is false: take $p = q = 3$, $e = 1$, $d = 5$ (so $ed = 5 \\equiv 1 \\pmod 4$) and $m = 3$. Then $3^5 = 243 \\equiv 0 \\not\\equiv 3 \\pmod 9$." },
+        { "id": "c", "label": "`theorem t {p q e d : ℕ} (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) (m : ℕ) : (m ^ e) ^ d ≡ m [MOD p * q]`", "correct": false, "feedback": "The key condition $ed \\equiv 1$ is missing, so this claims that *any* $e, d$ work — false, e.g. $e = d = 2$, $m = 2$, $p = 3$, $q = 5$: $16 \\not\\equiv 2 \\pmod{15}$." },
+        { "id": "d", "label": "`theorem t (n e : ℕ) : ¬ ∃ d, ∀ m, (m ^ e) ^ d ≡ m [MOD n]`", "correct": false, "feedback": "This tries to state that no decryption exponent exists — the opposite of correctness, and false (take $e = 1$, $d = 1$). Security is not a statement Lean can currently prove for RSA." }
+      ],
+      "hints": [
+        "Which hypotheses did the human proof use? Look for each one in the statements.",
+        "The CRT step needs $p$ and $q$ to be coprime."
+      ],
+      "solution": "Option (a) is `rsa_correct`. Dropping $p \\neq q$ (b) breaks the Chinese remainder step and the theorem: modulo $9$, $3^5 \\equiv 0 \\neq 3$. Dropping the key condition (c) makes the statement false. Option (d) is not correctness at all, and is false."
+    },
+    {
+      "id": "cryptography-python-powmod",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Implement `pow_mod(b, e, n)` by repeated squaring **without** using Python's three-argument `pow`: return $b^e \\bmod n$. It must handle exponents with hundreds of digits instantly.",
+      "starter": "def pow_mod(b, e, n):\n    # Repeated squaring: process the bits of e.\n    result = 1\n    return result\n",
+      "tests": "assert pow_mod(2, 10, 1000) == 24\nassert pow_mod(3, 0, 7) == 1\nassert pow_mod(5, 117, 19) == pow(5, 117, 19)\nassert pow_mod(1234, 17, 2773) == 1793\nassert pow_mod(1793, 157, 2773) == 1234\nbig = 2 ** 300 + 12345\nassert pow_mod(7, big, 10**9 + 7) == pow(7, big, 10**9 + 7)\nassert pow_mod(10, 5, 1) == 0\nprint('All tests passed!')\n",
+      "hints": [
+        "Keep `result` and `base = b % n`. While `e > 0`: if the last bit of `e` is 1, multiply `result` by `base`; then square `base` and shift `e` right.",
+        "Reduce modulo `n` after every multiplication, and start from `result = 1 % n` so that `n = 1` gives `0`."
+      ],
+      "solution": "```python\ndef pow_mod(b, e, n):\n    result, base = 1 % n, b % n\n    while e > 0:\n        if e & 1:\n            result = result * base % n\n        base = base * base % n\n        e >>= 1\n    return result\n```\n\nThe loop runs once per bit of $e$ — about $1000$ times for a $300$-digit exponent — and every number stays below $n^2$. This is the right-to-left version of the lesson's recursion: the bits of $e$ decide which squares $b^{2^j}$ go into the product."
+    }
+  ]
+}

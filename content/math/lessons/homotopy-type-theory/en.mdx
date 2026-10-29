@@ -1,0 +1,452 @@
+---
+slug: homotopy-type-theory
+topic: math.found.homotopy-type-theory
+title: Homotopy type theory
+subtitle: Types as spaces, equalities as paths — Voevodsky's univalence axiom, the circle as a type with one point and one loop, and why Lean itself is not homotopy type theory.
+level: research
+ages: Research (graduate background)
+minutes: 130
+order: 8001
+objectives:
+  - Explain identity types and their reading as path spaces, and derive transport, the action of functions on paths and the groupoid laws by path induction
+  - Define equivalences of types, state the univalence axiom, and prove that it is incompatible with uniqueness of identity proofs for the universe
+  - Define the circle as a higher inductive type and outline the encode–decode proof that its loop space is equivalent to $\Z$
+  - Describe the models of homotopy type theory and separate established results from open questions
+  - Use Lean to see precisely where an ordinary proof assistant departs from homotopy type theory
+narrators: []
+lean:
+  - Lumenary.HomotopyTypeTheory.Paths
+  - Lumenary.HomotopyTypeTheory.Paths.J
+  - Lumenary.HomotopyTypeTheory.Paths.inv
+  - Lumenary.HomotopyTypeTheory.Paths.concat
+  - Lumenary.HomotopyTypeTheory.Paths.ap
+  - Lumenary.HomotopyTypeTheory.Paths.transport
+  - Lumenary.HomotopyTypeTheory.Paths.refl_concat
+  - Lumenary.HomotopyTypeTheory.Paths.concat_inv
+  - Lumenary.HomotopyTypeTheory.Paths.concat_assoc
+  - Lumenary.HomotopyTypeTheory.Paths.transport_concat
+  - Lumenary.HomotopyTypeTheory.Paths.idtoeqv
+  - Lumenary.HomotopyTypeTheory.Paths.paths_subsingleton
+  - Lumenary.HomotopyTypeTheory.Paths.univalence_fails
+  - Lumenary.HomotopyTypeTheory.funext_library
+  - Lumenary.HomotopyTypeTheory.bijective_iff_unique_fibres
+  - Lumenary.HomotopyTypeTheory.fundamental_group_circle
+  - Lumenary.HomotopyTypeTheory.encode_loop_pow
+compute: [homotopy_type_theory_circle]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What does it mean to be the same?">
+
+Mathematicians routinely say "*the* cyclic group of order 2" or "*the* circle", although there are many isomorphic copies of each. Informally we identify isomorphic structures, because every property we care about is invariant under isomorphism. Formally, in ZFC, isomorphic structures are different sets, and nothing in the foundations stops us from asking non-invariant questions ("is $0 \in 1$?").
+
+Homotopy type theory (HoTT) starts from a foundation in which this informal practice becomes a theorem. It builds on Martin-Löf's dependent type theory (see <TopicLink id="math.found.type-theory">Type theory</TopicLink>), in which a proof of $a = b$ is itself a mathematical object, an element of the **identity type** $a =_A b$. In 1994 Hofmann and Streicher found a model in which two proofs of $a = b$ need not be equal; from 2006 onwards Awodey and Warren, and Voevodsky, saw that identity types behave exactly like **path spaces** in homotopy theory. Voevodsky then proposed the **univalence axiom**: for types $A$ and $B$, *identifications* $A = B$ are the same as *equivalences* $A \simeq B$. Under univalence, isomorphic structures are equal, and every construction automatically respects equivalence.
+
+This lesson is an orientation: the path reading of identity types, univalence, higher inductive types and the computation of the loop space of the circle — and, through Lean, a precise picture of what an ordinary proof assistant can and cannot say about all this. It assumes <TopicLink id="math.found.type-theory">Type theory</TopicLink> and <TopicLink id="math.geom.algebraic-topology">Algebraic topology</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A dictionary">
+
+The guiding idea is a three-way dictionary between logic, sets and homotopy theory.
+
+| Type theory | Set-level reading | Homotopy reading |
+| --- | --- | --- |
+| type $A$ | set | space (∞-groupoid) |
+| term $a : A$ | element | point |
+| $a =_A b$ | proposition "$a$ equals $b$" | space of paths from $a$ to $b$ |
+| $p : a = b$, $q : b = c$, $p \cdot q$ | transitivity | concatenation of paths |
+| family $P : A \to \mathcal{U}$ | family of sets | fibration over $A$ |
+| $\Sigma_{x : A} P(x)$ | disjoint union | total space |
+| $\Pi_{x : A} P(x)$ | product | space of sections |
+| transport along $p$ | substitution | lifting paths to the fibration |
+| contractible type | singleton | a point (up to homotopy) |
+
+The surprise is the third row. In the homotopy reading, two elements can be equal *in more than one way*, and the ways themselves can be equal in more than one way, and so on: every type carries the structure of a weak ∞-groupoid (Lumsdaine; van den Berg and Garner). Types are sorted by **homotopy level**: contractible types; **propositions** (any two elements are equal); **sets** (any two paths between two elements are equal); groupoids; and so on.
+
+<Figure caption="The circle S¹ and its universal cover. In HoTT the cover is a type family code over S¹ with fibre ℤ over the base point; transport along loop moves up the helix by one step (the successor). Following a loop from 0 up the helix and reading off where you end is the winding number — the encode map of the encode–decode proof.">
+<svg viewBox="0 0 320 240" role="img" aria-label="A helix above an ellipse. Marked points on the helix are labelled 2, 1, 0, minus 1 and lie above the base point of the ellipse, which is labelled S¹, base and loop.">
+  <path d="M 80 45 L 81 44 L 85 42 L 92 41 L 101 40 L 111 40 L 123 40 L 136 40 L 150 41 L 164 43 L 177 45 L 189 47 L 199 50 L 208 53 L 215 57 L 219 61 L 220 65" fill="none" stroke="var(--formal)" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+  <path d="M 80 85 L 81 84 L 85 82 L 92 81 L 101 80 L 111 80 L 123 80 L 136 80 L 150 81 L 164 83 L 177 85 L 189 87 L 199 90 L 208 93 L 215 97 L 219 101 L 220 105" fill="none" stroke="var(--formal)" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+  <path d="M 80 125 L 81 124 L 85 122 L 92 121 L 101 120 L 111 120 L 123 120 L 136 120 L 150 121 L 164 123 L 177 125 L 189 127 L 199 130 L 208 133 L 215 137 L 219 141 L 220 145" fill="none" stroke="var(--formal)" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+  <path d="M 220 25 L 219 29 L 215 33 L 208 37 L 199 40 L 189 43 L 177 45 L 164 47 L 150 49 L 136 50 L 123 50 L 111 50 L 101 50 L 92 49 L 85 48 L 81 46 L 80 45" fill="none" stroke="var(--formal)" strokeWidth="2.2" />
+  <path d="M 220 65 L 219 69 L 215 73 L 208 77 L 199 80 L 189 83 L 177 85 L 164 87 L 150 89 L 136 90 L 123 90 L 111 90 L 101 90 L 92 89 L 85 88 L 81 86 L 80 85" fill="none" stroke="var(--formal)" strokeWidth="2.2" />
+  <path d="M 220 105 L 219 109 L 215 113 L 208 117 L 199 120 L 189 123 L 177 125 L 164 127 L 150 129 L 136 130 L 123 130 L 111 130 L 101 130 L 92 129 L 85 128 L 81 126 L 80 125" fill="none" stroke="var(--formal)" strokeWidth="2.2" />
+  <circle cx="220" cy="25" r="4" fill="var(--gold)" />
+  <circle cx="220" cy="65" r="4" fill="var(--gold)" />
+  <circle cx="220" cy="105" r="4" fill="var(--gold)" />
+  <circle cx="220" cy="145" r="4" fill="var(--gold)" />
+  <text x="232" y="30" fontSize="13" fill="var(--ink-2)">2</text>
+  <text x="232" y="70" fontSize="13" fill="var(--ink-2)">1</text>
+  <text x="232" y="110" fontSize="13" fill="var(--ink-2)">0</text>
+  <text x="232" y="150" fontSize="13" fill="var(--ink-2)">−1</text>
+  <text x="40" y="90" fontSize="14" fill="var(--ink-2)">ℤ</text>
+  <line x1="220" y1="150" x2="220" y2="196" stroke="var(--ink-2)" strokeWidth="1.2" strokeDasharray="4 3" />
+  <ellipse cx="150" cy="205" rx="70" ry="14" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <circle cx="220" cy="205" r="4" fill="var(--ink-2)" />
+  <text x="230" y="210" fontSize="13" fill="var(--ink-2)">base</text>
+  <text x="30" y="210" fontSize="14" fill="var(--ink-2)">S¹</text>
+  <text x="135" y="236" fontSize="13" fill="var(--ink-2)">loop</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Identity types, equivalences and univalence">
+
+<Definition term="identity type and path induction">
+
+For a type $A$ and $a : A$, the **identity type** is a family of types $a =_A x$ indexed by $x : A$, with one constructor $\mathsf{refl}_a : a =_A a$. Its elimination rule is **(based) path induction**: given a family $C(x, p)$ for $x : A$ and $p : a = x$, and an element $c : C(a, \mathsf{refl}_a)$, there is a function $J(c) : \Pi_{x : A} \Pi_{p : a = x} C(x, p)$ with $J(c)(a, \mathsf{refl}_a) \equiv c$. Elements of $a = x$ are called **paths**.
+
+</Definition>
+
+Path induction does **not** say that every $p : a = a$ is $\mathsf{refl}_a$: the endpoint $x$ must be free. The rule that would say this, Streicher's **axiom K** (equivalently, *uniqueness of identity proofs*, UIP: any two elements of $a = b$ are equal), is independent of Martin-Löf type theory (Hofmann–Streicher) and false in homotopy type theory.
+
+<Definition term="transport and the action on paths">
+
+From path induction one defines, for $p : a = b$:
+
+- the **inverse** $p^{-1} : b = a$ and **concatenation** $p \cdot q : a = c$ for $q : b = c$;
+- the **action of a function** $f : A \to B$ on paths, $\mathsf{ap}_f(p) : f(a) = f(b)$;
+- **transport** in a family $P : A \to \mathcal{U}$, a function $\mathsf{tr}^P(p, -) : P(a) \to P(b)$.
+
+Each is defined by saying what happens when $p$ is $\mathsf{refl}$: $\mathsf{refl}^{-1} :\equiv \mathsf{refl}$, $\mathsf{ap}_f(\mathsf{refl}) :\equiv \mathsf{refl}$, $\mathsf{tr}^P(\mathsf{refl}, -) :\equiv \mathrm{id}$.
+
+</Definition>
+
+<Definition term="contractible types, fibres and equivalences">
+
+A type $A$ is **contractible** if $\mathsf{isContr}(A) :\equiv \Sigma_{a : A} \Pi_{x : A} (a = x)$ is inhabited. The **fibre** of $f : A \to B$ over $b$ is $\mathsf{fib}_f(b) :\equiv \Sigma_{a : A} (f(a) = b)$. A function is an **equivalence** if every fibre is contractible; equivalently (logically, though not as types), if it has a two-sided homotopy inverse $g$ with $\Pi_x\, g(f(x)) = x$ and $\Pi_y\, f(g(y)) = y$. We write $A \simeq B$ for the type of equivalences. A type is a **proposition** if any two of its elements are equal, and a **set** if each of its identity types is a proposition.
+
+</Definition>
+
+<Definition term="univalence">
+
+Let $\mathcal{U}$ be a universe. By path induction there is a canonical map $\mathsf{idtoeqv} : (A =_{\mathcal{U}} B) \to (A \simeq B)$ sending $\mathsf{refl}_A$ to the identity equivalence. The **univalence axiom** (Voevodsky) states that $\mathsf{idtoeqv}$ is an equivalence for all $A, B : \mathcal{U}$. Its inverse is written $\mathsf{ua} : (A \simeq B) \to (A = B)$.
+
+</Definition>
+
+<Definition term="higher inductive types: the circle">
+
+A **higher inductive type** has constructors for paths as well as points. The **circle** $S^1$ has a point $\mathsf{base} : S^1$ and a path $\mathsf{loop} : \mathsf{base} = \mathsf{base}$. Its **recursion principle**: to define $f : S^1 \to B$ it suffices to give $b : B$ and $\ell : b = b$; then $f(\mathsf{base}) \equiv b$ and $\mathsf{ap}_f(\mathsf{loop}) = \ell$. Its **induction principle** does the same for dependent functions, with $\ell$ a path *over* $\mathsf{loop}$: $\mathsf{tr}^P(\mathsf{loop}, b) = b$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Transport in simple families">
+
+- In a constant family $P(x) \equiv B$, $\mathsf{tr}^P(p, -) = \mathrm{id}_B$.
+- In the family $P(x) \equiv (a = x)$ of paths from a fixed point, $\mathsf{tr}^P(p, q) = q \cdot p$: transporting a path along $p$ appends $p$.
+- In the family $P(X) \equiv X$ over the universe, transport along $p : A = B$ is the underlying function of $\mathsf{idtoeqv}(p)$, and univalence says that $\mathsf{tr}^{X \mapsto X}(\mathsf{ua}(e), -) = e$.
+
+</Example>
+
+<Example title="Sets, and a universe that is not a set">
+
+By **Hedberg's theorem** (1998), every type with decidable equality, such as $\mathbb{N}$, $\Z$ or $\mathsf{Bool}$, is a set. The universe is not: by univalence, $(\mathsf{Bool} = \mathsf{Bool}) \simeq (\mathsf{Bool} \simeq \mathsf{Bool})$, and the right side has two different elements, the identity and negation. The path $\mathsf{ua}(\mathsf{not}) : \mathsf{Bool} = \mathsf{Bool}$ is a non-trivial loop in the universe — the universe "sees" the symmetry of $\mathsf{Bool}$. More generally the type of $n$-element types has loop space the symmetric group $S_n$: it is the classifying space $BS_n$.
+
+</Example>
+
+<Example title="The circle is not a set">
+
+The loop $\mathsf{loop} : \mathsf{base} = \mathsf{base}$ is not equal to $\mathsf{refl}$. The proof needs a type that is not a set: if every type were a set, the circle's recursion principle would send $\mathsf{loop}$ to $\mathsf{refl}$ in every type, but in the universe we can send it to $\mathsf{ua}(\mathsf{not})$, which is not $\mathsf{refl}$. The encode–decode theorem below computes $\mathsf{base} = \mathsf{base}$ completely.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central results">
+
+<Theorem name="Lemma 1 (the groupoid laws)">
+
+For paths $p : a = b$, $q : b = c$, $r : c = d$: $\;\mathsf{refl} \cdot p = p$, $\;p \cdot \mathsf{refl} = p$, $\;p \cdot p^{-1} = \mathsf{refl}$, $\;p^{-1} \cdot p = \mathsf{refl}$ and $(p \cdot q) \cdot r = p \cdot (q \cdot r)$. These equalities are themselves paths, and they satisfy higher coherences (the pentagon and beyond).
+
+</Theorem>
+
+<Proof>
+
+Define $p \cdot q$ by induction on $q$, setting $p \cdot \mathsf{refl} :\equiv p$; then the right unit law holds by definition. For the others, use path induction on the path with a free endpoint. For instance, to prove $\Pi_{x} \Pi_{p : a = x}\, (p \cdot p^{-1} = \mathsf{refl}_a)$ it suffices, by path induction, to treat $x \equiv a$ and $p \equiv \mathsf{refl}_a$, where $\mathsf{refl} \cdot \mathsf{refl}^{-1} \equiv \mathsf{refl} \cdot \mathsf{refl} \equiv \mathsf{refl}$, so $\mathsf{refl}_{\mathsf{refl}}$ is the required path. Associativity follows by induction on $r$: both sides reduce to $p \cdot q$. The left unit law $\mathsf{refl} \cdot p = p$ follows by induction on $p$.
+
+</Proof>
+
+<Theorem name="Lemma 2 (transport is an equivalence; transport is functorial)">
+
+For $P : A \to \mathcal{U}$ and $p : a = b$, the function $\mathsf{tr}^P(p, -) : P(a) \to P(b)$ is an equivalence with inverse $\mathsf{tr}^P(p^{-1}, -)$, and $\mathsf{tr}^P(p \cdot q, -) = \mathsf{tr}^P(q, -) \circ \mathsf{tr}^P(p, -)$.
+
+</Theorem>
+
+<Proof>
+
+By path induction on $p$ (and on $q$ for the second claim): when $p \equiv \mathsf{refl}$ all transports are identities. A function with a two-sided inverse is an equivalence.
+
+</Proof>
+
+<Theorem name="Theorem 3 (univalence contradicts uniqueness of identity proofs)">
+
+If the universe $\mathcal{U}$ is univalent and contains $\mathsf{Bool}$, then $\mathcal{U}$ is not a set; in particular axiom K and UIP fail for $\mathcal{U}$.
+
+</Theorem>
+
+<Proof>
+
+By univalence, $\mathsf{idtoeqv} : (\mathsf{Bool} = \mathsf{Bool}) \to (\mathsf{Bool} \simeq \mathsf{Bool})$ is an equivalence, in particular surjective. The identity equivalence and negation are different elements of $\mathsf{Bool} \simeq \mathsf{Bool}$ (they differ at $\mathsf{true}$). Their preimages $\mathsf{refl}$ and $\mathsf{ua}(\mathsf{not})$ are therefore different elements of $\mathsf{Bool} = \mathsf{Bool}$, since $\mathsf{idtoeqv}$ sends them to different things. So $\mathsf{Bool} = \mathsf{Bool}$ is not a proposition, and $\mathcal{U}$ is not a set.
+
+</Proof>
+
+The argument runs equally well backwards, and that is the content of the formal section: in a type theory where UIP holds — such as Lean, whose equality is proof-irrelevant — $\mathsf{idtoeqv}$ for $\mathsf{Bool}$ cannot be surjective, so univalence is *false*, not merely unprovable.
+
+<Theorem name="Theorem 4 (univalence implies function extensionality; Voevodsky; stated)">
+
+In a univalent universe, if $f, g : \Pi_{x : A} B(x)$ satisfy $\Pi_x\, f(x) = g(x)$, then $f = g$. Moreover the canonical map $(f = g) \to \Pi_x (f(x) = g(x))$ is an equivalence.
+
+</Theorem>
+
+See *Homotopy Type Theory*, §4.9. Function extensionality is not provable in plain Martin-Löf type theory; in HoTT it is a consequence of univalence, while in Lean it is a theorem derived from quotient types.
+
+<Theorem name="Theorem 5 (the loop space of the circle; Licata and Shulman, 2013)">
+
+$(\mathsf{base} =_{S^1} \mathsf{base}) \simeq \Z$. Consequently $\pi_1(S^1) \cong \Z$, and $S^1$ is a 1-type (its higher homotopy groups vanish).
+
+</Theorem>
+
+<Proof>
+
+(*Outline of the encode–decode method.*)
+
+1. **The universal cover.** Define $\mathsf{code} : S^1 \to \mathcal{U}$ by circle recursion, with $\mathsf{code}(\mathsf{base}) :\equiv \Z$ and $\mathsf{ap}_{\mathsf{code}}(\mathsf{loop}) := \mathsf{ua}(\mathsf{succ})$, where $\mathsf{succ} : \Z \simeq \Z$ is the successor. By the computation rules of circle recursion and univalence, $\mathsf{tr}^{\mathsf{code}}(\mathsf{loop}, n) = n + 1$ and $\mathsf{tr}^{\mathsf{code}}(\mathsf{loop}^{-1}, n) = n - 1$.
+2. **Encode.** For $x : S^1$ define $\mathsf{encode} : (\mathsf{base} = x) \to \mathsf{code}(x)$ by $\mathsf{encode}(p) :\equiv \mathsf{tr}^{\mathsf{code}}(p, 0)$.
+3. **Decode.** Define $\mathsf{decode} : \Pi_{x : S^1}\, \mathsf{code}(x) \to (\mathsf{base} = x)$ by circle induction: $\mathsf{decode}(\mathsf{base}, n) :\equiv \mathsf{loop}^n$, and one checks that this is compatible with transport along $\mathsf{loop}$, which amounts to $\mathsf{loop}^{n-1} \cdot \mathsf{loop} = \mathsf{loop}^n$.
+4. **Decode after encode.** $\mathsf{decode}(x, \mathsf{encode}(p)) = p$ for all $x$ and $p : \mathsf{base} = x$, by based path induction on $p$: for $p \equiv \mathsf{refl}$ both sides are $\mathsf{refl}$, since $\mathsf{encode}(\mathsf{refl}) \equiv 0$ and $\mathsf{loop}^0 \equiv \mathsf{refl}$.
+5. **Encode after decode.** $\mathsf{encode}(\mathsf{decode}(x, c)) = c$, by circle induction reduced to $x \equiv \mathsf{base}$, where it says $\mathsf{tr}^{\mathsf{code}}(\mathsf{loop}^n, 0) = n$. By functoriality of transport (Lemma 2) this is $\mathsf{succ}^n(0) = n$, an induction on $n \in \Z$.
+
+So $(\mathsf{base} = x) \simeq \mathsf{code}(x)$ for all $x$, and at $x \equiv \mathsf{base}$ this gives $(\mathsf{base} = \mathsf{base}) \simeq \Z$. Since $\Z$ is a set, the loop space is a set, so $\pi_1(S^1) \cong \Z$ and $S^1$ has no higher homotopy. Full details: *Homotopy Type Theory*, §8.1, and Licata–Shulman (2013).
+
+</Proof>
+
+Step 1 is where univalence enters, and step 3 is where the higher inductive type does. The formal section proves the purely arithmetic step 5 (that $\mathsf{succ}^n(0) = n$ for every integer $n$) in Lean, and cites Mathlib's classical proof that $\pi_1(S^1) \cong \Z$ via covering spaces.
+
+<Theorem name="Theorem 6 (models; stated)">
+
+1. Univalent type theory has a model in **Kan simplicial sets**, in which types are Kan complexes and identity types are path spaces (Voevodsky; Kapulkin and Lumsdaine, 2021); the model also interprets many higher inductive types, including the circle (Lumsdaine and Shulman, 2020). This shows that univalence is consistent relative to ZFC with inaccessible cardinals (used to interpret universes).
+2. **Cubical type theory** has constructive models in cubical sets, in which univalence is a theorem and computes (Bezem, Coquand and Huber, 2014; Cohen, Coquand, Huber and Mörtberg, 2018).
+3. Every **Grothendieck $(\infty, 1)$-topos** models homotopy type theory with strict univalent universes (Shulman, 2019).
+
+</Theorem>
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: what is known and what is open">
+
+**Established.**
+
+- *Synthetic homotopy theory.* Classical theorems have been reproved inside HoTT, where they hold in every model: $\pi_1(S^1) = \Z$, $\pi_k(S^n) = 0$ for $k < n$, $\pi_n(S^n) = \Z$, the Hopf fibration and $\pi_3(S^2) = \Z$, the Freudenthal suspension theorem, Eilenberg–MacLane spaces (Licata–Finster, 2014), and the Blakers–Massey theorem (Favonia, Finster, Licata and Lumsdaine, 2016). Brunerie (2016) proved that $\pi_4(S^3) \cong \Z/n$ for an explicitly defined integer $n$ and then showed by hand that $n = \pm 2$; getting a proof assistant to *compute* $n$ was an open challenge for years, met with a reformulated proof in Cubical Agda (Ljungström and Mörtberg, 2023).
+- *Univalent mathematics.* Large libraries (UniMath, the Coq HoTT library, agda-unimath) develop algebra and category theory univalently. Univalent categories satisfy "isomorphic objects are equal", and every category has a univalent completion, the Rezk completion (Ahrens, Kapulkin and Shulman, 2015).
+- *Logic.* The law of excluded middle for propositions and the axiom of choice for sets are consistent with univalence (they hold in the simplicial model), but excluded middle for *all* types, $\Pi_{A : \mathcal{U}} (A + \neg A)$, contradicts univalence (*HoTT*, §3.2).
+
+**Open or in progress.**
+
+- Which further homotopy groups of spheres can be computed synthetically, and how efficiently proofs about them can be made to compute.
+- The precise sense in which HoTT is the internal language of $(\infty, 1)$-toposes: partial results exist (for example Kapulkin and Szumiło, 2019, for finitely complete $(\infty, 1)$-categories), but a full statement covering univalent universes and higher inductive types is not established.
+- Synthetic ∞-category theory in directed or simplicial type theories (Riehl and Shulman, 2017) and new type theories that make univalence and higher inductive types compute in every model are active research programmes.
+
+</Section>
+
+<Section id="formal" kind="formal" title="HoTT and Lean: where they part ways">
+
+Lean's logic is a dependent type theory, but **not** homotopy type theory: its equality `a = b` lives in the universe `Prop` of proof-irrelevant propositions, so any two proofs of `a = b` are equal *by definition*. This is uniqueness of identity proofs, which, by Theorem 3, contradicts univalence. We can still learn a lot by building a HoTT-style identity type inside Lean and watching what happens.
+
+First, an identity type in `Type` rather than `Prop`, with its eliminator. `J` is defined by pattern matching on `refl` with the endpoint free, which is exactly based path induction:
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.J" />
+
+The basic operations, each defined from `J` alone, exactly as in the definitions section:
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.inv" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.concat" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.ap" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.transport" />
+
+The groupoid laws and functoriality of transport (Lemmas 1 and 2), proved by path induction. Because a proof of an equation between paths is itself a path — an element of a type in `Type` — these are `def`s producing paths, not `theorem`s: Lean reserves `theorem` for propositions.
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.refl_concat" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.concat_inv" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.concat_assoc" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.transport_concat" />
+
+The map that univalence asks to be an equivalence:
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.idtoeqv" />
+
+Now the two theorems about Lean itself. Even though `Paths a b` lives in `Type`, Lean proves it has at most one element: it is a *retract* of `a = b`, which is proof-irrelevant. The middle step of the `calc` is closed by `rfl`, because Lean considers any two proofs of the same proposition definitionally equal. Consequently `idtoeqv` is not surjective for `Bool`, and univalence is false in Lean:
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.paths_subsingleton" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.Paths.univalence_fails" />
+
+Function extensionality, which HoTT derives from univalence, is a theorem in Lean derived from quotient types; and the set-level shadow of "equivalences are maps with contractible fibres" is Mathlib's characterisation of bijections:
+
+<Lean decl="Lumenary.HomotopyTypeTheory.funext_library" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.bijective_iff_unique_fibres" />
+
+Finally, the circle. Lean has no higher inductive types, but Mathlib proves the classical theorem $\pi_1(S^1) \cong \Z$ with covering spaces, and we prove the arithmetic step 5 of the encode–decode argument — the $n$-th power of the successor permutation of $\Z$ is translation by $n$, for negative $n$ too:
+
+<Lean decl="Lumenary.HomotopyTypeTheory.fundamental_group_circle" />
+
+<Lean decl="Lumenary.HomotopyTypeTheory.encode_loop_pow" />
+
+**What is and is not formalised.** Formalised here: identity types with path induction, the groupoid laws and transport as paths, the map `idtoeqv`, and two precise theorems showing that Lean validates uniqueness of identity proofs and refutes univalence. Not formalisable in Lean as it stands: univalent universes, higher inductive types, and the synthetic proof of Theorem 5. Those live in proof assistants built for HoTT — Cubical Agda, Coq/Rocq with the HoTT library, UniMath, Arend — in which, conversely, Lean's proof-irrelevant `Prop` is unavailable.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Encode and decode, by machine">
+
+In a combinatorial model of the circle, a loop built from $\mathsf{loop}$ and $\mathsf{loop}^{-1}$ is a word in $+1$ and $-1$, the groupoid laws cancel adjacent $+1, -1$, and transport in the universal cover is successor and predecessor on $\Z$. The experiment checks exhaustively, for all 8190 non-empty words of length at most 12, that decoding the winding number gives back the reduced word (steps 4 and 5 of Theorem 5 in this model), that encoding turns concatenation into addition, and then computes winding numbers of loops in the plane numerically, the classical counterpart.
+
+<Python id="homotopy_type_theory_circle" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: transport along a path">
+
+Transport and the action of functions on paths fit into one picture. A path $p$ in the base type $A$ lifts to the total space of a family $P$; over the circle with the family $\mathsf{code}$, lifting $\mathsf{loop}$ starting at $0$ ends at $1$.
+
+<CommutativeDiagram
+  objects={[
+    { id: "Pa", tex: "P(a)", row: 0, col: 0 },
+    { id: "Pb", tex: "P(b)", row: 0, col: 2 },
+    { id: "a", tex: "a", row: 1, col: 0 },
+    { id: "b", tex: "b", row: 1, col: 2 },
+    { id: "Z0", tex: "\\mathsf{code}(\\mathsf{base}) \\equiv \\mathbb{Z}", row: 2, col: 0 },
+    { id: "Z1", tex: "\\mathbb{Z}", row: 2, col: 2 }
+  ]}
+  arrows={[
+    { from: "Pa", to: "Pb", tex: "\\mathsf{tr}^P(p, -)" },
+    { from: "a", to: "b", tex: "p", style: "double" },
+    { from: "Z0", to: "Z1", tex: "\\mathsf{tr}^{\\mathsf{code}}(\\mathsf{loop}, -) \\,=\\, \\mathsf{succ}", labelSide: "right" }
+  ]}
+  size="md"
+  caption="Top: transport along a path $p : a = b$ (drawn as a double arrow) is a function between fibres, an equivalence by Lemma 2. Bottom: in the universal cover of the circle, transport along $\mathsf{loop}$ is the successor; the experiment's encode map iterates it along a word."
+/>
+
+Try it with the experiment's functions in mind: the word $(+1, +1, -1, +1)$ encodes to $2$ because transport along a concatenation is the composite of transports. Which words of length 4 encode to $0$, and why do all of them reduce to the empty word?
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"HoTT replaces set theory and category theory wholesale."** It is one foundation among several, with its own strengths (invariance under equivalence is built in; homotopy theory becomes synthetic) and open questions (computation with univalence in all models, the precise relation to ∞-toposes). Much mathematics can be done in ZFC, in Lean's type theory or in HoTT, and the interpretations between them are themselves mathematics.
+
+</Misconception>
+
+<Misconception>
+
+**"Univalence says isomorphic sets are equal, so it contradicts ZFC."** Univalence is an axiom about identity types *inside* type theory; it says nothing about membership of ZFC sets. It is consistent relative to ZFC with inaccessible cardinals, via the simplicial-set model, in which "$A = B$" is interpreted as a space of paths, not as equality of sets.
+
+</Misconception>
+
+<Misconception>
+
+**"HoTT is the same as ∞-category theory."** They are connected through models: types in a model behave like objects of an ∞-topos (Shulman), and ∞-groupoids appear on both sides. But HoTT is a formal language with proofs and computation, and directed ∞-categories (with non-invertible morphisms) are not what its identity types describe.
+
+</Misconception>
+
+<Misconception>
+
+**"Path induction says every path is refl."** Path induction lets you assume $p \equiv \mathsf{refl}$ only when one endpoint is free. For a loop $p : a = a$ with both endpoints fixed, the rule does not apply — which is why $\mathsf{loop} \neq \mathsf{refl}$ in the circle and $\mathsf{ua}(\mathsf{not}) \neq \mathsf{refl}$ in the universe.
+
+</Misconception>
+
+<Misconception>
+
+**"Lean can check HoTT proofs if we are careful."** Lean's equality satisfies uniqueness of identity proofs definitionally, and so Lean refutes univalence (formal section). One can study HoTT *about* Lean-built models, or restrict oneself to a fragment, but univalent proofs need a proof assistant designed without proof-irrelevant equality.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Synthetic homotopy theory">
+
+To a topologist, HoTT is a language in which every type is a space and every construction is automatically continuous: a function $f : A \to B$ acts on paths ($\mathsf{ap}_f$), a type family is a fibration (transport is path lifting), and $\Sigma$ and $\Pi$ are total spaces and spaces of sections. Spaces are described synthetically, by generators (higher inductive types), rather than as sets of points with a topology. Theorem 5 is the type-theoretic version of the covering-space proof that $\pi_1(S^1) \cong \Z$, with $\mathsf{code}$ playing the universal cover $\R \to S^1$ — and because it uses only the rules of type theory, it holds in every ∞-topos. See <TopicLink id="math.geom.fundamental-group">Homotopy and the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Propositions as some types">
+
+Curry–Howard reads every type as a proposition; HoTT refines this. Only types with at most one element (up to paths) are **propositions** in the HoTT sense, and the **propositional truncation** $\|A\|$ turns any type into one ("there merely exists"). This resolves an old tension: $\Sigma_{x : A} P(x)$ remembers a witness, while $\|\Sigma_{x : A} P(x)\|$ is the classical "there exists". Excluded middle and choice can be assumed for propositions and sets without contradicting univalence, but excluded middle for all types contradicts it, because it would choose, uniformly in $A$, an element of every inhabited type — impossible when the universe has symmetries. See <TopicLink id="math.found.proof-theory">Proof theory</TopicLink> and <TopicLink id="math.cat.categorical-logic">Categorical logic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Groups as pointed connected types">
+
+In univalent foundations a group can be presented as a pointed, connected 1-type $BG$, with $G$ recovered as the loop space $\mathsf{pt} = \mathsf{pt}$: composition is concatenation and associativity is Lemma 1. Actions of $G$ on sets are type families over $BG$, homomorphisms are pointed maps $BG \to BH$, and the circle is $B\Z$ (Theorem 5). The universe itself realises symmetric groups: the type of $n$-element types is $BS_n$. This approach to group theory is developed in the draft book *Symmetry* by Bezem, Buchholtz, Cagne, Dundas and Grayson. See <TopicLink id="math.algebra.groups">Groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Counting symmetries: groupoid cardinality">
+
+Univalence says that the paths $\mathsf{Fin}(n) = \mathsf{Fin}(n)$ are the $n!$ permutations. Counting a groupoid by weighting each isomorphism class by $1/|\mathrm{Aut}|$ (Baez and Dolan, 2001), the type of all finite sets has cardinality $\sum_{n \ge 0} 1/n! = e$. This "homotopy cardinality" is the bookkeeping behind exponential generating functions and Joyal's combinatorial species, where structures on finite sets are counted *up to relabelling* — exactly the invariance under equivalence that univalence builds in. See <TopicLink id="math.discrete.enumerative-combinatorics">Enumerative combinatorics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Proofs that compute">
+
+In type theory, proofs are programs, and closed terms should compute to canonical values. An axiom such as univalence blocks computation: a term of type $\mathbb{N}$ built using $\mathsf{ua}$ may not reduce to a numeral. Cubical type theory solves this by taking paths to be maps out of an abstract interval, so that univalence becomes a theorem that computes; Huber (2019) proved canonicity for cubical type theory. Cubical Agda implements it, and the computation of Brunerie's number (Ljungström and Mörtberg) is a striking test of what "proofs that compute" can achieve. See <TopicLink id="math.comp.formal-methods">Formal methods</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="∞-toposes and univalent categories">
+
+Categorically, a model of HoTT is a **type-theoretic model topos**, presenting an $(\infty, 1)$-topos, in which types are objects, dependent types are fibrations and univalent universes are object classifiers (Shulman, 2019). Inside HoTT, category theory itself becomes univalent: a **univalent category** is one in which the canonical map from identities of objects to isomorphisms is an equivalence — so "isomorphic objects are equal" holds by design, and constructions automatically respect isomorphism. See <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink> and <TopicLink id="math.cat.elementary-topoi">Elementary topos theory</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1970s–1980s.** Per Martin-Löf (Stockholm) developed intensional dependent type theory, with identity types and their elimination rule $J$; Thierry Coquand and Gérard Huet's calculus of constructions (1988) led to the proof assistants Coq (now Rocq) and, later, Lean.
+- **1990s: identity proofs need not be unique.** Martin Hofmann and Thomas Streicher (Germany) built the groupoid model (1994), showing that uniqueness of identity proofs is not provable; Streicher formulated axiom K; Hedberg (1998) showed that types with decidable equality satisfy UIP.
+- **2006–2010: the homotopy interpretation.** Steve Awodey and Michael Warren showed that identity types can be interpreted as path objects in model categories; Vladimir Voevodsky, independently, built the simplicial model and formulated univalence and univalent foundations, motivated in part by errors discovered in published proofs, including his own (see <TopicLink id="math.cat.higher-categories">Higher categories</TopicLink>); Lumsdaine and van den Berg–Garner showed that types are weak ∞-groupoids.
+- **2012–2013: the special year.** A special year at the Institute for Advanced Study in Princeton brought together researchers from many countries and produced the collaboratively written *Homotopy Type Theory* book (2013). Licata and Shulman computed the loop space of the circle (2013).
+- **2014–today.** Cubical type theory (Bezem, Coquand, Huber; Cohen, Coquand, Huber, Mörtberg) gave univalence computational meaning; Shulman (2019) showed that all ∞-toposes model HoTT; large univalent libraries and textbooks (Rijke, 2022) appeared; Brunerie's computation of $\pi_4(S^3)$ and its mechanisation became landmarks of synthetic homotopy theory.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+A suggested path: Rijke's textbook or Grayson's survey for a first pass; the HoTT book, Chapters 1–8, for the core; Licata–Shulman for the circle; Kapulkin–Lumsdaine and Shulman for models.
+
+- The Univalent Foundations Program, *Homotopy Type Theory: Univalent Foundations of Mathematics* (2013), https://homotopytypetheory.org/book/
+- Egbert Rijke, *Introduction to Homotopy Type Theory* (2022).
+- Daniel R. Grayson, "An introduction to univalent foundations for mathematicians", *Bulletin of the AMS* 55 (2018).
+- Daniel R. Licata and Michael Shulman, "Calculating the fundamental group of the circle in homotopy type theory", *LICS 2013*.
+- Steve Awodey and Michael A. Warren, "Homotopy theoretic models of identity types", *Math. Proc. Cambridge Philos. Soc.* 146 (2009).
+- Martin Hofmann and Thomas Streicher, "The groupoid interpretation of type theory", in *Twenty-Five Years of Constructive Type Theory* (1998).
+- Krzysztof Kapulkin and Peter LeFanu Lumsdaine, "The simplicial model of univalent foundations (after Voevodsky)", *J. Eur. Math. Soc.* 23 (2021).
+- Michael Shulman, "All $(\infty, 1)$-toposes have strict univalent universes" (2019).
+- Cyril Cohen, Thierry Coquand, Simon Huber and Anders Mörtberg, "Cubical type theory: a constructive interpretation of the univalence axiom" (2018).
+
+</Section>

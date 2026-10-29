@@ -1,0 +1,163 @@
+{
+  "lesson": "formal-proof-lean",
+  "exercises": [
+    {
+      "id": "formal-proof-lean-statement-comp",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "F",
+      "prompt": "With `f : α → β` and `g : β → γ`, which Lean statement says that *a composite of injective functions is injective*?",
+      "options": [
+        { "id": "a", "label": "`Injective g → Injective f → Injective (g ∘ f)`", "correct": true, "feedback": "Yes: two hypotheses and the conclusion. This is Mathlib's `Function.Injective.comp`." },
+        { "id": "b", "label": "`Injective (g ∘ f) → Injective g`", "correct": false, "feedback": "This is a different claim, and it is false: with `f : Unit → Bool` and `g` constant, `g ∘ f` is injective but `g` is not. (What *does* follow is `Injective f`.)" },
+        { "id": "c", "label": "`∃ f g, Injective (g ∘ f)`", "correct": false, "feedback": "This only says that *some* composite is injective (take identities). It is not a statement about all `f` and `g`." },
+        { "id": "d", "label": "`Injective g ∧ Injective f`", "correct": false, "feedback": "This asserts that the two given functions are injective; it has no conclusion about the composite." }
+      ],
+      "hints": [
+        "The informal statement is \"if … and …, then …\": two hypotheses and a conclusion.",
+        "Implications in Lean are written with `→` and read from left to right."
+      ],
+      "solution": "Option (a). Informal \"if $g$ and $f$ are injective then $g \\circ f$ is injective\" becomes `Injective g → Injective f → Injective (g ∘ f)` (curried implications). The lesson proves it both from scratch (`injective_comp`) and by citing Mathlib (`hg.comp hf`)."
+    },
+    {
+      "id": "formal-proof-lean-first-step",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "To prove that $g \\circ f$ is injective, we assume $g(f(x)) = g(f(y))$ and must show $x = y$. Which fact do we use **first**?",
+      "options": [
+        { "id": "a", "label": "Injectivity of $g$, to get $f(x) = f(y)$", "correct": true, "feedback": "Right: the outer function is peeled off first. Then injectivity of $f$ gives $x = y$." },
+        { "id": "b", "label": "Injectivity of $f$, to get $x = y$ directly", "correct": false, "feedback": "Injectivity of $f$ needs $f(x) = f(y)$ as input, which we do not have yet; we have $g(f(x)) = g(f(y))$." },
+        { "id": "c", "label": "Surjectivity of $g$", "correct": false, "feedback": "Surjectivity plays no role here; injectivity is the hypothesis." },
+        { "id": "d", "label": "Associativity of composition", "correct": false, "feedback": "Nothing needs re-bracketing: $(g \\circ f)(x)$ is by definition $g(f(x))$." }
+      ],
+      "hints": [
+        "Which hypothesis applies to an equation of the form $g(\\cdot) = g(\\cdot)$?",
+        "In Lean, `apply hf` turns the goal `x = y` into `f x = f y`; `apply hg` then turns it into `g (f x) = g (f y)`."
+      ],
+      "solution": "From $g(f(x)) = g(f(y))$, injectivity of $g$ gives $f(x) = f(y)$, and then injectivity of $f$ gives $x = y$. In the Lean proof, `apply hf` comes first because `apply` works backwards from the goal — the reasoning order and the text order are mirror images."
+    },
+    {
+      "id": "formal-proof-lean-image-counterexample",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which function $f : \\N \\to \\N$ gives sets $S, T$ with $f(S \\cap T) \\ne f(S) \\cap f(T)$?",
+      "options": [
+        { "id": "a", "label": "$f(n) = 0$ for all $n$", "correct": true, "feedback": "Yes: with $S = \\{0\\}$, $T = \\{1\\}$, $f(S \\cap T) = \\varnothing$ but $f(S) \\cap f(T) = \\{0\\}$." },
+        { "id": "b", "label": "$f(n) = n + 1$", "correct": false, "feedback": "This $f$ is injective, and for injective functions equality always holds (Mathlib's `Set.image_inter`)." },
+        { "id": "c", "label": "$f(n) = 2n$", "correct": false, "feedback": "Also injective, so images preserve intersections." },
+        { "id": "d", "label": "$f(n) = n$", "correct": false, "feedback": "The identity preserves everything." }
+      ],
+      "hints": [
+        "For an injective function equality always holds. So look for a function that is not injective.",
+        "You need two different points of $S$ and $T$ with the same image, and $S \\cap T$ avoiding both."
+      ],
+      "solution": "Equality can only fail for a non-injective $f$, and among the options only the constant function is not injective. With $S = \\{0\\}$ and $T = \\{1\\}$: $S \\cap T = \\varnothing$, so $f(S \\cap T) = \\varnothing$, while $f(S) = f(T) = \\{0\\}$. This is the Lean theorem `image_inter_ne`; the first experiment confirms on all small examples that equality for all $S, T$ holds exactly for injective $f$."
+    },
+    {
+      "id": "formal-proof-lean-quantifier-order",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which of these statements about natural numbers are true? (Choose all that apply.)",
+      "options": [
+        { "id": "a", "label": "$\\forall n\\ \\exists m\\ \\ n < m$", "correct": true, "feedback": "Yes: take $m = n + 1$." },
+        { "id": "b", "label": "$\\exists m\\ \\forall n\\ \\ n < m$", "correct": false, "feedback": "No: taking $n = m$ would give $m < m$." },
+        { "id": "c", "label": "$\\exists m\\ \\forall n\\ \\ m \\le n$", "correct": true, "feedback": "Yes: $m = 0$ is below every natural number." },
+        { "id": "d", "label": "$\\forall n\\ \\exists m\\ \\ m < n$", "correct": false, "feedback": "No: for $n = 0$ there is no natural number $m < 0$." }
+      ],
+      "hints": [
+        "In $\\forall n\\, \\exists m$, the witness $m$ may depend on $n$; in $\\exists m\\, \\forall n$ one $m$ must work for every $n$.",
+        "Test the extreme cases $n = 0$ and $n = m$."
+      ],
+      "solution": "True: (a) with $m = n + 1$, and (c) with $m = 0$. False: (b), since $n = m$ fails; (d), since $n = 0$ has nothing below it. (a) and (b) differ only in the order of the quantifiers — the Lean theorem `forall_exists_not_imp` shows that $\\forall\\exists$ does not imply $\\exists\\forall$."
+    },
+    {
+      "id": "formal-proof-lean-truncated-subtraction",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "In Lean, with natural numbers, what is the value of `(5 : ℕ) - 8 + 8`?",
+      "answer": 8,
+      "feedback": [
+        { "match": "5", "message": "That would be true in the integers. But on `ℕ`, `5 - 8` is truncated to `0`." },
+        { "match": "-3", "message": "There are no negative natural numbers; subtraction on `ℕ` stops at `0`." }
+      ],
+      "hints": [
+        "Lean computes `5 - 8` first. What does truncated subtraction give?",
+        "`Nat.sub_add_cancel` needs the hypothesis `b ≤ a`, which fails here."
+      ],
+      "solution": "On `ℕ`, `5 - 8 = 0` (truncated subtraction), so `5 - 8 + 8 = 8`, not `5`. The law `a - b + b = a` holds only when `b ≤ a` (`Nat.sub_add_cancel`). Formal statements carry such hypotheses explicitly; informal ones often leave them implicit."
+    },
+    {
+      "id": "formal-proof-lean-div-zero",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "In Mathlib, `(7 : ℝ) / 0 = 0` is a theorem (`div_zero`). What follows?",
+      "options": [
+        { "id": "a", "label": "Nothing false: laws such as `a / b * b = a` require the hypothesis `b ≠ 0`, so the convention cannot be used to cancel a zero.", "correct": true, "feedback": "Exactly. The convention makes division total, and the hypothesis moves onto the cancellation laws (`div_mul_cancel₀`)." },
+        { "id": "b", "label": "`7 = 0`, by multiplying both sides by `0`.", "correct": false, "feedback": "Multiplying `7 / 0 = 0` by `0` gives `7 / 0 * 0 = 0`, and turning the left side into `7` would need `div_mul_cancel₀`, which requires `0 ≠ 0`." },
+        { "id": "c", "label": "Lean's logic is inconsistent.", "correct": false, "feedback": "No contradiction arises; `div_mul_cancel_needs_hyp` in the lesson shows precisely which law fails without the hypothesis." },
+        { "id": "d", "label": "Real analysis defines division by zero.", "correct": false, "feedback": "Real analysis leaves $7/0$ undefined. Lean must give every expression a value, and chooses $0$ as a harmless convention." }
+      ],
+      "hints": [
+        "Try to derive a contradiction from `7 / 0 = 0`. Which law would you need?",
+        "Look at the hypotheses of `div_mul_cancel₀`."
+      ],
+      "solution": "Option (a). Lean functions are total, so `x / 0` must denote *something*; Mathlib chooses `0`. To derive anything about real division you need laws like `div_mul_cancel₀ : b ≠ 0 → a / b * b = a`, and these carry the hypothesis `b ≠ 0`. So from `7 / 0 = 0` nothing false follows; the lesson's theorem `div_mul_cancel_needs_hyp` shows that the cancellation law without its hypothesis is false."
+    },
+    {
+      "id": "formal-proof-lean-print-axioms",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "`#print axioms limit_unique` reports `[propext, Classical.choice, Quot.sound]`. What does this tell you?",
+      "options": [
+        { "id": "a", "label": "The proof is complete (no `sorry`) and uses only Lean's three standard axioms, including choice.", "correct": true, "feedback": "Right. A gap would show up as `sorryAx`. The use of `Classical.choice` reflects classical reasoning, here a proof by contradiction about real numbers." },
+        { "id": "b", "label": "The proof is incomplete, because it depends on axioms.", "correct": false, "feedback": "Every proof depends on *some* rules; these three are the standard axioms of Mathlib's foundation. An incomplete proof would list `sorryAx`." },
+        { "id": "c", "label": "The proof is constructive.", "correct": false, "feedback": "`Classical.choice` appears, so the proof uses classical logic (excluded middle follows from choice)." },
+        { "id": "d", "label": "`limit_unique` was itself assumed as an axiom.", "correct": false, "feedback": "It is a theorem with a checked proof; `#print axioms` lists the axioms that proof rests on, and `limit_unique` is not among them." }
+      ],
+      "hints": [
+        "What would appear in the list if a step had been left as `sorry`?",
+        "Which of the three axioms makes a proof non-constructive?"
+      ],
+      "solution": "`#print axioms` lists the axioms a proof depends on. Here they are the three standard ones: propositional extensionality, quotient soundness and choice. There is no `sorryAx`, so the proof is complete. Compare `injective_comp`, which depends on no axioms at all: it is pure logic plus the definition of composition."
+    },
+    {
+      "id": "formal-proof-lean-group-step",
+      "type": "choice",
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "In the proof that a group in which every $x$ satisfies $x^2 = 1$ is commutative, we write $ab = (ab)^{-1} = b^{-1}a^{-1} = ba$. Which group law justifies the middle equality?",
+      "options": [
+        { "id": "a", "label": "The inverse of a product is the product of the inverses in reverse order (Mathlib's `mul_inv_rev`).", "correct": true, "feedback": "Yes: $(ab)(b^{-1}a^{-1}) = a(bb^{-1})a^{-1} = 1$, so $(ab)^{-1} = b^{-1}a^{-1}$ in every group." },
+        { "id": "b", "label": "Commutativity of multiplication.", "correct": false, "feedback": "That would be circular: commutativity is what we are proving. The step holds in every group." },
+        { "id": "c", "label": "$x^{-1} = x$ for all $x$.", "correct": false, "feedback": "That fact is used in the first and last equalities. The middle one holds in any group." },
+        { "id": "d", "label": "Uniqueness of the identity element.", "correct": false, "feedback": "Uniqueness of identities is not needed; the step is about inverses of products." }
+      ],
+      "hints": [
+        "Which step would still be true in a non-commutative group such as the symmetries of a triangle?",
+        "Compute $(ab)(b^{-1}a^{-1})$."
+      ],
+      "solution": "The middle step $(ab)^{-1} = b^{-1}a^{-1}$ holds in every group: $(ab)(b^{-1}a^{-1}) = 1$ and inverses are unique (the lesson's `inv_unique`). The outer steps use the hypothesis via $x^{-1} = x$. In Lean the step is `mul_inv_rev a b`, which is why `comm_of_sq_eq_one` works for every Mathlib `Group`."
+    },
+    {
+      "id": "formal-proof-lean-python-counterexample",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Write `find_counterexample(a, b)` that searches all functions $f$ from $\\{0, \\dots, a-1\\}$ to $\\{0, \\dots, b-1\\}$ (as tuples of values) and all pairs of subsets $S, T$ of the domain, and returns the first `(f, S, T)` with $f(S \\cap T) \\ne f(S) \\cap f(T)$ (with `S`, `T` as Python sets), or `None` if there is none. Use `itertools`.",
+      "starter": "import itertools\n\ndef find_counterexample(a, b):\n    return None\n",
+      "tests": "r = find_counterexample(2, 1)\nassert r is not None\nf, S, T = r\nimage = lambda s: {f[x] for x in s}\nassert image(S & T) != image(S) & image(T)\nassert find_counterexample(1, 3) is None, 'every function on a one-point set is injective'\nassert find_counterexample(3, 3) is not None\nassert find_counterexample(0, 2) is None\nprint('All tests passed!')\n",
+      "hints": [
+        "Functions: `itertools.product(range(b), repeat=a)`. Subsets: for each `k`, `itertools.combinations(range(a), k)`, converted to `set`.",
+        "Loop over `f`, then `S`, then `T`; compare `{f[x] for x in S & T}` with `{f[x] for x in S} & {f[x] for x in T}`."
+      ],
+      "solution": "```python\nimport itertools\n\ndef find_counterexample(a, b):\n    subsets = [set(c) for k in range(a + 1)\n               for c in itertools.combinations(range(a), k)]\n    for f in itertools.product(range(b), repeat=a):\n        image = lambda s: {f[x] for x in s}\n        for S in subsets:\n            for T in subsets:\n                if image(S & T) != image(S) & image(T):\n                    return f, S, T\n    return None\n```\n\nFor $a = 2$, $b = 1$ it finds the constant function with $S = \\{0\\}$, $T = \\{1\\}$. For $a = 1$ every function is injective, so no counterexample exists — consistent with Mathlib's `Set.image_inter`. A finite search can refute a general claim but not prove one; the theorem for injective functions is proved in the lesson."
+    }
+  ]
+}

@@ -1,0 +1,555 @@
+---
+slug: algebraic-geometry
+topic: math.geom.algebraic-geometry
+title: Algebraic geometry
+subtitle: Shapes cut out by polynomial equations, read through their rings of functions, completed by points at infinity — and rebuilt by Grothendieck so that every commutative ring is a space.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7015
+objectives:
+  - Pass between ideals and affine algebraic sets with the Nullstellensatz, matching irreducible sets with prime ideals and morphisms with homomorphisms of coordinate rings
+  - Work with the Zariski topology and explain why it is not Hausdorff
+  - Use projective space and homogeneous coordinates, and state Bézout's theorem for plane curves, proving it when one curve is a line or a smooth conic
+  - Distinguish varieties that are in bijection but not isomorphic, using coordinate rings
+  - Explain why schemes generalise varieties, using $\operatorname{Spec} R$ and its structure sheaf
+narrators: []
+lean:
+  - Lumenary.AlgebraicGeometry.zeroLocus_mul
+  - Lumenary.AlgebraicGeometry.basic_opens_meet
+  - Lumenary.AlgebraicGeometry.spec_int_not_t2
+  - Lumenary.AlgebraicGeometry.prime_ideal_of_irreducible
+  - Lumenary.AlgebraicGeometry.vanishing_of_prime
+  - Lumenary.AlgebraicGeometry.cusp_param_injective
+  - Lumenary.AlgebraicGeometry.cusp_not_normal
+  - Lumenary.AlgebraicGeometry.projective_plane_card
+  - Lumenary.AlgebraicGeometry.roots_on_a_line
+  - Lumenary.AlgebraicGeometry.global_sections_spec
+  - Lumenary.AlgebraicGeometry.sections_basic_open
+  - Lumenary.AlgebraicGeometry.affine_schemes_equiv_rings
+compute: [algebraic_geometry_bezout, algebraic_geometry_points_mod_p]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Equations are shapes">
+
+Draw the line through the point $(-1, 0)$ of the unit circle $x^2 + y^2 = 1$ with slope $t$. Substituting $y = t(x + 1)$ gives a quadratic equation in $x$ with the known root $x = -1$, so the other root is forced to be rational in $t$:
+$$
+(x, y) = \left( \frac{1 - t^2}{1 + t^2},\; \frac{2t}{1 + t^2} \right).
+$$
+Every rational slope gives a rational point and every rational point other than $(-1, 0)$ comes from a rational slope: for instance $t = 2/3$ gives $(\tfrac{5}{13}, \tfrac{12}{13})$ and, clearing denominators, the Pythagorean triple $5^2 + 12^2 = 13^2$. Diophantus used a version of this trick in the third century. It rests on a geometric fact — **a line meets a conic in two points** — which is false as stated (a line can miss a circle, or touch it) and becomes exactly true only after three repairs: allow complex points, add points at infinity, and count tangency twice. The result is **Bézout's theorem**: two plane curves of degrees $d$ and $e$ without common component meet in exactly $de$ points.
+
+**Algebraic geometry** studies the sets of solutions of systems of polynomial equations — **varieties** — and the polynomial maps between them. Its central idea is a dictionary: a variety $X$ is controlled by its ring of polynomial functions $k[X]$, points correspond to maximal ideals, subvarieties to prime ideals, and maps to ring homomorphisms in the opposite direction. Grothendieck turned the dictionary into a definition: every commutative ring $R$ *is* a space, $\operatorname{Spec} R$, and gluing such spaces gives **schemes**. The same language then describes curves over $\C$, curves over finite fields and the integers themselves.
+
+This lesson assumes <TopicLink id="math.algebra.commutative-algebra">commutative algebra</TopicLink> (prime ideals, localisation, Noetherian rings and the Nullstellensatz) and <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>. Throughout, $k$ is an **algebraically closed** field (such as $\C$) unless said otherwise, and $\mathbb{A}^n = k^n$ is **affine $n$-space**.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The dictionary">
+
+| geometry | algebra |
+| --- | --- |
+| affine algebraic set $X \subseteq \mathbb{A}^n$ | radical ideal $I(X) \subseteq k[x_1, \dots, x_n]$ |
+| irreducible $X$ (an affine variety) | prime ideal |
+| point $a \in \mathbb{A}^n$ | maximal ideal $(x_1 - a_1, \dots, x_n - a_n)$ |
+| polynomial functions on $X$ | coordinate ring $k[X] = k[x_1, \dots, x_n]/I(X)$ |
+| polynomial map $X \to Y$ | $k$-algebra homomorphism $k[Y] \to k[X]$ |
+| dimension of $X$ | Krull dimension of $k[X]$ |
+| $X \cup Y$, $X \cap Y$ | $I(X) \cap I(Y)$, $\sqrt{I(X) + I(Y)}$ |
+
+Three warnings shape everything that follows.
+
+- **The topology is coarse.** Closed sets are zero sets of polynomials, so in the line $\mathbb{A}^1$ they are just the finite sets and the whole line. Two non-empty open sets always meet.
+- **Points are not enough.** The cusp $y^2 = x^3$ and the line $\mathbb{A}^1$ are in bijection by a polynomial map, but they are not isomorphic: the rings of functions differ. The ideals $(x)$ and $(x^2)$ have the same zero set, but $(x^2)$ remembers a "double point". Rings, not point sets, carry the structure.
+- **Affine space is incomplete.** Parallel lines do not meet, and a line may miss a circle. Projective space adds the missing points at infinity; complex numbers add the missing complex points.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="algebraic sets and their ideals">
+
+For $S \subseteq k[x_1, \dots, x_n]$ the **affine algebraic set** of $S$ is $V(S) = \{a \in \mathbb{A}^n : f(a) = 0 \text{ for all } f \in S\}$. For $X \subseteq \mathbb{A}^n$ its **ideal** is $I(X) = \{f : f(a) = 0 \text{ for all } a \in X\}$, always a radical ideal. $V(S) = V(\langle S \rangle)$, and by Hilbert's basis theorem every algebraic set is cut out by finitely many polynomials.
+
+</Definition>
+
+<Definition term="Zariski topology; irreducibility; variety">
+
+The **Zariski topology** on $\mathbb{A}^n$ has the algebraic sets as its closed sets; a subset of $\mathbb{A}^n$ gets the subspace topology. A non-empty topological space is **irreducible** if it is not the union of two proper closed subsets; equivalently, any two non-empty open subsets meet. An **affine variety** is an irreducible affine algebraic set. (Some authors, e.g. in scheme theory, allow reducible "varieties"; we follow Hartshorne.)
+
+</Definition>
+
+<Definition term="coordinate ring, regular functions, morphisms">
+
+The **coordinate ring** of an algebraic set $X \subseteq \mathbb{A}^n$ is $k[X] = k[x_1, \dots, x_n]/I(X)$, the ring of polynomial functions on $X$; it is a finitely generated, **reduced** (no non-zero nilpotents) $k$-algebra, and a domain exactly when $X$ is a variety. A **morphism** $\varphi : X \to Y$ of algebraic sets $X \subseteq \mathbb{A}^n$, $Y \subseteq \mathbb{A}^m$ is a map $\varphi = (\varphi_1, \dots, \varphi_m)$ with $\varphi_i \in k[X]$ and $\varphi(X) \subseteq Y$. It induces the **comorphism** $\varphi^* : k[Y] \to k[X]$, $g \mapsto g \circ \varphi$. An **isomorphism** is a morphism with a morphism inverse.
+
+</Definition>
+
+<Definition term="function field and dimension">
+
+For a variety $X$ the **function field** $k(X)$ is the fraction field of $k[X]$; its elements are **rational functions**, defined on a dense open subset. Varieties with isomorphic function fields are **birational**. The **dimension** of $X$ is the supremum of lengths $n$ of chains $Z_0 \subsetneq Z_1 \subsetneq \cdots \subsetneq Z_n$ of irreducible closed subsets; it equals the Krull dimension of $k[X]$ and the transcendence degree of $k(X)$ over $k$. Curves have dimension $1$, surfaces $2$.
+
+</Definition>
+
+<Definition term="projective space and projective algebraic sets">
+
+**Projective $n$-space** $\mathbb{P}^n$ is the set of lines through the origin in $k^{n+1}$: points are written $[a_0 : \cdots : a_n]$, not all $a_i = 0$, with $[a_0 : \cdots : a_n] = [\lambda a_0 : \cdots : \lambda a_n]$ for $\lambda \in k^\times$. A polynomial $F$ does not have values on $\mathbb{P}^n$, but if $F$ is **homogeneous** the condition $F(a) = 0$ is well defined. **Projective algebraic sets** are common zero sets of homogeneous polynomials (equivalently of a **homogeneous ideal**), and they are the closed sets of the Zariski topology on $\mathbb{P}^n$. The **standard charts** $U_i = \{a_i \neq 0\} \cong \mathbb{A}^n$, $[a_0 : \cdots : a_n] \mapsto (a_0/a_i, \dots, \widehat{a_i/a_i}, \dots, a_n/a_i)$, cover $\mathbb{P}^n$. The **projective closure** of an affine algebraic set is its closure in $\mathbb{P}^n \supseteq U_0$, obtained by homogenising the equations.
+
+</Definition>
+
+<Definition term="plane curves and intersection multiplicity">
+
+A **projective plane curve** of degree $d$ is a non-zero homogeneous $F \in k[x, y, z]$ of degree $d$, up to scalar multiples (it may have repeated factors, which count as multiple components). For curves $F, G$ and a point $P$ in the chart $z \neq 0$, with $f, g$ their dehomogenisations, the **intersection multiplicity** is
+$$
+I_P(F, G) = \dim_k \mathcal{O}_P / (f, g),
+$$
+where $\mathcal{O}_P = k[x, y]_{\mathfrak{m}_P}$ is the local ring of the plane at $P$ (rational functions defined at $P$); points in other charts are treated in the same way. $I_P$ is finite exactly when $F$ and $G$ have no common component through $P$, is $0$ when $P$ is not on both curves, is $1$ exactly when $P$ is a smooth point of both curves with different tangent lines, and for a line $L$ equals the order of vanishing at $P$ of $F$ restricted to $L$ (Fulton, *Algebraic Curves*, §3.3).
+
+</Definition>
+
+<Definition term="presheaves and sheaves">
+
+A **presheaf** $\mathcal{F}$ of rings on a space $X$ assigns a ring $\mathcal{F}(U)$ to each open $U$ and restriction maps $\mathcal{F}(U) \to \mathcal{F}(V)$, $s \mapsto s|_V$, for $V \subseteq U$, compatibly with composition. It is a **sheaf** if sections are determined locally and compatible local sections glue: for every open cover $U = \bigcup U_i$, the sequence
+$$
+0 \to \mathcal{F}(U) \to \prod_i \mathcal{F}(U_i) \rightrightarrows \prod_{i, j} \mathcal{F}(U_i \cap U_j)
+$$
+is exact (an equaliser). On a variety, the **structure sheaf** $\mathcal{O}_X$ assigns to $U$ the ring of **regular functions** on $U$: functions that are locally quotients $g/h$ of polynomials with $h \neq 0$.
+
+</Definition>
+
+<Definition term="Spec R, the structure sheaf, schemes">
+
+For a commutative ring $R$, $\operatorname{Spec} R$ is the set of prime ideals with the Zariski topology (closed sets $V(I) = \{\mathfrak{p} \supseteq I\}$), with basic open sets $D(f) = \{\mathfrak{p} : f \notin \mathfrak{p}\}$. Its **structure sheaf** $\mathcal{O}$ is the unique sheaf of rings with $\mathcal{O}(D(f)) = R_f = R[1/f]$ and restriction maps the localisation maps; its stalk at $\mathfrak{p}$ is the local ring $R_\mathfrak{p}$. The pair $(\operatorname{Spec} R, \mathcal{O})$ is an **affine scheme**. A **scheme** is a space with a sheaf of rings (a locally ringed space) that is locally isomorphic to affine schemes; morphisms of schemes are morphisms of locally ringed spaces.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="The affine line and the cofinite topology">
+
+A non-zero polynomial in one variable has finitely many roots, so the algebraic subsets of $\mathbb{A}^1$ are $\mathbb{A}^1$ itself and the finite sets: the Zariski topology on $\mathbb{A}^1$ is the **cofinite topology**. It is $T_1$ (points are closed) but not Hausdorff, because $k$ is infinite and any two cofinite sets meet. In $\mathbb{A}^2$ the closed sets are finite unions of points and curves, and the Zariski topology on $\mathbb{A}^2 = \mathbb{A}^1 \times \mathbb{A}^1$ is **not** the product topology: the diagonal $x = y$ is closed in $\mathbb{A}^2$ but not in the product of two cofinite topologies.
+
+</Example>
+
+<Example title="A parabola is a line; a hyperbola is not">
+
+The parabola $P = V(y - x^2)$ is isomorphic to $\mathbb{A}^1$: the morphisms $t \mapsto (t, t^2)$ and $(x, y) \mapsto x$ are mutually inverse, and correspondingly $k[P] = k[x, y]/(y - x^2) \cong k[t]$.
+
+The hyperbola $H = V(xy - 1)$ is not: $k[H] = k[x, y]/(xy - 1) \cong k[t, t^{-1}]$, in which $t$ is a non-constant **unit**, whereas the units of $k[t]$ are the non-zero constants. An isomorphism $H \cong \mathbb{A}^1$ would give a ring isomorphism $k[t] \cong k[t, t^{-1}]$, preserving units. (Projection $(x, y) \mapsto x$ does identify $H$ with the open subset $\mathbb{A}^1 \setminus \{0\}$ — so an open subset of an affine variety can itself be affine.) Note that $H$ and $\mathbb{A}^1$ are **homeomorphic** in their Zariski topologies — both carry the cofinite topology on a set of cardinality $|k|$, so any bijection is a homeomorphism: topology alone cannot tell them apart.
+
+</Example>
+
+<Example title="The cusp: a bijection that is not an isomorphism">
+
+Let $C = V(y^2 - x^3)$. The morphism $\varphi : \mathbb{A}^1 \to C$, $t \mapsto (t^2, t^3)$, is bijective: its inverse is $(x, y) \mapsto y/x$ for $x \neq 0$ and $(0, 0) \mapsto 0$. But this inverse is not a polynomial map, and no inverse morphism exists: the comorphism $\varphi^* : k[C] \to k[t]$ sends $x \mapsto t^2$, $y \mapsto t^3$ with image $k[t^2, t^3]$, which does not contain $t$ (formalised below). So $\varphi^*$ is not an isomorphism, and neither is $\varphi$. Geometrically, $C$ has a **singular point** at the origin (both partial derivatives of $y^2 - x^3$ vanish there), while $\mathbb{A}^1$ is smooth. Algebraically, $k[C]$ is not integrally closed, and $\varphi$ is its **normalisation**.
+
+</Example>
+
+<Example title="Reducible sets and non-radical ideals">
+
+$V(xy) \subseteq \mathbb{A}^2$ is the union of the two axes $V(x) \cup V(y)$; its ideal $(xy)$ is radical but not prime. The ideals $(x^2y, xy^2)$, $(xy)$ and $(x) \cap (y)$ all have this zero set, and the Nullstellensatz gives $I(V(x^2y, xy^2)) = \sqrt{(x^2y, xy^2)} = (xy)$. Likewise $V(x^2) = V(x)$ in $\mathbb{A}^1$: the varieties cannot see the difference between $(x)$ and $(x^2)$, but schemes can — $\operatorname{Spec} k[x]/(x^2)$ is a point with a tangent direction attached.
+
+</Example>
+
+<Example title="Points at infinity">
+
+Homogenising with a new variable $z$ embeds $\mathbb{A}^2$ as the chart $z = 1$ of $\mathbb{P}^2$; the complement is the **line at infinity** $z = 0$.
+
+- The parallel lines $y = 0$ and $y = 1$ become $y = 0$ and $y = z$, which meet at $[1 : 0 : 0]$: parallel lines meet at infinity, at the point determined by their common direction.
+- The hyperbola $xy = 1$ becomes $xy = z^2$ and meets the line at infinity at $[1 : 0 : 0]$ and $[0 : 1 : 0]$ — the directions of its asymptotes.
+- The parabola $y = x^2$ becomes $yz = x^2$ and meets $z = 0$ only at $[0 : 1 : 0]$, where $x^2 = 0$ gives a double root: the parabola is **tangent** to the line at infinity.
+- Every circle $x^2 + y^2 + axz + byz + cz^2 = 0$ passes through the two **circular points** $[1 : \pm i : 0]$. So two circles, which meet in at most $2$ affine points, have their remaining $2$ intersections there.
+
+Over $\R$, ellipse, parabola and hyperbola are projectively equivalent, distinguished only by how they meet the line at infinity: in no real point, in one double point, or in two real points.
+
+</Example>
+
+<Example title="Spec of the integers">
+
+The points of $\operatorname{Spec}\Z$ are $(2), (3), (5), (7), \dots$ — one closed point for each prime — together with the **generic point** $(0)$, whose closure is the whole space. The function $n \in \Z$ has the "value" $n \bmod p$ in $\mathbb{F}_p$ at the point $(p)$, and vanishes exactly at the primes dividing $n$. $\operatorname{Spec}\Z$ looks like a curve: it has dimension $1$, its non-empty open sets are cofinite and contain the generic point, and the rings of integers of number fields give "curves" lying over it.
+
+<Figure caption="Spec ℤ drawn as a curve (after Mumford): one closed point for each prime, and a generic point (0) spread along the whole line, lying in every non-empty open set.">
+<svg viewBox="0 0 420 90" role="img" aria-label="A horizontal line with dots labelled 2, 3, 5, 7, 11, 13 and dots continuing, and a dashed band labelled (0) above the whole line">
+  <line x1="20" y1="55" x2="400" y2="55" stroke="var(--ink-2)" strokeWidth="2" />
+  <rect x="20" y="22" width="380" height="12" rx="6" fill="var(--sky-soft)" stroke="var(--gold)" strokeDasharray="5 4" />
+  <text x="210" y="17" textAnchor="middle" fontSize="12" fill="var(--ink-2)">generic point (0)</text>
+  <circle cx="50" cy="55" r="5" fill="var(--human)" />
+  <circle cx="100" cy="55" r="5" fill="var(--human)" />
+  <circle cx="150" cy="55" r="5" fill="var(--human)" />
+  <circle cx="200" cy="55" r="5" fill="var(--human)" />
+  <circle cx="250" cy="55" r="5" fill="var(--human)" />
+  <circle cx="300" cy="55" r="5" fill="var(--human)" />
+  <text x="50" y="78" textAnchor="middle" fontSize="12" fill="var(--ink-2)">(2)</text>
+  <text x="100" y="78" textAnchor="middle" fontSize="12" fill="var(--ink-2)">(3)</text>
+  <text x="150" y="78" textAnchor="middle" fontSize="12" fill="var(--ink-2)">(5)</text>
+  <text x="200" y="78" textAnchor="middle" fontSize="12" fill="var(--ink-2)">(7)</text>
+  <text x="250" y="78" textAnchor="middle" fontSize="12" fill="var(--ink-2)">(11)</text>
+  <text x="300" y="78" textAnchor="middle" fontSize="12" fill="var(--ink-2)">(13)</text>
+  <text x="360" y="78" textAnchor="middle" fontSize="12" fill="var(--ink-2)">…</text>
+</svg>
+</Figure>
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The main theorems">
+
+<Theorem name="Proposition 1 (the Zariski topology)">
+
+For subsets and ideals of $k[x_1, \dots, x_n]$ (any field $k$): $V(0) = \mathbb{A}^n$, $V(1) = \varnothing$, $V\big(\bigcup_\alpha S_\alpha\big) = \bigcap_\alpha V(S_\alpha)$, and $V(IJ) = V(I \cap J) = V(I) \cup V(J)$. Hence the algebraic sets are the closed sets of a topology. Moreover $V$ and $I$ reverse inclusions, $X \subseteq V(I(X))$ with equality exactly when $X$ is algebraic, and $V(I(X)) = \overline{X}$ is the Zariski closure.
+
+</Theorem>
+
+<Proof>
+
+The first three identities are immediate from the definition. Since $IJ \subseteq I \cap J \subseteq I$, we have $V(I) \subseteq V(I \cap J) \subseteq V(IJ)$, and similarly for $J$. Conversely, let $a \in V(IJ)$ and suppose $a \notin V(I)$: choose $f \in I$ with $f(a) \neq 0$. For every $g \in J$, $fg \in IJ$, so $f(a) g(a) = 0$ and hence $g(a) = 0$; thus $a \in V(J)$. So $V(IJ) \subseteq V(I) \cup V(J)$. If $X = V(J)$ then $J \subseteq I(X)$, so $V(I(X)) \subseteq V(J) = X$; and $V(I(X))$ is the smallest algebraic set containing $X$, since any algebraic $V(J) \supseteq X$ has $J \subseteq I(X)$.
+
+</Proof>
+
+<Theorem name="Proposition 2 (irreducible sets are prime ideals; components)">
+
+An algebraic set $X$ is irreducible if and only if $I(X)$ is a prime ideal. Every algebraic set is a finite union $X = X_1 \cup \cdots \cup X_r$ of irreducible algebraic sets, uniquely if no $X_i$ contains another (the **irreducible components**).
+
+</Theorem>
+
+<Proof>
+
+Suppose $X$ is irreducible and $fg \in I(X)$. Then $X = (X \cap V(f)) \cup (X \cap V(g))$ is a union of two closed subsets, so one of them, say $X \cap V(f)$, is all of $X$; that is, $f \in I(X)$. And $I(X) \neq (1)$ because $X \neq \varnothing$. Conversely, if $I(X)$ is prime and $X = X_1 \cup X_2$ with $X_i$ closed and proper, then $I(X_i) \supsetneq I(X)$ (Proposition 1: $X_i = V(I(X_i))$), so we may pick $f_i \in I(X_i) \setminus I(X)$; but $f_1 f_2$ vanishes on $X_1 \cup X_2 = X$, contradicting primality.
+
+For the decomposition: if some algebraic set had no such decomposition, by Hilbert's basis theorem (ascending chains of ideals stabilise, so descending chains of algebraic sets stabilise) there would be a *minimal* such $X$. It is not irreducible, so $X = X_1 \cup X_2$ with proper closed $X_i$, each of which decomposes by minimality — contradiction. For uniqueness, let $X = \bigcup X_i = \bigcup Y_j$ be irredundant decompositions. Since $X_1 = \bigcup_j (X_1 \cap Y_j)$ is irreducible, $X_1 \subseteq Y_j$ for some $j$; symmetrically $Y_j \subseteq X_i$ for some $i$, and then $X_1 \subseteq X_i$ forces $i = 1$, so $X_1 = Y_j$. The same argument applies to every $X_i$ and every $Y_j$, so the two decompositions have the same members.
+
+</Proof>
+
+<Theorem name="Theorem 3 (the Nullstellensatz dictionary)">
+
+Let $k$ be algebraically closed. For every ideal $J \subseteq k[x_1, \dots, x_n]$, $I(V(J)) = \sqrt{J}$. Hence $V$ and $I$ are mutually inverse, inclusion-reversing bijections
+$$
+\{\text{radical ideals}\} \leftrightarrow \{\text{algebraic sets}\}, \qquad \{\text{prime ideals}\} \leftrightarrow \{\text{affine varieties}\}, \qquad \{\text{maximal ideals}\} \leftrightarrow \{\text{points}\}.
+$$
+
+</Theorem>
+
+<Proof>
+
+The equation $I(V(J)) = \sqrt{J}$ is Hilbert's Nullstellensatz, proved in the lesson on <TopicLink id="math.algebra.commutative-algebra">commutative algebra</TopicLink> (in full for uncountable $k$ such as $\C$, via Rabinowitsch's trick). It shows $I \circ V$ is the identity on radical ideals, and Proposition 1 shows $V \circ I$ is the identity on algebraic sets. Prime ideals correspond to irreducible sets by Proposition 2, and maximal ideals — minimal non-empty algebraic sets — to points.
+
+</Proof>
+
+Algebraic closure is essential: over $\R$, $V(x^2 + y^2 + 1) = \varnothing = V(1)$, although $(x^2 + y^2 + 1)$ is a prime ideal.
+
+<Theorem name="Proposition 4 (the Zariski topology is not Hausdorff)">
+
+In an irreducible space, every non-empty open set is dense, and any two non-empty open sets meet. Consequently an affine variety with more than one point — for instance $\mathbb{A}^n$ for $n \geq 1$ — is not Hausdorff.
+
+</Theorem>
+
+<Proof>
+
+If $U, V$ are non-empty open and $U \cap V = \varnothing$, then $X = (X \setminus U) \cup (X \setminus V)$ is a union of two proper closed subsets, so $X$ is reducible. In a Hausdorff space with two distinct points $a \neq b$ there are disjoint open neighbourhoods of $a$ and $b$, which is impossible here. Finally $\mathbb{A}^n$ is irreducible because $I(\mathbb{A}^n) = 0$ (a polynomial vanishing on all of $k^n$, for infinite $k$, is zero, by induction on $n$) is prime.
+
+</Proof>
+
+For $\mathbb{A}^1$ the proof is concrete: basic open sets $D(f) = \{f \neq 0\}$ and $D(g)$ with $f, g \neq 0$ always meet, because $fg$ has finitely many roots and $k$ is infinite — this is the statement formalised below. The same is true of $\operatorname{Spec}\Z$, where it is even worse: the generic point lies in every non-empty open set, so $\operatorname{Spec}\Z$ is not even $T_1$.
+
+<Theorem name="Theorem 5 (affine varieties are the opposite of algebras)">
+
+Let $X \subseteq \mathbb{A}^n$ and $Y \subseteq \mathbb{A}^m$ be affine algebraic sets over an algebraically closed field $k$.
+
+1. $\varphi \mapsto \varphi^*$ is a bijection from morphisms $X \to Y$ to $k$-algebra homomorphisms $k[Y] \to k[X]$, compatible with composition: $(\psi \circ \varphi)^* = \varphi^* \circ \psi^*$.
+2. Every finitely generated reduced $k$-algebra is isomorphic to $k[X]$ for some $X$.
+
+Hence $X \mapsto k[X]$ is an equivalence between the category of affine algebraic sets and the opposite of the category of finitely generated reduced $k$-algebras; under it, affine varieties correspond to finitely generated $k$-algebras that are domains.
+
+</Theorem>
+
+<Proof>
+
+(1) Write $\bar y_1, \dots, \bar y_m$ for the coordinate functions on $Y$, which generate $k[Y]$. Given a homomorphism $\alpha : k[Y] \to k[X]$, set $\varphi = (\alpha(\bar y_1), \dots, \alpha(\bar y_m)) : X \to \mathbb{A}^m$. For $g \in I(Y)$ and $a \in X$, $g(\varphi(a)) = \alpha(\bar g)(a) = \alpha(0)(a) = 0$, because $\alpha$ is a $k$-algebra map and so commutes with polynomial expressions; hence $\varphi(a) \in V(I(Y)) = Y$ by Proposition 1. So $\varphi$ is a morphism, and $\varphi^*(\bar y_i) = \alpha(\bar y_i)$, so $\varphi^* = \alpha$ since both are algebra maps agreeing on generators. Conversely a morphism is determined by its coordinates $\varphi_i = \varphi^*(\bar y_i)$. Compatibility with composition is $g \circ (\psi \circ \varphi) = (g \circ \psi) \circ \varphi$.
+
+(2) A finitely generated $k$-algebra is $A \cong k[x_1, \dots, x_n]/J$ for some ideal $J$; it is reduced exactly when $J$ is radical. Then $X = V(J)$ has $I(X) = \sqrt{J} = J$ by the Nullstellensatz, so $k[X] = A$. A functor that is fully faithful (by (1)) and essentially surjective (by (2)) is an equivalence; domains correspond to prime $I(X)$, i.e. to varieties by Proposition 2.
+
+</Proof>
+
+So isomorphism of varieties is isomorphism of coordinate rings — which is how the parabola, hyperbola and cusp examples were decided. A point $a \in X$ is the same as a homomorphism $k[X] \to k$ (evaluation at $a$), which is a first glimpse of the **functor of points**: $X(k) = \operatorname{Hom}_{k\text{-alg}}(k[X], k)$.
+
+<Theorem name="Proposition 6 (projective space over a finite field)">
+
+$\mathbb{P}^n$ is covered by the $n + 1$ charts $U_i \cong \mathbb{A}^n$, and $\mathbb{P}^n = \mathbb{A}^n \sqcup \mathbb{P}^{n-1}$ (the chart $U_0$ and the hyperplane at infinity $a_0 = 0$). Over the finite field $\mathbb{F}_q$,
+$$
+\#\mathbb{P}^n(\mathbb{F}_q) = \frac{q^{n+1} - 1}{q - 1} = q^n + q^{n-1} + \cdots + q + 1.
+$$
+
+</Theorem>
+
+<Proof>
+
+The chart maps are inverse to $(b_1, \dots, b_n) \mapsto [b_1 : \cdots : 1 : \cdots : b_n]$ ($1$ in position $i$), and every point has some non-zero coordinate. Points with $a_0 \neq 0$ are $[1 : b_1 : \cdots : b_n]$, a copy of $\mathbb{A}^n$; points with $a_0 = 0$ are $[0 : a_1 : \cdots : a_n]$, a copy of $\mathbb{P}^{n-1}$. Over $\mathbb{F}_q$ the non-zero vectors of $\mathbb{F}_q^{n+1}$, $q^{n+1} - 1$ of them, fall into lines of $q - 1$ non-zero vectors each; alternatively induct with $\#\mathbb{P}^n = q^n + \#\mathbb{P}^{n-1}$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (Bézout for a line)">
+
+Let $k$ be algebraically closed, $L \subseteq \mathbb{P}^2$ a line and $F$ a curve of degree $d$ not containing $L$. Then $L$ meets $F$ in exactly $d$ points counted with multiplicity: $\sum_{P \in L} I_P(L, F) = d$.
+
+</Theorem>
+
+<Proof>
+
+Choose two distinct points $A, B$ spanning $L$ and parametrise $L$ by $[s : t] \mapsto sA + tB$, a bijection $\mathbb{P}^1 \to L$. Then $h(s, t) = F(sA + tB)$ is a homogeneous polynomial of degree $d$ in $s, t$ (each monomial of $F$ has degree $d$). It is not identically zero, since $L \not\subseteq V(F)$. Over an algebraically closed field a non-zero binary form of degree $d$ factors as a product of $d$ linear forms: $h = c \prod_{j=1}^{d} (\beta_j s - \alpha_j t)$ — dehomogenise at $t = 1$ to get a polynomial of degree $d - e$ in $s$ (where $t^{e} \parallel h$), which splits into linear factors, and the $e$ missing roots are at $[1 : 0]$. The zeros of $h$ are the parameters of the points of $L \cap V(F)$, and the multiplicity of the root $[\alpha_j : \beta_j]$ is the order of vanishing of $F$ along $L$ at that point, which is $I_P(L, F)$. Summing the multiplicities gives $d$.
+
+</Proof>
+
+For example, a line meets a smooth cubic in $3$ points; if two are rational, so is the third — which is the source of the group law on an elliptic curve (see <TopicLink id="math.number.arithmetic-geometry">arithmetic geometry</TopicLink>).
+
+<Theorem name="Theorem 8 (Bézout for a smooth conic)">
+
+Let $Q \subseteq \mathbb{P}^2$ be a smooth conic and $F$ a curve of degree $d$ not containing $Q$. Then $\sum_P I_P(Q, F) = 2d$. In particular two conics without common component meet in $4$ points counted with multiplicity.
+
+</Theorem>
+
+<Proof>
+
+Over an algebraically closed field of characteristic $\neq 2$, a smooth conic is a non-degenerate quadratic form in three variables, and after a linear change of coordinates it becomes $Q = V(xz - y^2)$ (diagonalise the form to $x'^2 + y'^2 + z'^2$, then substitute). The map $\nu : \mathbb{P}^1 \to Q$, $[s : t] \mapsto [s^2 : st : t^2]$, is a bijection onto $Q$: a point $[x : y : z]$ of $Q$ with $x \neq 0$ is $\nu[x : y]$, and the only point with $x = 0$ is $[0 : 0 : 1] = \nu[0 : 1]$. Now $h(s, t) = F(s^2, st, t^2)$ is a binary form of degree $2d$, non-zero because $Q \not\subseteq V(F)$, so it has $2d$ roots counted with multiplicity, as in Theorem 7. The multiplicity of a root equals $I_P(Q, F)$ because $\nu$ restricts, near each point, to an isomorphism of a neighbourhood in $\mathbb{P}^1$ with a neighbourhood in the smooth curve $Q$, and the local ring of $Q$ at $P$ is a discrete valuation ring in which $I_P(Q, F)$ is the order of vanishing of $F$ (Fulton, §3.3).
+
+</Proof>
+
+The same argument works for any curve with a parametrisation $\mathbb{P}^1 \to C$ by forms of degree $m$ that is an isomorphism onto a smooth curve: it meets $F$ in $md$ points. The general case needs a different tool.
+
+<Theorem name="Theorem 9 (Bézout's theorem; proof sketched)">
+
+Let $k$ be algebraically closed and $F, G \subseteq \mathbb{P}^2$ curves of degrees $d$ and $e$ with no common component. Then
+$$
+\sum_{P \in \mathbb{P}^2} I_P(F, G) = de.
+$$
+In particular $F$ and $G$ meet in at least one and at most $de$ points.
+
+</Theorem>
+
+*Proof sketch.* Change coordinates so that $[0 : 0 : 1]$ lies on neither curve and on no line joining two of the (finitely many) intersection points. Write $F$ and $G$ as polynomials in $z$ with coefficients in $k[x, y]$; their leading coefficients are non-zero constants. The **resultant** $R(x, y) = \operatorname{Res}_z(F, G)$, the determinant of the Sylvester matrix, is a homogeneous polynomial of degree exactly $de$ in $x, y$ — this is a degree count in the determinant — and it vanishes at $(a, b)$ exactly when $F(a, b, z)$ and $G(a, b, z)$ have a common root $z$, that is, when the line through $[0 : 0 : 1]$ and $[a : b : 0]$ contains an intersection point. Since $R \neq 0$ (no common component) it has $de$ roots in $\mathbb{P}^1$ counted with multiplicity, one for each intersection point by the choice of coordinates; the remaining work is to show that the multiplicity of each root equals $I_P(F, G)$, using the axiomatic characterisation of $I_P$. Complete proofs: Fulton, *Algebraic Curves*, Chapter 5; Kirwan, *Complex Algebraic Curves*, Chapter 3; Shafarevich, *Basic Algebraic Geometry* 1, §IV.2 (via intersection theory). The first experiment below carries out this resultant computation. $\square$
+
+Each hypothesis is needed: over $\R$ a line can miss a circle; in $\mathbb{A}^2$ parallel lines do not meet; without multiplicities a tangent line meets a conic once; and curves with a common component share infinitely many points.
+
+<Theorem name="Theorem 10 (the structure sheaf of Spec R)">
+
+Let $R$ be a commutative ring and $f_1, \dots, f_r \in R$ with $D(f_1) \cup \cdots \cup D(f_r) = \operatorname{Spec} R$. Then the sequence
+$$
+0 \longrightarrow R \longrightarrow \prod_{i} R_{f_i} \rightrightarrows \prod_{i, j} R_{f_i f_j}
+$$
+is exact: an element of $R$ that vanishes in every $R_{f_i}$ is $0$, and elements $s_i \in R_{f_i}$ that agree in every $R_{f_i f_j}$ come from a unique $a \in R$. Consequently $D(f) \mapsto R_f$ satisfies the sheaf condition on covers by basic open sets, extends to a sheaf $\mathcal{O}$ on $\operatorname{Spec} R$, and $\mathcal{O}(\operatorname{Spec} R) = R$.
+
+</Theorem>
+
+<Proof>
+
+*The $f_i$ generate the unit ideal, and so do their powers.* If $(f_1, \dots, f_r) \neq R$, it lies in a maximal ideal $\mathfrak{m}$, which is then in no $D(f_i)$. For any $N$, the $f_i^N$ also satisfy the hypothesis ($D(f^N) = D(f)$), so $1 = \sum_i c_i f_i^N$ for some $c_i \in R$.
+
+*Injectivity.* If $a/1 = 0$ in each $R_{f_i}$, then $f_i^{N} a = 0$ for all $i$ and some common $N$. Writing $1 = \sum c_i f_i^N$ gives $a = \sum c_i f_i^N a = 0$.
+
+*Gluing.* Write $s_i = a_i / f_i^n$ with a common $n$. Agreement in $R_{f_i f_j}$ means $(f_i f_j)^m (a_i f_j^n - a_j f_i^n) = 0$ for some $m$, which we may take independent of $i, j$. Put $b_i = a_i f_i^m$ and $g_i = f_i^{n + m}$; then $s_i = b_i / g_i$ in $R_{f_i}$ and $b_i g_j = b_j g_i$ for all $i, j$. Write $1 = \sum_j c_j g_j$ and set $a = \sum_j c_j b_j$. Then
+$$
+a\, g_i = \sum_j c_j b_j g_i = \sum_j c_j b_i g_j = b_i,
+$$
+so $a/1 = b_i/g_i = s_i$ in $R_{f_i}$. Uniqueness is injectivity. Applying this to $R_f$ in place of $R$ handles covers of $D(f) = \operatorname{Spec} R_f$ by smaller basic open sets; a sheaf on a basis extends uniquely to a sheaf (Hartshorne, II.1 and II.2.2).
+
+</Proof>
+
+<CommutativeDiagram
+  objects={[
+    { id: "R", tex: "R", row: 0, col: 0 },
+    { id: "P", tex: "\\prod_i R_{f_i}", row: 0, col: 1.3 },
+    { id: "Q", tex: "\\prod_{i,j} R_{f_i f_j}", row: 0, col: 2.8 },
+  ]}
+  arrows={[
+    { from: "R", to: "P", style: "hook" },
+    { from: "P", to: "Q", tex: "\\mathrm{res}_1" },
+    { from: "P", to: "Q", tex: "\\mathrm{res}_2" },
+  ]}
+  caption="$R$ is the equaliser of the two restriction maps: local data that agree on overlaps glue uniquely to a global element."
+/>
+
+Theorem 10 is why Grothendieck's definition works: an affine scheme remembers its ring ($\Gamma(\operatorname{Spec} R, \mathcal{O}) = R$), Theorem 5 becomes the equivalence of affine schemes with the opposite of *all* commutative rings, and gluing affine schemes along open subsets gives schemes such as $\mathbb{P}^n_\Z$, defined over every ring at once. A variety over $k$ is (the set of closed points of) a reduced, irreducible scheme of finite type over $k$. Theorem 10 is stated here for the ring $R$ itself; the same proof for modules gives the quasi-coherent sheaves $\widetilde{M}$ that underlie modern cohomology.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: chords, conics and cubics">
+
+**The chord trick.** Move the slope $m$ of the line through $(-1, 0)$. The line meets the circle in exactly one more point $P = \big(\tfrac{1 - m^2}{1 + m^2}, \tfrac{2m}{1 + m^2}\big)$ — Bézout's count $2 = 1 + 1$. As $m \to \pm\infty$ the line becomes vertical and $P \to (-1, 0)$: the tangent line meets the circle twice at the same point. Rational $m$ gives rational points, which is the whole parametrisation of Pythagorean triples.
+
+<FunctionPlot
+  mode="parametric"
+  fns={[["cos(t)", "sin(t)"], ["-1.5 + 3*t/(2*pi)", "m*(-0.5 + 3*t/(2*pi))"]]}
+  labels={["x² + y² = 1", "line through (−1, 0) with slope m"]}
+  params={[{ name: "m", min: -3, max: 3, step: 0.05, value: 0.5, label: "slope m" }]}
+  points={[[-1, 0, "(−1, 0)"], ["(1 - m^2)/(1 + m^2)", "2*m/(1 + m^2)", "P"]]}
+  t={[0, "2*pi"]}
+  x={[-2, 2]}
+  y={[-2, 2]}
+  title="A line through a point of a conic meets it once more"
+  subtitle="Rational slope m ⇔ rational point P: the circle is isomorphic to the projective line."
+/>
+
+**Cubics and their singularities.** The real points of $y^2 = x^3 + ax + b$ are drawn as the two graphs $y = \pm\sqrt{x^3 + ax + b}$. The curve is singular exactly when $4a^3 + 27b^2 = 0$: try $a = -3$, $b = 2$, where $x^3 - 3x + 2 = (x - 1)^2(x + 2)$ and the curve has a **node** at $(1, 0)$ (two branches crossing), and $a = b = 0$, the **cusp** $y^2 = x^3$. For other values the cubic is smooth — an **elliptic curve** — with one or two real components; over $\C$ it is a torus, of genus $1$.
+
+<FunctionPlot
+  fns={["sqrt(x^3 + a*x + b)", "-sqrt(x^3 + a*x + b)"]}
+  labels={["y = +√(x³ + ax + b)", "y = −√(x³ + ax + b)"]}
+  params={[
+    { name: "a", min: -3, max: 3, step: 0.1, value: -1 },
+    { name: "b", min: -3, max: 3, step: 0.1, value: 0 },
+  ]}
+  x={[-3, 3]}
+  y={[-4, 4]}
+  title="The family y² = x³ + ax + b"
+  subtitle="Smooth unless 4a³ + 27b² = 0: try (a, b) = (−3, 2) for a node and (0, 0) for a cusp."
+/>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Algebraic geometry in Lean and Mathlib">
+
+Mathlib has both classical algebraic sets (`MvPolynomial.zeroLocus`, `MvPolynomial.vanishingIdeal`) and the full theory of schemes (`AlgebraicGeometry.Scheme`). We begin with Proposition 1, proved here exactly as in the text:
+
+<Lean decl="Lumenary.AlgebraicGeometry.zeroLocus_mul" />
+
+Proposition 4 for the affine line, and for $\operatorname{Spec}\Z$ (which is not even $T_1$, by Mathlib's characterisation of $T_1$ spectra of domains):
+
+<Lean decl="Lumenary.AlgebraicGeometry.basic_opens_meet" />
+
+<Lean decl="Lumenary.AlgebraicGeometry.spec_int_not_t2" />
+
+The dictionary — Proposition 2 for spectra, and the Nullstellensatz for prime ideals — from Mathlib:
+
+<Lean decl="Lumenary.AlgebraicGeometry.prime_ideal_of_irreducible" />
+
+<Lean decl="Lumenary.AlgebraicGeometry.vanishing_of_prime" />
+
+The cusp example, both halves: the parametrisation is injective, but $t \notin k[t^2, t^3]$. The second proof exhibits the subalgebra of polynomials with no linear term:
+
+<Lean decl="Lumenary.AlgebraicGeometry.cusp_param_injective" />
+
+<Lean decl="Lumenary.AlgebraicGeometry.cusp_not_normal" />
+
+Proposition 6 for $n = 2$, from Mathlib's count of points of projective spaces, and the one-variable fact behind Theorem 7:
+
+<Lean decl="Lumenary.AlgebraicGeometry.projective_plane_card" />
+
+<Lean decl="Lumenary.AlgebraicGeometry.roots_on_a_line" />
+
+Finally, schemes. Mathlib proves Theorem 10 — the global sections of $\operatorname{Spec} R$ are $R$, and sections over $D(f)$ are $R_f$ — and the scheme form of Theorem 5:
+
+<Lean decl="Lumenary.AlgebraicGeometry.global_sections_spec" />
+
+<Lean decl="Lumenary.AlgebraicGeometry.sections_basic_open" />
+
+<Lean decl="Lumenary.AlgebraicGeometry.affine_schemes_equiv_rings" />
+
+**What is and is not formalised.** Proved here: Proposition 1's union formula, Proposition 4 for $\mathbb{A}^1$ over an infinite field and for $\operatorname{Spec}\Z$, both halves of the cusp example, and $\#\mathbb{P}^2(\mathbb{F}_q) = q^2 + q + 1$. From Mathlib: irreducible closed sets ↔ primes, the Nullstellensatz, root counting over algebraically closed fields, $\Gamma(\operatorname{Spec} R) \cong R$, sections over basic opens, and affine schemes ≃ rings$^{\mathrm{op}}$. Not formalised: Bézout's theorem (Mathlib has neither intersection multiplicities of plane curves nor the theorem; Theorems 7–9 are not formalised beyond the root count), Theorem 5 for classical varieties (Mathlib works with schemes instead), and the gluing argument of Theorem 10 in our own words (Mathlib's proof is `AlgebraicGeometry.StructureSheaf`).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Intersections and points, computed">
+
+The first experiment computes $\operatorname{Res}_z(F, G)$ for ten pairs of curves after a generic change of coordinates, factors it over $\Q$, and reads off the intersection points and their multiplicities. Points at infinity (the circular points), complex points and tangencies appear exactly as needed to make the total $de$ — this is the proof sketch of Theorem 9 run on examples.
+
+<Python id="algebraic_geometry_bezout" />
+
+The second experiment reduces curves modulo primes and counts their points over $\mathbb{F}_p$ by brute force: $\mathbb{P}^2$ has $p^2 + p + 1$ points (Proposition 6), the conic and the cusp each have $p + 1$ (both are in bijection with $\mathbb{P}^1$), and the elliptic curve $y^2 = x^3 - x$ has $p + 1 - a_p$ points with $|a_p| \leq 2\sqrt{p}$ (Hasse's theorem), $a_p = 0$ for $p \equiv 3 \pmod 4$, and $p = (a_p/2)^2 + b^2$ for $p \equiv 1 \pmod 4$ — a first glimpse of the arithmetic of curves.
+
+<Python id="algebraic_geometry_points_mod_p" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The Zariski topology is like the usual topology, only coarser — surely it is Hausdorff."** On any irreducible variety with more than one point it is not: any two non-empty open sets meet (Proposition 4). On $\mathbb{A}^1$ the open sets are the cofinite sets. The Zariski topology is still useful — it records which sets are cut out by equations, and irreducibility, dimension and quasi-compactness are all topological notions in it — but limits, continuity arguments and "small neighbourhoods" from analysis do not transfer. Over $\C$ one also has the classical topology, and comparing the two is the subject of Serre's GAGA.
+
+</Misconception>
+
+<Misconception>
+
+**"A variety is just its set of points."** Two varieties can be in bijection, even homeomorphic, without being isomorphic: the cusp and the line (bijective morphism, non-isomorphic coordinate rings), or the hyperbola and the line (homeomorphic cofinite spaces, but $k[t, t^{-1}]$ has non-constant units). The coordinate ring — more generally the structure sheaf — carries the structure. Schemes go further: $\operatorname{Spec} k[x]/(x^2)$ and $\operatorname{Spec} k$ have one point each but are different, and the difference (a tangent vector) is exactly what makes tangency count twice in Bézout's theorem.
+
+</Misconception>
+
+<Misconception>
+
+**"Two curves of degrees $d$ and $e$ meet in $de$ points — so a line and a circle always meet twice in the plane."** Bézout's theorem needs all three repairs: an algebraically closed field (complex points), projective space (points at infinity) and multiplicities (tangency). Two concentric circles have no common point in $\C^2$; their four intersections are the circular points $[1 : \pm i : 0]$ at infinity, each counted twice.
+
+</Misconception>
+
+<Misconception>
+
+**"Equations that cannot be factored define irreducible sets."** For a single hypersurface $V(f) \subseteq \mathbb{A}^n$ over an algebraically closed field this is right up to repeated factors: $V(f)$ is irreducible exactly when $f$ is a power of an irreducible polynomial. For several equations it fails: $V(x^2 + y^2 - 1,\, x) = \{(0, 1), (0, -1)\}$ is two points, cut out by an irreducible conic and a line. Irreducibility is a property of the ideal $I(X)$ — primality (Proposition 2) — not of the chosen generators.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="Projective geometry and the shape of curves">
+
+Projective space makes intersection theory clean: Bézout's theorem, Pascal's theorem (the three intersection points of opposite sides of a hexagon inscribed in a conic are collinear — a consequence of the Cayley–Bacharach theorem on cubics through eight points), and the classification of conics (all smooth conics over $\C$ are projectively equivalent to $xz = y^2 \cong \mathbb{P}^1$). The **degree** of a projective variety $X \subseteq \mathbb{P}^n$ of dimension $r$ is the number of points in which it meets a general linear subspace of dimension $n - r$, generalising Theorem 7. For a smooth plane curve of degree $d$, the **genus** $g = (d - 1)(d - 2)/2$ (the degree–genus formula) counts holes in its complex points: lines and conics have genus $0$, smooth cubics genus $1$, smooth quartics genus $3$. Klein's Erlangen programme applies too: projective geometry is the study of invariants of $PGL(n+1)$ acting on $\mathbb{P}^n$ (see <TopicLink id="math.geom.projective-geometry">projective geometry</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Complex points: Riemann surfaces and the comparison of topologies">
+
+Over $\C$, a smooth projective curve $X$ is also a compact Riemann surface in the classical topology, of genus $g = \dim_\C H^0(X, \Omega^1)$: the algebraic genus (holomorphic differentials) equals the topological genus (holes), and $\chi = 2 - 2g$. The plane cubic $y^2 = x^3 - x$ is a torus. Conversely, Riemann's existence theorem says that every compact Riemann surface is a projective algebraic curve, and Serre's **GAGA** theorem (1956) extends this to coherent sheaves on projective varieties: analytic and algebraic geometry of projective varieties over $\C$ agree. The Zariski topology is far coarser, but its **étale** refinement (Grothendieck, Artin) recovers topological invariants algebraically: for a variety over $\C$, étale cohomology with $\Z/n$ coefficients equals singular cohomology (Artin's comparison theorem), and étale cohomology makes sense over any field (see <TopicLink id="math.geom.riemann-surfaces">Riemann surfaces</TopicLink> and <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Rational points and curves over finite fields">
+
+The same equations can be solved in $\Q$, in $\mathbb{F}_p$ or in $\C$. Over $\Q$ the geometry controls the arithmetic: a conic with one rational point has infinitely many (the chord trick, which is Theorem 8 in disguise); the rational points of an elliptic curve form a finitely generated abelian group (Mordell 1922, Weil 1928), via the chord-and-tangent construction from Theorem 7; and a curve of genus $\geq 2$ has only finitely many rational points (Faltings, 1983). Over $\mathbb{F}_q$, counting points gives the **zeta function** of the variety; Weil proved the analogue of the Riemann hypothesis for curves (1940s), whose concrete form for an elliptic curve is Hasse's bound $|a_p| \leq 2\sqrt{p}$ seen in the second experiment, and Deligne proved the Weil conjectures in general (1974) using étale cohomology. $\operatorname{Spec}\Z$ and $\operatorname{Spec}\mathcal{O}_K$ are themselves one-dimensional schemes, which is the starting point of <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink> and <TopicLink id="math.number.arithmetic-geometry">arithmetic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Complex analytic geometry">
+
+A complex variety is locally the zero set of holomorphic (indeed polynomial) functions, so complex analysis applies: the local ring $\mathcal{O}_{X,P}$ embeds in the ring of convergent power series at $P$, a smooth point has a neighbourhood biholomorphic to a ball in $\C^{\dim X}$ (implicit function theorem), and the intersection multiplicity $I_P(F, G)$ equals the number of intersection points near $P$ after a small generic perturbation of $G$ — a "conservation of number" that is the analytic face of Theorem 9. Chow's theorem (1949) says that a closed analytic subset of $\mathbb{P}^n(\C)$ is algebraic: on compact projective space, analysis produces nothing new. Hodge theory, which decomposes the cohomology of a smooth projective variety using harmonic forms, is an analytic tool with algebraic consequences (see <TopicLink id="math.geom.complex-kahler-geometry">complex and Kähler geometry</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Schemes as functors: the functor of points">
+
+Theorem 5 says the category of affine varieties is dual to an algebraic category, and Grothendieck's reformulation takes this as the definition: a scheme $X$ is determined by its **functor of points** $R \mapsto X(R) = \operatorname{Hom}(\operatorname{Spec} R, X)$ on commutative rings (Yoneda's lemma). For $X = \mathbb{A}^n_\Z$, $X(R) = R^n$; for $X = V(y^2 - x^3 + x)$ over $\Z$, $X(R) = \{(a, b) \in R^2 : b^2 = a^3 - a\}$ — the same equation read in every ring at once. Many important spaces are first defined as functors (Grassmannians, Hilbert schemes, moduli of curves) and then shown to be representable. The opens $D(f)$ and the sheaf condition of Theorem 10 make $\operatorname{Spec} R$ the beginning of **sheaf theory**: local data glue to global data, which is the theme of <TopicLink id="math.geom.sheaves">sheaves</TopicLink> and, in derived form, of <TopicLink id="math.cat.derived-categories">derived categories</TopicLink>, which arose from Grothendieck and Verdier's duality theory in algebraic geometry.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Conics and cubics.** Apollonius of Perga (c. 200 BCE) studied conic sections synthetically. Diophantus of Alexandria (c. 3rd century CE) found rational solutions of quadratic and cubic equations by chord-type substitutions. **Omar Khayyam** (Nishapur, c. 1070) solved cubic equations by intersecting conics, classifying the cases geometrically.
+- **Coordinates and curves.** Fermat and Descartes (1630s) introduced coordinates, turning curves into equations. Newton classified cubic curves (1704). Maclaurin and Euler stated that curves of degrees $d$ and $e$ meet in $de$ points, and **Étienne Bézout** published a proof for plane curves in his *Théorie générale des équations algébriques* (1779); rigorous treatments of multiplicities came much later. **Jean-Victor Poncelet** (1822) made points at infinity and imaginary points systematic in projective geometry.
+- **Riemann and after.** Bernhard Riemann (1857) studied algebraic curves through Riemann surfaces and introduced the genus; Max Noether, Alexander Brill and the Italian school — Castelnuovo, Enriques and Severi — developed the geometry of curves and the classification of algebraic surfaces, with brilliant intuition but sometimes incomplete proofs.
+- **Algebraic foundations.** David Hilbert's basis theorem (1890) and Nullstellensatz (1893), and **Emmy Noether**'s ideal theory (1920s), made commutative algebra the foundation. Oscar Zariski and André Weil rebuilt algebraic geometry rigorously in the 1940s; the Zariski topology dates from this work, and Weil's *Foundations of Algebraic Geometry* (1946) made abstract varieties over arbitrary fields precise. Weil also stated his conjectures on varieties over finite fields (1949).
+- **Sheaves and schemes.** Jean-Pierre Serre introduced sheaf cohomology into algebraic geometry (*Faisceaux algébriques cohérents*, 1955) and proved GAGA (1956). **Alexander Grothendieck**, with Jean Dieudonné, built the theory of schemes in the *Éléments de géométrie algébrique* (1960–67) and, with many collaborators, the *Séminaire de Géométrie Algébrique*; **Pierre Deligne** used étale cohomology to prove the Weil conjectures (1974).
+- **A worldwide subject.** Kunihiko Kodaira classified compact complex surfaces; **Heisuke Hironaka** proved resolution of singularities in characteristic zero (1964); M. S. Narasimhan and C. S. Seshadri connected stable vector bundles on curves with unitary representations (1965); David Mumford developed geometric invariant theory and the theory of moduli; Shigefumi Mori founded the minimal model programme for threefolds (1988). More recently **Caucher Birkar** proved boundedness of Fano varieties (Fields Medal 2018) and **June Huh** used Hodge theory to settle conjectures in combinatorics (Fields Medal 2022). Andrew Wiles's proof of Fermat's Last Theorem (1995, with Richard Taylor) rests on the arithmetic geometry of elliptic curves and modular curves.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- William Fulton, *Algebraic Curves: An Introduction to Algebraic Geometry* (1969; free revised edition 2008) — the clearest route to intersection multiplicity and a complete proof of Bézout's theorem (Chapters 3 and 5).
+- Frances Kirwan, *Complex Algebraic Curves* (1992) — curves over $\C$, Bézout via resultants, and the topology of Riemann surfaces.
+- Miles Reid, *Undergraduate Algebraic Geometry* (1988) — short, lively, with conics, cubics and the Nullstellensatz.
+- David Cox, John Little and Donal O'Shea, *Ideals, Varieties, and Algorithms* (4th ed., 2015) — the dictionary made computational with Gröbner bases and resultants.
+- Igor R. Shafarevich, *Basic Algebraic Geometry* 1 and 2 (1972; 3rd ed. 2013) — varieties, intersection theory, then schemes and complex manifolds.
+- Robin Hartshorne, *Algebraic Geometry* (1977) — Chapter I on varieties, Chapter II on schemes and sheaves (Proposition II.2.2 is Theorem 10), Chapter III on cohomology.
+- Joe Harris, *Algebraic Geometry: A First Course* (1992) — a tour of classical varieties through many examples.
+
+</Section>

@@ -2,7 +2,7 @@ import { ChevronDown, Heart, Users } from "lucide-react";
 import type { TFunction } from "@/i18n/dictionary";
 import { NarratorAvatar, type NarratorId } from "@/components/brand/Narrators";
 import { ModeBadge } from "@/components/ui/ModeBadge";
-import { SECTION_KINDS, type SectionKind } from "./kinds";
+import { LENSES, SECTION_KINDS, type Lens, type SectionKind } from "./kinds";
 
 type P = { children?: React.ReactNode };
 
@@ -113,6 +113,29 @@ export function makeBlocks(t: TFunction) {
           <div className="[&>*+*]:mt-3">{children}</div>
         </div>
       </details>
+    ),
+    Viewpoint: ({ lens, title, children }: P & { lens: Lens; title?: string }) => {
+      const { Icon } = LENSES[lens] ?? LENSES.sets;
+      return (
+        <div className="!mt-6 rounded-xl border border-line bg-card px-5 py-4" data-lens={lens}>
+          <p className="flex flex-wrap items-center gap-2 font-sans text-xs font-bold uppercase tracking-[0.1em] text-sky-ink">
+            <Icon size={15} aria-hidden="true" />
+            {t(`lenses.${lens}`)}
+            {title && <span className="normal-case tracking-normal text-ink-2">— {title}</span>}
+          </p>
+          <div className="mt-2 text-ink [&>*+*]:mt-3">{children}</div>
+        </div>
+      );
+    },
+    /** A typeset formula (see src/lib/rehype-katex-html.ts): KaTeX's own HTML, as one string. */
+    KatexHtml: ({ className, html }: { className: string; html: string }) => <span className={className} dangerouslySetInnerHTML={{ __html: html }} />,
+    Figure: ({ caption, children }: P & { caption?: string }) => (
+      <figure className="not-prose !mt-7 rounded-xl border border-line bg-card px-4 py-4 text-ink">
+        <div className="flex justify-center [&_svg]:h-auto [&_svg]:max-w-full" dir="ltr">
+          {children}
+        </div>
+        {caption && <figcaption className="mt-3 text-center font-sans text-sm leading-snug text-muted">{caption}</figcaption>}
+      </figure>
     ),
     ForGrownUps: ({ children, title }: P & { title?: string }) => (
       <details className="group !mt-6 rounded-xl border border-line bg-card font-sans">

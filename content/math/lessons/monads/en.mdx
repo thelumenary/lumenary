@@ -1,0 +1,511 @@
+---
+slug: monads
+topic: math.cat.monads
+title: Monads
+subtitle: Wrap, flatten, evaluate — one shape behind free algebras, closure operators, probability kernels, sheaf resolutions and effectful programs.
+level: grad
+ages: Graduate
+minutes: 130
+order: 7037
+objectives:
+  - Verify the monad laws for the list, power-set and maybe monads on $\cat{Set}$, and identify their algebras (monoids, complete join-semilattices, pointed sets)
+  - Prove that every adjunction $F \dashv G$ induces a monad $GF$, and construct the Kleisli and Eilenberg–Moore adjunctions that recover any monad
+  - Construct the comparison functors and show that the Kleisli and Eilenberg–Moore categories need not be equivalent
+  - State Beck's monadicity theorem, show that $\cat{Grp}$ is monadic over $\cat{Set}$ and $\cat{Top}$ is not
+  - Explain how monads model computational effects and probabilistic transitions
+narrators: []
+lean:
+  - Lumenary.Monads.list_monad_laws
+  - Lumenary.Monads.listKleisli
+  - Lumenary.Monads.list_kleisli_laws
+  - Lumenary.Monads.ListAlgebra
+  - Lumenary.Monads.ListAlgebra.act_cons
+  - Lumenary.Monads.ListAlgebra.toMonoid
+  - Lumenary.Monads.ListAlgebra.ofMonoid
+  - Lumenary.Monads.ListAlgebra.act_eq_prod
+  - Lumenary.Monads.listAlgebraEquivMonoid
+  - Lumenary.Monads.optionAlgebraEquiv
+  - Lumenary.Monads.adjunction_monad
+  - Lumenary.Monads.kleisli_induces
+  - Lumenary.Monads.eilenberg_moore_induces
+  - Lumenary.Monads.comparison
+  - Lumenary.Monads.beck
+  - Lumenary.Monads.monads_are_monoids
+compute: [monads_algebra_count, monads_kleisli_kernels]
+trails: [inverses-and-structure]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Formal expressions and how to evaluate them">
+
+Take a set $X$ and form the set $TX$ of finite lists of elements of $X$ — formal products $x_1 x_2 \cdots x_n$ with no rule for multiplying yet. Three pieces of structure are already there, before any algebra is chosen:
+
+- every element is a one-letter word: $x \mapsto [x]$;
+- a list of lists can be **flattened**: $[[x_1, x_2], [\,], [x_3]] \mapsto [x_1, x_2, x_3]$;
+- a monoid $M$ is exactly a set with a way to **evaluate** words, $TM \to M$, compatible with the first two.
+
+The same pattern appears far from monoids. Subsets of subsets can be flattened by union, and a complete lattice is a set where every subset can be evaluated to its supremum. Probability distributions over probability distributions can be flattened by averaging, and expectation evaluates a distribution of numbers to a number. On a topological space, Godement's "standard construction" sends a sheaf to its sheaf of discontinuous sections and builds sheaf cohomology by iterating. In a programming language, a computation that may fail, branch or print returns a value wrapped in that effect, and running two such computations in sequence requires flattening.
+
+A **monad** is the common shape: a functor $T$ with a unit $\eta : X \to TX$ and a flattening $\mu : TTX \to TX$ obeying associativity and unit laws. Its **algebras** are the structures that $T$ describes. This lesson develops the theory — algebras, the Kleisli and Eilenberg–Moore categories, the correspondence with <TopicLink id="math.cat.adjunctions">adjunctions</TopicLink>, and Beck's monadicity theorem — and then looks at the same idea through the eyes of topologists, algebraists, probabilists and computer scientists.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Wrap, flatten, evaluate">
+
+Read $TX$ as "$X$-shaped things wrapped in a $T$-structure": words in $X$, subsets of $X$, distributions on $X$, terms built from variables in $X$, computations returning an $X$.
+
+- $\eta_X : X \to TX$ **wraps** a plain element as a trivial structure: the one-letter word, the singleton, the point mass, the variable, the computation that does nothing and returns $x$.
+- $\mu_X : TTX \to TX$ **flattens** two layers of structure into one: concatenation of words, union of subsets, averaging of distributions, substitution of terms into terms, running a computation that returns a computation.
+
+The laws say that flattening three layers does not depend on which two layers you flatten first, and that wrapping then flattening (on the inside or the outside) does nothing. They are the laws of a monoid — written one dimension up, with composition of functors in place of multiplication. That analogy is precise: monads on $\mathcal{C}$ are the monoid objects in the monoidal category of endofunctors of $\mathcal{C}$ (see <TopicLink id="math.cat.monoidal-categories">monoidal categories</TopicLink>).
+
+An **algebra** is a place where wrapped things can be **evaluated**: $a : TA \to A$. The unit law says that evaluating a trivially wrapped element returns it; the associativity law says that evaluating the inner layers first and then the outer layer is the same as flattening first and then evaluating. For lists this is the generalised associative law of a monoid, and that is the whole story: the algebras of the list monad are exactly the monoids.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Monads, algebras and Kleisli arrows">
+
+Throughout, $\mathcal{C}$ is a category and composition is written $g \circ f$ ("$g$ after $f$"). Recall from <TopicLink id="math.cat.natural-transformations">natural transformations</TopicLink> how to whisker: for $\alpha : S \Rightarrow S'$ and a functor $T$, $(T\alpha)_X = T(\alpha_X)$ and $(\alpha T)_X = \alpha_{TX}$.
+
+<Definition term="monad">
+
+A **monad** on $\mathcal{C}$ is a triple $(T, \eta, \mu)$ consisting of a functor $T : \mathcal{C} \to \mathcal{C}$ and natural transformations $\eta : \mathrm{id}_{\mathcal{C}} \Rightarrow T$ (the **unit**) and $\mu : T^2 \Rightarrow T$ (the **multiplication**) such that for every object $X$
+
+$$
+\mu_X \circ T\mu_X = \mu_X \circ \mu_{TX} \qquad\text{and}\qquad \mu_X \circ \eta_{TX} = \mathrm{id}_{TX} = \mu_X \circ T\eta_X .
+$$
+
+</Definition>
+
+The laws are the commutativity of the following diagrams (associativity on the left, the two unit laws on the right).
+
+<CommutativeDiagram
+  objects={[
+    { id: "a", tex: "T^3X", row: 0, col: 0 },
+    { id: "b", tex: "T^2X", row: 0, col: 1 },
+    { id: "c", tex: "T^2X", row: 1, col: 0 },
+    { id: "d", tex: "TX", row: 1, col: 1 },
+    { id: "e", tex: "TX", row: 0, col: 2.4 },
+    { id: "f", tex: "T^2X", row: 0, col: 3.4 },
+    { id: "g", tex: "TX", row: 0, col: 4.4 },
+    { id: "h", tex: "TX", row: 1, col: 3.4 }
+  ]}
+  arrows={[
+    { from: "a", to: "b", tex: "T\\mu_X" },
+    { from: "a", to: "c", tex: "\\mu_{TX}", labelSide: "right" },
+    { from: "b", to: "d", tex: "\\mu_X" },
+    { from: "c", to: "d", tex: "\\mu_X", labelSide: "right" },
+    { from: "e", to: "f", tex: "\\eta_{TX}" },
+    { from: "g", to: "f", tex: "T\\eta_X", labelSide: "right" },
+    { from: "f", to: "h", tex: "\\mu_X" },
+    { from: "e", to: "h", tex: "\\mathrm{id}", labelSide: "right" },
+    { from: "g", to: "h", tex: "\\mathrm{id}" }
+  ]}
+  caption="The monad laws: associativity of $\mu$ (left) and the unit laws (right)."
+/>
+
+<Definition term="algebra for a monad (Eilenberg–Moore algebra)">
+
+A **$T$-algebra** is a pair $(A, a)$ of an object $A$ and a morphism $a : TA \to A$ (the **structure map**) such that
+
+$$
+a \circ \eta_A = \mathrm{id}_A \qquad\text{and}\qquad a \circ Ta = a \circ \mu_A .
+$$
+
+A **morphism of algebras** $f : (A, a) \to (B, b)$ is a morphism $f : A \to B$ with $f \circ a = b \circ Tf$. Algebras and their morphisms form the **Eilenberg–Moore category** $\mathcal{C}^T$, with a forgetful functor $U^T : \mathcal{C}^T \to \mathcal{C}$. For every $X$, the pair $(TX, \mu_X)$ is an algebra — the **free algebra** on $X$ — and $F^T X = (TX, \mu_X)$, $F^T f = Tf$ defines a functor $F^T : \mathcal{C} \to \mathcal{C}^T$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "a", tex: "A", row: 0, col: 0 },
+    { id: "b", tex: "TA", row: 0, col: 1 },
+    { id: "c", tex: "A", row: 1, col: 1 },
+    { id: "d", tex: "T^2A", row: 0, col: 2.4 },
+    { id: "e", tex: "TA", row: 0, col: 3.4 },
+    { id: "f", tex: "TA", row: 1, col: 2.4 },
+    { id: "g", tex: "A", row: 1, col: 3.4 }
+  ]}
+  arrows={[
+    { from: "a", to: "b", tex: "\\eta_A" },
+    { from: "b", to: "c", tex: "a" },
+    { from: "a", to: "c", tex: "\\mathrm{id}", labelSide: "right" },
+    { from: "d", to: "e", tex: "Ta" },
+    { from: "d", to: "f", tex: "\\mu_A", labelSide: "right" },
+    { from: "e", to: "g", tex: "a" },
+    { from: "f", to: "g", tex: "a", labelSide: "right" }
+  ]}
+  caption="The algebra laws: the unit law (left) and the associativity law (right)."
+/>
+
+<Definition term="Kleisli category">
+
+The **Kleisli category** $\mathcal{C}_T$ has the same objects as $\mathcal{C}$, and a morphism $A \rightsquigarrow B$ in $\mathcal{C}_T$ is a morphism $f : A \to TB$ in $\mathcal{C}$ (a **Kleisli arrow**). The Kleisli composite of $f : A \to TB$ and $g : B \to TC$ and the Kleisli identity are
+
+$$
+g \circ_T f = \mu_C \circ Tg \circ f : A \to TC, \qquad \mathrm{id}^T_A = \eta_A : A \to TA .
+$$
+
+There are functors $F_T : \mathcal{C} \to \mathcal{C}_T$, $F_T A = A$, $F_T(h) = \eta_B \circ h$ for $h : A \to B$, and $U_T : \mathcal{C}_T \to \mathcal{C}$, $U_T A = TA$, $U_T(f) = \mu_B \circ Tf$ for $f : A \to TB$.
+
+</Definition>
+
+Think of a Kleisli arrow as a "generalised function" from $A$ to $B$: many-valued (list or power-set monad), partial (maybe monad), random (distribution monad), or effectful (in programming).
+
+<Definition term="monadic functor">
+
+A functor $G : \mathcal{D} \to \mathcal{C}$ is **monadic** if it has a left adjoint $F$ and the comparison functor $K : \mathcal{D} \to \mathcal{C}^{GF}$ (constructed below) is an equivalence of categories. Informally: the objects of $\mathcal{D}$ are exactly "objects of $\mathcal{C}$ with $T$-algebra structure".
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="The list (free monoid) monad on Set">
+
+$TX = \mathrm{List}(X)$, the set of finite sequences; $Tf$ applies $f$ to each entry; $\eta_X(x) = [x]$; $\mu_X$ concatenates a list of lists. Associativity says that flattening a list of lists of lists inside-first or outside-first gives the same list; the unit laws say $\mu[w] = w$ and $\mu[[x_1], \dots, [x_n]] = [x_1, \dots, x_n]$. All three are proved by induction on the outer list (and in Lean below). This monad comes from the adjunction between the free-monoid functor and the forgetful functor $\cat{Mon} \to \cat{Set}$.
+
+</Example>
+
+<Example title="The power-set monad on Set">
+
+$TX = \mathcal{P}X$; $Tf(S) = f[S]$ (direct image); $\eta_X(x) = \{x\}$; $\mu_X(\mathcal{S}) = \bigcup \mathcal{S}$. Associativity is $\bigcup_{\mathcal{S} \in \mathfrak{S}} \bigcup \mathcal{S} = \bigcup \bigcup \mathfrak{S}$ for $\mathfrak{S} \in \mathcal{P}\mathcal{P}\mathcal{P}X$; the unit laws are $\bigcup\{S\} = S$ and $\bigcup_{x \in S} \{x\} = S$.
+
+An algebra $a : \mathcal{P}A \to A$ is a **complete join-semilattice**: define $x \le y \iff a\{x, y\} = y$. Conversely, a poset with all joins gives $a(S) = \bigvee S$. (Sketch: the associativity law gives $a(S) = a\{a(S_1), a(S_2)\}$ whenever $S = S_1 \cup S_2$, from which $\le$ is a partial order and $a(S)$ is the least upper bound of $S$; the unit law gives $a\{x\} = x$.) Algebra morphisms are maps preserving all joins. A Kleisli arrow $A \to \mathcal{P}B$ is a **relation** from $A$ to $B$, and Kleisli composition is composition of relations: $\cat{Set}_{\mathcal{P}} \cong \cat{Rel}$.
+
+</Example>
+
+<Example title="The maybe (exception) monad on Set">
+
+$TX = X \sqcup \{\bot\}$; $\eta_X(x) = x$; $\mu_X$ collapses the two copies of $\bot$ in $X \sqcup \{\bot\} \sqcup \{\bot\}$. An algebra $a : A \sqcup \{\bot\} \to A$ must be the identity on $A$ (unit law), and the associativity law then holds automatically, so an algebra is just a **base point** $a(\bot) \in A$: $\cat{Set}^T$ is the category of pointed sets. (The empty set has no algebra structure.) A Kleisli arrow $A \to B \sqcup \{\bot\}$ is a **partial function**, and $\cat{Set}_T$ is the category of sets and partial functions.
+
+</Example>
+
+<Example title="Closure operators: monads on a poset">
+
+Regard a poset $(P, \le)$ as a category with a unique arrow $x \to y$ when $x \le y$. A functor $c : P \to P$ is a monotone map; $\eta$ says $x \le c(x)$; $\mu$ says $c(c(x)) \le c(x)$; all diagrams commute automatically. So a monad on a poset is exactly a **closure operator** (and then $c \circ c = c$). Its algebras are the elements with $c(x) \le x$, i.e. the **closed elements**. Topological closure on $\mathcal{P}X$, the subgroup generated by a subset, the convex hull and the radical of an ideal are all examples; so is $S \mapsto S^{\perp\perp}$ for any <TopicLink id="math.found.order-theory">Galois connection</TopicLink>.
+
+</Example>
+
+<Example title="The distribution monad">
+
+$DX$ is the set of finitely supported probability distributions on $X$; $Df$ pushes distributions forward; $\eta_X(x) = \delta_x$ (point mass); $\mu_X(\Phi)(x) = \sum_{\varphi} \Phi(\varphi)\, \varphi(x)$ averages a distribution of distributions. A Kleisli arrow $X \to DY$ is a **Markov kernel** — for finite $X, Y$, a stochastic matrix — and Kleisli composition is the Chapman–Kolmogorov formula: the product of stochastic matrices (see <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>). Expectation $\mathbb{E} : D\R \to \R$ is an algebra; its associativity law is the tower property $\mathbb{E}[\mathbb{E}[Z \mid W]] = \mathbb{E}[Z]$ for finitely supported random variables. More generally every convex subset of a real vector space is a $D$-algebra via barycentres — but so is every join-semilattice (send a distribution to the join of its support), so "$D$-algebra" (also called a convex space) is broader than "convex set".
+
+</Example>
+
+<Example title="Monads from adjunctions">
+
+Every adjunction gives a monad (proved below). The free group functor $F \dashv U : \cat{Grp} \to \cat{Set}$ gives the monad $UF$ sending $X$ to the set of reduced words in $X^{\pm 1}$. For a ring $R$, extension of scalars $R \otimes_{\Z} - \dashv U : R\text{-}\cat{Mod} \to \cat{Ab}$ gives the monad $R \otimes_{\Z} -$ on $\cat{Ab}$, whose algebras are $R$-modules. The discrete-space functor $\mathrm{Disc} \dashv U : \cat{Top} \to \cat{Set}$ gives the **identity** monad, since $U \circ \mathrm{Disc} = \mathrm{id}$; this will show that $\cat{Top}$ is not monadic over $\cat{Set}$.
+
+</Example>
+
+<Example title="A non-example: the wrong multiplication">
+
+Keep $\mathcal{P}$ and $\eta_X(x) = \{x\}$ but flatten by **intersection**, $\mu_X(\mathcal{S}) = \bigcap \mathcal{S}$. The associativity law and the left unit law $\bigcap\{S\} = S$ hold (with the convention $\bigcap \varnothing = X$), but the right unit law fails: $\mu(\mathcal{P}\eta(\{0, 1\})) = \{0\} \cap \{1\} = \varnothing \neq \{0, 1\}$. Nor is this $\mu$ natural: for a non-injective $f$, $f[S_1 \cap S_2]$ can be smaller than $f[S_1] \cap f[S_2]$. (The experiment below finds the unit-law counterexample by search.)
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Adjunctions, Kleisli and Eilenberg–Moore">
+
+Let $F : \mathcal{C} \to \mathcal{D}$ be left adjoint to $G : \mathcal{D} \to \mathcal{C}$, with unit $\eta : \mathrm{id}_{\mathcal{C}} \Rightarrow GF$ and counit $\varepsilon : FG \Rightarrow \mathrm{id}_{\mathcal{D}}$ satisfying the triangle identities $\varepsilon_{FX} \circ F\eta_X = \mathrm{id}_{FX}$ and $G\varepsilon_B \circ \eta_{GB} = \mathrm{id}_{GB}$.
+
+<Theorem name="Theorem 1 (every adjunction induces a monad; Huber)">
+
+$(GF, \eta, G\varepsilon F)$ is a monad on $\mathcal{C}$: its multiplication has components $\mu_X = G(\varepsilon_{FX}) : GFGFX \to GFX$.
+
+</Theorem>
+
+<Proof>
+
+$\mu$ is natural because $\varepsilon$ is. *Associativity.* Naturality of $\varepsilon$ applied to the morphism $\varepsilon_{FX} : FGFX \to FX$ gives $\varepsilon_{FX} \circ FG(\varepsilon_{FX}) = \varepsilon_{FX} \circ \varepsilon_{FGFX}$. Applying $G$:
+
+$$
+\mu_X \circ T\mu_X = G\varepsilon_{FX} \circ GFG\varepsilon_{FX} = G(\varepsilon_{FX} \circ FG\varepsilon_{FX}) = G(\varepsilon_{FX} \circ \varepsilon_{FGFX}) = \mu_X \circ \mu_{TX}.
+$$
+
+*Left unit.* $\mu_X \circ \eta_{TX} = G\varepsilon_{FX} \circ \eta_{GFX} = \mathrm{id}$ by the second triangle identity at $B = FX$. *Right unit.* $\mu_X \circ T\eta_X = G\varepsilon_{FX} \circ GF\eta_X = G(\varepsilon_{FX} \circ F\eta_X) = G(\mathrm{id}_{FX}) = \mathrm{id}$ by the first triangle identity.
+
+</Proof>
+
+Now go the other way: start with a monad $(T, \eta, \mu)$ and look for adjunctions that induce it.
+
+<Theorem name="Theorem 2 (the Kleisli adjunction; Kleisli 1965)">
+
+$\mathcal{C}_T$ is a category, $F_T$ and $U_T$ are functors, $F_T \dashv U_T$, and the monad induced by this adjunction is $(T, \eta, \mu)$.
+
+</Theorem>
+
+<Proof>
+
+*Identities.* For $f : A \to TB$: $\eta_B \circ_T f = \mu_B \circ T\eta_B \circ f = f$ by the right unit law; and $f \circ_T \eta_A = \mu_B \circ Tf \circ \eta_A = \mu_B \circ \eta_{TB} \circ f = f$ by naturality of $\eta$ and the left unit law.
+
+*Associativity.* For $f : A \to TB$, $g : B \to TC$, $h : C \to TD$:
+
+$$
+(h \circ_T g) \circ_T f = \mu_D \circ T\mu_D \circ T^2 h \circ Tg \circ f = \mu_D \circ \mu_{TD} \circ T^2 h \circ Tg \circ f = \mu_D \circ Th \circ \mu_C \circ Tg \circ f = h \circ_T (g \circ_T f),
+$$
+
+using associativity of $\mu$ and then naturality of $\mu$ at $h$ ($\mu_{TD} \circ T^2 h = Th \circ \mu_C$).
+
+*Functors.* $F_T(k \circ h) = \eta \circ k \circ h = (\eta \circ k) \circ_T (\eta \circ h)$ by naturality of $\eta$ and the unit law; $U_T(g \circ_T f) = \mu \circ T\mu \circ T^2 g \circ Tf = \mu \circ \mu \circ T^2 g \circ Tf = \mu \circ Tg \circ \mu \circ Tf = U_T g \circ U_T f$ by the same two laws; identities are preserved by the unit laws.
+
+*Adjunction.* $\mathcal{C}_T(F_T A, B) = \mathcal{C}(A, TB) = \mathcal{C}(A, U_T B)$, and this identity bijection is natural in $A$ and $B$ (a direct check with the formulas above). Its unit is $\eta_A$ (the arrow corresponding to $\mathrm{id}^T_A$) and its counit at $B$ is the Kleisli arrow $\mathrm{id}_{TB} : TB \rightsquigarrow B$.
+
+*The induced monad.* $U_T F_T A = TA$ and $U_T F_T h = \mu_B \circ T\eta_B \circ Th = Th$, so $U_T F_T = T$; the unit is $\eta$; and $U_T(\varepsilon_{F_T A}) = U_T(\mathrm{id}_{TA}) = \mu_A \circ T(\mathrm{id}_{TA}) = \mu_A$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (the Eilenberg–Moore adjunction; Eilenberg and Moore 1965)">
+
+$F^T \dashv U^T : \mathcal{C}^T \to \mathcal{C}$, and the monad induced by this adjunction is $(T, \eta, \mu)$.
+
+</Theorem>
+
+<Proof>
+
+First, $(TX, \mu_X)$ is an algebra: the unit and associativity laws for it are the left unit law and the associativity law of the monad; and $Tf$ is an algebra map $(TX, \mu_X) \to (TY, \mu_Y)$ by naturality of $\mu$. For an algebra $(A, a)$ define
+
+$$
+\Phi : \mathcal{C}^T\big((TX, \mu_X), (A, a)\big) \to \mathcal{C}(X, A),\quad \Phi(f) = f \circ \eta_X; \qquad \Psi(g) = a \circ Tg .
+$$
+
+$\Psi(g)$ is an algebra map: $a \circ Tg \circ \mu_X = a \circ \mu_A \circ T^2 g = a \circ Ta \circ T^2 g = a \circ T(a \circ Tg)$ (naturality of $\mu$, then the associativity law of $a$). The maps are inverse: $\Phi\Psi(g) = a \circ Tg \circ \eta_X = a \circ \eta_A \circ g = g$ (naturality of $\eta$, unit law of $a$), and for an algebra map $f$, $\Psi\Phi(f) = a \circ Tf \circ T\eta_X = f \circ \mu_X \circ T\eta_X = f$ (algebra map, right unit law). Naturality in $X$ and $(A, a)$ is immediate. The unit of the adjunction is $\Phi(\mathrm{id}) = \eta_X$, and the counit at $(A, a)$ is $\Psi(\mathrm{id}_A) = a$, an algebra map $(TA, \mu_A) \to (A, a)$. Finally $U^T F^T = T$ and $U^T \varepsilon_{F^T X} = \mu_X$.
+
+</Proof>
+
+So every monad arises from an adjunction, generally from many. The two constructions are the extreme ones.
+
+<Theorem name="Theorem 4 (comparison functors)">
+
+Let $F \dashv G$ induce $T = GF$. Then $K : \mathcal{D} \to \mathcal{C}^T$, $K(B) = (GB, G\varepsilon_B)$, $K(h) = Gh$, is a functor with $U^T K = G$ and $K F = F^T$. Likewise $L : \mathcal{C}_T \to \mathcal{D}$, $L(A) = FA$, $L(f) = \varepsilon_{FB} \circ Ff$ for $f : A \to GFB$, is a functor with $L F_T = F$ and $G L = U_T$. Each is the unique functor with these properties; hence the Kleisli adjunction is **initial** and the Eilenberg–Moore adjunction **terminal** among adjunctions inducing $T$.
+
+</Theorem>
+
+<Proof>
+
+We check that $K$ is well defined. Unit law: $G\varepsilon_B \circ \eta_{GB} = \mathrm{id}$ (triangle identity). Associativity law: $G\varepsilon_B \circ T(G\varepsilon_B) = G(\varepsilon_B \circ FG\varepsilon_B) = G(\varepsilon_B \circ \varepsilon_{FGB}) = G\varepsilon_B \circ \mu_{GB}$ (naturality of $\varepsilon$ at $\varepsilon_B$). For $h : B \to B'$, $Gh \circ G\varepsilon_B = G(\varepsilon_{B'} \circ FGh) = G\varepsilon_{B'} \circ T(Gh)$, so $Gh$ is an algebra map. Clearly $U^T K = G$, and $KFX = (GFX, G\varepsilon_{FX}) = (TX, \mu_X) = F^T X$, with $KFf = Tf = F^T f$. The checks for $L$ are similar (functoriality uses the triangle identity $\varepsilon_{FA} \circ F\eta_A = \mathrm{id}$ and naturality of $\varepsilon$). For uniqueness, see Mac Lane, *Categories for the Working Mathematician*, VI.3 Theorem 1 and VI.5 Theorem 3.
+
+</Proof>
+
+Applied to the Eilenberg–Moore adjunction, the functor $L : \mathcal{C}_T \to \mathcal{C}^T$ sends $A$ to the free algebra $F^T A$ and $f : A \to TB$ to $\mu_B \circ Tf$. It is **fully faithful**: on morphisms it is the bijection $\Psi : \mathcal{C}(A, TB) \cong \mathcal{C}^T(F^T A, F^T B)$ of Theorem 3. So the Kleisli category is (equivalent to) the full subcategory of **free** algebras. Whether it is all of $\mathcal{C}^T$ depends on the monad.
+
+<Theorem name="Proposition 5 (Kleisli and Eilenberg–Moore can differ)">
+
+For the maybe monad, $\mathcal{C}_T \to \mathcal{C}^T$ is an equivalence. For the list monad, $\mathcal{C}_T$ and $\mathcal{C}^T \simeq \cat{Mon}$ are not equivalent by any functor.
+
+</Theorem>
+
+<Proof>
+
+*Maybe.* Every pointed set $(X, x_0)$ is isomorphic to the free algebra on $X \setminus \{x_0\}$, so the fully faithful functor $\mathcal{C}_T \to \mathcal{C}^T$ is essentially surjective, hence an equivalence: sets and partial functions are equivalent to pointed sets.
+
+*List.* An equivalence of categories preserves endomorphism monoids up to isomorphism (it is fully faithful). In $\cat{Mon}$, the monoid $\Z/2$ has exactly two endomorphisms ($1 \mapsto 0$ and $1 \mapsto 1$). In $\mathcal{C}_T$, the endomorphisms of $A$ are the functions $A \to \mathrm{List}(A)$: one if $A = \varnothing$, infinitely many otherwise. So no object of $\mathcal{C}_T$ can correspond to $\Z/2$.
+
+</Proof>
+
+</Section>
+
+<Section id="beck" kind="human" title="Beck's monadicity theorem">
+
+Which adjunctions are "the Eilenberg–Moore one" up to equivalence? A parallel pair $f, g : A \rightrightarrows B$ in $\mathcal{D}$ is **$G$-split** if $Gf, Gg$ has a *split* coequaliser in $\mathcal{C}$: a morphism $e : GB \to Z$ with $e \circ Gf = e \circ Gg$, together with $s : Z \to GB$ and $t : GB \to GA$ such that $e \circ s = \mathrm{id}_Z$, $Gf \circ t = \mathrm{id}_{GB}$ and $Gg \circ t = s \circ e$. (Split coequalisers are coequalisers, and are preserved by every functor.)
+
+<Theorem name="Beck's monadicity theorem (Beck 1967)">
+
+A functor $G : \mathcal{D} \to \mathcal{C}$ is monadic if and only if
+
+1. $G$ has a left adjoint,
+2. $G$ reflects isomorphisms, and
+3. $\mathcal{D}$ has coequalisers of $G$-split pairs, and $G$ preserves them.
+
+</Theorem>
+
+The proof constructs a left adjoint to the comparison functor $K$ by sending an algebra $(A, a)$ to the coequaliser in $\mathcal{D}$ of the $G$-split pair $F a, \varepsilon_{FA} : FGFA \rightrightarrows FA$ (every algebra is canonically a coequaliser of free algebras), and then shows that unit and counit are isomorphisms. Full proofs: Mac Lane, *CWM* VI.7; Riehl, *Category Theory in Context*, Theorem 5.5.1. Mathlib proves it (cited in the formal section).
+
+<Example title="Groups are monadic over Set">
+
+$U : \cat{Grp} \to \cat{Set}$ has the free-group left adjoint, and a bijective homomorphism is an isomorphism, so $U$ reflects isomorphisms. *Sketch of condition 3.* Let $f, g : H \rightrightarrows K$ be homomorphisms with a split coequaliser $e : K \to Z$ of sets, with $s, t$ as above. If $e(x) = e(y)$, then with $h = t(x)$ and $h' = t(y)$ we get $x = f(h)$, $g(h) = s(e(x)) = s(e(y)) = g(h')$ and $y = f(h')$. So the relation $e(x) = e(y)$ is the composite of the relation $R = \{(f(h), g(h))\}$ with its converse. $R$ is the image of the homomorphism $(f, g) : H \to K \times K$, hence a subgroup of $K \times K$, and composites and converses of subgroups of $K \times K$ are again subgroups. So $\ker e$ is a congruence on $K$, $Z$ carries a unique group structure making $e$ a homomorphism, and one checks that $e$ is then a coequaliser of $f, g$ in $\cat{Grp}$, preserved by $U$. By Beck, $\cat{Grp} \simeq \cat{Set}^{UF}$.
+
+The same argument (or Linton's theorem that every variety of universal algebras is monadic) applies to $\cat{Ab}$, $\cat{Ring}$, $R\text{-}\cat{Mod}$ and $\cat{Mon}$. The category of compact Hausdorff spaces is monadic over $\cat{Set}$ too, via the ultrafilter monad (Manes 1969) — although it is not a variety of finitary algebras.
+
+</Example>
+
+<Example title="Topological spaces are not monadic over Set">
+
+The left adjoint of $U : \cat{Top} \to \cat{Set}$ is the discrete-space functor, so the induced monad is the identity monad, whose algebras are just sets (the unit law forces $a = \mathrm{id}$). The comparison functor $\cat{Top} \to \cat{Set}$ is $U$ itself, and it is not an equivalence: the identity map from a two-point discrete space to a two-point indiscrete space is continuous and bijective but not a homeomorphism, so $U$ does not reflect isomorphisms (condition 2 fails). The same argument shows that posets are not monadic over $\cat{Set}$.
+
+</Example>
+
+<Example title="Monads in programming (Moggi)">
+
+Model a programming language whose programs may have **effects** by a monad $T$ on a category of types: a program from $A$ to $B$ is a Kleisli arrow $A \to TB$, and running programs in sequence is Kleisli composition. Exceptions: $TB = B + E$. Nondeterminism: $TB = \mathcal{P}_{\mathrm{fin}}B$ or $\mathrm{List}(B)$. Global state: $TB = (B \times S)^S$. Output to a log: $TB = M \times B$ for a monoid $M$. Probabilistic choice: $TB = DB$. Moggi (1989, 1991) made this precise; Wadler brought it into functional programming, and in Haskell `return` is $\eta$ and `>>=` (bind) is **Kleisli extension**: $f : A \to TB$ extends to $f^* = \mu_B \circ Tf : TA \to TB$. A monad can equivalently be given as a **Kleisli triple** $(T, \eta, (-)^*)$ satisfying $\eta^* = \mathrm{id}$, $f^* \circ \eta = f$ and $g^* \circ f^* = (g^* \circ f)^*$ — which are exactly the three Kleisli category laws, i.e. Haskell's "monad laws". The monads came from algebra and topology; programming found them afterwards.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Monads in Lean">
+
+The Lean module works at two levels. First, with plain functions on types, it checks the monad and Kleisli laws for lists by induction, and proves in full that list-algebras are monoids:
+
+<Lean decl="Lumenary.Monads.list_monad_laws" />
+
+<Lean decl="Lumenary.Monads.listKleisli" />
+
+<Lean decl="Lumenary.Monads.list_kleisli_laws" />
+
+A list algebra is an evaluation map with the two laws. The key lemma is the human proof's first step: an algebra is determined by evaluating two-element lists.
+
+<Lean decl="Lumenary.Monads.ListAlgebra" />
+
+<Lean decl="Lumenary.Monads.ListAlgebra.act_cons" />
+
+<Lean decl="Lumenary.Monads.ListAlgebra.toMonoid" />
+
+<Lean decl="Lumenary.Monads.ListAlgebra.ofMonoid" />
+
+<Lean decl="Lumenary.Monads.ListAlgebra.act_eq_prod" />
+
+The theorem "algebras for the list monad are exactly monoids" is then an explicit bijection between the two kinds of structure on a type:
+
+<Lean decl="Lumenary.Monads.listAlgebraEquivMonoid" />
+
+<Lean decl="Lumenary.Monads.optionAlgebraEquiv" />
+
+Second, Mathlib has the general theory: `CategoryTheory.Monad`, the Eilenberg–Moore category `Monad.Algebra`, `Kleisli`, `Adjunction.toMonad`, the comparison functor and Beck's theorem. The following are one-line applications of Mathlib, recording Theorems 1–4 and Beck's theorem in Mathlib's language (note that Mathlib writes composition in diagrammatic order: `F ⋙ G` is $G \circ F$):
+
+<Lean decl="Lumenary.Monads.adjunction_monad" />
+
+<Lean decl="Lumenary.Monads.kleisli_induces" />
+
+<Lean decl="Lumenary.Monads.eilenberg_moore_induces" />
+
+<Lean decl="Lumenary.Monads.comparison" />
+
+<Lean decl="Lumenary.Monads.beck" />
+
+<Lean decl="Lumenary.Monads.monads_are_monoids" />
+
+**What is and is not formalised.** Independently proved here: the list monad and Kleisli laws, the equivalence between list-algebras and monoids, and the classification of maybe-algebras. Taken from Mathlib: the adjunction–monad correspondence, both canonical adjunctions, the comparison functor, Beck's theorem and monads as monoids. Not formalised: monadicity of $\cat{Grp}$, the non-monadicity of $\cat{Top}$, and Proposition 5. The list-algebra statements are about functions `List X → X`; Mathlib's `ofTypeMonad List` packages the same monad as a `CategoryTheory.Monad (Type u)`, and connecting the two is a routine but fiddly exercise in unfolding Mathlib's morphisms of types.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Searching for algebras; composing kernels">
+
+The first experiment searches **every** candidate structure map on small sets. It finds that maybe-algebras are base points, that power-set algebras on $n \le 3$ points are the $n!$ chains with $a(S) = \sup S$, and that among the 243 unital binary operations on a 3-element set, the list-algebra laws hold exactly for the 33 associative ones — the monoids. It also catches the "intersection monad" breaking a unit law.
+
+<Python id="monads_algebra_count" />
+
+The second experiment works in the Kleisli category of the distribution monad. It composes Markov kernels using only $\eta$ and $\mu$ (push forward, then average) and compares with matrix multiplication, in exact rational arithmetic; it also checks the tower property, which is the associativity law of the expectation algebra.
+
+<Python id="monads_kleisli_kernels" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Monads come from programming."** They arose in algebraic topology and homological algebra: Godement's *construction fondamentale* (1958) for sheaf cohomology, Huber's observation (1961) that adjunctions yield them, and the work of Eilenberg, Moore, Kleisli and Beck in the 1960s, when they were called *standard constructions* or *triples*. Moggi applied them to programming semantics in 1989.
+
+</Misconception>
+
+<Misconception>
+
+**"The Kleisli and Eilenberg–Moore categories of a monad are always equivalent."** The Kleisli category is the full subcategory of *free* algebras. It is equivalent to the whole Eilenberg–Moore category only when every algebra is (isomorphic to) a free one — true for the maybe monad, false for the list monad, where the monoid $\Z/2$ is not free and has an endomorphism monoid of size 2 that no Kleisli object has.
+
+</Misconception>
+
+<Misconception>
+
+**"A monad is just a functor with some maps $\eta$ and $\mu$."** The maps must be natural *and* satisfy the associativity and both unit laws. The power-set functor with $\eta(x) = \{x\}$ and $\mu = \bigcap$ satisfies the associativity law and the left unit law, yet it is not a monad: the right unit law fails, and this $\mu$ is not even natural.
+
+</Misconception>
+
+<Misconception>
+
+**"Every algebra structure is unique / every forgetful functor with a left adjoint is monadic."** A set can carry many algebra structures (six power-set algebras on three points). And having a left adjoint is not enough: $\cat{Top} \to \cat{Set}$ has one but is not monadic, because it does not reflect isomorphisms.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Compact spaces as algebras; sheaf resolutions">
+
+The **ultrafilter monad** $\beta$ on $\cat{Set}$ sends $X$ to the set of ultrafilters on $X$ (for discrete $X$, the Stone–Čech compactification), with $\eta$ the principal ultrafilters. Manes' theorem (1969): the algebras for $\beta$ are exactly the **compact Hausdorff spaces**, the structure map sending each ultrafilter to its unique limit, and algebra morphisms are continuous maps. Compactness says every ultrafilter has a limit, Hausdorffness that it is unique; the algebra laws encode the topology. So a purely algebraic notion recovers a central class of spaces (see <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>).
+
+Godement's original monad lives on sheaves: if $X^\delta$ is $X$ with the discrete topology and $p : X^\delta \to X$ the identity map, the adjunction $p^* \dashv p_*$ gives the monad $T\mathcal{F}(U) = \prod_{x \in U} \mathcal{F}_x$ of discontinuous sections. Iterating $T$ with the face maps built from $\eta$ and $\mu$ yields the flabby **Godement resolution** $\mathcal{F} \to T\mathcal{F} \to T^2\mathcal{F} \to \cdots$, which computes sheaf cohomology (see <TopicLink id="math.geom.sheaves">sheaves</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Varieties, theories and descent">
+
+For a variety of algebras (groups, rings, lattices, $R$-modules, …) the free-algebra adjunction is monadic, and the monad is **finitary** (determined by its values on finite sets). Conversely, finitary monads on $\cat{Set}$ correspond to Lawvere's **algebraic theories** (Lawvere 1963; Linton 1966): a monad is a presentation-free description of an equational theory, $TX$ being the set of terms in variables $X$ modulo the equations, $\eta$ the variables and $\mu$ substitution. For a monoid object $A$ in a monoidal category (a ring in $\cat{Ab}$, an algebra in $\cat{Vect}_k$), $A \otimes -$ is a monad whose algebras are the $A$-modules.
+
+Dually, Beck's theorem for **comonads** is the abstract form of Grothendieck's descent. For a faithfully flat homomorphism of commutative rings $A \to B$, extension of scalars $B \otimes_A - : A\text{-}\cat{Mod} \to B\text{-}\cat{Mod}$ is comonadic, and coalgebras for the induced comonad are $B$-modules with descent data (Bénabou–Roubaud 1970). This is the algebraic heart of gluing modules and quasi-coherent sheaves along faithfully flat covers in <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Kleisli arrows are Markov kernels">
+
+For the finite distribution monad $D$, Kleisli arrows $X \to DY$ are Markov kernels and Kleisli composition is the Chapman–Kolmogorov equation $P^{(m+n)} = P^{(m)} P^{(n)}$; the Kleisli category of $D$ on finite sets is the category of stochastic matrices. A Markov chain with transition kernel $k : X \to DX$ is an endomorphism in this category, and its $n$-step behaviour is the $n$-fold Kleisli power (see <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>). Expectation is an algebra $D\R \to \R$, and its associativity law is the tower property. Lawvere (1962) and Giry (1982) extended this to the **Giry monad** on measurable spaces, sending $X$ to the space of probability measures on it; its Kleisli arrows are measurable Markov kernels, and this is now the basis of categorical probability and of the semantics of probabilistic programming (see <TopicLink id="math.prob.measure-theoretic-probability">measure-theoretic probability</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Effects and the monad laws">
+
+In Moggi's semantics a type of computations returning $B$ is $TB$, `return` is $\eta$ and sequencing (`>>=`, `do`-notation) is Kleisli extension $f^* = \mu \circ Tf$. The monad laws are what make program transformations valid: associativity justifies flattening nested `do`-blocks; the unit laws justify removing `return x >>= f` and `m >>= return`. Different monads give different effects (exceptions, state, nondeterminism, input/output, probability, continuations $TB = R^{(R^B)}$), and monad morphisms translate between them. Later refinements — algebraic effects and handlers (Plotkin and Power; Plotkin and Pretnar) — return to the algebraic view: an effect is given by operations and equations, and its monad is the free-algebra monad of that theory (see <TopicLink id="math.comp.formal-methods">formal methods</TopicLink> and <TopicLink id="math.comp.lambda-calculus">the λ-calculus</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Closure, possibility and modalities">
+
+On a preorder of propositions ordered by entailment, a monad is a closure operator $j$ with $p \vdash jp$ and $jjp \vdash jp$. In the modal logic S4, possibility $\Diamond$ satisfies $p \vdash \Diamond p$ and $\Diamond\Diamond p \vdash \Diamond p$, so it is a monad (and necessity $\Box$ a comonad). The modality of lax logic is a monad of this kind, and so are the Lawvere–Tierney topologies of topos theory, which in addition preserve conjunction and classify subtoposes such as categories of sheaves (see <TopicLink id="math.cat.elementary-topoi">elementary topoi</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="A monoid, one dimension up">
+
+Endofunctors of $\mathcal{C}$ form a strict monoidal category under composition, and a monad is a monoid object in it ($\mu$ the multiplication, $\eta$ the unit). Street's **formal theory of monads** (1972) defines a monad in any 2-category as a 1-cell $t : a \to a$ with 2-cells $\eta, \mu$ satisfying the usual laws; in $\cat{Cat}$ these are the monads of this lesson, and (Bénabou) in the bicategory of spans of sets they are exactly the small categories. Kan extensions give the most general source of monads: every functor $G$ whose right Kan extension along itself exists has a **codensity monad**, which for $G$ a right adjoint is the induced monad (see <TopicLink id="math.cat.kan-extensions">Kan extensions</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="inverses-and-structure" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Roger Godement** (France) introduced the "standard construction" in *Topologie algébrique et théorie des faisceaux* (1958), to build flabby resolutions of sheaves.
+- **Peter J. Huber** (Switzerland) showed in 1961, in work on homotopy theory in general categories, that every adjunction produces such a construction.
+- In 1965 **Heinrich Kleisli** (Switzerland) and, independently, **Samuel Eilenberg** and **John C. Moore** showed that every monad arises from an adjunction, by the two constructions that now bear their names.
+- **Jon Beck** proved the monadicity theorem in his 1967 Columbia thesis *Triples, algebras and cohomology*; **F. William Lawvere**'s 1963 thesis on algebraic theories and **Fred Linton**'s work connected monads to universal algebra; **Ernest Manes** characterised compact Hausdorff spaces as algebras in 1969. The name "monad" replaced "triple" in the late 1960s and was popularised by Mac Lane's 1971 textbook; it is usually credited to **Jean Bénabou**.
+- **Michèle Giry** (1982), building on unpublished notes of Lawvere (1962), introduced the probability monad on measurable spaces.
+- **Eugenio Moggi** (Italy, 1989 and 1991) used monads to structure the semantics of computational effects; **Philip Wadler** and **Simon Peyton Jones** brought them into functional programming, and Haskell adopted monadic input/output in the 1990s.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Saunders Mac Lane, *Categories for the Working Mathematician* (1971; 2nd edition 1998), Chapter VI — monads, algebras, the comparison theorems and Beck's theorem.
+- Emily Riehl, *Category Theory in Context* (2016), Chapter 5 — a modern treatment with many examples, including Beck's theorem.
+- Francis Borceux, *Handbook of Categorical Algebra 2* (1994), Chapter 4 — monads in depth.
+- Michael Barr and Charles Wells, *Toposes, Triples and Theories* (1985) — triples, algebraic theories and descent.
+- Eugenio Moggi, "Notions of computation and monads", *Information and Computation* 93 (1991).
+- Tom Leinster, *Basic Category Theory* (2014) — for the adjunctions this lesson builds on.
+
+</Section>

@@ -9,10 +9,14 @@ import { HeroConstellation } from "@/components/site/HeroConstellation";
 import { NarratorAvatar } from "@/components/brand/Narrators";
 import { MODE_STYLE } from "@/components/ui/ModeBadge";
 
+const FIRST_SEQUENCE = ["collections", "sets", "integers", "functions", "composition"];
+
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const locale = await resolveLocale(params);
   const t = await getT(locale);
-  const lessons = getLessonList(locale).map((l) => l.frontmatter);
+  // The first learning sequence shown on the home page (the curriculum has many more lessons).
+  const all = getLessonList(locale).map((l) => l.frontmatter);
+  const lessons = FIRST_SEQUENCE.map((slug) => all.find((l) => l.slug === slug)).filter((l) => l !== undefined);
   const trails = getTrailList(locale).map((l) => l.frontmatter);
   const graph = getGraph();
   const lean = getLeanReport();
@@ -51,7 +55,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <h1 className="mt-4 text-[2.6rem] font-semibold leading-[1.05] tracking-tight text-ink sm:text-6xl">{t("home.title")}</h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-2">{t("home.lead")}</p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={href(locale, "math/lessons/collections")} className="btn btn-primary px-5 py-3 text-base">
+              <Link prefetch={false} href={href(locale, "math/lessons/collections")} className="btn btn-primary px-5 py-3 text-base">
                 {t("home.start")} <ArrowRight size={18} className="rtl:rotate-180" aria-hidden="true" />
               </Link>
               <Link href={href(locale, "math/graph")} className="btn btn-ghost px-5 py-3 text-base">
@@ -120,7 +124,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             {lessons.map((l, i) => (
               <li key={l.slug} className="relative">
                 {i < lessons.length - 1 && <span className="absolute start-[calc(100%-0.5rem)] top-10 z-0 hidden h-px w-6 bg-gold md:block" aria-hidden="true" />}
-                <Link href={href(locale, `math/lessons/${l.slug}`)} className="card group relative z-10 flex h-full flex-col p-5 transition-shadow hover:shadow-[var(--shadow-lg)]">
+                <Link prefetch={false} href={href(locale, `math/lessons/${l.slug}`)} className="card group relative z-10 flex h-full flex-col p-5 transition-shadow hover:shadow-[var(--shadow-lg)]">
                   <span className="flex items-center justify-between">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold font-display font-bold text-[#1b1406]">{fmt(i + 1)}</span>
                     <span className="text-xs font-semibold text-muted">{t(`levels.${l.level}`)}</span>
@@ -145,13 +149,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <h2 className="mt-2 text-3xl font-semibold text-ink sm:text-4xl">{t("home.trailsTitle")}</h2>
             <p className="mt-4 text-lg leading-relaxed text-ink-2">{t("home.trailsLead")}</p>
           </div>
-          <Link href={href(locale, "math/trails")} className="btn btn-ghost">
+          <Link prefetch={false} href={href(locale, "math/trails")} className="btn btn-ghost">
             {t("home.trailsCta")} <ArrowRight size={16} className="rtl:rotate-180" aria-hidden="true" />
           </Link>
         </div>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {trails.slice(0, 6).map((tr) => (
-            <Link
+            <Link prefetch={false}
               key={tr.slug}
               href={href(locale, `math/trails/${tr.slug}`)}
               className="group relative overflow-hidden rounded-2xl border border-gold/35 bg-gradient-to-br from-gold-soft/80 via-card to-card p-6 shadow-[var(--shadow)] transition-shadow hover:shadow-[var(--shadow-lg)]"
@@ -205,7 +209,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
-              [lessons.length, t("home.statLessons")],
+              [all.length, t("home.statLessons")],
               [trails.length, t("home.statTrails")],
               [graph.topics.length, t("home.statTopics")],
               [leanCompiled, t("home.statLean")],

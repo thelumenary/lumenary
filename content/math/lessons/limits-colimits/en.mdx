@@ -1,0 +1,553 @@
+---
+slug: limits-colimits
+topic: math.cat.limits-colimits
+title: Limits and colimits
+subtitle: Carving out and gluing together — equalisers, pullbacks, inverse limits and their mirror images as one universal construction, from solution sets to the $p$-adic integers.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6029
+objectives:
+  - Define diagrams, cones, limits and colimits, and recognise products, equalisers, pullbacks and inverse limits (and their duals) as special cases
+  - Compute equalisers, pullbacks, coequalisers and pushouts in $\cat{Set}$, $\cat{Grp}$ and $\cat{Top}$
+  - Prove that limits are unique up to unique isomorphism and that a category with all small products and equalisers has all small limits
+  - Show that hom functors $\Hom(A, -)$ preserve limits, and that the forgetful functor $\cat{Grp} \to \cat{Set}$ preserves limits but not coproducts
+  - Describe the $p$-adic integers as an inverse limit of the rings $\Z/p^n\Z$ and use the description to find units and square roots
+narrators: []
+lean:
+  - Lumenary.LimitsColimits.equalizer_universal
+  - Lumenary.LimitsColimits.homEqualizerEquiv
+  - Lumenary.LimitsColimits.pullback_universal
+  - Lumenary.LimitsColimits.CoeqRel
+  - Lumenary.LimitsColimits.coequalizer_universal
+  - Lumenary.LimitsColimits.cone_naturality
+  - Lumenary.LimitsColimits.limits_of_products_equalizers
+  - Lumenary.LimitsColimits.pullbacks_of_products_equalizers
+  - Lumenary.LimitsColimits.complete_cocomplete
+  - Lumenary.LimitsColimits.hom_preserves_limits
+  - Lumenary.LimitsColimits.forget_preserves_limits
+  - Lumenary.LimitsColimits.forget_not_preserves_coproduct
+  - Lumenary.LimitsColimits.padic_inverse_limit
+  - Lumenary.LimitsColimits.increasing_limit_is_colimit
+compute: [limits_colimits_finite_sets, limits_colimits_padic]
+trails: [products-by-maps, remainder-families]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Solving, intersecting, gluing, approximating">
+
+Here are some constructions from across mathematics.
+
+- The **solution set** $\{x \in X : f(x) = g(x)\}$ of an equation between two maps.
+- The **kernel** of a homomorphism, and the **intersection** of two subgroups or subspaces.
+- The **preimage** $f^{-1}(B')$ of a subset, and the **fibre product** $\{(a, b) : f(a) = g(b)\}$.
+- The **$p$-adic integers**, built from the rings $\Z/p\Z \leftarrow \Z/p^2\Z \leftarrow \Z/p^3\Z \leftarrow \cdots$ by taking all compatible sequences of residues.
+- **Quotients** $Y/{\sim}$, the sphere obtained by **gluing** two discs along their boundary circles, the rationals as a **union** of the groups $\frac{1}{n}\Z$.
+
+The first four "carve out" a piece of a product by equations; the last group "glues" pieces of a disjoint union together. Category theory shows that each of them is a **limit** or a **colimit** — one universal property, applied to diagrams of different shapes. The payoff is threefold: one proof of uniqueness for all of them; one theorem constructing all of them from two basic ones (products and equalisers); and a precise way to say which constructions a functor respects. That last point already decides questions such as whether a functor can have an adjoint, the subject of the <TopicLink id="math.cat.adjunctions">next lesson</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Cones: compatible families, everywhere at once">
+
+A **diagram** is a picture of objects and arrows in a category — a cospan $A \to C \leftarrow B$, a parallel pair $X \rightrightarrows Y$, a tower $\cdots \to D_3 \to D_2 \to D_1$. A **cone** over the diagram is an object $X$ with one arrow to each object of the diagram, compatible with all the arrows *of* the diagram: whichever path you follow from $X$ to an object, you get the same arrow. The **limit** is the best cone: every other cone factors through it in exactly one way.
+
+In $\cat{Set}$, take $X = \{\ast\}$. A cone from the one-point set is just a choice of one element in each object of the diagram, compatible with all the arrows — a **compatible family**. So the limit of a diagram of sets is *the set of compatible families*. For the cospan $A \xrightarrow{f} C \xleftarrow{g} B$, a compatible family is $(a, b, c)$ with $f(a) = c = g(b)$: the fibre product. For the tower of rings $\Z/p^n\Z$, it is a sequence of residues, each reducing to the previous one: a $p$-adic integer.
+
+Colimits reverse every arrow. A **cocone** is an object receiving an arrow from every object of the diagram, compatibly, and the colimit is the best cocone. In $\cat{Set}$ it is the disjoint union of all the objects, with $x$ glued to $D(u)(x)$ for every arrow $u$ of the diagram.
+
+Limits **carve out**, colimits **glue together**.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $\mathcal{C}$ is a category and $\mathcal{J}$ a small category, the **shape**. Composition is written $g \circ f$.
+
+<Definition term="diagram">
+
+A **diagram of shape $\mathcal{J}$** in $\mathcal{C}$ is a functor $D : \mathcal{J} \to \mathcal{C}$. For an object $X$ of $\mathcal{C}$, the **constant diagram** $\Delta X : \mathcal{J} \to \mathcal{C}$ sends every object to $X$ and every arrow to $\mathrm{id}_X$.
+
+</Definition>
+
+<Definition term="cone and limit">
+
+A **cone** over $D$ with **apex** $X$ is a natural transformation $\lambda : \Delta X \Rightarrow D$. Concretely: arrows $\lambda_j : X \to D(j)$, one for each object $j$ of $\mathcal{J}$, with $D(u) \circ \lambda_i = \lambda_j$ for every arrow $u : i \to j$ of $\mathcal{J}$. A morphism of cones $(X, \lambda) \to (X', \lambda')$ is an arrow $h : X \to X'$ with $\lambda'_j \circ h = \lambda_j$ for all $j$. A **limit** of $D$ is a terminal object $(\lim D, \pi)$ of the category of cones: for every cone $(X, \lambda)$ there is a unique $h : X \to \lim D$ with $\pi_j \circ h = \lambda_j$ for all $j$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "X", tex: "X", row: 0, col: 1 },
+    { id: "L", tex: "\\lim D", row: 1, col: 1 },
+    { id: "Di", tex: "D(i)", row: 2, col: 0 },
+    { id: "Dj", tex: "D(j)", row: 2, col: 2 },
+  ]}
+  arrows={[
+    { from: "X", to: "Di", tex: "\\lambda_i", labelSide: "right", bend: -25 },
+    { from: "X", to: "Dj", tex: "\\lambda_j", bend: 25 },
+    { from: "X", to: "L", tex: "h", style: "dashed" },
+    { from: "L", to: "Di", tex: "\\pi_i" },
+    { from: "L", to: "Dj", tex: "\\pi_j", labelSide: "right" },
+    { from: "Di", to: "Dj", tex: "D(u)", labelSide: "right" },
+  ]}
+  caption="A cone $\lambda$ with apex $X$ factors uniquely through the limit cone $\pi$; all triangles commute."
+/>
+
+<Definition term="cocone and colimit">
+
+A **cocone** under $D$ is a natural transformation $D \Rightarrow \Delta Y$, and a **colimit** $\operatorname{colim} D$ is an initial cocone. Equivalently, a colimit of $D$ is a limit of $D^{\mathrm{op}} : \mathcal{J}^{\mathrm{op}} \to \mathcal{C}^{\mathrm{op}}$.
+
+</Definition>
+
+<Definition term="the basic shapes">
+
+| shape $\mathcal{J}$ | limit | colimit |
+| --- | --- | --- |
+| no objects | terminal object | initial object |
+| two objects, no arrows | product $A \times B$ | coproduct $A \sqcup B$ |
+| parallel pair $\bullet \rightrightarrows \bullet$ | **equaliser** of $f, g$ | **coequaliser** of $f, g$ |
+| cospan $\bullet \to \bullet \leftarrow \bullet$ | **pullback** $A \times_C B$ | — |
+| span $\bullet \leftarrow \bullet \to \bullet$ | — | **pushout** $A \sqcup_C B$ |
+| tower $\cdots \to \bullet \to \bullet$ ($\N^{\mathrm{op}}$) | **inverse limit** $\varprojlim D_n$ | — |
+| chain $\bullet \to \bullet \to \cdots$ ($\N$) | — | **direct (sequential) limit** $\varinjlim D_n$ |
+
+</Definition>
+
+Unpacked, an **equaliser** of $f, g : X \to Y$ is an arrow $e : E \to X$ with $f e = g e$ such that every $h : W \to X$ with $f h = g h$ factors as $h = e \circ k$ for a unique $k$. (The leg to $Y$ is forced to be $f e = g e$.) A **pullback** of $f : A \to C$ and $g : B \to C$ is an object $P$ with $p_1 : P \to A$, $p_2 : P \to B$, $f p_1 = g p_2$, through which every such commuting square factors uniquely:
+
+<CommutativeDiagram
+  objects={[
+    { id: "Q", tex: "W", row: 0, col: 0 },
+    { id: "P", tex: "A \\times_C B", row: 1, col: 1 },
+    { id: "A", tex: "A", row: 1, col: 2 },
+    { id: "B", tex: "B", row: 2, col: 1 },
+    { id: "C", tex: "C", row: 2, col: 2 },
+  ]}
+  arrows={[
+    { from: "Q", to: "A", tex: "a", bend: 20 },
+    { from: "Q", to: "B", tex: "b", bend: -20, labelSide: "right" },
+    { from: "Q", to: "P", tex: "u", style: "dashed" },
+    { from: "P", to: "A", tex: "p_1" },
+    { from: "P", to: "B", tex: "p_2", labelSide: "right" },
+    { from: "A", to: "C", tex: "f" },
+    { from: "B", to: "C", tex: "g", labelSide: "right" },
+  ]}
+  caption="The pullback: every pair $a, b$ with $f a = g b$ factors through $A \times_C B$ by a unique $u$."
+/>
+
+<Definition term="complete, cocomplete, preservation">
+
+$\mathcal{C}$ is **complete** if every diagram of every small shape has a limit, and **cocomplete** if every such diagram has a colimit. A functor $F : \mathcal{C} \to \mathcal{D}$ **preserves** a limit $(\lim D, \pi)$ if $(F(\lim D), F\pi)$ is a limit of $F \circ D$; it **preserves limits** if it preserves every limit that exists. Preservation of colimits is defined dually.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Limits and colimits of sets">
+
+For $D : \mathcal{J} \to \cat{Set}$,
+
+$$
+\lim D = \Big\{ (x_j) \in \prod_j D(j) \;:\; D(u)(x_i) = x_j \text{ for all } u : i \to j \Big\}, \qquad \operatorname{colim} D = \Big( \bigsqcup_j D(j) \Big) \Big/ {\sim},
+$$
+
+where $\sim$ is the equivalence relation generated by $x \sim D(u)(x)$ for $x \in D(i)$, $u : i \to j$. The equaliser of $f, g : X \to Y$ is $\{x : f(x) = g(x)\}$; the pullback of $f, g$ is $\{(a, b) \in A \times B : f(a) = g(b)\}$; the coequaliser of $f, g$ is $Y$ modulo the equivalence relation generated by $f(x) \sim g(x)$; the pushout of $A \xleftarrow{f} C \xrightarrow{g} B$ is $A \sqcup B$ with $f(c)$ glued to $g(c)$.
+
+</Example>
+
+<Example title="Special pullbacks: preimages and intersections">
+
+If $m : B' \hookrightarrow B$ is the inclusion of a subset and $f : A \to B$, the pullback of $m$ along $f$ is $\{(a, b') : f(a) = b'\} \cong f^{-1}(B')$. If $A', B' \subseteq X$, the pullback of the two inclusions is $A' \cap B'$. In $\cat{Grp}$ the kernel of $\varphi : G \to H$ is the equaliser of $\varphi$ and the trivial homomorphism, and also the pullback of $\varphi$ along $1 \to H$.
+
+</Example>
+
+<Example title="Groups and spaces">
+
+In $\cat{Grp}$, limits are computed as in $\cat{Set}$: the equaliser of $\varphi, \psi : G \to H$ is the subgroup $\{g : \varphi(g) = \psi(g)\}$, the pullback is the subgroup $\{(a, b) : \varphi(a) = \psi(b)\}$ of $A \times B$. Colimits are not: the coequaliser of $\varphi, \psi$ is $H / N$, where $N$ is the **normal** subgroup generated by the elements $\varphi(g)\psi(g)^{-1}$, and the pushout of $A \leftarrow C \to B$ is the **amalgamated free product** $A *_C B$. In $\cat{Top}$, limits carry the coarsest topology making the legs continuous (subspaces of products), and colimits the finest making the legs continuous (quotients of disjoint unions): the pushout of $D^2 \hookleftarrow S^1 \hookrightarrow D^2$ is the sphere $S^2$, and the coequaliser identifying the endpoints of $[0, 1]$ is the circle.
+
+</Example>
+
+<Example title="Inverse limits">
+
+- The **$p$-adic integers**: $\Z_p = \varprojlim \Z/p^n\Z$, the set of sequences $(x_n)$ with $x_n \in \Z/p^n\Z$ and $x_{n+1} \equiv x_n \pmod{p^n}$, with componentwise ring operations. In $\Z_5$, $-1 = (4, 24, 124, \dots)$; in $\Z_2$, $\tfrac13 = (1, 3, 3, 11, 11, 43, \dots)$ because $3 \cdot 11 = 33 \equiv 1 \pmod{16}$.
+- The **Cantor set** is homeomorphic to $\varprojlim \{0,1\}^n$ (finite discrete spaces, truncation maps), i.e. to $\{0,1\}^{\N}$ with the product topology.
+- The **profinite integers** $\widehat{\Z} = \varprojlim_n \Z/n\Z$, over the positive integers ordered by divisibility; by the Chinese remainder theorem $\widehat{\Z} \cong \prod_p \Z_p$.
+
+</Example>
+
+<Figure caption="The tower $\cdots \to \Z/8 \to \Z/4 \to \Z/2 \to \Z/1$ drawn as a tree: each residue mod $2^n$ has two lifts mod $2^{n+1}$. A $2$-adic integer is an infinite path from the root; the highlighted path $1, 3, 3, \dots$ is $\tfrac13$.">
+<svg viewBox="0 0 480 190" role="img" aria-label="Binary tree of residues modulo 1, 2, 4 and 8, with the path 1, 3, 3 highlighted">
+  <g stroke="var(--ink-2)" strokeWidth="1.5">
+    <line x1="240" y1="20" x2="120" y2="70" />
+    <line x1="120" y1="70" x2="60" y2="120" />
+    <line x1="120" y1="70" x2="180" y2="120" />
+    <line x1="360" y1="70" x2="300" y2="120" />
+    <line x1="60" y1="120" x2="30" y2="170" />
+    <line x1="60" y1="120" x2="90" y2="170" />
+    <line x1="180" y1="120" x2="150" y2="170" />
+    <line x1="180" y1="120" x2="210" y2="170" />
+    <line x1="300" y1="120" x2="270" y2="170" />
+    <line x1="300" y1="120" x2="330" y2="170" />
+    <line x1="420" y1="120" x2="450" y2="170" />
+  </g>
+  <g stroke="var(--gold)" strokeWidth="4">
+    <line x1="240" y1="20" x2="360" y2="70" />
+    <line x1="360" y1="70" x2="420" y2="120" />
+    <line x1="420" y1="120" x2="390" y2="170" />
+  </g>
+  <g fill="var(--sky-soft)" stroke="var(--ink-2)">
+    <circle cx="240" cy="20" r="11" />
+    <circle cx="120" cy="70" r="11" />
+    <circle cx="360" cy="70" r="11" />
+    <circle cx="60" cy="120" r="11" />
+    <circle cx="180" cy="120" r="11" />
+    <circle cx="300" cy="120" r="11" />
+    <circle cx="420" cy="120" r="11" />
+    <circle cx="30" cy="170" r="11" />
+    <circle cx="90" cy="170" r="11" />
+    <circle cx="150" cy="170" r="11" />
+    <circle cx="210" cy="170" r="11" />
+    <circle cx="270" cy="170" r="11" />
+    <circle cx="330" cy="170" r="11" />
+    <circle cx="390" cy="170" r="11" />
+    <circle cx="450" cy="170" r="11" />
+  </g>
+  <g fill="var(--ink-2)" fontSize="12" textAnchor="middle">
+    <text x="240" y="24">0</text>
+    <text x="120" y="74">0</text>
+    <text x="360" y="74">1</text>
+    <text x="60" y="124">0</text>
+    <text x="180" y="124">2</text>
+    <text x="300" y="124">1</text>
+    <text x="420" y="124">3</text>
+    <text x="30" y="174">0</text>
+    <text x="90" y="174">4</text>
+    <text x="150" y="174">2</text>
+    <text x="210" y="174">6</text>
+    <text x="270" y="174">1</text>
+    <text x="330" y="174">5</text>
+    <text x="390" y="174">3</text>
+    <text x="450" y="174">7</text>
+  </g>
+</svg>
+</Figure>
+
+<Example title="Direct limits">
+
+- $\Z[\tfrac1p] = \varinjlim (\Z \xrightarrow{p} \Z \xrightarrow{p} \Z \to \cdots)$: the $n$-th copy of $\Z$ is $p^{-n}\Z \subset \Q$.
+- The **Prüfer group** $\Z(p^\infty) = \varinjlim (\Z/p \xrightarrow{p} \Z/p^2 \xrightarrow{p} \Z/p^3 \to \cdots) \cong \Z[\tfrac1p]/\Z$, the group of $p$-power roots of unity.
+- $\Q$ is the colimit of the groups $\frac1n \Z$ over the positive integers ordered by divisibility. In a poset, a colimit of an increasing sequence is its **supremum**.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems and proofs">
+
+<Theorem name="Theorem 1 (uniqueness)">
+
+If $(L, \pi)$ and $(L', \pi')$ are limits of $D$, there is a unique isomorphism $\varphi : L \to L'$ with $\pi'_j \circ \varphi = \pi_j$ for all $j$. Dually for colimits.
+
+</Theorem>
+
+<Proof>
+
+Both are terminal objects of the category of cones over $D$, and terminal objects are unique up to unique isomorphism: the unique cone morphisms $\varphi : L \to L'$ and $\psi : L' \to L$ compose to cone endomorphisms of $L$ and $L'$, which must be the identities by uniqueness. (This is the argument for products in <TopicLink id="math.cat.products-coproducts">the previous lesson</TopicLink>, now for every shape at once.)
+
+</Proof>
+
+<Theorem name="Theorem 2 (Set is complete and cocomplete)">
+
+The formulas in the first example are a limit and a colimit of $D : \mathcal{J} \to \cat{Set}$ for every small $\mathcal{J}$, with legs the projections $\pi_j$ and the maps $\iota_j : D(j) \to \operatorname{colim} D$, $x \mapsto [x]$.
+
+</Theorem>
+
+<Proof>
+
+*Limit.* The projections form a cone because $D(u)(x_i) = x_j$ for elements of $\lim D$. Given a cone $(X, \lambda)$, each $x \in X$ gives a compatible family $(\lambda_j(x))_j$, so $h(x) = (\lambda_j(x))_j$ defines $h : X \to \lim D$ with $\pi_j h = \lambda_j$; and any such $h$ must have $j$-th coordinate $\lambda_j(x)$. *Colimit.* $\iota_j(x) = [x]$ is a cocone since $[x] = [D(u)(x)]$. Given a cocone $\mu_j : D(j) \to Y$, define $k[x] = \mu_j(x)$ for $x \in D(j)$; this is well defined because the relation $\{(x, y) : \mu(x) = \mu(y)\}$ is an equivalence relation containing the generating pairs $x \sim D(u)(x)$ (as $\mu_j \circ D(u) = \mu_i$), hence containing $\sim$. Uniqueness: $k$ is determined on every class $[x]$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (limits from products and equalisers)">
+
+If $\mathcal{C}$ has all small products and all equalisers, then $\mathcal{C}$ has all small limits. Explicitly, for $D : \mathcal{J} \to \mathcal{C}$, let
+
+$$
+s, t : \prod_{j \in \mathrm{Ob}\,\mathcal{J}} D(j) \;\rightrightarrows\; \prod_{u : i \to j \text{ in } \mathcal{J}} D(j), \qquad \mathrm{pr}_u \circ s = \mathrm{pr}_j, \quad \mathrm{pr}_u \circ t = D(u) \circ \mathrm{pr}_i
+$$
+
+(for $u : i \to j$; $\mathrm{pr}$ denotes product projections). Then the equaliser $e : E \to \prod_j D(j)$ of $s$ and $t$, with legs $\pi_j = \mathrm{pr}_j \circ e$, is a limit of $D$.
+
+</Theorem>
+
+<Proof>
+
+*Cone.* For $u : i \to j$: $D(u) \circ \pi_i = D(u) \circ \mathrm{pr}_i \circ e = \mathrm{pr}_u \circ t \circ e = \mathrm{pr}_u \circ s \circ e = \mathrm{pr}_j \circ e = \pi_j$, using $t e = s e$.
+
+*Universal.* Let $(X, \lambda)$ be a cone. By the universal property of the product there is a unique $\ell : X \to \prod_j D(j)$ with $\mathrm{pr}_j \circ \ell = \lambda_j$. For every $u : i \to j$,
+
+$$
+\mathrm{pr}_u \circ s \circ \ell = \mathrm{pr}_j \circ \ell = \lambda_j = D(u) \circ \lambda_i = D(u) \circ \mathrm{pr}_i \circ \ell = \mathrm{pr}_u \circ t \circ \ell,
+$$
+
+so $s \ell = t \ell$ (maps into a product are determined by their components). By the universal property of the equaliser, $\ell = e \circ h$ for a unique $h : X \to E$, and then $\pi_j \circ h = \mathrm{pr}_j \circ e \circ h = \lambda_j$. If also $\pi_j \circ h' = \lambda_j$ for all $j$, then $\mathrm{pr}_j \circ (e h') = \lambda_j$ for all $j$, so $e h' = \ell = e h$, and $h' = h$ because an equaliser is a monomorphism (by the uniqueness in its universal property).
+
+</Proof>
+
+In $\cat{Set}$ this is exactly the formula of Theorem 2: compatible families are the tuples on which "move along $u$" and "look at the target" agree. Dually, coproducts and coequalisers give all colimits. The same proof with finite products shows that **a terminal object, binary products and equalisers give all finite limits**; and since the pullback of $f : A \to C$, $g : B \to C$ is the equaliser of $f \circ \pi_1$ and $g \circ \pi_2$ on $A \times B$, products and equalisers in particular give pullbacks.
+
+<Theorem name="Theorem 4 (hom functors preserve limits)">
+
+For every object $A$ of a locally small category $\mathcal{C}$, the functor $\Hom(A, -) : \mathcal{C} \to \cat{Set}$ preserves all limits that exist. Dually, $\Hom(-, B) : \mathcal{C}^{\mathrm{op}} \to \cat{Set}$ sends colimits in $\mathcal{C}$ to limits in $\cat{Set}$: $\Hom(\operatorname{colim} D, B) \cong \lim \Hom(D(-), B)$.
+
+</Theorem>
+
+<Proof>
+
+Let $(L, \pi)$ be a limit of $D$. By Theorem 2, $\lim \Hom(A, D(-))$ is the set of compatible families $(\lambda_j : A \to D(j))_j$ — that is, the set of cones over $D$ with apex $A$. The map $\Hom(A, L) \to \lim \Hom(A, D(-))$, $h \mapsto (\pi_j \circ h)_j$, is a bijection: that is precisely the universal property of $(L, \pi)$ tested on cones with apex $A$. For the dual statement apply this to $\mathcal{C}^{\mathrm{op}}$.
+
+</Proof>
+
+So limits can be computed "elementwise", using generalised elements $A \to L$: maps into a limit are compatible families of maps. For example $\Hom(A, X \times Y) \cong \Hom(A, X) \times \Hom(A, Y)$, and $\Hom(V \oplus W, U) \cong \Hom(V, U) \times \Hom(W, U)$ for vector spaces.
+
+<Theorem name="Theorem 5 (forgetful functors and limits)">
+
+The forgetful functor $U : \cat{Grp} \to \cat{Set}$ preserves all limits. It preserves neither the initial object nor binary coproducts: $U(\Z * \Z)$ is not the disjoint union $U(\Z) \sqcup U(\Z)$.
+
+</Theorem>
+
+<Proof>
+
+$U$ is naturally isomorphic to $\Hom_{\cat{Grp}}(\Z, -)$, since a homomorphism $\Z \to G$ is determined by the image of $1$, which can be any element. So Theorem 4 applies. (Directly: the set of compatible families in $\prod_j D(j)$ is a subgroup, and it is the limit in $\cat{Grp}$.) The initial object of $\cat{Grp}$ is the trivial group, whose underlying set has one element, not zero. For coproducts, compare the canonical map $c : U(\Z) \sqcup U(\Z) \to U(\Z * \Z)$ sending the two summands by $\iota_1, \iota_2$. If $U$ preserved this coproduct, $c$ would be a bijection. Let $x = \iota_1(1)$, $y = \iota_2(1)$, and map $\Z * \Z \to S_3$ by $x \mapsto \sigma = (1\,2)$, $y \mapsto \tau = (2\,3)$. Every element in the image of $c$ goes to a power of $\sigma$ (which fixes $3$) or a power of $\tau$ (which fixes $1$); but $xy$ goes to $\sigma\tau = (1\,2\,3)$, which fixes neither. So $xy \notin \operatorname{im} c$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (units of the p-adic integers)">
+
+In $\Z_p = \varprojlim \Z/p^n\Z$, an element $x = (x_n)_n$ is a unit if and only if $x_1 \neq 0$ in $\Z/p\Z$. In particular every integer, and every fraction $a/b$ with $p \nmid b$, defines an element of $\Z_p$.
+
+</Theorem>
+
+<Proof>
+
+If $xy = 1$ then $x_1 y_1 = 1$ in $\Z/p$, so $x_1 \neq 0$. Conversely, if $x_1 \neq 0$, then for each $n$ the residue $x_n$ is prime to $p$ (it reduces to $x_1$), so it has an inverse $y_n$ in $\Z/p^n$. The family $(y_n)$ is compatible: $y_{n+1} \bmod p^n$ is an inverse of $x_{n+1} \bmod p^n = x_n$, and inverses are unique, so it equals $y_n$. By the description of limits of rings as compatible families (limits in rings are computed as in sets), $y = (y_n) \in \Z_p$, and $xy = 1$ componentwise. For $a/b$, take $x = a \cdot b^{-1}$, where $b = (b \bmod p^n)_n$ is a unit.
+
+</Proof>
+
+The same "solve level by level, then use compatibility" strategy is **Hensel's lemma**: if $f$ is a polynomial with integer coefficients, $f(x_1) \equiv 0$ and $f'(x_1) \not\equiv 0 \pmod p$, then $x_1$ lifts uniquely to a compatible tower of roots, i.e. to a root in $\Z_p$. The computation below lifts the root $2$ of $x^2 + 1$ modulo $5$ to $\sqrt{-1} = (2, 7, 57, 182, \dots) \in \Z_5$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Limits and colimits in Lean">
+
+In the category of types, the constructions of Theorem 2 can be written down directly: subtypes carve out, quotients glue.
+
+<Lean decl="Lumenary.LimitsColimits.equalizer_universal" />
+
+<Lean decl="Lumenary.LimitsColimits.homEqualizerEquiv" />
+
+<Lean decl="Lumenary.LimitsColimits.pullback_universal" />
+
+<Lean decl="Lumenary.LimitsColimits.CoeqRel" />
+
+<Lean decl="Lumenary.LimitsColimits.coequalizer_universal" />
+
+Mathlib's general theory (`CategoryTheory.Limits`) defines a cone exactly as in the lesson — a natural transformation from a constant functor — and proves Theorems 3 and 4 and the completeness results. Here diagrammatic composition `π_j ≫ F.map f` means $F(f) \circ \pi_j$.
+
+<Lean decl="Lumenary.LimitsColimits.cone_naturality" />
+
+<Lean decl="Lumenary.LimitsColimits.limits_of_products_equalizers" />
+
+<Lean decl="Lumenary.LimitsColimits.pullbacks_of_products_equalizers" />
+
+<Lean decl="Lumenary.LimitsColimits.complete_cocomplete" />
+
+<Lean decl="Lumenary.LimitsColimits.hom_preserves_limits" />
+
+Theorem 5, with the non-preservation of coproducts proved by hand, as in the lesson (the permutation computations are done by `decide`):
+
+<Lean decl="Lumenary.LimitsColimits.forget_preserves_limits" />
+
+<Lean decl="Lumenary.LimitsColimits.forget_not_preserves_coproduct" />
+
+Mathlib constructs $\Z_p$ analytically (as the completion of $\Z$ for the $p$-adic norm) and proves that it is the inverse limit of the rings $\Z/p^n$ — the two descriptions agree:
+
+<Lean decl="Lumenary.LimitsColimits.padic_inverse_limit" />
+
+Finally the meeting point of the two meanings of "limit":
+
+<Lean decl="Lumenary.LimitsColimits.increasing_limit_is_colimit" />
+
+Not formalised here: Theorem 6 in the compatible-family model, and the explicit colimit formula for arbitrary diagrams of types (Mathlib: `Types.colimitEquivQuot`).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: compatible families, gluing, and towers of residues">
+
+The first experiment computes limits of small diagrams of finite sets in two ways — as compatible families, and by the construction of Theorem 3 as an equaliser of two maps between products — and checks that they agree. It then computes colimits by gluing with a union–find, and counts reduced words in $\Z/2 * \Z/3$ to watch the forgetful functor fail to preserve a coproduct.
+
+<Python id="limits_colimits_finite_sets" />
+
+The second builds points of $\Z_p = \varprojlim \Z/p^n$ as compatible towers of residues, including a square root of $-1$ in $\Z_5$ found by Hensel lifting, and counts solutions of $x^2 = a$ modulo $5^n$.
+
+<Python id="limits_colimits_padic" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: the shapes side by side">
+
+Read each diagram as a recipe. The **equaliser** $e$ is the universal arrow that makes the parallel pair agree; the **coequaliser** $q$ is the universal arrow that makes it agree *after* the pair; the **pushout** glues $A$ and $B$ along $C$. Compare each with its mirror image and check which arrows are dashed (induced uniquely).
+
+<CommutativeDiagram
+  size="sm"
+  objects={[
+    { id: "W", tex: "W", row: 0, col: 0 },
+    { id: "E", tex: "E", row: 1, col: 0 },
+    { id: "X", tex: "X", row: 1, col: 1 },
+    { id: "Y", tex: "Y", row: 1, col: 2 },
+    { id: "Q", tex: "Q", row: 1, col: 3 },
+    { id: "Z", tex: "Z", row: 0, col: 3 },
+  ]}
+  arrows={[
+    { from: "W", to: "E", tex: "k", style: "dashed", labelSide: "right" },
+    { from: "W", to: "X", tex: "h" },
+    { from: "E", to: "X", tex: "e", style: "hook", labelSide: "right" },
+    { from: "X", to: "Y", tex: "f" },
+    { from: "X", to: "Y", tex: "g" },
+    { from: "Y", to: "Q", tex: "q", style: "epi", labelSide: "right" },
+    { from: "Y", to: "Z", tex: "r" },
+    { from: "Q", to: "Z", tex: "r'", style: "dashed", labelSide: "right" },
+  ]}
+  caption="Equaliser (left): if $f h = g h$ then $h = e k$ for a unique $k$. Coequaliser (right): if $r f = r g$ then $r = r' q$ for a unique $r'$."
+/>
+
+<CommutativeDiagram
+  objects={[
+    { id: "C", tex: "C", row: 0, col: 0 },
+    { id: "B", tex: "B", row: 0, col: 1 },
+    { id: "A", tex: "A", row: 1, col: 0 },
+    { id: "P", tex: "A \\sqcup_C B", row: 1, col: 1 },
+    { id: "Y", tex: "Y", row: 2, col: 2 },
+  ]}
+  arrows={[
+    { from: "C", to: "B", tex: "g" },
+    { from: "C", to: "A", tex: "f", labelSide: "right" },
+    { from: "B", to: "P", tex: "\\iota_2" },
+    { from: "A", to: "P", tex: "\\iota_1", labelSide: "right" },
+    { from: "B", to: "Y", tex: "b", bend: 20 },
+    { from: "A", to: "Y", tex: "a", bend: -20, labelSide: "right" },
+    { from: "P", to: "Y", tex: "u", style: "dashed" },
+  ]}
+  caption="The pushout glues $A$ and $B$ along $C$: maps $a, b$ agreeing on $C$ ($a f = b g$) induce a unique $u$. For $A = B = D^2$, $C = S^1$ it is the sphere."
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A categorical limit is a limit of a sequence."** They are different notions that occasionally meet. In the poset $(\R, \le)$, an increasing sequence $u_0 \le u_1 \le \cdots$ is a diagram of shape $\N$, its colimit is its supremum, and for a convergent increasing sequence the supremum *is* the analytic limit (formalised above). But a sequence that oscillates, such as $(-1)^n/n$, is not a diagram in $(\R, \le)$ at all, and categorical limits of most diagrams (equalisers, pullbacks) have nothing to do with convergence. Even the meeting point is a colimit, not a limit — the terminology runs against intuition here.
+
+</Misconception>
+
+<Misconception>
+
+**"Forgetful functors preserve colimits as they preserve limits."** $U : \cat{Grp} \to \cat{Set}$ preserves all limits, but not coproducts ($U(\Z * \Z) \neq U(\Z) \sqcup U(\Z)$) and not the initial object (the trivial group has one element). Colimits of algebraic structures must generate new elements (words, products of images), while limits are carved out of products. Which one a functor preserves is information about it — in the next lesson, the sign that $U$ is a right adjoint.
+
+</Misconception>
+
+<Misconception>
+
+**"Every diagram has a limit, because a universal property defines one."** Existence depends on the category. In $(\Q, \le)$ the increasing sequence $3, 3.1, 3.14, 3.141, \dots$ of decimal truncations of $\pi$ has no colimit; in the category of fields $\mathbb{F}_2$ and $\mathbb{F}_3$ have no product; the category of finite sets has no infinite product of two-element sets.
+
+</Misconception>
+
+<Misconception>
+
+**"Limits of algebraic objects can be computed on underlying sets, so colimits can too."** The first half is true in $\cat{Grp}$, $\cat{Ring}$, $\cat{Vect}_k$ and similar categories (forgetful functors to $\cat{Set}$ preserve limits); the second is false. A coequaliser in $\cat{Grp}$ quotients by a *normal* subgroup, not by an equivalence relation on the set, and a coproduct is a free product.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Profinite spaces and gluing">
+
+Inverse limits of finite discrete spaces are **profinite spaces**: compact, Hausdorff and totally disconnected (and every such space arises this way). The Cantor set $\varprojlim \{0,1\}^n$, the $p$-adic integers $\Z_p$ and $\widehat{\Z}$ are examples; compactness comes from Tychonoff's theorem, since a limit of compact Hausdorff spaces is a closed subspace of their product. In $\Z_p$ two integers are close when they agree modulo a high power of $p$ — the tree picture above is literally the topology, with basic open sets the branches.
+
+Colimits glue. A CW complex is a sequential colimit of skeleta, each obtained from the last by a pushout attaching cells, and the Seifert–van Kampen theorem says that the fundamental group turns a suitable pushout of spaces ($X = U \cup V$ with $U, V$ open, and $U$, $V$, $U \cap V$ path-connected, base point in $U \cap V$) into a pushout of groups: $\pi_1(X) \cong \pi_1(U) *_{\pi_1(U \cap V)} \pi_1(V)$. See <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Towers of congruences">
+
+Solving a polynomial equation $f(x) = 0$ in $\Z_p$ is the same as solving it modulo $p^n$ for every $n$, compatibly: a root in $\Z_p$ is a point of the limit of the finite solution sets $\{x \in \Z/p^n : f(x) \equiv 0\}$. Hensel's lemma lifts simple roots uniquely, so $x^2 = -1$ has exactly two solutions in $\Z_5$ (lifting $\pm 2$) and none in $\Z_3$ (none modulo $3$). The same pattern runs through modern number theory: $\widehat{\Z} = \varprojlim \Z/n$ is the absolute Galois group of every finite field, and in general the absolute Galois group $\mathrm{Gal}(\overline{K}/K)$ is the inverse limit of the finite groups $\mathrm{Gal}(L/K)$ over finite Galois extensions $L$, with Krull's profinite topology (1928). See <TopicLink id="math.number.elementary-number-theory">elementary number theory</TopicLink> and <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Two completions of the integers">
+
+Analysis builds $\Z_p$ differently: complete $\Z$ with respect to the $p$-adic absolute value $|x|_p = p^{-v_p(x)}$, exactly as $\R$ completes $\Q$ for the usual one. The inverse limit description is the same object — a Cauchy sequence for $|\cdot|_p$ is eventually constant modulo each $p^n$, and the sequence of those eventual residues is a compatible tower (Mathlib proves exactly this equivalence). Categorical limits also hide in order-theoretic analysis: the supremum of a bounded set of reals is its colimit in $(\R, \le)$, and the completeness axiom of $\R$ says that every non-empty bounded-above diagram in $(\R, \le)$ has a colimit. By Ostrowski's theorem the usual and the $p$-adic absolute values are, up to equivalence, the only non-trivial absolute values on $\Q$, so these are all the completions of $\Q$.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Fibre products and the sheaf condition">
+
+Pullbacks are fibre products: the fibre of a map $f : X \to Y$ over $y$ is the pullback of $f$ along $\{y\} \hookrightarrow Y$, and the intersection of two submanifolds is a pullback of inclusions. In smooth manifolds, pullbacks along **transverse** maps exist and are manifolds; in general they need not — the zero set of $(x, y) \mapsto xy$ is the union of the two axes — and the category of smooth manifolds does not have all pullbacks. Algebraic geometry repairs this by working with schemes (where all fibre products exist) and, later, derived schemes.
+
+Locality is an equaliser. A presheaf $F$ on a space is a **sheaf** when, for every open cover $U = \bigcup U_i$, the diagram $F(U) \to \prod_i F(U_i) \rightrightarrows \prod_{i, j} F(U_i \cap U_j)$ is an equaliser: compatible local sections glue uniquely. See <TopicLink id="math.geom.sheaves">sheaves</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Direct limits and exactness">
+
+Direct limits build big algebraic objects from small ones: $\Q$ from the groups $\frac1n\Z$, the Prüfer group from the cyclic groups $\Z/p^n$, the algebraic closure of $\mathbb{F}_p$ as the union of the fields $\mathbb{F}_{p^{n!}}$, the localisation $S^{-1}R$ from copies of $R$. Filtered colimits of modules are **exact** — they preserve short exact sequences — which is why "a module is a union of its finitely generated submodules" is such a useful reduction. Inverse limits are only left exact. Apply $\varprojlim$ to the short exact sequences $0 \to \Z \xrightarrow{p^n} \Z \to \Z/p^n \to 0$, arranged into towers (multiplication by $p$ on the first copies of $\Z$, the identity on the second, reduction on the third): the limits are $0$, $\Z$ and $\Z_p$, and $\Z \to \Z_p$ is not surjective. The failure is measured by the derived functor $\varprojlim^1$ (here $\varprojlim^1 \cong \Z_p/\Z$), a first glimpse of <TopicLink id="math.algebra.homological-algebra">homological algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Limits are right adjoints">
+
+For a fixed shape $\mathcal{J}$, a cone over $D$ with apex $X$ is a natural transformation $\Delta X \Rightarrow D$, so the universal property of the limit says $\Hom_{\mathcal{C}}(X, \lim D) \cong \Hom_{[\mathcal{J}, \mathcal{C}]}(\Delta X, D)$, naturally in $X$ and $D$. That is, $\lim : [\mathcal{J}, \mathcal{C}] \to \mathcal{C}$ is **right adjoint** to the diagonal functor $\Delta$, and dually $\operatorname{colim} \dashv \Delta$. In the <TopicLink id="math.cat.adjunctions">next lesson</TopicLink> this turns into the key theorem: right adjoints preserve limits. Limits are also special <TopicLink id="math.cat.kan-extensions">Kan extensions</TopicLink>, along the functor $\mathcal{J} \to \mathbf{1}$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="products-by-maps" />
+
+<Trail slug="remainder-families" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Kurt Hensel** introduced the $p$-adic numbers in 1897, by analogy between numbers and functions (expanding a number "around a prime" like a function around a point). **Alexander Ostrowski** classified the absolute values on $\Q$ in 1916.
+- Inverse and direct limits grew up in topology and algebra in the 1920s and 1930s: **Leopold Vietoris** (1927) and **David van Dantzig** (1930) studied solenoids as inverse limits, **Wolfgang Krull** (1928) put the profinite topology on infinite Galois groups, and **Eduard Čech** and **Solomon Lefschetz** used limits over open covers to define cohomology and homology for general spaces.
+- **Daniel Kan**'s "Adjoint functors" (1958) defined limits and colimits of arbitrary diagrams in a category ("inverse and direct limits") and characterised them by adjunctions. The construction of all limits from products and equalisers is standard in the texts of the 1960s and 70s; Mac Lane's *Categories for the Working Mathematician* (1971) gave it its definitive form.
+- The sheaf condition as an equaliser comes from **Jean Leray**'s work on sheaves (1940s) and the reformulations of **Henri Cartan**, **Roger Godement** and **Alexander Grothendieck** in the 1950s.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Emily Riehl, *Category Theory in Context* (2016), Chapter 3 — limits and colimits with many examples, including the construction from products and equalisers.
+- Tom Leinster, *Basic Category Theory* (2014), Chapters 5 and 6 — limits, and their interaction with adjoints.
+- Saunders Mac Lane, *Categories for the Working Mathematician* (2nd edition, 1998), Chapters III and V.
+- Fernando Q. Gouvêa, *p-adic Numbers: An Introduction* (2nd edition, 1997) — the analytic and inverse-limit constructions of $\Z_p$, and Hensel's lemma.
+- Luis Ribes and Pavel Zalesskii, *Profinite Groups* (2nd edition, 2010), Chapter 1 — inverse limits of finite groups.
+- Saunders Mac Lane and Ieke Moerdijk, *Sheaves in Geometry and Logic* (1992), Chapter II — the sheaf condition as an equaliser.
+
+</Section>

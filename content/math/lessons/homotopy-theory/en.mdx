@@ -1,0 +1,506 @@
+---
+slug: homotopy-theory
+topic: math.geom.homotopy-theory
+title: Homotopy theory
+subtitle: Spaces up to deformation — higher homotopy groups, fibrations and their exact sequences, the Hopf map that links every pair of its fibres, and the theorems of Hurewicz, Whitehead and Freudenthal.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7017
+objectives:
+  - Define the homotopy groups $\pi_n(X, x_0)$ and prove, by the Eckmann–Hilton argument, that they are abelian for $n \ge 2$
+  - Define fibrations, derive the long exact sequence of homotopy groups, and compute $\pi_n$ of covering spaces such as $S^1$ and $\R P^n$
+  - Construct the Hopf fibration $S^1 \to S^3 \to S^2$, prove that its fibres are circles, and deduce $\pi_3(S^2) \cong \Z$
+  - State Whitehead's, Hurewicz's and Freudenthal's theorems, with their hypotheses, and apply them to spheres and CW complexes
+  - Define Eilenberg–MacLane spaces and explain how they represent cohomology
+narrators: []
+lean:
+  - Lumenary.HomotopyTheory.eckmann_hilton
+  - Lumenary.HomotopyTheory.pi_comm
+  - Lumenary.HomotopyTheory.pi_one
+  - Lumenary.HomotopyTheory.loops_of_loops
+  - Lumenary.HomotopyTheory.hopf
+  - Lumenary.HomotopyTheory.hopf_mem_sphere
+  - Lumenary.HomotopyTheory.hopf_circle_invariant
+  - Lumenary.HomotopyTheory.hopf_fibre
+  - Lumenary.HomotopyTheory.bijective_of_exact
+compute: [homotopy_theory_hopf_linking]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A map that cannot be undone">
+
+In 1931 Heinz Hopf wrote down a map $h : S^3 \to S^2$ and proved that it cannot be deformed to a constant map. This was a surprise. <TopicLink id="math.geom.algebraic-topology">Homology</TopicLink> sees nothing: $H_3(S^2) = 0$, so every map $S^3 \to S^2$ induces zero on $H_3$. Yet Hopf's map is essential, and the reason is geometric: the preimages of any two points of $S^2$ are two circles in $S^3$ that are **linked**, like two rings of a chain.
+
+Homotopy theory studies spaces and maps up to continuous deformation. Its basic invariants, the **homotopy groups** $\pi_n(X)$, are defined just like the fundamental group, with $n$-spheres in place of loops. They are easy to define and fiendishly hard to compute — not even the homotopy groups of spheres are known in general:
+
+| $\pi_{n+k}(S^n)$ | $n = 1$ | $n = 2$ | $n = 3$ | $n = 4$ | $n = 5$ | $n \ge 6$ |
+| --- | --- | --- | --- | --- | --- | --- |
+| $k = 0$ | $\Z$ | $\Z$ | $\Z$ | $\Z$ | $\Z$ | $\Z$ |
+| $k = 1$ | $0$ | $\Z$ | $\Z/2$ | $\Z/2$ | $\Z/2$ | $\Z/2$ |
+| $k = 2$ | $0$ | $\Z/2$ | $\Z/2$ | $\Z/2$ | $\Z/2$ | $\Z/2$ |
+| $k = 3$ | $0$ | $\Z/2$ | $\Z/12$ | $\Z \oplus \Z/12$ | $\Z/24$ | $\Z/24$ |
+
+(Toda, 1962.) This lesson develops the tools that produce such tables: fibrations and their long exact sequences, the Hopf fibration, and the theorems of Hurewicz, Whitehead and Freudenthal that connect homotopy to homology and stabilise it. It assumes <TopicLink id="math.geom.fundamental-group">the fundamental group and covering spaces</TopicLink> and <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink> (homology and CW complexes).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Room to move">
+
+An element of $\pi_n(X, x_0)$ is a map from the cube $I^n$ to $X$ sending the whole boundary to the base point — an $n$-dimensional "balloon" pinned at $x_0$ — up to deformation. Two such maps are added by placing their cubes side by side along the first coordinate and squashing. For $n = 1$ this is concatenation of loops, which is not commutative in general.
+
+For $n \ge 2$ there is room to move. Shrink $f$ into the bottom-left corner and $g$ into the top-right corner (the rest of the cube goes to $x_0$), slide them past each other, and expand again: $f + g$ becomes $g + f$.
+
+<Figure caption="Why π₂ is abelian. The sum f + g (left) is deformed by shrinking each map into a smaller square, sliding the squares past each other through the region that maps to the base point, and expanding again, giving g + f (right).">
+<svg viewBox="0 0 380 110" role="img" aria-label="Four squares in a row. The first is split vertically into f on the left and g on the right. In the second, f occupies the bottom-left quarter and g the top-right quarter. In the third, f occupies the bottom-right quarter and g the top-left quarter. The fourth is split into g on the left and f on the right.">
+  <rect x="10" y="20" width="70" height="70" fill="var(--paper-2)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="10" y="20" width="35" height="70" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1" />
+  <rect x="45" y="20" width="35" height="70" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1" />
+  <text x="27" y="60" fontSize="14" textAnchor="middle" fill="var(--ink-2)">f</text>
+  <text x="62" y="60" fontSize="14" textAnchor="middle" fill="var(--ink-2)">g</text>
+  <rect x="105" y="20" width="70" height="70" fill="var(--paper-2)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="105" y="55" width="35" height="35" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1" />
+  <rect x="140" y="20" width="35" height="35" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1" />
+  <text x="122" y="77" fontSize="14" textAnchor="middle" fill="var(--ink-2)">f</text>
+  <text x="157" y="42" fontSize="14" textAnchor="middle" fill="var(--ink-2)">g</text>
+  <rect x="200" y="20" width="70" height="70" fill="var(--paper-2)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="235" y="55" width="35" height="35" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1" />
+  <rect x="200" y="20" width="35" height="35" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1" />
+  <text x="252" y="77" fontSize="14" textAnchor="middle" fill="var(--ink-2)">f</text>
+  <text x="217" y="42" fontSize="14" textAnchor="middle" fill="var(--ink-2)">g</text>
+  <rect x="295" y="20" width="70" height="70" fill="var(--paper-2)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="295" y="20" width="35" height="70" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1" />
+  <rect x="330" y="20" width="35" height="70" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1" />
+  <text x="312" y="60" fontSize="14" textAnchor="middle" fill="var(--ink-2)">g</text>
+  <text x="347" y="60" fontSize="14" textAnchor="middle" fill="var(--ink-2)">f</text>
+</svg>
+</Figure>
+
+The second idea is that homotopy groups behave well for **fibrations** — maps $p : E \to B$ that look, up to homotopy, like projections of a product, though they may be globally twisted. A fibration with fibre $F$ gives a long exact sequence linking $\pi_\bullet(F)$, $\pi_\bullet(E)$ and $\pi_\bullet(B)$. Covering spaces are fibrations with discrete fibres; the Hopf map is a fibration with fibre $S^1$, and its exact sequence computes $\pi_3(S^2)$.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Spaces have base points, maps preserve them, and homotopies fix them; $[X, Y]_*$ denotes based homotopy classes of based maps.
+
+<Definition term="homotopy groups">
+
+For $n \ge 0$, $\pi_n(X, x_0)$ is the set of homotopy classes of maps $f : (I^n, \partial I^n) \to (X, x_0)$, homotopies being through such maps. Equivalently, since $I^n / \partial I^n \cong S^n$, $\pi_n(X, x_0) = [(S^n, *), (X, x_0)]_*$. For $n \ge 1$ it is a group under
+
+$$
+(f + g)(s_1, \dots, s_n) = \begin{cases} f(2 s_1, s_2, \dots, s_n) & s_1 \le \tfrac12, \\ g(2 s_1 - 1, s_2, \dots, s_n) & s_1 \ge \tfrac12, \end{cases}
+$$
+
+with identity the constant map and inverse $f(1 - s_1, s_2, \dots, s_n)$. $\pi_0(X)$ is the set of path components and $\pi_1$ is the fundamental group. A based map $\varphi : X \to Y$ induces homomorphisms $\varphi_*[f] = [\varphi \circ f]$.
+
+</Definition>
+
+<Definition term="n-connected; weak homotopy equivalence">
+
+$X$ is **$n$-connected** if $\pi_k(X, x_0) = 0$ for $0 \le k \le n$ (so $0$-connected means path connected and $1$-connected means simply connected). A map $\varphi : X \to Y$ is a **weak homotopy equivalence** if it induces bijections $\pi_n(X, x_0) \to \pi_n(Y, \varphi(x_0))$ for all $n \ge 0$ and all base points.
+
+</Definition>
+
+<Definition term="fibration">
+
+A map $p : E \to B$ has the **homotopy lifting property** for a space $X$ if for every homotopy $G : X \times I \to B$ and every map $\tilde g_0 : X \to E$ with $p \circ \tilde g_0 = G_0$ there is a homotopy $\tilde G : X \times I \to E$ with $p \circ \tilde G = G$ and $\tilde G_0 = \tilde g_0$. It is a **(Hurewicz) fibration** if this holds for all spaces $X$, and a **Serre fibration** if it holds for all discs $D^n$ (equivalently, all CW complexes). The **fibre** over $b_0$ is $F = p^{-1}(b_0)$, and we write $F \to E \to B$.
+
+</Definition>
+
+<Definition term="fibre bundle">
+
+A **fibre bundle** with fibre $F$ is a map $p : E \to B$ such that every point of $B$ has a neighbourhood $U$ with a homeomorphism $p^{-1}(U) \cong U \times F$ over $U$. Every fibre bundle is a Serre fibration (Hatcher, Proposition 4.48), and a fibre bundle over a paracompact base is a Hurewicz fibration (Hurewicz, 1955).
+
+</Definition>
+
+<Definition term="suspension and loop space">
+
+The **reduced suspension** $\Sigma X$ is $X \times I$ with $X \times \{0, 1\} \cup \{x_0\} \times I$ collapsed to a point; $\Sigma S^n \cong S^{n+1}$. The **loop space** $\Omega X$ is the space of based loops in $X$ (compact-open topology). They are adjoint: $[\Sigma X, Y]_* \cong [X, \Omega Y]_*$, and in particular $\pi_{n+1}(Y) \cong \pi_n(\Omega Y)$.
+
+</Definition>
+
+<Definition term="Eilenberg–MacLane space">
+
+For a group $G$ and $n \ge 1$ (with $G$ abelian if $n \ge 2$), an **Eilenberg–MacLane space** $K(G, n)$ is a connected CW complex with $\pi_n \cong G$ and $\pi_k = 0$ for $k \neq n$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Easy cases">
+
+- If $X$ is contractible, $\pi_n(X) = 0$ for all $n$.
+- $\pi_n(X \times Y, (x_0, y_0)) \cong \pi_n(X, x_0) \times \pi_n(Y, y_0)$: a map into a product is a pair of maps, and likewise for homotopies.
+- $\pi_n(S^n) \cong \Z$ for $n \ge 1$, detected by the degree (proved below via Hurewicz). The identity map generates.
+- $\pi_k(S^n) = 0$ for $k \lt n$ (Theorem 5).
+
+</Example>
+
+<Example title="Spheres are not determined by dimension">
+
+Higher homotopy groups do not vanish above the dimension: $\pi_3(S^2) \cong \Z$ (Theorem 7), and Serre showed in the early 1950s that $\pi_k(S^n)$ is non-zero for infinitely many $k$ when $n \ge 2$. So a $2$-dimensional CW complex can have non-zero homotopy groups in infinitely many degrees, whereas its homology vanishes above degree $2$.
+
+</Example>
+
+<Example title="Eilenberg–MacLane spaces you know">
+
+- $K(\Z, 1) = S^1$: its universal cover $\R$ is contractible, so $\pi_n(S^1) = 0$ for $n \ge 2$ (Corollary 4).
+- $K(\pi_1(M_g), 1) = M_g$ for a closed orientable surface of genus $g \ge 1$, whose universal cover is the plane.
+- $K(\Z/2, 1) = \R P^\infty$, covered by the contractible sphere $S^\infty$.
+- $K(\Z, 2) = \C P^\infty$, from the fibration $S^1 \to S^\infty \to \C P^\infty$ and the long exact sequence.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Homotopy groups and fibrations">
+
+<Theorem name="Theorem 1 (higher homotopy groups are abelian)">
+
+For $n \ge 1$, $\pi_n(X, x_0)$ is a group, and for $n \ge 2$ it is abelian.
+
+</Theorem>
+
+<Proof>
+
+The group axioms are checked exactly as for $\pi_1$, using reparametrisations in the first coordinate. For $n \ge 2$ define a second operation $+_2$ by concatenating in the *second* coordinate; write $+_1$ for the first. Both have the constant map $c$ as identity. They satisfy the **interchange law**
+
+$$
+(f +_1 g) +_2 (h +_1 k) = (f +_2 h) +_1 (g +_2 k)
+$$
+
+on the nose: both sides are the map on $I^n$ that is $f$, $g$, $h$, $k$ on the four quarters $\{s_1 \le \tfrac12, s_2 \le \tfrac12\}$, $\{s_1 \ge \tfrac12, s_2 \le \tfrac12\}$, $\{s_1 \le \tfrac12, s_2 \ge \tfrac12\}$, $\{s_1 \ge \tfrac12, s_2 \ge \tfrac12\}$, suitably rescaled. Now the **Eckmann–Hilton argument**, which uses nothing but the two unit laws and the interchange law (writing $e$ for the common unit $[c]$):
+
+$$
+a +_1 b = (a +_2 e) +_1 (e +_2 b) = (a +_1 e) +_2 (e +_1 b) = a +_2 b,
+$$
+
+$$
+a +_1 b = (e +_2 a) +_1 (b +_2 e) = (e +_1 b) +_2 (a +_1 e) = b +_2 a = b +_1 a .
+$$
+
+(In general one first shows that the two units agree, by the same trick: $e_1 = e_1 +_1 e_1 = (e_2 +_2 e_1) +_1 (e_1 +_2 e_2) = (e_2 +_1 e_1) +_2 (e_1 +_1 e_2) = e_2 +_2 e_2 = e_2$.) So the two operations coincide on $\pi_n$ and are commutative.
+
+</Proof>
+
+For $n = 1$ there is only one coordinate, the argument has nothing to work with, and indeed $\pi_1$ of the figure eight is a non-abelian free group.
+
+<Theorem name="Theorem 2 (covering spaces are fibrations)">
+
+A covering map $p : \tilde X \to X$ has the homotopy lifting property for all spaces, with unique lifts.
+
+</Theorem>
+
+This is the homotopy lifting theorem for covering spaces from <TopicLink id="math.geom.fundamental-group">the fundamental group lesson</TopicLink> (Hatcher, Proposition 1.30): lift along each slice $\{x\} \times I$ using unique path lifting, and check continuity locally using evenly covered neighbourhoods.
+
+<Theorem name="Theorem 3 (long exact sequence of a fibration)">
+
+Let $p : E \to B$ be a Serre fibration, $b_0 \in B$, $F = p^{-1}(b_0)$ and $e_0 \in F$. There is a long exact sequence
+
+$$
+\cdots \to \pi_n(F, e_0) \xrightarrow{i_*} \pi_n(E, e_0) \xrightarrow{p_*} \pi_n(B, b_0) \xrightarrow{\partial} \pi_{n-1}(F, e_0) \to \cdots \to \pi_0(F) \to \pi_0(E) \to \pi_0(B),
+$$
+
+where the last three terms are only pointed sets and exactness there means that preimages of the base point are images.
+
+</Theorem>
+
+<Proof>
+
+*The boundary map.* Represent $[f] \in \pi_n(B, b_0)$ by $f : I^n \to B$ with $f(\partial I^n) = b_0$, and view $I^n = I^{n-1} \times I$ as a homotopy of maps $I^{n-1} \to B$. Lift it, starting from the constant map $e_0$ on $I^{n-1} \times \{0\}$ and remaining $e_0$ on $\partial I^{n-1} \times I$; such relative lifts exist for Serre fibrations, because $(I^{n-1} \times I,\ I^{n-1} \times \{0\} \cup \partial I^{n-1} \times I)$ is homeomorphic to $(I^{n-1} \times I,\ I^{n-1} \times \{0\})$. The lift $\tilde f$ maps the top face $I^{n-1} \times \{1\}$ into $p^{-1}(b_0) = F$ and its boundary to $e_0$, and $\partial [f]$ is its class in $\pi_{n-1}(F, e_0)$. Well-definedness follows by lifting homotopies one dimension higher.
+
+*Exactness at $\pi_n(E)$.* First $p_* i_* = 0$, since $p \circ i$ is constant. Conversely, let $f : (I^n, \partial I^n) \to (E, e_0)$ and suppose $p \circ f$ is null-homotopic through a homotopy $G : I^n \times I \to B$ with $G_0 = p \circ f$, $G_1 \equiv b_0$ and $G(\partial I^n \times I) = b_0$. Lift $G$ to $\tilde G$ with $\tilde G_0 = f$ and $\tilde G = e_0$ on $\partial I^n \times I$. Then $\tilde G_1$ maps $I^n$ into $p^{-1}(b_0) = F$ with boundary at $e_0$, and $\tilde G$ is a homotopy from $f$ to $\tilde G_1$ through maps of $(I^n, \partial I^n)$. So $[f] = i_*[\tilde G_1]$.
+
+Exactness at the other two places is proved by the same lifting technique; equivalently, $p_* : \pi_n(E, F, e_0) \to \pi_n(B, b_0)$ is an isomorphism and the sequence is the long exact sequence of the pair $(E, F)$ (Hatcher, Theorem 4.41).
+
+</Proof>
+
+<Theorem name="Corollary 4 (covering spaces)">
+
+If $p : \tilde X \to X$ is a covering map, then $p_* : \pi_n(\tilde X) \to \pi_n(X)$ is an isomorphism for $n \ge 2$. In particular $\pi_n(S^1) = 0$, $\pi_n(T^k) = 0$ for $n \ge 2$, and $\pi_n(\R P^m) \cong \pi_n(S^m)$ for $n \ge 2$.
+
+</Theorem>
+
+<Proof>
+
+The fibre is discrete, so $\pi_k(F) = 0$ for $k \ge 1$, and the exact sequence $0 = \pi_n(F) \to \pi_n(\tilde X) \to \pi_n(X) \to \pi_{n-1}(F) = 0$ (for $n \ge 2$) gives the isomorphism. Apply it to $\R \to S^1$, $\R^k \to T^k$ (contractible covers) and $S^m \to \R P^m$.
+
+</Proof>
+
+<Theorem name="Theorem 5 (spheres are highly connected)">
+
+$\pi_k(S^n) = 0$ for $0 \le k \lt n$.
+
+</Theorem>
+
+<Proof>
+
+By the **cellular approximation theorem** (Hatcher, Theorem 4.8), every map between CW complexes is homotopic to a cellular one, i.e. one sending the $k$-skeleton into the $k$-skeleton; the homotopy can be taken relative to a subcomplex on which the map is already cellular, such as the base point. Give $S^k$ and $S^n$ the cell structures $e^0 \cup e^k$ and $e^0 \cup e^n$. A cellular map $S^k \to S^n$ sends $S^k$ into the $k$-skeleton of $S^n$, which for $k \lt n$ is the single point $e^0$. So every based map $S^k \to S^n$ is based-homotopic to a constant.
+
+</Proof>
+
+</Section>
+
+<Section id="hopf" kind="proof" title="The Hopf fibration and π₃(S²)">
+
+Regard $S^3 = \{ (z, w) \in \C^2 : |z|^2 + |w|^2 = 1 \}$ and $S^2 \subset \C \times \R \cong \R^3$. The **Hopf map** is
+
+$$
+h(z, w) = \big( 2 z \bar w,\ |z|^2 - |w|^2 \big).
+$$
+
+<Theorem name="Theorem 6 (the Hopf fibration)">
+
+$h$ maps $S^3$ onto $S^2$; its fibres are exactly the circles $\{ (\lambda z, \lambda w) : |\lambda| = 1 \}$; and $h$ is a fibre bundle with fibre $S^1$. Under stereographic projection $S^2 \setminus \{(0, 1)\} \cong \C$ it is the map $(z, w) \mapsto z / w$, so $h$ is the quotient map $S^3 \to \C P^1 \cong S^2$.
+
+</Theorem>
+
+<Proof>
+
+*Into $S^2$:* $|2 z \bar w|^2 + (|z|^2 - |w|^2)^2 = 4|z|^2|w|^2 + (|z|^2 - |w|^2)^2 = (|z|^2 + |w|^2)^2 = 1$.
+
+*Constant on circles:* $h(\lambda z, \lambda w) = (2 \lambda \bar\lambda z \bar w, |\lambda|^2(|z|^2 - |w|^2)) = h(z, w)$ when $|\lambda| = 1$.
+
+*Fibres are exactly circles:* suppose $h(z, w) = h(z', w')$ for two points of $S^3$. The second coordinates and $|z|^2 + |w|^2 = |z'|^2 + |w'|^2 = 1$ give $|z| = |z'|$ and $|w| = |w'|$; the first gives $z \bar w = z' \bar w'$. Put $\lambda = z' \bar z + w' \bar w$. Then
+
+$$
+\lambda z = z' |z|^2 + w' (z \bar w) = z' |z|^2 + w' z' \bar w' = z' (|z|^2 + |w'|^2) = z' (|z|^2 + |w|^2) = z',
+$$
+
+and symmetrically (using $\bar z w = \bar z' w'$) $\lambda w = w'$. Finally $1 = |z'|^2 + |w'|^2 = |\lambda|^2 (|z|^2 + |w|^2) = |\lambda|^2$.
+
+*Stereographic form:* projecting from $(0, 1)$, a point $(v, t)$ goes to $v / (1 - t)$; here $1 - t = 1 - |z|^2 + |w|^2 = 2|w|^2$, so $h(z, w) \mapsto 2 z \bar w / (2 |w|^2) = z / w$. *Onto, and locally trivial:* over $U = S^2 \setminus \{(0, 1)\}$, i.e. where $w \neq 0$, the map $h^{-1}(U) \to U \times S^1$, $(z, w) \mapsto (h(z, w), w / |w|)$, is a homeomorphism with inverse $(q, \mu) \mapsto \mu\,(q, 1)/\sqrt{1 + |q|^2}$ in the stereographic coordinate $q = z / w$; this also shows that every $q \in \C$ is hit. Over $S^2 \setminus \{(0, -1)\}$ use $z / |z|$ instead.
+
+</Proof>
+
+<Theorem name="Theorem 7 (Hopf, 1931)">
+
+$\pi_2(S^2) \cong \Z$, and $\pi_n(S^2) \cong \pi_n(S^3)$ for $n \ge 3$. In particular $\pi_3(S^2) \cong \Z$, generated by the class of $h$.
+
+</Theorem>
+
+<Proof>
+
+The long exact sequence of the fibration $S^1 \to S^3 \xrightarrow{h} S^2$ contains
+
+$$
+\pi_n(S^1) \to \pi_n(S^3) \xrightarrow{h_*} \pi_n(S^2) \xrightarrow{\partial} \pi_{n-1}(S^1) .
+$$
+
+For $n \ge 3$ both ends vanish by Corollary 4, so $h_*$ is an isomorphism — this is the algebraic lemma `bijective_of_exact` formalised below. For $n = 2$ the sequence reads $\pi_2(S^3) \to \pi_2(S^2) \to \pi_1(S^1) \to \pi_1(S^3)$, with outer terms zero by Theorem 5, so $\pi_2(S^2) \cong \pi_1(S^1) \cong \Z$. Finally $\pi_3(S^3) \cong \Z$ is generated by $[\mathrm{id}]$ (Corollary 9 below), and $h_*[\mathrm{id}] = [h]$.
+
+</Proof>
+
+The **Hopf invariant** gives a direct geometric reason. For a smooth map $f : S^3 \to S^2$, the preimages of two regular values are disjoint closed curves (possibly with several components), and their linking number $H(f)$ does not depend on the choices and is a homotopy invariant; $H : \pi_3(S^2) \to \Z$ is an isomorphism with $H(h) = 1$ (Bott and Tu, §17). The experiment below computes the linking numbers of Hopf fibres numerically. The same construction with quaternions and octonions gives Hopf fibrations $S^3 \to S^7 \to S^4$ and $S^7 \to S^{15} \to S^8$, and Adams proved (1960) that maps $S^{2n-1} \to S^n$ of Hopf invariant one exist only for $n = 2, 4, 8$. This gives a homotopy-theoretic proof that finite-dimensional real division algebras exist only in dimensions $1, 2, 4, 8$ (first proved by Kervaire and by Bott and Milnor in 1958; for normed division algebras the result goes back to Hurwitz, 1898).
+
+</Section>
+
+<Section id="big-theorems" kind="proof" title="Hurewicz, Whitehead, Freudenthal and Eilenberg–MacLane">
+
+These are the structural theorems of the subject. We state them precisely and show how they are used; their proofs occupy Chapter 4 of Hatcher.
+
+<Theorem name="Theorem 8 (Whitehead, 1949)">
+
+A weak homotopy equivalence between connected CW complexes is a homotopy equivalence. More generally, if $\varphi : X \to Y$ is a map of CW complexes inducing isomorphisms on all $\pi_n$, there is $\psi : Y \to X$ with $\psi\varphi \simeq \mathrm{id}_X$ and $\varphi\psi \simeq \mathrm{id}_Y$.
+
+</Theorem>
+
+The CW hypothesis matters. The **Warsaw circle** (the closed topologist's sine curve, closed up by an arc) has all homotopy groups trivial, so the map to a point is a weak homotopy equivalence; but it is not contractible (its Čech cohomology detects the "circle").
+
+<Theorem name="Theorem 9 (Hurewicz, 1935)">
+
+Let $X$ be $(n - 1)$-connected with $n \ge 2$. Then $\tilde H_k(X) = 0$ for $k \lt n$, and the Hurewicz map $\pi_n(X) \to H_n(X)$, $[f] \mapsto f_*(\text{fundamental class of } S^n)$, is an isomorphism. For $n = 1$ and path-connected $X$, $\pi_1(X)^{\mathrm{ab}} \cong H_1(X)$.
+
+</Theorem>
+
+<Theorem name="Corollary 10">
+
+(a) $\pi_n(S^n) \cong \Z$ for $n \ge 1$, generated by the identity; a map $S^n \to S^n$ is classified up to homotopy by its degree. (b) **Homology Whitehead theorem:** a map between *simply connected* CW complexes that induces isomorphisms on all homology groups is a homotopy equivalence.
+
+</Theorem>
+
+<Proof>
+
+(a) $S^n$ is $(n - 1)$-connected by Theorem 5, so $\pi_n(S^n) \cong H_n(S^n) \cong \Z$ by Theorem 9 ($n \ge 2$; for $n = 1$ use $\pi_1(S^1) \cong \Z$). The Hurewicz map sends $[f]$ to $\deg(f)$ times the generator. (b) *Sketch:* make $\varphi$ cellular and replace $Y$ by the mapping cylinder so that $\varphi$ is an inclusion of a subcomplex; then $H_\bullet(Y, X) = 0$. The relative Hurewicz theorem for the simply connected pair $(Y, X)$ (Hatcher, Theorem 4.32) shows inductively that $\pi_n(Y, X) = 0$ for all $n$, so $\varphi$ is a weak equivalence by the long exact sequence of the pair, and Theorem 8 applies.
+
+</Proof>
+
+Simple connectivity cannot be dropped in (b): if $\Sigma$ is Poincaré's homology sphere, a degree-one map $\Sigma \to S^3$ (collapse the complement of a small ball) induces isomorphisms on all homology groups, but $\pi_1(\Sigma)$ has order $120$, so it is not a homotopy equivalence.
+
+<Theorem name="Theorem 11 (Freudenthal suspension theorem, 1937)">
+
+If $X$ is an $(n - 1)$-connected CW complex, the suspension map $\pi_i(X) \to \pi_{i+1}(\Sigma X)$ is an isomorphism for $i \lt 2n - 1$ and surjective for $i = 2n - 1$. In particular $\pi_{n+k}(S^n) \to \pi_{n+k+1}(S^{n+1})$ is an isomorphism for $n \gt k + 1$.
+
+</Theorem>
+
+So each column of the table in the motivation stabilises: the **stable homotopy groups of spheres** $\pi_k^s = \lim_n \pi_{n+k}(S^n)$ begin $\Z, \Z/2, \Z/2, \Z/24, 0, 0, \Z/2, \Z/240$. For example, $\pi_3(S^2) \cong \Z \to \pi_4(S^3)$ is onto (the case $i = 2n - 1$ with $n = 2$), and $\pi_4(S^3) \cong \pi_5(S^4) \cong \dots \cong \Z/2$, generated by the suspension of the Hopf map, usually called $\eta$. The stable groups are the subject of <TopicLink id="math.geom.stable-homotopy-theory">stable homotopy theory</TopicLink>.
+
+<Theorem name="Theorem 12 (Eilenberg–MacLane spaces)">
+
+For every $n \ge 1$ and group $G$ (abelian if $n \ge 2$), a $K(G, n)$ exists and is unique up to homotopy equivalence. For CW complexes $X$ and abelian $G$, there is a natural bijection $[X, K(G, n)] \cong H^n(X; G)$, sending $f$ to $f^*(\iota)$ for a fundamental class $\iota \in H^n(K(G, n); G)$.
+
+</Theorem>
+
+*Construction:* start with a wedge of $n$-spheres, one for each generator of $G$, attach $(n+1)$-cells to impose the relations (this gives $\pi_n \cong G$ by Hurewicz and cellular approximation), then attach cells of dimension $n + 2, n + 3, \dots$ to kill all higher homotopy groups. Uniqueness comes from Whitehead's theorem, and representability is Hatcher, Theorem 4.57. Thus cohomology is a homotopy-theoretic object: the cup product, for instance, is induced by maps $K(G, m) \wedge K(G', n) \to K(G \otimes G', m + n)$. Dually, every connected CW complex is assembled from Eilenberg–MacLane spaces in a **Postnikov tower**, glued by cohomology classes ($k$-invariants).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Eckmann–Hilton and the Hopf map in Lean">
+
+The Eckmann–Hilton argument of Theorem 1 is proved independently, for any set with two unital operations satisfying the interchange law; the `calc` blocks are the displayed equations of the proof.
+
+<Lean decl="Lumenary.HomotopyTheory.eckmann_hilton" />
+
+Mathlib defines $\pi_n$ with cubes exactly as in the lesson (`HomotopyGroup.Pi n X x`, notation `π_ n X x`), and proves commutativity for $n \ge 2$ by the same Eckmann–Hilton argument (`EckmannHilton.commGroup`), applied to concatenation in two different cube directions. It also identifies the cube version of $\pi_1$ with the fundamental group, and loops of loops with higher loops:
+
+<Lean decl="Lumenary.HomotopyTheory.pi_comm" />
+
+<Lean decl="Lumenary.HomotopyTheory.pi_one" />
+
+<Lean decl="Lumenary.HomotopyTheory.loops_of_loops" />
+
+The Hopf map and the first three claims of Theorem 6 are formalised independently. The proof that fibres are exactly circles uses the same $\lambda = z' \bar z + w' \bar w$ as the human proof; each displayed identity becomes a `linear_combination` of the hypotheses.
+
+<Lean decl="Lumenary.HomotopyTheory.hopf" />
+
+<Lean decl="Lumenary.HomotopyTheory.hopf_mem_sphere" />
+
+<Lean decl="Lumenary.HomotopyTheory.hopf_circle_invariant" />
+
+<Lean decl="Lumenary.HomotopyTheory.hopf_fibre" />
+
+The algebraic step in the proof of Theorem 7 — an exact sequence of groups whose outer terms are trivial has a bijective middle map — is proved for arbitrary groups:
+
+<Lean decl="Lumenary.HomotopyTheory.bijective_of_exact" />
+
+**What is and is not formalised.** Formalised independently: the Eckmann–Hilton argument, the Hopf map, that it maps $S^3$ to $S^2$, is constant on circles and has exactly circles as fibres, and the exact-sequence lemma. From Mathlib: $\pi_n$, its group structure and commutativity, $\pi_1$ and $\Omega(\Omega^n X) \cong \Omega^{n+1} X$. Not formalised (and, as far as we know, not yet in Mathlib): surjectivity and local triviality of the Hopf map, the long exact sequence of a fibration, $\pi_n(S^n) \cong \Z$, cellular approximation, and the theorems of Whitehead, Hurewicz and Freudenthal. So Theorem 7 is formalised only in its algebraic and geometric ingredients. (Several of these results have been formalised synthetically in homotopy type theory — see the logic viewpoint below.)
+
+</Section>
+
+<Section id="computation" kind="computation" title="Linked fibres, numerically">
+
+The experiment samples five fibres of $h$, checks that $h$ is constant on them to rounding error, projects them stereographically into $\R^3$ and evaluates Gauss's linking integral
+
+$$
+\mathrm{Lk}(\gamma_1, \gamma_2) = \frac{1}{4\pi} \oint \oint \frac{(\gamma_1 - \gamma_2) \cdot (\dot\gamma_1 \times \dot\gamma_2)}{|\gamma_1 - \gamma_2|^3}\, ds\, dt
+$$
+
+for every pair, with a control pair of unlinked circles.
+
+<Python id="homotopy_theory_hopf_linking" />
+
+Every pair links exactly once, as the Hopf invariant $H(h) = 1$ predicts. Because the curves are smooth and periodic, the trapezoidal rule with spectrally computed tangents is accurate to many digits — but this is numerical evidence about five fibres, not a proof; the proof that $[h]$ generates $\pi_3(S^2)$ is Theorem 7.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: homotopy versus homology in the twice-punctured plane">
+
+The plane with two holes is homotopy equivalent to the figure eight, so its fundamental group is free on two loops $a$, $b$ around the holes, while $H_1 \cong \Z^2$ records only the winding numbers. Choose **Draw your own** and draw the commutator loop $a b a^{-1} b^{-1}$: around the left hole, around the right hole, back around the left hole the other way, then around the right hole the other way.
+
+<WindingNumber punctures={[[-1.6, 0], [1.6, 0]]} loop="figureEight" loops={["circle", "figureEight", "twice", "miss"]} subtitle="The commutator loop winds 0 times around each hole, yet cannot be shrunk to a point." />
+
+Both winding numbers of the commutator are $0$, so it is zero in $H_1$ — this is the Hurewicz theorem in degree one, $H_1 = \pi_1^{\mathrm{ab}}$ — yet it is not null-homotopic, because $a b a^{-1} b^{-1} \neq 1$ in the free group. Homotopy remembers order; homology forgets it.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Higher homotopy groups of spheres vanish above the dimension, as homology does."** They do not: $\pi_3(S^2) \cong \Z$, and by Serre's work $\pi_k(S^n)$ is non-zero for infinitely many $k$ when $n \ge 2$. Homology vanishes above the dimension of a CW complex because it is computed from cells; homotopy groups are not.
+
+</Misconception>
+
+<Misconception>
+
+**"A map inducing isomorphisms on all homology groups is a homotopy equivalence."** Only with extra hypotheses: for CW complexes that are simply connected (Corollary 10(b)). The degree-one map from Poincaré's homology sphere to $S^3$ is a homology isomorphism but not a homotopy equivalence. Even isomorphisms on all *homotopy* groups need the CW hypothesis (Theorem 8; the Warsaw circle).
+
+</Misconception>
+
+<Misconception>
+
+**"Abstractly isomorphic homotopy groups mean homotopy equivalent spaces."** Whitehead's theorem needs a *map* inducing the isomorphisms. $S^2 \times \R P^3$ and $\R P^2 \times S^3$ have isomorphic homotopy groups in every degree (both have $\pi_1 = \Z/2$ and universal cover $S^2 \times S^3$) but are not homotopy equivalent: one is orientable and the other is not, so their top homology groups differ.
+
+</Misconception>
+
+<Misconception>
+
+**"A fibration is a product, or at least locally a product."** The Hopf fibration is not a product — $S^3 \not\simeq S^2 \times S^1$, since $\pi_1(S^2 \times S^1) = \Z$ — and a fibration need not be locally trivial at all; only its homotopy lifting property matters. What is true is that all fibres over a path-connected base are homotopy equivalent.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="The homotopy category and its invariants">
+
+Homotopy theory replaces the category of spaces by the **homotopy category**, where homotopic maps are identified and weak equivalences are inverted; Whitehead's theorem says this loses nothing for CW complexes. The fundamental question is to compute $[X, Y]$, and the tools are exact sequences (of pairs, of fibrations, of cofibrations $A \to X \to X/A$), obstruction theory (extending a map cell by cell, with obstructions in $H^{n+1}(X; \pi_n(Y))$), and spectral sequences. A beautiful example: Pontryagin's theorem identifies $\pi_{n+k}(S^n)$ with framed $k$-dimensional submanifolds of $\R^{n+k}$ up to framed cobordism — the preimage of a regular value — and the Hopf map corresponds to a circle with a framing that twists once.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Clifford circles and Lie groups">
+
+The fibres of the Hopf map are great circles of $S^3$, any two of which are **Clifford parallel** (at constant distance) and linked; the preimage of a circle of latitude is a flat torus. The unit quaternions form the Lie group $S^3 = SU(2)$, and $h$ is the quotient $SU(2) \to SU(2)/U(1)$. More generally, for every compact simple Lie group $G$, $\pi_2(G) = 0$ and $\pi_3(G) \cong \Z$, and **Bott periodicity** (1959) gives $\pi_i(U) \cong \pi_{i+2}(U)$ and $\pi_i(O) \cong \pi_{i+8}(O)$ for the infinite unitary and orthogonal groups — the source of the $2$- and $8$-fold periodicities of K-theory and of Clifford algebras.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Rationally, spheres are simple">
+
+Serre's **finiteness theorem** (1953): $\pi_k(S^n)$ is finite except for $k = n$, and, when $n$ is even, $k = 2n - 1$, where it is $\Z$ plus a finite group. So rationally the homotopy groups of spheres are almost trivial, and **rational homotopy theory** (Quillen, 1969; Sullivan, 1977) shows that the rational homotopy type of a simply connected space is captured completely by algebra: a commutative differential graded algebra or a differential graded Lie algebra. The torsion is where the difficulty lives, prime by prime, organised by the Adams spectral sequence and chromatic homotopy theory.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Homotopy type theory">
+
+In <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink>, types are spaces, identity proofs are paths, and higher inductive types define spheres directly. Results such as $\pi_1(S^1) \cong \Z$ (Licata and Shulman, 2013), the Freudenthal suspension theorem, the long exact sequence of a fibration and the Hopf fibration have *synthetic* proofs valid in any model, including $\infty$-toposes. Guillaume Brunerie (2016) proved in this setting that $\pi_4(S^3) \cong \Z/n$ for an explicitly defined integer $n$, and then that $n = 2$; computing $n$ by running the proof as a program became a famous challenge, met with a simplified definition by Axel Ljungström and Anders Mörtberg in Cubical Agda (2023).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Monopoles, solitons and instantons">
+
+The Hopf fibration is the bundle of Dirac's magnetic monopole of unit charge (1931, the same year as Hopf's paper): the electron's wavefunction is a section of the associated line bundle over a sphere surrounding the monopole, and the charge quantisation is the integer classifying the bundle (see <TopicLink id="math.geom.vector-bundles-characteristic-classes">vector bundles</TopicLink>). Homotopy groups classify topological defects and solitons: field configurations on $\R^3$ with values in $S^2$ that are constant at infinity are maps $S^3 \to S^2$, and their Hopf invariant is a conserved topological charge (Faddeev–Skyrme "hopfions"); Yang–Mills instantons on $\R^4$ are labelled by $\pi_3(SU(2)) \cong \Z$. These are physical heuristics backed by theorems in each mathematical model, not derivations of physics.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Spaces are ∞-groupoids">
+
+A space determines its fundamental $\infty$-groupoid: points, paths, homotopies between paths, and so on. Grothendieck's **homotopy hypothesis** — made precise by Quillen's equivalence between topological spaces and Kan complexes — says that homotopy types *are* $\infty$-groupoids. Quillen's **model categories** (1967) axiomatised the passage to the homotopy category, and <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink> now provide a framework in which homotopy theory is done systematically, from algebraic geometry to the stable homotopy category.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Higher homotopy groups.** Eduard Čech introduced higher homotopy groups at the 1932 International Congress in Zürich, but because they were abelian they were dismissed as unlikely to say more than homology. Witold Hurewicz rediscovered them in 1935–36 and proved the theorem connecting them to homology.
+- **Hopf.** Heinz Hopf's 1931 paper constructed $h : S^3 \to S^2$ and the linking invariant, the first sign that homotopy groups of spheres do not vanish above the dimension. Hans Freudenthal proved the suspension theorem in 1937, introducing the stable range.
+- **Framed manifolds.** Lev Pontryagin in the Soviet Union related $\pi_{n+k}(S^n)$ to framed manifolds and computed the first two stable stems (1950), and Vladimir Rokhlin's work on the third stable stem in the early 1950s led to his theorem that the signature of a smooth spin $4$-manifold is divisible by $16$.
+- **The 1940s and 1950s.** J. H. C. Whitehead's combinatorial homotopy (1949) introduced CW complexes and his theorem. Samuel Eilenberg and Saunders Mac Lane developed the spaces $K(G, n)$ and their cohomology. Jean-Pierre Serre's thesis (1951) brought spectral sequences of fibrations and loop spaces into the subject, giving finiteness and many computations. Hiroshi Toda's *Composition Methods in Homotopy Groups of Spheres* (1962) computed $\pi_{n+k}(S^n)$ for $k \le 19$. J. Frank Adams built his spectral sequence (1958) and settled the Hopf invariant one problem (1960).
+- **Recent work.** Michael Hill, Michael Hopkins and Douglas Ravenel solved the Kervaire invariant one problem in all dimensions except $126$ (2016), and Weinan Lin, Guozhen Wang and Zhouli Xu announced a resolution of dimension $126$ in 2024. Daniel Isaksen, Guozhen Wang and Zhouli Xu, using motivic methods and machine computation, determined the stable stems through dimension about $90$ (2023). The full computation of $\pi_{n+k}(S^n)$ remains open, and is not expected to have a closed form.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Allen Hatcher, *Algebraic Topology* (2002), Chapter 4 — homotopy groups, CW approximation, Whitehead, Hurewicz, fibrations, Eilenberg–MacLane spaces and Postnikov towers.
+- J. P. May, *A Concise Course in Algebraic Topology* (1999) — a fast, categorical account of fibrations, cofibrations and the main theorems.
+- George W. Whitehead, *Elements of Homotopy Theory* (1978) — the classical comprehensive treatment.
+- Raoul Bott and Loring W. Tu, *Differential Forms in Algebraic Topology* (1982), §17–18 — the Hopf invariant via differential forms and the Serre spectral sequence.
+- Martin Arkowitz, *Introduction to Homotopy Theory* (2011) — duality between fibrations and cofibrations, at a gentle pace.
+- Hiroshi Toda, *Composition Methods in Homotopy Groups of Spheres* (1962), and Douglas C. Ravenel, *Complex Cobordism and Stable Homotopy Groups of Spheres* (1986) — for the computations.
+- The Univalent Foundations Program, *Homotopy Type Theory: Univalent Foundations of Mathematics* (2013), Chapter 8 — synthetic homotopy theory.
+
+Reading path: Hatcher §4.1–4.3 with this lesson, then May; then <TopicLink id="math.geom.stable-homotopy-theory">stable homotopy theory</TopicLink> or <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink>.
+
+</Section>

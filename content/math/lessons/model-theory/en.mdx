@@ -1,0 +1,660 @@
+---
+slug: model-theory
+topic: math.found.model-theory
+title: Model theory
+subtitle: Structures and the sentences true in them — and how ultraproducts, quantifier elimination and back-and-forth turn logic into a tool for algebra, geometry and number theory.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7005
+objectives:
+  - Define elementary equivalence and elementary embeddings, and use the Tarski–Vaught test
+  - Prove Łoś's theorem and use ultraproducts to give a second proof of compactness
+  - Prove that the theory of dense linear orders without endpoints has quantifier elimination and is $\aleph_0$-categorical, hence complete
+  - State quantifier elimination for algebraically closed fields and relate it to Chevalley's theorem on constructible sets
+  - Explain the Lefschetz principle and prove the Ax–Grothendieck theorem with it
+narrators: []
+lean:
+  - Lumenary.ModelTheory.dlo_elim_core
+  - Lumenary.ModelTheory.dlo_elim_core_fails_discrete
+  - Lumenary.ModelTheory.rat_elem_equiv_real
+  - Lumenary.ModelTheory.rat_not_equiv_real
+  - Lumenary.ModelTheory.cantor_back_and_forth
+  - Lumenary.ModelTheory.dlo_aleph0_categorical
+  - Lumenary.ModelTheory.los
+  - Lumenary.ModelTheory.compactness
+  - Lumenary.ModelTheory.nonstandard_natural
+  - Lumenary.ModelTheory.nonstandard_ne_standard
+  - Lumenary.ModelTheory.lefschetz
+  - Lumenary.ModelTheory.ax_grothendieck
+compute: [model_theory_ef_games, model_theory_dlo_qe]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="One sentence, many worlds">
+
+Here is a theorem about complex polynomials:
+
+> **Ax–Grothendieck.** If a polynomial map $f : \C^n \to \C^n$ is injective, then it is surjective.
+
+For $n = 1$ this is easy (a non-constant polynomial in one variable takes every value). For $n \ge 2$ it is not at all obvious. Yet over a **finite** set it is trivial: an injective map from a finite set to itself is surjective, by counting. The proof we will give runs: *the statement, for maps of bounded degree, is a single first-order sentence; it is true over the algebraic closure of every finite field because those are unions of finite fields; and any first-order sentence in the language of rings that is true in algebraically closed fields of every prime characteristic is true in $\C$.* Each step is a theorem of **model theory**.
+
+Or take two familiar orders, the rationals $(\Q, <)$ and the reals $(\R, <)$. They are not isomorphic — one is countable, the other is not — and $\R$ is complete while $\Q$ is full of gaps. Yet no sentence of first-order logic that talks only about $<$ can tell them apart. Model theory explains why, and turns that blindness into a powerful method.
+
+Model theory studies the relationship between **theories** (sets of sentences) and their **models** (structures in which the sentences are true): what a theory determines about its models, which sets are definable in a structure, and how structures that satisfy the same sentences can be built and compared. This lesson assumes <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink> and the <TopicLink id="math.found.completeness-theorem">completeness, compactness and Löwenheim–Skolem theorems</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Sentences cut out classes of structures">
+
+Fix a language $L$ — a list of function, relation and constant symbols. For a set $T$ of $L$-sentences and a class $K$ of $L$-structures put
+
+$$
+\mathrm{Mod}(T) = \{\, M \mid M \models \varphi \text{ for all } \varphi \in T \,\}, \qquad \mathrm{Th}(K) = \{\, \varphi \mid M \models \varphi \text{ for all } M \in K \,\}.
+$$
+
+Both maps reverse inclusions, and $K \subseteq \mathrm{Mod}(T) \iff T \subseteq \mathrm{Th}(K)$: they form an antitone Galois connection. By the completeness theorem, $\mathrm{Th}(\mathrm{Mod}(T))$ is exactly the set of consequences of $T$. A single structure $M$ has a **complete theory** $\mathrm{Th}(M)$: for each sentence $\varphi$, exactly one of $\varphi$, $\neg\varphi$ belongs to it.
+
+<Analogy>
+
+In algebraic geometry, polynomial equations cut out varieties, and a set of points determines the ideal of polynomials vanishing on it; the maps $I \mapsto V(I)$ and $X \mapsto I(X)$ form a Galois connection of exactly the same shape. Model theory's "geometry" is the study of **definable sets**: subsets of $M^n$ of the form $\{\bar a \mid M \models \varphi(\bar a, \bar b)\}$. For algebraically closed fields the analogy becomes literal — the definable sets are the constructible sets of algebraic geometry. In general it is only an analogy: definable sets need not look like varieties at all.
+
+</Analogy>
+
+Three tools do most of the work in a first course:
+
+1. **Ultraproducts** average a family of structures; Łoś's theorem says a sentence holds in the average iff it holds in "most" of the factors.
+2. **Quantifier elimination** shows that, in a good theory, every definable set is defined without quantifiers — so definable sets can be understood concretely.
+3. **Back and forth** builds isomorphisms, and its finite version — Ehrenfeucht–Fraïssé games — shows exactly what first-order logic can and cannot see.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, structures are nonempty, and $\bar a$ denotes a finite tuple.
+
+<Definition term="elementary equivalence">
+
+$L$-structures $M$ and $N$ are **elementarily equivalent**, written $M \equiv N$, if they satisfy the same $L$-sentences: $\mathrm{Th}(M) = \mathrm{Th}(N)$.
+
+</Definition>
+
+<Definition term="elementary embedding and elementary substructure">
+
+A map $j : M \to N$ is an **elementary embedding** if for every formula $\varphi(x_1, \dots, x_n)$ and every $\bar a \in M^n$,
+
+$$
+M \models \varphi(\bar a) \iff N \models \varphi(j\bar a).
+$$
+
+If $M \subseteq N$ and the inclusion is elementary, $M$ is an **elementary substructure** of $N$ and $N$ an **elementary extension** of $M$, written $M \preceq N$.
+
+</Definition>
+
+Taking $n = 0$ shows that $M \preceq N$ implies $M \equiv N$. The converse fails, and the difference is *parameters*: $(\N_{\ge 1}, <)$ is a substructure of $(\N, <)$ isomorphic to it, hence elementarily equivalent, but the formula $\forall y\,(x \le y)$ holds of $x = 1$ in the substructure and not in $\N$.
+
+<Theorem name="Tarski–Vaught test">
+
+Let $M$ be a substructure of $N$. Then $M \preceq N$ if and only if for every formula $\varphi(x, \bar y)$ and every $\bar a$ from $M$: if $N \models \exists x\, \varphi(x, \bar a)$, then $N \models \varphi(b, \bar a)$ for some $b \in M$.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) If $N \models \exists x\,\varphi(x, \bar a)$ then $M \models \exists x\,\varphi(x, \bar a)$ by elementarity; pick $b \in M$ with $M \models \varphi(b, \bar a)$; by elementarity again $N \models \varphi(b, \bar a)$.
+
+($\Leftarrow$) We show $M \models \psi(\bar a) \iff N \models \psi(\bar a)$ for all formulas $\psi$ and tuples $\bar a$ from $M$, by induction on $\psi$ (built from atomic formulas with $\neg$, $\wedge$, $\exists$). Atomic formulas are preserved because $M$ is a substructure: terms are evaluated the same way in $M$ and $N$. The cases $\neg$ and $\wedge$ are immediate from the induction hypothesis. If $M \models \exists x\,\varphi(x, \bar a)$, choose a witness $b \in M$; by induction $N \models \varphi(b, \bar a)$, so $N \models \exists x\,\varphi(x, \bar a)$. Conversely, if $N \models \exists x\, \varphi(x, \bar a)$, the hypothesis gives $b \in M$ with $N \models \varphi(b, \bar a)$, and by induction $M \models \varphi(b, \bar a)$.
+
+</Proof>
+
+Note that the test only ever evaluates formulas in $N$: it asks whether $M$ contains enough witnesses.
+
+<Definition term="complete theory, categoricity">
+
+A consistent theory $T$ is **complete** if for every sentence $\varphi$, either $T \models \varphi$ or $T \models \neg \varphi$. For an infinite cardinal $\kappa$, $T$ is **$\kappa$-categorical** if any two models of $T$ of cardinality $\kappa$ are isomorphic.
+
+</Definition>
+
+<Definition term="quantifier elimination">
+
+A theory $T$ has **quantifier elimination** (QE) if every formula $\varphi(\bar x)$ is $T$-equivalent to a quantifier-free formula $\psi(\bar x)$ with the same free variables: $T \models \forall \bar x\,(\varphi \leftrightarrow \psi)$. (We count $\top$ and $\bot$ as quantifier-free, so that sentences can be equivalent to quantifier-free sentences even in a language without constants.)
+
+</Definition>
+
+<Definition term="ultrafilter and ultraproduct">
+
+An **ultrafilter** on a set $I$ is a family $U$ of subsets of $I$ with $\emptyset \notin U$, closed under finite intersections and supersets, and such that for every $A \subseteq I$ exactly one of $A$ and $I \setminus A$ is in $U$. It is **principal** if it consists of all sets containing a fixed $i_0$. Every family of subsets with the finite intersection property extends to an ultrafilter (by Zorn's lemma); in particular, non-principal ultrafilters on $\N$ exist (extend the cofinite sets).
+
+Given $L$-structures $(M_i)_{i \in I}$ and an ultrafilter $U$ on $I$, the **ultraproduct** $\prod_i M_i / U$ is the set $\prod_i M_i$ modulo $f \sim g \iff \{i \mid f(i) = g(i)\} \in U$, with functions and constants interpreted coordinatewise and
+
+$$
+R([f_1], \dots, [f_n]) \iff \{\, i \mid M_i \models R(f_1(i), \dots, f_n(i)) \,\} \in U .
+$$
+
+If all $M_i = M$, this is the **ultrapower** $M^I / U$, and $d(a) = [i \mapsto a]$ is the **diagonal map** $M \to M^I/U$.
+
+</Definition>
+
+Closure of $U$ under intersections and supersets makes $\sim$ an equivalence relation and makes the interpretations independent of representatives. Think of $U$ as deciding which sets of indices are "large": a property holds in the ultraproduct when it holds on a large set of coordinates.
+
+<Definition term="types">
+
+Let $M$ be a structure and $A \subseteq M$. A **complete $n$-type over $A$** is a set $p(\bar x)$ of formulas in $n$ free variables with parameters from $A$ that is maximal subject to $p \cup \mathrm{Th}(M_A)$ being satisfiable, where $M_A$ is $M$ with names for the elements of $A$. The set of these is $S_n^M(A)$. A type is **realised** in an elementary extension $N \succeq M$ by $\bar b$ if $N \models \varphi(\bar b)$ for all $\varphi \in p$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Elementarily equivalent, not isomorphic">
+
+$(\Q, <) \equiv (\R, <)$, and in fact $(\Q, <) \preceq (\R, <)$; both statements are proved below, from quantifier elimination for dense linear orders. They are not isomorphic, since $\Q$ is countable and $\R$ is not. "Every bounded nonempty set has a supremum" is not first-order: it quantifies over *sets*.
+
+</Example>
+
+<Example title="Distinguished by one sentence">
+
+- $(\N, <) \not\equiv (\Z, <)$: the sentence $\exists x\, \forall y\, (x \le y)$ ("there is a least element") separates them.
+- $(\Z, <) \not\equiv (\Q, <)$: density, $\forall x\,\forall y\,(x < y \to \exists z\,(x < z \wedge z < y))$, separates them. So $(\Z, <) \subseteq (\Q, <)$ is a substructure that is not elementary.
+- Finite structures of different sizes are never elementarily equivalent: "there are exactly $n$ elements" is a sentence. But sentences of bounded *quantifier depth* see only a bounded amount: the computation section shows that sentences with at most $k$ nested quantifiers cannot tell a linear order with $2^k - 1$ elements from one with $2^k$.
+
+</Example>
+
+<Example title="A theory without quantifier elimination">
+
+In $(\Z, <)$ the formula $\varphi(a, b) = \exists x\,(a < x \wedge x < b)$ is not equivalent to a quantifier-free formula in $a, b$. A quantifier-free formula in two variables is a Boolean combination of $a < b$, $a = b$, $b < a$, so it has the same truth value at $(0, 1)$ and $(0, 2)$; but $\varphi(0, 1)$ is false and $\varphi(0, 2)$ is true. (Enlarging the language by successor and predecessor functions restores quantifier elimination for $\mathrm{Th}(\Z, <)$.)
+
+Similarly, the ordered field $\R$ has QE in the language $\{+, -, \cdot, 0, 1, <\}$ (Tarski), but not in the ring language $\{+, -, \cdot, 0, 1\}$: there $\exists y\,(y \cdot y = x)$ defines $[0, \infty)$, while a quantifier-free formula in one variable defines a finite or cofinite set.
+
+</Example>
+
+<Example title="Hyperreals and nonstandard natural numbers">
+
+Let $U$ be a non-principal ultrafilter on $\N$. In ${}^*\R = \R^\N/U$, the element $\varepsilon = [(1, \tfrac12, \tfrac13, \dots)]$ satisfies $0 < \varepsilon < r$ for every real $r > 0$: the set $\{n \mid 1/n < r\}$ is cofinite, hence in $U$. Likewise in $\N^\N/U$ the class of $(0, 1, 2, \dots)$ lies above every standard natural number — proved in Lean below. By Łoś's theorem the diagonal maps $\R \to {}^*\R$ and $\N \to \N^\N/U$ are elementary, so these new elements live in structures with exactly the same first-order theory as the old ones.
+
+</Example>
+
+</Section>
+
+<Section id="ultraproducts" kind="proof" title="Łoś's theorem and compactness">
+
+<Theorem name="Łoś's theorem">
+
+Let $(M_i)_{i\in I}$ be nonempty $L$-structures, $U$ an ultrafilter on $I$ and $M = \prod_i M_i / U$. For every formula $\varphi(x_1, \dots, x_n)$ and $f_1, \dots, f_n \in \prod_i M_i$,
+
+$$
+M \models \varphi([f_1], \dots, [f_n]) \iff \{\, i \in I \mid M_i \models \varphi(f_1(i), \dots, f_n(i)) \,\} \in U.
+$$
+
+</Theorem>
+
+<Proof>
+
+Write $\|\varphi(\bar f)\| = \{i \mid M_i \models \varphi(\bar f(i))\}$. First, for every term $t$, the value $t^M([f_1], \dots, [f_n])$ is the class of $i \mapsto t^{M_i}(f_1(i), \dots, f_n(i))$: this is an induction on $t$, using that functions are interpreted coordinatewise. Now induct on $\varphi$, built from atomic formulas by $\neg$, $\wedge$ and $\exists$.
+
+- **Atomic.** For $t_1 = t_2$ this is the definition of $\sim$, and for $R(t_1, \dots, t_k)$ the definition of $R^M$, combined with the statement about terms.
+- **Negation.** $M \models \neg\varphi(\bar f)$ iff $\|\varphi(\bar f)\| \notin U$ (induction) iff $I \setminus \|\varphi(\bar f)\| = \|\neg\varphi(\bar f)\| \in U$. This is the only step that uses that $U$ is an *ultra*filter.
+- **Conjunction.** $\|\varphi \wedge \psi\| = \|\varphi\| \cap \|\psi\|$, and a filter contains $A \cap B$ iff it contains both $A$ and $B$.
+- **Existential.** Suppose $M \models \exists x\, \varphi(x, \bar f)$, witnessed by $[g]$. By induction $\|\varphi(g, \bar f)\| \in U$, and this set is contained in $\|\exists x\,\varphi(x, \bar f)\|$, which is therefore in $U$. Conversely, suppose $B = \|\exists x\,\varphi(x, \bar f)\| \in U$. For $i \in B$ choose $g(i) \in M_i$ with $M_i \models \varphi(g(i), \bar f(i))$, and for $i \notin B$ let $g(i)$ be any element of $M_i$ (nonempty). Then $\|\varphi(g, \bar f)\| \supseteq B$ is in $U$, so by induction $M \models \varphi([g], \bar f)$, hence $M \models \exists x\,\varphi(x, \bar f)$.
+
+</Proof>
+
+The existential step uses the axiom of choice to pick $g$ — this is where all the witnesses are assembled into one element.
+
+<Theorem name="Corollary — the diagonal embedding is elementary">
+
+For every structure $M$ and ultrafilter $U$ on $I$, the diagonal map $d : M \to M^I/U$ is an elementary embedding.
+
+</Theorem>
+
+<Proof>
+
+For $\bar a \in M^n$, Łoś gives $M^I/U \models \varphi(d\bar a)$ iff $\{i \mid M \models \varphi(\bar a)\} \in U$. That set is $I$ or $\emptyset$ according as $M \models \varphi(\bar a)$ or not, and $I \in U$, $\emptyset \notin U$.
+
+</Proof>
+
+<Theorem name="Compactness theorem — second proof">
+
+If every finite subset of a theory $T$ has a model, then $T$ has a model.
+
+</Theorem>
+
+<Proof>
+
+Let $I$ be the set of finite subsets of $T$, and for each $\Delta \in I$ choose a model $M_\Delta \models \Delta$. For $\varphi \in T$ let $A_\varphi = \{\Delta \in I \mid \varphi \in \Delta\}$. These sets have the finite intersection property, since $\{\varphi_1, \dots, \varphi_k\} \in A_{\varphi_1} \cap \dots \cap A_{\varphi_k}$. Extend them to an ultrafilter $U$ on $I$, and let $M = \prod_\Delta M_\Delta / U$. For $\varphi \in T$, every $\Delta \in A_\varphi$ has $M_\Delta \models \varphi$, so $\{\Delta \mid M_\Delta \models \varphi\} \supseteq A_\varphi$ belongs to $U$, and $M \models \varphi$ by Łoś.
+
+</Proof>
+
+This proof is purely semantic: it does not pass through the completeness theorem or any proof system. It is the proof Mathlib formalises.
+
+<Figure caption="An ultraproduct of models of finite fragments. Coordinate Δ satisfies the sentences in Δ; each φ ∈ T holds on the large set of Δ containing φ, so Łoś's theorem makes φ true in the ultraproduct.">
+
+<svg viewBox="0 0 520 170" role="img" aria-label="Several finite fragments of a theory, each with a model, combined into one ultraproduct">
+  <g stroke="var(--ink-2)" strokeWidth="1.5" fill="var(--sky-soft)">
+    <rect x="20" y="20" width="90" height="44" rx="8" />
+    <rect x="130" y="20" width="90" height="44" rx="8" />
+    <rect x="240" y="20" width="90" height="44" rx="8" />
+    <rect x="350" y="20" width="90" height="44" rx="8" />
+  </g>
+  <g fill="var(--ink-2)" fontSize="14" textAnchor="middle">
+    <text x="65" y="47">M for Δ₁</text>
+    <text x="175" y="47">M for Δ₂</text>
+    <text x="285" y="47">M for Δ₃</text>
+    <text x="395" y="47">M for Δ₄</text>
+    <text x="478" y="47">…</text>
+  </g>
+  <g stroke="var(--gold)" strokeWidth="1.5" fill="none">
+    <path d="M65 64 L250 120" />
+    <path d="M175 64 L255 120" />
+    <path d="M285 64 L265 120" />
+    <path d="M395 64 L270 120" />
+  </g>
+  <rect x="170" y="120" width="180" height="40" rx="8" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="2" />
+  <text x="260" y="145" fill="var(--ink-2)" fontSize="14" textAnchor="middle">∏ M / U ⊨ T</text>
+</svg>
+
+</Figure>
+
+</Section>
+
+<Section id="dlo" kind="proof" title="Dense linear orders: quantifier elimination and back and forth">
+
+Let $\mathrm{DLO}$ be the theory, in the language $\{<\}$, of dense linear orders without endpoints: the axioms of a strict linear order, together with $\forall x\,\exists y\,(x < y)$, $\forall x\,\exists y\,(y < x)$ and $\forall x\,\forall y\,(x < y \to \exists z\,(x < z \wedge z < y))$. Its models include $\Q$, $\R$, $\Q \cap (0, 1)$ and the real algebraic numbers.
+
+We first reduce QE in general to a single quantifier applied to a conjunction.
+
+<Theorem name="Lemma — reduction to primitive formulas">
+
+Suppose that for every conjunction $\theta(x, \bar y)$ of atomic and negated atomic formulas, $\exists x\,\theta$ is $T$-equivalent to a quantifier-free formula in $\bar y$. Then $T$ has quantifier elimination.
+
+</Theorem>
+
+<Proof>
+
+By induction on formulas we show each is $T$-equivalent to a quantifier-free one. Atomic formulas are quantifier-free, and the class of formulas with quantifier-free equivalents is closed under $\neg$ and $\wedge$. For $\exists x\,\varphi$, replace $\varphi$ by a quantifier-free equivalent and put it in disjunctive normal form $\theta_1 \vee \dots \vee \theta_m$, each $\theta_j$ a conjunction of literals. Since $\exists x\,(\theta_1 \vee \dots \vee \theta_m)$ is logically equivalent to $\exists x\,\theta_1 \vee \dots \vee \exists x\,\theta_m$, the hypothesis applies to each disjunct.
+
+</Proof>
+
+The heart of the matter is the following lemma, formalised in Lean below as `dlo_elim_core`.
+
+<Theorem name="Key lemma">
+
+Let $M \models \mathrm{DLO}$ and let $A, B \subseteq M$ be finite. There is $x \in M$ with $a < x$ for all $a \in A$ and $x < b$ for all $b \in B$ if and only if $a < b$ for all $a \in A$, $b \in B$.
+
+</Theorem>
+
+<Proof>
+
+The forward direction is transitivity. Conversely, assume $a < b$ for all $a \in A$, $b \in B$. If $A$ and $B$ are both nonempty, then $\max A < \min B$, and density gives $x$ with $\max A < x < \min B$. If only $B$ is nonempty, take $x < \min B$ (no least element); if only $A$ is nonempty, take $x > \max A$ (no greatest element); if both are empty, take any $x$ ($M$ is nonempty).
+
+</Proof>
+
+<Theorem name="Theorem — DLO has quantifier elimination">
+
+Every formula in the language $\{<\}$ is $\mathrm{DLO}$-equivalent to a quantifier-free formula.
+
+</Theorem>
+
+<Proof>
+
+By the reduction lemma it suffices to treat $\exists x\,\theta$ with $\theta$ a conjunction of literals. In a linear order, $\neg(s < t) \leftrightarrow (t < s \vee s = t)$ and $\neg(s = t) \leftrightarrow (s < t \vee t < s)$; substituting and redistributing, $\theta$ becomes a disjunction of conjunctions of *atomic* formulas, and $\exists$ distributes over $\vee$. So let $\theta$ be a conjunction of atomic formulas. Conjuncts not mentioning $x$ can be moved outside the quantifier. A conjunct $x < x$ makes $\theta$ equivalent to $\bot$; a conjunct $x = x$ can be dropped. If some conjunct is $x = c$ (or $c = x$) with $c$ a variable other than $x$, then $\exists x\,(x = c \wedge \theta'(x)) \leftrightarrow \theta'(c)$. Otherwise $\theta$ has the form $\bigwedge_{a \in A} a < x \wedge \bigwedge_{b \in B} x < b$ for finite sets of variables $A$ and $B$, and by the key lemma $\exists x\,\theta$ is equivalent to $\bigwedge_{a \in A, b \in B} a < b$ — the empty conjunction being $\top$.
+
+</Proof>
+
+<Theorem name="Corollary — completeness and model completeness">
+
+(1) $\mathrm{DLO}$ is complete; in particular $(\Q, <) \equiv (\R, <)$. (2) Every embedding between models of $\mathrm{DLO}$ is elementary; in particular $(\Q, <) \preceq (\R, <)$.
+
+</Theorem>
+
+<Proof>
+
+(1) The language has no constant symbols, so a quantifier-free sentence is a Boolean combination of $\top$ and $\bot$. By QE every sentence is $\mathrm{DLO}$-equivalent to $\top$ or to $\bot$, so $\mathrm{DLO}$ decides it; and $\mathrm{DLO}$ is consistent because $\Q$ is a model. (2) Embeddings preserve quantifier-free formulas, and every formula is $\mathrm{DLO}$-equivalent to a quantifier-free one.
+
+</Proof>
+
+There is a second, older route to completeness, through categoricity.
+
+<Theorem name="Cantor's theorem — DLO is ℵ₀-categorical">
+
+Any two countable models of $\mathrm{DLO}$ are isomorphic.
+
+</Theorem>
+
+<Proof>
+
+Let $A$, $B$ be countable models of DLO; they are infinite (a finite nonempty linear order has a greatest element). Enumerate $A = \{a_0, a_1, \dots\}$ and $B = \{b_0, b_1, \dots\}$. Call a finite order-preserving bijection $p$ between a finite subset of $A$ and a finite subset of $B$ a *partial isomorphism*.
+
+*Extension property:* if $p$ is a partial isomorphism and $a \in A$, there is $b \in B$ with $p \cup \{(a, b)\}$ a partial isomorphism. If $a \in \mathrm{dom}\,p$ take $b = p(a)$. Otherwise let $A_- = \{a' \in \mathrm{dom}\,p \mid a' < a\}$ and $A_+ = \{a' \in \mathrm{dom}\,p \mid a < a'\}$. Every element of $p(A_-)$ is below every element of $p(A_+)$, since $p$ preserves order, so the key lemma (applied in $B$) gives $b$ above $p(A_-)$ and below $p(A_+)$; then $b \notin \mathrm{ran}\,p$ and $p \cup \{(a, b)\}$ preserves order. By symmetry, for every $b \in B$ there is a matching $a \in A$.
+
+Start with $p_0 = \emptyset$. At step $2n + 1$ extend so that $a_n$ is in the domain ("forth"); at step $2n + 2$ extend so that $b_n$ is in the range ("back"). The union $\bigcup_n p_n$ is an order-preserving map defined on all of $A$ and onto all of $B$: an isomorphism.
+
+</Proof>
+
+<Figure caption="Back and forth: alternately add the next point of A (forth) and the next point of B (back), each time choosing a partner in the same position relative to the points already matched. Density and the absence of endpoints guarantee a partner always exists.">
+
+<svg viewBox="0 0 520 150" role="img" aria-label="Two horizontal lines A and B with points matched by numbered dashed segments, alternating between the two lines">
+  <line x1="40" y1="40" x2="500" y2="40" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="40" y1="115" x2="500" y2="115" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <text x="18" y="45" fill="var(--ink-2)" fontSize="15">A</text>
+  <text x="18" y="120" fill="var(--ink-2)" fontSize="15">B</text>
+  <g stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="5 4">
+    <line x1="260" y1="40" x2="300" y2="115" />
+    <line x1="120" y1="40" x2="90" y2="115" />
+    <line x1="400" y1="40" x2="440" y2="115" />
+    <line x1="190" y1="40" x2="210" y2="115" />
+  </g>
+  <g fill="var(--human)">
+    <circle cx="260" cy="40" r="5" />
+    <circle cx="400" cy="40" r="5" />
+  </g>
+  <g fill="var(--compute)">
+    <circle cx="90" cy="115" r="5" />
+    <circle cx="210" cy="115" r="5" />
+  </g>
+  <g fill="var(--ink-2)">
+    <circle cx="120" cy="40" r="4" />
+    <circle cx="190" cy="40" r="4" />
+    <circle cx="300" cy="115" r="4" />
+    <circle cx="440" cy="115" r="4" />
+  </g>
+  <g fill="var(--ink-2)" fontSize="13" textAnchor="middle">
+    <text x="260" y="28">1</text>
+    <text x="90" y="138">2</text>
+    <text x="400" y="28">3</text>
+    <text x="210" y="138">4</text>
+  </g>
+</svg>
+
+</Figure>
+
+<Theorem name="Łoś–Vaught test">
+
+Let $T$ be a consistent theory in a language $L$ with no finite models, and suppose $T$ is $\kappa$-categorical for some infinite cardinal $\kappa \ge |L|$. Then $T$ is complete.
+
+</Theorem>
+
+<Proof>
+
+If $T$ decided neither $\varphi$ nor $\neg\varphi$, both $T \cup \{\varphi\}$ and $T \cup \{\neg \varphi\}$ would have models, necessarily infinite. By the upward and downward Löwenheim–Skolem theorems each has a model of cardinality $\kappa$. These two models of $T$ are isomorphic by categoricity, yet one satisfies $\varphi$ and the other $\neg\varphi$ — a contradiction.
+
+</Proof>
+
+With Cantor's theorem ($\kappa = \aleph_0$, $L$ finite) this gives a second proof that DLO is complete. Mathlib proves completeness exactly this way.
+
+</Section>
+
+<Section id="fields" kind="proof" title="Algebraically closed fields, Lefschetz and Ax–Grothendieck">
+
+Work in the language of rings $\{+, -, \cdot, 0, 1\}$. Let $\mathrm{ACF}$ be the theory of algebraically closed fields — the field axioms plus, for each $n \ge 1$, the sentence $\forall a_0 \dots \forall a_{n-1}\, \exists x\, (x^n + a_{n-1}x^{n-1} + \dots + a_0 = 0)$. For $p$ prime, $\mathrm{ACF}_p$ adds $p \cdot 1 = 0$; and $\mathrm{ACF}_0$ adds $p \cdot 1 \neq 0$ for every prime $p$.
+
+<Theorem name="Theorem (Tarski) — ACF has quantifier elimination">
+
+Every formula in the language of rings is $\mathrm{ACF}$-equivalent to a quantifier-free formula.
+
+</Theorem>
+
+We do not prove this here; a complete proof (by the same reduction lemma, with a careful elimination of $\exists x$ from systems $f_1(x) = \dots = f_k(x) = 0 \wedge g(x) \neq 0$ using polynomial division) is in Marker, *Model Theory: An Introduction*, Theorem 3.2.2. Its consequences are what matter for us.
+
+- **Constructible sets.** In $K \models \mathrm{ACF}$, a quantifier-free formula with parameters defines a finite Boolean combination of zero sets of polynomials — a *constructible* set. So the definable subsets of $K^n$ are exactly the constructible ones. Since an existential quantifier is a coordinate projection, QE implies that the projection $K^{n+1} \to K^n$ of a constructible set is constructible: this is **Chevalley's theorem** for affine space over $K$. (Conversely, a sufficiently uniform form of Chevalley's theorem yields QE; the two are closely related rather than literally the same statement.)
+- **Completeness of $\mathrm{ACF}_p$.** A quantifier-free *sentence* is a Boolean combination of atomic sentences $t_1 = t_2$ between closed terms, that is, of statements $n \cdot 1 = m \cdot 1$ with $n, m \in \Z$. These are decided by the characteristic. Hence $\mathrm{ACF}_p$ is complete for $p = 0$ and for every prime $p$. In particular $\overline{\Q} \equiv \C$, and by QE again $\overline{\Q} \preceq \C$.
+
+<Theorem name="Lefschetz principle">
+
+For a sentence $\varphi$ in the language of rings, the following are equivalent:
+
+1. $\C \models \varphi$;
+2. $\mathrm{ACF}_0 \models \varphi$;
+3. $\mathrm{ACF}_p \models \varphi$ for all sufficiently large primes $p$;
+4. $\mathrm{ACF}_p \models \varphi$ for infinitely many primes $p$.
+
+</Theorem>
+
+<Proof>
+
+(1)⇔(2): $\C \models \mathrm{ACF}_0$, which is complete. (2)⇒(3): $\mathrm{ACF}_0 \cup \{\neg\varphi\}$ has no model, so by compactness some finite subset has none; such a subset lies in $\mathrm{ACF} \cup \{p \cdot 1 \ne 0 \mid p < N\} \cup \{\neg\varphi\}$ for some $N$, so every algebraically closed field of characteristic at least $N$ satisfies $\varphi$. (3)⇒(4) is trivial. (4)⇒(2): if $\mathrm{ACF}_0 \not\models \varphi$, completeness gives $\mathrm{ACF}_0 \models \neg\varphi$, so by (2)⇒(3) $\mathrm{ACF}_p \models \neg\varphi$ for all large $p$; since each $\mathrm{ACF}_p$ is consistent, $\varphi$ fails in $\mathrm{ACF}_p$ for all large $p$, contradicting (4).
+
+</Proof>
+
+<Theorem name="Ax–Grothendieck theorem">
+
+Let $K$ be an algebraically closed field. Every injective polynomial map $f : K^n \to K^n$ is surjective.
+
+</Theorem>
+
+<Proof>
+
+Fix $n$ and a degree bound $d$. "Every polynomial map $K^n \to K^n$ whose coordinates have degree at most $d$ and which is injective is surjective" is a single first-order sentence $\Phi_{n,d}$: quantify universally over the finitely many coefficients $\bar c$ of $n$ polynomials of degree $\le d$, and write
+
+$$
+\forall \bar c\, \Big[ \forall \bar x\, \forall \bar y\, \big(f_{\bar c}(\bar x) = f_{\bar c}(\bar y) \to \bar x = \bar y\big) \;\to\; \forall \bar z\, \exists \bar x\; f_{\bar c}(\bar x) = \bar z \Big].
+$$
+
+*Step 1: $\Phi_{n,d}$ holds in $\overline{\mathbb F}_p$ for every prime $p$.* Let $f$ have coefficients in $\overline{\mathbb F}_p$, be injective, and let $\bar z \in \overline{\mathbb F}_p^{\,n}$. The finitely many coefficients of $f$ and coordinates of $\bar z$ are algebraic over $\mathbb F_p$, so they generate a finite subfield $F$. Then $f$ maps $F^n$ to $F^n$ and is injective there; as $F^n$ is finite, $f|_{F^n}$ is surjective, so $\bar z = f(\bar x)$ for some $\bar x \in F^n$.
+
+*Step 2: transfer.* As $\mathrm{ACF}_p$ is complete and $\overline{\mathbb F}_p \models \mathrm{ACF}_p$, Step 1 gives $\mathrm{ACF}_p \models \Phi_{n,d}$ for every prime $p$. By the Lefschetz principle $\mathrm{ACF}_0 \models \Phi_{n,d}$. So every algebraically closed field, of any characteristic, satisfies $\Phi_{n,d}$. Every polynomial map has some degree $d$.
+
+</Proof>
+
+The algebraic closure matters: over $\Q$, the map $x \mapsto x^3$ is injective but $2$ is not a cube; over $\mathbb F_p(t)$, the Frobenius $x \mapsto x^p$ is injective but $t$ is not a $p$-th power.
+
+<Note>
+
+Ultraproducts give another view of the Lefschetz principle. If $U$ is a non-principal ultrafilter on the set of primes, then $\prod_p \overline{\mathbb F}_p / U$ is algebraically closed (Łoś, axiom by axiom) of characteristic $0$ (each sentence $q \cdot 1 \ne 0$ holds in all factors with $p \ne q$), and it has cardinality $2^{\aleph_0}$. Since $\mathrm{ACF}_0$ is categorical in every uncountable cardinal (an algebraically closed field is determined by its characteristic and transcendence degree — Steinitz), this ultraproduct is isomorphic to $\C$.
+
+</Note>
+
+</Section>
+
+<Section id="types" kind="human" title="Types and the Stone space">
+
+Types record how a new element could sit over a set of parameters. For $\mathrm{DLO}$, quantifier elimination says a complete 1-type over $A \subseteq M$ is determined by which atomic formulas $x < a$, $x = a$, $a < x$ ($a \in A$) it contains. Over $A = \Q$ inside $(\Q, <)$, the complete 1-types are therefore:
+
+- $x = q$ for each $q \in \Q$ (realised in $\Q$);
+- for each irrational $r$, the type $\{q < x \mid q \in \Q,\ q < r\} \cup \{x < q \mid q \in \Q,\ q > r\}$ (not realised in $\Q$, realised in $\R$ by $r$);
+- for each $q \in \Q$, a type $q^+$ "infinitely close to $q$ from above" ($q < x$ and $x < r$ for all rationals $r > q$), and similarly $q^-$;
+- $+\infty$ ($q < x$ for all $q$) and $-\infty$.
+
+So $|S_1(\Q)| = 2^{\aleph_0}$. The types $q^\pm$ and $\pm\infty$ are realised in neither $\Q$ nor $\R$. All of these types are realised in the ultrapower $\Q^\N/U$, an elementary extension of $\Q$ by Łoś's theorem: $q^+$ by $[(q + 1/n)_n]$, $q^-$ by $[(q - 1/n)_n]$, $\pm\infty$ by $[(\pm n)_n]$, and the cut of an irrational $r$ by the class of any sequence of rationals converging to $r$.
+
+The set $S_n(T)$ of complete $n$-types of a complete theory $T$ (over $\emptyset$) carries the **Stone topology**, with basic open sets $[\varphi] = \{p \mid \varphi \in p\}$. These sets are also closed (their complements are $[\neg\varphi]$), so $S_n(T)$ is totally disconnected and Hausdorff; and it is **compact precisely because of the compactness theorem**: a cover by basic open sets with no finite subcover would give a set of formulas $\{\neg\varphi_j\}$, finitely satisfiable with $T$ but not satisfiable. A type is an isolated point iff it is generated by a single formula modulo $T$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Model theory in Lean and Mathlib">
+
+Mathlib has a substantial model theory library: languages, structures, terms and formulas whose bound variables are indexed by `Fin n` (`FirstOrder.Language.BoundedFormula`), satisfaction `M ⊨ φ`, theories, elementary embeddings and substructures, ultraproducts, compactness, Löwenheim–Skolem, Fraïssé limits, and the theories of orders and algebraically closed fields. Here is what this lesson proves and what it applies.
+
+**The key lemma of quantifier elimination**, proved here, following the proof above case by case. The statement uses finite sets of parameters `L` and `U`:
+
+<Lean decl="Lumenary.ModelTheory.dlo_elim_core" />
+
+Density is genuinely needed — the elimination is false in the integers:
+
+<Lean decl="Lumenary.ModelTheory.dlo_elim_core_fails_discrete" />
+
+Mathlib does not (yet) state quantifier elimination for DLO as a theorem about all formulas; the lemma above is the mathematical heart of it, and the reduction from arbitrary formulas is the syntactic induction in the human proof.
+
+**$(\Q, \le) \equiv (\R, \le)$ but $(\Q, \le) \not\cong (\R, \le)$.** Mathlib's language of orders uses $\le$ rather than $<$; the two are interdefinable. The structures are given by Mathlib's `orderStructure`. Elementary equivalence applies Mathlib's completeness of `dlo` (proved there by the Łoś–Vaught test); non-isomorphism is proved here from Cantor's uncountability of $\R$:
+
+<Lean decl="Lumenary.ModelTheory.rat_elem_equiv_real" />
+
+<Lean decl="Lumenary.ModelTheory.rat_not_equiv_real" />
+
+**Back and forth and categoricity**, from Mathlib:
+
+<Lean decl="Lumenary.ModelTheory.cantor_back_and_forth" />
+
+<Lean decl="Lumenary.ModelTheory.dlo_aleph0_categorical" />
+
+**Łoś and compactness.** Mathlib's `Filter.Product M U` is the ultraproduct. Note the hypothesis that the factors are nonempty, used in the existential step of the proof:
+
+<Lean decl="Lumenary.ModelTheory.los" />
+
+<Lean decl="Lumenary.ModelTheory.compactness" />
+
+**A nonstandard natural number**, proved here. `Filter.hyperfilter ℕ` is a non-principal ultrafilter on $\N$ and `(hyperfilter ℕ).Germ ℕ` is the ultrapower $\N^\N/U$. The order on germs is "eventually less" — the atomic case of Łoś's theorem:
+
+<Lean decl="Lumenary.ModelTheory.nonstandard_natural" />
+
+<Lean decl="Lumenary.ModelTheory.nonstandard_ne_standard" />
+
+**Lefschetz and Ax–Grothendieck**, from Mathlib, whose proof of Ax–Grothendieck follows exactly the route of this lesson (`Mathlib/FieldTheory/AxGrothendieck.lean`). At the version used here, Mathlib does not prove quantifier elimination for ACF; it obtains completeness of $\mathrm{ACF}_p$ from uncountable categoricity and the Łoś–Vaught test instead.
+
+<Lean decl="Lumenary.ModelTheory.lefschetz" />
+
+<Lean decl="Lumenary.ModelTheory.ax_grothendieck" />
+
+What is **not** formalised here: Łoś's theorem and compactness are applied, not re-proved; quantifier elimination is formalised only in its key step; the Ehrenfeucht–Fraïssé theorem and the theory of types are not formalised in this lesson.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Games that measure what logic can see">
+
+The **quantifier rank** of a formula counts nested quantifiers: atomic formulas have rank $0$, $\neg$ and $\wedge$ take the maximum, and $\exists x\,\varphi$ has rank one more than $\varphi$. Write $M \equiv_k N$ if $M$ and $N$ satisfy the same sentences of rank at most $k$.
+
+In the **Ehrenfeucht–Fraïssé game** $G_k(M, N)$, Spoiler and Duplicator play $k$ rounds; in each round Spoiler picks an element of either structure and Duplicator answers with an element of the other. Duplicator wins if the chosen pairs $(a_1, b_1), \dots, (a_k, b_k)$ form a partial isomorphism. The **Ehrenfeucht–Fraïssé theorem** (Fraïssé 1954, Ehrenfeucht 1961) says that, for a finite relational language, $M \equiv_k N$ if and only if Duplicator has a winning strategy in $G_k(M, N)$. For finite linear orders $L_m$ and $L_n$ there is an exact rule: Duplicator wins $G_k$ iff $m = n$ or $m, n \ge 2^k - 1$. Duplicator's strategy keeps the invariant that, with $r$ rounds left, corresponding gaps between chosen points (and the ends) either have equal length or both have length at least $2^r - 1$; chapter 3 of Libkin's *Elements of Finite Model Theory* proves this kind of bound in detail.
+
+The program below solves these games by brute-force search over the game tree and compares the answers with the rule.
+
+<Python id="model_theory_ef_games" />
+
+A consequence: no first-order sentence $\varphi$ in $\{<\}$ holds in exactly the finite linear orders of even size, because if $\varphi$ has rank $k$ it cannot separate $L_{2^k - 1}$ from $L_{2^k}$. The search confirms the rule only for the sizes listed; the theorem covers all of them.
+
+The second program implements the quantifier-elimination step of the DLO proof and tests it against a direct search for witnesses in $\Q$ — and then runs the same elimination in $\Z$, where it fails.
+
+<Python id="model_theory_dlo_qe" />
+
+Agreement on two thousand random formulas is evidence that the implementation is right, not a proof that the elimination is valid; the proof is the key lemma (checked in Lean). The failures in $\Z$, by contrast, are genuine counterexamples: density is necessary.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="A square of elementary embeddings">
+
+Diagonal embeddings into ultrapowers and the inclusion $\Q \subseteq \R$ fit into a commutative square. Every arrow is an elementary embedding: the vertical ones by Łoś's theorem, and the horizontal ones because every embedding between models of $\mathrm{DLO}$ is elementary.
+
+<CommutativeDiagram
+  objects={[
+    { id: "Q", tex: "(\\mathbb{Q},<)", row: 0, col: 0 },
+    { id: "R", tex: "(\\mathbb{R},<)", row: 0, col: 1 },
+    { id: "QU", tex: "\\mathbb{Q}^{\\mathbb{N}}/U", row: 1, col: 0 },
+    { id: "RU", tex: "\\mathbb{R}^{\\mathbb{N}}/U", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "Q", to: "R", tex: "\\preceq", style: "hook" },
+    { from: "Q", to: "QU", tex: "d", style: "hook", labelSide: "right" },
+    { from: "R", to: "RU", tex: "d", style: "hook" },
+    { from: "QU", to: "RU", tex: "\\preceq", style: "hook", labelSide: "right" },
+  ]}
+  caption="Both paths send $q \in \mathbb{Q}$ to the class of the constant sequence $(q, q, \dots)$. The ultrapowers contain infinitesimals and infinite elements, yet all four orders satisfy the same sentences."
+/>
+
+Things to check for yourself: why is the bottom map well defined and injective (a rational sequence is a real sequence, and two sequences agree on a set in $U$ in $\Q$ iff they do in $\R$)? Why is $\Q^\N/U$ a model of $\mathrm{DLO}$, so that the bottom map is elementary? And which complete 1-types over $\Q$ from the previous section does $\Q^\N/U$ realise? (Answer: all of them — ultrapowers by non-principal ultrafilters on $\N$ are $\aleph_1$-saturated, a theorem of Keisler.)
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Elementarily equivalent structures must be isomorphic."** $(\Q, <)$ and $(\R, <)$ are elementarily equivalent and not isomorphic. By the Löwenheim–Skolem theorems, every infinite structure in a countable language has elementarily equivalent structures of every infinite cardinality, so elementary equivalence can never pin down an infinite structure up to isomorphism. Only for *finite* structures does $M \equiv N$ imply $M \cong N$.
+
+</Misconception>
+
+<Misconception>
+
+**"A theory with many models is vague."** Having non-isomorphic models of different cardinalities is forced on every first-order theory with an infinite model. It does not mean the theory fails to decide questions: DLO and $\mathrm{ACF}_p$ have models of every infinite cardinality and are complete. Completeness (deciding every sentence) and categoricity (one model per cardinality) are different properties.
+
+</Misconception>
+
+<Misconception>
+
+**"$M \subseteq N$ and $M \equiv N$ imply $M \preceq N$."** Elementarity involves formulas with parameters. $(\N_{\ge 1}, <) \subseteq (\N, <)$ is isomorphic to $(\N, <)$, but $1$ is least in the substructure and not in $\N$.
+
+</Misconception>
+
+<Misconception>
+
+**"Łoś's theorem needs a non-principal ultrafilter."** It holds for every ultrafilter. For a principal ultrafilter at $i_0$ the ultraproduct is just (isomorphic to) $M_{i_0}$, so the theorem is true but uninteresting; non-principal ultrafilters are needed to produce *new* structures such as the hyperreals.
+
+</Misconception>
+
+<Misconception>
+
+**"Quantifier elimination means the theory is decidable."** QE reduces sentences to quantifier-free sentences. Decidability also needs the elimination to be effective, the axioms to be computably enumerable, and the quantifier-free sentences to be decidable — true for DLO, ACF and real closed fields, but not automatic.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="Nullstellensatz and constructible sets">
+
+For algebraically closed fields, quantifier elimination is algebra. Abraham Robinson's proof of the weak Nullstellensatz runs as follows. Let $K$ be algebraically closed and $I \subsetneq K[x_1, \dots, x_n]$ a proper ideal, generated (by the Hilbert basis theorem) by $f_1, \dots, f_m$. Choose a maximal ideal $\mathfrak m \supseteq I$ and let $L$ be an algebraic closure of $K[\bar x]/\mathfrak m$. In $L$ the sentence $\exists \bar x\, \bigwedge_j f_j(\bar x) = 0$, with parameters from $K$, is true (take the images of the $x_i$). The embedding $K \subseteq L$ is elementary (model completeness of ACF, from QE), so the sentence is true in $K$: the variety $V(I)$ has a $K$-point. Projections of constructible sets are constructible (Chevalley) — the same theorem seen from the geometric side. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink> and <TopicLink id="math.algebra.fields-galois">fields and Galois theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Tame geometry: o-minimality">
+
+An expansion $(R, <, \dots)$ of a dense linear order is **o-minimal** if every definable subset of $R$ (with parameters) is a finite union of points and open intervals. By Tarski's quantifier elimination for real closed fields, $(\R, <, +, \cdot)$ is o-minimal, and its definable sets are the semialgebraic sets; Wilkie (1996) proved that $(\R, <, +, \cdot, \exp)$ is o-minimal too. The **cell decomposition theorem** (Pillay–Steinhorn, Knight–Pillay–Steinhorn, 1986) says that in an o-minimal structure every definable subset of $R^n$ is a finite disjoint union of "cells" (graphs and bands between definable continuous functions, built up coordinate by coordinate). Consequences: definable sets have finitely many connected components, a well-behaved dimension, and no pathologies such as space-filling curves. This is the "tame topology" Grothendieck asked for, developed in van den Dries's book; o-minimal counting (Pila–Wilkie, 2006) became a key tool in Pila's 2011 proof of the André–Oort conjecture for products of modular curves.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Ax–Kochen: p-adic fields through ultraproducts">
+
+Artin conjectured that every homogeneous form of degree $d$ over $\Q_p$ in more than $d^2$ variables has a nontrivial zero. Over $\mathbb F_p((t))$ the analogue is a theorem (Lang, 1952: $\mathbb F_p((t))$ is a $C_2$ field). Ax and Kochen (1965), and independently Ershov, proved that for a non-principal ultrafilter $U$ on the primes, $\prod_p \Q_p / U \equiv \prod_p \mathbb F_p((t))/U$ as valued fields. For each fixed $d$, "every form of degree $d$ in $d^2 + 1$ variables has a nontrivial zero" is a single first-order sentence; it holds in every $\mathbb F_p((t))$, hence in the second ultraproduct, hence in the first, hence (Łoś) in $\Q_p$ for $U$-almost all $p$ — and since $U$ was arbitrary, for **all but finitely many** primes $p$. The finite exceptional set depends on $d$, and the original argument gives no bound for it. The exceptions are real: Terjanian (1966) found a quartic form in $18 > 4^2$ variables over $\Q_2$ with no nontrivial zero, so Artin's conjecture is false as stated. See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Nonstandard analysis">
+
+Robinson (1961, book 1966) used ultrapowers to make infinitesimals rigorous. In ${}^*\R = \R^\N/U$ there is $\varepsilon > 0$ smaller than every positive real. Every function $f : \R \to \R$ extends to ${}^*f$ coordinatewise, and the **transfer principle** — Łoś's theorem for $\R$ expanded by symbols for all the functions and relations one cares about — says a first-order statement about these holds in $\R$ iff it holds in ${}^*\R$. One then proves, for standard $f$ and $a$: $f$ is continuous at $a$ iff ${}^*f(a + \delta) - f(a)$ is infinitesimal for every infinitesimal $\delta$. Derivatives become standard parts of difference quotients with infinitesimal increments. The method has produced new results — for instance Bernstein and Robinson's 1966 invariant subspace theorem for polynomially compact operators (later given a standard proof by Halmos). Compare with $\varepsilon$–$\delta$ <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink>: the two are interchangeable by transfer, but the nonstandard proofs are often shorter.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Compactness is compactness">
+
+The compactness theorem is literally the compactness of a space. The Lindenbaum algebra $B_n(T)$ of formulas in $n$ variables modulo $T$-equivalence is a Boolean algebra, and its Stone space — the space of ultrafilters of $B_n(T)$ — is $S_n(T)$, a compact, Hausdorff, totally disconnected space. Isolated points are the principal types. The **omitting types theorem** (for countable languages: a countable complete theory has a countable model omitting any given non-isolated type) is proved with the Baire category theorem, and countable models of countable theories are studied through the topology of $S_n(T)$ — for example, a complete theory in a countable language with infinite models is $\aleph_0$-categorical iff every $S_n(T)$ is finite (Engeler, Ryll-Nardzewski, Svenonius, 1959). See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Ultraproducts as colimits">
+
+An ultraproduct is a colimit of products: $\prod_i M_i / U \cong \operatorname{colim}_{A \in U} \prod_{i \in A} M_i$, the colimit taken over $U$ ordered by reverse inclusion along the restriction maps. Since $U$ is closed under intersections, this is a filtered colimit. That much works for any filter and produces the *reduced product*, which preserves Horn sentences such as the axioms of groups and rings; maximality of $U$ is what lets negations, and hence all first-order sentences, pass through. The pair $(\mathrm{Th}, \mathrm{Mod})$ is a Galois connection — an adjunction between posets — and categorical logic generalises models from structures in $\mathbf{Set}$ to structures in other categories (see <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Foundations (1915–1936).** Leopold Löwenheim (1915) and Thoralf Skolem (1920, 1922) proved the first downward Löwenheim–Skolem theorems. Kurt Gödel's completeness theorem (1929 thesis, published 1930) included compactness for countable languages; Anatolii Malcev extended compactness to arbitrary languages (1936) and applied it to group theory (1941). Alfred Tarski gave the mathematical definition of truth in a structure (1933).
+- **Quantifier elimination (1930s–1950s).** Tarski found quantifier elimination for real closed fields around 1930; his decision method was published by the RAND Corporation in 1948 (revised 1951). Abraham Robinson introduced model completeness and applied it to algebra in the 1950s. Robert Vaught and Jerzy Łoś independently found the Łoś–Vaught test (1954).
+- **Ultraproducts and games.** Jerzy Łoś proved his theorem in 1955 in Poland; ultraproducts became a central tool through work of Frayne, Morel, Scott, Keisler and Kochen. Roland Fraïssé (1954) and Andrzej Ehrenfeucht (1961) introduced back-and-forth systems and games.
+- **Applications (1960s).** Robinson created nonstandard analysis (1961; book 1966). James Ax and Simon Kochen (1965), and independently Yuri Ershov in Novosibirsk, proved the transfer theorem for $p$-adic fields. Ax proved the Ax–Grothendieck theorem by model theory (1968–69); Alexander Grothendieck proved it independently in EGA IV (1966).
+- **Stability and beyond.** Michael Morley's categoricity theorem (1965) — a countable theory categorical in one uncountable cardinal is categorical in all — launched Saharon Shelah's classification theory (book 1978). Later geometric model theory, through Boris Zilber, Ehud Hrushovski (whose 1996 proof of the function-field Mordell–Lang conjecture used model theory), Anand Pillay and many others, made model theory a working tool in algebraic and arithmetic geometry.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- David Marker, *Model Theory: An Introduction* (2002) — the standard graduate text; QE for ACF and DLO in chapter 3, ultraproducts in chapter 2 exercises and in many applications.
+- Katrin Tent and Martin Ziegler, *A Course in Model Theory* (2012) — concise and modern.
+- Wilfrid Hodges, *Model Theory* (1993), and its abridgement *A Shorter Model Theory* (1997).
+- C. C. Chang and H. J. Keisler, *Model Theory* (1973; 3rd edition 1990) — the classic reference, especially for ultraproducts.
+- Lou van den Dries, *Tame Topology and o-minimal Structures* (1998).
+- Leonid Libkin, *Elements of Finite Model Theory* (2004) — Ehrenfeucht–Fraïssé games and their limits.
+- Robert Goldblatt, *Lectures on the Hyperreals* (1998) — nonstandard analysis via ultrapowers.
+
+Next steps in the Lumenary: <TopicLink id="math.found.forcing">forcing and independence</TopicLink>, which builds new models of set theory; <TopicLink id="math.found.incompleteness">Gödel's incompleteness theorems</TopicLink>; and <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Section>

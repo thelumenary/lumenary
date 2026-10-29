@@ -1,0 +1,541 @@
+---
+slug: fundamental-group
+topic: math.geom.fundamental-group
+title: Homotopy and the fundamental group
+subtitle: Loops you cannot shrink form a group. Computing it for the circle — $\pi_1(S^1) \cong \Z$ — proves Brouwer's fixed-point theorem and the fundamental theorem of algebra, and turns topology into algebra.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6019
+objectives:
+  - Define homotopy of maps and of paths and the fundamental group, and prove that the fundamental group is a group and a homotopy invariant
+  - Compute $\pi_1(S^1) \cong \Z$ using the covering map $\R \to S^1$ and the path and homotopy lifting properties
+  - Deduce the Brouwer fixed-point theorem for the disc and the fundamental theorem of algebra
+  - Use the Seifert–van Kampen theorem to compute fundamental groups of wedges of circles, spheres and surfaces
+  - Relate connected covering spaces to subgroups of the fundamental group
+narrators: []
+lean:
+  - Lumenary.FundamentalGroup.smul_combo_self
+  - Lumenary.FundamentalGroup.straightLineHomotopy
+  - Lumenary.FundamentalGroup.paths_homotopic_in_vector_space
+  - Lumenary.FundamentalGroup.loop_nullhomotopic
+  - Lumenary.FundamentalGroup.vector_space_simply_connected
+  - Lumenary.FundamentalGroup.map_comp
+  - Lumenary.FundamentalGroup.change_of_basepoint
+  - Lumenary.FundamentalGroup.fact_one_pos
+  - Lumenary.FundamentalGroup.covering_real_circle
+  - Lumenary.FundamentalGroup.path_lifting
+  - Lumenary.FundamentalGroup.pi1_circle
+  - Lumenary.FundamentalGroup.windingNumber_loop
+  - Lumenary.FundamentalGroup.circle_not_retract
+  - Lumenary.FundamentalGroup.brouwer_interval
+  - Lumenary.FundamentalGroup.free_group_not_comm
+compute: [fundamental_group_winding_numbers, fundamental_group_free_group_covers]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Loops that cannot be undone">
+
+A goat tethered by a long rope wanders around a field in the hills above Arusha and, by evening, has walked twice around a tree. The rope is now wrapped twice around the trunk. However the goat wanders, it cannot unwrap the rope without walking back around the tree. Had there been no tree, every tangle could have been pulled straight. The obstruction is the *hole* in the field where the trunk stands, and the number of turns is a whole number that no continuous wandering can change.
+
+That simple picture leads to deep theorems. Lay a paper map of Santiago flat on a table in Santiago: some point on the map lies exactly above the point of the city it represents. Stir a cup of tea without splashing (and think of the surface as a disc): at every moment some point of the surface is back where it started. These are instances of **Brouwer's fixed-point theorem**. Its proof in two dimensions is a statement about loops around a hole.
+
+The previous lesson, <TopicLink id="math.geom.point-set-topology">metric spaces and point-set topology</TopicLink>, could tell $\R$ from $\R^2$ by removing a point and counting the pieces. It could not tell $\R^2$ from $\R^3$: both stay connected when a point is removed. What differs is the loops. In $\R^2 \setminus \{0\}$ a loop around the origin cannot be shrunk to a point; in $\R^3 \setminus \{0\}$ every loop can (slip it over the "top"). Henri Poincaré turned this into algebra in 1895. To each space with a basepoint he attached a group, the **fundamental group** $\pi_1$, whose elements are loops up to continuous deformation. This lesson builds that group, computes it for the circle, and uses it.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Deforming loops">
+
+Take the plane with a hole at the origin, and loops that start and end at a basepoint $x_0 = (1, 0)$. Two loops are **homotopic** if one can be continuously deformed into the other, keeping the basepoint fixed and never crossing the hole. A loop that does not go around the hole can be shrunk to the constant loop. A loop that goes around once anticlockwise cannot — but any two such loops can be deformed into each other, however much they wiggle. What survives deformation is the **winding number**: how many times the loop goes around the hole, counted with sign.
+
+Loops can be **composed**: run $\gamma$, then $\delta$. Winding numbers add. Every loop has an **inverse**, the same loop run backwards, and $\gamma$ followed by its reverse can be shrunk away. So the deformation classes of loops form a group, and for the punctured plane — or for the circle — it should be $\Z$. Proving that the winding number is really well defined, and that it classifies loops completely, is the heart of the lesson. The tool is a **covering map**: the real line wound round and round above the circle like a spiral staircase. A loop in the circle is followed upstairs, and how many floors it climbs is its winding number.
+
+<Figure caption="The covering map p : ℝ → S¹, drawn as a helix above a circle; p projects straight down. The points above the basepoint (dots) form a copy of ℤ. A loop in the circle lifts to a path on the helix, which ends on the floor where its winding number says.">
+<svg viewBox="0 0 300 250" role="img" aria-label="A helix with three turns above an ellipse representing a circle; dots on the helix lie directly above a point on the circle, joined by a dashed vertical line">
+  <polyline points="150,130 166,129 181,129 195,129 208,130 219,132 228,133 235,135 239,138 240,140 239,142 235,145 228,147 219,149 208,150 195,151 181,151 166,151 150,150 134,149 119,147 105,144 92,141 81,138 72,134 65,129 61,125 60,120 61,116 65,111 72,107 81,103 92,99 105,96 119,94 134,92 150,90 166,90 181,89 195,90 208,91 219,92 228,94 235,96 239,98 240,100 239,103 235,105 228,107 219,109 208,110 195,111 181,112 166,111 150,111 134,109 119,107 105,105 92,102 81,98 72,94 65,90 61,85 60,81 61,76 65,72 72,67 81,63 92,60 105,57 119,54 134,52 150,51 166,50 181,50 195,50 208,51 219,52 228,54 235,56 239,59 240,61 239,63 235,66 228,68 219,69 208,71 195,72 181,72 166,72 150,71 134,70 119,68 105,65 92,62 81,58 72,54 65,50 61,46 60,41 61,37 65,32 72,28 81,24 92,20 105,17 119,15 134,13 150,11" fill="none" stroke="var(--formal)" strokeWidth="2.5" />
+  <ellipse cx="150" cy="205" rx="90" ry="20" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="150" y1="71" x2="150" y2="225" stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="4 3" />
+  <circle cx="150" cy="150" r="4" fill="var(--gold)" />
+  <circle cx="150" cy="111" r="4" fill="var(--gold)" />
+  <circle cx="150" cy="71" r="4" fill="var(--gold)" />
+  <circle cx="150" cy="225" r="4.5" fill="var(--human)" />
+  <text x="248" y="60" fontSize="14" fill="var(--formal)">ℝ</text>
+  <text x="248" y="210" fontSize="14" fill="var(--ink-2)">S¹</text>
+  <text x="270" y="140" fontSize="13" fill="var(--ink-2)">p</text>
+  <line x1="265" y1="110" x2="265" y2="175" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <polygon points="265,182 260,172 270,172" fill="var(--ink-2)" />
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Homotopy, paths and the fundamental group">
+
+Throughout, $I = [0, 1]$ and all maps are continuous.
+
+<Definition term="homotopy">
+
+A **homotopy** between maps $f, g : X \to Y$ is a map $F : X \times I \to Y$ with $F(x, 0) = f(x)$ and $F(x, 1) = g(x)$; then $f \simeq g$. A map is **null-homotopic** if it is homotopic to a constant map. A **homotopy equivalence** is a map $f : X \to Y$ with a map $g : Y \to X$ such that $g \circ f \simeq \mathrm{id}_X$ and $f \circ g \simeq \mathrm{id}_Y$. A space is **contractible** if it is homotopy equivalent to a point.
+
+</Definition>
+
+<Definition term="paths and path homotopy">
+
+A **path** from $x_0$ to $x_1$ is a map $\gamma : I \to X$ with $\gamma(0) = x_0$ and $\gamma(1) = x_1$; a **loop** at $x_0$ is a path from $x_0$ to $x_0$. Two paths $\gamma, \delta$ from $x_0$ to $x_1$ are **path-homotopic**, $\gamma \simeq \delta$, if there is a homotopy $F : I \times I \to X$ with
+
+$$
+F(s, 0) = \gamma(s), \quad F(s, 1) = \delta(s), \quad F(0, t) = x_0, \quad F(1, t) = x_1 .
+$$
+
+So the endpoints stay fixed throughout. Write $[\gamma]$ for the path-homotopy class of $\gamma$.
+
+</Definition>
+
+<Definition term="concatenation and reverse">
+
+If $\gamma$ ends where $\delta$ begins, the **concatenation** $\gamma \cdot \delta$ runs $\gamma$ at double speed, then $\delta$:
+
+$$
+(\gamma \cdot \delta)(s) = \begin{cases} \gamma(2s) & 0 \le s \le \tfrac12, \\ \delta(2s - 1) & \tfrac12 \le s \le 1. \end{cases}
+$$
+
+It is continuous by the pasting lemma. The **reverse** of $\gamma$ is $\bar\gamma(s) = \gamma(1 - s)$, and $c_{x}$ denotes the constant path at $x$.
+
+</Definition>
+
+<Definition term="fundamental group">
+
+The **fundamental group** $\pi_1(X, x_0)$ is the set of path-homotopy classes of loops at $x_0$, with the product $[\gamma][\delta] = [\gamma \cdot \delta]$. A map $f : X \to Y$ induces $f_* : \pi_1(X, x_0) \to \pi_1(Y, f(x_0))$, $f_*[\gamma] = [f \circ \gamma]$. A path-connected space with trivial fundamental group is **simply connected**.
+
+</Definition>
+
+<Definition term="covering map">
+
+A map $p : E \to B$ is a **covering map** if every $b \in B$ has an open neighbourhood $U$ that is **evenly covered**: $p^{-1}(U)$ is a disjoint union of open sets (the **sheets** over $U$), each mapped homeomorphically onto $U$ by $p$. A **lift** of a map $f : Z \to B$ is a map $\tilde f : Z \to E$ with $p \circ \tilde f = f$.
+
+</Definition>
+
+<Example title="The basic covering">
+
+$p : \R \to S^1 \subseteq \C$, $p(x) = e^{2\pi i x}$, is a covering map. For $b = e^{2\pi i \theta}$, the open arc $U$ of points $e^{2\pi i x}$ with $|x - \theta| < 1/2$ is evenly covered: $p^{-1}(U)$ is the disjoint union of the intervals $(\theta + n - \tfrac12, \theta + n + \tfrac12)$, $n \in \Z$. So is $z \mapsto z^n$ from $S^1$ to itself, for $n \ne 0$: every point has $|n|$ preimages, and small arcs are evenly covered.
+
+</Example>
+
+</Section>
+
+<Section id="examples" kind="examples" title="A first gallery">
+
+The theorems below justify every entry of this table.
+
+| Space | $\pi_1$ | Reason |
+| --- | --- | --- |
+| $\R^n$, a convex set, a disc | trivial | straight-line homotopy (Example below) |
+| circle $S^1$, punctured plane, annulus | $\Z$ | Theorem 6 (and homotopy equivalence) |
+| torus $S^1 \times S^1$ | $\Z \times \Z$ | product formula; also van Kampen |
+| figure eight $S^1 \vee S^1$ | free group $F_2$ on two generators | van Kampen (Theorem 9) |
+| sphere $S^n$, $n \ge 2$ | trivial | van Kampen |
+| real projective plane $\R P^2$ | $\Z/2$ | van Kampen, or the double cover $S^2 \to \R P^2$ |
+| closed orientable surface of genus $g$ | $\langle a_1, b_1, \dots, a_g, b_g \mid [a_1, b_1] \cdots [a_g, b_g] \rangle$ | van Kampen |
+
+<Example title="Convex sets are simply connected">
+
+If $C \subseteq \R^n$ is convex and $\gamma, \delta$ are paths in $C$ from $x_0$ to $x_1$, then $F(s, t) = (1 - t)\gamma(s) + t\delta(s)$ stays in $C$ (by convexity), is continuous, equals $\gamma$ at $t = 0$ and $\delta$ at $t = 1$, and keeps the endpoints fixed because $(1 - t)x_0 + t x_0 = x_0$. So any two paths with the same endpoints are path-homotopic; in particular every loop is null-homotopic. This **straight-line homotopy** is formalised in Lean below.
+
+</Example>
+
+<Example title="Products">
+
+A loop in $X \times Y$ is a pair of loops, and a path homotopy is a pair of path homotopies, so $\pi_1(X \times Y, (x_0, y_0)) \cong \pi_1(X, x_0) \times \pi_1(Y, y_0)$. For the torus this gives $\Z \times \Z$: a loop is determined up to homotopy by how many times it goes around "the long way" and "the short way".
+
+</Example>
+
+<Example title="Same group, different spaces">
+
+$S^2$ and a single point both have trivial fundamental group, but they are not homeomorphic (and not even homotopy equivalent: $S^2$ has a non-trivial second homotopy group). The fundamental group is an invariant, not a complete classification.
+
+</Example>
+
+</Section>
+
+<Section id="group" kind="proof" title="The fundamental group is a group, and an invariant">
+
+<Theorem name="Lemma 1 (reparametrisation)">
+
+If $\varphi : I \to I$ is continuous with $\varphi(0) = 0$ and $\varphi(1) = 1$, then $\gamma \circ \varphi \simeq \gamma$ for every path $\gamma$.
+
+</Theorem>
+
+<Proof>
+
+$F(s, t) = \gamma\big((1 - t)\varphi(s) + ts\big)$ is defined because $I$ is convex, it is continuous, it equals $\gamma \circ \varphi$ at $t = 0$ and $\gamma$ at $t = 1$, and $F(0, t) = \gamma(0)$, $F(1, t) = \gamma(1)$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (π₁ is a group)">
+
+Path homotopy is an equivalence relation, concatenation is well defined on classes, and $\pi_1(X, x_0)$ is a group with identity $[c_{x_0}]$ and inverses $[\gamma]^{-1} = [\bar\gamma]$.
+
+</Theorem>
+
+<Proof>
+
+*Equivalence relation.* Reflexivity: $F(s, t) = \gamma(s)$. Symmetry: $F(s, 1 - t)$. Transitivity: run a homotopy from $\gamma$ to $\delta$ for $t \in [0, \tfrac12]$ and one from $\delta$ to $\varepsilon$ for $t \in [\tfrac12, 1]$, at double speed.
+
+*Well defined.* If $F$ is a path homotopy from $\gamma$ to $\gamma'$ and $G$ from $\delta$ to $\delta'$, then placing $F$ on $[0, \tfrac12] \times I$ and $G$ on $[\tfrac12, 1] \times I$ (with $s$ rescaled) gives a path homotopy from $\gamma \cdot \delta$ to $\gamma' \cdot \delta'$; the pieces agree on $s = \tfrac12$, where both equal the common endpoint.
+
+*Associativity.* $(\gamma \cdot \delta) \cdot \varepsilon$ runs $\gamma, \delta, \varepsilon$ on $[0, \tfrac14], [\tfrac14, \tfrac12], [\tfrac12, 1]$, while $\gamma \cdot (\delta \cdot \varepsilon)$ uses $[0, \tfrac12], [\tfrac12, \tfrac34], [\tfrac34, 1]$. So $(\gamma \cdot \delta) \cdot \varepsilon = (\gamma \cdot (\delta \cdot \varepsilon)) \circ \varphi$, where $\varphi$ is piecewise linear, mapping $[0, \tfrac14] \to [0, \tfrac12]$, $[\tfrac14, \tfrac12] \to [\tfrac12, \tfrac34]$ and $[\tfrac12, 1] \to [\tfrac34, 1]$. Apply Lemma 1.
+
+*Identity.* $c_{x_0} \cdot \gamma = \gamma \circ \varphi$ with $\varphi(s) = \max(0, 2s - 1)$, and similarly for $\gamma \cdot c_{x_0}$. Apply Lemma 1.
+
+*Inverses.* $F(s, t) = \gamma\big(2s(1 - t)\big)$ for $s \le \tfrac12$ and $F(s, t) = \gamma\big((2 - 2s)(1 - t)\big)$ for $s \ge \tfrac12$ agree at $s = \tfrac12$, equal $\gamma \cdot \bar\gamma$ at $t = 0$ and the constant loop at $t = 1$, and fix both ends at $x_0$. So $\gamma \cdot \bar\gamma \simeq c_{x_0}$, and likewise $\bar\gamma \cdot \gamma \simeq c_{x_0}$.
+
+</Proof>
+
+<Theorem name="Proposition 3 (basepoints)">
+
+A path $h$ from $x_0$ to $x_1$ gives an isomorphism $\beta_h : \pi_1(X, x_0) \to \pi_1(X, x_1)$, $\beta_h[\gamma] = [\bar h \cdot \gamma \cdot h]$. So for path-connected $X$ the group $\pi_1(X, x_0)$ does not depend on $x_0$, up to isomorphism.
+
+</Theorem>
+
+<Proof>
+
+$\beta_h[\gamma] \, \beta_h[\delta] = [\bar h \cdot \gamma \cdot h \cdot \bar h \cdot \delta \cdot h] = [\bar h \cdot \gamma \cdot \delta \cdot h] = \beta_h([\gamma][\delta])$, using $h \cdot \bar h \simeq c_{x_0}$ and the group laws of Theorem 2 (which hold for paths, not only loops, with the same proofs). The inverse of $\beta_h$ is $\beta_{\bar h}$.
+
+</Proof>
+
+The isomorphism $\beta_h$ depends on the homotopy class of $h$: changing $h$ composes $\beta_h$ with conjugation by a loop. So when $\pi_1$ is non-abelian, "the" fundamental group of a path-connected space is defined only up to *non-canonical* isomorphism.
+
+<Theorem name="Proposition 4 (functoriality and homotopy invariance)">
+
+(a) $f_*$ is a homomorphism, $(g \circ f)_* = g_* \circ f_*$ and $(\mathrm{id}_X)_* = \mathrm{id}$. (b) If $F : X \times I \to Y$ is a homotopy from $f$ to $g$ with $F(x_0, t) = y_0$ for all $t$, then $f_* = g_*$. (c) A homotopy equivalence $f : X \to Y$ induces an isomorphism $\pi_1(X, x_0) \cong \pi_1(Y, f(x_0))$.
+
+</Theorem>
+
+<Proof>
+
+(a) $f \circ (\gamma \cdot \delta) = (f \circ \gamma) \cdot (f \circ \delta)$, and $f$ carries path homotopies to path homotopies. The other two equations hold already on loops.
+
+(b) For a loop $\gamma$ at $x_0$, $(s, t) \mapsto F(\gamma(s), t)$ is a path homotopy from $f \circ \gamma$ to $g \circ \gamma$; its ends stay at $F(x_0, t) = y_0$.
+
+(c) When a homotopy $F$ from $f$ to $g$ does not fix the basepoint, one shows instead that $g_* = \beta_h \circ f_*$, where $h(t) = F(x_0, t)$ is the track of the basepoint; see Hatcher (2002), Lemma 1.19. Now let $g$ be a homotopy inverse of $f$. Applying this to $g \circ f \simeq \mathrm{id}_X$ shows that $g_* \circ f_*$ is a change-of-basepoint isomorphism, so $g_* : \pi_1(Y, f(x_0)) \to \pi_1(X, g f(x_0))$ is surjective. Applying it to $f \circ g \simeq \mathrm{id}_Y$ shows that $f_* \circ g_*$ is an isomorphism, so the same $g_*$ is injective. Hence $g_*$ is an isomorphism, and so is $f_* = g_*^{-1} \circ (g_* \circ f_*)$.
+
+</Proof>
+
+In particular contractible spaces are simply connected, and the punctured plane, the annulus and the solid torus all have the same fundamental group as the circle — each deformation retracts onto a circle.
+
+</Section>
+
+<Section id="circle" kind="proof" title="Lifting, and the fundamental group of the circle">
+
+<Theorem name="Theorem 5 (path and homotopy lifting)">
+
+Let $p : E \to B$ be a covering map. (a) For every path $\gamma$ in $B$ and every $e \in p^{-1}(\gamma(0))$ there is a unique lift $\tilde\gamma$ with $\tilde\gamma(0) = e$. (b) For every map $F : I \times I \to B$ and every $e \in p^{-1}(F(0, 0))$ there is a unique lift $\tilde F$ with $\tilde F(0, 0) = e$. If $F$ is a path homotopy, so is $\tilde F$.
+
+</Theorem>
+
+<Proof>
+
+(a) *Existence.* The sets $\gamma^{-1}(U)$, for $U$ evenly covered, form an open cover of the compact metric space $I$. By the Lebesgue number lemma there is a subdivision $0 = s_0 < s_1 < \dots < s_m = 1$ such that each $\gamma([s_{k-1}, s_k])$ lies in one evenly covered set $U_k$. Suppose $\tilde\gamma$ is defined on $[0, s_{k-1}]$. Let $\tilde U$ be the sheet over $U_k$ that contains $\tilde\gamma(s_{k-1})$, and set $\tilde\gamma = (p|_{\tilde U})^{-1} \circ \gamma$ on $[s_{k-1}, s_k]$. The two definitions agree at $s_{k-1}$, so the pasting lemma keeps $\tilde\gamma$ continuous. After $m$ steps, $\tilde\gamma$ is defined on $I$.
+
+*Uniqueness.* Let $\tilde\gamma, \hat\gamma$ be lifts with the same start, and $A = \{s \mid \tilde\gamma(s) = \hat\gamma(s)\}$, which contains $0$. Given $s$, choose an evenly covered $U \ni \gamma(s)$ and the sheets $\tilde U \ni \tilde\gamma(s)$, $\hat U \ni \hat\gamma(s)$. On a small interval $J$ around $s$, both lifts stay in their sheets. If $\tilde U = \hat U$, both equal $(p|_{\tilde U})^{-1} \circ \gamma$ on $J$, so $J \subseteq A$. If $\tilde U \ne \hat U$ the sheets are disjoint, so $J \cap A = \varnothing$. Hence $A$ and its complement are open; $I$ is connected, so $A = I$.
+
+(b) The same argument on the square: subdivide $I \times I$ into small squares, each mapped into an evenly covered set, and lift them one at a time, row by row; each new square meets the part already lifted in a connected set (an edge, or two edges), so the lift agrees there. Uniqueness follows from (a) applied to the segments $s \mapsto (s, t)$ and $t \mapsto (0, t)$. If $F$ is a path homotopy, then $t \mapsto F(0, t)$ and $t \mapsto F(1, t)$ are constant, and by uniqueness so are their lifts. Details: Hatcher (2002), Proposition 1.30.
+
+</Proof>
+
+<Theorem name="Theorem 6 (Poincaré: the fundamental group of the circle)">
+
+$\pi_1(S^1, 1) \cong \Z$. The isomorphism sends the class of a loop $\gamma$ to its **degree**: $\tilde\gamma(1)$, where $\tilde\gamma$ is the lift of $\gamma$ to $\R$ with $\tilde\gamma(0) = 0$ under $p(x) = e^{2\pi i x}$.
+
+</Theorem>
+
+<Proof>
+
+The lift ends in $p^{-1}(1) = \Z$, so $\deg \gamma = \tilde\gamma(1)$ is an integer.
+
+*Well defined.* If $F$ is a path homotopy from $\gamma$ to $\gamma'$, lift it with $\tilde F(0, 0) = 0$ (Theorem 5b). By uniqueness, $\tilde F(\cdot, 0) = \tilde\gamma$ and $\tilde F(\cdot, 1) = \tilde\gamma'$. The path $t \mapsto \tilde F(1, t)$ lifts the constant path at $1$, so it lies in the discrete set $\Z$; a path in a discrete space is constant. Hence $\tilde\gamma(1) = \tilde\gamma'(1)$.
+
+*Homomorphism.* Let $\tilde\gamma$ lift $\gamma$ from $0$ to $m$ and $\tilde\delta$ lift $\delta$ from $0$ to $n$. The translate $\tilde\delta + m$ also lifts $\delta$ (as $p(x + m) = p(x)$), from $m$ to $m + n$. So $\tilde\gamma \cdot (\tilde\delta + m)$ lifts $\gamma \cdot \delta$ from $0$ to $m + n$: $\deg(\gamma \cdot \delta) = \deg \gamma + \deg \delta$.
+
+*Surjective.* The loop $\omega_n(s) = e^{2\pi i n s}$ lifts to $s \mapsto ns$, so it has degree $n$.
+
+*Injective.* If $\deg \gamma = 0$, then $\tilde\gamma$ is a loop at $0$ in $\R$, and $\tilde F(s, t) = (1 - t)\tilde\gamma(s)$ is a path homotopy from $\tilde\gamma$ to the constant loop. Then $p \circ \tilde F$ is a path homotopy from $\gamma$ to the constant loop.
+
+</Proof>
+
+The same proof, with the covering $\C \to \C \setminus \{0\}$, $z \mapsto e^z$, shows that $\pi_1(\C \setminus \{0\}) \cong \Z$, with the winding number as the isomorphism.
+
+</Section>
+
+<Section id="applications" kind="proof" title="Brouwer and the fundamental theorem of algebra">
+
+<Theorem name="Corollary 7 (no retraction; Brouwer's fixed-point theorem)">
+
+(a) There is no map $r : D^2 \to S^1$ with $r(x) = x$ for all $x \in S^1$. (b) Every map $f : D^2 \to D^2$ of the closed disc to itself has a fixed point.
+
+</Theorem>
+
+<Proof>
+
+(a) Let $i : S^1 \to D^2$ be the inclusion. If $r \circ i = \mathrm{id}_{S^1}$, then $r_* \circ i_* = \mathrm{id}$ on $\pi_1(S^1) \cong \Z$ (Proposition 4a). But $i_*$ lands in $\pi_1(D^2)$, which is trivial (the disc is convex). So the identity of $\Z$ would factor through the trivial group, which is absurd.
+
+(b) Suppose $f(x) \ne x$ for every $x$. Let $r(x)$ be the point where the ray from $f(x)$ through $x$ leaves the disc. Explicitly, with $u = x - f(x) \ne 0$, $r(x) = x + \tau u$, where $\tau \ge 0$ solves $|x + \tau u|^2 = 1$:
+
+$$
+\tau = \frac{-\langle x, u\rangle + \sqrt{\langle x, u\rangle^2 + |u|^2 (1 - |x|^2)}}{|u|^2}.
+$$
+
+The square root is of a non-negative continuous function (as $|x| \le 1$), so $r$ is continuous. If $|x| = 1$, then $\langle x, u\rangle = 1 - \langle x, f(x)\rangle \ge 0$ (Cauchy–Schwarz and $|f(x)| \le 1$), so $\tau = 0$ and $r(x) = x$. Thus $r$ is a retraction of $D^2$ onto $S^1$, contradicting (a).
+
+</Proof>
+
+The same theorem holds for the closed ball $D^n$ in every dimension, with $\pi_1$ replaced by higher homotopy or homology groups; in dimension one it is just the intermediate value theorem (formalised below as `brouwer_interval`). The hypotheses matter: a rotation of an annulus, the antipodal map of a sphere and the map $x \mapsto (x + e_1)/2$ of the *open* disc have no fixed points.
+
+<Theorem name="Corollary 8 (fundamental theorem of algebra)">
+
+Every non-constant polynomial with complex coefficients has a complex root.
+
+</Theorem>
+
+<Proof>
+
+We may take $p(z) = z^n + a_{n-1} z^{n-1} + \dots + a_0$ with $n \ge 1$. Suppose $p$ has no root. For $r \ge 0$ define the loop
+
+$$
+f_r(s) = \frac{p(r e^{2\pi i s}) / |p(r e^{2\pi i s})|}{p(r) / |p(r)|}
+$$
+
+in $S^1$ at $1$. As $r$ varies, $(s, r) \mapsto f_r(s)$ is a path homotopy between any two of these loops, and $f_0$ is constant. So $[f_r] = 0$ in $\pi_1(S^1)$ for all $r$.
+
+Now fix $R > \max(1, |a_0| + \dots + |a_{n-1}|)$. For $|z| = R$,
+
+$$
+|a_{n-1} z^{n-1} + \dots + a_0| \le (|a_{n-1}| + \dots + |a_0|) R^{n-1} < R^n = |z^n|,
+$$
+
+so $p_t(z) = z^n + t(a_{n-1} z^{n-1} + \dots + a_0)$ has no zero on $|z| = R$ for $t \in [0, 1]$. Replacing $p$ by $p_t$ in the formula for $f_R$ gives a path homotopy from $f_R$ (at $t = 1$) to $s \mapsto e^{2\pi i n s}$ (at $t = 0$), whose degree is $n \ne 0$. This contradicts $[f_R] = 0$.
+
+</Proof>
+
+</Section>
+
+<Section id="van-kampen" kind="proof" title="Gluing spaces: van Kampen, and covering spaces">
+
+To compute $\pi_1$ of a space built from simpler pieces, one glues the groups.
+
+<Theorem name="Theorem 9 (Seifert–van Kampen; stated, proof referenced)">
+
+Let $X = U \cup V$ with $U, V$ open and path-connected, $U \cap V$ path-connected, and $x_0 \in U \cap V$. Then the inclusions induce an isomorphism
+
+$$
+\pi_1(X, x_0) \cong \pi_1(U, x_0) *_{\pi_1(U \cap V, x_0)} \pi_1(V, x_0),
+$$
+
+the free product of $\pi_1(U)$ and $\pi_1(V)$ modulo the relations $i_U(\omega) = i_V(\omega)$ for $\omega \in \pi_1(U \cap V)$.
+
+</Theorem>
+
+The proof subdivides a loop, or a homotopy, into pieces lying in $U$ or in $V$ by the Lebesgue number lemma; see Hatcher (2002), Theorem 1.20. In practice it is used like this:
+
+- **Wedge of circles.** For $S^1 \vee S^1$, take $U$ and $V$ to be each circle together with a short open arc of the other at the wedge point. Each deformation retracts to a circle and $U \cap V$ is contractible, so $\pi_1(S^1 \vee S^1) \cong \Z * \Z = F_2$, the **free group** on two generators $a, b$: its elements are reduced words such as $a b^2 a^{-1} b$. In particular $ab \ne ba$, so **fundamental groups need not be abelian**.
+- **Spheres.** For $S^n$, $n \ge 2$, take $U$ and $V$ to be the complements of the north and south poles. Each is homeomorphic to $\R^n$, and $U \cap V \cong S^{n-1} \times \R$ is path-connected when $n \ge 2$. So $\pi_1(S^n)$ is trivial. (For $n = 1$ the intersection is two arcs and the theorem does not apply — rightly so.)
+- **Surfaces.** The torus is a square with sides glued by the word $a b a^{-1} b^{-1}$. Take $U$ to be the open square and $V$ a neighbourhood of the glued boundary, which deformation retracts onto the figure eight $a \cup b$. Then $U \cap V$ is an annulus, whose generator goes once around the boundary of the square, i.e. maps to $a b a^{-1} b^{-1}$ in $\pi_1(V)$. So $\pi_1(T^2) = \langle a, b \mid a b a^{-1} b^{-1} \rangle \cong \Z^2$. The genus-$g$ surface, a $4g$-gon glued by $[a_1, b_1] \cdots [a_g, b_g]$, has $\pi_1 = \langle a_1, \dots, b_g \mid [a_1, b_1] \cdots [a_g, b_g] \rangle$, whose abelianisation is $\Z^{2g}$. Different genera give different groups, so the surfaces are pairwise non-homeomorphic. The projective plane, a disc with antipodal boundary points glued (word $aa$), has $\pi_1 = \langle a \mid a^2 \rangle \cong \Z/2$.
+
+Covering spaces turn $\pi_1$ into a Galois-like correspondence.
+
+<Theorem name="Theorem 10 (classification of covering spaces; stated, proof referenced)">
+
+Let $B$ be path-connected, locally path-connected and semilocally simply connected, with basepoint $b_0$. Then $(E, e_0) \mapsto p_*\pi_1(E, e_0)$ is a bijection from isomorphism classes of connected based covering spaces $p : (E, e_0) \to (B, b_0)$ onto subgroups of $\pi_1(B, b_0)$. Forgetting basepoints, connected coverings correspond to conjugacy classes of subgroups. The number of sheets equals the index of the subgroup. The trivial subgroup corresponds to the simply connected **universal cover** $\tilde B$, whose group of deck transformations is isomorphic to $\pi_1(B, b_0)$.
+
+</Theorem>
+
+The proof (Hatcher 2002, Theorem 1.38) constructs $\tilde B$ as the space of homotopy classes of paths starting at $b_0$ and obtains the other coverings as its quotients. Examples: the coverings of $S^1$ are $\R \to S^1$ (subgroup $0$) and $z \mapsto z^n$ (subgroup $n\Z$); the universal cover of the torus is the plane, with deck group $\Z^2$ acting by translations. An $n$-sheeted covering of the figure eight is described by two permutations of the $n$ sheets (where the lifts of $a$ and $b$ lead), and it is connected when they act transitively — the second experiment below counts them.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Homotopy in Lean and Mathlib">
+
+Mathlib's notions match the lesson's, with one difference of convention: a homotopy $F(t, s)$ takes the *time* first. `Path x y` is a bundled continuous map from the unit interval with the right endpoints, `Path.Homotopy p q` a homotopy rel endpoints, and `FundamentalGroup X x` the automorphism group of `x` in the fundamental groupoid (so $\pi_1$ is literally a groupoid's vertex group — see the categories viewpoint).
+
+The straight-line homotopy of the convex-set example, and its consequences. The helper lemma is the identity $(1 - t)v + tv = v$ that keeps endpoints fixed:
+
+<Lean decl="Lumenary.FundamentalGroup.smul_combo_self" />
+
+<Lean decl="Lumenary.FundamentalGroup.straightLineHomotopy" />
+
+<Lean decl="Lumenary.FundamentalGroup.paths_homotopic_in_vector_space" />
+
+<Lean decl="Lumenary.FundamentalGroup.loop_nullhomotopic" />
+
+<Lean decl="Lumenary.FundamentalGroup.vector_space_simply_connected" />
+
+Functoriality (Proposition 4a) and change of basepoint (Proposition 3):
+
+<Lean decl="Lumenary.FundamentalGroup.map_comp" />
+
+<Lean decl="Lumenary.FundamentalGroup.change_of_basepoint" />
+
+The circle is `AddCircle 1`, that is $\R/\Z$; the covering $p$ is the quotient map. Mathlib proves the covering property, path lifting (Theorem 5a), and Theorem 6 itself, where the isomorphism is the winding number:
+
+<Lean decl="Lumenary.FundamentalGroup.fact_one_pos" />
+
+<Lean decl="Lumenary.FundamentalGroup.covering_real_circle" />
+
+<Lean decl="Lumenary.FundamentalGroup.path_lifting" />
+
+<Lean decl="Lumenary.FundamentalGroup.pi1_circle" />
+
+<Lean decl="Lumenary.FundamentalGroup.windingNumber_loop" />
+
+Corollary 7(a), proved here in a more general form: the circle is not a retract of *any* simply connected space. The proof is the lesson's, phrased with winding numbers: the loop going once around is carried to a null-homotopic loop with the same winding number. Since the disc is convex, hence simply connected, this is exactly the no-retraction theorem. What is *not* formalised is the step from no-retraction to Brouwer's theorem (the continuity of the ray construction in Corollary 7b).
+
+<Lean decl="Lumenary.FundamentalGroup.circle_not_retract" />
+
+Brouwer's theorem in dimension one, from the intermediate value theorem:
+
+<Lean decl="Lumenary.FundamentalGroup.brouwer_interval" />
+
+Finally, the free group on two generators — by van Kampen, $\pi_1$ of the figure eight — is not abelian. The proof maps it to the symmetric group $S_3$ and lets `decide` compare two permutations:
+
+<Lean decl="Lumenary.FundamentalGroup.free_group_not_comm" />
+
+**What is and is not formalised.** Independent: the straight-line homotopy and simple connectivity of vector spaces, functoriality, the no-retraction theorem, the one-dimensional Brouwer theorem and the non-commutativity of $F_2$. Cited from Mathlib: the covering $\R \to \R/\Z$, path lifting, $\pi_1(S^1) \cong \Z$ and change of basepoint. Not formalised: Corollary 7(b) and Corollary 8, the Seifert–van Kampen theorem (Mathlib has a categorical "van Kampen colimit" notion but not the topological theorem), the identification $\pi_1(S^1 \vee S^1) \cong F_2$, and Theorem 10.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Lifting loops by computer, and counting coverings">
+
+Path lifting is an algorithm. Follow a sampled loop and, at each step, add the change of angle taken in $(-\pi, \pi]$. That is exactly the step-by-step construction in the proof of Theorem 5, with the samples playing the role of the subdivision. The total change divided by $2\pi$ is the winding number; the program compares it with the contour integral $\frac{1}{2\pi i}\oint dz/z$, then watches a homotopy of circles and runs the argument of Corollary 8 on a cubic.
+
+<Python id="fundamental_group_winding_numbers" />
+
+This is numerical evidence: the lift is correct only if consecutive samples turn by less than $\pi$ — the computational shadow of the Lebesgue number in the proof.
+
+The second program works in $\pi_1(S^1 \vee S^1) = F_2$. It reduces words, detects $ab \ne ba$ with a homomorphism to $S_3$ (as the Lean proof does), and counts covering spaces of the figure eight by counting pairs of permutations.
+
+<Python id="fundamental_group_free_group_covers" />
+
+The counts are exact for $n \le 5$ sheets. The numbers $1, 3, 13, 71, 461$ of subgroups of index $n$ in $F_2$ grow faster than exponentially, while $\Z$ has exactly one subgroup of each index. That is one numerical measure of how much bigger a free group is than the fundamental group of the circle.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: winding numbers and universal covers">
+
+Drag the hole, choose a loop or draw your own, and press **Play**: the arrow from the hole to the moving point sweeps out the winding number, the degree of Theorem 6. The integral beside it is computed independently. Then add a second hole and try the figure-eight loop: it winds $-1$ and $+1$ around the two holes. Try to imagine the commutator loop $aba^{-1}b^{-1}$: it winds $0$ times around each hole, yet it cannot be shrunk, because $\pi_1$ of the twice-punctured plane is the non-abelian group $F_2$.
+
+<WindingNumber loop="circle" loops={["circle", "twice", "miss", "figureEight"]} title="Loops around holes: the winding number" />
+
+The torus is a square with opposite sides glued. Its universal cover is the plane, tiled by copies of the square; deck transformations are the translations by $\Z^2 = \pi_1(T^2)$. Walk across a seam in the tiling view and compare with the flat square. For the Klein bottle, alternate columns are mirror images, and the deck group is a non-abelian group.
+
+<SurfaceGluing surface="torus" surfaces={["torus", "klein"]} showTiling title="Universal covers: the plane above the torus" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Fundamental groups are always abelian."** $\pi_1(S^1) \cong \Z$ and $\pi_1(T^2) \cong \Z^2$ are abelian, but $\pi_1(S^1 \vee S^1)$ is the free group $F_2$, in which $ab \ne ba$; the surface groups of genus $g \ge 2$ are non-abelian too. (The fundamental group of a topological group *is* abelian — an Eckmann–Hilton argument.)
+
+</Misconception>
+
+<Misconception>
+
+**"Spaces with isomorphic fundamental groups are homeomorphic."** $S^2$, $S^3$ and a point all have trivial $\pi_1$; $S^1$, the annulus and the solid torus all have $\pi_1 \cong \Z$. The fundamental group only sees the space up to homotopy, and even then only its "one-dimensional" part. The Poincaré conjecture, proved by Grigori Perelman in 2002–2003, says that among closed 3-manifolds, $\pi_1 = 1$ does force $S^3$ — a deep theorem about one special situation.
+
+</Misconception>
+
+<Misconception>
+
+**"A loop that winds zero times around every hole can be shrunk."** In the plane with two holes, the commutator $aba^{-1}b^{-1}$ of the loops $a$, $b$ around them winds zero times around each hole but is not null-homotopic, since $aba^{-1}b^{-1} \ne 1$ in $F_2$. Winding numbers only see the abelianisation $\Z^2$ of $F_2$.
+
+</Misconception>
+
+<Misconception>
+
+**"Homotopic loops are the same as freely homotopic loops."** In $\pi_1(X, x_0)$ the basepoint must stay fixed during the homotopy. If the basepoint may move, loops are classified by the *conjugacy classes* of $\pi_1$ instead. For abelian groups like $\Z$ there is no difference; in $F_2$, the loops $ab$ and $ba$ are freely homotopic but not homotopic rel basepoint.
+
+</Misconception>
+
+<Misconception>
+
+**"A deformation may pass through the hole if it comes out the other side."** A homotopy is a map into $X$ at every moment. A loop around the origin of $\R^2 \setminus \{0\}$ cannot be dragged across the origin, even briefly — that is exactly what the first experiment shows when the circle's centre crosses $0$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="The first of the homotopy groups">
+
+$\pi_1$ is the first of the **homotopy groups** $\pi_n(X, x_0)$, built from maps of spheres $S^n \to X$; for $n \ge 2$ they are abelian. They are hard to compute: $\pi_3(S^2) \cong \Z$ (Hopf, 1931), and the homotopy groups of spheres are still not fully known. **Homology** is easier and coarser. The Hurewicz theorem says that $H_1(X)$ is the abelianisation of $\pi_1(X)$ for path-connected $X$, which is why winding numbers, which are homological, cannot see the commutator loop. The Poincaré conjecture, now Perelman's theorem, shows how much $\pi_1$ can know: a closed 3-manifold with trivial $\pi_1$ is homeomorphic to $S^3$. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink> and <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Every group is a fundamental group; Galois theory and coverings">
+
+Every group is the fundamental group of some space. Given a presentation $\langle S \mid R \rangle$, take a wedge of circles, one for each generator, and glue in a disc along each relator; by van Kampen the resulting 2-complex has $\pi_1 = \langle S \mid R \rangle$. So questions about groups become questions about spaces. **Geometric group theory** grew out of this, and Max Dehn's word problem for surface groups (1911) was an early example.
+
+Theorem 10 has the same shape as the fundamental theorem of <TopicLink id="math.algebra.fields-galois">Galois theory</TopicLink>. Intermediate coverings correspond to subgroups of the deck group, just as intermediate fields correspond to subgroups of the Galois group; normal subgroups give regular coverings and Galois extensions. This is more than an analogy. Grothendieck's **étale fundamental group** treats both at once: for a field $k$ it is the absolute Galois group of $k$, and for a complex algebraic variety it is the profinite completion of the topological $\pi_1$.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Winding numbers as integrals">
+
+For a loop $\gamma$ in $\C \setminus \{a\}$ the degree is an integral: $\deg = \frac{1}{2\pi i} \oint_\gamma \frac{dz}{z - a}$. Homotopy invariance of the integral is Cauchy's theorem, and counting zeros with it is the **argument principle** of <TopicLink id="math.analysis.complex-analysis">complex analysis</TopicLink>, which the first experiment uses. More generally, a closed differential 1-form $\omega$ on $X$ defines a homomorphism $\pi_1(X) \to \R$, $[\gamma] \mapsto \int_\gamma \omega$, well defined by Stokes' theorem. The form $d\theta = (x\,dy - y\,dx)/(x^2 + y^2)$ on the punctured plane gives $2\pi$ times the winding number, and is closed but not exact. That is the starting point of de Rham cohomology in <TopicLink id="math.geom.differential-forms">differential forms and Stokes' theorem</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="The group seen from far away">
+
+A closed surface of genus $g \ge 2$ carries a metric of constant curvature $-1$, and its universal cover is the hyperbolic plane, tiled by $4g$-gons on which $\pi_1$ acts by isometries (the genus-1 analogue is the flat torus covered by the Euclidean plane). The **Švarc–Milnor lemma** says that if a group acts properly and cocompactly by isometries on a geodesic metric space, the group — with its word metric — looks like that space from far away (they are quasi-isometric). So the fundamental group of a compact Riemannian manifold "is" the large-scale geometry of its universal cover. Surface groups of genus at least 2 are hyperbolic groups, and $\Z^2$ is flat. See <TopicLink id="math.geom.geometric-group-theory">geometric group theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Phases, spin and anyons">
+
+In the Aharonov–Bohm effect (1959) an electron passing around a thin solenoid acquires a phase proportional to the enclosed magnetic flux, although the magnetic field vanishes along its path. The phase depends only on the homotopy class of the path in the plane minus the solenoid — a winding number. The rotation group $SO(3)$ has $\pi_1 \cong \Z/2$, with the double cover $SU(2) \to SO(3)$. This is the mathematics behind spin-½ particles, whose state changes sign under a $2\pi$ rotation, and behind the "belt trick": a $4\pi$ twist of a belt with fixed ends can be undone, a $2\pi$ twist cannot. In two spatial dimensions, the configuration space of $n$ identical particles has the braid group as $\pi_1$, which permits **anyons** with exotic exchange statistics. These are physical models whose consistency rests on the topology; the topology itself is proved, not assumed from physics.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="The fundamental groupoid">
+
+Instead of fixing a basepoint, take *all* points as objects and homotopy classes of paths as arrows: the **fundamental groupoid** $\Pi_1(X)$, a category in which every arrow is invertible. $\pi_1(X, x_0)$ is the automorphism group of one object — that is literally Mathlib's definition — and Proposition 3 says that objects in the same connected component have isomorphic automorphism groups. A map $f$ induces a functor $\Pi_1(f)$, and Proposition 4 says homotopic maps give naturally isomorphic functors. Groupoids also give the cleanest van Kampen theorem (Ronald Brown's version for groupoids applies with non-connected intersections, so it computes $\pi_1(S^1)$ itself). In <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink> the circle is a higher inductive type, and $\pi_1(S^1) \cong \Z$ has a synthetic proof (Licata and Shulman, 2013).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="What cannot be computed">
+
+Given a finite presentation of a group, can a computer decide whether a word equals $1$? For free groups, surface groups and many others, yes: reduce the word (Dehn's algorithm). In general, no. Pyotr Novikov (1955) and William Boone (1958) constructed finitely presented groups with undecidable word problem. Since every finitely presented group is the fundamental group of a closed 4-manifold, Andrei Markov Jr. (1958) deduced that there is no algorithm to decide whether two 4-manifolds, given by triangulations, are homeomorphic. Topology inherits the limits of computation through $\pi_1$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Winding numbers before topology.** Augustin-Louis Cauchy's integral theorem (1825) and his residue calculus counted how curves wind around singular points. Bernhard Riemann's surfaces for multivalued functions (1851, 1857) were in effect covering spaces of the plane. Carl Friedrich Gauss's first proof of the fundamental theorem of algebra (1799) used a topological argument with a gap that Alexander Ostrowski closed in 1920.
+- **Poincaré.** Henri Poincaré's *Analysis Situs* (1895) and its supplements introduced the fundamental group and homology, computed examples, and posed in 1904 the question that became the Poincaré conjecture. Grigori Perelman proved it in 2002–2003, building on Richard Hamilton's Ricci flow.
+- **Fixed points.** Piers Bohl proved a result equivalent to the fixed-point theorem in 1904, Jacques Hadamard gave a proof in 1910, and L. E. J. Brouwer proved the general $n$-dimensional theorem around 1910–1912.
+- **Groups from spaces, spaces from groups.** Max Dehn (1910–1912) studied fundamental groups of surfaces and knot complements and posed the word, conjugacy and isomorphism problems. Herbert Seifert (1931) and Egbert van Kampen (1933) proved the gluing theorem. Pyotr Novikov in Moscow and William Boone in the United States showed in the 1950s that the word problem is undecidable in general.
+- **Covering spaces** were systematised in the 1930s and 1940s (Seifert and Threlfall's 1934 textbook was influential), and Alexander Grothendieck's *SGA 1* (1960–61) unified covering spaces and Galois theory in the étale fundamental group.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Allen Hatcher, *Algebraic Topology* (2002), chapter 1 — the standard modern account of $\pi_1$, van Kampen and covering spaces (freely available from the author).
+- James R. Munkres, *Topology* (2nd edition, 2000), chapters 9–14.
+- William S. Massey, *A Basic Course in Algebraic Topology* (1991).
+- William Fulton, *Algebraic Topology: A First Course* (1995) — emphasises winding numbers, integrals and complex analysis.
+- John Stillwell, *Classical Topology and Combinatorial Group Theory* (2nd edition, 1993) — the interplay of surfaces, knots and presentations, with history.
+
+</Section>

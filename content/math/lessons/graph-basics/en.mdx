@@ -1,0 +1,533 @@
+---
+slug: graph-basics
+topic: math.discrete.graph-basics
+title: Graphs
+subtitle: Dots and lines made precise — the handshake lemma, Euler's theorem on walking every bridge exactly once, why a tree on $n$ vertices has $n - 1$ edges, and how to tell when two networks are secretly the same.
+level: g9-12
+ages: Ages 14–18
+minutes: 75
+order: 4019
+objectives:
+  - Model networks with graphs and use the vocabulary of vertices, edges, degrees, walks, paths, cycles and connectedness
+  - Prove the handshake lemma and deduce that every graph has an even number of vertices of odd degree
+  - Prove Euler's theorem that a connected graph has an Euler circuit exactly when every vertex has even degree, and its version for Euler trails
+  - Prove that a tree with $n$ vertices has $n - 1$ edges and that any two of its vertices are joined by exactly one path
+  - Decide whether two small graphs are isomorphic, using invariants to prove that they are not
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.GraphBasics.Multigraph
+  - Lumenary.GraphBasics.ends
+  - Lumenary.GraphBasics.degree
+  - Lumenary.GraphBasics.handshake
+  - Lumenary.GraphBasics.even_card_odd_degree
+  - Lumenary.GraphBasics.walkEdges
+  - Lumenary.GraphBasics.IsEulerTrail
+  - Lumenary.GraphBasics.IsEulerCircuit
+  - Lumenary.GraphBasics.degree_walkEdges
+  - Lumenary.GraphBasics.degree_perm
+  - Lumenary.GraphBasics.euler_circuit_even
+  - Lumenary.GraphBasics.euler_trail_odd
+  - Lumenary.GraphBasics.konigsberg
+  - Lumenary.GraphBasics.konigsberg_degrees
+  - Lumenary.GraphBasics.konigsberg_no_euler_trail
+  - Lumenary.GraphBasics.handshake_library
+  - Lumenary.GraphBasics.eulerian_even_degree_iff
+  - Lumenary.GraphBasics.tree_card_edges
+  - Lumenary.GraphBasics.tree_unique_path
+  - Lumenary.GraphBasics.tree_two_leaves
+  - Lumenary.GraphBasics.iso_degree
+  - Lumenary.GraphBasics.path_not_iso_star
+compute: [graph_basics_euler, graph_basics_trees]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Seven bridges, one walk">
+
+In the 18th century the city of Königsberg (today Kaliningrad) was built around two islands in the river Pregel, joined to the banks and to each other by seven bridges. A popular puzzle asked: can you take a walk that crosses **every bridge exactly once**? Nobody could find one, but nobody could prove that none existed — until Leonhard Euler, in 1736, saw that the answer has nothing to do with distances, angles or the shape of the river. All that matters is **which land masses are joined by how many bridges**.
+
+That insight created a new kind of mathematics. Today the same idea describes road and rail networks, electrical circuits, molecules, friendships, the links between web pages, and the routes of rubbish trucks and postal workers — the "Chinese postman problem", posed by the mathematician Guan Meigu in 1960, asks for the shortest walk along every street of a town.
+
+You may have met these ideas in <TopicLink id="math.discrete.networks-puzzles">dots and lines</TopicLink>. In this lesson we make them precise and **prove** them.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Forgetting everything except connections">
+
+Here is Euler's simplification. Shrink each land mass to a dot and draw one line for each bridge.
+
+<Figure caption="The Königsberg bridges as a graph: four land masses (vertices) and seven bridges (edges). Kneiphof island has $5$ bridges; each of the other three land masses has $3$.">
+
+<svg viewBox="0 0 420 260" role="img" aria-label="Four dots labelled North bank, Kneiphof, South bank and East island. Two curved lines join Kneiphof to the North bank, two join it to the South bank, one joins it to the East island, and one line joins each bank to the East island.">
+  <g fill="none" stroke="var(--ink-2)" strokeWidth="2.5">
+    <path d="M 150 130 Q 105 80 150 35" />
+    <path d="M 150 130 Q 195 80 150 35" />
+    <path d="M 150 130 Q 105 180 150 225" />
+    <path d="M 150 130 Q 195 180 150 225" />
+    <path d="M 150 130 L 340 130" />
+    <path d="M 150 35 Q 300 40 340 130" />
+    <path d="M 150 225 Q 300 220 340 130" />
+  </g>
+  <g fill="var(--gold)">
+    <circle cx="150" cy="35" r="9" />
+    <circle cx="150" cy="130" r="9" />
+    <circle cx="150" cy="225" r="9" />
+    <circle cx="340" cy="130" r="9" />
+  </g>
+  <g fontSize="14" fill="var(--ink-2)">
+    <text x="20" y="40">North bank</text>
+    <text x="30" y="135">Kneiphof</text>
+    <text x="20" y="230">South bank</text>
+    <text x="355" y="135">East</text>
+  </g>
+</svg>
+
+</Figure>
+
+A walk over the bridges becomes a walk along the lines. Now think about a vertex in the **middle** of a walk: every time the walk arrives there along one edge, it leaves along another. Visits use up edges **in pairs**. Only the start and the end of the walk can be left with an unpaired edge.
+
+<Narrator who="chloe">
+
+So if a walk crosses every bridge exactly once, every land mass except the start and the finish must have an even number of bridges. But in Königsberg all four land masses have an odd number! Four "odd" places, and a walk has only two ends. That can't work — and now I know *why* it can't, which is much better than giving up after trying.
+
+</Narrator>
+
+A drawing is only a picture of a graph. Moving the dots or bending the lines changes nothing, as long as the same pairs stay joined.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="graph">
+
+A **simple graph** $G = (V, E)$ consists of a finite set $V$ of **vertices** and a set $E$ of **edges**, each edge being a two-element subset $\{u, v\}$ of $V$. We say $u$ and $v$ are **adjacent**, or **neighbours**, and that the edge joins them. A **multigraph** may also have several edges joining the same pair of vertices (parallel edges), like the Königsberg bridges.
+
+</Definition>
+
+<Definition term="degree">
+
+The **degree** $\deg(v)$ of a vertex $v$ is the number of edges that have $v$ as an end.
+
+</Definition>
+
+<Definition term="walk, trail, path, cycle">
+
+A **walk** is a sequence $v_0, e_1, v_1, e_2, \dots, e_k, v_k$ in which each edge $e_i$ joins $v_{i-1}$ and $v_i$; it is **closed** if $v_k = v_0$. A **trail** is a walk that uses no edge twice; a **path** is a walk that visits no vertex twice. A **cycle** is a closed trail with at least one edge in which no vertex is repeated except that $v_k = v_0$ (in a simple graph a cycle has at least three edges).
+
+</Definition>
+
+<Definition term="connected">
+
+A graph is **connected** if every two vertices are joined by a walk (equivalently, by a path: a shortest walk between two vertices never repeats a vertex).
+
+</Definition>
+
+<Definition term="Euler trail and Euler circuit">
+
+An **Euler trail** is a trail that uses **every edge** of the graph exactly once. An **Euler circuit** is a closed Euler trail.
+
+</Definition>
+
+<Definition term="tree">
+
+A **tree** is a connected graph with no cycles. A **leaf** is a vertex of degree $1$.
+
+</Definition>
+
+<Definition term="isomorphism">
+
+Graphs $G = (V, E)$ and $H = (W, F)$ are **isomorphic** if there is a bijection $f : V \to W$ that preserves adjacency in both directions: $\{u, v\} \in E$ exactly when $\{f(u), f(v)\} \in F$. Such an $f$ is an **isomorphism**.
+
+</Definition>
+
+Some families have names: the **complete graph** $K_n$ ($n$ vertices, every pair joined), the **cycle** $C_n$ ($n$ vertices in a ring), the **path** $P_n$ ($n$ vertices in a line) and the **star** with one centre joined to all the other vertices.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Degrees in a small network">
+
+Five towns are joined by roads: Arusha–Moshi, Arusha–Nairobi, Moshi–Nairobi, Nairobi–Mombasa, Moshi–Tanga, Tanga–Mombasa. The degrees are Arusha $2$, Moshi $3$, Nairobi $3$, Mombasa $2$, Tanga $2$. They add up to $12$, twice the number of roads.
+
+</Example>
+
+<Example title="Complete graphs">
+
+In $K_n$ every vertex has degree $n - 1$, and there is one edge for every pair of vertices, so $K_n$ has $\binom{n}{2} = \frac{n(n-1)}{2}$ edges (see <TopicLink id="math.discrete.combinatorics">combinatorics</TopicLink>). A round-robin tournament of $10$ teams has $\binom{10}{2} = 45$ matches.
+
+</Example>
+
+<Example title="Euler trail, but no Euler circuit">
+
+The "house" — a square with a triangular roof and both diagonals of the square drawn — can be drawn in one stroke without lifting the pen, but only if you start at one bottom corner and finish at the other. Those two corners are its only vertices of odd degree ($3$ each); the other three vertices have even degree.
+
+</Example>
+
+<Example title="Euler is not Hamilton">
+
+The cube graph (the corners and edges of a cube) has a **Hamiltonian cycle** — a cycle visiting every **vertex** exactly once: go round the top face, drop down, go round the bottom face in the opposite direction and climb back up. But every vertex has degree $3$, which is odd, so it has no Euler circuit and not even an Euler trail. Euler circuits use every edge once; Hamiltonian cycles visit every vertex once. Deciding whether a graph has an Euler circuit is easy (count degrees); no comparably simple test is known for Hamiltonian cycles.
+
+</Example>
+
+<Example title="A non-example: crossings are not vertices">
+
+If two edges of a drawing cross at a point that is not a dot, that crossing is **not** a vertex. The complete graph $K_4$ is often drawn as a square with both diagonals, which cross in the middle; it still has only $4$ vertices and $6$ edges.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems and proofs">
+
+### Degrees
+
+<Theorem name="Theorem 1 (handshake lemma)">
+
+In every graph (or multigraph), the sum of the degrees of the vertices is twice the number of edges:
+$$
+\sum_{v \in V} \deg(v) = 2|E|.
+$$
+
+</Theorem>
+
+<Proof>
+
+Count the **edge-ends** in two ways. Each edge has exactly two ends, so there are $2|E|$ of them. On the other hand, the number of edge-ends at a vertex $v$ is $\deg(v)$, so the total is $\sum_v \deg(v)$.
+
+</Proof>
+
+The name comes from a party: if everyone shakes some hands, the total number of hands shaken, counted person by person, is twice the number of handshakes.
+
+<Theorem name="Corollary 2">
+
+Every graph has an even number of vertices of odd degree.
+
+</Theorem>
+
+<Proof>
+
+Split the sum of the degrees into the sum over the even-degree vertices and the sum over the odd-degree vertices. The total is even (Theorem 1) and the first part is a sum of even numbers, so the second part is even. A sum of odd numbers is even only when there is an even number of them.
+
+</Proof>
+
+So, for example, there is no group of $7$ people in which everyone knows exactly $3$ others: the degrees would add up to $21$, which is odd.
+
+### Euler trails and circuits
+
+<Theorem name="Lemma 3 (edge-ends along a walk)">
+
+Let $W$ be a trail from $a$ to $b$ and let $v$ be a vertex. The number of edge-ends at $v$ belonging to edges of $W$ is even if $v$ is neither or both of $a$ and $b$ (in particular whenever $W$ is closed, $a = b$), and odd if $v$ is exactly one of them.
+
+</Theorem>
+
+<Proof>
+
+Each time the trail passes **through** $v$ — arriving along one edge and leaving along another — it uses two edge-ends at $v$. Starting at $v$ uses one edge-end, and finishing at $v$ uses one more. So the count is $2 \times (\text{number of passes through } v)$, plus $1$ if $v = a$, plus $1$ if $v = b$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Euler's theorem)">
+
+Let $G$ be a connected graph or multigraph with at least one edge.
+
+1. $G$ has an Euler circuit **if and only if** every vertex has even degree.
+2. $G$ has an Euler trail that is not closed **if and only if** exactly two vertices have odd degree; the trail then starts at one of them and ends at the other.
+
+</Theorem>
+
+<Proof>
+
+**Necessity.** An Euler trail uses every edge, so the edge-ends of its edges are *all* the edge-ends, and the count in Lemma 3 is exactly $\deg(v)$. For an Euler circuit every degree is therefore even. For an Euler trail from $a$ to $b \ne a$, exactly $a$ and $b$ have odd degree. (Connectedness is not needed for this half.)
+
+**Sufficiency for circuits.** Suppose every degree is even.
+
+*Step 1: from any vertex $u$ of positive degree, there is a closed trail starting at $u$.* Walk from $u$ along unused edges, choosing any unused edge each time. Whenever you arrive at a vertex $w \ne u$, you have used an odd number of its edge-ends (two for each earlier pass, one for arriving), and $\deg(w)$ is even, so an unused edge remains and you can leave. The graph is finite, so the walk must stop — and the only place it can stop is $u$. This gives a closed trail.
+
+*Step 2.* Let $C$ be a closed trail using as many edges as possible. Suppose some edge is not in $C$. Then some vertex $u$ **on** $C$ has an edge not in $C$: otherwise, take an unused edge, a path from a vertex of $C$ to one of its ends (the graph is connected), and look at the first edge of this path that leaves the vertices of $C$ — it touches $C$ but is not in $C$. Delete the edges of $C$. By Lemma 3, $C$ used an even number of edge-ends at every vertex, so in what is left every degree is still even, and $u$ still has positive degree. Step 1 gives a closed trail $C'$ from $u$ in the remaining edges. Following $C$ to $u$, going round $C'$, and then finishing $C$ is a closed trail longer than $C$ — a contradiction. So $C$ uses every edge: it is an Euler circuit.
+
+**Sufficiency for trails.** If exactly $a$ and $b$ have odd degree, add a new edge joining $a$ and $b$ (it may be parallel to an existing one). Now every degree is even and the graph is still connected, so there is an Euler circuit. Start it just after the new edge; removing the new edge leaves an Euler trail from $a$ to $b$.
+
+</Proof>
+
+Step 1 and Step 2 together are an algorithm, essentially **Hierholzer's algorithm** (1873): walk until you are stuck, then splice in detours. The computation section runs it.
+
+<Example title="Königsberg, settled">
+
+The four land masses have degrees $5$, $3$, $3$ and $3$ — four odd vertices. By Theorem 4 there is no Euler trail and no Euler circuit: **no walk crosses every bridge exactly once**. (Adding one bridge between the two banks would leave exactly two odd land masses, and then such a walk would exist.)
+
+</Example>
+
+### Trees
+
+<Theorem name="Lemma 5 (leaves)">
+
+Every tree with at least two vertices has at least two leaves.
+
+</Theorem>
+
+<Proof>
+
+Take a longest path $v_0, v_1, \dots, v_k$ in the tree; since the tree is connected and has two vertices, $k \ge 1$. A neighbour of $v_k$ outside the path would give a longer path, and a neighbour $v_i$ with $i < k - 1$ would close the cycle $v_i, v_{i+1}, \dots, v_k, v_i$. So $v_{k-1}$ is the only neighbour of $v_k$: $v_k$ is a leaf. The same argument applies to $v_0$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (trees)">
+
+Let $T$ be a tree with $n$ vertices. Then
+
+1. $T$ has exactly $n - 1$ edges;
+2. any two vertices of $T$ are joined by exactly one path.
+
+</Theorem>
+
+<Proof>
+
+**1.** Induction on $n$. A tree with one vertex has no edges. If $n \ge 2$, Lemma 5 gives a leaf $v$; remove it and its single edge. What is left has no cycles (we removed things), and it is still connected: a path between two other vertices never passes through $v$, because a vertex in the middle of a path needs two edges. So it is a tree with $n - 1$ vertices, which by induction has $n - 2$ edges, and $T$ has $n - 1$.
+
+**2.** A path exists because $T$ is connected. Suppose $P$ and $Q$ were two different paths from $u$ to $v$. Both start at $u$; let $w$ be the last vertex before they first go different ways. Follow $P$ from $w$ until it first meets a vertex $x$ of $Q$ again (it must, since $P$ ends at $v$, which is on $Q$). The part of $P$ from $w$ to $x$ and the part of $Q$ between $x$ and $w$ share only $w$ and $x$, and they are not the same single edge (because $P$ and $Q$ leave $w$ along different edges), so together they form a cycle — impossible in a tree.
+
+</Proof>
+
+Conversely, a graph in which every two vertices are joined by exactly one path is a tree. And for a graph with $n$ vertices, **any two** of "connected", "no cycles" and "$n - 1$ edges" imply the third. For instance, if $G$ has no cycles and $n - 1$ edges, each of its $c$ connected pieces is a tree, with $n_i$ vertices and $n_i - 1$ edges; adding up, $n - c = n - 1$ edges, so $c = 1$ and $G$ is connected.
+
+### Isomorphism
+
+To prove that two graphs **are** isomorphic, exhibit an isomorphism. To prove that they are **not**, find an **invariant** — a property preserved by every isomorphism — on which they differ: the number of vertices or edges, the list of degrees (the **degree sequence**), connectedness, the number of triangles, the length of the shortest cycle…
+
+<Theorem name="Theorem 7 (isomorphisms preserve degrees)">
+
+If $f$ is an isomorphism from $G$ to $H$, then $\deg_H(f(v)) = \deg_G(v)$ for every vertex $v$. Hence isomorphic graphs have the same degree sequence.
+
+</Theorem>
+
+<Proof>
+
+Since $f$ preserves adjacency in both directions, it maps the neighbours of $v$ one-to-one onto the neighbours of $f(v)$.
+
+</Proof>
+
+<Example title="Two trees that differ">
+
+The path $P_4$ (degrees $1, 2, 2, 1$) and the star with three leaves (degrees $3, 1, 1, 1$) both have $4$ vertices and $3$ edges, and both are trees. They are not isomorphic: the star has a vertex of degree $3$ and the path does not.
+
+</Example>
+
+<Example title="Same degrees, still different">
+
+The hexagon $C_6$ and two separate triangles both have six vertices, six edges, and every degree equal to $2$. They are not isomorphic, because the hexagon is connected and two triangles are not (equally: two triangles contain a triangle, the hexagon does not). Matching degree sequences is necessary for isomorphism, **not** sufficient.
+
+</Example>
+
+<Example title="Different drawings, same graph">
+
+Draw five dots $0, 1, 2, 3, 4$ around a circle. The pentagon joins neighbours $0$–$1$–$2$–$3$–$4$–$0$; the pentagram joins every second dot, $0$–$2$–$4$–$1$–$3$–$0$. They look different, but the bijection $0 \mapsto 0$, $1 \mapsto 2$, $2 \mapsto 4$, $3 \mapsto 1$, $4 \mapsto 3$ carries each pentagon edge to a pentagram edge: both are the cycle $C_5$.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Graphs in Lean">
+
+For the handshake lemma and Euler's theorem we need **multigraphs**, because Königsberg has parallel bridges. So we build a small model: a multigraph is a list of edges, each an unordered pair `s(a, b)` (Mathlib's `Sym2`).
+
+<Lean decl="Lumenary.GraphBasics.Multigraph" />
+
+<Lean decl="Lumenary.GraphBasics.ends" />
+
+<Lean decl="Lumenary.GraphBasics.degree" />
+
+The handshake lemma is proved by induction on the list of edges — each new edge adds exactly $2$ to the total — and Corollary 2 follows from it:
+
+<Lean decl="Lumenary.GraphBasics.handshake" />
+
+<Lean decl="Lumenary.GraphBasics.even_card_odd_degree" />
+
+A walk is a list of vertices $w_0, w_1, \dots, w_m$, and it crosses the edges $s(w_0, w_1), s(w_1, w_2), \dots$. It is an Euler trail when this list of edges is a rearrangement (`List.Perm`) of the edges of the graph — every edge crossed exactly once.
+
+<Lean decl="Lumenary.GraphBasics.walkEdges" />
+
+<Lean decl="Lumenary.GraphBasics.IsEulerTrail" />
+
+<Lean decl="Lumenary.GraphBasics.IsEulerCircuit" />
+
+Lemma 3 becomes an exact equation, proved by induction along the walk. Here `rest.getLastD a` is the last vertex of the walk `a :: rest`:
+
+<Lean decl="Lumenary.GraphBasics.degree_walkEdges" />
+
+<Lean decl="Lumenary.GraphBasics.degree_perm" />
+
+From it, the necessity half of Euler's theorem, for circuits and for trails:
+
+<Lean decl="Lumenary.GraphBasics.euler_circuit_even" />
+
+<Lean decl="Lumenary.GraphBasics.euler_trail_odd" />
+
+And Königsberg, settled by machine:
+
+<Lean decl="Lumenary.GraphBasics.konigsberg" />
+
+<Lean decl="Lumenary.GraphBasics.konigsberg_degrees" />
+
+<Lean decl="Lumenary.GraphBasics.konigsberg_no_euler_trail" />
+
+<Narrator who="gideon">
+
+The last proof is a pigeonhole argument in disguise: four odd land masses, each of which must be one of the two ends of the walk. Lean splits into the sixteen possible cases and finds a contradiction in every one. Notice what is *not* here: the sufficiency half of Euler's theorem. Mathlib does not have it yet, so we proved it by hand above and say so honestly.
+
+</Narrator>
+
+Mathlib's `SimpleGraph` has the same facts for simple graphs, including Euler's degree condition for its own notion of an Eulerian walk:
+
+<Lean decl="Lumenary.GraphBasics.handshake_library" />
+
+<Lean decl="Lumenary.GraphBasics.eulerian_even_degree_iff" />
+
+For trees we use Mathlib throughout. Its proof that a tree has $n - 1$ edges pairs every vertex except a chosen root with the first edge of its unique path to the root — a different proof from our leaf-removal induction. Our own `tree_two_leaves` then goes the other way, deducing Lemma 5 from the edge count by adding up degrees, rather than from a longest path:
+
+<Lean decl="Lumenary.GraphBasics.tree_card_edges" />
+
+<Lean decl="Lumenary.GraphBasics.tree_unique_path" />
+
+<Lean decl="Lumenary.GraphBasics.tree_two_leaves" />
+
+Finally, isomorphism (`G ≃g H` in Mathlib) preserves degrees, which proves that the path and the star are different:
+
+<Lean decl="Lumenary.GraphBasics.iso_degree" />
+
+<Lean decl="Lumenary.GraphBasics.path_not_iso_star" />
+
+</Section>
+
+<Section id="computation" kind="computation" title="Every small graph, checked">
+
+<Narrator who="margaret">
+
+There are $2^{10} = 1024$ simple graphs on five labelled vertices, because each of the $\binom{5}{2} = 10$ possible edges is either there or not. My program searches through all possible trails in each one — it never looks at degrees — and compares its verdict with Euler's criterion.
+
+</Narrator>
+
+<Python id="graph_basics_euler" />
+
+<Narrator who="margaret">
+
+Now trees. I'll test every set of $n - 1$ edges on $n$ labelled vertices, for $n$ up to $7$, and sort the trees into isomorphism classes.
+
+</Narrator>
+
+<Python id="graph_basics_trees" />
+
+Two things in this table are worth a second look. First, the "connected" and "acyclic" columns agree exactly, as the "two out of three" property predicts. Second, the numbers of labelled trees are $1, 3, 16, 125, 1296, 16807$ — that is $n^{n-2}$. This is **Cayley's formula**, a theorem (stated by Arthur Cayley in 1889, and proved in many ways since, for example with Prüfer sequences); the program only checks it for $n \le 7$. The last column counts trees up to isomorphism: there are just $3$ different shapes of tree on $5$ vertices — the path, the star, and a "T" shape.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: walks, trees and drawings">
+
+<GraphExplorer preset="konigsberg" modes={["walk", "degrees"]} title="Can you cross every bridge exactly once?" />
+
+Try to build an Euler trail by clicking bridges one after another. The widget tells you when you are stuck — and the Degrees tab shows why you always will be.
+
+<GraphExplorer preset="cube" modes={["spanning", "degrees", "walk"]} title="Spanning trees of the cube" />
+
+Build a spanning tree of the cube: a tree that uses all $8$ vertices. However you do it, you will use exactly $7$ edges. The widget also counts how many spanning trees there are in all (Kirchhoff's matrix-tree theorem). On the Walk tab, look for a Hamiltonian cycle — and convince yourself there is no Euler trail.
+
+<GraphExplorer nodes={["0", "1", "2", "3", "4"]} edges={[["0", "1"], ["1", "2"], ["2", "3"], ["3", "4"], ["4", "0"]]} modes={["degrees", "matrix"]} title="A pentagon" />
+
+<GraphExplorer nodes={["0", "1", "2", "3", "4"]} edges={[["0", "2"], ["2", "4"], ["4", "1"], ["1", "3"], ["3", "0"]]} modes={["degrees", "matrix"]} title="A pentagram" />
+
+The pentagon and the pentagram are the same graph drawn differently. Relabel the pentagram's vertices by $0 \mapsto 0$, $2 \mapsto 1$, $4 \mapsto 2$, $1 \mapsto 3$, $3 \mapsto 4$ (the inverse of the isomorphism in the examples) and its edges become exactly the pentagon's.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The drawing is the graph."** A graph records only which pairs of vertices are joined. Very different drawings — a pentagon and a pentagram, a tangle and a neat diagram — can show the same graph, and a single graph has infinitely many drawings.
+
+</Misconception>
+
+<Misconception>
+
+**Confusing Euler circuits with Hamiltonian cycles.** An Euler circuit uses every **edge** exactly once (vertices may be revisited); a Hamiltonian cycle visits every **vertex** exactly once (most edges are not used). The cube has a Hamiltonian cycle but no Euler circuit; a "bow tie" — two triangles sharing a vertex — has an Euler circuit but no Hamiltonian cycle.
+
+</Misconception>
+
+<Misconception>
+
+**"Same degree sequence means isomorphic."** The hexagon and two triangles have identical degrees and are not isomorphic. Invariants can prove that graphs are *different*; to prove they are the *same*, you need an isomorphism.
+
+</Misconception>
+
+<Misconception>
+
+**"A tree is any graph without cycles."** It must also be connected. A graph without cycles is a **forest**: a collection of trees.
+
+</Misconception>
+
+<Misconception>
+
+**"Even degrees guarantee an Euler circuit."** Only for a **connected** graph (apart from isolated vertices). Two separate triangles have all degrees even, but no single walk can use the edges of both.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="topology" title="Where topology began">
+
+Euler's solution ignores lengths and angles and keeps only connections — exactly the attitude of **topology**, and Königsberg is often called its first theorem. A graph can be viewed as a space built from points and segments, and some of its numbers are topological invariants: for a connected graph, $|E| - |V| + 1$ counts its independent cycles (for a tree it is $0$, which is Theorem 6 again). For a connected graph drawn in the plane without crossings, Euler's later formula $V - E + F = 2$ relates vertices, edges and faces; see <TopicLink id="math.geom.surfaces-euler-characteristic">surfaces and the Euler characteristic</TopicLink> and <TopicLink id="math.discrete.graph-theory">graph theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Graphs as matrices">
+
+Number the vertices $1, \dots, n$ and let $A$ be the **adjacency matrix**: $A_{ij} = 1$ if $i$ and $j$ are adjacent, $0$ otherwise. The row sums of $A$ are the degrees, and the entry $(A^k)_{ij}$ counts the walks of length $k$ from $i$ to $j$ — try the Matrix tab above. Two graphs are isomorphic exactly when one adjacency matrix can be turned into the other by renumbering the vertices, that is $A' = P A P^{\mathsf{T}}$ for a permutation matrix $P$. Similar matrices have the same eigenvalues, so the eigenvalues of $A$ are an isomorphism invariant (though, like degrees, not a complete one); see <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Easy and hard questions">
+
+Euler's criterion turns "is there an Euler circuit?" into degree-counting, which a computer does in time proportional to the size of the graph, and Hierholzer's algorithm finds the circuit just as fast. For Hamiltonian cycles no efficient method is known: the problem is NP-complete, so an efficient algorithm for it would settle the famous P versus NP question; see <TopicLink id="math.comp.complexity-theory">complexity theory</TopicLink>. Graph isomorphism sits in between: in 2015 László Babai announced an algorithm running in quasi-polynomial time, but whether isomorphism can be decided in polynomial time remains open.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Maps between graphs">
+
+A **graph homomorphism** $f : G \to H$ sends vertices to vertices so that adjacent vertices go to adjacent vertices. Graphs and homomorphisms form a category, and an isomorphism is exactly a homomorphism with an inverse homomorphism — the general pattern of <TopicLink id="math.cat.structure-preserving-maps">structure-preserving maps</TopicLink>. Colourings fit too: a colouring of $G$ with $k$ colours is a homomorphism from $G$ to $K_k$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="sets" kind="sets" title="Set-theoretic connection">
+
+A simple graph is pure set theory: a set $V$ together with a set $E$ of two-element subsets of $V$. Equivalently, adjacency is a **relation** on $V$ that is symmetric ($u \sim v$ implies $v \sim u$) and irreflexive (no $v \sim v$). An isomorphism is a bijection that carries this relation onto the other graph's relation, and a property is an invariant exactly when it can be stated using only $V$ and the relation.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Euler (1736).** Leonhard Euler's paper on the Königsberg bridges (published in 1741) stated the degree conditions and showed why they are necessary. He asserted, but did not prove, that they are also sufficient; the first published proof is Carl Hierholzer's, from 1873, which appeared after his death.
+- **Drawing in one stroke.** Among the Chokwe people of north-eastern Angola and neighbouring regions, storytellers trace *sona* — figures drawn in the sand around a grid of dots, many of them in a single continuous line that returns to its start. The mathematician Paulus Gerdes studied their geometry, including their connection with Euler circuits. Some *kolam* designs drawn at thresholds in Tamil Nadu, in southern India, are likewise single closed lines looping around a grid of dots.
+- **Trees.** Gustav Kirchhoff used trees to analyse electrical networks (1847), and Arthur Cayley counted trees in connection with chemical molecules (1857 and later); J. J. Sylvester introduced the word *graph* in 1878, from chemical diagrams. Dénes Kőnig wrote the first textbook on graph theory in 1936.
+- **Routes.** In 1960 the Chinese mathematician Guan Meigu (Kwan Mei-Ko) asked for the shortest closed walk covering every street of a town at least once — the "Chinese postman problem", solved with Euler's theorem when every degree is even.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Robin J. Wilson, *Introduction to Graph Theory* (5th edition, 2010) — a gentle, careful first book.
+- J. A. Bondy and U. S. R. Murty, *Graph Theory with Applications* (1976).
+- Oystein Ore, *Graphs and Their Uses* (1963; revised by Robin J. Wilson, 1990) — written for school students.
+- Norman L. Biggs, E. Keith Lloyd and Robin J. Wilson, *Graph Theory 1736–1936* (1976) — the original papers, including Euler's, with commentary.
+- Paulus Gerdes, *Geometry from Africa: Mathematical and Educational Explorations* (1999).
+
+</Section>

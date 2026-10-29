@@ -1,0 +1,599 @@
+---
+slug: lambda-calculus
+topic: math.comp.lambda-calculus
+title: The λ-calculus
+subtitle: A programming language made of nothing but functions — numbers, truth values and recursion are all encoded, some computations never end, and yet no term can have two different answers.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6035
+objectives:
+  - Reduce λ-terms using capture-avoiding substitution, and encode booleans, pairs and natural numbers (Church numerals)
+  - Use a fixed-point combinator to define recursive functions, and explain why untyped terms need not terminate
+  - Prove the Church–Rosser theorem by parallel reduction and deduce that a term has at most one normal form
+  - Prove that every simply typed λ-term has a normal form, and say what this costs in expressive power
+  - State the equivalence of λ-definability with computability and the undecidability of β-equality
+narrators: []
+lean:
+  - Lumenary.LambdaCalculus.Term
+  - Lumenary.LambdaCalculus.up
+  - Lumenary.LambdaCalculus.subst
+  - Lumenary.LambdaCalculus.inst
+  - Lumenary.LambdaCalculus.subst_subst
+  - Lumenary.LambdaCalculus.subst_inst
+  - Lumenary.LambdaCalculus.Step
+  - Lumenary.LambdaCalculus.Normal
+  - Lumenary.LambdaCalculus.bigOmega
+  - Lumenary.LambdaCalculus.bigOmega_step
+  - Lumenary.LambdaCalculus.bigOmega_no_normal_form
+  - Lumenary.LambdaCalculus.theta
+  - Lumenary.LambdaCalculus.theta_fixed_point
+  - Lumenary.LambdaCalculus.curryY
+  - Lumenary.LambdaCalculus.curryY_fixed_point
+  - Lumenary.LambdaCalculus.church
+  - Lumenary.LambdaCalculus.plus
+  - Lumenary.LambdaCalculus.stepNO
+  - Lumenary.LambdaCalculus.stepNO_sound
+  - Lumenary.LambdaCalculus.stepNO_none
+  - Lumenary.LambdaCalculus.two_plus_three
+  - Lumenary.LambdaCalculus.two_times_three
+  - Lumenary.LambdaCalculus.Diamond
+  - Lumenary.LambdaCalculus.strip
+  - Lumenary.LambdaCalculus.diamond_confluent
+  - Lumenary.LambdaCalculus.church_rosser_library
+  - Lumenary.LambdaCalculus.Par
+  - Lumenary.LambdaCalculus.par_subst
+  - Lumenary.LambdaCalculus.cd
+  - Lumenary.LambdaCalculus.triangle
+  - Lumenary.LambdaCalculus.par_diamond
+  - Lumenary.LambdaCalculus.church_rosser
+  - Lumenary.LambdaCalculus.normal_form_unique
+  - Lumenary.LambdaCalculus.plus_unique_value
+compute: [lambda_calculus_church, lambda_calculus_confluence]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Functions as rules">
+
+In school a function is often a formula: $x \mapsto x^2 + 1$. In set theory it becomes a set of ordered pairs. In the early 1930s the American logician **Alonzo Church** took a third view: a function is a **rule** that can be *applied*, and the only things in the world are rules. He wrote $\lambda x.\, x^2 + 1$ for "the function that sends $x$ to $x^2 + 1$", and studied what can be done with abstraction ($\lambda x.\,\dots$) and application ($f\,a$) alone.
+
+The answer is: everything that can be computed. Truth values, pairs, natural numbers and arithmetic can be encoded as pure functions; recursion comes from a clever self-application; and the resulting calculus computes exactly the same functions as Turing machines. Python's `lambda`, JavaScript's arrow functions and every functional programming language descend from it.
+
+It also contains a warning. Type this into Python:
+
+```python
+(lambda x: x(x))(lambda x: x(x))
+```
+
+It never finishes (Python gives up with a `RecursionError`). In the λ-calculus this term is called $\Omega$, and it reduces to itself forever. So the λ-calculus raises two questions that this lesson answers. If a computation can be carried out in many orders, can different orders give different answers? (No — the Church–Rosser theorem.) And which terms are guaranteed to finish? (Among others, all *typed* ones.) The lesson assumes induction from <TopicLink id="math.found.proof-techniques">proof techniques</TopicLink> and some experience of <TopicLink id="math.comp.programming-intro">programming</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Terms as trees, reduction as plugging in">
+
+A λ-term is a tree built from variables, applications and abstractions. In $\lambda x.\, x\,y$ the variable $x$ is **bound** by the $\lambda$ — it is a placeholder, and $\lambda z.\, z\,y$ means the same thing — while $y$ is **free**. Computing means **β-reduction**: wherever a function meets an argument, plug the argument in,
+$$
+(\lambda x.\, M)\, N \;\to\; M[N/x].
+$$
+
+The only subtlety is that plugging in must not change the meaning of free variables. Take $K = \lambda x.\, \lambda y.\, x$, the function that returns a constant function. Applied to a free variable $y$, naive textual substitution would give
+$$
+(\lambda x.\, \lambda y.\, x)\, y \;\to\; \lambda y.\, y \qquad \text{(wrong!)}
+$$
+— the free $y$ has been **captured** by the inner $\lambda y$, and a constant function has turned into the identity. The correct answer renames the bound variable first: $\lambda z.\, y$. Capture-avoiding substitution is easy to state and notoriously easy to get wrong; the Lean formalisation sidesteps it entirely by using de Bruijn indices.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="λ-terms">
+
+Given an infinite set of variables $x, y, z, \dots$, the **λ-terms** are generated by
+$$
+M, N \;::=\; x \;\mid\; (M\, N) \;\mid\; (\lambda x.\, M).
+$$
+Conventions: application associates to the left ($M\,N\,L = (M\,N)\,L$); the body of a $\lambda$ extends as far right as possible; $\lambda x\, y.\, M$ abbreviates $\lambda x.\, \lambda y.\, M$.
+
+</Definition>
+
+<Definition term="free variables and α-equivalence">
+
+$\mathrm{FV}(x) = \{x\}$, $\mathrm{FV}(M\, N) = \mathrm{FV}(M) \cup \mathrm{FV}(N)$, $\mathrm{FV}(\lambda x.\, M) = \mathrm{FV}(M) \setminus \{x\}$. A term is **closed** if it has no free variables. Terms that differ only by renaming bound variables (such as $\lambda x.\, x$ and $\lambda y.\, y$) are **α-equivalent**, and we identify them.
+
+</Definition>
+
+<Definition term="capture-avoiding substitution">
+
+$M[N/x]$ replaces the free occurrences of $x$ in $M$ by $N$:
+
+- $x[N/x] = N$, and $y[N/x] = y$ for $y \ne x$;
+- $(M_1\, M_2)[N/x] = M_1[N/x]\; M_2[N/x]$;
+- $(\lambda x.\, M)[N/x] = \lambda x.\, M$;
+- $(\lambda y.\, M)[N/x] = \lambda y.\, M[N/x]$ if $y \ne x$ and $y \notin \mathrm{FV}(N)$; otherwise first rename $y$ to a variable not free in $M$ or $N$.
+
+</Definition>
+
+<Definition term="β-reduction and normal forms">
+
+A **redex** is a term $(\lambda x.\, M)\, N$; its **contractum** is $M[N/x]$. One-step **β-reduction** $M \to M'$ contracts one redex anywhere inside $M$. Write $M \twoheadrightarrow M'$ for zero or more steps, and $M =_\beta M'$ for the equivalence relation generated by $\to$ (**β-equality**). A term with no redex is in **normal form**; $M$ **has a normal form** $N$ if $M \twoheadrightarrow N$ with $N$ normal. $M$ is **weakly normalising** if it has a normal form, and **strongly normalising** if every reduction sequence from $M$ is finite.
+
+</Definition>
+
+<Definition term="de Bruijn indices">
+
+Replace each variable occurrence by the number of $\lambda$'s between it and its binder: $\lambda x.\, \lambda y.\, x$ becomes $\lambda\, \lambda\, 1$ and $\lambda x.\, x\,(\lambda y.\, y\, x)$ becomes $\lambda\, 0\,(\lambda\, 0\, 1)$. α-equivalent terms become *identical*, and substitution becomes arithmetic on indices, with no renaming. This is how the Lean formalisation and the Python experiments represent terms.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples: combinators, data and recursion">
+
+<Example title="Small combinators">
+
+$I = \lambda x.\, x$, $K = \lambda x\, y.\, x$, $S = \lambda f\, g\, x.\, f\, x\, (g\, x)$. Then $I\, M \to M$, $K\, M\, N \twoheadrightarrow M$, and
+$$
+S\, K\, K\, M \;\to\; (\lambda g\, x.\, K\, x\, (g\, x))\, K\, M \;\twoheadrightarrow\; K\, M\, (K\, M) \;\twoheadrightarrow\; M,
+$$
+so $S\,K\,K$ behaves like $I$. With $\omega = \lambda x.\, x\, x$ and $\Omega = \omega\, \omega$:
+$$
+\Omega = (\lambda x.\, x\, x)(\lambda x.\, x\, x) \;\to\; (\lambda x.\, x\, x)(\lambda x.\, x\, x) = \Omega .
+$$
+
+</Example>
+
+<Example title="Order matters for termination">
+
+$K\, I\, \Omega$ has two redexes. Contracting the leftmost-outermost one first: $K\, I\, \Omega \to (\lambda y.\, I)\, \Omega \to I$, a normal form in two steps. Contracting $\Omega$ first does nothing: $K\, I\, \Omega \to K\, I\, \Omega$, forever. A term can have a normal form *and* an infinite reduction. **Normal order** — always contract the leftmost-outermost redex — finds the normal form whenever there is one (the standardisation theorem, below); **applicative order** — evaluate arguments first, as most programming languages do — can loop.
+
+</Example>
+
+<Example title="Booleans and pairs">
+
+A truth value is a *choice*: $\mathsf{TRUE} = \lambda x\, y.\, x$ picks the first of two arguments, $\mathsf{FALSE} = \lambda x\, y.\, y$ the second. Then "if $b$ then $M$ else $N$" is just $b\, M\, N$, and
+$$
+\mathsf{AND} = \lambda p\, q.\, p\, q\, p, \qquad \mathsf{OR} = \lambda p\, q.\, p\, p\, q, \qquad \mathsf{NOT} = \lambda p.\, p\, \mathsf{FALSE}\, \mathsf{TRUE}.
+$$
+For instance $\mathsf{AND}\, \mathsf{TRUE}\, \mathsf{FALSE} \twoheadrightarrow \mathsf{TRUE}\, \mathsf{FALSE}\, \mathsf{TRUE} \twoheadrightarrow \mathsf{FALSE}$. A pair is a function waiting for a selector: $\mathsf{PAIR} = \lambda a\, b\, f.\, f\, a\, b$, $\mathsf{FST} = \lambda p.\, p\, \mathsf{TRUE}$, $\mathsf{SND} = \lambda p.\, p\, \mathsf{FALSE}$.
+
+</Example>
+
+<Example title="Church numerals">
+
+The number $n$ is "do something $n$ times": $\bar n = \lambda f\, x.\, f^n\, x$, so $\bar 0 = \lambda f\, x.\, x$ and $\bar 3 = \lambda f\, x.\, f\,(f\,(f\, x))$. Arithmetic is composition of iterations:
+$$
+\mathsf{SUCC} = \lambda n\, f\, x.\, f\,(n\, f\, x), \quad \mathsf{PLUS} = \lambda m\, n\, f\, x.\, m\, f\,(n\, f\, x), \quad \mathsf{TIMES} = \lambda m\, n\, f.\, m\,(n\, f), \quad \mathsf{EXP} = \lambda m\, n.\, n\, m .
+$$
+In normal order, $\mathsf{PLUS}\, \bar 2\, \bar 3 \twoheadrightarrow \bar 5$ takes six steps:
+$$
+\begin{aligned}
+\mathsf{PLUS}\, \bar 2\, \bar 3 &\twoheadrightarrow \lambda f\, x.\, \bar 2\, f\,(\bar 3\, f\, x) && \text{(2 steps)}\\
+&\to \lambda f\, x.\, (\lambda x'.\, f\,(f\, x'))\,(\bar 3\, f\, x) \to \lambda f\, x.\, f\,(f\,(\bar 3\, f\, x))\\
+&\twoheadrightarrow \lambda f\, x.\, f\,(f\,(f\,(f\,(f\, x)))) = \bar 5 && \text{(2 more steps).}
+\end{aligned}
+$$
+Testing for zero is $\mathsf{ISZERO} = \lambda n.\, n\, (\lambda z.\, \mathsf{FALSE})\, \mathsf{TRUE}$. The predecessor is harder — Church at first doubted that it could be defined; Stephen Kleene found it by iterating on pairs, $(0, 0) \mapsto (0, 1) \mapsto (1, 2) \mapsto \cdots \mapsto (n - 1, n)$, then taking the first component:
+$$
+\mathsf{PRED} = \lambda n.\, \mathsf{FST}\, \big(n\, (\lambda p.\, \mathsf{PAIR}\, (\mathsf{SND}\, p)\, (\mathsf{SUCC}\, (\mathsf{SND}\, p)))\, (\mathsf{PAIR}\, \bar 0\, \bar 0)\big).
+$$
+
+</Example>
+
+<Example title="Recursion by self-application">
+
+Curry's **paradoxical combinator** $Y = \lambda f.\, (\lambda x.\, f\,(x\, x))\,(\lambda x.\, f\,(x\, x))$ and Turing's $\Theta = A\, A$ with $A = \lambda x\, y.\, y\,(x\, x\, y)$ produce fixed points (Theorem 1). To define the factorial, solve the recursive equation $\mathsf{fact} = F\, \mathsf{fact}$ for
+$$
+F = \lambda r\, n.\, \mathsf{ISZERO}\, n\, \bar 1\, \big(\mathsf{TIMES}\, n\, (r\, (\mathsf{PRED}\, n))\big),
+$$
+by $\mathsf{FACT} = Y\, F$. Then $\mathsf{FACT}\, \bar 3 \twoheadrightarrow \bar 6$ — after 1477 normal-order steps in the experiment below. The same trick with $F = I$ gives $Y\, I \twoheadrightarrow \omega'\,\omega'$ with $\omega' = \lambda x.\, I\,(x\, x)$, a term with no normal form: recursion and non-termination are two sides of one coin.
+
+</Example>
+
+</Section>
+
+<Section id="theorems" kind="proof" title="The main theorems">
+
+<Theorem name="Theorem 1 (fixed points)">
+
+For every term $F$ there is a term $X$ with $F\, X =_\beta X$. In fact $\Theta\, F \twoheadrightarrow F\,(\Theta\, F)$, and $Y\, F$ and $F\,(Y\, F)$ have a common reduct.
+
+</Theorem>
+
+<Proof>
+
+With $A = \lambda x\, y.\, y\,(x\, x\, y)$: $\Theta\, F = A\, A\, F \to (\lambda y.\, y\,(A\, A\, y))\, F \to F\,(A\, A\, F) = F\,(\Theta\, F)$. For $Y$, let $W = \lambda x.\, F\,(x\, x)$. Then $Y\, F \to W\, W \to F\,(W\, W)$, and also $F\,(Y\, F) \to F\,(W\, W)$. So $X = \Theta\, F$ (or $Y\, F$) works.
+
+</Proof>
+
+Now the central theorem. The naive approach — show that two one-step reducts can be joined in one step each, then tile — fails, because contracting one redex can *duplicate* another: from $(\lambda x.\, x\, x)(I\, z)$ one step gives $(I\, z)(I\, z)$ and another gives $(\lambda x.\, x\, x)\, z$, and joining them at $z\, z$ takes two steps on the left. The cure (Tait and Martin-Löf) is to reduce **in parallel**.
+
+<Definition term="parallel reduction">
+
+$M \Rightarrow M'$ is defined inductively: $x \Rightarrow x$; if $M \Rightarrow M'$ then $\lambda x.\, M \Rightarrow \lambda x.\, M'$; if $M \Rightarrow M'$ and $N \Rightarrow N'$ then $M\, N \Rightarrow M'\, N'$ and $(\lambda x.\, M)\, N \Rightarrow M'[N'/x]$. Intuitively: contract any set of redexes already present, all at once.
+
+</Definition>
+
+<Theorem name="Lemma A">
+
+(i) $M \Rightarrow M$. (ii) If $M \to N$ then $M \Rightarrow N$. (iii) If $M \Rightarrow N$ then $M \twoheadrightarrow N$. Hence $\twoheadrightarrow$ is the reflexive–transitive closure of $\Rightarrow$.
+
+</Theorem>
+
+<Proof>
+
+(i) By induction on $M$. (ii) By induction on the position of the contracted redex, using (i) for the parts that do not change. (iii) By induction on the derivation of $M \Rightarrow N$: the congruence cases chain reductions of the parts, and the last case reduces $M \twoheadrightarrow M'$ and $N \twoheadrightarrow N'$ inside $(\lambda x.\, M)\, N$ and then contracts. Finally, (ii) and (iii) give $\to \;\subseteq\; \Rightarrow \;\subseteq\; \twoheadrightarrow$, and taking reflexive–transitive closures of all three gives $\twoheadrightarrow = \Rightarrow^\ast$.
+
+</Proof>
+
+We use the **substitution lemma**: if $x \ne y$ and $x \notin \mathrm{FV}(L)$, then $M[N/x][L/y] = M[L/y][N[L/y]/x]$. (Induction on $M$: for $M = x$ both sides are $N[L/y]$; for $M = y$ both are $L$, using $x \notin \mathrm{FV}(L)$; the other cases are immediate, choosing bound variables fresh.)
+
+<Theorem name="Lemma B (parallel reduction respects substitution)">
+
+If $M \Rightarrow M'$ and $N \Rightarrow N'$, then $M[N/x] \Rightarrow M'[N'/x]$.
+
+</Theorem>
+
+<Proof>
+
+Induction on the derivation of $M \Rightarrow M'$, with bound variables chosen different from $x$ and not free in $N, N'$. Variable case: if $M = x$ the claim is $N \Rightarrow N'$; otherwise both sides are the same variable. The abstraction and application cases follow from the induction hypothesis. In the remaining case $M = (\lambda y.\, P)\, Q$ and $M' = P'[Q'/y]$ with $P \Rightarrow P'$ and $Q \Rightarrow Q'$. Then
+$$
+M[N/x] = (\lambda y.\, P[N/x])\,(Q[N/x]) \;\Rightarrow\; P'[N'/x]\,\big[Q'[N'/x]/y\big] = P'[Q'/y][N'/x] = M'[N'/x],
+$$
+using the induction hypothesis for $P$ and $Q$, then the substitution lemma (valid because $y \notin \mathrm{FV}(N')$).
+
+</Proof>
+
+<Definition term="complete development">
+
+$M^\ast$ contracts *every* redex of $M$: $x^\ast = x$; $(\lambda x.\, M)^\ast = \lambda x.\, M^\ast$; $(M\, N)^\ast = M^\ast\, N^\ast$ if $M$ is not an abstraction; $((\lambda x.\, M)\, N)^\ast = M^\ast[N^\ast/x]$.
+
+</Definition>
+
+<Theorem name="Lemma C (triangle property; Takahashi)">
+
+If $M \Rightarrow N$ then $N \Rightarrow M^\ast$. Consequently $\Rightarrow$ has the **diamond property**: if $M \Rightarrow N_1$ and $M \Rightarrow N_2$, then $N_1 \Rightarrow M^\ast$ and $N_2 \Rightarrow M^\ast$.
+
+</Theorem>
+
+<Proof>
+
+Induction on the derivation of $M \Rightarrow N$. Variables and abstractions are immediate. If $M = (\lambda x.\, P)\, Q$ and $N = P'[Q'/x]$ with $P \Rightarrow P'$, $Q \Rightarrow Q'$, then by induction $P' \Rightarrow P^\ast$ and $Q' \Rightarrow Q^\ast$, and Lemma B gives $N \Rightarrow P^\ast[Q^\ast/x] = M^\ast$. If $M = P\, Q$ and $N = P'\, Q'$ with $P \Rightarrow P'$, $Q \Rightarrow Q'$: when $P$ is not an abstraction, $M^\ast = P^\ast\, Q^\ast$ and the induction hypotheses give $N \Rightarrow M^\ast$. When $P = \lambda x.\, P_0$, the only rule producing $P \Rightarrow P'$ makes $P' = \lambda x.\, P_0'$ with $P_0 \Rightarrow P_0'$, and the induction hypothesis $P' \Rightarrow P^\ast = \lambda x.\, P_0^\ast$ gives $P_0' \Rightarrow P_0^\ast$. So $N = (\lambda x.\, P_0')\, Q' \Rightarrow P_0^\ast[Q^\ast/x] = M^\ast$ by the last rule of $\Rightarrow$.
+
+</Proof>
+
+<Theorem name="Lemma D (diamond implies confluence)">
+
+If a relation $\triangleright$ has the diamond property, then so does its reflexive–transitive closure $\triangleright^\ast$: if $a \triangleright^\ast b$ and $a \triangleright^\ast c$, there is $d$ with $b \triangleright^\ast d$ and $c \triangleright^\ast d$.
+
+</Theorem>
+
+<Proof>
+
+First the **strip lemma**: if $a \triangleright b$ and $a \triangleright^\ast c$, then there is $d$ with $b \triangleright^\ast d$ and $c \triangleright d$. By induction on the length of $a \triangleright^\ast c$: for length $0$ take $d = b$; if $a \triangleright^\ast c' \triangleright c$ and (by induction) $b \triangleright^\ast d'$, $c' \triangleright d'$, the diamond property applied to $c' \triangleright d'$ and $c' \triangleright c$ gives $e$ with $d' \triangleright e$ and $c \triangleright e$; then $b \triangleright^\ast e$. Now induct on the length of $a \triangleright^\ast b$ in the same way, using the strip lemma for each step. Geometrically: the two reductions span a grid, and each square is filled by one diamond.
+
+</Proof>
+
+<Theorem name="Theorem 2 (Church–Rosser)">
+
+β-reduction is **confluent**: if $M \twoheadrightarrow N_1$ and $M \twoheadrightarrow N_2$, then there is a term $L$ with $N_1 \twoheadrightarrow L$ and $N_2 \twoheadrightarrow L$.
+
+</Theorem>
+
+<Proof>
+
+By Lemma A, $\twoheadrightarrow$ equals $\Rightarrow^\ast$. By Lemma C, $\Rightarrow$ has the diamond property, so by Lemma D, $\Rightarrow^\ast$ is confluent.
+
+</Proof>
+
+<Theorem name="Corollary 3 (uniqueness of normal forms; consistency)">
+
+1. If $M =_\beta N$, then $M$ and $N$ have a common reduct.
+2. A term has at most one normal form.
+3. Distinct normal forms are not β-equal. In particular $\mathsf{TRUE} \ne_\beta \mathsf{FALSE}$ and $K \ne_\beta I$, so β-equality does not identify all terms.
+
+</Theorem>
+
+<Proof>
+
+(1) By induction on a chain $M = M_0, M_1, \dots, M_k = N$ in which each consecutive pair is related by $\to$ or $\leftarrow$: if $M_0$ and $M_{k-1}$ have a common reduct $L$, then either $M_k \to M_{k-1}$, so $L$ is also a reduct of $M_k$, or $M_{k-1} \to M_k$, and Church–Rosser applied to $M_{k-1} \twoheadrightarrow L$ and $M_{k-1} \to M_k$ gives a common reduct of $L$ and $M_k$, hence of $M_0$ and $M_k$. (2) If $N_1, N_2$ are normal forms of $M$, Church–Rosser gives $L$ with $N_i \twoheadrightarrow L$; a normal form reduces only to itself, so $N_1 = L = N_2$. (3) follows from (1) in the same way.
+
+</Proof>
+
+So the value of a computation, if it has one, does not depend on the order of evaluation. Two further classical theorems complete the picture; we state them with references.
+
+<Theorem name="Theorem 4 (standardisation, stated)">
+
+If $M$ has a normal form, then normal-order reduction (always contracting the leftmost-outermost redex) reaches it. (Curry and Feys 1958; see Barendregt 1984 or Hindley and Seldin 2008.)
+
+</Theorem>
+
+<Theorem name="Theorem 5 (λ-definability and undecidability, stated)">
+
+A partial function $\N^k \rightharpoonup \N$ is λ-definable on Church numerals if and only if it is partial recursive, if and only if it is computable by a Turing machine (Kleene 1936, Turing 1937). Consequently there is no algorithm that decides whether a λ-term has a normal form, or whether two λ-terms are β-equal (Church 1936).
+
+</Theorem>
+
+The idea of the first equivalence: primitive recursion is iteration on pairs, exactly as in $\mathsf{PRED}$, and unbounded search ("the least $n$ with $f(n) = 0$") is a recursive definition, solved with $Y$. Conversely, β-reduction is a mechanical process a Turing machine can simulate. See <TopicLink id="math.comp.computability">computability</TopicLink>.
+
+### Types tame the calculus
+
+The **simply typed λ-calculus** attaches a type to every variable. Types are built from base types by $A \to B$; the rules are: a variable $x{:}A$ has type $A$; if $M : A \to B$ and $N : A$ then $M\, N : B$; and if $M : B$ assuming $x : A$, then $\lambda x{:}A.\, M : A \to B$. So $\lambda x{:}A.\, x : A \to A$ and $\lambda x{:}A.\, \lambda y{:}B.\, x : A \to B \to A$, but $\omega = \lambda x.\, x\, x$ has no type: $x\, x$ would need $x : A \to B$ and $x : A$ at once, i.e. $A = A \to B$, impossible since $A \to B$ is strictly bigger than $A$. Types are preserved by reduction (subject reduction, a consequence of a substitution lemma for typings).
+
+The **degree** of a redex $(\lambda x{:}A.\, M)\, N$ is the size (number of arrows) of the type $A \to B$ of the function $\lambda x{:}A.\, M$.
+
+<Theorem name="Theorem 6 (weak normalisation; Turing)">
+
+Every simply typed λ-term has a normal form.
+
+</Theorem>
+
+<Proof>
+
+For a term $M$ let $d$ be the maximum degree of its redexes and $n$ the number of redexes of degree $d$; we induct on $(d, n)$ in lexicographic order. If $M$ has no redex we are done. Otherwise choose a redex $R = (\lambda x{:}A.\, P)\, Q$ of degree $d$ that is **rightmost** among those of degree $d$ (its $\lambda$ comes last in the written term). Every redex inside $Q$ starts to the right of $R$'s $\lambda$, so $Q$ contains no redex of degree $d$. Contract $R$ to $P[Q/x]$ and look at the redexes of the result:
+
+- redexes outside $R$, and redexes inside $P$, survive exactly once each, with the same degree (substitution does not copy $P$);
+- redexes inside $Q$ may be copied many times, but all have degree $< d$;
+- new redexes can be *created* only in two ways: where $P$ contains $x\, L$ and $Q$ is an abstraction, giving $Q\, L'$ of degree $|A| < d$; or where $R$ itself was applied, $R\, L$, and $P[Q/x]$ is an abstraction, giving a redex of degree $|B| < d$, where $A \to B$ is the type of $\lambda x{:}A.\, P$.
+
+So the redex $R$ of degree $d$ is gone and no redex of degree $\ge d$ was created: either $n$ drops by one or, if $n$ was $1$, the maximal degree $d$ drops. By induction the process reaches a normal form.
+
+</Proof>
+
+<Theorem name="Theorem 7 (strong normalisation and expressive power, stated)">
+
+Every simply typed λ-term is strongly normalising: *every* reduction sequence is finite (Tait 1967, by "reducibility candidates"; see Girard, Lafont and Taylor 1989). The price is expressive power: on Church numerals of type $(o \to o) \to o \to o$, the simply typed λ-calculus defines exactly the **extended polynomials** — functions built from constants, addition, multiplication and a test for zero (Schwichtenberg 1976). Not even subtraction or exponentiation in general is definable at that type.
+
+</Theorem>
+
+So typed programs always terminate, but some computable functions cannot be typed this way — an instance of a general trade-off: a total language cannot define all computable total functions. Under the Curry–Howard correspondence, types are propositions and typed terms are proofs; normalisation of terms is normalisation of proofs. That is the subject of <TopicLink id="math.found.type-theory">type theory and propositions as types</TopicLink>.
+
+</Section>
+
+<Section id="formal" kind="formal" title="The λ-calculus in Lean">
+
+The Lean module uses de Bruijn indices, so α-equivalent terms are equal and substitution never captures. Substitutions are *simultaneous*: `subst σ t` replaces each free variable `n` by `σ n`, and going under a binder uses `up σ`, which shifts the substituted terms. The β-rule contracts `(λ t) s` to `inst t s`.
+
+<Lean decl="Lumenary.LambdaCalculus.Term" />
+
+<Lean decl="Lumenary.LambdaCalculus.up" />
+
+<Lean decl="Lumenary.LambdaCalculus.subst" />
+
+<Lean decl="Lumenary.LambdaCalculus.inst" />
+
+The algebra of substitution is proved from scratch. Two of the fusion laws, including the substitution lemma used in Lemma B:
+
+<Lean decl="Lumenary.LambdaCalculus.subst_subst" />
+
+<Lean decl="Lumenary.LambdaCalculus.subst_inst" />
+
+**β-reduction, normal forms and Ω.** $\Omega$ reduces only to itself, so it has no normal form:
+
+<Lean decl="Lumenary.LambdaCalculus.Step" />
+
+<Lean decl="Lumenary.LambdaCalculus.Normal" />
+
+<Lean decl="Lumenary.LambdaCalculus.bigOmega" />
+
+<Lean decl="Lumenary.LambdaCalculus.bigOmega_step" />
+
+<Lean decl="Lumenary.LambdaCalculus.bigOmega_no_normal_form" />
+
+**Fixed points (Theorem 1).**
+
+<Lean decl="Lumenary.LambdaCalculus.theta" />
+
+<Lean decl="Lumenary.LambdaCalculus.theta_fixed_point" />
+
+<Lean decl="Lumenary.LambdaCalculus.curryY" />
+
+<Lean decl="Lumenary.LambdaCalculus.curryY_fixed_point" />
+
+**Church numerals, computed by the kernel.** A normal-order evaluator is proved sound (each step is a β-step) and complete for normal forms (when it stops, the term is normal). Then `decide` makes Lean's kernel run it, and soundness turns the run into a proof of $\mathsf{PLUS}\, \bar 2\, \bar 3 \twoheadrightarrow \bar 5$.
+
+<Lean decl="Lumenary.LambdaCalculus.church" />
+
+<Lean decl="Lumenary.LambdaCalculus.plus" />
+
+<Lean decl="Lumenary.LambdaCalculus.stepNO" />
+
+<Lean decl="Lumenary.LambdaCalculus.stepNO_sound" />
+
+<Lean decl="Lumenary.LambdaCalculus.stepNO_none" />
+
+<Lean decl="Lumenary.LambdaCalculus.two_plus_three" />
+
+<Lean decl="Lumenary.LambdaCalculus.two_times_three" />
+
+**Lemma D, abstractly**, proved from scratch and compared with Mathlib's `Relation.church_rosser`:
+
+<Lean decl="Lumenary.LambdaCalculus.Diamond" />
+
+<Lean decl="Lumenary.LambdaCalculus.strip" />
+
+<Lean decl="Lumenary.LambdaCalculus.diamond_confluent" />
+
+<Lean decl="Lumenary.LambdaCalculus.church_rosser_library" />
+
+**The Church–Rosser theorem (Theorem 2 and Corollary 3)**, following Lemmas A–C: parallel reduction, its substitution lemma, complete developments and the triangle property.
+
+<Lean decl="Lumenary.LambdaCalculus.Par" />
+
+<Lean decl="Lumenary.LambdaCalculus.par_subst" />
+
+<Lean decl="Lumenary.LambdaCalculus.cd" />
+
+<Lean decl="Lumenary.LambdaCalculus.triangle" />
+
+<Lean decl="Lumenary.LambdaCalculus.par_diamond" />
+
+<Lean decl="Lumenary.LambdaCalculus.church_rosser" />
+
+<Lean decl="Lumenary.LambdaCalculus.normal_form_unique" />
+
+<Lean decl="Lumenary.LambdaCalculus.plus_unique_value" />
+
+**What is and is not formalised.** Everything above — syntax, substitution, β-reduction, $\Omega$, both fixed-point combinators, Church arithmetic, the evaluator and the full Church–Rosser theorem with uniqueness of normal forms — is proved independently in this module; from Mathlib it uses only the reflexive–transitive closure `ReflTransGen` (and `Relation.church_rosser`, for the comparison above). Not formalised: standardisation (Theorem 4), λ-definability of the partial recursive functions and undecidability (Theorem 5), and the typed calculus with Theorems 6 and 7.
+
+</Section>
+
+<Section id="computation" kind="computation" title="An interpreter, and Church–Rosser by exhaustion">
+
+The first experiment is a small λ-calculus interpreter. It parses named terms into de Bruijn form, reduces them by normal order, and counts β-steps. It also runs $K\, I\, \Omega$ under applicative order.
+
+<Python id="lambda_calculus_church" />
+
+What to notice: $\mathsf{PLUS}\, \bar 2\, \bar 3$ takes 6 steps and $\mathsf{TIMES}\, \bar 2\, \bar 3$ takes 7, the same counts as the Lean evaluator. Kleene's predecessor takes 36 steps for $\mathsf{PRED}\, \bar 3$, and the factorial via $Y$ needs 1477 steps for $3! = 6$: Church numerals are a proof of concept, not an efficient representation. $K\, I\, \Omega$ normalises in 2 steps in normal order and never in applicative order.
+
+The second experiment tests the Church–Rosser theorem on *every* term with at most one free variable and at most 10 nodes (variables, applications and abstractions) — 38,438 terms. For each it builds the complete reduction graph, every redex in every order, and checks that any two reducts have a common reduct and that no term reaches two normal forms.
+
+<Python id="lambda_calculus_confluence" />
+
+No counterexample, as the theorem guarantees. Notice $(\lambda x.\, x\, x)((\lambda y.\, y)\, z)$: different routes to its normal form take 2 or 3 steps, so the *answer* is independent of the strategy but the *cost* is not. And $(\lambda x.\, x\, x\, x)(\lambda x.\, x\, x\, x)$ has an ever-growing reduction graph. Both experiments are evidence for finitely many terms; the theorems are proved above and in Lean.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: reduction graphs and Church booleans">
+
+Here is the full reduction graph of $(\lambda x.\, x\, x)(I\, z)$ with $I = \lambda y.\, y$. Each arrow contracts one redex. Follow any path from the top: all of them end at $z\, z$.
+
+<CommutativeDiagram
+  objects={[
+    { id: "M", tex: "(\\lambda x.\\, x\\, x)(I\\, z)", row: 0, col: 1.5 },
+    { id: "A", tex: "(I\\, z)(I\\, z)", row: 1, col: 0.5 },
+    { id: "B", tex: "(\\lambda x.\\, x\\, x)\\, z", row: 1, col: 2.5 },
+    { id: "C", tex: "z\\,(I\\, z)", row: 2, col: 0 },
+    { id: "D", tex: "(I\\, z)\\, z", row: 2, col: 1 },
+    { id: "N", tex: "z\\, z", row: 3, col: 1.5 }
+  ]}
+  arrows={[
+    { from: "M", to: "A", labelSide: "right" },
+    { from: "M", to: "B" },
+    { from: "A", to: "C", labelSide: "right" },
+    { from: "A", to: "D" },
+    { from: "C", to: "N", labelSide: "right" },
+    { from: "D", to: "N" },
+    { from: "B", to: "N" }
+  ]}
+  caption="Contracting the outer redex first duplicates $I\, z$, so the left routes take 3 steps; contracting $I\, z$ first takes 2. Confluence: the normal form $z\, z$ is the same."
+/>
+
+The parallel-reduction proof fills every such picture with diamonds: from $M$, any two parallel reductions meet again at the complete development $M^\ast$ in one parallel step each.
+
+<CommutativeDiagram
+  objects={[
+    { id: "M", tex: "M", row: 0, col: 1 },
+    { id: "N1", tex: "N_1", row: 1, col: 0 },
+    { id: "N2", tex: "N_2", row: 1, col: 2 },
+    { id: "S", tex: "M^\\ast", row: 2, col: 1 }
+  ]}
+  arrows={[
+    { from: "M", to: "N1", tex: "\\Rightarrow", labelSide: "right" },
+    { from: "M", to: "N2", tex: "\\Rightarrow" },
+    { from: "N1", to: "S", tex: "\\Rightarrow", style: "dashed", labelSide: "right" },
+    { from: "N2", to: "S", tex: "\\Rightarrow", style: "dashed" }
+  ]}
+  caption="The triangle property (Lemma C) makes parallel reduction a diamond: every parallel reduct of $M$ reaches $M^\ast$ in one more parallel step."
+/>
+
+Church booleans are selectors, so $\mathsf{AND}\, p\, q = p\, q\, p$ means "if $p$ then $q$ else $p$". Is that really "and"? Compare it with $p \wedge q$ in the truth table, writing "if $p$ then $q$ else $p$" as $(p \wedge q) \vee (\neg p \wedge p)$. Then try $\mathsf{OR}\, p\, q = p\, p\, q$, "if $p$ then $p$ else $q$".
+
+<TruthTable formula="(p ∧ q) ∨ (¬p ∧ p)" compare="p ∧ q" title="Church's AND, read as if-then-else" subtitle="AND p q = p q p means ‘if p then q else p’." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Substituting without renaming bound variables.** $(\lambda x\, y.\, x)\, y$ is *not* $\lambda y.\, y$: the free $y$ would be captured. Rename the bound variable first: $(\lambda x\, z.\, x)\, y \to \lambda z.\, y$. De Bruijn indices make the problem disappear, which is why proof assistants use them.
+
+</Misconception>
+
+<Misconception>
+
+**"Every λ-term has a normal form."** $\Omega = (\lambda x.\, x\, x)(\lambda x.\, x\, x)$ reduces only to itself, so it has none (proved in Lean above); so does $\lambda x.\, \Omega$, since reduction also happens under $\lambda$. Only typed calculi guarantee normal forms.
+
+</Misconception>
+
+<Misconception>
+
+**"If a term has a normal form, every reduction strategy finds it."** $K\, I\, \Omega$ has normal form $I$, but reducing $\Omega$ first loops forever. Church–Rosser says the normal form is *unique*; standardisation says *normal order* finds it. Neither says every strategy terminates.
+
+</Misconception>
+
+<Misconception>
+
+**"Church–Rosser means reduction terminates."** Confluence is about agreement, not termination: $\Omega$ is confluent (all its reducts are $\Omega$) and never terminates. Uniqueness and existence of normal forms are separate questions.
+
+</Misconception>
+
+<Misconception>
+
+**"$M =_\beta N$ means one reduces to the other."** β-equality allows reductions in both directions. $Y\, F =_\beta F\,(Y\, F)$, but neither reduces to the other; they have a common reduct (Corollary 3 says this is always the case for β-equal terms).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="computation" title="Evaluation strategies and functional programming">
+
+To a programmer, the λ-calculus is the core of every functional language, and the strategies of this lesson are real design choices. Most languages (Python, OCaml, Scheme) use **call-by-value**: evaluate arguments first — applicative order, which loops on $K\, I\, \Omega$ but never duplicates work. Haskell uses **call-by-need**, normal order with sharing, so that a duplicated argument such as the $I\, z$ above is evaluated at most once. In a call-by-value language $Y$ loops even when used correctly; one uses the η-expanded $Z = \lambda f.\, (\lambda x.\, f\,(\lambda v.\, x\, x\, v))(\lambda x.\, f\,(\lambda v.\, x\, x\, v))$ instead. Closures, currying ($\lambda x\, y.\, M$ as a function returning a function) and higher-order functions such as `map` all come from here. Peter Landin's SECD machine (1964) was the first abstract machine for evaluating λ-terms.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="A failed logic and a successful calculus">
+
+Church introduced λ-notation as part of a system of logic intended as a foundation of mathematics. In 1935 Kleene and Rosser showed that system inconsistent, and Curry later distilled the problem into a short paradox built on the same self-application as $Y$: with a fixed point of $\lambda x.\, (x \to P)$, every proposition $P$ becomes provable. What survived was the pure calculus of functions, whose consistency as an equational theory is exactly Corollary 3 ($\mathsf{TRUE} \ne_\beta \mathsf{FALSE}$). Church then used it to give the first published undecidable problem (1936), and with types it became a logic again: under the **Curry–Howard correspondence**, simply typed terms are proofs in intuitionistic propositional logic and β-reduction is the elimination of detours in proofs. See <TopicLink id="math.found.type-theory">type theory</TopicLink> and <TopicLink id="math.found.proof-theory">proof theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Scott's models: continuity tames self-application">
+
+Can the untyped calculus be modelled by actual functions? Self-application suggests a set $D$ with $D \cong D^D$, which Cantor's theorem forbids unless $|D| = 1$. In 1969 **Dana Scott** found the way out: work with complete lattices and only the **continuous** functions for the Scott topology (the open sets are the upward-closed sets that cannot be reached by a directed supremum from outside). He constructed a lattice $D_\infty$, as an inverse limit, with $D_\infty \cong [D_\infty \to D_\infty]$, the space of continuous functions — a non-trivial model in which every λ-term denotes an element and β-equal terms denote the same element. The Scott topology is $T_0$ but not Hausdorff: its specialisation order is the information order, "$x \sqsubseteq y$ when $y$ is at least as defined as $x$". Continuity — a finite part of the output depends only on a finite part of the input — is a topological statement about computation, and **domain theory** grew from it.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Combinators and combinatory algebras">
+
+Bound variables can be eliminated entirely. In **combinatory logic** (Schönfinkel 1924, Curry 1930) there are just two constants with the rules $K\, x\, y = x$ and $S\, x\, y\, z = x\, z\,(y\, z)$, and every λ-term can be translated into an expression in $S$ and $K$ by "bracket abstraction" (for instance $I = S\, K\, K$, as computed above). Algebraically, a **combinatory algebra** is a set with a binary operation (application) containing elements $K, S$ obeying these two laws; it is *combinatorially complete*: every polynomial in the operation is represented by an element. Models of the λ-calculus are combinatory algebras satisfying a few extra axioms (λ-algebras), and the λ-calculus becomes an equational algebraic theory — though a strange one, since application is neither associative nor commutative.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Cartesian closed categories">
+
+Joachim Lambek observed (around 1980) that the simply typed λ-calculus with products is the **internal language of cartesian closed categories**: types are objects, a term $x : A \vdash M : B$ is an arrow $A \to B$, abstraction is the bijection $\Hom(A \times B, C) \cong \Hom(A, C^B)$, and β- and η-equality are the two triangle laws of that adjunction. Untyped models live in a CCC as **reflexive objects** $U$ with $U^U$ a retract of $U$ — Scott's $D_\infty$ is one in the category of complete lattices and continuous maps. See <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Moses Schönfinkel** (working in Göttingen) introduced combinators in "Über die Bausteine der mathematischen Logik" (1924); **Haskell Curry** developed combinatory logic from his 1930 dissertation onwards.
+- **Alonzo Church** introduced λ-notation in "A set of postulates for the foundation of logic" (*Annals of Mathematics*, 1932–33). **Stephen Kleene** and **J. Barkley Rosser** showed the logical system inconsistent (1935). Kleene, then Church's student, found the λ-definition of the predecessor; he later recalled that the idea came to him at the dentist's.
+- **Church and Rosser** proved confluence in "Some properties of conversion" (*Transactions of the AMS*, 1936). Church's "An unsolvable problem of elementary number theory" (1936) proposed identifying effective computability with λ-definability and gave the first undecidability result; **Kleene** (1936) and **Alan Turing** ("Computability and λ-definability", 1937) proved the equivalences with recursive functions and Turing machines.
+- Church's simple theory of types (1940) introduced the typed calculus. Turing's normalisation argument was published by **Robin Gandy** in 1980; **William Tait** proved strong normalisation in 1967. The parallel-reduction proof of Church–Rosser is due to Tait and **Per Martin-Löf**, and the complete-development form to **Masako Takahashi** (1995). **N. G. de Bruijn** introduced nameless indices for the Automath proof checker (1972).
+- **John McCarthy**'s LISP (1960) borrowed λ-notation; **Peter Landin** (1964–66) showed how to understand programming languages through the λ-calculus; **Corrado Böhm** proved his separation theorem (1968); **Dana Scott** built the first mathematical models (1969). **Henk Barendregt**'s monograph (1981; revised 1984) made the subject a branch of mathematics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Henk Barendregt, *The Lambda Calculus: Its Syntax and Semantics* (1981; revised edition 1984) — the standard reference, including standardisation and Böhm's theorem.
+- J. Roger Hindley and Jonathan P. Seldin, *Lambda-Calculus and Combinators: An Introduction* (2008) — a readable first course, with combinatory logic and types.
+- Benjamin C. Pierce, *Types and Programming Languages* (2002) — the λ-calculus from the programming-language side, with implementations.
+- Jean-Yves Girard, Yves Lafont and Paul Taylor, *Proofs and Types* (1989) — normalisation proofs and the Curry–Howard correspondence.
+- Morten Heine Sørensen and Paweł Urzyczyn, *Lectures on the Curry–Howard Isomorphism* (2006) — untyped and typed calculi, with full proofs.
+- Masako Takahashi, "Parallel reductions in λ-calculus", *Information and Computation* 118 (1995) — the triangle-property proof used here.
+
+</Section>

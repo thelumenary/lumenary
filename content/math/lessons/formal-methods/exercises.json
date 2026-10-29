@@ -1,0 +1,348 @@
+{
+  "lesson": "formal-methods",
+  "exercises": [
+    {
+      "id": "formal-methods-partial-triples",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Which of these are **valid partial-correctness** triples over the integers? (Choose all that apply.)",
+      "options": [
+        {
+          "id": "a",
+          "label": "$\\{x = 1\\}\\ \\mathtt{while}\\ x \\gt  0\\ \\mathtt{do}\\ x := x + 1\\ \\{x = 0\\}$",
+          "correct": true,
+          "feedback": "Valid — vacuously. From $x = 1$ the loop never terminates, so there is no final state that could violate $x = 0$."
+        },
+        {
+          "id": "b",
+          "label": "$\\{\\top\\}\\ x := 5\\ \\{x = 5\\}$",
+          "correct": true,
+          "feedback": "Valid: by the assignment rule the precondition is $(x = 5)[5/x]$, i.e. $5 = 5$, which is true in every state."
+        },
+        {
+          "id": "c",
+          "label": "$\\{x = 3\\}\\ x := x + 1\\ \\{x = 3\\}$",
+          "correct": false,
+          "feedback": "Not valid: the run from $x = 3$ terminates with $x = 4$. The weakest precondition of $x = 3$ is $x + 1 = 3$, i.e. $x = 2$."
+        },
+        {
+          "id": "d",
+          "label": "$\\{x \\ge 0\\}\\ \\mathtt{while}\\ x \\gt  0\\ \\mathtt{do}\\ x := x - 1\\ \\{x = 0\\}$",
+          "correct": true,
+          "feedback": "Valid (and even totally correct): with invariant $x \\ge 0$, at exit $x \\ge 0 \\wedge \\neg(x \\gt  0)$ gives $x = 0$; the variant $x$ decreases."
+        }
+      ],
+      "hints": [
+        "A partial-correctness triple only constrains runs that terminate.",
+        "For assignments, compute the weakest precondition $Q[a/x]$; for loops, look for an invariant — or notice that the loop never stops."
+      ],
+      "solution": "(a), (b) and (d). Triple (a) is valid because no run from $x = 1$ terminates — partial correctness is silent about divergence. (b) follows from the assignment axiom. (c) fails on the run $x = 3 \\mapsto 4$. (d) follows from the loop rule with invariant $x \\ge 0$: $I \\wedge \\neg(x \\gt  0)$ implies $x = 0$; here the loop also terminates, with variant $x$."
+    },
+    {
+      "id": "formal-methods-weakest-precondition",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Compute $\\mathrm{wp}(y := x + 3;\\ z := 2y,\\ \\; z = 20)$. It has the form $x = n$. What is $n$?",
+      "answer": 7,
+      "feedback": [
+        {
+          "match": "10",
+          "message": "$10$ is the value of $y$ that makes $z = 20$. One more substitution is needed: replace $y$ by $x + 3$."
+        },
+        {
+          "match": "17",
+          "message": "Substitute backwards, last assignment first: $(z = 20)[2y/z]$ is $2y = 20$; then replace $y$ by $x + 3$."
+        },
+        {
+          "match": "23",
+          "message": "Check the order of substitutions: work from the *last* assignment back to the first."
+        }
+      ],
+      "hints": [
+        "$\\mathrm{wp}(c_1;c_2, Q) = \\mathrm{wp}(c_1, \\mathrm{wp}(c_2, Q))$, and $\\mathrm{wp}(x := a, Q) = Q[a/x]$.",
+        "First $\\mathrm{wp}(z := 2y, z = 20)$ is $2y = 20$."
+      ],
+      "solution": "$\\mathrm{wp}(z := 2y, z = 20) = (2y = 20)$, and $\\mathrm{wp}(y := x + 3, 2y = 20) = (2(x+3) = 20)$, i.e. $x = 7$. So $n = 7$. Assignment works backwards: the last command is substituted first."
+    },
+    {
+      "id": "formal-methods-loop-invariant",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "The program $s := 0;\\ i := 0;\\ \\mathtt{while}\\ i \\lt  n\\ \\mathtt{do}\\ (i := i + 1;\\ s := s + i)$ should satisfy $\\{n \\ge 0\\}\\ \\cdot\\ \\{s = n(n+1)/2\\}$. Which loop invariant lets the loop rule and the rule of consequence prove this?",
+      "options": [
+        {
+          "id": "a",
+          "label": "$s = i(i+1)/2 \\wedge i \\le n$",
+          "correct": true,
+          "feedback": "Yes. It holds initially ($0 = 0$, $0 \\le n$), is preserved ($s + (i+1) = (i+1)(i+2)/2$ and $i \\lt  n$ gives $i + 1 \\le n$), and at exit $i \\le n \\wedge \\neg(i \\lt  n)$ forces $i = n$."
+        },
+        {
+          "id": "b",
+          "label": "$s = i(i+1)/2$",
+          "correct": false,
+          "feedback": "It is inductive, but too weak: at exit we only know $\\neg(i \\lt  n)$, i.e. $i \\ge n$, which does not give $i = n$."
+        },
+        {
+          "id": "c",
+          "label": "$s = n(n+1)/2$",
+          "correct": false,
+          "feedback": "This is the postcondition, not an invariant: it is false at the start, when $s = 0$ (unless $n = 0$)."
+        },
+        {
+          "id": "d",
+          "label": "$i \\le n$",
+          "correct": false,
+          "feedback": "Inductive, but it says nothing about $s$, so it cannot imply the postcondition."
+        }
+      ],
+      "hints": [
+        "An invariant must (1) hold initially, (2) be preserved by the body when the test is true, and (3) together with the negated test imply the postcondition.",
+        "At exit you know $\\neg(i \\lt  n)$. What else do you need to conclude $i = n$?"
+      ],
+      "solution": "Take $I \\equiv s = i(i+1)/2 \\wedge i \\le n$. (1) Initially $s = i = 0$ and $n \\ge 0$. (2) If $I$ and $i \\lt  n$, then after $i := i+1;\\ s := s + i$ the new values satisfy $s' = i(i+1)/2 + (i+1) = (i+1)(i+2)/2$ and $i' = i + 1 \\le n$. (3) $I \\wedge i \\ge n$ gives $i = n$ and so $s = n(n+1)/2$. The bare formula $s = i(i+1)/2$ fails step (3): invariants often need an extra *bound* conjunct."
+    },
+    {
+      "id": "formal-methods-why-rule-induction",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In the soundness proof of Hoare logic, the loop case is proved by induction on the derivation of $\\langle \\mathtt{while}\\ b\\ \\mathtt{do}\\ c, s\\rangle \\Downarrow t$. Why would structural induction on the command not work?",
+      "options": [
+        {
+          "id": "a",
+          "label": "The premise of the rule for $b(s) = \\mathrm{tt}$ contains the same loop $\\mathtt{while}\\ b\\ \\mathtt{do}\\ c$, which is not a smaller command.",
+          "correct": true,
+          "feedback": "Exactly. The derivation of the remaining iterations is smaller, but the command is the same, so only induction on derivations (or on the number of iterations) goes through."
+        },
+        {
+          "id": "b",
+          "label": "Because loops might not terminate.",
+          "correct": false,
+          "feedback": "Non-terminating runs have no derivation at all, so they never appear in a partial-correctness proof. The problem is elsewhere."
+        },
+        {
+          "id": "c",
+          "label": "Because the invariant may mention variables not assigned in the loop.",
+          "correct": false,
+          "feedback": "That is harmless: assertions may mention any variables. Look at the shape of the loop rule of the semantics."
+        },
+        {
+          "id": "d",
+          "label": "Because the rule of consequence is not syntax-directed.",
+          "correct": false,
+          "feedback": "The rule of consequence is handled by the *outer* induction on Hoare derivations. The inner induction is about runs of the loop."
+        }
+      ],
+      "hints": [
+        "Write down the big-step rule for $\\mathtt{while}$ when the test is true. What are its premises?",
+        "For induction to work, the induction hypothesis must apply to something strictly smaller."
+      ],
+      "solution": "The rule $\\dfrac{b(s) = \\mathrm{tt} \\quad \\langle c, s\\rangle \\Downarrow s' \\quad \\langle \\mathtt{while}\\ b\\ \\mathtt{do}\\ c, s'\\rangle \\Downarrow t}{\\langle \\mathtt{while}\\ b\\ \\mathtt{do}\\ c, s\\rangle \\Downarrow t}$ has the same loop in its conclusion and in a premise. Structural induction on commands gives no hypothesis about that premise; induction on derivations does, because the sub-derivation is smaller. In Lean this is `while_sound`: `generalize` the command, then `induction` on the execution."
+    },
+    {
+      "id": "formal-methods-ctl-formula",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which CTL formula says: *from every reachable state it is possible to get back to an initial state* (a \\\"reset\\\" property)?",
+      "options": [
+        {
+          "id": "a",
+          "label": "$\\mathsf{AG}\\,\\mathsf{EF}\\,\\mathit{init}$",
+          "correct": true,
+          "feedback": "Yes: on all paths, globally ($\\mathsf{AG}$), there exists a path that eventually reaches $\\mathit{init}$ ($\\mathsf{EF}$)."
+        },
+        {
+          "id": "b",
+          "label": "$\\mathsf{EF}\\,\\mathsf{AG}\\,\\mathit{init}$",
+          "correct": false,
+          "feedback": "This says some reachable state is the start of a region where $\\mathit{init}$ holds forever on every path — a very different property."
+        },
+        {
+          "id": "c",
+          "label": "$\\mathsf{AF}\\,\\mathit{init}$",
+          "correct": false,
+          "feedback": "This says every path from the current state *inevitably* reaches $\\mathit{init}$ — and only from the current state, not from every reachable one."
+        },
+        {
+          "id": "d",
+          "label": "$\\mathsf{EG}\\,\\mathsf{EF}\\,\\mathit{init}$",
+          "correct": false,
+          "feedback": "$\\mathsf{EG}$ only requires *one* path along which $\\mathsf{EF}\\,\\mathit{init}$ holds; the property must hold at every reachable state."
+        }
+      ],
+      "hints": [
+        "\\\"From every reachable state\\\" is $\\mathsf{AG}$; \\\"it is possible to eventually\\\" is $\\mathsf{EF}$.",
+        "Read the formula from the outside in."
+      ],
+      "solution": "$\\mathsf{AG}\\,\\mathsf{EF}\\,\\mathit{init}$. The outer $\\mathsf{AG}$ quantifies over every state reachable along any path; the inner $\\mathsf{EF}$ asks for some path from that state to $\\mathit{init}$. This property is not expressible in LTL, which cannot say \\\"there exists a path\\\"."
+    },
+    {
+      "id": "formal-methods-ef-states",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "C",
+      "prompt": "A Kripke structure has states $1, \\dots, 6$ and transitions $1 \\to 2$, $2 \\to 3$, $3 \\to 3$, $4 \\to 5$, $5 \\to 4$, $6 \\to 1$. The proposition $p$ holds only in state $3$. Compute $\\mathsf{EF}\\,p$ by the iteration $Z_0 = \\emptyset$, $Z_{k+1} = \\{3\\} \\cup \\mathrm{pre}(Z_k)$. How many states satisfy $\\mathsf{EF}\\,p$?",
+      "answer": 4,
+      "feedback": [
+        {
+          "match": "3",
+          "message": "Keep iterating until nothing changes: state $6$ has a successor in the set $\\{1, 2, 3\\}$."
+        },
+        {
+          "match": "6",
+          "message": "States $4$ and $5$ only lead to each other; no path from them reaches state $3$."
+        },
+        {
+          "match": "1",
+          "message": "$\\mathsf{EF}\\,p$ also contains every state from which a $p$-state is *reachable*, not only the $p$-states."
+        }
+      ],
+      "hints": [
+        "$Z_1 = \\{3\\}$. Which states have a successor in $Z_1$?",
+        "The iterates are $\\{3\\}, \\{2, 3\\}, \\{1, 2, 3\\}, \\dots$"
+      ],
+      "solution": "$Z_1 = \\{3\\}$, $Z_2 = \\{2, 3\\}$ (and $3$, by its self-loop), $Z_3 = \\{1, 2, 3\\}$, $Z_4 = \\{1, 2, 3, 6\\}$, $Z_5 = Z_4$. So $\\mathsf{EF}\\,p = \\{1, 2, 3, 6\\}$, which has $4$ states. States $4$ and $5$ form a cycle that never reaches $3$, so $\\mathsf{AG}\\,\\neg p$ holds there."
+    },
+    {
+      "id": "formal-methods-rice",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Programs are written in a Turing-complete language. Which of these problems are **undecidable**? (Choose all that apply.)",
+      "options": [
+        {
+          "id": "a",
+          "label": "Given a program P, does P halt on input 0?",
+          "correct": true,
+          "feedback": "Undecidable: this is (a form of) the halting problem."
+        },
+        {
+          "id": "b",
+          "label": "Given a program P, does P compute a total function?",
+          "correct": true,
+          "feedback": "Undecidable by Rice's theorem: totality is a non-trivial property of the function computed."
+        },
+        {
+          "id": "c",
+          "label": "Given a program P, does its source text contain a while loop?",
+          "correct": false,
+          "feedback": "Decidable: this is a property of the *text*, not of the behaviour, so Rice's theorem does not apply."
+        },
+        {
+          "id": "d",
+          "label": "Given a finite Kripke structure and a state, does $\\mathsf{AG}\\,\\neg \\mathit{bad}$ hold?",
+          "correct": false,
+          "feedback": "Decidable — this is model checking, by a graph search (Theorems 5 and 6)."
+        },
+        {
+          "id": "e",
+          "label": "Given P, does P output 1 on every input 0, …, 10 within a million steps?",
+          "correct": false,
+          "feedback": "Decidable: run P on the eleven inputs for at most a million steps each. Bounded questions escape Rice's theorem."
+        }
+      ],
+      "hints": [
+        "Rice's theorem is about non-trivial properties of the *function computed*.",
+        "Properties of the program text, of finite structures, or with an explicit step bound are not of that kind."
+      ],
+      "solution": "(a) and (b). Halting on a fixed input is the halting problem; totality is a non-trivial semantic property, so Rice's theorem applies. (c) is syntactic, (d) is model checking of a finite structure, and (e) is bounded — all decidable. This is why practical verification restricts programs, properties or automation."
+    },
+    {
+      "id": "formal-methods-lean-hoare",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "Which Lean definition correctly formalises the **partial-correctness** triple $\\{P\\}\\ c\\ \\{Q\\}$, where `BigStep c s t` means that `c` run from `s` terminates in `t`?",
+      "options": [
+        {
+          "id": "a",
+          "label": "`∀ s t, P s → BigStep c s t → Q t`",
+          "correct": true,
+          "feedback": "Correct — this is the lesson's `Hoare`. Every terminating run from a `P`-state ends in a `Q`-state; non-terminating runs impose nothing."
+        },
+        {
+          "id": "b",
+          "label": "`∀ s, P s → ∃ t, BigStep c s t ∧ Q t`",
+          "correct": false,
+          "feedback": "This is *total* correctness for a deterministic language: it also demands that a terminating run exists."
+        },
+        {
+          "id": "c",
+          "label": "`∃ s t, P s ∧ BigStep c s t ∧ Q t`",
+          "correct": false,
+          "feedback": "This only says that *some* run from some `P`-state ends in `Q` — far too weak."
+        },
+        {
+          "id": "d",
+          "label": "`∀ s t, Q t → BigStep c s t → P s`",
+          "correct": false,
+          "feedback": "This runs the implication backwards: it says every run ending in `Q` started in `P`."
+        }
+      ],
+      "hints": [
+        "Partial correctness has the form: for every run, if the precondition held at the start, then the postcondition holds at the end.",
+        "Which option would be true of `while true do skip` for every `P` and `Q`?"
+      ],
+      "solution": "Option (a). With (a), `loopForever_hoare` proves `{True} while true do skip {False}`, since there are no runs at all. Option (b) would be false for that loop, which is the difference between partial and total correctness."
+    },
+    {
+      "id": "formal-methods-trusted-base",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "A compiler comes with a machine-checked proof that, whenever it succeeds, the generated assembly has only behaviours allowed by the source program, according to formal semantics of the source and assembly languages. Which of the following could still lead to a wrongly behaving executable? (Choose all that apply.)",
+      "options": [
+        {
+          "id": "a",
+          "label": "The formal semantics of the source language differs from what programmers (or the standard) expect.",
+          "correct": true,
+          "feedback": "Yes: the theorem is relative to the formal semantics. If that model is unfaithful, the guarantee is about the wrong thing."
+        },
+        {
+          "id": "b",
+          "label": "An unverified parser or assembler used around the verified core has a bug.",
+          "correct": true,
+          "feedback": "Yes: components outside the proof are part of the trusted base. Random testing found such bugs in CompCert's then-unverified front end."
+        },
+        {
+          "id": "c",
+          "label": "The processor does not implement its instruction set as the assembly semantics says.",
+          "correct": true,
+          "feedback": "Yes: the hardware model is an assumption of the theorem (recall the Pentium division bug)."
+        },
+        {
+          "id": "d",
+          "label": "One of the verified optimisation passes contains an error in its proof.",
+          "correct": false,
+          "feedback": "If the proof was checked by the proof assistant's kernel, such an error would have been rejected — unless the kernel itself is wrong, which is a different item of the trusted base."
+        }
+      ],
+      "hints": [
+        "A verification theorem is relative to its specification, its semantics and its trusted base.",
+        "Which items are *assumed* by the proof rather than *proved* by it?"
+      ],
+      "solution": "(a), (b) and (c). The proof establishes a precise statement about formal models; anything that connects those models to reality — the source semantics, unverified tools, the hardware, and the proof checker itself — is assumed. Errors inside the checked proof (d) are exactly what the kernel rules out."
+    },
+    {
+      "id": "formal-methods-python-counterexample",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Write `find_violation(initial, successors, is_bad)` for explicit-state model checking of a safety property. `successors(s)` returns a list of states and `is_bad(s)` a boolean. Return a **shortest** path `[initial, ..., bad_state]` to a reachable bad state, or `None` if no reachable state is bad. Your search must terminate on finite systems with cycles.",
+      "starter": "def find_violation(initial, successors, is_bad):\n    # breadth-first search with a dictionary of parents\n    return None\n",
+      "tests": "g = {0: [1, 2], 1: [3], 2: [3], 3: [0], 4: [5], 5: []}\nassert find_violation(0, lambda s: g[s], lambda s: s == 3) in ([0, 1, 3], [0, 2, 3])\nassert find_violation(0, lambda s: g[s], lambda s: s == 5) is None\nassert find_violation(4, lambda s: g[s], lambda s: s == 4) == [4]\nh = {0: [1, 9], 1: [2], 2: [3], 3: [4], 9: [4], 4: []}\nassert find_violation(0, lambda s: h[s], lambda s: s == 4) == [0, 9, 4], 'BFS finds the shortest path'\nc = {0: [1], 1: [0]}\nassert find_violation(0, lambda s: c[s], lambda s: s == 7) is None\nprint('All tests passed!')\n",
+      "hints": [
+        "Use `collections.deque` as a queue and a dictionary `parent` mapping each discovered state to the state it was discovered from (the initial state maps to `None`).",
+        "When you pop a bad state, follow the parents back to the start and reverse the list. Never enqueue a state twice."
+      ],
+      "solution": "```python\nfrom collections import deque\n\ndef find_violation(initial, successors, is_bad):\n    parent = {initial: None}\n    queue = deque([initial])\n    while queue:\n        s = queue.popleft()\n        if is_bad(s):\n            path = []\n            while s is not None:\n                path.append(s)\n                s = parent[s]\n            return path[::-1]\n        for t in successors(s):\n            if t not in parent:\n                parent[t] = s\n                queue.append(t)\n    return None\n```\n\nBreadth-first search visits states in order of distance from the initial state, so the first bad state popped has a shortest path, and the `parent` map reconstructs it. Each state is enqueued once, so the search terminates on every finite system. Returning `None` is an exhaustive guarantee about the *model* — the same evidence as the lesson's model-checking experiment."
+    }
+  ]
+}

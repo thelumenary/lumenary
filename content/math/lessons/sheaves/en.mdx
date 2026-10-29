@@ -1,0 +1,465 @@
+---
+slug: sheaves
+topic: math.geom.sheaves
+title: Sheaves
+subtitle: The mathematics of local-to-global — data that live on open sets, restrict to smaller ones and glue when they agree, from continuous functions to logarithms that exist everywhere locally and nowhere globally.
+level: grad
+ages: Graduate
+minutes: 130
+order: 7019
+objectives:
+  - Define presheaves as functors $\mathcal{O}(X)^{\mathrm{op}} \to \cat{Set}$ and state the sheaf condition both as locality-plus-gluing and as an equaliser condition
+  - Prove that continuous functions form a sheaf, that constant presheaves usually do not, and that a section of a sheaf is determined by its germs
+  - Compute stalks, prove that a morphism of sheaves is an isomorphism if and only if it is one on every stalk, and sheafify simple presheaves such as constant presheaves
+  - Explain how sheaves of continuous, smooth and holomorphic functions encode local-to-global structure, with the logarithm and the exponential sequence as examples
+  - Compute a first Čech cohomology group and explain how it measures the failure of local solutions to glue
+narrators: []
+lean:
+  - Lumenary.Sheaves.Presheaf
+  - Lumenary.Sheaves.IsSheaf
+  - Lumenary.Sheaves.sec_empty
+  - Lumenary.Sheaves.constPresheaf
+  - Lumenary.Sheaves.const_not_sheaf
+  - Lumenary.Sheaves.contPresheaf
+  - Lumenary.Sheaves.cont_isSheaf
+  - Lumenary.Sheaves.SameGerm
+  - Lumenary.Sheaves.eq_of_sameGerm
+  - Lumenary.Sheaves.functions_isSheaf
+  - Lumenary.Sheaves.section_ext
+  - Lumenary.Sheaves.iso_iff_stalks
+  - Lumenary.Sheaves.sheafification_adjunction
+  - Lumenary.Sheaves.subobject_classifier
+  - Lumenary.Sheaves.etale_covering
+compute: [sheaves_finite_spaces]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Everywhere locally, nowhere globally">
+
+On the punctured plane $X = \C \setminus \{0\}$, does $z$ have a logarithm — a holomorphic $\ell$ with $e^{\ell(z)} = z$? Near every point, yes: on any disc avoiding $0$ there is a branch of $\log z$, unique up to adding $2\pi i k$. On all of $X$, no: following a branch once around the origin adds $2\pi i$. The question "does a solution exist?" has a **local** answer (yes, everywhere) and a **global** answer (no), and the gap between them is a topological invariant of $X$ — the class of the loop around $0$.
+
+Many problems have this shape: solving a differential equation, finding a potential for a vector field with zero curl, choosing a consistent orientation, building a meromorphic function with prescribed poles (Mittag-Leffler), patching local coordinates into a manifold. A **sheaf** is the structure that records what exists locally and how local pieces restrict and glue. Its global sections are the global solutions, its **stalks** describe what happens at a point, and its **cohomology** measures the obstructions in between.
+
+Sheaves are also a bridge. Topologically they are spaces lying over $X$ (étale spaces, covering spaces); geometrically they are how algebraic and complex geometry define their spaces (a scheme is a space with a sheaf of rings); categorically they form a **topos**, a universe of "sets varying over $X$" with its own logic. This lesson builds on <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink> and <TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Restrict, compare, glue">
+
+Think of an atlas. Each page is a map of a region; a map of a region can be cut down to a map of any smaller region; and if maps of two regions agree where the regions overlap, they combine into one map of the union — in exactly one way. Replace "map of a region" by "continuous function on an open set", or "solution of a differential equation on an open set", or "branch of $\log z$ on an open set", and you have the three ingredients of a sheaf:
+
+- **sections** $F(U)$ over each open set $U$;
+- **restriction** $s \mapsto s|_V$ to smaller open sets $V \subseteq U$, compatible with restricting in stages;
+- **gluing**: sections over the pieces of an open cover that agree on overlaps come from exactly one section over the union.
+
+<Figure caption="Gluing on the line. A function s₁ on U₁ and a function s₂ on U₂ agree on the overlap U₁ ∩ U₂ (shaded); together they define exactly one function on U₁ ∪ U₂.">
+<svg viewBox="0 0 340 170" role="img" aria-label="Two overlapping intervals U1 and U2 on a horizontal axis, with the overlap shaded. A curve s1 drawn over U1 and a curve s2 over U2 coincide above the overlap.">
+  <rect x="140" y="20" width="70" height="115" fill="var(--sky-soft)" />
+  <line x1="20" y1="135" x2="320" y2="135" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="40" y1="148" x2="210" y2="148" stroke="var(--human)" strokeWidth="4" />
+  <line x1="140" y1="158" x2="300" y2="158" stroke="var(--formal)" strokeWidth="4" />
+  <path d="M 40 100 C 80 40, 120 60, 160 80 S 200 95, 210 90" fill="none" stroke="var(--human)" strokeWidth="3" />
+  <path d="M 140 70 C 150 76, 155 79, 160 80 S 200 95, 230 85 S 280 40, 300 50" fill="none" stroke="var(--formal)" strokeWidth="3" strokeDasharray="7 4" />
+  <text x="44" y="145" fontSize="12" fill="var(--ink-2)">U₁</text>
+  <text x="282" y="155" fontSize="12" fill="var(--ink-2)">U₂</text>
+  <text x="56" y="62" fontSize="13" fill="var(--ink-2)">s₁</text>
+  <text x="282" y="38" fontSize="13" fill="var(--ink-2)">s₂</text>
+</svg>
+</Figure>
+
+Not every natural assignment glues. Bounded functions do not: the function $x$ is bounded on every bounded interval, and these local pieces agree, but they glue to an unbounded function on $\R$. Boundedness is a **global** condition; continuity is **local**. Sheaves are exactly the assignments defined by local conditions.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Let $X$ be a topological space and $\mathcal{O}(X)$ the poset of its open sets, viewed as a category with an arrow $V \to U$ when $V \subseteq U$.
+
+<Definition term="presheaf">
+
+A **presheaf** (of sets) on $X$ is a functor $F : \mathcal{O}(X)^{\mathrm{op}} \to \cat{Set}$: a set $F(U)$ of **sections** for each open $U$ and a **restriction** map $F(U) \to F(V)$, $s \mapsto s|_V$, for each $V \subseteq U$, with $s|_U = s$ and $(s|_V)|_W = s|_W$. Elements of $F(X)$ are **global sections**. A **morphism** of presheaves $\varphi : F \to G$ is a natural transformation: maps $\varphi_U : F(U) \to G(U)$ commuting with restriction. Presheaves of abelian groups, rings or modules are defined in the same way.
+
+</Definition>
+
+<Definition term="sheaf">
+
+A presheaf $F$ is a **sheaf** if for every open $U$ and every open cover $U = \bigcup_{i \in I} U_i$:
+
+1. **(Locality)** if $s, t \in F(U)$ satisfy $s|_{U_i} = t|_{U_i}$ for all $i$, then $s = t$;
+2. **(Gluing)** if $s_i \in F(U_i)$ satisfy $s_i|_{U_i \cap U_j} = s_j|_{U_i \cap U_j}$ for all $i, j$, then there is $s \in F(U)$ with $s|_{U_i} = s_i$ for all $i$.
+
+Equivalently, the diagram below is an **equaliser** in $\cat{Set}$, where $e(s) = (s|_{U_i})_i$, $p((s_i)_i) = (s_i|_{U_i \cap U_j})_{i,j}$ and $q((s_i)_i) = (s_j|_{U_i \cap U_j})_{i,j}$. Sheaves form a full subcategory $\mathrm{Sh}(X)$ of the presheaf category $\mathrm{PSh}(X)$.
+
+</Definition>
+
+<CommutativeDiagram
+  size="sm"
+  objects={[
+    { id: "U", tex: "F(U)", row: 0, col: 0 },
+    { id: "P", tex: "\\prod_i F(U_i)", row: 0, col: 1.3 },
+    { id: "Q", tex: "\\prod_{i,j} F(U_i \\cap U_j)", row: 0, col: 2.8 },
+  ]}
+  arrows={[
+    { from: "U", to: "P", tex: "e" },
+    { from: "P", to: "Q", tex: "p" },
+    { from: "P", to: "Q", tex: "q" },
+  ]}
+  caption="The sheaf condition: $e$ is injective (locality) and its image is exactly the set where $p$ and $q$ agree (gluing)."
+/>
+
+<Definition term="stalk; germ">
+
+The **stalk** of a presheaf $F$ at $x \in X$ is the colimit over open neighbourhoods of $x$,
+
+$$
+F_x = \operatorname*{colim}_{U \ni x} F(U) = \Big( \bigsqcup_{U \ni x} F(U) \Big) \Big/ \sim, \qquad (s \in F(U)) \sim (t \in F(V)) \iff s|_W = t|_W \text{ for some open } x \in W \subseteq U \cap V .
+$$
+
+The class $s_x$ of $s$ is its **germ** at $x$. A morphism $\varphi$ induces maps $\varphi_x : F_x \to G_x$ on stalks.
+
+</Definition>
+
+<Definition term="étale space">
+
+The **étale space** of $F$ is $\mathrm{Et}(F) = \bigsqcup_{x \in X} F_x$ with the topology generated by the sets $\{ s_x : x \in U \}$ for $s \in F(U)$, and projection $\pi : \mathrm{Et}(F) \to X$. Every section $s \in F(U)$ becomes a continuous section $x \mapsto s_x$ of $\pi$ over $U$, and $\pi$ is a local homeomorphism.
+
+</Definition>
+
+<Definition term="direct image; skyscraper">
+
+For a continuous map $f : X \to Y$ and a sheaf $F$ on $X$, the **direct image** $f_*F$ is the sheaf $V \mapsto F(f^{-1}(V))$ on $Y$. For a point $x \in X$ and a set $A$, the **skyscraper sheaf** $x_*A$ has sections $A$ over open sets containing $x$ and a single point otherwise.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Sheaves of functions">
+
+For any space $Y$, $U \mapsto C(U, Y)$ (continuous maps) is a sheaf: functions that agree on overlaps define one function on the union, and continuity can be checked locally (Proposition 2). The same holds for smooth functions on a manifold, holomorphic functions on a complex manifold, solutions of a linear differential equation, and sections $U \to E$ of any continuous map $p : E \to X$. In each case the defining condition is local.
+
+</Example>
+
+<Example title="Constant presheaves, and the sheaf of locally constant functions">
+
+The **constant presheaf** $U \mapsto A$, with all restrictions the identity, fails to be a sheaf if $A$ has at least two elements: the empty set is covered by the empty family, and gluing then forces $F(\varnothing)$ to be a single point (Proposition 1). Repairing this by setting $F(\varnothing) = \{*\}$ does not help: if $U = U_1 \sqcup U_2$ with $U_1, U_2$ disjoint, non-empty and open, the sections $a \in F(U_1)$ and $b \neq a \in F(U_2)$ agree on the empty overlap but do not glue to a single element of $A$. The sheaf that does the job is the sheaf $\underline{A}$ of **locally constant** functions $U \to A$, with $\underline{A}(U) = A^{\pi_0(U)}$ when $U$ is locally connected. It is the sheafification of the constant presheaf (Corollary 6).
+
+</Example>
+
+<Example title="Bounded functions">
+
+$U \mapsto \{\text{bounded continuous } U \to \R\}$ satisfies locality but not gluing: the restrictions of $f(x) = x$ to the intervals $(n - 1, n + 1)$ are bounded and compatible, but there is no bounded function on $\R$ restricting to them.
+
+</Example>
+
+<Example title="Branches of the logarithm and a twisted sheaf on the circle">
+
+On $X = \C \setminus \{0\}$ let $L(U)$ be the set of continuous (equivalently holomorphic) branches of $\log z$ on $U$. Every point has a neighbourhood with $L(U) \neq \varnothing$, but $L(X) = \varnothing$. Similarly, on $S^1 = \R/\Z$ let $T(U)$ be the continuous functions $s$ on the preimage of $U$ in $\R$ with values in $\Z$ and $s(t + 1) = -s(t)$. Locally $T$ looks like the sheaf $\underline{\Z}$ of locally constant integers, with every stalk $\cong \Z$; but a global section would be a constant integer equal to its own negative, so $T(S^1) = \{0\}$. A non-zero sheaf can have no non-zero global sections.
+
+</Example>
+
+<Example title="Finite spaces">
+
+On a finite space every point $x$ has a smallest open neighbourhood $U_x$, so $F_x = F(U_x)$. The **pseudocircle** $\{a, b, c, d\}$, with open sets $\varnothing, \{a\}, \{b\}, \{a, b\}, \{a, b, c\}, \{a, b, d\}$ and the whole space, is a finite model of the circle (McCord, 1966); sheaves on it can be checked exhaustively, as in the computation section.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Gluing, germs and stalks">
+
+<Theorem name="Proposition 1 (the empty set)">
+
+If $F$ is a sheaf, then $F(\varnothing)$ has exactly one element.
+
+</Theorem>
+
+<Proof>
+
+The empty set is covered by the empty family ($I = \varnothing$). The compatibility condition is vacuous, so gluing gives some $s \in F(\varnothing)$, and locality, which is also vacuous, says that any two elements of $F(\varnothing)$ are equal.
+
+</Proof>
+
+<Theorem name="Proposition 2 (continuity is local)">
+
+For every space $Y$, the presheaf $U \mapsto C(U, Y)$ on $X$ is a sheaf.
+
+</Theorem>
+
+<Proof>
+
+Let $U = \bigcup_i U_i$. *Locality:* if $s|_{U_i} = t|_{U_i}$ for all $i$ then $s(x) = t(x)$ for every $x \in U$, as $x$ lies in some $U_i$. *Gluing:* given continuous $s_i : U_i \to Y$ agreeing on overlaps, define $s(x) = s_i(x)$ for any $i$ with $x \in U_i$; this is well defined because $s_i(x) = s_j(x)$ when $x \in U_i \cap U_j$. For continuity, let $W \subseteq Y$ be open; then $s^{-1}(W) = \bigcup_i s_i^{-1}(W)$, and each $s_i^{-1}(W)$ is open in $U_i$, hence in $X$ because $U_i$ is open. So $s$ is continuous and $s|_{U_i} = s_i$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (sections are determined by germs)">
+
+Let $F$ be a sheaf and $s, t \in F(U)$. If $s_x = t_x$ for every $x \in U$, then $s = t$.
+
+</Theorem>
+
+<Proof>
+
+For each $x \in U$, $s_x = t_x$ means there is an open $W_x$ with $x \in W_x \subseteq U$ and $s|_{W_x} = t|_{W_x}$. The sets $W_x$ cover $U$, so $s = t$ by locality.
+
+</Proof>
+
+<Theorem name="Theorem 4 (isomorphisms are detected on stalks)">
+
+A morphism of sheaves $\varphi : F \to G$ is an isomorphism if and only if $\varphi_x : F_x \to G_x$ is bijective for every $x \in X$.
+
+</Theorem>
+
+<Proof>
+
+An isomorphism clearly induces bijections on colimits. Conversely, assume every $\varphi_x$ is bijective; we show every $\varphi_U$ is bijective, and then the inverses $\varphi_U^{-1}$ automatically commute with restriction.
+
+*Injective.* If $\varphi_U(s) = \varphi_U(t)$, then $\varphi_x(s_x) = \varphi_x(t_x)$, so $s_x = t_x$ for all $x \in U$, and $s = t$ by Theorem 3.
+
+*Surjective.* Let $t \in G(U)$. For each $x \in U$, surjectivity of $\varphi_x$ gives a section $s^{(x)} \in F(V_x)$, $x \in V_x$, with $\varphi(s^{(x)})_x = t_x$; shrinking $V_x$ we may assume $\varphi_{V_x}(s^{(x)}) = t|_{V_x}$. On an overlap $V_x \cap V_y$, the sections $s^{(x)}$ and $s^{(y)}$ both map to $t|_{V_x \cap V_y}$, so they agree by the injectivity just proved. By gluing there is $s \in F(U)$ with $s|_{V_x} = s^{(x)}$, and then $\varphi_U(s)$ and $t$ agree on every $V_x$, so $\varphi_U(s) = t$ by locality in $G$.
+
+</Proof>
+
+The hypothesis that $F$ is a sheaf is essential: the inclusion of the constant presheaf $A$ into $\underline{A}$ is bijective on all stalks but not an isomorphism. And "surjective on stalks" does **not** imply "surjective on sections" (see the exponential sequence below): the proof of surjectivity used injectivity, i.e. bijectivity, on stalks.
+
+<Theorem name="Theorem 5 (sheafification)">
+
+Every presheaf $F$ has a sheaf $F^+$ and a morphism $\theta : F \to F^+$ such that every morphism from $F$ to a sheaf $G$ factors uniquely through $\theta$. In other words, sheafification $F \mapsto F^+$ is left adjoint to the inclusion $\mathrm{Sh}(X) \hookrightarrow \mathrm{PSh}(X)$. Moreover $\theta_x : F_x \to F^+_x$ is bijective for every $x$.
+
+</Theorem>
+
+<Proof>
+
+Let $F^+(U)$ be the set of functions $\sigma : U \to \bigsqcup_{x \in U} F_x$ with $\sigma(x) \in F_x$ that are **locally germs of sections**: every $x \in U$ has an open neighbourhood $W \subseteq U$ and some $s \in F(W)$ with $\sigma(y) = s_y$ for all $y \in W$. (These are exactly the continuous sections of the étale space.) Restriction is restriction of functions, and $\theta_U(s) = (x \mapsto s_x)$.
+
+*$F^+$ is a sheaf:* functions agreeing on overlaps glue uniquely to a function, and the defining condition is local, so the glued function satisfies it — the same argument as Proposition 2. *Stalks:* every germ of $F^+$ at $x$ is represented near $x$ by some $\theta(s)$, so $\theta_x$ is surjective; if $\theta(s)$ and $\theta(t)$ have the same germ at $x$ then $s_x = t_x$, so $\theta_x$ is injective. *Universal property:* given $\varphi : F \to G$ with $G$ a sheaf, and $\sigma \in F^+(U)$ locally of the form $\theta(s^{(i)})$ on a cover $W_i$, the sections $\varphi(s^{(i)}) \in G(W_i)$ have the same germs on overlaps, so they agree there by Theorem 3 and glue to a unique $\varphi^+(\sigma) \in G(U)$; this defines $\varphi^+ : F^+ \to G$ with $\varphi^+ \theta = \varphi$, and uniqueness follows because $\varphi^+$ is forced on the local pieces $\theta(s^{(i)})$.
+
+</Proof>
+
+<Theorem name="Corollary 6 (sheafifying a constant presheaf)">
+
+The sheafification of the constant presheaf with value $A$ is the sheaf $\underline{A}$ of locally constant functions $U \to A$.
+
+</Theorem>
+
+<Proof>
+
+For $x \in X$, the stalk of the constant presheaf is $A$ (all restriction maps are the identity, and every neighbourhood system is non-empty). A section of $F^+$ over $U$ is therefore a function $\sigma : U \to A$ that is locally equal to a constant section, i.e. a locally constant function. Over $U = \varnothing$ there is exactly one (empty) function, as Proposition 1 requires.
+
+</Proof>
+
+<Theorem name="Theorem 7 (sheaves form a topos)">
+
+$\mathrm{Sh}(X)$ is a **Grothendieck topos**: it has all limits and colimits, it is cartesian closed, and it has a subobject classifier $\Omega$ with $\Omega(U) = \{ \text{open subsets of } U \}$.
+
+</Theorem>
+
+Limits of sheaves are computed sectionwise; colimits are sheafified sectionwise colimits; the internal hom is $\mathcal{H}om(F, G)(U) = \operatorname{Hom}(F|_U, G|_U)$. A subsheaf $S \subseteq F$ is classified by sending $s \in F(U)$ to the largest open $V \subseteq U$ with $s|_V \in S(V)$ — the "set of points where $s$ belongs to $S$" (Mac Lane–Moerdijk, Chapters II and III). This is the starting point of <TopicLink id="math.cat.elementary-topoi">elementary topos theory</TopicLink>, where truth values become open sets.
+
+</Section>
+
+<Section id="cohomology" kind="human" title="A preview of sheaf cohomology">
+
+For sheaves of abelian groups, a sequence $0 \to F' \to F \to F'' \to 0$ is called **exact** if it is exact on every stalk. Taking global sections preserves exactness on the left but not on the right, and sheaf cohomology $H^n(X, F)$ measures the failure.
+
+<Example title="The exponential sequence">
+
+On $X = \C \setminus \{0\}$ let $\mathcal{O}$ be the sheaf of holomorphic functions and $\mathcal{O}^\times$ that of nowhere-vanishing ones (a group under multiplication). The sequence
+
+$$
+0 \to 2\pi i \underline{\Z} \to \mathcal{O} \xrightarrow{\ \exp\ } \mathcal{O}^\times \to 1
+$$
+
+is exact on stalks, because every non-vanishing holomorphic germ has a logarithm on a small disc. But $\exp : \mathcal{O}(X) \to \mathcal{O}^\times(X)$ is not surjective: $z$ is not $e^{\ell}$ for any holomorphic $\ell$ on $X$. The long exact sequence $\cdots \to \mathcal{O}(X) \to \mathcal{O}^\times(X) \to H^1(X, \underline{\Z}) \to \cdots$ sends $z$ to the generator of $H^1(X, \underline{\Z}) \cong \Z$: its winding number.
+
+</Example>
+
+<Definition term="Čech cohomology">
+
+For a sheaf of abelian groups $F$ and an open cover $\mathcal{U} = (U_i)_{i \in I}$ with $I$ totally ordered, set $U_{i_0 \cdots i_p} = U_{i_0} \cap \dots \cap U_{i_p}$ and $\check C^p(\mathcal{U}, F) = \prod_{i_0 \lt \dots \lt i_p} F(U_{i_0 \cdots i_p})$, with differential $(\delta c)_{i_0 \cdots i_{p+1}} = \sum_{k=0}^{p+1} (-1)^k\, c_{i_0 \cdots \widehat{i_k} \cdots i_{p+1}} \big|_{U_{i_0 \cdots i_{p+1}}}$. The **Čech cohomology** $\check H^p(\mathcal{U}, F)$ is the cohomology of this complex. By the sheaf axioms, $\check H^0(\mathcal{U}, F) = F(X)$.
+
+</Definition>
+
+<Example title="The circle">
+
+Cover $S^1$ by two open arcs $U_1, U_2$ whose intersection is two disjoint arcs, and take $F = \underline{\Z}$. Then $\check C^0 = \underline{\Z}(U_1) \times \underline{\Z}(U_2) = \Z^2$ and $\check C^1 = \underline{\Z}(U_1 \cap U_2) = \Z^2$, and $\delta(a, b) = (b - a, b - a)$. The kernel is the diagonal, so $\check H^0 = \Z$ (global locally constant functions), and the cokernel is $\Z^2 / \{(c, c)\} \cong \Z$, so $\check H^1 = \Z$. A cocycle $(m, n)$ describes "local constants that jump by $m$ on one overlap and $n$ on the other"; only the difference $n - m$ survives, and it is the obstruction to gluing — the same integer as the winding number above.
+
+</Example>
+
+On a manifold, when the cover is **good** (all non-empty finite intersections are contractible), Čech cohomology of $\underline{\Z}$ agrees with singular cohomology. The general definition is Grothendieck's: $H^n(X, -)$ are the right derived functors of the global sections functor $F \mapsto F(X)$ on sheaves of abelian groups. The **de Rham theorem** is a theorem about sheaves: on a smooth manifold the sequence $0 \to \underline{\R} \to \Omega^0 \xrightarrow{d} \Omega^1 \xrightarrow{d} \cdots$ is exact on stalks — that is precisely the Poincaré lemma — and the sheaves $\Omega^k$ have no higher cohomology (partitions of unity), so $H^k(M, \underline{\R})$ is computed by global forms: $H^k(M; \R) \cong H^k_{\mathrm{dR}}(M)$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Sheaves in Lean">
+
+To keep every definition visible, the independent part of the formalisation uses a small notion of presheaf of types on the open sets of a space, with the sheaf condition stated as "compatible local sections glue **uniquely**" — a single `∃!` that packages locality and gluing. (Mathlib's `TopCat.Presheaf` is a functor `(Opens X)ᵒᵖ ⥤ C`; its sheaf condition is equivalent to ours for presheaves of types.)
+
+<Lean decl="Lumenary.Sheaves.Presheaf" />
+
+<Lean decl="Lumenary.Sheaves.IsSheaf" />
+
+Proposition 1, and the failure of constant presheaves at the empty set:
+
+<Lean decl="Lumenary.Sheaves.sec_empty" />
+
+<Lean decl="Lumenary.Sheaves.constPresheaf" />
+
+<Lean decl="Lumenary.Sheaves.const_not_sheaf" />
+
+Proposition 2: continuous maps into any space form a sheaf. The glued map is built with Mathlib's `ContinuousMap.liftCover`, which is exactly the "continuity is local" argument of the proof.
+
+<Lean decl="Lumenary.Sheaves.contPresheaf" />
+
+<Lean decl="Lumenary.Sheaves.cont_isSheaf" />
+
+Theorem 3, with germs defined by agreement on a neighbourhood: choose a neighbourhood for each point, observe that they cover, and apply uniqueness of gluing.
+
+<Lean decl="Lumenary.Sheaves.SameGerm" />
+
+<Lean decl="Lumenary.Sheaves.eq_of_sameGerm" />
+
+Mathlib's sheaf theory supplies the rest. Its version of Theorem 3 uses the stalk defined as a colimit; Theorem 4 and the sheafification adjunction of Theorem 5 are in the library, as are a subobject classifier for sheaf categories (one of the topos axioms of Theorem 7) and the étale space, which is a covering space when the sheaf is locally constant:
+
+<Lean decl="Lumenary.Sheaves.functions_isSheaf" />
+
+<Lean decl="Lumenary.Sheaves.section_ext" />
+
+<Lean decl="Lumenary.Sheaves.iso_iff_stalks" />
+
+<Lean decl="Lumenary.Sheaves.sheafification_adjunction" />
+
+<Lean decl="Lumenary.Sheaves.subobject_classifier" />
+
+<Lean decl="Lumenary.Sheaves.etale_covering" />
+
+**What is and is not formalised.** Formalised independently: Proposition 1, the failure of the constant presheaf, Proposition 2 and Theorem 3, for our self-contained notion of sheaf. From Mathlib: the sheaf of functions, Theorem 3 with colimit stalks, Theorem 4, the sheafification adjunction, the subobject classifier of $\mathrm{Sh}(X)$, and étale spaces of locally constant sheaves as covering spaces. Not formalised here: the equivalence between our `IsSheaf` and Mathlib's, Corollary 6, the topos structure in full, and sheaf cohomology (Mathlib has sheaf cohomology via derived functors in general, but we do not use it).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Sheaves on a finite space, exhaustively">
+
+On a finite space the sheaf condition involves finitely many covers, so it can be checked completely. The experiment works on the pseudocircle: it tests the constant presheaf, the constant presheaf repaired at $\varnothing$, and the locally constant functions against every cover of every open set; computes the stalks $F_x = F(U_x)$; and computes Čech $H^0$ and $H^1$ of $\underline{\Z/2}$ for the cover by the two minimal neighbourhoods $U_c = \{a, b, c\}$ and $U_d = \{a, b, d\}$, whose intersection $\{a, b\}$ has two components — the finite analogue of the two-arc cover of the circle.
+
+<Python id="sheaves_finite_spaces" />
+
+As in the circle example, $H^1 \cong \Z/2$ for the pseudocircle, while for a three-point "interval", whose cover has connected overlap, $H^1 = 0$. For these finite spaces the checks are exhaustive and so amount to proofs of the specific statements; that the pseudocircle models the circle is McCord's theorem.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: local potentials that do not glue">
+
+The vortex field $\big( -y/(x^2 + y^2),\ x/(x^2 + y^2) \big)$ has zero curl away from the origin, so on every disc avoiding the origin it is the gradient of a local potential — a branch of the angle $\theta$. These local potentials are sections of a sheaf (locally constant up to an additive constant, i.e. a torsor under $\underline{\R}$). Drag the loop around the origin: the circulation is $2\pi$, so the local potentials cannot be glued into a global one. Move the loop off the origin: circulation $0$.
+
+<VectorField mode="field" f="-y/(x^2 + y^2)" g="x/(x^2 + y^2)" title="A vortex: locally a gradient, globally not" subtitle="Circulation around the origin is 2π: the local potentials θ do not glue." />
+
+The same obstruction for the logarithm: follow a continuous branch of the argument of $z - a$ around a loop. When it comes back, it has changed by $2\pi$ times the winding number, so a branch chosen at the start disagrees with itself at the end exactly when the winding number is non-zero.
+
+<WindingNumber loop="circle" loops={["circle", "twice", "miss"]} subtitle="Continuing a branch of arg(z − a) around the loop changes it by 2π × the winding number." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every presheaf is a sheaf."** Constant presheaves usually are not (they fail at the empty set, and after repair on every disconnected open set), and neither are presheaves defined by global conditions, such as bounded functions or constant functions. A presheaf is a sheaf exactly when its sections are determined by, and can be assembled from, local data.
+
+</Misconception>
+
+<Misconception>
+
+**"A sheaf is determined by its global sections."** The sheaf of holomorphic functions on the Riemann sphere has only the constants as global sections (Liouville), the same as the constant sheaf $\underline{\C}$, yet the two sheaves are very different. The twisted sheaf $T$ on $S^1$ has $T(S^1) = 0$, like the zero sheaf, although all its stalks are $\Z$. Sheaves are determined by their sections over all open sets, or by their stalks together with how germs fit together.
+
+</Misconception>
+
+<Misconception>
+
+**"A morphism that is surjective on stalks is surjective on sections."** The exponential map $\mathcal{O} \to \mathcal{O}^\times$ on $\C \setminus \{0\}$ is surjective on stalks but $z$ has no global logarithm. Injectivity, by contrast, *is* detected on stalks (Theorem 4's proof), and isomorphisms are detected on stalks.
+
+</Misconception>
+
+<Misconception>
+
+**"The stalk at $x$ is the value at $x$."** A germ remembers the section on a whole (arbitrarily small) neighbourhood. The functions $0$ and $x^2$ on $\R$ have the same value at $0$ but different germs; $0$ and $\max(0, x - 1)$ have the same germ at $0$. For holomorphic functions a germ is the same as a convergent power series, which carries much more than one value.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Sheaves are spaces over X; covering spaces are locally constant sheaves">
+
+The étale space construction is an equivalence between sheaves on $X$ and local homeomorphisms $E \to X$; under it, sections of the sheaf are continuous sections of $E \to X$. Locally constant sheaves correspond to covering spaces, and for connected, locally path-connected, semi-locally simply connected $X$ both correspond to sets with an action of $\pi_1(X)$ — the twisted sheaf $T$ on the circle is the $\pi_1$-set $\Z$ on which the generator acts by $-1$. Sheaf cohomology with constant coefficients agrees with singular cohomology on such spaces, so <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink> can be rebuilt sheaf-theoretically, as Leray did. See also <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Spaces defined by their functions">
+
+A smooth manifold is a space with a sheaf of rings locally isomorphic to $(\R^n, C^\infty)$, a complex manifold one locally isomorphic to $(\C^n, \mathcal{O})$, and a **scheme** one locally isomorphic to the spectrum of a commutative ring with its structure sheaf; morphisms are morphisms of locally ringed spaces. Vector bundles become locally free sheaves of modules, line bundles form the Picard group $H^1(X, \mathcal{O}_X^\times)$, and the first Chern class is the connecting map of the exponential sequence (see <TopicLink id="math.geom.vector-bundles-characteristic-classes">vector bundles</TopicLink>). Serre's theorems on coherent sheaves and Grothendieck's cohomology made sheaves the language of <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Analytic continuation and the Cousin problems">
+
+For holomorphic functions the identity theorem makes the étale space of $\mathcal{O}$ **Hausdorff** — germs that agree near a point agree on connected domains — and the Riemann surface of $\sqrt z$ or $\log z$ is a connected component of this étale space: Weierstrass's analytic continuation, made into a space. The étale space of continuous (or smooth) functions is not Hausdorff: the germs of $0$ and of a smooth function vanishing only on $(-\infty, 0]$ cannot be separated at $0$. Classical existence problems become cohomology: the Mittag-Leffler and Cousin problems ask for meromorphic functions with prescribed principal parts, and their obstruction lies in $H^1(X, \mathcal{O})$, which vanishes on domains of holomorphy (Cartan's Theorem B, following Oka). Sato's **hyperfunctions** are defined as cohomology classes with coefficients in $\mathcal{O}$.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Truth varies over a space">
+
+In the topos $\mathrm{Sh}(X)$, a proposition about sections has as truth value the **open set** where it holds, and the internal logic is intuitionistic: "$s = t$ or $s \neq t$" holds only on the union of the interior of $\{s = t\}$ and the interior of its complement, which need not be all of $X$. Kripke models of intuitionistic logic are sheaves on posets with the Alexandrov topology, and forcing arguments can be phrased in sheaf toposes. See <TopicLink id="math.cat.elementary-topoi">elementary topos theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Sheaves on a site">
+
+Only the poset $\mathcal{O}(X)$ and the notion of a covering family were used. Grothendieck replaced them by a category with a **Grothendieck topology**, and sheaves on such a **site** — for example the étale site of a scheme — give the cohomology theories behind the Weil conjectures. Sheafification is a left exact left adjoint, presheaf categories are free cocompletions, and Giraud's theorem characterises the categories of sheaves on sites intrinsically. See <TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Contextuality as a missing global section">
+
+Samson Abramsky and Adam Brandenburger (2011) described quantum measurement scenarios by a presheaf assigning to each set of jointly measurable observables (a "context") the possible outcome distributions. The empirical data form a compatible family on the cover by contexts. Bell non-locality and Kochen–Specker contextuality are precisely the failure of such a family to come from a **global section** — a joint outcome assignment for all observables at once — and the obstruction can sometimes be detected by Čech cohomology. This is a precise mathematical reformulation of known theorems, not a new physical claim.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Cellular sheaves and data on networks">
+
+On a graph or cell complex, a **cellular sheaf** assigns a vector space to each vertex and edge and linear restriction maps from vertices to incident edges (Justin Curry, 2014). Global sections are consistent assignments of data across the network, $H^1$ measures irreconcilable local measurements, and the **sheaf Laplacian** (Jakob Hansen and Robert Ghrist, 2019) generalises the graph Laplacian, with its kernel equal to the global sections. These ideas are used for sensor fusion, distributed consensus and signal processing on networks.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Leray.** Jean Leray created sheaf theory, together with spectral sequences, while a prisoner of war in Oflag XVII-A in Austria (1940–45), where he organised a university for fellow prisoners; his work appeared from 1945–46 and introduced the word *faisceau*.
+- **The Cartan seminar.** Henri Cartan's Paris seminar (1948–51) reformulated sheaves with open sets and étale spaces and developed sheaf cohomology. In Japan, Kiyoshi Oka's work on several complex variables, including his coherence theorem (1950), led — through Cartan's Theorems A and B (1951–53) — to the solution of the Cousin problems on Stein manifolds.
+- **Algebraic geometry.** Jean-Pierre Serre's *Faisceaux algébriques cohérents* (1955) brought sheaves into algebraic geometry, and Alexander Grothendieck's Tôhoku paper (1957) defined sheaf cohomology by derived functors. Roger Godement's *Topologie algébrique et théorie des faisceaux* (1958) became the standard reference. Grothendieck's sites and toposes (SGA 4, 1963–64, with Michael Artin and Jean-Louis Verdier) extended the theory far beyond spaces.
+- **Analysis.** Mikio Sato introduced hyperfunctions (1958–59) as sheaf cohomology classes, and the Kyoto school of Sato, Masaki Kashiwara and Takahiro Kawai developed microlocal analysis and $D$-modules in sheaf-theoretic language.
+- **Today.** Sheaves are basic in algebraic and complex geometry, representation theory (perverse sheaves), logic and topos theory, and increasingly in applied topology, network science and the foundations of quantum theory.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Saunders Mac Lane and Ieke Moerdijk, *Sheaves in Geometry and Logic* (1992), Chapter II — sheaves on spaces, étale spaces and sheafification, leading into toposes.
+- Masaki Kashiwara and Pierre Schapira, *Categories and Sheaves* (2006) — the categorical foundations, at research level; see also their *Sheaves on Manifolds* (1990).
+- Glen E. Bredon, *Sheaf Theory* (2nd ed., 1997) — the topologist's comprehensive treatment of sheaf cohomology.
+- Robin Hartshorne, *Algebraic Geometry* (1977), §II.1 and Chapter III — sheaves and their cohomology for algebraic geometry.
+- Raoul Bott and Loring W. Tu, *Differential Forms in Algebraic Topology* (1982), §10 — presheaves, Čech cohomology and the de Rham theorem.
+- Raymond O. Wells, *Differential Analysis on Complex Manifolds* (1973; 3rd ed. 2008), Chapter II — sheaves in complex analysis.
+- Robert Ghrist, *Elementary Applied Topology* (2014), Chapter 9 — cellular sheaves and applications.
+
+Reading path: Mac Lane–Moerdijk Chapter II or Bott–Tu §10 with this lesson; then Hartshorne for geometry, Bredon for topology, or <TopicLink id="math.cat.elementary-topoi">elementary toposes</TopicLink> for logic.
+
+</Section>

@@ -26,7 +26,7 @@ export default async function TrailsPage({ params }: { params: Promise<{ locale:
             const lesson = getLesson(tr.from.lesson, locale).frontmatter;
             return (
               <li key={tr.slug}>
-                <Link
+                <Link prefetch={false}
                   href={href(locale, `math/trails/${tr.slug}`)}
                   className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gold/35 bg-gradient-to-br from-gold-soft/80 via-card to-card p-6 shadow-[var(--shadow)] transition-shadow hover:shadow-[var(--shadow-lg)]"
                 >

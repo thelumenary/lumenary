@@ -1,0 +1,405 @@
+---
+slug: descriptive-set-theory
+topic: math.found.descriptive-set-theory
+title: Descriptive set theory
+subtitle: Classifying sets of reals by how they can be defined — the Borel hierarchy, analytic sets, Suslin's theorem and the perfect set property, where topology, set theory and logic meet.
+level: grad
+ages: Graduate
+minutes: 140
+order: 7002
+objectives:
+  - Define Polish spaces, Baire space and Cantor space, and represent closed sets by trees
+  - Define the Borel hierarchy and locate standard sets in it, using the Baire category theorem to prove non-membership
+  - Prove that every uncountable analytic set contains a perfect set and hence has cardinality $2^{\aleph_0}$
+  - Prove the Lusin separation theorem and deduce Suslin's theorem that the Borel sets are exactly the sets that are both analytic and coanalytic
+  - Explain why projections of Borel sets need not be Borel, and what ZFC, $V = L$ and large cardinals say about projective sets
+narrators: []
+lean:
+  - Lumenary.DescriptiveSetTheory.baire_space_polish
+  - Lumenary.DescriptiveSetTheory.closed_isGδ
+  - Lumenary.DescriptiveSetTheory.rat_not_isGδ
+  - Lumenary.DescriptiveSetTheory.borel_analytic
+  - Lumenary.DescriptiveSetTheory.analytic_image
+  - Lumenary.DescriptiveSetTheory.projection_analytic
+  - Lumenary.DescriptiveSetTheory.separation_iUnion
+  - Lumenary.DescriptiveSetTheory.suslin_from_lusin
+  - Lumenary.DescriptiveSetTheory.suslin
+  - Lumenary.DescriptiveSetTheory.lusin_souslin
+  - Lumenary.DescriptiveSetTheory.cantor_bendixson
+  - Lumenary.DescriptiveSetTheory.perfect_set_closed
+compute: [descriptive_set_theory_trees]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Lebesgue's mistake">
+
+In 1905 Henri Lebesgue, studying functions "representable analytically", asserted in passing that the projection of a Borel subset of the plane onto a line is again Borel. The proof looked routine: projection commutes with unions. It does not commute with intersections, and around 1916 Mikhail Suslin, a student of Nikolai Lusin in Moscow, found the error. He defined the class of **analytic sets** — projections of Borel sets — and proved that it is strictly larger than the class of Borel sets, while still behaving well: every uncountable analytic set has the cardinality of the continuum.
+
+This launched **descriptive set theory**: the study of *definable* sets of reals and of other Polish spaces, organised by the complexity of their definitions. Its guiding theme is that definable sets are well behaved — no definable set should be a counterexample to the continuum hypothesis, or non-measurable — and its methods combine point-set topology, set theory and logic. Today it is also a tool: it measures the complexity of classification problems in algebra and dynamics, and it explains which constructions in analysis need the axiom of choice.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Complexity as quantifiers">
+
+Membership in an open subset of $\R$ is witnessed by *finite* information: $x \in U$ because some rational interval around $x$ lies in $U$ — an existential quantifier over $\N$. A closed set is the complement: $x \in F$ if *no* finite approximation refutes it — a universal quantifier over $\N$. Each further alternation of quantifiers over $\N$ climbs a level of the **Borel hierarchy**: $G_\delta$ sets are "$\forall n\, \exists m$", $F_{\sigma\delta}$ sets are "$\forall n\, \exists m\, \forall k$", and so on transfinitely.
+
+A projection adds a quantifier over a whole **real**: $x \in \pi[B]$ iff *there exists $y$* with $(x, y) \in B$. That is a different kind of quantifier — a search through uncountably many candidates — and it is why projections escape the Borel sets. In Baire space $\N^\N$ such a search is a search for an infinite branch through a tree.
+
+<Figure caption="A closed subset of Cantor space $2^\N$ is the set of infinite branches of a tree of finite binary strings. Here: the sequences with at most one $1$. Its branches are $000\ldots$ and the sequences $0\cdots 0 1 0 0 \ldots$; every branch except $000\ldots$ is isolated, so this closed set is countable.">
+<svg viewBox="0 0 320 215" role="img" aria-label="A binary tree of depth three in which only the strings with at most one 1 are drawn solid; the others are faint and dashed">
+  <g stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="3 3" opacity="0.35">
+    <line x1="120" y1="120" x2="140" y2="170" />
+    <line x1="200" y1="120" x2="220" y2="170" />
+    <line x1="240" y1="70" x2="280" y2="120" />
+    <line x1="280" y1="120" x2="260" y2="170" />
+    <line x1="280" y1="120" x2="300" y2="170" />
+  </g>
+  <g stroke="var(--human)" strokeWidth="2">
+    <line x1="160" y1="20" x2="80" y2="70" />
+    <line x1="160" y1="20" x2="240" y2="70" />
+    <line x1="80" y1="70" x2="40" y2="120" />
+    <line x1="80" y1="70" x2="120" y2="120" />
+    <line x1="240" y1="70" x2="200" y2="120" />
+    <line x1="40" y1="120" x2="20" y2="170" />
+    <line x1="40" y1="120" x2="60" y2="170" />
+    <line x1="120" y1="120" x2="100" y2="170" />
+    <line x1="200" y1="120" x2="180" y2="170" />
+    <line x1="20" y1="170" x2="20" y2="200" strokeDasharray="3 3" />
+    <line x1="60" y1="170" x2="60" y2="200" strokeDasharray="3 3" />
+    <line x1="100" y1="170" x2="100" y2="200" strokeDasharray="3 3" />
+    <line x1="180" y1="170" x2="180" y2="200" strokeDasharray="3 3" />
+  </g>
+  <text x="168" y="16" fontSize="11" fill="var(--ink-2)">∅</text>
+  <text x="58" y="72" fontSize="11" fill="var(--ink-2)">0</text>
+  <text x="250" y="72" fontSize="11" fill="var(--ink-2)">1</text>
+  <text x="10" y="120" fontSize="11" fill="var(--ink-2)">00</text>
+  <text x="126" y="118" fontSize="11" fill="var(--ink-2)">01</text>
+  <text x="206" y="118" fontSize="11" fill="var(--ink-2)">10</text>
+  <text x="2" y="212" fontSize="10" fill="var(--ink-2)">000…</text>
+  <text x="44" y="212" fontSize="10" fill="var(--ink-2)">0010…</text>
+  <text x="86" y="212" fontSize="10" fill="var(--ink-2)">010…</text>
+  <text x="166" y="212" fontSize="10" fill="var(--ink-2)">100…</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Polish spaces, trees and hierarchies">
+
+<Definition term="Polish space">
+
+A topological space is **Polish** if it is separable and completely metrisable. Examples: $\R^n$, $[0, 1]$, $\C$, every separable Banach space, **Baire space** $\mathcal N = \N^\N$ and **Cantor space** $\mathcal C = 2^\N$ (product topologies), and the irrationals $\R \setminus \Q$, which are homeomorphic to $\mathcal N$ via continued fractions. Countable products and $G_\delta$ subspaces of Polish spaces are Polish. $\Q$ is not Polish (by the Baire category theorem).
+
+</Definition>
+
+<Definition term="trees">
+
+A **tree** on a set $A$ is a set $T$ of finite sequences from $A$ closed under initial segments; its **body** $[T]$ is the set of infinite sequences all of whose initial segments lie in $T$. $T$ is **pruned** if every node has a proper extension in $T$, and **well-founded** if $[T] = \varnothing$. The basic open sets of $A^\N$ are $N_s = \{x : s \subset x\}$. The closed subsets of $A^\N$ are exactly the bodies of (pruned) trees: $F = [T_F]$ with $T_F = \{x \restriction n : x \in F, n \in \N\}$.
+
+</Definition>
+
+<Definition term="the Borel hierarchy">
+
+In a metrisable space $X$, let $\Sigma^0_1$ be the open sets; for $1 \le \alpha \lt \omega_1$ let $\Pi^0_\alpha$ be the complements of $\Sigma^0_\alpha$ sets, and let $\Sigma^0_\alpha$ (for $\alpha \gt 1$) consist of countable unions of sets in $\bigcup_{\beta \lt \alpha} \Pi^0_\beta$. Put $\Delta^0_\alpha = \Sigma^0_\alpha \cap \Pi^0_\alpha$. So $\Pi^0_1$ = closed, $\Sigma^0_2 = F_\sigma$, $\Pi^0_2 = G_\delta$. The **Borel sets** — the smallest $\sigma$-algebra containing the open sets — are $\bigcup_{\alpha \lt \omega_1} \Sigma^0_\alpha$. (These are the classical "boldface" classes, often printed in bold.)
+
+</Definition>
+
+<Definition term="analytic, coanalytic, projective">
+
+A subset $A$ of a Polish space $X$ is **analytic** ($\Sigma^1_1$) if it is empty or a continuous image of $\mathcal N$; equivalently, the projection of a closed subset of $X \times \mathcal N$, or of a Borel subset of $X \times Y$ for some Polish $Y$. It is **coanalytic** ($\Pi^1_1$) if its complement is analytic, and $\Delta^1_1 = \Sigma^1_1 \cap \Pi^1_1$. The **projective hierarchy** continues: $\Sigma^1_{n+1}$ sets are projections of $\Pi^1_n$ sets, $\Pi^1_{n+1}$ their complements.
+
+</Definition>
+
+<Definition term="perfect set property">
+
+A set is **perfect** if it is closed, non-empty and has no isolated points. A set $A$ has the **perfect set property** if it is countable or contains a perfect subset. A non-empty perfect subset of a Polish space contains a homeomorphic copy of $\mathcal C$, so it has cardinality $2^{\aleph_0}$; hence no set with the perfect set property is a counterexample to CH.
+
+</Definition>
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="The hierarchy at a glance">
+
+Hooked arrows are inclusions, all proper in any uncountable Polish space (Lebesgue, using universal sets). The Borel hierarchy has $\omega_1$ levels; above it come the projective classes, starting with the analytic and coanalytic sets, whose intersection is exactly the Borel sets by Suslin's theorem.
+
+<CommutativeDiagram
+  size="sm"
+  objects={[
+    { id: "S1", tex: "\\Sigma^0_1", row: 0, col: 0 },
+    { id: "P1", tex: "\\Pi^0_1", row: 2, col: 0 },
+    { id: "D2", tex: "\\Delta^0_2", row: 1, col: 1 },
+    { id: "S2", tex: "\\Sigma^0_2", row: 0, col: 2 },
+    { id: "P2", tex: "\\Pi^0_2", row: 2, col: 2 },
+    { id: "D3", tex: "\\Delta^0_3", row: 1, col: 3 },
+    { id: "B", tex: "\\Delta^1_1", row: 1, col: 4 },
+    { id: "A", tex: "\\Sigma^1_1", row: 0, col: 5 },
+    { id: "C", tex: "\\Pi^1_1", row: 2, col: 5 }
+  ]}
+  arrows={[
+    { from: "S1", to: "D2", tex: "", style: "hook" },
+    { from: "P1", to: "D2", tex: "", style: "hook" },
+    { from: "D2", to: "S2", tex: "", style: "hook" },
+    { from: "D2", to: "P2", tex: "", style: "hook" },
+    { from: "S2", to: "D3", tex: "", style: "hook" },
+    { from: "P2", to: "D3", tex: "", style: "hook" },
+    { from: "D3", to: "B", tex: "\\cdots", style: "dashed" },
+    { from: "B", to: "A", tex: "", style: "hook" },
+    { from: "B", to: "C", tex: "", style: "hook" }
+  ]}
+  caption="The Borel hierarchy (open, closed, $F_\sigma$, $G_\delta$, …, through all countable ordinals) and the first projective classes. $\Delta^1_1$ is the class of Borel sets."
+/>
+
+Try placing sets on the diagram as you read: a closed interval, $\Q$, the irrationals, the set of sequences in $2^\N$ with infinitely many $1$s, the set of everywhere-differentiable functions in $C[0, 1]$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Locating sets">
+
+<Example title="Rationals and irrationals">
+
+$\Q \subseteq \R$ is a countable union of closed singletons, so it is $\Sigma^0_2$. It is not $\Pi^0_2$: the irrationals are a dense $G_\delta$, and if $\Q$ were a $G_\delta$ too, the Baire category theorem would make the empty set $\Q \cap (\R \setminus \Q)$ dense. Dually the irrationals are $\Pi^0_2$ but not $\Sigma^0_2$. (The formal section proves this in Lean.)
+
+</Example>
+
+<Example title="Sets of sequences">
+
+In $2^\N$: $\{x : x(0) = 1\}$ is clopen; $\{x : \exists n\, x(n) = 1\}$ is open, not closed; $\{x : x \text{ has infinitely many } 1\text{s}\} = \bigcap_n \bigcup_{m \gt n} \{x : x(m) = 1\}$ is $\Pi^0_2$, and by the same Baire category argument not $\Sigma^0_2$; the set of $x$ whose averages $\frac1n \sum_{i \lt n} x(i)$ converge to $\frac12$ is $\Pi^0_3$ ("for every $k$ there is $N$ such that for all $n \ge N$ the average is within $1/k$").
+
+</Example>
+
+<Example title="Beyond Borel">
+
+Coding trees on $\N$ by points of $2^{\N^{\lt\N}}$, the set $\mathrm{IF}$ of **ill-founded** trees (those with an infinite branch) is analytic: $T \in \mathrm{IF}$ iff $\exists x \in \mathcal N\; \forall n\; x \restriction n \in T$. The set $\mathrm{WF}$ of well-founded trees is coanalytic. Neither is Borel; they are *complete* for their classes. Mazurkiewicz (1936) showed that the set of everywhere-differentiable functions in $C[0, 1]$ is coanalytic but not Borel — a natural set of analysis beyond the Borel hierarchy.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The perfect set theorem and Suslin's theorem">
+
+Throughout, $X$ is a Polish space with a compatible complete metric $d$.
+
+<Theorem name="Perfect set theorem for analytic sets (Suslin 1917)">
+
+Every uncountable analytic set $A \subseteq X$ contains a homeomorphic copy of $\mathcal C$. In particular it contains a perfect set and has cardinality $2^{\aleph_0}$.
+
+</Theorem>
+
+<Proof>
+
+Let $A = f[\mathcal N]$ with $f : \mathcal N \to X$ continuous. Let $U$ be the union of all basic open sets $N_s$ with $f[N_s]$ countable; $f[U]$ is countable, being a countable union of countable sets. Put $F = \mathcal N \setminus U$, a closed set, non-empty since $A$ is uncountable.
+
+*Key property:* if $N_s \cap F \neq \varnothing$ then $f[N_s \cap F]$ is uncountable. Otherwise $f[N_s] \subseteq f[N_s \cap F] \cup f[U]$ would be countable, so $N_s \subseteq U$, contradicting $N_s \cap F \neq \varnothing$.
+
+We assign to each finite binary string $u$ a finite sequence $s_u \in \N^{\lt\N}$ with $N_{s_u} \cap F \neq \varnothing$. Let $s_\varnothing = \varnothing$. Given $s_u$, the key property gives $y_0, y_1 \in N_{s_u} \cap F$ with $f(y_0) \neq f(y_1)$. Choose disjoint closed balls $B_0 \ni f(y_0)$ and $B_1 \ni f(y_1)$ of radius at most $2^{-|u|}$. By continuity of $f$ at $y_i$ there is a proper extension $s_{u\frown i}$ of $s_u$ with $y_i \in N_{s_{u\frown i}}$ and $f[N_{s_{u\frown i}}] \subseteq B_i$.
+
+For $z \in \mathcal C$, the sequences $s_{z \restriction n}$ extend one another and their lengths increase, so they converge to a point $y_z \in \mathcal N$; since each $N_{s_{z\restriction n}}$ meets the closed set $F$, $y_z \in F$. The map $g(z) = f(y_z)$ is continuous. It is injective: if $z \neq z'$ first differ at place $n$, then $g(z)$ and $g(z')$ lie in the two disjoint balls chosen at stage $u = z \restriction n$. As $\mathcal C$ is compact, $g$ is a homeomorphism onto $g[\mathcal C] \subseteq A$, a compact set without isolated points.
+
+</Proof>
+
+So **no analytic set is a counterexample to CH**. For closed sets this is the Cantor–Bendixson theorem; for Borel sets it was proved by Alexandrov and by Hausdorff (1916).
+
+Two sets $P, Q$ are **Borel-separated** if some Borel set $C$ satisfies $P \subseteq C$ and $C \cap Q = \varnothing$.
+
+<Theorem name="Lemma (separation is countably additive)">
+
+If $P = \bigcup_m P_m$, $Q = \bigcup_n Q_n$, and each $P_m$ is Borel-separated from each $Q_n$, then $P$ is Borel-separated from $Q$.
+
+</Theorem>
+
+<Proof>
+
+If $C_{mn}$ separates $P_m$ from $Q_n$, then $C = \bigcup_m \bigcap_n C_{mn}$ is Borel, contains every $P_m$, and is disjoint from every $Q_n$.
+
+</Proof>
+
+<Theorem name="Lusin separation theorem (1927)">
+
+If $A$ and $B$ are disjoint analytic subsets of $X$, there is a Borel set $C$ with $A \subseteq C$ and $C \cap B = \varnothing$.
+
+</Theorem>
+
+<Proof>
+
+We may assume $A = f[\mathcal N]$ and $B = g[\mathcal N]$ with $f, g$ continuous. Suppose $A$ and $B$ are not Borel-separated. Since $f[N_s] = \bigcup_i f[N_{s \frown i}]$ and $g[N_t] = \bigcup_j g[N_{t \frown j}]$, the lemma shows: if $f[N_s]$ and $g[N_t]$ are not Borel-separated, then neither are $f[N_{s\frown i}]$ and $g[N_{t \frown j}]$ for some $i, j$. Starting from $s = t = \varnothing$ we obtain $x, y \in \mathcal N$ such that $f[N_{x \restriction n}]$ and $g[N_{y \restriction n}]$ are not Borel-separated for any $n$. But $f(x) \in A$ and $g(y) \in B$ are distinct, so they have disjoint open neighbourhoods $V$ and $W$; by continuity, for large $n$, $f[N_{x \restriction n}] \subseteq V$ and $g[N_{y \restriction n}] \subseteq W$, and the open set $V$ separates them — a contradiction.
+
+</Proof>
+
+<Theorem name="Suslin's theorem (1917)">
+
+A subset of a Polish space is Borel if and only if it is both analytic and coanalytic: $\Delta^1_1 = $ Borel.
+
+</Theorem>
+
+<Proof>
+
+Borel sets are analytic (the formal section cites Mathlib's proof: a Borel set is closed in a finer Polish topology, hence a continuous image of $\mathcal N$), and so are their complements. Conversely, if $A$ and $X \setminus A$ are analytic, the Lusin separation theorem gives a Borel $C$ with $A \subseteq C$ and $C \cap (X \setminus A) = \varnothing$, i.e. $A = C$.
+
+</Proof>
+
+<Theorem name="Theorem (Suslin): an analytic set that is not Borel">
+
+There is an analytic subset of $\mathcal N$ that is not coanalytic, hence not Borel.
+
+</Theorem>
+
+<Proof>
+
+*(Sketch.)* There is a **universal** analytic set $\mathcal U \subseteq \mathcal N \times \mathcal N$: every analytic subset of $\mathcal N$ is a section $\mathcal U_a = \{x : (a, x) \in \mathcal U\}$. (Code closed subsets of $\mathcal N \times \mathcal N$ by trees, and trees by points of $\mathcal N$; then project.) The diagonal $D = \{x : (x, x) \in \mathcal U\}$ is analytic. If its complement were analytic, it would be $\mathcal U_a$ for some $a$, and then $a \in D \iff (a, a) \in \mathcal U \iff a \in \mathcal U_a \iff a \notin D$.
+
+</Proof>
+
+The same diagonal argument as in Cantor's and Gödel's theorems. Lebesgue's claim fails because projections can produce any analytic set — for instance, $D$ is the projection of a closed subset of $\mathcal N \times \mathcal N$ — while *injective* continuous images of Borel sets are Borel (the Lusin–Souslin theorem).
+
+</Section>
+
+<Section id="projective" kind="human" title="Projective sets and the limits of ZFC">
+
+The good behaviour of analytic sets does not continue up the projective hierarchy in ZFC alone.
+
+- **What ZFC proves.** $\Sigma^1_1$ sets have the perfect set property (above), and $\Sigma^1_1$ and $\Pi^1_1$ sets are Lebesgue measurable and have the property of Baire (Lusin, Sierpiński). Every uncountable $\Sigma^1_2$ set has cardinality $\aleph_1$ or $2^{\aleph_0}$ (a consequence of Shoenfield absoluteness and the analysis of $\Sigma^1_2$ sets as unions of $\aleph_1$ Borel sets).
+- **What $V = L$ gives.** In Gödel's $L$ there is a $\Sigma^1_2$ well-order of the reals, hence a $\Delta^1_2$ set that is not Lebesgue measurable, and an uncountable $\Pi^1_1$ set with no perfect subset. So ZFC cannot prove that $\Pi^1_1$ sets have the perfect set property, nor that $\Delta^1_2$ sets are measurable (if ZFC is consistent).
+- **What large cardinals give.** **Determinacy** of infinite games is the unifying principle. Gale and Stewart (1953) showed open games are determined; Martin (1975) proved **Borel determinacy** in ZFC. Martin and Steel (1989) proved that if there are infinitely many Woodin cardinals then every projective set is determined (**projective determinacy**), and determinacy implies the perfect set property, Lebesgue measurability and the Baire property for all projective sets.
+
+So the regularity of definable sets of reals, which ZFC establishes at the first level, is settled at all projective levels by large cardinal axioms — one of the strongest arguments for adopting them (see <TopicLink id="math.found.large-cardinals">large cardinals</TopicLink>).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Polish spaces and analytic sets in Lean">
+
+Mathlib has substantial descriptive set theory. Baire space is Polish, and closed sets in a metric space are $G_\delta$:
+
+<Lean decl="Lumenary.DescriptiveSetTheory.baire_space_polish" />
+
+<Lean decl="Lumenary.DescriptiveSetTheory.closed_isGδ" />
+
+The Baire category argument that $\Q$ is not $G_\delta$, proved here from Mathlib's `Dense.inter_of_Gδ`:
+
+<Lean decl="Lumenary.DescriptiveSetTheory.rat_not_isGδ" />
+
+Mathlib defines `MeasureTheory.AnalyticSet` as "empty or a continuous image of `ℕ → ℕ`". Borel sets are analytic, continuous images of analytic sets are analytic, and so projections of Borel sets are analytic:
+
+<Lean decl="Lumenary.DescriptiveSetTheory.borel_analytic" />
+
+<Lean decl="Lumenary.DescriptiveSetTheory.analytic_image" />
+
+<Lean decl="Lumenary.DescriptiveSetTheory.projection_analytic" />
+
+The lemma that separation is countably additive, proved here with the separating set $\bigcup_m \bigcap_n C_{mn}$ of the lesson; then Suslin's theorem, derived from Mathlib's Lusin separation theorem exactly as in the proof above, and Mathlib's own statement of it:
+
+<Lean decl="Lumenary.DescriptiveSetTheory.separation_iUnion" />
+
+<Lean decl="Lumenary.DescriptiveSetTheory.suslin_from_lusin" />
+
+<Lean decl="Lumenary.DescriptiveSetTheory.suslin" />
+
+<Lean decl="Lumenary.DescriptiveSetTheory.lusin_souslin" />
+
+The perfect set property for closed sets (via Cantor–Bendixson):
+
+<Lean decl="Lumenary.DescriptiveSetTheory.cantor_bendixson" />
+
+<Lean decl="Lumenary.DescriptiveSetTheory.perfect_set_closed" />
+
+**Not formalised (here or, as far as we know, in Mathlib):** the Borel hierarchy $\Sigma^0_\alpha$ itself (Mathlib has a related transfinite construction, `MeasurableSpace.generateMeasurableRec`, used to count Borel sets), the perfect set theorem for *analytic* sets proved above, universal sets and the existence of an analytic non-Borel set, and determinacy. Mathlib's `Mathlib.SetTheory.Descriptive.Tree` provides trees on a type as a starting point.
+
+</Section>
+
+<Section id="computation" kind="computation" title="What finite trees can and cannot see">
+
+The experiment studies four closed subsets of $2^\N$ through their trees, truncated at finite depths: the full tree, the "golden" tree of strings with no two adjacent $1$s (perfect), the tree of strings with at most two $1$s (countable), and a "staircase" tree whose branches all have finitely many $1$s (countable). For each it counts nodes and computes the *splitting height* — the height of the largest full binary tree embedded in the branching nodes.
+
+<Python id="descriptive_set_theory_trees" />
+
+The staircase tree has exactly the same node counts and splitting heights as the golden tree at every depth checked, yet one body is countable and the other is perfect. Countability of $[T]$ is a property of the infinite tree that finite information cannot decide — indeed (Hurewicz) the set of codes of countable closed sets is coanalytic but not Borel.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The projection of a Borel set is Borel."** This was Lebesgue's error. Projections of Borel sets are analytic, and every analytic set arises this way, including non-Borel ones. (Projections of *closed* subsets of $\R^2$ happen to be Borel, because closed subsets of $\R^2$ are $\sigma$-compact; projections of $G_\delta$ subsets of $\R^2$ already give every analytic set.)
+
+</Misconception>
+
+<Misconception>
+
+**"Definable means computable."** The classical (boldface) classes allow arbitrary real parameters: every singleton, and so every countable set, is $\Pi^0_1$ or $\Sigma^0_2$, however uncomputable its points. The *effective* (lightface) hierarchies of Kleene — $\Sigma^0_1$ for computably enumerable, $\Delta^1_1$ for hyperarithmetic — refine the classical ones, and the classical classes are their relativisations to all parameters.
+
+</Misconception>
+
+<Misconception>
+
+**"Every uncountable set of reals has cardinality $2^{\aleph_0}$."** That is CH. What is true is that every uncountable *analytic* set (in particular every uncountable Borel or closed set) does.
+
+</Misconception>
+
+<Misconception>
+
+**"Analytic sets are related to analytic functions."** The name comes from Lebesgue's functions "représentables analytiquement"; Mathlib places them in the `MeasureTheory` namespace for this reason, with a warning in the documentation.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Baire space is universal">
+
+Every non-empty Polish space is a continuous image of $\mathcal N$, and every uncountable Polish space contains a homeomorphic copy of $\mathcal C$. Kuratowski's isomorphism theorem says that any two uncountable Polish spaces are **Borel isomorphic**: up to Borel bijections there is exactly one uncountable standard Borel space. So from the measurable point of view $\R$, $[0, 1]^\N$ and $\mathcal N$ are the same, and topology is a tool for choosing convenient representatives — for example, every Borel set becomes clopen in a finer Polish topology with the same Borel sets. The Baire category theorem is the basic tool for proving that sets are *not* in a given class (see <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Measurability and uniformisation">
+
+Lusin proved that analytic sets are **universally measurable**: measurable for the completion of every $\sigma$-finite Borel measure. So measure theory extends beyond Borel sets in a controlled way (see <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink>). The **Jankov–von Neumann uniformisation theorem** says that an analytic subset of $X \times Y$ has a uniformising function measurable with respect to the $\sigma$-algebra generated by analytic sets; this measurable selection principle underpins dynamic programming, stochastic control and optimal transport. And descriptive set theory returns to Cantor's original question: Kechris and Louveau's work on sets of uniqueness for trigonometric series uses exactly these tools.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Classifying measure-preserving systems">
+
+Ergodic theory classifies measure-preserving transformations up to isomorphism. Ornstein (1970) classified Bernoulli shifts completely by entropy. In general the problem is intractable, and descriptive set theory makes this precise: Foreman, Rudolph and Weiss (2011) proved that the isomorphism relation on ergodic measure-preserving transformations of the unit interval is a complete analytic set, in particular not Borel — no countable Borel procedure can decide isomorphism, unlike the Bernoulli case.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="How hard is a classification problem?">
+
+An equivalence relation $E$ on a Polish space is **Borel reducible** to $F$ if a Borel map sends $E$-classes to $F$-classes injectively; this measures the complexity of classification problems. Countable structures (groups, graphs, fields) are coded by points of Polish spaces, and isomorphism becomes an analytic equivalence relation. Torsion-free abelian groups of rank $1$ are classified by "types" (Baer), but Hjorth (1999) showed rank $2$ is strictly harder, and Thomas (2003) showed that the classification problems for torsion-free abelian groups of rank $n$ strictly increase in complexity with $n$. The Glimm–Effros dichotomy (Harrington, Kechris and Louveau, 1990) says that a Borel equivalence relation either admits countable invariants of a concrete kind or is at least as complex as eventual equality of binary sequences.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Effective descriptive set theory">
+
+Replacing "open" by "computably enumerable union of basic open sets" gives Kleene's lightface hierarchies: the arithmetical sets are the effective Borel sets of finite rank, and **Kleene's theorem** (1955) — the effective Suslin theorem — says that the lightface $\Delta^1_1$ sets of natural numbers are exactly the hyperarithmetic ones. Classical theorems follow by relativising effective ones to arbitrary parameters, an approach developed by Addison and Moschovakis. Set-theoretically, the regularity of projective sets is independent of ZFC and decided by determinacy axioms, as described above.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Émile Borel** (1898) introduced the sets now named after him while developing measure; **René Baire** (1899) classified functions by iterated pointwise limits; **Henri Lebesgue** (1905) studied Baire's classes, proved that the Borel hierarchy is proper, and made the error about projections.
+- **Pavel Alexandrov** and **Felix Hausdorff** (1916) proved that uncountable Borel sets have cardinality $2^{\aleph_0}$. **Mikhail Suslin** (1917), in Moscow, introduced analytic sets, proved that they have the perfect set property and that Borel = analytic ∩ coanalytic; he died of typhus in 1919, aged 24. **Nikolai Lusin** developed the theory and the separation theorem (1927) and defined the projective sets with **Wacław Sierpiński** (1925).
+- Polish spaces are named in honour of the Polish school of topology — Sierpiński, **Kazimierz Kuratowski**, **Stefan Mazurkiewicz** and others. **Kurt Gödel** (1938) observed that $V = L$ yields definable pathological sets.
+- **Stephen Kleene** (1955), **John Addison** and **Yiannis Moschovakis** built the effective theory; **Donald A. Martin** proved Borel determinacy (1975), and Martin and **John Steel** projective determinacy from Woodin cardinals (1989).
+- Since the 1990s, **Alexander Kechris**, **Alain Louveau**, **Leo Harrington**, **Greg Hjorth**, **Simon Thomas** and others have developed invariant descriptive set theory and its applications to classification in algebra and dynamics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Alexander S. Kechris, *Classical Descriptive Set Theory* (1995) — the standard graduate text; the proofs above follow its chapters 3, 14 and 29.
+- Yiannis N. Moschovakis, *Descriptive Set Theory* (1980; 2nd edition 2009) — the effective approach and determinacy.
+- S. M. Srivastava, *A Course on Borel Sets* (1998) — a gentle, complete route through Borel and analytic sets.
+- Su Gao, *Invariant Descriptive Set Theory* (2009) — Borel equivalence relations and classification.
+- Thomas Jech, *Set Theory* (Third Millennium Edition, 2003), chapters 11 and 25 — the set-theoretic side.
+
+</Section>

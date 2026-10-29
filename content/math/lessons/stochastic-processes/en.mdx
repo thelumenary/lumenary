@@ -1,0 +1,606 @@
+---
+slug: stochastic-processes
+topic: math.prob.stochastic-processes
+title: Stochastic processes
+subtitle: Random functions of time — the Poisson process counts rare events, Brownian motion jitters continuously but nowhere smoothly, and Itô's calculus explains why its chain rule needs an extra term.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7032
+objectives:
+  - Construct the Poisson process from exponential waiting times and derive its Poisson counts, independent increments and memorylessness
+  - Describe a continuous-time Markov chain by its generator and solve Kolmogorov's forward and backward equations in simple cases
+  - State the defining properties of Brownian motion and prove its basic path properties — scaling, martingales, quadratic variation, infinite variation and nowhere differentiability
+  - Prove Itô's isometry, compute the integral of B dB, and use Itô's formula to solve the equations of geometric Brownian motion and the Ornstein–Uhlenbeck process
+narrators: []
+lean:
+  - Lumenary.StochasticProcesses.discrete_ito
+  - Lumenary.StochasticProcesses.discrete_stratonovich
+  - Lumenary.StochasticProcesses.random_walk_ito
+  - Lumenary.StochasticProcesses.poissonPMF
+  - Lumenary.StochasticProcesses.poissonPMF_eq
+  - Lumenary.StochasticProcesses.poisson_convolution
+  - Lumenary.StochasticProcesses.poisson_conv
+  - Lumenary.StochasticProcesses.law_of_rare_events
+  - Lumenary.StochasticProcesses.exp_memoryless
+  - Lumenary.StochasticProcesses.two_state_forward
+  - Lumenary.StochasticProcesses.brownian_covariance
+  - Lumenary.StochasticProcesses.brownian_increment
+  - Lumenary.StochasticProcesses.brownian_indep_increments
+  - Lumenary.StochasticProcesses.brownian_scaling
+  - Lumenary.StochasticProcesses.brownian_time_inversion
+  - Lumenary.StochasticProcesses.gbm
+  - Lumenary.StochasticProcesses.gbm_ito
+compute: [stochastic_processes_ito_sums, stochastic_processes_poisson_process, stochastic_processes_gbm]
+trails: [will-the-walker-return]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Random functions of time">
+
+In 1827 the botanist Robert Brown watched particles from pollen grains in water under a microscope and saw them jitter ceaselessly, in no preferred direction. In 1900 Louis Bachelier, in a thesis on the Paris stock exchange, modelled prices by a process with independent Gaussian increments. In 1905 Albert Einstein, and independently Marian Smoluchowski, explained Brown's motion by molecular collisions and predicted that the mean square displacement grows linearly in time; Jean Perrin's measurements (1908–1909) confirmed it and fixed Avogadro's number, helping to settle the reality of atoms. Meanwhile the engineer Agner Krarup Erlang, designing the Copenhagen telephone exchange (1909), and the actuary Filip Lundberg, modelling insurance claims (1903), needed a model for events arriving "at random" in continuous time.
+
+These are **stochastic processes**: random functions $t \mapsto X_t$. They raise questions the previous lesson could not ask. What does it mean to choose a function at random? Which properties of a random path hold almost surely? And since Brownian paths turn out to be nowhere differentiable, how can one write — let alone solve — a differential equation driven by them? The answer to the last question, Itô's stochastic calculus (1944), is now used from population genetics to quantitative finance.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Two limits of coin tossing">
+
+Both basic processes are scaling limits of coin tossing.
+
+**Rare events.** Divide $[0, t]$ into $n$ short slots and let an "arrival" occur in each slot independently with probability $\lambda t / n$. The number of arrivals is binomial, and as $n \to \infty$ it becomes Poisson with mean $\lambda t$ (the law of rare events). Counts in disjoint intervals are independent, and the waiting time for the next arrival does not care how long you have already waited. This is the **Poisson process**: a random step function that jumps by $1$ at random times.
+
+**Many small steps.** Take a simple random walk and speed it up: steps of size $1/\sqrt n$ every $1/n$ units of time. After time $t$ the position is a sum of $nt$ independent steps of variance $1/n$, so by the central limit theorem it is approximately $N(0, t)$. The limit is **Brownian motion**: a continuous random path with independent Gaussian increments. The scaling — space like the square root of time — is the source of everything strange about it. Over a time step $dt$ the path moves about $\sqrt{dt}$, far more than $dt$, so the path has no slope; but the *squares* of the increments add up to exactly the elapsed time. In the heuristic shorthand of stochastic calculus, $(dB)^2 = dt$. A second-order Taylor expansion therefore keeps a term that ordinary calculus discards:
+
+$$
+df(B_t) = f'(B_t) \, dB_t + \tfrac12 f''(B_t) \, (dB_t)^2 = f'(B_t) \, dB_t + \tfrac12 f''(B_t) \, dt.
+$$
+
+This is Itô's formula. The rest of the lesson makes these heuristics into theorems.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="stochastic process, finite-dimensional distributions">
+
+A **stochastic process** on a probability space $(\Omega, \mathcal F, P)$ is a family $(X_t)_{t \in I}$ of random variables indexed by time, $I = [0, \infty)$ or $\{0, 1, 2, \dots\}$. Its **finite-dimensional distributions** are the laws of the vectors $(X_{t_1}, \dots, X_{t_k})$. For each $\omega$, $t \mapsto X_t(\omega)$ is a **sample path**. A **filtration** $(\mathcal F_t)$ is an increasing family of sub-σ-algebras; $X$ is **adapted** if each $X_t$ is $\mathcal F_t$-measurable, and an adapted integrable $X$ is a **martingale** if $\mathbb E[X_t \mid \mathcal F_s] = X_s$ almost surely for all $s \le t$.
+
+</Definition>
+
+The **Kolmogorov extension theorem** says that any consistent family of finite-dimensional distributions (consistent under permuting and forgetting coordinates) is the family of some process. It does not control paths: the event "the path is continuous" depends on uncountably many coordinates and is not even measurable in the product σ-algebra. Path regularity has to be constructed separately — for Brownian motion by Wiener's or Lévy's construction, or by the Kolmogorov–Chentsov continuity theorem.
+
+<Definition term="Poisson process">
+
+A **Poisson process of rate $\lambda > 0$** is a process $(N_t)_{t \ge 0}$ with values in $\{0, 1, 2, \dots\}$ such that $N_0 = 0$; its paths are right-continuous, non-decreasing, and increase by jumps of size $1$; its increments over disjoint intervals are independent; and $N_t - N_s$ has the Poisson distribution with mean $\lambda (t - s)$ for $s \lt t$:
+
+$$
+P(N_t - N_s = k) = p_k\big(\lambda(t - s)\big), \qquad p_k(r) = e^{-r} \frac{r^k}{k!}.
+$$
+
+</Definition>
+
+<Definition term="continuous-time Markov chain">
+
+Let $S$ be a finite set. A **generator** (Q-matrix) on $S$ is a matrix $Q = (q_{ij})$ with $q_{ij} \ge 0$ for $i \ne j$ and rows summing to $0$; write $q_i = -q_{ii} = \sum_{j \ne i} q_{ij}$. The **continuous-time Markov chain** with generator $Q$ sits in state $i$ for an exponential time with rate $q_i$, then jumps to $j \ne i$ with probability $q_{ij}/q_i$, independently of the past. Its **transition matrix** is $P(t)_{ij} = P(X_t = j \mid X_0 = i)$.
+
+</Definition>
+
+<Definition term="Brownian motion">
+
+A **standard Brownian motion** is a real process $(B_t)_{t \ge 0}$ such that
+
+1. $B_0 = 0$;
+2. for $0 \le t_0 \lt t_1 \lt \dots \lt t_k$ the increments $B_{t_1} - B_{t_0}, \dots, B_{t_k} - B_{t_{k-1}}$ are independent;
+3. for $s \lt t$, $B_t - B_s$ is normal with mean $0$ and variance $t - s$;
+4. almost every sample path $t \mapsto B_t(\omega)$ is continuous.
+
+A **Gaussian process** is one whose finite-dimensional distributions are all multivariate normal; it is determined in law by its mean $\mathbb E X_t$ and covariance $\operatorname{Cov}(X_s, X_t)$.
+
+</Definition>
+
+<Definition term="simple integrands and the Itô integral">
+
+Let $(B_t)$ be a Brownian motion with filtration $(\mathcal F_t)$ (for which $B_t - B_s$ is independent of $\mathcal F_s$). A **simple process** on $[0, T]$ has the form $H_t = \sum_{k=0}^{n-1} \xi_k \mathbf 1_{(t_k, t_{k+1}]}(t)$ for a partition $0 = t_0 \lt \dots \lt t_n = T$, where each $\xi_k$ is bounded and $\mathcal F_{t_k}$-measurable — the integrand is decided at the **left endpoint**. Its **Itô integral** is
+
+$$
+\int_0^T H_t \, dB_t = \sum_{k=0}^{n-1} \xi_k \big(B_{t_{k+1}} - B_{t_k}\big).
+$$
+
+It extends by an $L^2$ limit (below) to all adapted, jointly measurable $H$ with $\mathbb E \int_0^T H_t^2 \, dt \lt \infty$.
+
+</Definition>
+
+<Definition term="Itô process, stochastic differential equation, quadratic variation">
+
+An **Itô process** is $X_t = X_0 + \int_0^t \mu_s \, ds + \int_0^t \sigma_s \, dB_s$, written $dX_t = \mu_t \, dt + \sigma_t \, dB_t$. A **stochastic differential equation** $dX_t = b(t, X_t) \, dt + \sigma(t, X_t) \, dB_t$ asks for an Itô process with $\mu_t = b(t, X_t)$ and $\sigma_t = \sigma(t, X_t)$. The **quadratic variation** of a process over $[0, t]$ is the limit, if it exists, of $\sum_k (X_{t_{k+1}} - X_{t_k})^2$ as the mesh of the partition tends to $0$.
+
+</Definition>
+
+</Section>
+
+<Section id="poisson" kind="proof" title="The Poisson process">
+
+<Theorem name="Construction from exponential waiting times">
+
+Let $E_1, E_2, \dots$ be independent exponential random variables with rate $\lambda$ (density $\lambda e^{-\lambda s}$ on $s > 0$), let $T_n = E_1 + \dots + E_n$ be the $n$-th arrival time and $N_t = \#\{n \ge 1 : T_n \le t\}$. Then:
+
+1. $T_n$ has the Gamma density $f_n(s) = \lambda^n s^{n-1} e^{-\lambda s}/(n - 1)!$ on $s > 0$;
+2. $N_t$ has the Poisson distribution with mean $\lambda t$;
+3. (memorylessness) $P(E_1 > s + t \mid E_1 > s) = P(E_1 > t)$ for $s, t \ge 0$.
+
+</Theorem>
+
+<Proof>
+
+(1) By induction: $f_1$ is the exponential density, and since $T_{n+1} = T_n + E_{n+1}$ with independent summands, its density is the convolution
+$f_{n+1}(s) = \int_0^s f_n(u) \, \lambda e^{-\lambda(s - u)} \, du = \frac{\lambda^{n+1} e^{-\lambda s}}{(n-1)!} \int_0^s u^{n-1} \, du = \frac{\lambda^{n+1} s^n e^{-\lambda s}}{n!}$.
+
+(2) $P(N_t = 0) = P(E_1 > t) = e^{-\lambda t}$. For $n \ge 1$, $N_t = n$ exactly when $T_n \le t \lt T_n + E_{n+1}$. Since $E_{n+1}$ is independent of $T_n$,
+
+$$
+P(N_t = n) = \int_0^t f_n(s) \, P(E_{n+1} > t - s) \, ds = \int_0^t \frac{\lambda^n s^{n-1} e^{-\lambda s}}{(n-1)!} \, e^{-\lambda(t - s)} \, ds = e^{-\lambda t} \frac{(\lambda t)^n}{n!}.
+$$
+
+(3) $P(E_1 > s + t)/P(E_1 > s) = e^{-\lambda(s + t)}/e^{-\lambda s} = e^{-\lambda t}$.
+
+</Proof>
+
+Memorylessness characterises the exponential law among distributions on $(0, \infty)$: if $G(t) = P(E > t)$ satisfies $G(s + t) = G(s) G(t)$ and $G$ is monotone with $0 \lt G(1) \lt 1$, then $G(t) = e^{-\lambda t}$ with $\lambda = -\log G(1)$ (Cauchy's functional equation for $\log G$). It is also why the construction has **independent, stationary increments**: at any fixed time $s$, the residual waiting time until the next arrival is again exponential with rate $\lambda$ and independent of what happened before $s$, so $(N_{s+t} - N_s)_{t \ge 0}$ is a Poisson process independent of $(N_u)_{u \le s}$ (Norris, *Markov Chains*, §2.4). In particular the counts must be consistent: a Poisson($\lambda s$) count followed by an independent Poisson($\lambda t$) count must total a Poisson($\lambda(s + t)$) count.
+
+<Theorem name="Poisson counts add">
+
+For $s, t \ge 0$ and $k \ge 0$: $\displaystyle \sum_{j=0}^k p_j(s) \, p_{k-j}(t) = p_k(s + t)$. Equivalently, the sum of independent Poisson variables with means $s$ and $t$ is Poisson with mean $s + t$.
+
+</Theorem>
+
+<Proof>
+
+$\displaystyle \sum_{j=0}^k e^{-s}\frac{s^j}{j!} \, e^{-t} \frac{t^{k-j}}{(k-j)!} = \frac{e^{-(s+t)}}{k!} \sum_{j=0}^k \binom kj s^j t^{k-j} = e^{-(s+t)} \frac{(s+t)^k}{k!}$, by the binomial theorem.
+
+</Proof>
+
+<Theorem name="Law of rare events">
+
+If $n p_n \to r$, then $\binom nk p_n^k (1 - p_n)^{n-k} \to e^{-r} r^k/k!$ for every fixed $k$.
+
+</Theorem>
+
+<Proof>
+
+Write $\binom nk p_n^k = \frac{n (n-1) \cdots (n - k + 1)}{n^k} \cdot \frac{(n p_n)^k}{k!} \to \frac{r^k}{k!}$. Also $p_n \to 0$, so $(1 - p_n)^{-k} \to 1$, and $n \log(1 - p_n) = -n p_n (1 + O(p_n)) \to -r$ gives $(1 - p_n)^n \to e^{-r}$.
+
+</Proof>
+
+Two further operations keep us inside the family (Kingman, *Poisson Processes*): the **superposition** of independent Poisson processes of rates $\lambda$ and $\mu$ is a Poisson process of rate $\lambda + \mu$, and **thinning** — keeping each arrival independently with probability $p$ — turns a Poisson process of rate $\lambda$ into one of rate $p\lambda$, independent of the process of discarded arrivals.
+
+</Section>
+
+<Section id="markov" kind="proof" title="Continuous-time Markov chains">
+
+<Theorem name="Kolmogorov's equations (finite state space)">
+
+Let $Q$ be a generator on a finite set $S$ and $P(t) = e^{tQ} = \sum_{m \ge 0} t^m Q^m/m!$. Then $P(0) = I$, $P(s + t) = P(s) P(t)$, each $P(t)$ is a stochastic matrix (non-negative entries, rows summing to $1$), and
+
+$$
+P'(t) = Q \, P(t) \quad \text{(backward equation)}, \qquad P'(t) = P(t) \, Q \quad \text{(forward equation)}.
+$$
+
+</Theorem>
+
+<Proof>
+
+The exponential series converges absolutely; $e^{(s+t)Q} = e^{sQ} e^{tQ}$ because $sQ$ and $tQ$ commute, and differentiating the series termwise gives $P' = QP = PQ$. Rows: $Q \mathbf 1 = 0$ (rows of $Q$ sum to zero), so $P(t) \mathbf 1 = \mathbf 1 + \sum_{m \ge 1} t^m Q^m \mathbf 1/m! = \mathbf 1$. Non-negativity: with $c = \max_i q_i$, the matrix $Q + cI$ has non-negative entries, so $e^{t(Q + cI)}$ does too, and $e^{tQ} = e^{-ct} e^{t(Q + cI)}$ (as $cI$ commutes with $Q$).
+
+</Proof>
+
+One shows that the jump-and-hold chain of the definition has exactly these transition probabilities (Norris, §2.8): the backward equation comes from conditioning on the first jump, the forward equation from conditioning on the last. A distribution $\pi$ is **stationary** if $\pi P(t) = \pi$ for all $t$, equivalently $\pi Q = 0$; for an irreducible finite chain it is unique and $P(t)_{ij} \to \pi_j$ as $t \to \infty$ (no periodicity can arise in continuous time).
+
+<Example title="The two-state chain">
+
+On $S = \{0, 1\}$ with $q_{01} = a$, $q_{10} = b$ and $a + b > 0$, the forward equation for $p(t) = P(t)_{00}$ reads $p' = -a p + b (1 - p)$: probability leaves $0$ at rate $a$ and returns at rate $b$. With $p(0) = 1$ its solution is
+
+$$
+p(t) = \frac{b}{a + b} + \frac{a}{a + b} e^{-(a+b) t} \xrightarrow[t \to \infty]{} \frac{b}{a+b} = \pi_0.
+$$
+
+The relaxation rate $a + b$ is the non-zero eigenvalue of $-Q$.
+
+</Example>
+
+The Poisson process is the chain on $\{0, 1, 2, \dots\}$ with $q_{i, i+1} = \lambda$. On infinite state spaces a new phenomenon appears: a pure birth chain with rates $\lambda_n$ makes infinitely many jumps in finite time — it **explodes** — with probability one if $\sum_n 1/\lambda_n \lt \infty$ (the expected total holding time is finite), and with probability zero if $\sum_n 1/\lambda_n = \infty$.
+
+</Section>
+
+<Section id="brownian" kind="proof" title="Brownian motion">
+
+Brownian motion exists. Wiener (1923) constructed its law on the space of continuous functions; Lévy gave a construction by successive dyadic interpolation with independent Gaussian corrections; alternatively, the finite-dimensional distributions exist by Kolmogorov's extension theorem, and since $\mathbb E|B_t - B_s|^{2p} = C_p |t - s|^p$, the **Kolmogorov–Chentsov theorem** provides a modification whose paths are locally Hölder continuous of every order $\gamma \lt \frac{p-1}{2p}$, hence of every order $\gamma \lt \tfrac12$ (Mörters–Peres, §1.1; Le Gall, Ch. 2).
+
+<Theorem name="Brownian motion as a Gaussian process">
+
+A process $(B_t)$ with $B_0 = 0$ and continuous paths is a standard Brownian motion if and only if it is a Gaussian process with $\mathbb E B_t = 0$ and $\operatorname{Cov}(B_s, B_t) = \min(s, t)$.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) Any vector $(B_{t_1}, \dots, B_{t_k})$ with $t_1 \lt \dots \lt t_k$ is a linear image of the independent Gaussian increments, hence Gaussian with mean $0$. For $s \le t$, independence of $B_s$ and $B_t - B_s$ gives $\operatorname{Cov}(B_s, B_t) = \operatorname{Var} B_s + \operatorname{Cov}(B_s, B_t - B_s) = s$.
+
+($\Leftarrow$) The increments over $t_0 \lt \dots \lt t_k$ are jointly Gaussian. For $s \le t \le u \le v$, $\operatorname{Cov}(B_t - B_s, B_v - B_u) = t - s - t + s = 0$, and jointly Gaussian uncorrelated variables are independent. Finally $\operatorname{Var}(B_t - B_s) = t - 2s + s = t - s$.
+
+</Proof>
+
+<Theorem name="Invariances">
+
+If $B$ is a standard Brownian motion, so are: $-B$ (symmetry); $c^{-1/2} B_{ct}$ for each $c > 0$ (scaling); $B_{s+t} - B_s$ for each fixed $s \ge 0$, and it is independent of $(B_u)_{u \le s}$ (Markov property); and $t B_{1/t}$ (with value $0$ at $t = 0$) (time inversion).
+
+</Theorem>
+
+<Proof>
+
+Each new process is a centred Gaussian process; by the previous theorem it suffices to compute covariances and check continuity. For scaling, $\operatorname{Cov}(c^{-1/2} B_{cs}, c^{-1/2} B_{ct}) = c^{-1} \min(cs, ct) = \min(s, t)$. For time inversion with $0 \lt s \le t$, $\operatorname{Cov}(s B_{1/s}, t B_{1/t}) = st \min(1/s, 1/t) = st/t = s$. Continuity of $t B_{1/t}$ at $t = 0$ amounts to $B_u/u \to 0$ as $u \to \infty$, the Brownian strong law; it follows, for instance, from Doob's maximal inequality applied on dyadic blocks (Mörters–Peres, Ch. 1). The Markov property: the increments of $B_{s + \cdot} - B_s$ are increments of $B$ over $[s, \infty)$, independent of those over $[0, s]$.
+
+</Proof>
+
+<Theorem name="Brownian martingales">
+
+With respect to the natural filtration, $B_t$, $B_t^2 - t$ and $\exp(\theta B_t - \theta^2 t/2)$ (for each $\theta \in \R$) are martingales.
+
+</Theorem>
+
+<Proof>
+
+For $s \lt t$ write $B_t = B_s + D$ with $D = B_t - B_s \sim N(0, t - s)$ independent of $\mathcal F_s$. Then $\mathbb E[B_t \mid \mathcal F_s] = B_s$; $\mathbb E[B_t^2 \mid \mathcal F_s] = B_s^2 + 2 B_s \mathbb E D + \mathbb E D^2 = B_s^2 + t - s$; and $\mathbb E[e^{\theta B_t} \mid \mathcal F_s] = e^{\theta B_s} \mathbb E e^{\theta D} = e^{\theta B_s + \theta^2 (t - s)/2}$, using the Gaussian moment generating function.
+
+</Proof>
+
+<Theorem name="Quadratic variation of Brownian motion">
+
+Let $\Pi_n = \{0 = t_0^n \lt \dots \lt t_{m_n}^n = t\}$ be partitions of $[0, t]$ with mesh $|\Pi_n| = \max_k (t^n_{k+1} - t^n_k) \to 0$. Then $Q_n = \sum_k \big(B_{t^n_{k+1}} - B_{t^n_k}\big)^2 \to t$ in $L^2$.
+
+</Theorem>
+
+<Proof>
+
+Write $\Delta_k = B_{t_{k+1}} - B_{t_k}$ and $\delta_k = t_{k+1} - t_k$ (dropping $n$). Then $\mathbb E \Delta_k^2 = \delta_k$, so $\mathbb E Q_n = t$. The $\Delta_k^2$ are independent with $\operatorname{Var} \Delta_k^2 = \mathbb E \Delta_k^4 - \delta_k^2 = 3\delta_k^2 - \delta_k^2 = 2\delta_k^2$. Hence
+
+$$
+\mathbb E (Q_n - t)^2 = \operatorname{Var} Q_n = 2 \sum_k \delta_k^2 \le 2 \, |\Pi_n| \sum_k \delta_k = 2 t \, |\Pi_n| \to 0.
+$$
+
+</Proof>
+
+If $\sum_n |\Pi_n| \lt \infty$ (for instance dyadic partitions), Chebyshev and Borel–Cantelli upgrade this to almost-sure convergence.
+
+<Theorem name="Brownian paths have infinite variation">
+
+Almost surely, the total variation $V = \sup_\Pi \sum_k |B_{t_{k+1}} - B_{t_k}|$ of $B$ on $[0, t]$ (with $t > 0$) is infinite.
+
+</Theorem>
+
+<Proof>
+
+Take the dyadic partitions $\Pi_n$ of $[0, t]$, along which $Q_n \to t$ almost surely. For every $n$,
+$Q_n \le \max_k |\Delta_k| \cdot \sum_k |\Delta_k| \le \max_k |\Delta_k| \cdot V$.
+Each path is uniformly continuous on $[0, t]$, so $\max_k |\Delta_k| \to 0$. If $V(\omega) \lt \infty$ then $Q_n(\omega) \to 0$, which happens only on a null set because $Q_n \to t > 0$ almost surely.
+
+</Proof>
+
+So Brownian paths are not of bounded variation, and $\int H \, dB$ cannot be defined path by path as a Riemann–Stieltjes integral. In fact much more is true.
+
+<Theorem name="Nowhere differentiability (Paley–Wiener–Zygmund, 1933)">
+
+Almost surely, $t \mapsto B_t$ is differentiable at no point of $[0, 1)$.
+
+</Theorem>
+
+<Proof>
+
+This proof is due to Dvoretzky, Erdős and Kakutani (1961). Suppose $B$ is differentiable at some $s \in [0, 1)$. Then there are $M \in \N$ and $\delta > 0$ with $|B_u - B_s| \le M |u - s|$ for $|u - s| \le \delta$. Let $n > 4/\delta$ and $k = \lceil ns \rceil$, so $0 \le k/n - s \lt 1/n$. For $j = 1, 2, 3$ both $(k + j)/n$ and $(k + j - 1)/n$ lie within $4/n$ of $s$, and
+
+$$
+\big|B_{(k+j)/n} - B_{(k+j-1)/n}\big| \le M \frac{j + 1}{n} + M \frac{j}{n} \le \frac{7M}{n}.
+$$
+
+So $\omega$ lies in $A_{n, M} = \bigcup_{k=0}^n \bigcap_{j=1}^3 \big\{|B_{(k+j)/n} - B_{(k+j-1)/n}| \le 7M/n\big\}$ for all large $n$. The three increments are independent $N(0, 1/n)$, and a $N(0, 1/n)$ density is at most $\sqrt{n/(2\pi)} \le \sqrt n/2$, so each event in the intersection has probability at most $2 \cdot \frac{7M}{n} \cdot \frac{\sqrt n}{2} = 7M/\sqrt n$. Hence
+
+$$
+P(A_{n, M}) \le (n + 1) \Big(\frac{7M}{\sqrt n}\Big)^3 \xrightarrow[n \to \infty]{} 0.
+$$
+
+The set of paths differentiable somewhere in $[0, 1)$ is therefore contained in $\bigcup_{M} \liminf_n A_{n, M}$, and $P(\liminf_n A_{n, M}) \le \liminf_n P(A_{n, M}) = 0$ for each $M$.
+
+</Proof>
+
+Finally, the **reflection principle**: for $a > 0$, $P\big(\max_{s \le t} B_s \ge a\big) = 2 P(B_t \ge a)$. Reflect the path after the first time it hits $a$; by the strong Markov property the reflected path is again a Brownian motion (Mörters–Peres, §2.2).
+
+</Section>
+
+<Section id="ito" kind="proof" title="Itô's stochastic calculus">
+
+<Theorem name="Itô isometry (simple integrands)">
+
+For a simple process $H$ on $[0, T]$: $\mathbb E \int_0^T H_t \, dB_t = 0$ and $\displaystyle \mathbb E \Big(\int_0^T H_t \, dB_t\Big)^2 = \mathbb E \int_0^T H_t^2 \, dt$.
+
+</Theorem>
+
+<Proof>
+
+Let $\Delta_k = B_{t_{k+1}} - B_{t_k}$, independent of $\mathcal F_{t_k}$, with mean $0$ and variance $\delta_k = t_{k+1} - t_k$. Since $\xi_k$ is $\mathcal F_{t_k}$-measurable, $\mathbb E[\xi_k \Delta_k] = \mathbb E[\xi_k] \, \mathbb E[\Delta_k] = 0$. Expanding the square, for $j \lt k$ the variable $\xi_j \Delta_j \xi_k$ is $\mathcal F_{t_k}$-measurable, so $\mathbb E[\xi_j \Delta_j \xi_k \Delta_k] = \mathbb E[\xi_j \Delta_j \xi_k] \, \mathbb E \Delta_k = 0$. The diagonal terms give $\mathbb E[\xi_k^2 \Delta_k^2] = \mathbb E[\xi_k^2] \, \delta_k$, and $\sum_k \mathbb E[\xi_k^2] \delta_k = \mathbb E \int_0^T H_t^2 \, dt$.
+
+</Proof>
+
+The isometry says that $H \mapsto \int H \, dB$ is a linear isometry from simple processes, with the norm $\big(\mathbb E \int_0^T H^2 \, dt\big)^{1/2}$, into $L^2(\Omega)$. Simple processes are dense in the space of adapted, jointly measurable $H$ with $\mathbb E \int_0^T H^2 \, dt \lt \infty$, so the integral extends uniquely, still isometric. The resulting process $t \mapsto \int_0^t H \, dB$ has a continuous modification which is a martingale (Karatzas–Shreve, §3.2). The choice of the **left endpoint** is what makes the integral a martingale: the integrand cannot anticipate the increment it multiplies.
+
+<Theorem name="Integral of B dB">
+
+$\displaystyle \int_0^t B_s \, dB_s = \frac12 B_t^2 - \frac12 t$.
+
+</Theorem>
+
+<Proof>
+
+Fix partitions $\Pi_n$ of $[0, t]$ with mesh $\to 0$ and let $H^n = \sum_k B_{t_k} \mathbf 1_{(t_k, t_{k+1}]}$. (These are not bounded, but they are square-integrable, which suffices for the isometry.) Then
+
+$$
+\mathbb E \int_0^t (B_s - H^n_s)^2 \, ds = \sum_k \int_{t_k}^{t_{k+1}} (s - t_k) \, ds = \frac12 \sum_k \delta_k^2 \le \frac t2 |\Pi_n| \to 0,
+$$
+
+so by the isometry $\int H^n \, dB \to \int B \, dB$ in $L^2$. On the other hand, the algebraic identity $a(b - a) = \frac12 (b^2 - a^2) - \frac12 (b - a)^2$, summed over the partition (the *discrete Itô formula*, formalised in Lean below), gives
+
+$$
+\int_0^t H^n \, dB = \sum_k B_{t_k} (B_{t_{k+1}} - B_{t_k}) = \frac12 B_t^2 - \frac12 \sum_k (B_{t_{k+1}} - B_{t_k})^2 \xrightarrow{L^2} \frac12 B_t^2 - \frac12 t
+$$
+
+by the quadratic variation theorem.
+
+</Proof>
+
+Ordinary calculus would predict $\frac12 B_t^2$. The extra $-\frac12 t$ is forced: the left side is a martingale with mean $0$, and $\mathbb E[\frac12 B_t^2] = \frac t2 \ne 0$. With midpoints $\frac12(B_{t_k} + B_{t_{k+1}})$ instead of left endpoints the sum telescopes to exactly $\frac12 B_t^2$: this is the **Stratonovich integral** $\int B \circ dB$, which obeys the ordinary chain rule but is not a martingale.
+
+<Theorem name="Itô's formula">
+
+Let $f(t, x)$ be continuously differentiable once in $t$ and twice in $x$, and let $dX_t = \mu_t \, dt + \sigma_t \, dB_t$ be an Itô process. Then, almost surely for all $t$,
+
+$$
+f(t, X_t) = f(0, X_0) + \int_0^t \Big(\partial_t f + \mu_s \, \partial_x f + \tfrac12 \sigma_s^2 \, \partial_{xx} f\Big)(s, X_s) \, ds + \int_0^t \sigma_s \, \partial_x f(s, X_s) \, dB_s.
+$$
+
+In particular $df(B_t) = f'(B_t) \, dB_t + \frac12 f''(B_t) \, dt$.
+
+</Theorem>
+
+*About the proof.* Expand $f(t_{k+1}, X_{t_{k+1}}) - f(t_k, X_{t_k})$ by Taylor's theorem to first order in time and second order in space and sum over a partition. The first-order space terms converge to the stochastic integral, the second-order terms $\frac12 \partial_{xx} f \, (\Delta X_k)^2$ converge to $\frac12 \int \partial_{xx} f \, \sigma^2 \, ds$ by the same variance computation as for quadratic variation, and the remainders vanish because $\sum_k |\Delta X_k|^3 \to 0$. A localisation argument removes boundedness assumptions (Karatzas–Shreve, §3.3; Le Gall, Ch. 5). The formula with $f(x) = x^2$ and $X = B$ is exactly the previous theorem.
+
+<Example title="Geometric Brownian motion">
+
+Consider $dS_t = \mu S_t \, dt + \sigma S_t \, dB_t$ with $S_0 > 0$, the Black–Scholes model of a stock price. Guess $S_t = f(t, B_t)$ with $f(t, x) = S_0 \exp\big((\mu - \frac{\sigma^2}{2}) t + \sigma x\big)$. Then $\partial_x f = \sigma f$, $\partial_{xx} f = \sigma^2 f$, $\partial_t f = (\mu - \frac{\sigma^2}{2}) f$, and Itô's formula gives
+
+$$
+dS_t = \Big(\mu - \frac{\sigma^2}{2} + \frac{\sigma^2}{2}\Big) S_t \, dt + \sigma S_t \, dB_t = \mu S_t \, dt + \sigma S_t \, dB_t.
+$$
+
+Since the coefficients are Lipschitz, this is the unique solution (Øksendal, Thm 5.2.1). Its behaviour is instructive. $\mathbb E S_t = S_0 e^{\mu t}$ (the mean of a log-normal), but the median is $S_0 e^{(\mu - \sigma^2/2)t}$, and since $B_t/t \to 0$ almost surely, $\frac1t \log S_t \to \mu - \frac{\sigma^2}{2}$. If $0 \lt \mu \lt \sigma^2/2$, the expectation grows exponentially while **almost every path tends to $0$**: the mean is carried by ever rarer, ever larger paths.
+
+</Example>
+
+<Example title="The Ornstein–Uhlenbeck process">
+
+The Langevin equation $dX_t = -\theta X_t \, dt + \sigma \, dB_t$ ($\theta > 0$) models the velocity of a particle with friction. Itô's formula for $e^{\theta t} X_t$ (here $\partial_{xx} = 0$) gives $d(e^{\theta t} X_t) = \sigma e^{\theta t} \, dB_t$, so
+
+$$
+X_t = e^{-\theta t} X_0 + \sigma \int_0^t e^{-\theta(t - s)} \, dB_s.
+$$
+
+The integral is Gaussian with mean $0$ and, by the isometry, variance $\sigma^2 \int_0^t e^{-2\theta(t-s)} \, ds = \frac{\sigma^2}{2\theta}(1 - e^{-2\theta t})$. So $X_t$ converges in distribution to $N(0, \sigma^2/2\theta)$, the stationary law — in physics, the Maxwell distribution of velocities, with $\sigma^2/2\theta$ proportional to temperature.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Stochastic processes in Lean and Mathlib">
+
+Mathlib has no Itô integral yet, but the algebra that produces Itô's correction term can be formalised for *any* real sequence. The discrete Itô formula — left-point sums equal half the change of the square minus half the quadratic variation — is proved by induction, one line of `ring` per step:
+
+<Lean decl="Lumenary.StochasticProcesses.discrete_ito" />
+
+With midpoints the sum telescopes and the ordinary chain rule holds; for the simple random walk the quadratic variation is exactly $n$, giving the discrete form of $\int B \, dB = \frac12 (B_t^2 - t)$:
+
+<Lean decl="Lumenary.StochasticProcesses.discrete_stratonovich" />
+
+<Lean decl="Lumenary.StochasticProcesses.random_walk_ito" />
+
+For the Poisson process, we define the Poisson probabilities, check that they agree with the point masses of Mathlib's `poissonMeasure`, and prove the convolution identity from the binomial theorem, as in the human proof. Mathlib proves the measure-level statement through characteristic functions, and the law of rare events:
+
+<Lean decl="Lumenary.StochasticProcesses.poissonPMF" />
+
+<Lean decl="Lumenary.StochasticProcesses.poissonPMF_eq" />
+
+<Lean decl="Lumenary.StochasticProcesses.poisson_convolution" />
+
+<Lean decl="Lumenary.StochasticProcesses.poisson_conv" />
+
+<Lean decl="Lumenary.StochasticProcesses.law_of_rare_events" />
+
+Memorylessness, from Mathlib's formula for the distribution function of `expMeasure r`, and the solution of the two-state forward equation (with `HasDerivAt` for the derivative):
+
+<Lean decl="Lumenary.StochasticProcesses.exp_memoryless" />
+
+<Lean decl="Lumenary.StochasticProcesses.two_state_forward" />
+
+Mathlib defines Brownian motion as in the lesson: `IsPreBrownianReal B P` says that the finite-dimensional laws are those of Brownian motion (centred Gaussian with covariance $\min(s, t)$), and `IsBrownianReal` adds almost surely continuous paths. Time is indexed by `ℝ≥0`. It proves the covariance, the Gaussian increments, their independence, scaling and time inversion — the Gaussian-process theorem and the invariances above. (Mathlib proves these for any process with the right laws; we do not need an existence theorem for them.)
+
+<Lean decl="Lumenary.StochasticProcesses.brownian_covariance" />
+
+<Lean decl="Lumenary.StochasticProcesses.brownian_increment" />
+
+<Lean decl="Lumenary.StochasticProcesses.brownian_indep_increments" />
+
+<Lean decl="Lumenary.StochasticProcesses.brownian_scaling" />
+
+<Lean decl="Lumenary.StochasticProcesses.brownian_time_inversion" />
+
+Finally, geometric Brownian motion: we verify the derivatives that Itô's formula needs and the cancellation $(\mu - \frac{\sigma^2}{2}) + \frac{\sigma^2}{2} = \mu$ in the drift.
+
+<Lean decl="Lumenary.StochasticProcesses.gbm" />
+
+<Lean decl="Lumenary.StochasticProcesses.gbm_ito" />
+
+**Not formalised here:** the Itô integral and Itô's formula themselves, quadratic variation and nowhere differentiability of Brownian paths, the construction of the Poisson process from waiting times, and the matrix-exponential solution of Kolmogorov's equations. What is formalised is the exact algebra and calculus on which those limit arguments rest, together with Mathlib's genuine probabilistic theorems about Brownian motion and Poisson laws.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: Itô sums, Poisson arrivals, geometric Brownian motion">
+
+The first experiment follows one simulated Brownian path on $[0, 1]$ through dyadic partitions with up to $2^{16}$ intervals. The left-point (Itô) sums of $B \, dB$ approach $\frac12(B_1^2 - 1)$, the trapezoidal (Stratonovich) sums equal $\frac12 B_1^2$ on every partition, the quadratic variation approaches $1$, and the total variation grows like $\sqrt{2n/\pi}$ without bound.
+
+<Python id="stochastic_processes_ito_sums" />
+
+The second builds a Poisson process from exponential waiting times and compares the counts with the Poisson law, the covariance of counts on disjoint intervals with $0$, and the conditional waiting time with the unconditional one.
+
+<Python id="stochastic_processes_poisson_process" />
+
+The third solves $dS = \mu S \, dt + \sigma S \, dB$ numerically by the Euler–Maruyama scheme $S_{k+1} = S_k + \mu S_k \Delta t + \sigma S_k \Delta B_k$ and compares it, on the same Brownian increments, with Itô's exact solution: the error shrinks like $\sqrt{\Delta t}$ (strong order $\frac12$). The "ordinary chain rule" solution $S_0 e^{\mu t + \sigma B_t}$ has the wrong mean.
+
+<Python id="stochastic_processes_gbm" />
+
+These are simulations: statistical and numerical evidence for finitely many paths and partitions. The exact identities between the sums are proved in Lean; the limits are the theorems above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Random walks, the heat kernel and the log-normal">
+
+Many random walks at once: the root-mean-square distance grows like $\sqrt n$, the diffusive scaling that becomes $\operatorname{Var} B_t = t$ in the limit.
+
+<ChanceLab experiment="random-walk" trials={500} n={400} title="Diffusive scaling: distance grows like √n" />
+
+The law of $B_t$ has density $p_t(x) = (2\pi t)^{-1/2} e^{-x^2/2t}$, the **heat kernel**: it solves $\partial_t p = \frac12 \partial_{xx} p$. Move $t$ and watch the heat spread; the area under the curve stays $1$.
+
+<FunctionPlot
+  fns={["exp(-x^2/(2*s))/sqrt(2*pi*s)"]}
+  labels={["density of B_t"]}
+  params={[{ name: "s", min: 0.05, max: 4, step: 0.05, value: 0.5, label: "t" }]}
+  x={[-5, 5]}
+  y={[0, 1.8]}
+  shade={0}
+  title="The heat kernel: the law of Brownian motion at time t"
+/>
+
+For geometric Brownian motion with $S_0 = 1$, compare the mean $e^{\mu t}$ with the median $e^{(\mu - \sigma^2/2)t}$. Choose $\mu = 0.05$ and slide $\sigma$ past $\sqrt{2\mu} \approx 0.32$: the median turns downward while the mean keeps rising.
+
+<FunctionPlot
+  fns={["exp(m*x)", "exp((m - s^2/2)*x)"]}
+  labels={["mean E S_t = e^(μt)", "median e^((μ − σ²/2)t)"]}
+  params={[
+    { name: "m", min: -0.1, max: 0.2, step: 0.01, value: 0.05, label: "μ" },
+    { name: "s", min: 0.05, max: 0.8, step: 0.01, value: 0.4, label: "σ" },
+  ]}
+  x={[0, 30]}
+  y={[0, 5]}
+  xLabel="t"
+  title="Geometric Brownian motion: mean versus median"
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The chain rule of calculus applies to Itô integrals."** It does not: $d(B_t^2) = 2 B_t \, dB_t + dt$, not $2 B_t \, dB_t$, and $\int_0^t B \, dB = \frac12 B_t^2 - \frac12 t$. The extra term comes from the quadratic variation, $\sum (\Delta B)^2 \to t$, which vanishes for smooth paths but not for Brownian ones. The ordinary chain rule holds for the Stratonovich integral, at the price of losing the martingale property.
+
+</Misconception>
+
+<Misconception>
+
+**"Brownian paths are continuous, so they must be differentiable almost everywhere."** Continuity does not imply differentiability anywhere (Weierstrass's function is an example), and monotone or bounded-variation functions are the ones that are differentiable almost everywhere (Lebesgue). Brownian paths have infinite variation on every interval and are differentiable at no point, almost surely. Velocity is not defined, which is why physicists' "white noise" $dB/dt$ makes sense only as a generalised function.
+
+</Misconception>
+
+<Misconception>
+
+**"A Poisson process spreads its arrivals out evenly."** Arrivals cluster: the gaps are exponential, whose most likely values are near $0$. Given $N_t = n$, the arrival times are distributed like $n$ independent uniform points on $[0, t]$ sorted in order — and uniform random points form clumps and gaps. Regular spacing would be a sign that the process is *not* Poisson.
+
+</Misconception>
+
+<Misconception>
+
+**"If $\mathbb E S_t$ grows, the typical path grows."** For geometric Brownian motion with $0 \lt \mu \lt \sigma^2/2$, $\mathbb E S_t = S_0 e^{\mu t} \to \infty$ while $S_t \to 0$ almost surely. Expectations can be dominated by rare events; almost-sure statements describe the typical path.
+
+</Misconception>
+
+<Misconception>
+
+**"Every martingale is a Markov process", or the reverse.** $B_t^2$ is a Markov process but not a martingale. Conversely, a fair-coin walk whose step size ($1$ or $2$) is fixed once and for all by the direction of its first step is a martingale but not a Markov process: its current position alone does not tell you how far it will move next (position $1$ at time $3$ can be reached with either step size). The two notions describe different kinds of memory.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="analysis" title="Generators, the heat equation and harmonic functions">
+
+Every Markov process has an infinitesimal **generator** $\mathcal L f = \lim_{t \downarrow 0} (\mathbb E_x f(X_t) - f(x))/t$; for a finite chain it is the matrix $Q$, and for Brownian motion it is $\frac12 \Delta$. The transition semigroup $P_t f(x) = \mathbb E_x f(B_t)$ solves the heat equation $\partial_t u = \frac12 \Delta u$ with $u(0, \cdot) = f$, and Itô's formula shows that $f(B_t) - \int_0^t \frac12 \Delta f(B_s) \, ds$ is a martingale. Consequences flow both ways. **Kakutani** (1944): the solution of the Dirichlet problem $\Delta u = 0$ in a domain $D$ with boundary values $g$ is $u(x) = \mathbb E_x g(B_\tau)$, where $\tau$ is the exit time from $D$. The **Feynman–Kac formula** (Kac, 1949) represents solutions of $\partial_t u = \frac12 \Delta u - V u$ as $\mathbb E_x\big[f(B_t) e^{-\int_0^t V(B_s) \, ds}\big]$. See <TopicLink id="math.analysis.pde-theory">partial differential equations</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Brownian motion on manifolds, and conformal invariance">
+
+On a Riemannian manifold, Brownian motion is the diffusion with generator $\frac12 \Delta_g$, the Laplace–Beltrami operator; its transition density is the heat kernel of the manifold, and the short-time asymptotics $\lim_{t \downarrow 0} t \log p_t(x, y) = -\tfrac12 d(x, y)^2$ recover the geodesic distance from the random motion (Varadhan, 1967). Curvature appears in how fast Brownian particles spread: on hyperbolic space they escape to infinity at linear speed, on a compact manifold they equidistribute. In the plane there is a hidden symmetry: **Lévy's conformal invariance theorem** says that if $f$ is a non-constant analytic function, then $f(B_t)$ is again a planar Brownian motion, run with the random clock $\int_0^t |f'(B_s)|^2 \, ds$. Planar Brownian motion thus sees only the conformal structure — which is why it connects to complex analysis and, through Schramm–Loewner evolution, to the scaling limits of planar statistical mechanics. See <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="A measure on path space, and winding around a point">
+
+Wiener measure is a Borel probability measure on the Polish space $C([0, \infty))$ of continuous paths with the topology of uniform convergence on compacts. It is concentrated on paths that are Hölder continuous of every order $\gamma \lt \frac12$ and of no order $\gamma > \frac12$ — a topologically meagre subset of path space carrying full measure. **Donsker's invariance principle** (1951) is a statement of weak convergence in this space: rescaled random walk paths converge in law to Brownian motion, so continuous functionals such as $\max_{s \le 1} B_s$ can be computed from simple random walks. Planar Brownian motion started at $1$ never hits $0$ (points are polar in dimension two), so its winding angle $\theta_t$ around $0$ is well defined, and **Spitzer's theorem** (1958) says that $2\theta_t/\log t$ converges in distribution to a standard Cauchy law: the path winds around the origin endlessly, in both directions. See <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Diffusion, atoms and friction">
+
+Einstein (1905) argued that a suspended particle of radius $a$ in a fluid of viscosity $\eta$ at temperature $T$ diffuses with $\mathbb E X_t^2 = 2Dt$ in each coordinate, where $D = k_B T/(6\pi\eta a)$; measuring $D$ therefore measures Boltzmann's constant $k_B$, and with it Avogadro's number. Perrin's experiments did exactly this. Langevin (1908) wrote Newton's law with friction and a random force, $m \, dv = -\gamma v \, dt + \sigma \, dB_t$: the Ornstein–Uhlenbeck process, whose stationary variance $\sigma^2/(2\gamma m)$ must equal $k_B T/m$ — a fluctuation–dissipation relation. Physicists' white noise "$\xi_t = dB_t/dt$" is heuristic: Wong and Zakai (1965) showed that ordinary differential equations driven by smooth approximations of white noise converge to the *Stratonovich* solution, which is why physicists often prefer Stratonovich calculus and mathematicians Itô's.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Counting paths: reflection and the ballot problem">
+
+Behind Brownian identities stand exact counts of lattice paths. The reflection principle for simple random walk — reflect the path after its first visit to level $a$ — gives the number of paths of length $n$ from $0$ to $b \lt a$ that touch $a$ as the number of all paths from $0$ to $2a - b$. It solves the **ballot problem** (Bertrand, 1887): if candidate A receives $p$ votes and B receives $q \lt p$, counted in random order, the probability that A is strictly ahead throughout the count is $(p - q)/(p + q)$. Passing to the diffusive limit turns these counts into $P(\max_{s \le t} B_s \ge a) = 2 P(B_t \ge a)$ and the arcsine laws for the time spent positive (Lévy). See <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink> and <TopicLink id="math.prob.random-geometry">random structures</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="will-the-walker-return" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Siméon Denis Poisson** (1837) derived his distribution as a limit of binomials; **Ladislaus von Bortkiewicz** (1898) famously fitted it to deaths from horse kicks in the Prussian cavalry. **Filip Lundberg** (1903) and **Agner Krarup Erlang** (1909) used Poisson arrivals for insurance risk and telephone traffic.
+- **Thorvald Thiele** (1880) and **Louis Bachelier** (1900) described Brownian motion mathematically; **Albert Einstein** (1905), **Marian Smoluchowski** (1906) and **Paul Langevin** (1908) gave its physics, and **Jean Perrin** (1908–1909) its experimental confirmation (Nobel Prize 1926).
+- **Norbert Wiener** (1923) constructed Brownian motion as a measure on path space; **Raymond Paley, Wiener and Antoni Zygmund** (1933) proved nowhere differentiability; **Andrey Kolmogorov** (1931) founded the analytic theory of Markov processes with his forward and backward equations; **Paul Lévy** (*Processus stochastiques et mouvement brownien*, 1948) discovered most of the fine path properties.
+- **Kiyosi Itô** (1944, 1951) defined the stochastic integral and proved his formula, building a theory of stochastic differential equations; in 2006 he received the first Gauss Prize. **Wolfgang Doeblin**, killed in 1940, had sent a sealed envelope to the Paris Academy containing a version of Itô's formula; it was opened in 2000. **Joseph Doob** (1953) put continuous-time martingales at the centre; **William Feller** developed the semigroup theory of diffusions; **Ruslan Stratonovich** (1966) introduced his integral.
+- **Fischer Black, Myron Scholes** and **Robert Merton** (1973) priced options with geometric Brownian motion and Itô's formula (Nobel Prize in Economics 1997 for Merton and Scholes). Stochastic analysis now underlies population genetics (Kimura's diffusions), filtering and control, statistical physics and the study of random geometry.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Ioannis Karatzas and Steven E. Shreve, *Brownian Motion and Stochastic Calculus* (2nd ed., 1991) — the standard rigorous treatment.
+- Bernt Øksendal, *Stochastic Differential Equations: An Introduction with Applications* (6th ed., 2003) — the friendliest route to Itô calculus and SDEs.
+- Peter Mörters and Yuval Peres, *Brownian Motion* (2010) — path properties, with modern proofs.
+- Jean-François Le Gall, *Brownian Motion, Martingales, and Stochastic Calculus* (2016) — concise and complete.
+- James R. Norris, *Markov Chains* (1997) — discrete and continuous time, Poisson processes, with clear proofs.
+- J. F. C. Kingman, *Poisson Processes* (1993) — the geometry and calculus of Poisson point processes.
+- J. Michael Steele, *Stochastic Calculus and Financial Applications* (2001) — Itô calculus motivated by finance.
+
+</Section>

@@ -1,0 +1,523 @@
+---
+slug: higher-categories
+topic: math.cat.higher-categories
+title: Higher categories
+subtitle: Arrows between arrows — 2-categories and bicategories, the interchange law, why $\pi_2$ is abelian, and why "the" definition of a weak $n$-category is still being negotiated.
+level: research
+ages: Research (graduate background)
+minutes: 120
+order: 8016
+objectives:
+  - Define strict 2-categories and bicategories, and show that a bicategory with one object is the same thing as a monoidal category
+  - Compute in the 2-category $\mathbf{Cat}$ with vertical and horizontal composition, and prove the interchange law
+  - Prove the Eckmann–Hilton argument and deduce that 2-endomorphisms of an identity 1-morphism commute
+  - State the coherence theorem for bicategories and explain why strictification fails for tricategories (Gordon–Power–Street)
+  - Describe the main approaches to weak $n$-categories, separating established results from open questions
+narrators: []
+lean:
+  - Lumenary.HigherCategories.interchange
+  - Lumenary.HigherCategories.interchange_library
+  - Lumenary.HigherCategories.cat_strict
+  - Lumenary.HigherCategories.units_coincide
+  - Lumenary.HigherCategories.eckmann_hilton
+  - Lumenary.HigherCategories.eckmann_hilton_library
+  - Lumenary.HigherCategories.endo_id_comm
+  - Lumenary.HigherCategories.nat_trans_id_comm
+  - Lumenary.HigherCategories.free_bicategory_coherence
+  - Lumenary.HigherCategories.endMonoidal
+  - Lumenary.HigherCategories.singleObjEquiv
+compute: [higher_categories_associahedra]
+trails: [arrows-that-compose]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why go up a dimension?">
+
+A category records objects and arrows, and asks whether two arrows are *equal*. Again and again, mathematics hands us arrows that are not equal but are related in a structured way:
+
+- Two functors $F, G : \mathcal{C} \to \mathcal{D}$ are compared by **natural transformations** $F \Rightarrow G$ — arrows between arrows. Categories, functors and natural transformations form something with three layers.
+- In a monoidal category such as vector spaces under $\otimes$, the objects $(U \otimes V) \otimes W$ and $U \otimes (V \otimes W)$ are not equal but **canonically isomorphic**, and the isomorphisms satisfy laws of their own (Mac Lane's pentagon).
+- Rings $R, S$ and $(R, S)$-bimodules compose by tensor product, ${}_R M_S \otimes_S {}_S N_T$, which is associative only up to isomorphism; bimodule maps are arrows between these arrows. (This is the *Morita bicategory*.)
+- In a space $X$, paths compose only up to homotopy; homotopies between paths are arrows between arrows, and homotopies between homotopies go one level higher. The fundamental groupoid of <TopicLink id="math.geom.fundamental-group">the fundamental-group lesson</TopicLink> forgets all of this higher information.
+
+**Higher category theory** is the study of structures with $k$-morphisms between $(k-1)$-morphisms for $k = 1, 2, \dots, n$ (or for all $k$). Dimension 2 is completely understood and is the main subject of this lesson; dimension 3 is understood, with a surprise; beyond that the subject branches into several competing definitions, and the $(\infty, 1)$ case has its own lesson, <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Cells, pasting and the two compositions">
+
+Picture a 2-category as a world of **cells**: 0-cells (objects) are points, 1-cells are arrows between points, and 2-cells are surfaces between parallel arrows.
+
+<Figure caption="Globular picture of 2-cells. Vertically, α : F ⇒ G and β : G ⇒ H stack to give β·α : F ⇒ H. Horizontally, α and γ : I ⇒ J sit side by side to give γ∗α : IF ⇒ JG. The interchange law says the whole picture has one meaning, however it is cut up.">
+<svg viewBox="0 0 420 170" role="img" aria-label="Three points A, B, C. Between A and B three parallel arrows F, G, H with 2-cells alpha and beta; between B and C three parallel arrows I, J, K with 2-cells gamma and delta.">
+  <circle cx="40" cy="85" r="5" fill="var(--ink-2)" />
+  <circle cx="210" cy="85" r="5" fill="var(--ink-2)" />
+  <circle cx="380" cy="85" r="5" fill="var(--ink-2)" />
+  <text x="40" y="112" textAnchor="middle" fontSize="14" fill="var(--ink-2)">A</text>
+  <text x="210" y="112" textAnchor="middle" fontSize="14" fill="var(--ink-2)">B</text>
+  <text x="380" y="112" textAnchor="middle" fontSize="14" fill="var(--ink-2)">C</text>
+  <path d="M 45 80 Q 125 5 205 80" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M 45 85 L 205 85" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M 45 90 Q 125 165 205 90" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M 215 80 Q 295 5 375 80" fill="none" stroke="var(--formal)" strokeWidth="2" />
+  <path d="M 215 85 L 375 85" fill="none" stroke="var(--formal)" strokeWidth="2" />
+  <path d="M 215 90 Q 295 165 375 90" fill="none" stroke="var(--formal)" strokeWidth="2" />
+  <text x="125" y="35" textAnchor="middle" fontSize="13" fill="var(--ink-2)">F</text>
+  <text x="140" y="80" textAnchor="middle" fontSize="13" fill="var(--ink-2)">G</text>
+  <text x="125" y="146" textAnchor="middle" fontSize="13" fill="var(--ink-2)">H</text>
+  <text x="295" y="35" textAnchor="middle" fontSize="13" fill="var(--ink-2)">I</text>
+  <text x="310" y="80" textAnchor="middle" fontSize="13" fill="var(--ink-2)">J</text>
+  <text x="295" y="146" textAnchor="middle" fontSize="13" fill="var(--ink-2)">K</text>
+  <text x="110" y="64" textAnchor="middle" fontSize="15" fill="var(--gold)">⇓α</text>
+  <text x="110" y="114" textAnchor="middle" fontSize="15" fill="var(--gold)">⇓β</text>
+  <text x="280" y="64" textAnchor="middle" fontSize="15" fill="var(--gold)">⇓γ</text>
+  <text x="280" y="114" textAnchor="middle" fontSize="15" fill="var(--gold)">⇓δ</text>
+</svg>
+</Figure>
+
+Two 2-cells can be composed in two directions: **vertically** (along a shared 1-cell) and **horizontally** (along a shared 0-cell). The picture above can be evaluated "rows first" — compose $\alpha, \beta$ and $\gamma, \delta$ vertically, then horizontally — or "columns first". The **interchange law** says the answers agree:
+
+$$
+(\delta \cdot \gamma) \ast (\beta \cdot \alpha) = (\delta \ast \beta) \cdot (\gamma \ast \alpha).
+$$
+
+The second idea is **weakness**. In $\mathbf{Cat}$, composition of functors is associative on the nose. In the Morita bicategory it is not: $(M \otimes N) \otimes P$ and $M \otimes (N \otimes P)$ are different modules, related by a canonical isomorphism. A *bicategory* keeps these isomorphisms as part of the data and imposes laws on them. Going up a dimension means that equations between 1-cells may be replaced by invertible 2-cells — and then those 2-cells must satisfy equations of their own.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="2-categories, bicategories and pseudofunctors">
+
+Throughout, juxtaposition $gf$ means $g \circ f$ ("first $f$, then $g$"); Lean and Mathlib write the same composite in diagrammatic order as `f ≫ g`.
+
+<Definition term="strict 2-category">
+
+A **strict 2-category** $\mathcal{K}$ consists of
+
+- a collection of **objects** (0-cells) $a, b, c, \dots$;
+- for each pair of objects a **category** $\mathcal{K}(a, b)$, whose objects $f : a \to b$ are the **1-cells** and whose morphisms $\alpha : f \Rightarrow g$ are the **2-cells**; composition in $\mathcal{K}(a, b)$ is **vertical composition** $\beta \cdot \alpha$;
+- for each triple of objects a **functor** $\circ : \mathcal{K}(b, c) \times \mathcal{K}(a, b) \to \mathcal{K}(a, c)$, written $(g, f) \mapsto gf$ on 1-cells and $(\gamma, \alpha) \mapsto \gamma \ast \alpha$ on 2-cells (**horizontal composition**);
+- an identity 1-cell $1_a$ for each object,
+
+such that horizontal composition is strictly associative and unital: $(hg)f = h(gf)$, $f 1_a = f = 1_b f$, and likewise for 2-cells. That $\circ$ is a *functor* on the product category says exactly that $1_g \ast 1_f = 1_{gf}$ and that the interchange law holds.
+
+</Definition>
+
+<Definition term="bicategory">
+
+A **bicategory** $\mathcal{B}$ (Bénabou, 1967) has the same data as a 2-category, except that horizontal composition is associative and unital only **up to coherent invertible 2-cells**: there are natural isomorphisms
+
+$$
+\alpha_{h,g,f} : (hg)f \Rightarrow h(gf), \qquad \lambda_f : 1_b f \Rightarrow f, \qquad \rho_f : f 1_a \Rightarrow f
+$$
+
+(the **associator** and **unitors**), natural in $f, g, h$, satisfying two axioms. For composable $f : a \to b$, $g : b \to c$, $h : c \to d$, $k : d \to e$:
+
+- **pentagon**: $(1_k \ast \alpha_{h,g,f}) \cdot \alpha_{k, hg, f} \cdot (\alpha_{k,h,g} \ast 1_f) = \alpha_{k,h,gf} \cdot \alpha_{kh,g,f}$ as 2-cells $((kh)g)f \Rightarrow k(h(gf))$;
+- **triangle**: $(1_g \ast \lambda_f) \cdot \alpha_{g, 1_b, f} = \rho_g \ast 1_f$ as 2-cells $(g 1_b) f \Rightarrow g f$.
+
+A strict 2-category is a bicategory whose associators and unitors are identities.
+
+</Definition>
+
+<Definition term="pseudofunctor">
+
+A **pseudofunctor** $F : \mathcal{B} \to \mathcal{B}'$ sends objects, 1-cells and 2-cells to objects, 1-cells and 2-cells, is a functor on each hom-category, and preserves composition and identities only up to coherent invertible 2-cells $F(g) F(f) \Rightarrow F(gf)$ and $1_{Fa} \Rightarrow F(1_a)$, subject to compatibility with the associators and unitors. It is a **2-functor** when these 2-cells are identities. A **biequivalence** is a pseudofunctor that is essentially surjective on objects up to equivalence and an equivalence on every hom-category.
+
+</Definition>
+
+<Definition term="monoidal category">
+
+A **monoidal category** (see <TopicLink id="math.cat.monoidal-categories">Monoidal categories</TopicLink>) is a category $\mathcal{C}$ with a functor $\otimes : \mathcal{C} \times \mathcal{C} \to \mathcal{C}$, a unit object $I$ and natural isomorphisms $(X \otimes Y) \otimes Z \cong X \otimes (Y \otimes Z)$, $I \otimes X \cong X$, $X \otimes I \cong X$ satisfying the pentagon and triangle axioms.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="The strict 2-category Cat">
+
+Objects are (small) categories, 1-cells are functors, 2-cells are natural transformations. Vertical composition is componentwise: $(\beta \cdot \alpha)_X = \beta_X \circ \alpha_X$. For $\alpha : F \Rightarrow G$ between functors $\mathcal{C} \to \mathcal{D}$ and $\gamma : I \Rightarrow J$ between functors $\mathcal{D} \to \mathcal{E}$, the horizontal composite $\gamma \ast \alpha : IF \Rightarrow JG$ has components
+
+$$
+(\gamma \ast \alpha)_X = J(\alpha_X) \circ \gamma_{FX} = \gamma_{GX} \circ I(\alpha_X),
+$$
+
+the two expressions agreeing by naturality of $\gamma$ at $\alpha_X$. Composition of functors is associative and unital on the nose, so $\mathbf{Cat}$ is **strict**.
+
+</Example>
+
+<Example title="One-object bicategories are monoidal categories">
+
+If $\mathcal{B}$ has a single object $\star$, the hom-category $\mathcal{C} = \mathcal{B}(\star, \star)$ carries a tensor product $g \otimes f := gf$ (horizontal composition), unit $I := 1_\star$, and the associator and unitors of $\mathcal{B}$; the pentagon and triangle are word for word the monoidal axioms. Conversely, a monoidal category $(\mathcal{C}, \otimes, I)$ gives a bicategory $\Sigma\mathcal{C}$ with one object, 1-cells the objects of $\mathcal{C}$, 2-cells the morphisms of $\mathcal{C}$, and composition $\otimes$. So **a monoidal category is a bicategory with one object** — "delooping" shifts everything down one dimension. Mathlib has both directions (see the formal section).
+
+</Example>
+
+<Example title="Spans, bimodules and the fundamental 2-groupoid">
+
+- **Spans.** In a category with pullbacks, a 1-cell $a \to b$ is a span $a \leftarrow s \rightarrow b$, composition is by pullback and 2-cells are maps of spans. Pullbacks are defined only up to unique isomorphism, so composition is associative only up to isomorphism: a genuine bicategory (Bénabou's original example).
+- **Bimodules.** Objects are rings, 1-cells $R \to S$ are $(S, R)$-bimodules, composition is $\otimes$ and 2-cells are bimodule maps. Two rings are equivalent in this bicategory exactly when they are **Morita equivalent**.
+- **The fundamental 2-groupoid** $\Pi_2(X)$ of a space: points, paths, and homotopy classes (rel endpoints) of homotopies between paths. Concatenation of paths is associative only up to reparametrisation homotopy, so $\Pi_2(X)$ is a bicategory in which every 2-cell is invertible and every 1-cell is invertible up to a 2-cell (a *bigroupoid*).
+
+</Example>
+
+<Example title="A non-example, and a surprise">
+
+Take a "2-category with one object $\star$ and one 1-cell $1_\star$". Its 2-cells form a set with two operations, vertical and horizontal composition, both unital with unit $1_{1_\star}$ and linked by interchange. By the Eckmann–Hilton argument below, **the two operations coincide and are commutative**. So you cannot model a non-commutative group as the 2-cells of a doubly degenerate 2-category: a monoid becomes forced to be commutative when it is pushed up two dimensions. This is the categorical shadow of the fact that $\pi_2(X)$ is abelian.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central theorems">
+
+<Theorem name="Theorem 1 (the interchange law in Cat)">
+
+Let $\alpha : F \Rightarrow G$, $\beta : G \Rightarrow H$ be natural transformations between functors $\mathcal{C} \to \mathcal{D}$, and $\gamma : I \Rightarrow J$, $\delta : J \Rightarrow K$ between functors $\mathcal{D} \to \mathcal{E}$. Then
+
+$$
+(\delta \cdot \gamma) \ast (\beta \cdot \alpha) = (\delta \ast \beta) \cdot (\gamma \ast \alpha).
+$$
+
+</Theorem>
+
+<Proof>
+
+Both sides are natural transformations $IF \Rightarrow KH$; compare components at an object $X$ of $\mathcal{C}$, using $(\gamma \ast \alpha)_X = J(\alpha_X) \circ \gamma_{FX}$. The left side is
+
+$$
+K\big((\beta \cdot \alpha)_X\big) \circ (\delta \cdot \gamma)_{FX} = K(\beta_X) \circ K(\alpha_X) \circ \delta_{FX} \circ \gamma_{FX}.
+$$
+
+The right side is
+
+$$
+(\delta \ast \beta)_X \circ (\gamma \ast \alpha)_X = K(\beta_X) \circ \delta_{GX} \circ J(\alpha_X) \circ \gamma_{FX}.
+$$
+
+Naturality of $\delta$ at the morphism $\alpha_X : FX \to GX$ says $\delta_{GX} \circ J(\alpha_X) = K(\alpha_X) \circ \delta_{FX}$. Substituting this into the right side gives the left side.
+
+</Proof>
+
+The same computation shows that horizontal composition is associative and unital, so $\mathbf{Cat}$ is a strict 2-category.
+
+<Theorem name="Theorem 2 (Eckmann–Hilton, 1962)">
+
+Let $X$ be a set with binary operations $\odot$ and $\star$, with two-sided units $e_\odot$ and $e_\star$, satisfying the **interchange law**
+
+$$
+(a \star b) \odot (c \star d) = (a \odot c) \star (b \odot d) \qquad \text{for all } a, b, c, d \in X.
+$$
+
+Then $e_\odot = e_\star$, the operations coincide, and the common operation is commutative (and associative).
+
+</Theorem>
+
+<Proof>
+
+*Units.* Put $a = d = e_\star$ and $b = c = e_\odot$:
+$e_\odot = e_\odot \odot e_\odot = (e_\star \star e_\odot) \odot (e_\odot \star e_\star) = (e_\star \odot e_\odot) \star (e_\odot \odot e_\star) = e_\star \star e_\star = e_\star.$
+Call the common unit $e$.
+
+*The operations agree.* For all $a, b$:
+$a \odot b = (a \star e) \odot (e \star b) = (a \odot e) \star (e \odot b) = a \star b.$
+
+*Commutativity.* For all $a, b$:
+$a \star b = a \odot b = (e \star a) \odot (b \star e) = (e \odot b) \star (a \odot e) = b \star a.$
+
+*Associativity.* $(a \star b) \star c = (a \star b) \odot (e \star c) = (a \odot e) \star (b \odot c) = a \star (b \star c)$.
+
+</Proof>
+
+<Figure caption="The Eckmann–Hilton argument as a picture (2-cells point downwards, so η above θ is the vertical composite θ·η). Using units, the two cells shrink and slide around each other in the plane until θ sits above η, which is η·θ. In one dimension there is no room to pass, which is why ordinary monoids need not be commutative.">
+<svg viewBox="0 0 500 110" role="img" aria-label="Five panels: eta above theta; eta upper left and theta lower right; eta and theta side by side; eta lower left and theta upper right; theta above eta.">
+  <rect x="5" y="10" width="70" height="90" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="20" y="18" width="40" height="32" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="1.5" />
+  <rect x="20" y="60" width="40" height="32" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="1.5" />
+  <text x="40" y="39" textAnchor="middle" fontSize="15" fill="var(--ink-2)">η</text>
+  <text x="40" y="81" textAnchor="middle" fontSize="15" fill="var(--ink-2)">θ</text>
+  <text x="88" y="60" textAnchor="middle" fontSize="15" fill="var(--ink-2)">=</text>
+  <rect x="101" y="10" width="70" height="90" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="106" y="18" width="28" height="32" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="1.5" />
+  <rect x="138" y="60" width="28" height="32" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="1.5" />
+  <text x="120" y="39" textAnchor="middle" fontSize="15" fill="var(--ink-2)">η</text>
+  <text x="152" y="81" textAnchor="middle" fontSize="15" fill="var(--ink-2)">θ</text>
+  <text x="184" y="60" textAnchor="middle" fontSize="15" fill="var(--ink-2)">=</text>
+  <rect x="197" y="10" width="70" height="90" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="202" y="39" width="28" height="32" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="1.5" />
+  <rect x="234" y="39" width="28" height="32" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="1.5" />
+  <text x="216" y="60" textAnchor="middle" fontSize="15" fill="var(--ink-2)">η</text>
+  <text x="248" y="60" textAnchor="middle" fontSize="15" fill="var(--ink-2)">θ</text>
+  <text x="280" y="60" textAnchor="middle" fontSize="15" fill="var(--ink-2)">=</text>
+  <rect x="293" y="10" width="70" height="90" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="298" y="60" width="28" height="32" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="1.5" />
+  <rect x="330" y="18" width="28" height="32" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="1.5" />
+  <text x="312" y="81" textAnchor="middle" fontSize="15" fill="var(--ink-2)">η</text>
+  <text x="344" y="39" textAnchor="middle" fontSize="15" fill="var(--ink-2)">θ</text>
+  <text x="376" y="60" textAnchor="middle" fontSize="15" fill="var(--ink-2)">=</text>
+  <rect x="389" y="10" width="70" height="90" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="404" y="18" width="40" height="32" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="1.5" />
+  <rect x="404" y="60" width="40" height="32" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="1.5" />
+  <text x="424" y="39" textAnchor="middle" fontSize="15" fill="var(--ink-2)">θ</text>
+  <text x="424" y="81" textAnchor="middle" fontSize="15" fill="var(--ink-2)">η</text>
+</svg>
+</Figure>
+
+<Theorem name="Corollary 3 (2-endomorphisms of identities commute)">
+
+In any bicategory $\mathcal{B}$, for any object $a$ and any 2-cells $\eta, \theta : 1_a \Rightarrow 1_a$, we have $\eta \cdot \theta = \theta \cdot \eta$. In particular, natural transformations $1_{\mathcal{C}} \Rightarrow 1_{\mathcal{C}}$ of the identity functor commute, and in a monoidal category the endomorphisms of the unit object $I$ commute.
+
+</Theorem>
+
+<Proof>
+
+The interchange law for the two whiskerings of $\eta$ and $\theta$ says $(\eta \ast 1_{1_a}) \cdot (1_{1_a} \ast \theta) = (1_{1_a} \ast \theta) \cdot (\eta \ast 1_{1_a})$, as 2-cells $1_a 1_a \Rightarrow 1_a 1_a$ (both sides equal $\eta \ast \theta$). Whiskering by an identity is conjugation by a unitor: by naturality of $\lambda$ and $\rho$,
+
+$$
+1_{1_a} \ast \theta = \lambda^{-1}_{1_a} \cdot \theta \cdot \lambda_{1_a}, \qquad \eta \ast 1_{1_a} = \rho^{-1}_{1_a} \cdot \eta \cdot \rho_{1_a}.
+$$
+
+A standard consequence of the pentagon and triangle axioms is $\lambda_{1_a} = \rho_{1_a}$ (Kelly, 1964, for monoidal categories). Writing $u$ for this isomorphism, the interchange equation becomes $u^{-1} \cdot \eta \cdot \theta \cdot u = u^{-1} \cdot \theta \cdot \eta \cdot u$, and cancelling the isomorphism $u$ gives $\eta \cdot \theta = \theta \cdot \eta$. (Equivalently: the set of such 2-cells carries vertical composition and a second unital operation $\eta \star \theta := u \cdot (\eta \ast \theta) \cdot u^{-1}$ satisfying interchange; apply Theorem 2.)
+
+</Proof>
+
+The same argument, in $\Pi_2(X, x)$ or with maps of squares $[0,1]^2 \to X$, proves that $\pi_2(X, x)$ — and every $\pi_n$ with $n \ge 2$ — is abelian.
+
+<Theorem name="Theorem 4 (coherence for bicategories; stated, not proved here)">
+
+Every bicategory is biequivalent to a strict 2-category. Moreover, in a bicategory all diagrams built from associators and unitors (formal composites, between the same two bracketings) commute.
+
+</Theorem>
+
+The first statement is due to Mac Lane and Paré (1985), and can also be deduced from a bicategorical Yoneda lemma: embed $\mathcal{B}$ into the strict 2-category of pseudofunctors $\mathcal{B}^{\mathrm{op}} \to \mathbf{Cat}$ (Street). A careful modern treatment, via the bicategorical Yoneda lemma, is in Johnson and Yau, *2-Dimensional Categories*. For one-object bicategories this reduces to coherence for monoidal categories (Mac Lane, 1963; see also Joyal and Street): all diagrams of associators and unitors commute, and every monoidal category is monoidally equivalent to a strict one. The practical meaning is that one may calculate in a bicategory as if it were strict — provided one remembers that the strictification changes the objects.
+
+<Theorem name="Theorem 5 (Gordon–Power–Street, 1995; stated, not proved here)">
+
+Every tricategory is triequivalent to a **Gray-category** — a semi-strict 3-category in which everything is strict except the interchange law, which holds only up to a coherent invertible 3-cell. It is **not** true that every tricategory is triequivalent to a strict 3-category.
+
+</Theorem>
+
+The failure of full strictification is visible in homotopy theory. Simpson (1998) showed that **the homotopy 3-type of the 2-sphere $S^2$ cannot be modelled by a strict 3-groupoid**. Roughly, a strict interchange law forces the invariant linking $\pi_2$ and $\pi_3$ of a simply connected strict 3-groupoid to vanish (the braiding obtained by sliding one 2-cell around another becomes trivial), whereas for $S^2$ this invariant is non-zero: it is detected by the Hopf map, which generates $\pi_3(S^2) \cong \Z$. Strictification works in dimension 2 and fails from dimension 3 on; the "weak interchange" of Gray-categories is exactly the missing ingredient.
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: what is known and what is open">
+
+**Established.**
+
+- *Dimension 2.* Bicategories, pseudofunctors, pseudonatural transformations and modifications form a well-understood theory, with coherence (Theorem 4), a Yoneda lemma, adjunctions and monads (Johnson–Yau 2021; Lack's *2-categories companion*, 2010).
+- *Dimension 3.* Tricategories were defined by Gordon, Power and Street (1995); coherence holds in the Gray-category form (Theorem 5; see Gurski, *Coherence in Three-Dimensional Category Theory*, 2013).
+- *Degenerate cases and the periodic table.* A bicategory with one object is a monoidal category; a tricategory with one object and one 1-cell is (essentially) a braided monoidal category; one more level of degeneracy gives symmetric monoidal structure, after which nothing new appears. This pattern is the **periodic table** of Baez and Dolan (1995). Making "is the same as" precise is subtle: Cheng and Gurski (2007) showed that the comparison works on objects but must be stated carefully once morphisms and higher morphisms are compared. A version of the Baez–Dolan **stabilization hypothesis** has been proved in the $(\infty, n)$-categorical setting (Gepner and Haugseng, 2015).
+- *$(\infty, 1)$-categories.* When all $k$-morphisms with $k \ge 2$ are invertible, there are several equivalent, fully developed models (quasi-categories, complete Segal spaces, simplicial categories) — the subject of the next lesson.
+
+**Several definitions of weak $n$-category.** For general $n$ there is no single accepted definition. Leinster's survey (2002) lists ten, including: Batanin's and Leinster's (globular operads), Trimble's, Street's (simplicial, via "orientals" and complicial sets, later developed by Verity), Tamsamani's and Simpson's (Segal-type, iterated simplicial), Baez and Dolan's (opetopic), Joyal's ($\Theta$-categories) and Rezk's ($\Theta_n$-spaces, for $(\infty, n)$-categories).
+
+**Open or in progress.** Comparing these definitions is research. Some comparisons are proved (for instance among several models of $(\infty, n)$-categories, and an axiomatic characterisation of the homotopy theory of $(\infty, n)$-categories by Barwick and Schommer-Pries, published 2021), but a complete comparison of all proposed definitions of weak $n$-category is not available. Fully explicit algebraic definitions with coherence theorems exist for $n \le 3$; Trimble wrote down an explicit definition of tetracategories ($n = 4$), and explicit definitions become unmanageable by hand beyond that — one reason the field moved towards homotopical ("$\infty$") models.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Higher categories in Lean and Mathlib">
+
+Mathlib has a substantial library for dimension 2: bicategories (`CategoryTheory.Bicategory`, with associators, unitors, the pentagon and the triangle as axioms), strict bicategories, pseudofunctors, the strict 2-category `Cat`, the monoidal category of endomorphisms of an object, and the one-object bicategory of a monoidal category. Note the conventions: Mathlib composes 1-cells and morphisms in diagrammatic order (`f ≫ g` is "first `f`, then `g`") and writes horizontal composition of natural transformations as `α ◫ γ`, with components `(α ◫ γ).app X = γ.app (F.obj X) ≫ J.map (α.app X)` — the formula $J(\alpha_X) \circ \gamma_{FX}$ of the examples section.
+
+The interchange law, proved from naturality exactly as in Theorem 1 (after `ext X` and unfolding, one use of the naturality of `δ` finishes the proof), and Mathlib's own version:
+
+<Lean decl="Lumenary.HigherCategories.interchange" />
+
+<Lean decl="Lumenary.HigherCategories.interchange_library" />
+
+<Lean decl="Lumenary.HigherCategories.cat_strict" />
+
+The Eckmann–Hilton argument, with a `calc` proof that follows Theorem 2 line by line (the units first, then agreement, then commutativity), and Mathlib's version, which it uses to prove that higher homotopy groups are abelian:
+
+<Lean decl="Lumenary.HigherCategories.units_coincide" />
+
+<Lean decl="Lumenary.HigherCategories.eckmann_hilton" />
+
+<Lean decl="Lumenary.HigherCategories.eckmann_hilton_library" />
+
+Corollary 3 in an arbitrary bicategory. The proof uses Mathlib's axiom `whisker_exchange` (the interchange law for whiskerings), the axioms `id_whiskerLeft` and `whiskerRight_id` (whiskering by an identity is conjugation by a unitor) and the lemma `unitors_equal` ($\lambda_{1_a} = \rho_{1_a}$), then cancels the unitor:
+
+<Lean decl="Lumenary.HigherCategories.endo_id_comm" />
+
+<Lean decl="Lumenary.HigherCategories.nat_trans_id_comm" />
+
+The second half of Theorem 4 — every formal diagram of associators and unitors commutes — is in Mathlib in the form "the free bicategory on a quiver is locally thin", proved by normalisation:
+
+<Lean decl="Lumenary.HigherCategories.free_bicategory_coherence" />
+
+Finally, the two halves of "a bicategory with one object is a monoidal category", as Mathlib provides them:
+
+<Lean decl="Lumenary.HigherCategories.endMonoidal" />
+
+<Lean decl="Lumenary.HigherCategories.singleObjEquiv" />
+
+**What is not formalised.** The first half of Theorem 4 (every bicategory is biequivalent to a strict 2-category), tricategories and Gray-categories (Theorem 5), Simpson's theorem, and any definition of weak $n$-category for $n \ge 3$ are not formalised here, and as far as we know not in Mathlib. Mathlib's coherence *tactics* (`coherence`, `bicategory`) put the locally-thin theorem to work: they prove equations between structural 2-cells automatically.
+
+</Section>
+
+<Section id="computation" kind="computation" title="The shape of coherence: associahedra">
+
+Bracketings of a word of $n$ letters, joined when they differ by one associator, form the 1-skeleton of **Stasheff's associahedron** $K_n$. The experiment builds these graphs for $n \le 7$, checks that they are connected (any two bracketings are related by associators), finds Mac Lane's pentagon as the two directed paths of lengths 2 and 3 in $K_4$, and computes that the 2-dimensional faces of $K_5$ are 6 pentagons and 3 squares whose boundaries span every cycle (mod 2). The squares are the "naturality" relations between associators acting on disjoint parts of the word; the pentagons are instances of the pentagon axiom. This is the combinatorial content of the second half of Theorem 4.
+
+<Python id="higher_categories_associahedra" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: the pentagon and the associahedron K₅">
+
+The pentagon axiom asserts that the two composites of associators from $((kh)g)f$ to $k(h(gf))$ are equal:
+
+<CommutativeDiagram
+  objects={[
+    { id: "A", tex: "((kh)g)f", row: 0, col: 2 },
+    { id: "B", tex: "(kh)(gf)", row: 1, col: 4 },
+    { id: "C", tex: "k(h(gf))", row: 2, col: 3 },
+    { id: "D", tex: "k((hg)f)", row: 2, col: 1 },
+    { id: "E", tex: "(k(hg))f", row: 1, col: 0 }
+  ]}
+  arrows={[
+    { from: "A", to: "B", tex: "\\alpha_{kh,g,f}" },
+    { from: "B", to: "C", tex: "\\alpha_{k,h,gf}" },
+    { from: "A", to: "E", tex: "\\alpha_{k,h,g} \\ast 1_f", labelSide: "right" },
+    { from: "E", to: "D", tex: "\\alpha_{k,hg,f}", labelSide: "right" },
+    { from: "D", to: "C", tex: "1_k \\ast \\alpha_{h,g,f}", labelSide: "right" }
+  ]}
+  size="sm"
+  caption="Mac Lane's pentagon. Juxtaposition is composition of 1-cells; every arrow is an invertible 2-cell."
+/>
+
+For five letters there are 14 bracketings. Below they are the vertices of the associahedron $K_5$, numbered as in this table (with $e$ the fifth 1-cell); edges are single associator moves.
+
+| # | bracketing | # | bracketing | # | bracketing |
+| --- | --- | --- | --- | --- | --- |
+| 1 | $a(b(c(de)))$ | 6 | $(ab)(c(de))$ | 11 | $(a((bc)d))e$ |
+| 2 | $a(b((cd)e))$ | 7 | $(ab)((cd)e)$ | 12 | $((ab)(cd))e$ |
+| 3 | $a((bc)(de))$ | 8 | $(a(bc))(de)$ | 13 | $((a(bc))d)e$ |
+| 4 | $a((b(cd))e)$ | 9 | $((ab)c)(de)$ | 14 | $(((ab)c)d)e$ |
+| 5 | $a(((bc)d)e)$ | 10 | $(a(b(cd)))e$ | | |
+
+<GraphExplorer
+  title="The associahedron K₅"
+  subtitle="Vertices: bracketings of abcde. Edges: one associator."
+  nodes={["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]}
+  edges={[["1", "2"], ["1", "3"], ["1", "6"], ["2", "4"], ["2", "7"], ["3", "5"], ["3", "8"], ["4", "5"], ["4", "10"], ["5", "11"], ["6", "7"], ["6", "9"], ["7", "12"], ["8", "9"], ["8", "13"], ["9", "14"], ["10", "11"], ["10", "12"], ["11", "13"], ["12", "14"], ["13", "14"]]}
+  positions={[[180, 145], [130, 115], [180, 200], [85, 135], [125, 225], [230, 115], [180, 75], [235, 225], [275, 135], [20, 125], [80, 285], [180, 15], [280, 285], [340, 125]]}
+  modes={["walk", "degrees"]}
+  mode="walk"
+/>
+
+Things to try:
+
+- In **degrees** mode, check that every vertex has degree 3: a bracketing of five letters has three internal brackets, and each allows exactly one associator move.
+- The outer pentagon $14 \to 12 \to 10$ and $14 \to 13 \to 11 \to 10$ is Mac Lane's pentagon for $abcd$, followed by $e$. Find the other five pentagons and the three squares (for example the square $1, 2, 7, 6$: the associator inside the block $cde$ and the associator $a(bX) \Rightarrow (ab)X$ with $X = cde$ act on disjoint parts of the word, so they commute — a naturality square).
+- In **walk** mode, build a closed walk. Each step is an associator or its inverse, so the walk composes to a 2-cell from a bracketing to itself. Coherence says it is always the identity — because every closed walk is filled in by faces.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Strictification works in every dimension, so weak structures are just strict ones written sloppily."** It works in dimension 2 (Theorem 4) and fails in dimension 3: by Gordon–Power–Street, tricategories can be strictified only to Gray-categories, and Simpson showed that the homotopy 3-type of $S^2$ is not modelled by a strict 3-groupoid. Weakness carries genuine information.
+
+</Misconception>
+
+<Misconception>
+
+**"There is one agreed definition of weak $n$-category."** There are many (Leinster's 2002 survey describes ten), they are known to agree in low dimensions and in important homotopical cases, and comparing them in general is ongoing research. Results should always say which definition they use.
+
+</Misconception>
+
+<Misconception>
+
+**"Strictification lets you assume the bicategory you started with is strict."** Theorem 4 replaces $\mathcal{B}$ by a biequivalent strict 2-category, which usually has *different* objects and 1-cells. For example, composition of spans is defined only up to isomorphism, and no choice of pullbacks makes it strictly associative in general. You may reason in the strict model and transport the conclusion, but you may not pretend the associators of $\mathcal{B}$ are identities.
+
+</Misconception>
+
+<Misconception>
+
+**"Eckmann–Hilton says 2-cells in a 2-category commute."** Only the endomorphisms of an *identity* 1-cell $1_a$ are forced to commute. For a general 1-cell $f$ the monoid of 2-cells $f \Rightarrow f$ can be any monoid: in $\mathbf{Cat}$, take $f$ to be a functor from the terminal category picking out an object $X$; its natural endomorphisms are the monoid $\mathrm{End}(X)$, which can be non-commutative.
+
+</Misconception>
+
+<Misconception>
+
+**"The pentagon is the only axiom."** A bicategory also needs the triangle axiom relating associators and unitors, and the associator and unitors must be *natural*. Without the triangle, the coherence theorem fails.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Homotopy types and the homotopy hypothesis">
+
+Every space $X$ has a fundamental $n$-groupoid $\Pi_n(X)$: points, paths, homotopies between paths, …, with $n$-cells taken up to homotopy. Grothendieck's **homotopy hypothesis** (in *Pursuing Stacks*, 1983) proposes that weak $n$-groupoids are "the same as" homotopy $n$-types. In dimension 1 this is a theorem: the homotopy category of 1-types is equivalent to the homotopy category of groupoids. In dimension 2 it is also established, and connected pointed 2-types correspond to **crossed modules** (Mac Lane and Whitehead, 1950). The Eckmann–Hilton argument is the topological fact that you can move two small discs past each other in the plane; Simpson's theorem is the fact that you cannot model the Hopf map with strict interchange. For an ∞-groupoid version see <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink> and <TopicLink id="math.geom.homotopy-theory">Homotopy theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="String diagrams: 2-cells live in the plane">
+
+In the Poincaré dual picture of a 2-category, 0-cells are regions of the plane, 1-cells are lines between regions and 2-cells are points (beads) on lines. Vertical composition stacks diagrams, horizontal composition places them side by side, and the interchange law is the statement that **planar isotopy** — sliding beads up and down past each other on different strings — does not change the value of a diagram. Joyal and Street (1991) made this precise for monoidal categories: a well-formed equation follows from the axioms exactly when the corresponding diagrams are isotopic. Braided monoidal categories need three dimensions (strings may pass over and under), which is where knots and braids enter: see <TopicLink id="math.geom.knot-theory">Knot theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Categorification and 2-groups">
+
+Higher categories turn equations into isomorphisms: this is **categorification**. A group becomes a **2-group**, a monoidal category in which every object and every morphism is invertible; 2-groups are classified up to equivalence by a group $G$, an abelian group $A$ with a $G$-action, and a class in $H^3(G; A)$ (Sinh, 1975). Categorified representation theory replaces vector spaces by linear categories and linear maps by functors; Khovanov homology categorifies the Jones polynomial and Chuang and Rouquier's $\mathfrak{sl}_2$-categorification proved Broué's abelian defect group conjecture for symmetric groups (2008). See <TopicLink id="math.cat.categorical-representation-theory">Categorical representation theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Extended topological field theories">
+
+Atiyah's axioms (1988) describe an $n$-dimensional topological quantum field theory as a symmetric monoidal functor from a category of $(n-1)$-manifolds and $n$-dimensional cobordisms to vector spaces. Physical **locality** suggests going further down: cutting a manifold along codimension-2 pieces, and so on to points, which requires an $n$-category of cobordisms with corners. Baez and Dolan's **cobordism hypothesis** (1995) predicts that fully extended framed TQFTs are classified by their value on a point, which must be a "fully dualisable" object. Lurie (2009) gave a detailed outline of a proof in the language of $(\infty, n)$-categories; supplying every detail has been the subject of substantial later work. The heuristic (locality in physics) and the theorem (about $(\infty, n)$-categories) should be kept apart. See <TopicLink id="math.applied.gauge-theory">Gauge theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Enrichment and the 2-category of categories">
+
+A strict 2-category is precisely a category **enriched** in $(\mathbf{Cat}, \times)$: hom-objects are categories and composition is a functor (see <TopicLink id="math.cat.enriched-categories">Enriched categories</TopicLink>). A bicategory is the "weak" version, and iterating — enriching in the category of $n$-categories — gives strict $(n+1)$-categories, which is why strict definitions are easy and weak ones hard. Much of ordinary category theory is really 2-category theory in $\mathbf{Cat}$: adjunctions, monads and Kan extensions can be defined in any 2-category, and Street's "formal theory of monads" (1972) does exactly that.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="arrows-that-compose" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1950s–1960s: higher structure appears.** Mac Lane and Whitehead (1950) classified homotopy 2-types by crossed modules. Eckmann and Hilton published their argument in 1962. Stasheff (1963) introduced the associahedra to describe homotopy-associative H-spaces, and in the same year Mac Lane proved coherence for monoidal categories. Charles Ehresmann (France) introduced double categories and 2-categories in the early 1960s.
+- **1967: bicategories.** Jean Bénabou's *Introduction to bicategories* defined bicategories, with spans as the motivating example.
+- **1970s–1980s: the Sydney school and Grothendieck.** Ross Street and Max Kelly in Australia developed 2-category theory (the formal theory of monads, 1972; Kelly–Street's *Review of the elements of 2-categories*, 1974). Street's "orientals" (1987) proposed a simplicial approach to $\omega$-categories. Grothendieck's long letter-manuscript *Pursuing Stacks* (1983) set out the homotopy hypothesis.
+- **1990s: dimension 3 and beyond.** Gordon, Power and Street defined tricategories (1995). Kapranov and Voevodsky (1991) claimed that strict ∞-groupoids model all homotopy types; Simpson (1998) showed that the 3-type of $S^2$ is not modelled by a strict 3-groupoid. Voevodsky later described this episode as one of the motivations for his work on computer-checked proofs (see <TopicLink id="math.found.homotopy-type-theory">Homotopy type theory</TopicLink>). Baez and Dolan (1995) formulated the periodic table, the stabilization hypothesis and the cobordism hypothesis; Batanin (1998) gave a definition of weak $\omega$-category via globular operads, and Tamsamani (1999) and Simpson developed Segal-type definitions.
+- **2000s–today.** Leinster's survey (2002) and book (2004) organised the definitions; Lurie's work on $(\infty, n)$-categories (2009) and many others moved the subject into homotopy theory; textbooks on 2-dimensional categories (Johnson–Yau, 2021) consolidated dimension 2.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+A suggested path: start with Lack's companion and Johnson–Yau for dimension 2, read Leinster's survey for the landscape, then Cheng–Lauda for pictures and Gurski for dimension 3.
+
+- Stephen Lack, "A 2-categories companion", in *Towards Higher Categories* (2010).
+- Niles Johnson and Donald Yau, *2-Dimensional Categories* (2021).
+- Jean Bénabou, "Introduction to bicategories", *Reports of the Midwest Category Seminar* (1967).
+- Tom Leinster, "A survey of definitions of $n$-category", *Theory and Applications of Categories* 10 (2002).
+- Tom Leinster, *Higher Operads, Higher Categories* (2004).
+- Eugenia Cheng and Aaron Lauda, *Higher-Dimensional Categories: an illustrated guide book* (2004).
+- Nick Gurski, *Coherence in Three-Dimensional Category Theory* (2013).
+- Robert Gordon, A. John Power and Ross Street, "Coherence for tricategories", *Memoirs of the AMS* 558 (1995).
+- John Baez and James Dolan, "Higher-dimensional algebra and topological quantum field theory", *J. Math. Phys.* 36 (1995).
+- Saunders Mac Lane, *Categories for the Working Mathematician* (2nd edition, 1998), Chapters VII and XII.
+
+</Section>

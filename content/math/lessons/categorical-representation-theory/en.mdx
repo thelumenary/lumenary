@@ -1,0 +1,422 @@
+---
+slug: categorical-representation-theory
+topic: math.cat.categorical-representation-theory
+title: Categorical representation theory
+subtitle: Groups act on vector spaces; what acts on categories? Replace numbers by vector spaces and equations by isomorphisms, and invariants such as the Jones polynomial turn into homology theories that see more.
+level: research
+ages: Research orientation (representation theory, abelian and higher categories assumed)
+minutes: 130
+order: 8017
+objectives:
+  - Explain categorification and decategorification through examples — natural numbers and finite sets, Euler characteristic and homology, the Jones polynomial and Khovanov homology
+  - Define Grothendieck groups, tensor and fusion categories, Frobenius–Perron dimension and module categories, with $\operatorname{Rep}(G)$ as the guiding example
+  - Prove that dimension and characters decategorify $\operatorname{Rep}(G)$, and that the Fibonacci fusion rule is not the Grothendieck ring of any $\operatorname{Rep}(G)$
+  - Describe categorical actions, including Chuang–Rouquier $\mathfrak{sl}_2$-categorification, and separate established results from open problems
+narrators: []
+lean:
+  - Lumenary.CategoricalRepresentationTheory.card_sum
+  - Lumenary.CategoricalRepresentationTheory.card_prod
+  - Lumenary.CategoricalRepresentationTheory.card_distrib
+  - Lumenary.CategoricalRepresentationTheory.finrank_additive
+  - Lumenary.CategoricalRepresentationTheory.euler_characteristic_two_term
+  - Lumenary.CategoricalRepresentationTheory.fdrep_symmetric
+  - Lumenary.CategoricalRepresentationTheory.fdrep_zigzag
+  - Lumenary.CategoricalRepresentationTheory.char_tensor
+  - Lumenary.CategoricalRepresentationTheory.char_iso
+  - Lumenary.CategoricalRepresentationTheory.char_one
+  - Lumenary.CategoricalRepresentationTheory.fibonacci_no_integer_dimension
+compute: [categorical_representation_theory_fusion, categorical_representation_theory_khovanov]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why replace numbers by objects?">
+
+Four stories, from four corners of mathematics, share one move.
+
+- **Combinatorics.** To prove $\binom{n}{k} = \binom{n}{n-k}$ you can compute, or you can exhibit a bijection between $k$-subsets and their complements. The bijection says more: it is a *reason*, and it can be compatible with symmetries that the numbers do not see.
+- **Topology.** Betti numbers count holes. Around 1925, Emmy Noether, with Heinz Hopf and Leopold Vietoris, emphasised that they are the ranks of *homology groups* — and groups, unlike numbers, have maps between them, so a continuous map induces a homomorphism. The Euler characteristic $\chi = \sum (-1)^i b_i$ became the shadow of a richer object.
+- **Representation theory.** The Kazhdan–Lusztig polynomials (1979) were conjectured to have non-negative coefficients. Elias and Williamson (2014) proved it for every Coxeter group by showing that the coefficients are *dimensions* of spaces of maps between Soergel bimodules — and dimensions cannot be negative.
+- **Knot theory.** The Jones polynomial (1984) is a powerful knot invariant, but whether it detects the unknot is still unknown. Khovanov (1999–2000) found bigraded homology groups whose graded Euler characteristic is the Jones polynomial; Kronheimer and Mrowka (2011) proved that **Khovanov homology does detect the unknot**.
+
+In each story a number (or polynomial) is recognised as the shadow — the **decategorification** — of an object (a set, a group, a vector space, a complex), and an equation between numbers as the shadow of an isomorphism. Going back up is **categorification**. Categorical representation theory applies this to representation theory itself: instead of a group or algebra acting on a vector space, it studies actions on *categories*, and representation-theoretic structures on categories such as tensor and fusion categories.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A ladder, and its shadow map">
+
+Picture a ladder:
+
+$$
+\text{numbers} \;\rightsquigarrow\; \text{sets, vector spaces} \;\rightsquigarrow\; \text{categories} \;\rightsquigarrow\; \text{2-categories} \;\rightsquigarrow\; \cdots
+$$
+
+Going down a rung forgets: a finite set to its cardinality, a vector space to its dimension, a category to its **Grothendieck group** $K_0$, the group of isomorphism classes with sums. Going up is not a functor or an algorithm; it is a search, and a structure may have many categorifications or none known.
+
+A representation of a group $G$ on a vector space $V$ is a homomorphism $G \to GL(V)$. One rung up, a **categorical action** of $G$ on a category $\mathcal{C}$ is a family of autoequivalences $F_g : \mathcal{C} \to \mathcal{C}$ with coherent isomorphisms $F_g F_h \cong F_{gh}$; passing to $K_0(\mathcal{C})$ gives an ordinary representation. Likewise the representation *ring* of $G$ is the shadow of the representation *category* $\operatorname{Rep}(G)$, with $\otimes$ as the categorified multiplication.
+
+<Analogy>
+
+Decategorification is like reading a musical score by counting how many notes are written on each page. The counts are honest information — they add up correctly when pages are combined — but two very different pieces can have the same counts, and you cannot hear the music from them. The analogy is informal: the precise statements are about Grothendieck groups below.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $k$ is a field, algebraically closed of characteristic $0$ when we speak of fusion categories.
+
+<Definition term="Grothendieck group">
+
+The **Grothendieck group** $K_0(\mathcal{A})$ of an essentially small abelian category $\mathcal{A}$ is the abelian group generated by symbols $[X]$, one for each isomorphism class of objects, with a relation $[B] = [A] + [C]$ for every short exact sequence $0 \to A \to B \to C \to 0$. For an additive category one uses only split sequences ($[A \oplus C] = [A] + [C]$); for a triangulated category, one relation per distinguished triangle. If $\mathcal{A}$ has a biexact tensor product, $[X][Y] = [X \otimes Y]$ makes $K_0(\mathcal{A})$ a ring.
+
+</Definition>
+
+<Definition term="tensor category">
+
+A **tensor category** over $k$ (in the sense of Etingof–Gelaki–Nikshych–Ostrik) is a locally finite $k$-linear abelian category with a bilinear monoidal structure $\otimes$ (see <TopicLink id="math.cat.monoidal-categories">monoidal categories</TopicLink>), such that every object has left and right duals (it is **rigid**) and $\operatorname{End}(\mathbf{1}) = k$.
+
+</Definition>
+
+<Definition term="fusion category and Frobenius–Perron dimension">
+
+A **fusion category** is a semisimple tensor category with finitely many isomorphism classes of simple objects $X_0 = \mathbf{1}, X_1, \dots, X_r$. Its Grothendieck ring is a **fusion ring**: a ring free on the $[X_i]$ with $[X_i][X_j] = \sum_k N_{ij}^k [X_k]$, $N_{ij}^k \in \N$. The **Frobenius–Perron dimension** $\operatorname{FPdim}(X_i)$ is the largest real eigenvalue of the non-negative matrix of multiplication by $[X_i]$; $\operatorname{FPdim}$ is the unique ring homomorphism $K_0 \to \R$ that is positive on every $[X_i]$, and $\operatorname{FPdim}(\mathcal{C}) = \sum_i \operatorname{FPdim}(X_i)^2$.
+
+</Definition>
+
+<Definition term="module category">
+
+A (left) **module category** over a monoidal category $\mathcal{C}$ is a category $\mathcal{M}$ with an action bifunctor $\otimes : \mathcal{C} \times \mathcal{M} \to \mathcal{M}$ and natural isomorphisms $(X \otimes Y) \otimes M \cong X \otimes (Y \otimes M)$ and $\mathbf{1} \otimes M \cong M$ satisfying the pentagon and triangle axioms. It is the categorified notion of a module over a ring: $K_0(\mathcal{M})$ is a module over $K_0(\mathcal{C})$.
+
+</Definition>
+
+<Definition term="sl₂-categorification (Chuang–Rouquier)">
+
+An **$\mathfrak{sl}_2$-categorification** on a $k$-linear abelian category $\mathcal{A}$ (with suitable finiteness) consists of exact functors $E, F : \mathcal{A} \to \mathcal{A}$ that are left and right adjoint to each other, such that $[E]$ and $[F]$ make $K_0(\mathcal{A}) \otimes \mathbb{Q}$ a locally finite representation of $\mathfrak{sl}_2$ in which the classes of simple objects are weight vectors, together with natural transformations $X \in \operatorname{End}(E)$ and $T \in \operatorname{End}(E^2)$ satisfying the relations of the degenerate affine Hecke algebra.
+
+</Definition>
+
+The extra natural transformations $X$ and $T$ are the essential, genuinely categorical part: an action of $\mathfrak{sl}_2$ on $K_0$ alone would not suffice for the theorems below.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Finite sets categorify the natural numbers">
+
+The category $\mathbf{FinSet}$ has $\sqcup$ and $\times$; taking cardinalities gives $\N$ with $+$ and $\cdot$. Commutativity, associativity and distributivity of arithmetic are shadows of *specified* bijections such as $A \times (B \sqcup C) \cong (A \times B) \sqcup (A \times C)$, and these bijections satisfy coherence conditions of their own (they form a symmetric bimonoidal category). The numbers forget *which* bijection; the category remembers. For vector spaces, $\dim$ identifies $K_0(\mathrm{vect}_k)$ with $\Z$.
+
+</Example>
+
+<Example title="Rep(S₃)">
+
+Over $\mathbb{C}$, $S_3$ has three irreducible representations: trivial $\mathbf{1}$, sign $\varepsilon$, and the $2$-dimensional reflection representation $V$. The fusion rules are
+
+$$
+\varepsilon \otimes \varepsilon \cong \mathbf{1}, \qquad \varepsilon \otimes V \cong V, \qquad V \otimes V \cong \mathbf{1} \oplus \varepsilon \oplus V,
+$$
+
+as the characters $(1, 1, 1)$, $(1, -1, 1)$, $(2, 0, -1)$ on the classes of $e$, transpositions and $3$-cycles confirm: $\chi_V^2 = (4, 0, 1) = \chi_{\mathbf 1} + \chi_\varepsilon + \chi_V$. Frobenius–Perron dimensions are ordinary dimensions, and $\operatorname{FPdim}(\operatorname{Rep}(S_3)) = 1 + 1 + 4 = 6 = |S_3|$.
+
+</Example>
+
+<Example title="One fusion ring, several fusion categories">
+
+- **Pointed categories.** For a finite group $A$ and a $3$-cocycle $\omega \in Z^3(A, k^\times)$, the category $\mathrm{Vec}_A^\omega$ of $A$-graded vector spaces with associativity twisted by $\omega$ has Grothendieck ring $\Z[A]$ for **every** $\omega$; and $\mathrm{Vec}_A^\omega \simeq \mathrm{Vec}_A^{\omega'}$ only if $\omega'$ is cohomologous to the pull-back of $\omega$ by an automorphism of $A$. For $A = \Z/2$, $H^3(\Z/2, \mathbb{C}^\times) \cong \Z/2$ gives two inequivalent fusion categories with the same fusion ring.
+- **$D_4$ and $Q_8$.** The dihedral group of order $8$ and the quaternion group have the same character table, hence isomorphic fusion rings; Tambara and Yamagami (1998) showed that $\operatorname{Rep}(D_4)$ and $\operatorname{Rep}(Q_8)$ are nevertheless inequivalent tensor categories.
+
+</Example>
+
+<Example title="Fibonacci and Ising">
+
+The **Fibonacci** fusion ring has basis $\mathbf{1}, \tau$ with $\tau \otimes \tau = \mathbf{1} \oplus \tau$; it is the Grothendieck ring of fusion categories built from quantum groups at roots of unity (for instance the even part of $SU(2)$ at level $3$). The matrix of multiplication by $\tau$ is $\left(\begin{smallmatrix} 0 & 1 \\ 1 & 1 \end{smallmatrix}\right)$, so $\operatorname{FPdim}(\tau) = \varphi = \tfrac{1 + \sqrt 5}{2}$, the golden ratio. The **Ising** ring has $\sigma \otimes \sigma = \mathbf{1} \oplus \psi$, $\psi \otimes \psi = \mathbf{1}$, $\sigma \otimes \psi = \sigma$, and $\operatorname{FPdim}(\sigma) = \sqrt{2}$.
+
+</Example>
+
+<Example title="Module categories over Vec_G">
+
+For a subgroup $H \le G$, the category of vector spaces graded by the cosets $G/H$ is a module category over $\mathrm{Vec}_G$ (with $g$ acting by left translation of the grading), and twisting by a $2$-cocycle $\psi \in Z^2(H, k^\times)$ gives more. Ostrik (2003) proved that every indecomposable semisimple module category over $\mathrm{Vec}_G$ is of this form $\mathcal{M}(H, \psi)$, with $(H, \psi)$ determined up to conjugation and coboundaries — the categorified version of "a transitive $G$-set is $G/H$".
+
+</Example>
+
+<Example title="Categorifying a Hecke-type relation with symmetric groups">
+
+Let $\mathcal{A} = \bigoplus_{n \ge 0} \operatorname{Rep}_{\mathbb{C}}(S_n)$, with $F = \operatorname{Ind}_{S_n}^{S_{n+1}}$ and $E = \operatorname{Res}^{S_{n+1}}_{S_n}$, which are biadjoint. Mackey's formula gives an isomorphism of functors $E F \cong F E \oplus \mathrm{id}$ on each $\operatorname{Rep}(S_n)$. On $K_0(\mathcal{A}) = \bigoplus_n R(S_n)$, which is identified with the ring of symmetric functions, this is the Heisenberg-type relation $[E][F] - [F][E] = 1$ — a categorified commutation relation (Khovanov, 2014, studied the full Heisenberg categorification). In characteristic $p$, splitting $E$ and $F$ according to eigenvalues of the Jucys–Murphy elements gives $i$-restriction and $i$-induction functors $E_i, F_i$ and a categorical action of $\widehat{\mathfrak{sl}}_p$ whose $K_0$ is the basic representation. For the Hecke algebras $H_n(q)$ over $\mathbb{C}$ at a primitive $e$-th root of unity the same construction gives an action of $\widehat{\mathfrak{sl}}_e$, and Ariki's theorem (1996, the Lascoux–Leclerc–Thibon conjecture) identifies their decomposition numbers with coefficients of Lusztig's canonical basis of the Fock space.
+
+</Example>
+
+<Example title="The Khovanov cube of the Hopf link">
+
+Each crossing of a link diagram can be smoothed in two ways, $0$ and $1$. Khovanov assigns to a smoothing with $c$ circles the graded vector space $V^{\otimes c}$, with $V = \mathbb{Q}[x]/(x^2)$, and to each edge of the cube of smoothings the multiplication $m : V \otimes V \to V$ (two circles merge) or the comultiplication $\Delta : V \to V \otimes V$ (a circle splits). For the Hopf link the smoothings $00, 01, 10, 11$ have $2, 1, 1, 2$ circles:
+
+<CommutativeDiagram
+  objects={[
+    { id: "a", tex: "V^{\\otimes 2}", row: 1, col: 0 },
+    { id: "b", tex: "V", row: 0, col: 1 },
+    { id: "c", tex: "V", row: 2, col: 1 },
+    { id: "d", tex: "V^{\\otimes 2}", row: 1, col: 2 }
+  ]}
+  arrows={[
+    { from: "a", to: "b", tex: "m" },
+    { from: "a", to: "c", tex: "m", labelSide: "right" },
+    { from: "b", to: "d", tex: "\\Delta" },
+    { from: "c", to: "d", tex: "-\\Delta", labelSide: "right" }
+  ]}
+  caption="The cube of smoothings of the Hopf link. Collapsing the columns gives a chain complex V⊗V → V ⊕ V → V⊗V (with degree shifts); the sign makes the square anticommute, so d∘d = 0."
+/>
+
+The graded Euler characteristic of this complex, with the standard normalisation shifts, is the unnormalised Jones polynomial; its homology is the Khovanov homology. The computation section does this for the trefoil and the figure-eight knot.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central results">
+
+<Theorem name="Proposition 1 — dimension decategorifies vect">
+
+If $0 \to A \xrightarrow{f} B \xrightarrow{g} C \to 0$ is a short exact sequence of finite-dimensional vector spaces, then $\dim B = \dim A + \dim C$. Hence $[V] \mapsto \dim V$ is a well-defined isomorphism $K_0(\mathrm{vect}_k) \cong \Z$.
+
+</Theorem>
+
+<Proof>
+
+Rank–nullity for $g$ gives $\dim B = \dim \operatorname{im} g + \dim \ker g$. Exactness says $\operatorname{im} g = C$ and $\ker g = \operatorname{im} f \cong A$ ($f$ injective). So $\dim$ respects the defining relations and induces a homomorphism $K_0 \to \Z$. It is surjective ($[k] \mapsto 1$) and injective, since $V \cong k^{\dim V}$ gives $[V] = \dim V \cdot [k]$.
+
+</Proof>
+
+<Theorem name="Proposition 2 — homology categorifies the Euler characteristic">
+
+For a bounded complex $C$ of finite-dimensional vector spaces, $\sum_i (-1)^i \dim C^i = \sum_i (-1)^i \dim H^i(C)$.
+
+</Theorem>
+
+<Proof>
+
+Write $Z^i = \ker d^i$ and $B^i = \operatorname{im} d^{i-1}$. Rank–nullity gives $\dim C^i = \dim Z^i + \dim B^{i+1}$, and $\dim H^i = \dim Z^i - \dim B^i$. Hence $\sum_i (-1)^i \dim C^i = \sum_i (-1)^i (\dim H^i + \dim B^i + \dim B^{i+1})$, and the boundary terms cancel in pairs. In the language of Grothendieck groups: $[C] := \sum (-1)^i [C^i] = \sum (-1)^i [H^i]$ in $K_0(\mathrm{vect}_k)$, which is the statement that $K_0$ of the derived category $D^b(\mathrm{vect}_k)$ is again $\Z$.
+
+</Proof>
+
+<Theorem name="Proposition 3 — the Grothendieck ring of Rep(G)">
+
+Let $G$ be a finite group and $k = \mathbb{C}$. Then $K_0(\operatorname{Rep}(G))$ is the free abelian group on the classes of the irreducible representations; with $[V][W] = [V \otimes W]$ it is the representation ring $R(G)$, and the character map $[V] \mapsto \chi_V$ is an injective ring homomorphism into class functions. Moreover $\operatorname{Rep}(G)$ is a fusion category with $\operatorname{FPdim}(V) = \dim V$ and $\operatorname{FPdim}(\operatorname{Rep}(G)) = |G|$.
+
+</Theorem>
+
+<Proof>
+
+By Maschke's theorem every short exact sequence splits and every representation is a direct sum of irreducibles $V_1, \dots, V_r$, uniquely up to multiplicities, so $K_0 = \bigoplus_i \Z [V_i]$. The character is additive on direct sums, multiplicative on tensor products ($\chi_{V \otimes W}(g) = \operatorname{tr}(\rho_V(g) \otimes \rho_W(g)) = \chi_V(g)\chi_W(g)$), constant on isomorphism classes, and sends $\mathbf{1}$ to the constant function $1$: a ring homomorphism. It is injective because the irreducible characters are orthonormal for $\langle \chi, \psi \rangle = \frac{1}{|G|} \sum_g \chi(g) \overline{\psi(g)}$, hence linearly independent (see <TopicLink id="math.algebra.representation-theory">representation theory of finite groups</TopicLink>). Duals exist ($V^*$ with $g$ acting by the inverse transpose), $\operatorname{End}(\mathbf{1}) = \mathbb{C}$, and there are finitely many simples: $\operatorname{Rep}(G)$ is fusion. Finally $\dim = \chi(e)$ is a ring homomorphism $K_0 \to \Z \subset \R$, positive on each $[V_i]$, so by uniqueness it is $\operatorname{FPdim}$, and $\sum_i (\dim V_i)^2 = |G|$.
+
+</Proof>
+
+<Theorem name="Theorem 4 — the Fibonacci rule is not Rep(G)">
+
+There is no finite group $G$ (and no semisimple Hopf algebra $H$) whose representation category has Grothendieck ring isomorphic, as a ring with basis, to the Fibonacci fusion ring. In fact the Fibonacci ring has no ring homomorphism to $\Z$ at all.
+
+</Theorem>
+
+<Proof>
+
+A ring homomorphism $d$ from the Fibonacci ring to $\Z$ sends $\tau$ to an integer $n$ with $n^2 = d(\tau^2) = d(1 + \tau) = 1 + n$, i.e. $n(n - 1) = 1$. But a product of two consecutive integers is never $1$: it is $0$ for $n \in \{0, 1\}$ and at least $2$ otherwise. So there is no such $n$. But for $\operatorname{Rep}(G)$ (or $\operatorname{Rep}(H)$), taking the dimension of the underlying vector space is a ring homomorphism $K_0 \to \Z$, because the forgetful functor to vector spaces preserves $\oplus$ and $\otimes$.
+
+</Proof>
+
+The same argument shows that a fusion category with a non-integer Frobenius–Perron dimension admits no *fibre functor* (no monoidal functor to vector spaces), so it cannot be reconstructed as the representations of a group or Hopf algebra. Fusion categories are strictly more general than $\operatorname{Rep}(G)$.
+
+<Theorem name="Theorem 5 — Khovanov (2000)">
+
+For an oriented link $L$ there are bigraded homology groups $\mathit{Kh}^{i,j}(L)$, computed from any diagram by the cube of smoothings, which are invariant under Reidemeister moves, and whose graded Euler characteristic is the unnormalised Jones polynomial: $\sum_{i,j} (-1)^i q^j \dim \mathit{Kh}^{i,j}(L) = (q + q^{-1}) J_L$ (with Bar-Natan's normalisation of $J_L$).
+
+</Theorem>
+
+Khovanov's proof of invariance is a direct verification for the three Reidemeister moves (see Bar-Natan, 2002, for an accessible account). Khovanov homology is functorial for link cobordisms up to sign (Jacobsson 2004; Khovanov 2006; Bar-Natan 2005), with the sign ambiguity resolved by Clark, Morrison and Walker (2009). It is strictly stronger than the Jones polynomial: the figure-eight knot has $\hat J = q^{-5} + q^{5}$ but $\mathit{Kh}$ of total rank $6$ (computed below).
+
+<Theorem name="Theorem 6 — Chuang–Rouquier (2008)">
+
+An $\mathfrak{sl}_2$-categorification on $\mathcal{A}$ lifts the action of the simple reflection of the Weyl group on $K_0(\mathcal{A})$ to a derived self-equivalence: the weight spaces $\mathcal{A}_\lambda$ and $\mathcal{A}_{-\lambda}$ are derived equivalent. Applied to blocks of symmetric groups in characteristic $p$ with the $i$-induction and $i$-restriction functors, this shows that blocks with the same weight are derived equivalent; together with the work of Chuang and Kessar (2002), it proves Broué's abelian defect group conjecture for symmetric groups.
+
+</Theorem>
+
+We do not prove Theorems 5 and 6 here; see the reading list.
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: what is known, what is open">
+
+**Established results.** Beyond the theorems above:
+
+- *Positivity by categorification.* Kazhdan–Lusztig positivity for all Coxeter groups (Elias–Williamson, 2014, via the Hodge theory of Soergel bimodules); positivity of Lusztig's canonical bases (via perverse sheaves on quiver representation spaces, see <TopicLink id="math.algebra.quiver-representations">quiver representations</TopicLink>).
+- *Categorified quantum groups.* Khovanov–Lauda and Rouquier (2008–2011) defined 2-categories whose Grothendieck groups are quantum groups, with KLR (quiver Hecke) algebras categorifying their positive parts.
+- *Knot homology.* Khovanov homology detects the unknot (Kronheimer–Mrowka, 2011). Rasmussen's $s$-invariant (2010) gives a combinatorial proof of the Milnor conjecture on the slice genus of torus knots, first proved by Kronheimer–Mrowka with gauge theory; Piccirillo (2020) used it to show that the Conway knot is not slice.
+- *Structure of fusion categories.* Etingof, Nikshych and Ostrik (2005): fusion categories over $\mathbb{C}$ admit no non-trivial deformations ("Ocneanu rigidity"), so a fusion ring has only finitely many categorifications up to equivalence; FP dimensions are algebraic integers; $\operatorname{FPdim}(\mathcal{C})$ is divisible, in the ring of algebraic integers, by $\operatorname{FPdim}$ of any fusion subcategory. Ostrik (2003) showed that rank-$2$ fusion categories have the fusion rings of $\Z/2$ or Fibonacci.
+- *Topology from fusion categories.* Spherical fusion categories give the Turaev–Viro invariants of $3$-manifolds (1992), and modular tensor categories give Reshetikhin–Turaev invariants (1991) and $3$-dimensional topological quantum field theories.
+
+**Open problems** (well documented; consult recent surveys for progress):
+
+- Does the **Jones polynomial detect the unknot**? Open, although Khovanov homology does.
+- Etingof–Nikshych–Ostrik (2011) asked whether every fusion category of integer Frobenius–Perron dimension is **weakly group-theoretical**. Open.
+- The **Broué abelian defect group conjecture** for finite groups in general (proved for symmetric groups by Theorem 6, and in other families). Open.
+- Do the "exotic" **Haagerup fusion categories** (from Haagerup's 1994 subfactor) arise from a conformal field theory? Open; there is numerical and structural evidence (Evans–Gannon, 2011).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Categorification in Lean and Mathlib">
+
+Mathlib has finite types and their cardinalities, finite-dimensional linear algebra, and the category `FDRep k G` of finite-dimensional representations with its symmetric monoidal and rigid structures and characters. It does not yet have fusion categories, module categories or categorical actions. We formalise the decategorification statements of the lesson.
+
+Finite sets categorify $\N$: cardinality turns $\sqcup$ and $\times$ into $+$ and $\cdot$, and the distributive law is the shadow of a bijection.
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.card_sum" />
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.card_prod" />
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.card_distrib" />
+
+Propositions 1 and 2, proved from rank–nullity (Proposition 2 for a two-term complex):
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.finrank_additive" />
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.euler_characteristic_two_term" />
+
+The tensor category $\operatorname{Rep}(G)$, and the character as decategorification (Proposition 3):
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.fdrep_symmetric" />
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.fdrep_zigzag" />
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.char_tensor" />
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.char_iso" />
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.char_one" />
+
+The arithmetic core of Theorem 4:
+
+<Lean decl="Lumenary.CategoricalRepresentationTheory.fibonacci_no_integer_dimension" />
+
+**What is and is not formalised.** Formalised: the cardinality and dimension statements, the two-term Euler characteristic identity, the symmetric, rigid structure of `FDRep k G` and the multiplicativity and isomorphism-invariance of characters (from Mathlib), and the integrality obstruction for the Fibonacci rule. Not formalised: Grothendieck groups as objects (Mathlib has no $K_0$ of an abelian category at this version), fusion categories, Frobenius–Perron dimension, module categories, Khovanov homology and the theorems of Chuang–Rouquier and Elias–Williamson.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing shadows, and what they miss">
+
+The first experiment builds $S_3$, $D_4$ and $Q_8$ as matrix groups, finds their one-dimensional characters by brute force, adds the trace of a two-dimensional representation, and computes the fusion rings exactly. $D_4$ and $Q_8$ are visibly different groups (five involutions against one) with isomorphic fusion rings. It then approximates the Frobenius–Perron dimensions of the Fibonacci and Ising rings.
+
+<Python id="categorical_representation_theory_fusion" />
+
+The second experiment builds Khovanov's complex for the trefoil and figure-eight knots from their PD codes, checks $d \circ d = 0$, and computes both the graded Euler characteristic (the Jones polynomial) and the homology over $\mathbb{Q}$. For the figure-eight knot the Euler characteristic has two terms while the homology has six: categorification has added information.
+
+<Python id="categorical_representation_theory_khovanov" />
+
+Both computations are exact (rational arithmetic) and exhaustive for the examples shown, and they match the published values (Bar-Natan, 2002). They prove nothing about other groups or knots; invariance of Khovanov homology is Theorem 5.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Categorification is a single construction."** It is a family of methods, and there is no functor that categorifies. A structure may have many categorifications (the ring $\Z[A]$ is categorified by every $\mathrm{Vec}_A^\omega$), or none known. Even the Jones polynomial has more than one categorification: Khovanov homology and the odd Khovanov homology of Ozsváth, Rasmussen and Szabó (2013) have the same graded Euler characteristic but are different theories; and its relatives have their own ($\mathfrak{sl}_n$ link homologies for the $\mathfrak{sl}_n$ polynomials, knot Floer homology for the Alexander polynomial).
+
+</Misconception>
+
+<Misconception>
+
+**"The Grothendieck group remembers everything about a category."** Much is lost: the associativity constraint ($\mathrm{Vec}_A^\omega$), the group itself ($\operatorname{Rep}(D_4)$ and $\operatorname{Rep}(Q_8)$), all morphisms and extensions (the module category of a finite-dimensional algebra has the same $K_0$ as the semisimple category with the same simple objects), and the differentials of a complex (Khovanov homology versus the Jones polynomial).
+
+</Misconception>
+
+<Misconception>
+
+**"$\operatorname{Rep}(G)$ as a tensor category determines $G$."** Not quite. As a *symmetric* tensor category it does (Tannaka–Krein duality, and Deligne's theorem in general), but there are non-isomorphic "isocategorical" groups with equivalent representation categories as tensor categories, forgetting the symmetry (Etingof–Gelaki, 2001).
+
+</Misconception>
+
+<Misconception>
+
+**"Every fusion category is $\operatorname{Rep}$ of something."** Fusion categories with non-integer Frobenius–Perron dimensions, such as Fibonacci, admit no fibre functor to vector spaces (Theorem 4), so they are not representation categories of groups or Hopf algebras.
+
+</Misconception>
+
+<Misconception>
+
+**"Khovanov homology is just the Jones polynomial written differently."** It is strictly finer (figure-eight knot), it is functorial for cobordisms, and it detects the unknot — a property still unknown for the Jones polynomial.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Knot homologies and quantum invariants">
+
+Khovanov homology is a functor from links and cobordisms to bigraded vector spaces, and its success (unknot detection, the $s$-invariant, the Conway knot) made categorification a working tool of low-dimensional topology (see <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>). In the other direction, fusion and modular categories produce topological invariants: a spherical fusion category $\mathcal{C}$ yields the Turaev–Viro invariant of a $3$-manifold by a state sum over triangulations, which equals the Reshetikhin–Turaev invariant of the Drinfeld centre $Z(\mathcal{C})$ (Turaev–Virelizier, Balsam–Kirillov). Noether's passage from Betti numbers to homology groups is the archetype of the whole subject.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Anyons and topological quantum computation">
+
+In $2+1$ dimensions, quasi-particles called anyons are described (in the standard mathematical model) by a modular tensor category: simple objects are particle types, fusion rules say which particles two can fuse into, and the braiding gives their exchange statistics. Freedman, Larsen and Wang (2002) proved that braiding Fibonacci anyons is universal for quantum computation, while Ising anyons are not. Moore and Seiberg (1989) found the axioms of modular categories in rational conformal field theory. The physical existence and controllability of such anyons is an experimental question; the mathematical theorems are about the categories.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Hecke algebras, Soergel bimodules and blocks">
+
+The Hecke algebra of a Coxeter group is categorified by Soergel bimodules: indecomposable bimodules correspond to the Kazhdan–Lusztig basis, and graded ranks of morphism spaces give the KL polynomials. In modular representation theory, categorical actions organise the blocks of symmetric groups and of Hecke algebras: Ariki's theorem computes decomposition numbers via canonical bases, and Chuang–Rouquier derived equivalences prove Broué's conjecture for symmetric groups (see <TopicLink id="math.cat.derived-categories">derived categories</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Geometric representation theory">
+
+Many categorifications come from geometry. Perverse sheaves on the flag variety $G/B$ categorify the Hecke algebra, and the Beilinson–Bernstein localisation theorem (1981) identifies representations of a semisimple Lie algebra with $D$-modules on $G/B$; the Kazhdan–Lusztig conjecture became a statement about intersection cohomology. Lusztig's canonical bases arise from perverse sheaves on spaces of quiver representations, and Nakajima quiver varieties carry geometric categorical actions. Here the categories are categories of sheaves on spaces, and functors are given by correspondences.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Positivity as a shadow of dimension">
+
+A combinatorialist's favourite question — "what do these non-negative integers count?" — is often answered by categorification. Littlewood–Richardson coefficients are multiplicities in tensor products of representations of $GL_n$; Kazhdan–Lusztig coefficients are dimensions of Hom spaces between Soergel bimodules; the coefficients of Kac polynomials have been interpreted through the cohomology of quiver varieties (Hausel, Letellier and Rodriguez-Villegas). A bijective proof of an identity is a categorification of it in $\mathbf{FinSet}$.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="2-representations and Tannakian duality">
+
+The natural home of categorical actions is $2$-representation theory: actions of a monoidal category or $2$-category $\mathfrak{C}$ on categories, with morphisms and $2$-morphisms between them (see <TopicLink id="math.cat.higher-categories">higher categories</TopicLink>). Module categories over a fusion category $\mathcal{C}$ form a $2$-category, and Morita theory for fusion categories says that $\mathcal{C}$ and $\mathcal{D}$ have equivalent $2$-categories of module categories iff their Drinfeld centres are equivalent as braided categories. Tannakian duality runs the other way: a symmetric tensor category with a fibre functor is $\operatorname{Rep}(G)$ of a recovered group (Deligne, 1990, 2002).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1925–30.** Emmy Noether, with Heinz Hopf and Leopold Vietoris, recasts Betti numbers as ranks of homology groups.
+- **1957.** Alexander Grothendieck introduces $K_0$ in his proof of the Grothendieck–Riemann–Roch theorem.
+- **1979–81.** Kazhdan and Lusztig formulate their conjectures; Beilinson–Bernstein and Brylinski–Kashiwara prove them via $D$-modules and perverse sheaves.
+- **1989–92.** Moore and Seiberg axiomatise modular categories from conformal field theory; Reshetikhin–Turaev and Turaev–Viro construct $3$-manifold invariants. Lusztig and, independently, Masaki Kashiwara (Kyoto) construct canonical and crystal bases (1990–91).
+- **1994.** Louis Crane and Igor Frenkel coin the word *categorification*.
+- **1996–98.** Susumu Ariki proves the LLT conjecture; Daisuke Tambara and Shigeru Yamagami classify the fusion categories now named after them.
+- **1999–2000.** Mikhail Khovanov categorifies the Jones polynomial.
+- **2002–08.** Pavel Etingof, Dmitri Nikshych and Viktor Ostrik develop the structure theory of fusion categories; Joseph Chuang and Raphaël Rouquier introduce $\mathfrak{sl}_2$-categorification; Khovanov–Lauda and Rouquier categorify quantum groups.
+- **2011–20.** Kronheimer–Mrowka (unknot detection), Elias–Williamson (Soergel's conjecture), Piccirillo (the Conway knot).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Pavel Etingof, Shlomo Gelaki, Dmitri Nikshych and Victor Ostrik, *Tensor Categories* (AMS Mathematical Surveys and Monographs 205, 2015) — the standard reference for tensor, fusion and module categories.
+- Volodymyr Mazorchuk, *Lectures on Algebraic Categorification* (EMS QGM Master Class Series, 2012) — a short course on categorification in representation theory.
+- John C. Baez and James Dolan, "Categorification", in *Higher Category Theory* (Contemporary Mathematics 230, 1998) — the programme, with many examples.
+- Dror Bar-Natan, "On Khovanov's categorification of the Jones polynomial", *Algebraic & Geometric Topology* 2 (2002) — the accessible account, with computations.
+- Joseph Chuang and Raphaël Rouquier, "Derived equivalences for symmetric groups and $\mathfrak{sl}_2$-categorification", *Annals of Mathematics* 167 (2008).
+- Ben Elias, Shotaro Makisumi, Ulrich Thiel and Geordie Williamson, *Introduction to Soergel Bimodules* (2020).
+- Vladimir Turaev, *Quantum Invariants of Knots and 3-Manifolds* (1994).
+
+A reading path: Baez–Dolan for the idea → EGNO Ch. 1–4 for tensor and fusion categories (with $\operatorname{Rep}(G)$ always in mind) → Bar-Natan for Khovanov homology, or Mazorchuk then Chuang–Rouquier for categorical actions.
+
+</Section>

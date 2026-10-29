@@ -1,0 +1,637 @@
+---
+slug: smooth-manifolds
+topic: math.geom.smooth-manifolds
+title: Smooth manifolds
+subtitle: Spaces that look like $\R^n$ up close but not from far away — and how to do calculus on them without ever choosing global coordinates.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7020
+objectives:
+  - Define smooth manifolds by atlases, and prove that spheres, projective spaces and the matrix groups $O(n)$ and $SL(n, \R)$ are smooth manifolds, using charts and the regular value theorem
+  - Work with tangent vectors as derivations, differentials of smooth maps, vector fields and flows, and explain why vectors and covectors transform by different laws
+  - Compute with differential forms, the wedge product, the exterior derivative and pullbacks
+  - Prove Stokes's theorem for compactly supported forms on oriented manifolds with boundary
+  - Compute de Rham cohomology of simple manifolds, prove $H^1_{\mathrm{dR}}(S^1) \cong \R$, and state de Rham's theorem
+narrators: []
+lean:
+  - Lumenary.SmoothManifolds.stereoInvNorth
+  - Lumenary.SmoothManifolds.stereoInvNorth_mem_sphere
+  - Lumenary.SmoothManifolds.stereoSouth
+  - Lumenary.SmoothManifolds.inversion
+  - Lumenary.SmoothManifolds.transition_map
+  - Lumenary.SmoothManifolds.inversion_inversion
+  - Lumenary.SmoothManifolds.inversion_smooth
+  - Lumenary.SmoothManifolds.sphere_is_manifold
+  - Lumenary.SmoothManifolds.gram_expansion
+  - Lumenary.SmoothManifolds.orthogonal_regular_value
+  - Lumenary.SmoothManifolds.chain_rule
+  - Lumenary.SmoothManifolds.exact_integral_zero
+  - Lumenary.SmoothManifolds.dtheta_not_exact
+  - Lumenary.SmoothManifolds.primitive_periodic
+  - Lumenary.SmoothManifolds.de_rham_circle
+compute: [smooth_manifolds_transition_laws, smooth_manifolds_stokes_periods]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Calculus without global coordinates">
+
+The surface of the Earth is a sphere, and no single map of it is faithful everywhere: Mercator's projection sends the poles to infinity, and every flat map tears the sphere somewhere. Yet navigators have always worked happily with *local* maps that overlap, and so does every GPS receiver today. Wherever two maps overlap, there is a rule converting one set of coordinates into the other.
+
+The same situation appears all over mathematics and physics. The positions of a double pendulum form a torus $S^1 \times S^1$ (two angles); the orientations of a rigid body — a satellite, a drone, a molecule — form the group $SO(3)$ of rotations, which is not a subset of any $\R^3$ in any natural way; the solutions of $x^2 + y^2 - z^2 = 1$ form a hyperboloid; and in general relativity spacetime is a four-dimensional manifold with no preferred coordinates at all. In each case we want to differentiate (velocities, forces, gradients) and integrate (work, flux, volume), but there are no global coordinates in which to do it.
+
+A **smooth manifold** is the minimal structure that makes this possible: a space covered by overlapping coordinate charts whose changes of coordinates are smooth. Everything in this lesson — tangent vectors, vector fields, differential forms, Stokes's theorem and de Rham cohomology — is calculus made independent of the chart. The payoff is two-fold: calculus on curved and abstract spaces, and a bridge from calculus to topology, since de Rham cohomology uses derivatives to count holes.
+
+This lesson builds on <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>, <TopicLink id="math.analysis.multivariable-calculus">multivariable calculus</TopicLink> (the inverse function theorem in particular), <TopicLink id="math.algebra.advanced-linear-algebra">dual spaces and multilinear algebra</TopicLink>, and it upgrades the calculus of <TopicLink id="math.geom.differential-forms">differential forms on open subsets of ℝⁿ</TopicLink> to manifolds.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="An atlas of the Earth">
+
+An atlas of the Earth is a book of maps. Each page shows a region; neighbouring pages overlap; and in the overlap a point has two pairs of coordinates, related by a conversion formula. Three observations drive the whole theory.
+
+1. **Local questions are chart questions.** Whether a curve on the Earth is smooth, how fast a ship is moving, whether a function has a maximum — these can be decided on any single page that contains the point.
+2. **The answer must not depend on the page.** This is guaranteed if the conversion formulas are smooth: a curve that is smooth on one page is then smooth on the other, by the chain rule. That is the entire content of the definition of a smooth atlas.
+3. **Global questions are not chart questions.** Whether every closed curve can be shrunk to a point, or whether the wind can blow everywhere at once without a calm spot (the hairy ball theorem), depends on how the pages fit together.
+
+Stereographic projection gives an atlas of the sphere with just two pages: project from the North Pole onto the equatorial plane, and from the South Pole.
+
+<Figure caption="Stereographic projection from the north pole $N$: the point $x$ of the sphere is sent to the point $u$ where the line $Nx$ meets the equatorial plane. Every point except $N$ is covered; a second chart, projecting from the south pole, covers everything except $S$.">
+<svg viewBox="0 0 320 220" role="img" aria-label="A circle with its north pole, a point on the circle, and the line from the north pole through that point meeting the horizontal equatorial line">
+  <line x1="10" y1="120" x2="310" y2="120" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="160" cy="120" r="80" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="160" y1="40" x2="290" y2="120" stroke="var(--formal)" strokeWidth="2" strokeDasharray="5 4" />
+  <circle cx="160" cy="40" r="4.5" fill="var(--gold)" />
+  <text x="168" y="34" fontSize="14" fill="var(--ink-2)">N</text>
+  <circle cx="160" cy="200" r="4.5" fill="var(--gold)" />
+  <text x="168" y="212" fontSize="14" fill="var(--ink-2)">S</text>
+  <circle cx="227.6" cy="81.6" r="4.5" fill="var(--human)" />
+  <text x="234" y="76" fontSize="14" fill="var(--ink-2)">x</text>
+  <circle cx="290" cy="120" r="4.5" fill="var(--compute)" />
+  <text x="284" y="140" fontSize="14" fill="var(--ink-2)">u</text>
+</svg>
+</Figure>
+
+On the overlap (everything except the poles) the conversion from north-chart coordinates $u$ to south-chart coordinates is $u \mapsto u/|u|^2$, an inversion in the unit circle. It is smooth away from $u = 0$, so the two charts form a smooth atlas. We will prove this, and Lean will check it.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Charts, atlases and smooth structures">
+
+<Definition term="topological manifold">
+
+A **topological $n$-manifold** is a topological space $M$ that is **Hausdorff**, **second countable** (its topology has a countable base) and **locally Euclidean of dimension $n$**: every point has an open neighbourhood homeomorphic to an open subset of $\R^n$.
+
+</Definition>
+
+<Definition term="chart, atlas, smooth structure">
+
+A **chart** on $M$ is a pair $(U, \varphi)$ with $U \subseteq M$ open and $\varphi : U \to \varphi(U)$ a homeomorphism onto an open subset of $\R^n$; the components $x^i = r^i \circ \varphi$ are **local coordinates**. Two charts $(U, \varphi)$ and $(V, \psi)$ are **smoothly compatible** if the **transition map**
+
+$$
+\psi \circ \varphi^{-1} : \varphi(U \cap V) \to \psi(U \cap V)
+$$
+
+is $C^\infty$ (its inverse $\varphi \circ \psi^{-1}$ is then $C^\infty$ too, by symmetry, so it is a diffeomorphism). A **smooth atlas** is a collection of pairwise compatible charts whose domains cover $M$. Every smooth atlas is contained in a unique **maximal** one (add every chart compatible with all charts of the atlas). A **smooth structure** is a maximal smooth atlas, and a **smooth manifold** is a topological manifold together with a smooth structure.
+
+</Definition>
+
+<Definition term="smooth map, diffeomorphism">
+
+A map $F : M \to N$ between smooth manifolds is **smooth** if for every $p \in M$ there are charts $(U, \varphi)$ at $p$ and $(V, \psi)$ at $F(p)$ with $F(U) \subseteq V$ such that the **local representative** $\psi \circ F \circ \varphi^{-1}$ is $C^\infty$. By the chain rule and the smoothness of transition maps this does not depend on the charts chosen. A **diffeomorphism** is a smooth bijection with smooth inverse. Write $C^\infty(M)$ for the algebra of smooth functions $M \to \R$.
+
+</Definition>
+
+<Definition term="manifold with boundary">
+
+Let $\mathbb{H}^n = \{x \in \R^n : x^n \ge 0\}$ be the closed upper half-space. A **smooth manifold with boundary** is defined in the same way, but with charts onto open subsets of $\mathbb{H}^n$; a map on a subset of $\mathbb{H}^n$ is smooth if it extends locally to a smooth map on an open subset of $\R^n$. The points sent to $\partial \mathbb{H}^n = \{x^n = 0\}$ by some (equivalently, every) chart form the **boundary** $\partial M$, a smooth $(n-1)$-manifold without boundary. The closed disc $\overline{D}{}^n$ is a manifold with boundary $\partial \overline{D}{}^n = S^{n-1}$.
+
+</Definition>
+
+Why Hausdorff and second countable? Hausdorffness makes limits and integral curves unique; second countability guarantees **partitions of unity** — smooth functions $\psi_\alpha \ge 0$ with locally finite supports, each inside a chart, summing to $1$. Partitions of unity are how local constructions (integrals, Riemannian metrics, embeddings) are glued into global ones, and they are why both axioms appear in the definition.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples, non-examples and boundary cases">
+
+<Example title="Euclidean space, open subsets and graphs">
+
+$\R^n$ with the single chart $\mathrm{id}$ is a smooth manifold. Any open subset of a smooth manifold is one, by restricting charts. So $GL(n, \R) = \{A : \det A \ne 0\}$, an open subset of the space $M_n(\R) \cong \R^{n^2}$ of matrices, is a smooth manifold of dimension $n^2$. The graph of a smooth function $f : U \to \R^k$ ($U \subseteq \R^n$ open) is a smooth $n$-manifold with the single chart $(x, f(x)) \mapsto x$.
+
+</Example>
+
+<Example title="The sphere, with two stereographic charts">
+
+On $S^n = \{x \in \R^{n+1} : |x| = 1\}$ write points as $(x, t)$ with $x \in \R^n$, $t \in \R$. Stereographic projection from the north pole $N = (0, 1)$ is $\sigma_N(x, t) = x/(1 - t)$, with inverse
+
+$$
+\sigma_N^{-1}(u) = \left( \frac{2u}{|u|^2 + 1}, \; \frac{|u|^2 - 1}{|u|^2 + 1} \right),
+$$
+
+and from the south pole it is $\sigma_S(x, t) = x/(1 + t)$. With $r = |u|^2$,
+
+$$
+\sigma_S \circ \sigma_N^{-1}(u) = \frac{2u/(r+1)}{1 + (r-1)/(r+1)} = \frac{2u/(r+1)}{2r/(r+1)} = \frac{u}{|u|^2} \qquad (u \ne 0).
+$$
+
+The inversion $u \mapsto u/|u|^2$ is smooth on $\R^n \setminus \{0\}$ and is its own inverse, so $\{\sigma_N, \sigma_S\}$ is a smooth atlas of $S^n$. Its Jacobian determinant is $-|u|^{-2n}$, which is negative: the two charts induce opposite orientations, a fact we return to below.
+
+</Example>
+
+<Example title="Real projective space">
+
+$\R P^n$ is the set of lines through $0$ in $\R^{n+1}$, i.e. $(\R^{n+1} \setminus \{0\})/\R^\times$, with the quotient topology (it is Hausdorff and second countable). Write $[x^0 : \dots : x^n]$ for the line through $x$. For each $i$, the set $U_i = \{x^i \ne 0\}$ is open and
+
+$$
+\varphi_i [x^0 : \dots : x^n] = \left( \tfrac{x^0}{x^i}, \dots, \widehat{\tfrac{x^i}{x^i}}, \dots, \tfrac{x^n}{x^i} \right) \in \R^n
+$$
+
+is a chart (the hat means "omit"). The transition maps divide by one coordinate and are smooth where that coordinate is non-zero. For $n = 1$: $\varphi_0[x^0 : x^1] = x^1/x^0 = t$ and $\varphi_1 \circ \varphi_0^{-1}(t) = 1/t$ on $\R \setminus \{0\}$, and $\R P^1$ is diffeomorphic to a circle.
+
+</Example>
+
+<Example title="Products, tori and configuration spaces">
+
+If $M$ and $N$ are smooth manifolds, products of charts form an atlas of $M \times N$, of dimension $\dim M + \dim N$. The torus $T^n = S^1 \times \dots \times S^1$ is the configuration space of $n$ independent rotors; the double pendulum lives on $T^2$, and its phase space (positions and momenta) is the $4$-manifold $T^*T^2 \cong T^2 \times \R^2$.
+
+</Example>
+
+<Example title="Non-examples">
+
+- **A cross.** The union of the two coordinate axes in $\R^2$ is not a topological manifold: a small connected neighbourhood of the origin falls into four pieces when the origin is removed, while a connected open subset of $\R^1$ falls into two and one of $\R^n$ ($n \ge 2$) stays connected. The **double cone** $x^2 + y^2 = z^2$ fails at its apex for the same reason (two pieces).
+- **The line with two origins.** Glue two copies of $\R$ along $\R \setminus \{0\}$. Every point has a neighbourhood homeomorphic to $\R$, and the space is second countable, but the two origins cannot be separated by open sets: it is not Hausdorff, and the sequence $1/k$ converges to both origins.
+- **The cone $z = \sqrt{x^2 + y^2}$** (one nappe) *is* a topological manifold, homeomorphic to $\R^2$ by vertical projection, and it can be given a smooth structure by declaring that projection a chart. But it is not a smooth **embedded submanifold** of $\R^3$: no plane is tangent at the apex. A manifold is not "a nice subset of $\R^N$"; smoothness is extra structure.
+
+</Example>
+
+<Example title="Different smooth structures, same manifold">
+
+On $\R$, the single chart $\psi(x) = x^3$ is a smooth atlas. It is *not* compatible with the identity chart, since the transition map $\mathrm{id} \circ \psi^{-1}(y) = y^{1/3}$ is not smooth at $0$; so it defines a different maximal atlas. Nevertheless $F(x) = x^3$ is a diffeomorphism from $(\R, \psi)$ to $(\R, \mathrm{id})$: its local representative $\mathrm{id} \circ F \circ \psi^{-1}(y) = y$ is smooth with smooth inverse. "Different smooth structures" and "non-diffeomorphic smooth manifolds" are different statements. Genuinely exotic structures exist — Milnor's exotic $7$-spheres (1956), and uncountably many smooth structures on $\R^4$ — but every topological manifold of dimension at most $3$ has a smooth structure, unique up to diffeomorphism (Radó, Moise). See <TopicLink id="math.geom.differential-topology">differential topology</TopicLink>.
+
+</Example>
+
+</Section>
+
+<Section id="tangent" kind="definitions" title="Tangent vectors, differentials and vector fields">
+
+There is no ambient space in which to draw arrows, so we define a tangent vector by what it does: it differentiates functions.
+
+<Definition term="tangent space">
+
+A **derivation at $p \in M$** is a linear map $v : C^\infty(M) \to \R$ satisfying the Leibniz rule $v(fg) = f(p)\, v(g) + g(p)\, v(f)$. The derivations at $p$ form a vector space, the **tangent space** $T_pM$.
+
+</Definition>
+
+Two consequences of the Leibniz rule: $v(1) = v(1 \cdot 1) = 2v(1)$, so $v$ kills constants; and $v$ is **local** — if $f = g$ near $p$ then $v(f) = v(g)$ (take a bump function $\chi$ with $\chi(p) = 1$ supported where $f = g$; then $\chi (f - g) = 0$, so $0 = v(\chi(f-g)) = \chi(p) v(f - g) + (f-g)(p) v(\chi) = v(f - g)$). By locality, $T_pM$ depends only on a neighbourhood of $p$, and a chart $(U, \varphi)$ with coordinates $x^i$ gives derivations
+
+$$
+\left.\frac{\partial}{\partial x^i}\right|_p f = \frac{\partial (f \circ \varphi^{-1})}{\partial r^i}\big(\varphi(p)\big).
+$$
+
+<Theorem name="Theorem 1 (dimension of the tangent space)">
+
+If $\dim M = n$, the derivations $\partial/\partial x^1|_p, \dots, \partial/\partial x^n|_p$ form a basis of $T_pM$. Every $v \in T_pM$ equals $\sum_i v(x^i)\, \partial/\partial x^i|_p$.
+
+</Theorem>
+
+<Proof>
+
+By locality we may work in the chart and assume $p = a \in \R^n$, with $f$ smooth on a ball $B$ around $a$. **Hadamard's lemma:** for $x \in B$,
+
+$$
+f(x) - f(a) = \int_0^1 \frac{d}{dt} f\big(a + t(x - a)\big)\, dt = \sum_{i=1}^n (x^i - a^i)\, g_i(x), \qquad g_i(x) = \int_0^1 \partial_i f\big(a + t(x-a)\big)\, dt,
+$$
+
+and the $g_i$ are smooth with $g_i(a) = \partial_i f(a)$. Apply $v$, using that it kills constants and the Leibniz rule:
+
+$$
+v(f) = \sum_i \Big( (a^i - a^i)\, v(g_i) + g_i(a)\, v(x^i - a^i) \Big) = \sum_i \partial_i f(a)\, v(x^i).
+$$
+
+So $v = \sum_i v(x^i)\, \partial_i|_a$: the $\partial_i|_a$ span. They are independent because $\partial_i|_a (x^j) = \delta_i^j$. ∎
+
+</Proof>
+
+<Definition term="differential">
+
+The **differential** of a smooth map $F : M \to N$ at $p$ is the linear map $dF_p : T_pM \to T_{F(p)}N$, $\; dF_p(v)(f) = v(f \circ F)$.
+
+</Definition>
+
+The **chain rule** is now a one-line computation: $d(G \circ F)_p(v)(f) = v(f \circ G \circ F) = dF_p(v)(f \circ G) = dG_{F(p)}\big(dF_p(v)\big)(f)$, so $d(G \circ F)_p = dG_{F(p)} \circ dF_p$, and $d(\mathrm{id})_p = \mathrm{id}$. In coordinates $x$ on $M$ and $y$ on $N$, $dF_p(\partial/\partial x^i) = \sum_j (\partial \hat F^j / \partial x^i)\, \partial/\partial y^j$: the matrix of $dF_p$ is the Jacobian of the local representative $\hat F$.
+
+**Vectors under a change of chart.** If $x$ and $\tilde x$ are two coordinate systems at $p$, the chain rule gives $\partial/\partial x^i = \sum_j (\partial \tilde x^j/\partial x^i)\, \partial/\partial \tilde x^j$. So if $v = \sum_i v^i \partial/\partial x^i = \sum_j \tilde v^j \partial/\partial \tilde x^j$, then
+
+$$
+\tilde v^j = \sum_i \frac{\partial \tilde x^j}{\partial x^i} v^i, \qquad \text{i.e.} \quad \tilde v = J v, \quad J = \frac{\partial \tilde x}{\partial x}.
+$$
+
+The **tangent bundle** $TM = \bigsqcup_p T_pM$ is a smooth $2n$-manifold, with charts $(p, v) \mapsto (x^1(p), \dots, x^n(p), v^1, \dots, v^n)$; the transition maps are $(x, v) \mapsto (\tilde x(x), J(x) v)$, which are smooth. A **vector field** is a smooth section $X : M \to TM$. Equivalently, it is a derivation of the algebra $C^\infty(M)$, acting by $(Xf)(p) = X_p f$. The **Lie bracket** $[X, Y] f = X(Yf) - Y(Xf)$ is again a vector field (the second derivatives cancel), with $[X, Y] = \sum_j \big(X(Y^j) - Y(X^j)\big) \partial_j$ in coordinates; it makes the vector fields a Lie algebra.
+
+<Theorem name="Theorem 2 (fundamental theorem on flows; stated)">
+
+Every smooth vector field $X$ on $M$ has a unique maximal flow: a smooth map $\theta$, defined on an open subset of $\R \times M$ containing $\{0\} \times M$, such that $t \mapsto \theta_t(p)$ is the maximal integral curve of $X$ starting at $p$. If $M$ is compact (or $X$ has compact support), the flow is defined on all of $\R \times M$, and $t \mapsto \theta_t$ is a one-parameter group of diffeomorphisms: $\theta_{s+t} = \theta_s \circ \theta_t$, $\theta_0 = \mathrm{id}$.
+
+</Theorem>
+
+This is the existence and uniqueness theorem for ODEs, applied in charts and glued using uniqueness (and Hausdorffness); see Lee, *Introduction to Smooth Manifolds*, Chapter 9. Example: on $S^2 \subset \R^3$ the field $X(x, y, z) = (-y, x, 0)$ is tangent to the sphere, its flow rotates the sphere about the vertical axis, and it vanishes at the two poles. On $S^3 \subset \C^2$ the field $X(z) = iz$ vanishes nowhere; its flow $z \mapsto e^{it}z$ is the Hopf flow.
+
+</Section>
+
+<Section id="forms" kind="definitions" title="Covectors and differential forms">
+
+<Definition term="cotangent space, differential of a function">
+
+The **cotangent space** is the dual $T_p^*M = (T_pM)^*$. A smooth function $f$ has a **differential** $df_p \in T_p^*M$, $df_p(v) = v(f)$. In a chart, the $dx^i|_p$ form the basis dual to the $\partial/\partial x^i|_p$, and $df = \sum_i (\partial f/\partial x^i)\, dx^i$.
+
+</Definition>
+
+**Covectors under a change of chart.** From $d\tilde x^j = \sum_i (\partial \tilde x^j / \partial x^i)\, dx^i$, a covector $\omega = \sum_i \omega_i\, dx^i = \sum_j \tilde \omega_j\, d\tilde x^j$ has $\omega_i = \sum_j \tilde\omega_j\, \partial \tilde x^j/\partial x^i$, that is
+
+$$
+\omega = J^{\mathsf T} \tilde\omega, \qquad \tilde \omega = (J^{\mathsf T})^{-1} \omega .
+$$
+
+Vectors transform by $J$, covectors by the inverse transpose, and the pairing $\omega(v) = \sum_i \omega_i v^i = \tilde\omega^{\mathsf T} J v$ is the same in both charts. This is why the classical literature calls vectors "contravariant" and covectors "covariant", and it is why the gradient of a function is *not* a vector until a metric is chosen: $df$ is a covector, and turning it into a vector needs an inner product on each tangent space (see <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>).
+
+<Definition term="differential forms">
+
+A **differential $k$-form** is a smooth section of the bundle $\Lambda^k T^*M$ of alternating $k$-linear forms on tangent spaces. In a chart, $\omega = \sum_{i_1 < \dots < i_k} \omega_{i_1 \dots i_k}\, dx^{i_1} \wedge \dots \wedge dx^{i_k}$ with smooth coefficients. Write $\Omega^k(M)$ for the space of $k$-forms. The **wedge product** is graded commutative: $\alpha \wedge \beta = (-1)^{kl}\beta \wedge \alpha$ for $\alpha \in \Omega^k$, $\beta \in \Omega^l$.
+
+</Definition>
+
+<Definition term="exterior derivative and pullback">
+
+The **exterior derivative** is the unique family of linear maps $d : \Omega^k(M) \to \Omega^{k+1}(M)$ such that $df$ is the differential of $f$ on functions, $d(\alpha \wedge \beta) = d\alpha \wedge \beta + (-1)^k \alpha \wedge d\beta$, and $d \circ d = 0$. In a chart, $d\big(\sum_I \omega_I\, dx^I\big) = \sum_I d\omega_I \wedge dx^I$. For smooth $F : M \to N$ the **pullback** $F^* : \Omega^k(N) \to \Omega^k(M)$ is $(F^*\omega)_p(v_1, \dots, v_k) = \omega_{F(p)}(dF_p v_1, \dots, dF_p v_k)$.
+
+</Definition>
+
+Three facts do most of the work: $F^*(\alpha \wedge \beta) = F^*\alpha \wedge F^*\beta$; $F^*(df) = d(f \circ F)$; and $F^* \circ d = d \circ F^*$. The identity $d(df) = \sum_{i, j} \partial_j \partial_i f\, dx^j \wedge dx^i = 0$ is the symmetry of second derivatives meeting the antisymmetry of $\wedge$.
+
+<Example title="Polar coordinates">
+
+Let $F(r, \theta) = (r\cos\theta, r\sin\theta)$. Then $F^*dx = \cos\theta\, dr - r\sin\theta\, d\theta$ and $F^*dy = \sin\theta\, dr + r\cos\theta\, d\theta$, so $F^*(dx \wedge dy) = r\, dr \wedge d\theta$ (the Jacobian appears automatically) and
+
+$$
+F^*\left( \frac{x\, dy - y\, dx}{x^2 + y^2} \right) = \frac{r^2\, d\theta}{r^2} = d\theta .
+$$
+
+The form $\omega = (x\,dy - y\,dx)/(x^2+y^2)$ on $\R^2 \setminus \{0\}$ is closed ($d\omega = 0$) and is locally $d$ of an angle function — but there is no global angle function, and we will see that $\omega$ is not exact.
+
+</Example>
+
+<Definition term="orientation and integration">
+
+An atlas is **oriented** if all its transition maps have positive Jacobian determinant; $M$ is **orientable** if it has one (equivalently, a nowhere-vanishing $n$-form). For an $n$-form $\omega$ with compact support in an oriented chart $(U, \varphi)$, write $(\varphi^{-1})^*\omega = f\, dx^1 \wedge \dots \wedge dx^n$ and set $\int_M \omega = \int_{\R^n} f\, dx^1 \cdots dx^n$. In general, $\int_M \omega = \sum_\alpha \int_M \psi_\alpha \omega$ for a partition of unity $\{\psi_\alpha\}$ subordinate to an oriented atlas.
+
+</Definition>
+
+This is well defined because, under a change of chart, the form's coefficient changes by $\det J$ while the change-of-variables formula for integrals uses $|\det J|$; the two agree exactly when $\det J > 0$. That is why we need an *oriented* atlas to integrate forms. The sphere is orientable: the stereographic charts have $\det J < 0$, so compose one of them with a reflection. $\R P^2$ is not orientable, since it contains a Möbius band; in general $\R P^n$ is orientable exactly when $n$ is odd.
+
+</Section>
+
+<Section id="regular-values" kind="proof" title="The regular value theorem and embeddings">
+
+<Definition term="regular value">
+
+Let $F : M \to N$ be smooth. A point $p \in M$ is a **regular point** if $dF_p$ is surjective; $c \in N$ is a **regular value** if every point of $F^{-1}(c)$ is regular (in particular if $F^{-1}(c) = \varnothing$). A subset $S \subseteq M$ is an **embedded $k$-dimensional submanifold** if each $p \in S$ has a chart $(U, \varphi)$ of $M$ with $\varphi(U \cap S) = \varphi(U) \cap (\R^k \times \{0\})$ (a **slice chart**).
+
+</Definition>
+
+<Theorem name="Theorem 3 (regular value theorem)">
+
+Let $F : M \to N$ be smooth, $\dim M = m$, $\dim N = n$, and let $c$ be a regular value. Then $F^{-1}(c)$ is an embedded submanifold of $M$ of dimension $m - n$ (or empty), and $T_p F^{-1}(c) = \ker dF_p$.
+
+</Theorem>
+
+<Proof>
+
+The statement is local. Fix $p \in F^{-1}(c)$ and charts centred at $p$ and at $c$; in them $F$ becomes a smooth map $\hat F : W \to \R^n$ on an open $W \ni 0$ of $\R^m$, with $\hat F(0) = 0$ and $D\hat F(0)$ of rank $n$ (so $m \ge n$). After reordering coordinates, write $x = (x', x'') \in \R^{m-n} \times \R^n$ with $\partial \hat F/\partial x''(0)$ invertible. Define $G(x', x'') = \big(x', \hat F(x', x'')\big)$. Its Jacobian at $0$ is block lower-triangular,
+
+$$
+DG(0) = \begin{pmatrix} I & 0 \\ \partial \hat F/\partial x' & \partial \hat F/\partial x'' \end{pmatrix},
+$$
+
+hence invertible, so by the **inverse function theorem** $G$ is a diffeomorphism from a neighbourhood $W_0$ of $0$ onto a neighbourhood of $0$. In the new chart $G$ (composed with the old one) the map $F$ reads $\hat F \circ G^{-1}(y', y'') = y''$, a linear projection, and $F^{-1}(c) \cap W_0$ corresponds to the slice $\{y'' = 0\}$. So $F^{-1}(c)$ has a slice chart of dimension $m - n$ at every point. Finally $F$ is constant on $S = F^{-1}(c)$, so $dF_p$ vanishes on $T_pS$; thus $T_pS \subseteq \ker dF_p$, and both have dimension $m - n$ (rank–nullity), so they are equal. ∎
+
+</Proof>
+
+<Theorem name="Corollary 4 (spheres and matrix groups are manifolds)">
+
+1. $S^n$ is an embedded $n$-dimensional submanifold of $\R^{n+1}$, and $T_xS^n = x^\perp$.
+2. $O(n) = \{A : A^{\mathsf T} A = I\}$ is an embedded submanifold of $M_n(\R)$ of dimension $n(n-1)/2$, and $T_I O(n)$ is the space of skew-symmetric matrices.
+3. $SL(n, \R) = \{A : \det A = 1\}$ is an embedded submanifold of dimension $n^2 - 1$, and $T_I SL(n, \R)$ is the space of trace-zero matrices.
+
+</Theorem>
+
+<Proof>
+
+(1) $F(x) = |x|^2$ has $dF_x(h) = 2\langle x, h\rangle$, which is onto $\R$ whenever $x \ne 0$; so $1$ is a regular value, and $T_x S^n = \ker dF_x = x^\perp$.
+
+(2) Let $\mathrm{Sym}_n$ be the space of symmetric matrices, of dimension $n(n+1)/2$, and $F : M_n(\R) \to \mathrm{Sym}_n$, $F(A) = A^{\mathsf T}A$. Expanding,
+
+$$
+(A + tH)^{\mathsf T}(A + tH) = A^{\mathsf T}A + t\big(A^{\mathsf T}H + H^{\mathsf T}A\big) + t^2 H^{\mathsf T}H,
+$$
+
+so $dF_A(H) = A^{\mathsf T}H + H^{\mathsf T}A$. If $A \in O(n)$ and $S \in \mathrm{Sym}_n$, then $H = \tfrac12 AS$ satisfies $A^{\mathsf T}H + H^{\mathsf T}A = \tfrac12 S + \tfrac12 S^{\mathsf T}A^{\mathsf T}A = S$. So $I$ is a regular value, $\dim O(n) = n^2 - n(n+1)/2 = n(n-1)/2$, and $T_I O(n) = \ker dF_I = \{H : H + H^{\mathsf T} = 0\}$.
+
+(3) For $A \in SL(n, \R)$, $\det\big((1+t)A\big) = (1 + t)^n$, so $d(\det)_A(A) = n \ne 0$ and $d(\det)_A$ is onto $\R$. Hence $1$ is a regular value and $\dim SL(n, \R) = n^2 - 1$. Expanding $\det(I + tH) = 1 + t \operatorname{tr} H + O(t^2)$ shows $d(\det)_I(H) = \operatorname{tr} H$, so $T_I SL(n, \R)$ consists of the trace-zero matrices. ∎
+
+</Proof>
+
+Note the codomain in (2): $A^{\mathsf T}A$ is always symmetric, so as a map into all of $M_n(\R)$ the differential is never surjective, and the theorem would not apply. These tangent spaces at the identity are the Lie algebras $\mathfrak{so}(n)$ and $\mathfrak{sl}(n, \R)$ of <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>.
+
+<Theorem name="Theorem 5 (Whitney embedding, compact case)">
+
+Every compact smooth manifold $M$ admits a smooth embedding into some $\R^N$.
+
+</Theorem>
+
+<Proof>
+
+For each $p$ choose a chart $(U_p, \varphi_p)$ and a smooth bump function $\rho_p : M \to [0, 1]$ supported in $U_p$ and equal to $1$ on an open $V_p \ni p$. By compactness finitely many $V_1, \dots, V_k$ cover $M$. Let $F = (\rho_1\varphi_1, \dots, \rho_k\varphi_k, \rho_1, \dots, \rho_k) : M \to \R^{k(n+1)}$, where $\rho_i\varphi_i$ is extended by $0$ outside $U_i$ (it is smooth). *Injective:* if $F(p) = F(q)$ and $p \in V_i$, then $\rho_i(q) = \rho_i(p) = 1$, so $q \in U_i$, and $\varphi_i(p) = \varphi_i(q)$, so $p = q$. *Immersion:* near $p \in V_i$ the component $\rho_i\varphi_i$ equals the chart $\varphi_i$, whose differential is injective, so $dF_p$ is injective. An injective continuous map from a compact space to a Hausdorff space is a homeomorphism onto its image, so $F$ is an embedding. ∎
+
+</Proof>
+
+Whitney (1936, 1944) proved much more: every smooth $n$-manifold (second countable and Hausdorff, compact or not) embeds in $\R^{2n}$, and $2n$ cannot be lowered in general ($\R P^2$ does not embed in $\R^3$). But no embedding is canonical, and nothing intrinsic depends on one.
+
+</Section>
+
+<Section id="stokes" kind="proof" title="Stokes's theorem">
+
+Let $M$ be an oriented $n$-manifold with boundary. Give $\partial M$ the **Stokes orientation**: a basis $(v_1, \dots, v_{n-1})$ of $T_p\partial M$ is positive when $(\nu, v_1, \dots, v_{n-1})$ is positive in $T_pM$ for an outward-pointing $\nu$. For $\mathbb{H}^n$ the outward vector is $-\partial_n$, and since $(-\partial_n, \partial_1, \dots, \partial_{n-1})$ has orientation sign $(-1)\cdot(-1)^{n-1} = (-1)^n$, the Stokes orientation of $\partial\mathbb{H}^n = \R^{n-1}$ is $(-1)^n$ times the standard one.
+
+<Theorem name="Theorem 6 (Stokes's theorem)">
+
+Let $M$ be an oriented smooth $n$-manifold with boundary, with $\partial M$ carrying the Stokes orientation, and let $\omega$ be a compactly supported smooth $(n-1)$-form on $M$. Then
+
+$$
+\int_M d\omega = \int_{\partial M} \omega ,
+$$
+
+where the right-hand side is $0$ if $\partial M = \varnothing$.
+
+</Theorem>
+
+<Proof>
+
+**Step 1: the half-space.** Let $M = \mathbb{H}^n$ and $\omega = \sum_{i=1}^n \omega_i\, dx^1 \wedge \dots \wedge \widehat{dx^i} \wedge \dots \wedge dx^n$, supported in $[-R, R]^{n-1} \times [0, R)$. Then $d\omega = \sum_i (-1)^{i-1} \partial_i\omega_i\, dx^1 \wedge \dots \wedge dx^n$, so
+
+$$
+\int_{\mathbb{H}^n} d\omega = \sum_{i=1}^n (-1)^{i-1} \int_{\mathbb{H}^n} \partial_i \omega_i \, dx .
+$$
+
+For $i < n$, integrate first in $x^i$ over $[-R, R]$ (Fubini): by the fundamental theorem of calculus the result is $\omega_i(\dots, R, \dots) - \omega_i(\dots, -R, \dots) = 0$. For $i = n$, $\int_0^R \partial_n\omega_n\, dx^n = -\omega_n(x', 0)$ since $\omega_n$ vanishes at $x^n = R$. Hence
+
+$$
+\int_{\mathbb{H}^n} d\omega = (-1)^{n-1}\cdot(-1) \int_{\R^{n-1}} \omega_n(x', 0)\, dx' = (-1)^n \int_{\R^{n-1}} \omega_n(x', 0)\, dx' .
+$$
+
+On $\partial \mathbb{H}^n$ the form $dx^n$ restricts to $0$, so only the $i = n$ term survives: $\omega|_{\partial\mathbb{H}^n} = \omega_n(x', 0)\, dx^1 \wedge \dots \wedge dx^{n-1}$. Integrating with the Stokes orientation, which is $(-1)^n$ times the standard one, gives exactly the same number. The same computation with $\R^n$ in place of $\mathbb{H}^n$ gives $\int_{\R^n} d\omega = 0$, because now every term vanishes.
+
+**Step 2: gluing.** Cover the compact set $\operatorname{supp}\omega$ by finitely many oriented charts, each onto an open subset of $\R^n$ or of $\mathbb{H}^n$, and let $\{\psi_\alpha\}$ be a subordinate partition of unity. Since $\sum_\alpha \psi_\alpha = 1$ near $\operatorname{supp}\omega$, we have $\sum_\alpha d\psi_\alpha = 0$ there, so
+
+$$
+\sum_\alpha d(\psi_\alpha\omega) = \sum_\alpha d\psi_\alpha \wedge \omega + \sum_\alpha \psi_\alpha\, d\omega = d\omega .
+$$
+
+Each $\psi_\alpha\omega$ is supported in a single chart. Pulling back by that chart preserves integrals (the chart is orientation-preserving), commutes with $d$, and carries $\partial M$ to $\partial\mathbb{H}^n$ with matching Stokes orientations, so Step 1 gives $\int_M d(\psi_\alpha \omega) = \int_{\partial M} \psi_\alpha\omega$. Summing over $\alpha$ proves the theorem. ∎
+
+</Proof>
+
+For $n = 1$ and $M = [a, b]$ this is the fundamental theorem of calculus (the boundary is $\{b\}$ with sign $+$ and $\{a\}$ with sign $-$). For domains in $\R^2$ and $\R^3$ it contains Green's theorem, the classical Stokes theorem and the divergence theorem. On a closed manifold ($\partial M = \varnothing$, $M$ compact), every exact $n$-form integrates to $0$; so a volume form on a closed oriented manifold is never exact.
+
+</Section>
+
+<Section id="de-rham" kind="proof" title="de Rham cohomology">
+
+Since $d \circ d = 0$, every exact form ($\omega = d\eta$) is closed ($d\omega = 0$). The failure of the converse measures topology.
+
+<Definition term="de Rham cohomology">
+
+$H^k_{\mathrm{dR}}(M) = \dfrac{\ker\big(d : \Omega^k(M) \to \Omega^{k+1}(M)\big)}{\operatorname{im}\big(d : \Omega^{k-1}(M) \to \Omega^k(M)\big)}$. A smooth $F : M \to N$ induces $F^* : H^k_{\mathrm{dR}}(N) \to H^k_{\mathrm{dR}}(M)$, since $F^*$ commutes with $d$; and the wedge product makes $H^\bullet_{\mathrm{dR}}(M)$ a graded-commutative algebra.
+
+</Definition>
+
+$H^0_{\mathrm{dR}}(M)$ is the space of locally constant functions ($df = 0$ means $f$ is constant on each component), so $\dim H^0_{\mathrm{dR}}(M)$ is the number of connected components.
+
+<Theorem name="Theorem 7 (the circle)">
+
+Integration over the circle induces an isomorphism $H^1_{\mathrm{dR}}(S^1) \cong \R$, $[\omega] \mapsto \int_{S^1}\omega$. In particular $d\theta$ (the form $x\,dy - y\,dx$ restricted to $S^1$) is closed but not exact.
+
+</Theorem>
+
+<Proof>
+
+Let $\pi : \R \to S^1$, $\pi(\theta) = (\cos\theta, \sin\theta)$; it is a local diffeomorphism. Every $1$-form on the $1$-manifold $S^1$ is closed, and $\pi^*\omega = f(\theta)\, d\theta$ with $f$ smooth and $2\pi$-periodic; $\omega = dg$ for some $g \in C^\infty(S^1)$ exactly when $f = G'$ for the $2\pi$-periodic function $G = g \circ \pi$ (a smooth periodic $G$ descends to a smooth $g$ on $S^1$, because $\pi$ is a local diffeomorphism). Also $\int_{S^1}\omega = \int_0^{2\pi} f(\theta)\, d\theta$.
+
+*Exact forms integrate to zero:* if $f = G'$ with $G$ periodic, then $\int_0^{2\pi} f = G(2\pi) - G(0) = 0$.
+
+*Forms with zero integral are exact:* if $\int_0^{2\pi} f = 0$, let $G(\theta) = \int_0^\theta f$. Then $G' = f$, and $G(\theta + 2\pi) - G(\theta) = \int_\theta^{\theta + 2\pi} f = \int_0^{2\pi} f = 0$, because the integral of a periodic function over a full period does not depend on where the period starts. So $G$ is periodic and $\omega = dg$.
+
+Thus the linear map $\omega \mapsto \int_{S^1}\omega$ has kernel exactly the exact forms. It is onto, since $\int_{S^1} d\theta = 2\pi \ne 0$, so it induces an isomorphism $H^1_{\mathrm{dR}}(S^1) \to \R$. ∎
+
+</Proof>
+
+The same argument applied to $\omega = (x\,dy - y\,dx)/(x^2+y^2)$ on $\R^2 \setminus \{0\}$ shows it is not exact: its integral round the unit circle is $2\pi$, whereas an exact form integrates to $0$ round every closed curve. More generally (proofs in Bott–Tu or Lee, Chapters 17–18):
+
+- **Poincaré lemma and homotopy invariance:** homotopic maps induce the same map on $H^\bullet_{\mathrm{dR}}$; hence $H^k_{\mathrm{dR}}(\R^n) = 0$ for $k \ge 1$, and every closed form is *locally* exact.
+- **Computations** (by Mayer–Vietoris): $H^k_{\mathrm{dR}}(S^n) \cong \R$ for $k = 0, n$ and $0$ otherwise; $H^k_{\mathrm{dR}}(T^n) \cong \R^{\binom nk}$; $H^1_{\mathrm{dR}}(\R^2 \setminus \{p_1, \dots, p_m\}) \cong \R^m$, detected by the periods around the $m$ punctures.
+- **Top degree:** for a compact connected oriented $n$-manifold without boundary, $\int_M : H^n_{\mathrm{dR}}(M) \to \R$ is an isomorphism (Stokes gives well-definedness; surjectivity is clear; injectivity is the real content).
+
+<Theorem name="Theorem 8 (de Rham's theorem; stated)">
+
+For every smooth manifold $M$, integration of forms over smooth singular chains induces an isomorphism $H^k_{\mathrm{dR}}(M) \cong H^k(M; \R)$ with singular cohomology with real coefficients, compatible with products.
+
+</Theorem>
+
+Stokes's theorem, $\int_c d\omega = \int_{\partial c}\omega$, is precisely the statement that integration is a chain map from the de Rham complex to the singular cochain complex; the theorem (de Rham, 1931) says it is a quasi-isomorphism. So de Rham cohomology is a topological invariant, even though it is defined with derivatives. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Smooth manifolds in Lean and Mathlib">
+
+Mathlib's manifolds follow the definitions above, with one generalisation: a manifold is modelled on a **model with corners** $I : H \to E$, which lets the same definitions cover manifolds without boundary (`𝓡 n`, modelled on $\R^n$), with boundary (`𝓡∂ n`, on a half-space) and with corners. `ChartedSpace H M` is an atlas, `IsManifold I n M` says the transition maps are $C^n$ (with `ω` meaning analytic), `ContMDiff` is smoothness of maps, and `mfderiv` is the differential.
+
+First, the stereographic charts. We define the inverse projection from the north pole and the projection from the south pole on $E \times \R$ for any real inner product space $E$, check that the first lands on the sphere, and prove that the transition map is the inversion, which is smooth on $E \setminus \{0\}$ and its own inverse. These are the computations of the sphere example, line by line:
+
+<Lean decl="Lumenary.SmoothManifolds.stereoInvNorth" />
+
+<Lean decl="Lumenary.SmoothManifolds.stereoInvNorth_mem_sphere" />
+
+<Lean decl="Lumenary.SmoothManifolds.stereoSouth" />
+
+<Lean decl="Lumenary.SmoothManifolds.inversion" />
+
+<Lean decl="Lumenary.SmoothManifolds.transition_map" />
+
+<Lean decl="Lumenary.SmoothManifolds.inversion_inversion" />
+
+<Lean decl="Lumenary.SmoothManifolds.inversion_smooth" />
+
+Mathlib uses exactly these charts to make the unit sphere of $\R^{n+1}$ a manifold, and we cite its instance:
+
+<Lean decl="Lumenary.SmoothManifolds.sphere_is_manifold" />
+
+Next, the two algebraic facts behind Corollary 4(2): the expansion of $(A + tH)^{\mathsf T}(A + tH)$, whose linear term is $dF_A(H)$, and the surjectivity of $dF_A$ onto symmetric matrices at an orthogonal $A$:
+
+<Lean decl="Lumenary.SmoothManifolds.gram_expansion" />
+
+<Lean decl="Lumenary.SmoothManifolds.orthogonal_regular_value" />
+
+The chain rule for manifolds, i.e. functoriality of the tangent map:
+
+<Lean decl="Lumenary.SmoothManifolds.chain_rule" />
+
+Finally Theorem 7, in the coordinate $\theta$: a $1$-form on the circle $\R/T\Z$ is $f(\theta)\,d\theta$ with $f$ continuous and $T$-periodic, and it is exact when $f$ is the derivative of a $T$-periodic function. Both halves of the proof are formalised — exact forms have period zero by the fundamental theorem of calculus; forms with period zero have the periodic primitive $\int_0^x f$ — and combined into the "if and only if" that says $H^1_{\mathrm{dR}}(S^1) \cong \R$:
+
+<Lean decl="Lumenary.SmoothManifolds.exact_integral_zero" />
+
+<Lean decl="Lumenary.SmoothManifolds.dtheta_not_exact" />
+
+<Lean decl="Lumenary.SmoothManifolds.primitive_periodic" />
+
+<Lean decl="Lumenary.SmoothManifolds.de_rham_circle" />
+
+**What is and is not formalised.** Independently proved: the stereographic computations (the image lies on the sphere, the transition map is the inversion, it is an involution and smooth), the expansion and surjectivity behind $O(n)$, and the circle computation of Theorem 7, in the coordinate on $\R$ (continuous rather than smooth $f$, which is slightly more general). Cited from Mathlib: the manifold structure on spheres and the chain rule. Not formalised: the regular value theorem itself (Mathlib has the inverse and implicit function theorems on Banach spaces, but not yet the theorem for manifolds), differential forms on manifolds, Stokes's theorem on manifolds with boundary (Mathlib has the divergence theorem on boxes), and de Rham's theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Charts, covectors and periods, computed">
+
+The first program computes, exactly, the transition map between the two stereographic charts of $S^2$ and its Jacobian. It then moves a tangent vector and a covector from one chart to the other: vector components by $J$, covector components by $(J^{\mathsf T})^{-1}$. The pairing $\omega(v)$ is the same in both charts; moving the covector by $J$ (the classic mistake) changes it.
+
+<Python id="smooth_manifolds_transition_laws" />
+
+The determinant $-1/(u^2+v^2)^2$ is negative everywhere, as predicted by the sphere example: the two charts are individually fine but orientation-incompatible. This is exact computation for one chart change, an illustration rather than a proof; the general laws are consequences of the chain rule.
+
+The second program checks Stokes's theorem for $x^3\,dy$ on the unit disc and computes periods of the closed form $d\theta$ round several loops in the punctured plane, and of a combination of two angle forms in the twice-punctured plane.
+
+<Python id="smooth_manifolds_stokes_periods" />
+
+The periods of $d\theta$ come out as $2\pi$ times an integer — the winding number — whatever the size or shape of the loop. With two punctures the two periods can be prescribed independently, illustrating $H^1_{\mathrm{dR}}(\R^2 \setminus \{p, q\}) \cong \R^2$. Quadrature is numerical evidence; the theorems are proved above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: closed but not exact, and a glued manifold">
+
+The vector field $(-y, x)/(x^2 + y^2)$ corresponds (through the Euclidean dot product) to the $1$-form $d\theta = (x\,dy - y\,dx)/(x^2+y^2)$. Drag the loop: when it encircles the origin the circulation $\oint \omega$ is $2\pi$; when it does not, it is $0$. The curl is $0$ everywhere it is defined ($\omega$ is closed), so Green's theorem predicts circulation $0$ — and it fails exactly when the loop surrounds the singularity, where $\omega$ is not defined. No function has this field as its gradient.
+
+<VectorField mode="field" f="-y/(x^2 + y^2)" g="x/(x^2 + y^2)" title="dθ: closed but not exact" subtitle="Circulation 2π round the origin, 0 elsewhere; curl 0 wherever it is defined." />
+
+A manifold need not live in any $\R^N$ to begin with. The torus and the Klein bottle below are squares with their sides glued; each point, including points on the seams and corners, has a neighbourhood that is a disc, so both are smooth $2$-manifolds. Walk the creature across the seams: on the Klein bottle it comes back mirror-reversed, so no oriented atlas exists.
+
+<SurfaceGluing surface="torus" surfaces={["torus", "klein"]} title="Manifolds made by gluing" subtitle="Charts across the seams make these smooth surfaces; only the torus is orientable." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A manifold comes with a preferred embedding in some $\R^N$."** A manifold is an abstract space with an atlas. Some arise as subsets ($S^n \subset \R^{n+1}$), many do not ($\R P^2$, the configuration space $SO(3)$, spacetime). Whitney's theorem says embeddings *exist*, but there are many and none is canonical, and intrinsic notions (tangent vectors, forms, cohomology) do not depend on one. Even extra structure can resist embedding: the flat torus $\R^2/\Z^2$ embeds smoothly in $\R^3$ as a doughnut, but no $C^2$ embedding in $\R^3$ is isometric, because every compact surface in $\R^3$ has a point of positive Gaussian curvature.
+
+</Misconception>
+
+<Misconception>
+
+**"Vectors and covectors are the same thing; just write the components in a column."** They transform differently under a change of chart: $\tilde v = Jv$ but $\tilde\omega = (J^{\mathsf T})^{-1}\omega$. Only for orthogonal $J$ do the laws coincide, which is why the confusion survives in Euclidean geometry with Cartesian coordinates. Example: in polar coordinates $df = f_r\, dr + f_\theta\, d\theta$, but the gradient vector is $f_r\,\partial_r + r^{-2} f_\theta\, \partial_\theta$; converting needs a metric.
+
+</Misconception>
+
+<Misconception>
+
+**"A closed form is exact."** Only locally (the Poincaré lemma), or on spaces with vanishing cohomology. On $\R^2 \setminus \{0\}$ the form $d\theta$ is closed with non-zero period $2\pi$, so it is not exact. The obstruction is topological, and measuring it is the point of de Rham cohomology.
+
+</Misconception>
+
+<Misconception>
+
+**"A homeomorphism between smooth manifolds is a diffeomorphism," or "the topology determines the smooth structure."** The homeomorphism $x \mapsto x^3$ of $\R$ is smooth but its inverse is not. More seriously, there are manifolds homeomorphic but not diffeomorphic to $S^7$ (Milnor) and to $\R^4$. In dimensions $1$, $2$ and $3$, however, smooth structures exist and are unique up to diffeomorphism.
+
+</Misconception>
+
+<Misconception>
+
+**"Hausdorff and second countable are technicalities."** Drop Hausdorff and the line with two origins appears, where a sequence has two limits and integral curves of vector fields are not unique. Drop second countability and the long line appears: locally like $\R$, Hausdorff, but with no partitions of unity, no Riemannian metric and no embedding in any $\R^N$.
+
+</Misconception>
+
+<Misconception>
+
+**"Tangent vectors at different points can be compared or added."** $T_pM$ and $T_qM$ are different vector spaces; there is no canonical way to say that a vector at $p$ "equals" one at $q$. Comparing them requires extra structure — a connection and its parallel transport — which is where <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink> begins.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Derivatives that count holes">
+
+de Rham's theorem says that a calculus construction — closed forms modulo exact forms — computes singular cohomology with real coefficients, a topological invariant. Periods of closed forms detect holes: $H^1_{\mathrm{dR}}(\R^2 \setminus \{p_1, \dots, p_m\}) \cong \R^m$, $H^\bullet_{\mathrm{dR}}(T^n)$ is an exterior algebra on $n$ generators, and on a compact oriented manifold integration identifies $H^n_{\mathrm{dR}}$ with $\R$. What de Rham cohomology cannot see is torsion: $\R P^2$ has $H^1(\R P^2; \Z) = 0$ but $H^2(\R P^2; \Z) \cong \Z/2$, while all its de Rham groups above degree $0$ vanish.
+
+The topologist also asks how far "smooth" is from "topological". In dimensions $\le 3$ there is no difference; in dimension $4$ there are topological manifolds with no smooth structure at all (Freedman's $E_8$ manifold) and exotic $\R^4$s; in dimensions $\ge 5$ surgery theory counts smooth structures, as in Kervaire and Milnor's computation that there are $28$ oriented smooth structures on $S^7$ up to orientation-preserving diffeomorphism. See <TopicLink id="math.geom.differential-topology">differential topology</TopicLink> and <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="From Riemann's manifolds to metrics and symmetry">
+
+Riemann introduced manifolds in order to do geometry in them. A **Riemannian metric** — an inner product on each tangent space, varying smoothly — exists on every smooth manifold (glue the Euclidean metrics of charts with a partition of unity), and it supplies what bare manifolds lack: lengths, angles, volumes, a canonical isomorphism $T_pM \cong T_p^*M$ (so gradients exist), geodesics and curvature. Klein's programme meets Riemann's in homogeneous spaces such as $S^n = O(n+1)/O(n)$ and hyperbolic space, where a Lie group acts transitively by isometries. See <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink> and <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="The inverse function theorem and elliptic PDE">
+
+The analyst sees two engines under the hood. The **inverse function theorem** produces submanifolds (the regular value theorem), local normal forms of maps and, through the ODE existence theorem, flows. **Sard's theorem** says almost every value of a smooth map is regular, so regular values are plentiful. And analysis returns at the end: on a compact oriented Riemannian manifold, the **Hodge theorem** says that each de Rham class contains exactly one harmonic form, $\Delta\omega = (dd^* + d^*d)\omega = 0$. So $\dim H^k_{\mathrm{dR}}(M)$, a topological number, equals the dimension of the space of solutions of an elliptic PDE — the prototype of index theory (Atiyah–Singer).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The manifold is its algebra of functions">
+
+For a smooth manifold $M$, the points can be recovered from the $\R$-algebra $C^\infty(M)$: every non-zero algebra homomorphism $C^\infty(M) \to \R$ is evaluation at a unique point ("Milnor's exercise"). Tangent vectors at $p$ are derivations of this algebra at $p$ — our definition — and vector fields are derivations of $C^\infty(M)$, which form a Lie algebra under the commutator. This is the starting point of the algebraic geometer's view (a variety is known by its ring of functions) and of noncommutative geometry, which replaces $C^\infty(M)$ by a noncommutative algebra. The de Rham complex $(\Omega^\bullet(M), \wedge, d)$ is a commutative differential graded algebra; Sullivan showed that, for simply connected manifolds, it determines the real homotopy type up to quasi-isomorphism, and a version with polynomial forms captures rational homotopy theory.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Configuration spaces, phase spaces and fields">
+
+Classical mechanics happens on manifolds: a system with configuration space $Q$ (a torus for a double pendulum, $SO(3)$ for a spinning top) has phase space the cotangent bundle $T^*Q$, which carries the canonical symplectic form $\sum_i dp_i \wedge dq^i$; momenta are covectors, velocities are vectors, and the distinction of this lesson is the distinction between the Hamiltonian and Lagrangian pictures. In electromagnetism the field strength is a $2$-form $F$ on spacetime and Maxwell's equations read $dF = 0$, $d{\star}F = J$. A magnetic monopole would make $F$ closed but not exact on $\R^3 \setminus \{0\}$, with flux through a sphere given by a class in $H^2_{\mathrm{dR}}$; Dirac's argument that this flux is quantised if electric charge is (1931) is a physical heuristic that became the mathematics of line bundles and characteristic classes. See <TopicLink id="math.geom.symplectic-geometry">symplectic geometry</TopicLink> and <TopicLink id="math.applied.relativity">relativity</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="The tangent functor">
+
+Smooth manifolds and smooth maps form a category $\cat{Man}$. The tangent construction is a functor $T : \cat{Man} \to \cat{Man}$ (indeed to vector bundles): $M \mapsto TM$, $F \mapsto dF$, and the chain rule $d(G \circ F) = dG \circ dF$ together with $d(\mathrm{id}) = \mathrm{id}$ is exactly functoriality. de Rham cohomology is a contravariant functor from $\cat{Man}$ to graded-commutative algebras, homotopy invariant, and $U \mapsto \Omega^k(U)$ is a sheaf. See <TopicLink id="math.cat.functors">functors</TopicLink> and <TopicLink id="math.geom.sheaves">sheaves</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Intrinsic geometry.** Carl Friedrich Gauss's *Disquisitiones generales circa superficies curvas* (1827), written after his geodetic survey of Hanover, showed that the curvature of a surface can be measured from inside it.
+- **Riemann's manifolds.** Bernhard Riemann's habilitation lecture *Über die Hypothesen, welche der Geometrie zu Grunde liegen* (1854, published 1868) introduced $n$-dimensional "manifoldnesses" with a metric given by a quadratic form on infinitesimal displacements. His thesis (1851) had already introduced the surfaces now named after him.
+- **Topology and forms.** Henri Poincaré's *Analysis Situs* (1895) and its supplements studied manifolds through homology and Betti numbers. Élie Cartan introduced the exterior calculus of differential forms (from 1899). The divergence theorem goes back to Mikhail Ostrogradsky (1826) and Gauss, Green's theorem to George Green (1828), and the classical Stokes theorem to a letter of William Thomson (Kelvin) to George Stokes (1850), which Stokes set as a Cambridge examination question in 1854; higher-dimensional versions were stated by Vito Volterra and Poincaré, and the modern form $\int_M d\omega = \int_{\partial M}\omega$ took shape in the Cartan school.
+- **The modern definition.** Hermann Weyl's *Die Idee der Riemannschen Fläche* (1913) defined Riemann surfaces by local coordinate neighbourhoods; Oswald Veblen and J. H. C. Whitehead gave the atlas definition of smooth manifolds (1931–32); Hassler Whitney's *Differentiable manifolds* (1936) proved that abstract manifolds embed in Euclidean space. Georges de Rham proved his theorem in his 1931 thesis.
+- **The global theory.** In the 1940s Shiing-Shen Chern's intrinsic proof of the Gauss–Bonnet theorem and his characteristic classes, and W. V. D. Hodge's harmonic integrals (developed further by Kunihiko Kodaira and others), made manifolds central to geometry. In 1956 John Milnor found exotic $7$-spheres. Vladimir Arnold's *Mathematical Methods of Classical Mechanics* (1974) made manifolds and forms the standard language of mechanics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- John M. Lee, *Introduction to Smooth Manifolds* (2nd edition, 2013) — the standard graduate text; Chapters 1–19 cover this lesson in full detail.
+- Loring W. Tu, *An Introduction to Manifolds* (2nd edition, 2011) — a gentler first course, through Stokes's theorem and de Rham cohomology.
+- Michael Spivak, *Calculus on Manifolds* (1965) — a short classic on forms and Stokes's theorem in $\R^n$; and *A Comprehensive Introduction to Differential Geometry*, Volume 1 (3rd edition, 1999).
+- Raoul Bott and Loring W. Tu, *Differential Forms in Algebraic Topology* (1982) — de Rham cohomology, Mayer–Vietoris and beyond.
+- Frank W. Warner, *Foundations of Differentiable Manifolds and Lie Groups* (1971; Springer reprint 1983) — concise, including a proof of de Rham's theorem and the Hodge theorem.
+- V. I. Arnold, *Mathematical Methods of Classical Mechanics* (2nd edition, 1989) — manifolds and forms in mechanics.
+
+</Section>

@@ -1,0 +1,482 @@
+---
+slug: complexity-theory
+topic: math.comp.complexity-theory
+title: Computational complexity
+subtitle: Some problems are easy to check but seem hard to solve. P, NP, reductions and NP-completeness — and the most famous open question in theoretical computer science.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6033
+objectives:
+  - Define running time, the classes P, NP and coNP, and place standard problems in them
+  - Prove the inclusions $\mathrm{P} \subseteq \mathrm{NP} \subseteq \mathrm{PSPACE} \subseteq \mathrm{EXPTIME}$ and explain why $\mathrm{P} \ne \mathrm{EXPTIME}$ by the time hierarchy theorem
+  - State the Cook–Levin theorem and explain the idea of its proof
+  - Prove NP-completeness by polynomial-time reductions, including 3-SAT to independent set, vertex cover and clique
+  - Explain what is known and unknown about P versus NP, and why cryptography rests on unproved hardness assumptions
+narrators: []
+lean:
+  - Lumenary.ComplexityTheory.CNF.eval
+  - Lumenary.ComplexityTheory.Satisfiable
+  - Lumenary.ComplexityTheory.length_allAssignments
+  - Lumenary.ComplexityTheory.bruteForce
+  - Lumenary.ComplexityTheory.bruteForce_correct
+  - Lumenary.ComplexityTheory.php32_unsat
+  - Lumenary.ComplexityTheory.indepSet_iff_vertexCover_compl
+  - Lumenary.ComplexityTheory.indepSet_iff_vertexCover_compl'
+  - Lumenary.ComplexityTheory.indep_reduces_to_cover
+  - Lumenary.ComplexityTheory.clique_iff_indepSet_compl
+  - Lumenary.ComplexityTheory.k4_not_three_colorable
+compute: [complexity_theory_reductions, complexity_theory_sat_threshold]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Easy to check, hard to find">
+
+A school in Nairobi has to schedule 40 examinations into a few time slots so that no student sits two exams at once. Draw a graph with one vertex per exam and an edge whenever some student takes both: a timetable with $k$ slots is exactly a colouring of the vertices with $k$ colours in which adjacent vertices differ. If someone hands you a proposed timetable, checking it is quick — look at every edge once. Finding one, or proving that none exists with three slots, seems to need a search through up to $3^{40} \approx 1.2 \times 10^{19}$ possibilities.
+
+Compare two puzzles on the same graph. **Euler's problem** — is there a closed walk using every edge exactly once? — is answered instantly by checking that the graph is connected and every degree is even. **Hamilton's problem** — is there a cycle through every *vertex* exactly once? — looks almost the same, yet nobody knows an algorithm that is fundamentally faster than trying exponentially many possibilities.
+
+<TopicLink id="math.comp.computability">Computability</TopicLink> drew the line between what algorithms can and cannot do in principle. Complexity theory draws a finer line, between what they can do **efficiently** and what (we believe) they cannot. Its central question was asked by Kurt Gödel in a 1956 letter to John von Neumann, and in its modern form — **does P equal NP?** — it is one of the seven Millennium Prize Problems. This lesson assumes <TopicLink id="math.comp.algorithm-design">algorithm design and analysis</TopicLink> and basic <TopicLink id="math.discrete.graph-basics">graph theory</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Polynomial versus exponential">
+
+Measure the cost of an algorithm by the number of elementary steps it takes, as a function of the length $n$ of its input. An algorithm taking $n^2$ or $n^3$ steps slows down gracefully: doubling the input multiplies the time by $4$ or $8$. An algorithm taking $2^n$ steps does not: each extra bit of input doubles the time, and $2^{100}$ steps would outlast the age of the universe on any conceivable computer.
+
+<FunctionPlot
+  fns={["x^k", "2^x"]}
+  labels={["n^k", "2^n"]}
+  params={[{ name: "k", min: 1, max: 6, step: 1, value: 3 }]}
+  x={[0, 30]}
+  y={[0, 60000]}
+  xLabel="n"
+  yLabel="steps"
+  title="Polynomial versus exponential growth"
+  subtitle="Raise k: every polynomial is eventually overtaken by 2^n."
+/>
+
+Try $k = 3$: the cubic is ahead until about $n = 10$, after which $2^n$ leaves it behind for good. For every $k$ there is a crossover, because $n^k / 2^n \to 0$.
+
+The working hypothesis of the subject — the **Cobham–Edmonds thesis** — is that "efficiently solvable" means "solvable in polynomial time". Like the Church–Turing thesis it is not a theorem, and it is cruder: an $n^{100}$ algorithm is useless and a $1.0001^n$ algorithm may be excellent. But polynomial time has two great virtues. It is **robust**: Turing machines, random-access machines and real programming languages simulate each other with polynomial overhead, so the class of polynomial-time problems does not depend on the model. And it is **closed under composition**: a polynomial-time algorithm that calls a polynomial-time subroutine is still polynomial-time.
+
+The second idea is the asymmetry of the timetable. For many problems a "yes" answer has a short **certificate** — a colouring, a cycle, a satisfying assignment — that can be checked quickly, even when finding it seems hard. NP is the class of such problems.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+A **decision problem** is a set $L$ of finite strings (over $\{0, 1\}$, say): the instances whose answer is "yes". Mathematical objects are encoded as strings in any reasonable way — a graph by its adjacency matrix, a number in binary — and $|x|$ is the length of the encoding. (Numbers in **unary** would be an unreasonable encoding: it is exponentially longer than binary and makes some hard problems look easy.)
+
+<Definition term="running time, P">
+
+A Turing machine $M$ (see <TopicLink id="math.comp.computability">computability</TopicLink>) **runs in time** $T : \N \to \N$ if it halts within $T(|x|)$ steps on every input $x$. $\mathrm{TIME}(T)$ is the class of problems decided by some machine running in time $O(T)$. The class **P** is
+
+$$
+\mathrm{P} = \bigcup_{k \ge 1} \mathrm{TIME}(n^k),
+$$
+
+the problems decidable in polynomial time.
+
+</Definition>
+
+<Definition term="NP">
+
+A problem $L$ is in **NP** if there are a polynomial $q$ and a polynomial-time machine $V$, the **verifier**, such that for every string $x$
+
+$$
+x \in L \iff \text{there is a string } y \text{ with } |y| \le q(|x|) \text{ and } V(x, y) = 1.
+$$
+
+The string $y$ is a **certificate** (or witness) for $x$. Equivalently, NP is the class of problems decided in polynomial time by a **nondeterministic** Turing machine, one that may branch at each step and accepts if some branch accepts — hence the name: **N**ondeterministic **P**olynomial time.
+
+</Definition>
+
+<Definition term="coNP, PSPACE, EXPTIME">
+
+**coNP** is the class of complements of problems in NP: those whose "no" instances have short, efficiently checkable certificates. **PSPACE** is the class of problems decidable by a machine that uses at most polynomially many tape cells; **EXPTIME** $= \bigcup_k \mathrm{TIME}(2^{n^k})$.
+
+</Definition>
+
+<Definition term="polynomial-time reduction, NP-complete">
+
+$A$ **reduces** to $B$ in polynomial time, $A \le_p B$, if there is a polynomial-time computable function $f$ with $x \in A \iff f(x) \in B$ for all $x$ (a Karp reduction). A problem $B$ is **NP-hard** if $A \le_p B$ for every $A \in \mathrm{NP}$, and **NP-complete** if moreover $B \in \mathrm{NP}$.
+
+</Definition>
+
+An NP-complete problem is a hardest problem in NP: a polynomial-time algorithm for it would give one for every problem in NP.
+
+**The problems we will use.** Formulas are in **conjunctive normal form (CNF)**: an AND of clauses, each an OR of literals $x_i$ or $\neg x_i$.
+
+- **SAT**: is a given CNF formula satisfiable? **3-SAT**: the same, for formulas with exactly three literals per clause.
+- **INDEPENDENT SET**: given a graph $G$ and $k$, does $G$ have $k$ pairwise non-adjacent vertices?
+- **VERTEX COVER**: given $G$ and $k$, is there a set of at most $k$ vertices touching every edge?
+- **CLIQUE**: given $G$ and $k$, does $G$ have $k$ pairwise adjacent vertices?
+- **3-COL**: is a given graph 3-colourable? **HAM-CYCLE**: does it have a Hamiltonian cycle?
+
+</Section>
+
+<Section id="examples" kind="examples" title="Where problems live">
+
+<Example title="Problems in P">
+
+- **Reachability**: is there a path from $s$ to $t$? Breadth-first search, time linear in the size of the graph.
+- **2-colourability**: colour greedily along a breadth-first search; the graph is 2-colourable iff no edge joins two vertices of the same colour (iff it has no odd cycle).
+- **Euler circuits** (connected, all degrees even), **shortest paths** (Dijkstra), **minimum spanning trees** (Kruskal), **2-SAT** (strongly connected components of the implication graph).
+- **Perfect matching** in an arbitrary graph — Edmonds's blossom algorithm (1965), the paper in which he argued that polynomial time is the right notion of a "good" algorithm.
+- **Linear programming** — Khachiyan's ellipsoid method (1979).
+- **Primality** — the AKS algorithm of Agrawal, Kayal and Saxena (2002): deciding whether an $n$-digit number is prime takes time polynomial in $n$, not in the number itself.
+
+</Example>
+
+<Example title="Problems in NP, with their certificates">
+
+- **SAT**: a satisfying assignment; the verifier evaluates the formula.
+- **3-COL**: a colouring; check every edge.
+- **HAM-CYCLE**: the cycle, as a list of vertices; check it visits each vertex once along edges.
+- **CLIQUE**, **INDEPENDENT SET**, **VERTEX COVER**: the set of vertices.
+- **COMPOSITE**: given $N$, is it composite? A factor $1 < d < N$ is the certificate; division checks it in polynomial time.
+
+All of these except COMPOSITE are NP-complete. COMPOSITE is in fact in P (by AKS), and the factoring problem in its decision form — does $N$ have a factor at most $k$? — is in $\mathrm{NP} \cap \mathrm{coNP}$ (a "no" certificate is the full prime factorisation together with proofs of primality) and is not believed to be NP-complete.
+
+</Example>
+
+<Example title="coNP, PSPACE and beyond">
+
+- **TAUT** — is a propositional formula true under every assignment? — is coNP-complete. A "yes" certificate would be a short proof; whether every tautology has a polynomial-size proof in some proof system is exactly the question $\mathrm{NP} = \mathrm{coNP}$ (Cook and Reckhow, 1979).
+- **TQBF** — is a fully quantified Boolean formula $\forall x_1 \exists x_2 \forall x_3 \cdots \varphi$ true? — is PSPACE-complete, and so are many two-player games, such as generalised geography (played on a directed graph) and Hex on an $n \times n$ board.
+- Generalised chess on an $n \times n$ board (deciding whether a position is a forced win) is EXPTIME-complete (Fraenkel and Lichtenstein, 1981), so it is provably **not** in P.
+
+</Example>
+
+<Example title="A non-example: a misleading encoding">
+
+**SUBSET-SUM** — given integers $a_1, \dots, a_m$ and $t$, does some subset sum to $t$? — is NP-complete. Dynamic programming solves it in about $m \cdot t$ steps. That is **not** polynomial time: the input length is about $m \log t$ bits, and $t$ is exponential in $\log t$. Such "pseudo-polynomial" algorithms are fast only when the numbers are small.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Inclusions, NP-completeness and the hierarchy theorem">
+
+### The basic inclusions
+
+<Theorem name="Theorem 1">
+
+$\mathrm{P} \subseteq \mathrm{NP} \subseteq \mathrm{PSPACE} \subseteq \mathrm{EXPTIME}$.
+
+</Theorem>
+
+<Proof>
+
+**P ⊆ NP.** If a polynomial-time machine $M$ decides $L$, take $V(x, y) = M(x)$, ignoring the certificate (the empty string will do).
+
+**NP ⊆ PSPACE.** Let $L$ have verifier $V$, running in time $p(n)$, and certificates of length at most $q(n)$. On input $x$, go through all strings $y$ of length at most $q(|x|)$ one at a time, in a fixed order, run $V(x, y)$, and accept if some run accepts. The current $y$ takes $q(n)$ cells; each run of $V$ uses at most $p(n)$ cells (a machine cannot visit more cells than it takes steps), and the space is reused for the next $y$. Total space $O(p(n) + q(n))$, a polynomial — although the time is exponential.
+
+**PSPACE ⊆ EXPTIME.** A machine with state set $Q$ and tape alphabet $\Gamma$ that uses at most $s(n)$ cells has at most $|Q| \cdot s(n) \cdot |\Gamma|^{s(n)} = 2^{O(s(n))}$ distinct configurations (state, head position, tape contents). A deterministic machine that halts never repeats a configuration — otherwise it would cycle forever — so it halts within $2^{O(s(n))}$ steps. For polynomial $s$ this is $2^{O(n^k)}$.
+
+</Proof>
+
+At least one of these three inclusions is strict, because $\mathrm{P} \ne \mathrm{EXPTIME}$ (Theorem 7 below) — but no one knows which.
+
+### Reductions
+
+<Theorem name="Lemma 2">
+
+(a) If $A \le_p B$ and $B \le_p C$ then $A \le_p C$. (b) If $A \le_p B$ and $B \in \mathrm{P}$ then $A \in \mathrm{P}$. (c) If $A$ is NP-complete, $B \in \mathrm{NP}$ and $A \le_p B$, then $B$ is NP-complete.
+
+</Theorem>
+
+<Proof>
+
+(a) Compose the reductions: if $f$ runs in time $p(n)$ and $g$ in time $q(n)$, then $f(x)$ has length at most $p(|x|)$, so $g(f(x))$ is computed in time $p(n) + q(p(n))$, a polynomial. (b) Decide $x \in A$ by computing $f(x)$ and running the polynomial-time algorithm for $B$; the same estimate applies. (c) Every $L \in \mathrm{NP}$ satisfies $L \le_p A$, hence $L \le_p B$ by (a).
+
+</Proof>
+
+Part (c) is how NP-completeness spreads: once **one** NP-complete problem is known, each new one needs only a single reduction. The first one requires a direct argument.
+
+<Theorem name="Theorem 3 (Cook 1971, Levin 1973)">
+
+SAT is NP-complete.
+
+</Theorem>
+
+<Proof>
+
+*Sketch.* SAT is in NP: the certificate is an assignment. Now let $L \in \mathrm{NP}$, with verifier $V$ running in time $T = p(n)$ and certificates of length $q(n)$. Given $x$ of length $n$, we build in polynomial time a CNF formula $\varphi_x$ that is satisfiable iff some certificate makes $V$ accept $x$.
+
+The computation of $V$ on $(x, y)$ is a **tableau**: a $(T + 1) \times (2T + 1)$ grid whose row $t$ is the configuration at time $t$ (only cells within distance $T$ of the start can be visited). Introduce Boolean variables saying "at time $t$, cell $i$ holds symbol $s$", "at time $t$ the head is at cell $i$", "at time $t$ the state is $q$" — $O(T^2)$ variables in all, since $Q$ and $\Gamma$ are fixed. Add clauses expressing:
+
+1. each cell holds exactly one symbol, there is exactly one head position and exactly one state, at each time;
+2. row $0$ is the start configuration with $x$ written in place, while the certificate cells are left free — the variables for those cells *are* the certificate;
+3. each row follows from the previous one by $\delta$. The key point is **locality**: in one step only the cell under the head changes and the head moves one cell, so it suffices to require that every $2 \times 3$ window of the tableau is consistent with $\delta$ — a constant number of clauses of constant size per window;
+4. the state at time $T$ is accepting (after halting, a machine is taken to repeat its final configuration).
+
+There are $O(T^2)$ clauses of bounded size, written down in polynomial time. A satisfying assignment describes an accepting computation of $V$ on $(x, y)$ for the certificate $y$ read off row $0$; conversely an accepting computation gives a satisfying assignment. So $x \in L \iff \varphi_x \in \mathrm{SAT}$.
+
+</Proof>
+
+<Theorem name="Theorem 4">
+
+$\mathrm{SAT} \le_p \mathrm{3\text{-}SAT}$, so 3-SAT is NP-complete.
+
+</Theorem>
+
+<Proof>
+
+Replace each clause by an equisatisfiable set of 3-literal clauses, using fresh variables for each clause. A clause $(\ell_1 \vee \cdots \vee \ell_k)$ with $k \ge 4$ becomes
+
+$$
+(\ell_1 \vee \ell_2 \vee z_1) \wedge (\neg z_1 \vee \ell_3 \vee z_2) \wedge (\neg z_2 \vee \ell_4 \vee z_3) \wedge \cdots \wedge (\neg z_{k-3} \vee \ell_{k-1} \vee \ell_k),
+$$
+
+$k - 2$ clauses. If some $\ell_j$ is true, set $z_i$ true for $i \le j - 2$ and false for $i \ge j - 1$: every new clause is satisfied. If all $\ell_j$ are false, the chain forces $z_1$ true, then $z_2$ true, …, then $z_{k-3}$ true, and the last clause fails. Short clauses are padded: $(\ell_1 \vee \ell_2)$ becomes $(\ell_1 \vee \ell_2 \vee w) \wedge (\ell_1 \vee \ell_2 \vee \neg w)$, and $(\ell_1)$ becomes four clauses with two fresh variables. The new formula is satisfiable iff the old one is, and it is built in linear time. 3-SAT is in NP, so Lemma 2(c) applies.
+
+</Proof>
+
+<Theorem name="Theorem 5 (Karp 1972: 3-SAT reduces to INDEPENDENT SET)">
+
+Given a 3-CNF formula $\varphi$ with clauses $C_1, \dots, C_m$, let $G_\varphi$ have a vertex $(i, j)$ for the $j$-th literal of $C_i$ ($1 \le j \le 3$), with an edge between two vertices of the same clause, and an edge between any two vertices labelled by complementary literals $x$ and $\neg x$. Then $\varphi$ is satisfiable if and only if $G_\varphi$ has an independent set of size $m$. Hence INDEPENDENT SET is NP-complete.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) Fix a satisfying assignment and choose, in each clause, one literal that it makes true. The $m$ chosen vertices lie in different clauses, so no triangle edge joins two of them; and two of them cannot be complementary, since both are true. So they form an independent set of size $m$.
+
+($\Leftarrow$) Let $S$ be independent with $|S| = m$. Each clause's three vertices are pairwise adjacent, so $S$ contains at most one of them; since there are $m$ clauses and $|S| = m$, it contains **exactly** one vertex from each clause. No two literals in $S$ are complementary (they would be adjacent), so we may set every literal in $S$ to true consistently, and give the remaining variables any values. Each clause then contains a true literal, so $\varphi$ is satisfied.
+
+The graph has $3m$ vertices and fewer than $(3m)^2$ edges, and is built in polynomial time; INDEPENDENT SET is in NP (the certificate is the set). By Theorem 4 and Lemma 2(c), it is NP-complete.
+
+</Proof>
+
+<Theorem name="Corollary 6">
+
+VERTEX COVER and CLIQUE are NP-complete.
+
+</Theorem>
+
+<Proof>
+
+$S$ is independent in $G$ iff its complement $V \setminus S$ is a vertex cover: an edge with no endpoint in $V \setminus S$ would have both endpoints in $S$. So $(G, k) \mapsto (G, |V| - k)$ reduces INDEPENDENT SET to VERTEX COVER. And $S$ is independent in $G$ iff it is a clique in the complement graph $\overline{G}$ (same vertices, edges exactly between distinct non-adjacent pairs), so $(G, k) \mapsto (\overline{G}, k)$ reduces INDEPENDENT SET to CLIQUE. Both problems are in NP.
+
+</Proof>
+
+Thousands of problems have been shown NP-complete in this way: 3-COL (by a gadget reduction from 3-SAT; Garey, Johnson and Stockmeyer, 1976), HAM-CYCLE and the travelling salesperson problem (Karp, 1972), SUBSET-SUM, scheduling, protein folding in simple lattice models, Sudoku and Minesweeper generalised to $n \times n$ boards. A remarkable dichotomy is visible already among the examples: 2-SAT and 2-COL are in P, while 3-SAT and 3-COL are NP-complete.
+
+### The hierarchy theorem
+
+<Theorem name="Theorem 7 (time hierarchy; Hartmanis and Stearns 1965, sharpened by Hennie and Stearns 1966)">
+
+If $g$ is time-constructible and $f(n) \log f(n) = o(g(n))$, then $\mathrm{TIME}(f) \subsetneq \mathrm{TIME}(g)$. In particular $\mathrm{P} \subsetneq \mathrm{EXPTIME}$.
+
+</Theorem>
+
+<Proof>
+
+*Sketch.* ("Time-constructible" means $g(n)$ can be computed in time $O(g(n))$, which holds for all the usual functions.) Diagonalise, as in the halting problem, but with a clock. Let $D$ be the machine that, on input $w$, reads $w$ as the code of a machine $M_w$ (allowing arbitrary padding), runs a universal simulation of $M_w$ on $w$, stops it after $g(|w|)$ of its own steps, and outputs the opposite of $M_w$'s answer if the simulation finished (and "no" otherwise). $D$ runs in time $O(g)$. Suppose some machine $M$ decided the same problem as $D$ in time $O(f)$. A universal machine simulates $t$ steps of $M$ in $O(t \log t)$ steps, with a constant depending only on $M$; since $f \log f = o(g)$, for long enough padded codes $w$ of $M$ the simulation of $M$ on $w$ finishes within $g(|w|)$ steps, and then $D(w) \ne M(w)$ — a contradiction.
+
+For the corollary: every polynomial is eventually below $2^n$, so $\mathrm{P} \subseteq \mathrm{TIME}(2^n)$; and $2^n \cdot n = o(2^{2n})$, so $\mathrm{TIME}(2^n) \subsetneq \mathrm{TIME}(2^{2n}) \subseteq \mathrm{EXPTIME}$.
+
+</Proof>
+
+So EXPTIME-complete problems, like generalised chess, provably have no polynomial-time algorithm. The same argument cannot separate P from NP, as the next section explains.
+
+</Section>
+
+<Section id="known-unknown" kind="human" title="P versus NP: what is known and what is not">
+
+**Open.** Whether $\mathrm{P} = \mathrm{NP}$; whether $\mathrm{NP} = \mathrm{coNP}$; whether $\mathrm{P} = \mathrm{PSPACE}$. None of the inclusions in Theorem 1 is known to be strict. Most researchers believe $\mathrm{P} \ne \mathrm{NP}$ — decades of effort have found no polynomial algorithm for any NP-complete problem, and $\mathrm{P} = \mathrm{NP}$ would make finding proofs about as easy as checking them — but belief is not proof.
+
+**Known implications.** If any NP-complete problem is in P, then $\mathrm{P} = \mathrm{NP}$ (Lemma 2). If $\mathrm{P} = \mathrm{NP}$ then $\mathrm{NP} = \mathrm{coNP}$ (P is closed under complement). If $\mathrm{P} \ne \mathrm{NP}$, then there are problems in NP that are neither in P nor NP-complete (Ladner, 1975); factoring and graph isomorphism are the natural candidates, and Babai (2015) showed graph isomorphism is solvable in quasi-polynomial time $2^{(\log n)^{O(1)}}$.
+
+**Why it is hard.** Three "barrier" theorems explain why familiar techniques cannot settle the question. Diagonalisation, as in Theorem 7, *relativises* — it works equally well for machines with access to any oracle — but Baker, Gill and Solovay (1975) built oracles relative to which $\mathrm{P} = \mathrm{NP}$ and others relative to which $\mathrm{P} \ne \mathrm{NP}$. Razborov and Rudich (1994) showed that "natural" circuit lower-bound arguments would break widely believed cryptographic assumptions; Aaronson and Wigderson (2008) found a further barrier, algebrisation. The best proven lower bounds for explicit problems in NP are, for general circuits, only linear in $n$.
+
+**Cryptography.** Public-key cryptography needs functions that are easy to compute and hard to invert. If $\mathrm{P} = \mathrm{NP}$, no such **one-way functions** exist, since inverting is an NP search problem. Conversely, $\mathrm{P} \ne \mathrm{NP}$ alone is not known to be enough: cryptography needs problems that are hard **on average**, for randomly generated keys, not merely in the worst case. So RSA rests on the unproved assumption that factoring products of two random large primes is hard. The general number field sieve factors $N$ in heuristic time $\exp\big(O((\log N)^{1/3} (\log \log N)^{2/3})\big)$, faster than exponential in the number of digits but not polynomial; and Shor's algorithm (1994) factors in polynomial time on a quantum computer, which is why "post-quantum" cryptosystems based on lattice problems are being deployed. See <TopicLink id="math.applied.cryptography">cryptography</TopicLink>.
+
+**In practice.** NP-completeness is a statement about the worst case. Modern SAT solvers routinely decide industrial instances with millions of variables (in hardware and software verification), and SAT solving has settled mathematical questions, such as the Boolean Pythagorean triples problem (Heule, Kullmann and Marek, 2016). Approximation algorithms, parameterised algorithms and heuristics make many NP-hard optimisation problems tractable for the instances that arise.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Satisfiability and reductions in Lean">
+
+Lean functions come without a cost model, so this module formalises what complexity theory says about **correctness** — verifiers, search spaces and reductions — and leaves running times to the prose. (Mathlib does contain a Turing-machine notion of polynomial-time computability, `Turing.TM2ComputableInPolyTime`; the Cook–Levin theorem has been machine-checked in Coq, by Gäher and Kunze in 2021, and in Isabelle, by Balbach in 2023, but not in Mathlib.)
+
+**The verifier.** A CNF formula over $n$ variables is a list of clauses, each a list of literals; evaluating it under an assignment is the polynomial-time verifier for SAT, and satisfiability is "some certificate passes":
+
+<Lean decl="Lumenary.ComplexityTheory.CNF.eval" />
+
+<Lean decl="Lumenary.ComplexityTheory.Satisfiable" />
+
+**Brute force** runs the verifier on every assignment. The search space has exactly $2^n$ elements, and the algorithm is correct — so SAT is decidable, and the whole question is speed:
+
+<Lean decl="Lumenary.ComplexityTheory.length_allAssignments" />
+
+<Lean decl="Lumenary.ComplexityTheory.bruteForce" />
+
+<Lean decl="Lumenary.ComplexityTheory.bruteForce_correct" />
+
+Running the algorithm proves that three pigeons do not fit in two holes. The pigeonhole formulas are a classic of proof complexity: Haken (1985) showed that resolution — the proof system underlying most SAT solvers — needs proofs of exponential length for them.
+
+<Lean decl="Lumenary.ComplexityTheory.php32_unsat" />
+
+**Reductions.** Corollary 6, formalised for Mathlib's `SimpleGraph`. First the complementation fact, proved here and then quoted from Mathlib:
+
+<Lean decl="Lumenary.ComplexityTheory.indepSet_iff_vertexCover_compl" />
+
+<Lean decl="Lumenary.ComplexityTheory.indepSet_iff_vertexCover_compl'" />
+
+then the reduction with its bookkeeping of sizes, and the passage to the complement graph:
+
+<Lean decl="Lumenary.ComplexityTheory.indep_reduces_to_cover" />
+
+<Lean decl="Lumenary.ComplexityTheory.clique_iff_indepSet_compl" />
+
+Finally a certificate of **non**-colourability, for a graph where a short one exists. For general graphs no short certificates of non-3-colourability are expected: that would put an NP-complete problem in coNP, and so make $\mathrm{NP} = \mathrm{coNP}$.
+
+<Lean decl="Lumenary.ComplexityTheory.k4_not_three_colorable" />
+
+What is **not** formalised here: running times and the classes P and NP themselves, Cook–Levin, the reduction from 3-SAT to INDEPENDENT SET (tested in Python below instead), and the hierarchy theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Testing a reduction, and looking for hard instances">
+
+The first program implements Karp's reduction from Theorem 5. It translates certificates in both directions on an example, then decides 200 formulas twice — by trying all assignments, and by a generic branch-and-bound search for an independent set in the reduction graph — and compares the answers.
+
+<Python id="complexity_theory_reductions" />
+
+The second program asks where hard instances live. Random 3-CNF formulas with $n$ variables and $m = rn$ clauses are almost always satisfiable when the density $r$ is small and almost never when it is large; the change happens near $r \approx 4.27$, a value predicted by statistical physicists (Mézard, Parisi and Zecchina, 2002). A sharp threshold of this kind is a theorem for $k$-SAT with $k$ large (Ding, Sly and Sun, 2015) and remains a conjecture for $k = 3$. The search effort of a DPLL solver peaks near the threshold.
+
+<Python id="complexity_theory_sat_threshold" />
+
+Notice the column "bad certificates": every "satisfiable" verdict was confirmed by an independent check of the assignment, whereas every "unsatisfiable" verdict is believed only because the search was complete. Certificates exist for one side but — as far as anyone knows — not for the other. That is the difference between NP and coNP, seen in a spreadsheet.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: colouring is easy to check">
+
+3-colourability is NP-complete. Colour the graphs by hand, ask for a greedy colouring, and then ask for the fewest colours possible — which the widget finds by exhaustive search, feasible only because the graphs are small.
+
+<GraphExplorer presets={["petersen", "wheel", "k4", "cube", "k33"]} mode="colour" modes={["colour"]} title="Find a colouring, check a colouring" subtitle="Checking a proposed colouring takes one look at each edge. Finding the fewest colours is a search." />
+
+Things to notice: the widget checks your colouring instantly, edge by edge — that is the verifier. Greedy colouring is fast but carries no guarantee: for a bad order of the vertices it can use far more colours than necessary (on the bipartite "crown" graph, $K_{n,n}$ minus a perfect matching, it can be forced to use $n$ colours), so always compare it with "Fewest possible?". The wheel has an odd rim, so it needs four colours; the Petersen graph, with ten vertices and fifteen edges, needs exactly three.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"NP stands for 'not polynomial'."** It stands for *nondeterministic polynomial time*. Every problem in P is in NP. Whether NP contains problems that are not in P is precisely the open question.
+
+</Misconception>
+
+<Misconception>
+
+**"NP-complete problems cannot be solved in practice."** NP-completeness says that no polynomial-time algorithm is known that solves **every** instance. Industrial SAT solvers handle instances with millions of variables, and many NP-hard optimisation problems have excellent approximation algorithms or are easy on the instances that arise.
+
+</Misconception>
+
+<Misconception>
+
+**"Polynomial means fast and exponential means slow."** Polynomial time is a robust mathematical idealisation. An $n^{100}$ algorithm is useless; the simplex method takes exponential time on specially built examples (Klee and Minty, 1972) yet is one of the most successful algorithms ever. The theory classifies growth rates, not stopwatch times.
+
+</Misconception>
+
+<Misconception>
+
+**"To show a problem is hard, reduce it to SAT."** That is backwards. $A \le_p \mathrm{SAT}$ shows that $A$ is *no harder* than SAT (every problem in NP satisfies it). To show $B$ is NP-hard, reduce a known NP-hard problem **to** $B$.
+
+</Misconception>
+
+<Misconception>
+
+**"A problem in NP has short certificates for both answers."** NP asks for short certificates of "yes" only. Short certificates of "no" define coNP. For SAT, a satisfying assignment certifies "yes", but nobody knows a short certificate that a formula is **un**satisfiable.
+
+</Misconception>
+
+<Misconception>
+
+**"Quantum computers will solve NP-complete problems efficiently."** Shor's algorithm factors integers, a problem not believed to be NP-complete. There is no known efficient quantum algorithm for any NP-complete problem, and Grover's search gives only a square-root speed-up over brute force.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="logic" title="Complexity classes as logics">
+
+Complexity classes can be defined without machines. **Fagin's theorem** (1974): a property of finite structures is in NP if and only if it is expressible in *existential second-order logic* — "there exist relations $R_1, \dots, R_k$ such that a first-order formula holds". For example, 3-colourability is "there exist three sets $R, G, B$ covering the vertices such that no edge has both ends in the same set". On finite **ordered** structures, the Immerman–Vardi theorem (1982) characterises P as first-order logic with a least-fixed-point operator. So P versus NP becomes a question about the expressive power of logics. On the proof side, Cook and Reckhow (1979) showed that $\mathrm{NP} = \mathrm{coNP}$ if and only if some propositional proof system has polynomial-size proofs of all tautologies; Haken's exponential lower bound for resolution on the pigeonhole formulas was a first step in a long programme. See <TopicLink id="math.found.proof-theory">proof theory</TopicLink> and <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Polytopes and linear programming">
+
+Optimisation problems are geometry: maximise a linear function over a convex polytope $P = \{x \in \R^d \mid Ax \le b\}$. The simplex method walks along edges of $P$ from vertex to vertex; Klee and Minty (1972) deformed the cube so that it visits all $2^d$ vertices, and Spielman and Teng's smoothed analysis (2004) explains why such examples are rare. Khachiyan's ellipsoid method (1979) — shrinking ellipsoids around the feasible region — and Karmarkar's interior-point method (1984) put linear programming in P. For a combinatorial problem one forms the polytope spanned by the solutions: the perfect matchings of a graph span a polytope with an explicit description (Edmonds), whereas for the travelling salesperson problem no tractable description is expected. In fact, Fiorini, Massar, Pokutta, Tiwary and de Wolf (2012) proved unconditionally that the TSP polytope is not the projection of any polytope with polynomially many facets, and Rothvoss (2014) proved the same for the matching polytope — rigorous exponential lower bounds, though for linear-programming formulations, not for all algorithms. See <TopicLink id="math.applied.optimisation">optimisation</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Certifying knots">
+
+Is a given knot diagram a diagram of the unknot? Haken (1961) showed the problem is decidable, using normal surfaces. Hass, Lagarias and Pippenger (1999) showed that it is in **NP**: if a knot is unknotted, there is a certificate — a normal disc it bounds, encoded compactly — checkable in polynomial time. Lackenby (2021) proved that it is also in **coNP**: knottedness has short certificates too. So unknot recognition is in $\mathrm{NP} \cap \mathrm{coNP}$, where problems are not expected to be NP-complete — and yet no polynomial-time algorithm is known. Related problems are hard: deciding whether a knot in a 3-manifold bounds a surface of genus at most $g$ is NP-complete (Agol, Hass and Thurston, 2006). Low-dimensional topology has become a rich source of natural problems of intermediate or unknown complexity. See <TopicLink id="math.geom.knot-theory">knot theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Determinant versus permanent">
+
+The determinant $\det(A) = \sum_{\sigma \in S_n} \mathrm{sgn}(\sigma) \prod_i a_{i\sigma(i)}$ and the permanent $\mathrm{perm}(A) = \sum_{\sigma \in S_n} \prod_i a_{i\sigma(i)}$ differ only in signs. Yet the determinant is computed with $O(n^3)$ arithmetic operations by Gaussian elimination, while computing the permanent of a 0–1 matrix — which counts the perfect matchings of a bipartite graph — is **#P-complete** (Valiant, 1979), at least as hard as counting the solutions of any NP problem. Valiant's algebraic version of P versus NP, **VP versus VNP**, asks whether the permanent can be written as the determinant of a polynomially larger matrix of affine functions; it is open. Mulmuley and Sohoni's geometric complexity theory proposes to attack it with algebraic geometry and representation theory of orbit closures — a research programme, not yet a proof. A related algebraic question: the exponent $\omega$ of matrix multiplication satisfies $2 \le \omega < 2.372$ by work up to 2024, and whether $\omega = 2$ is open. See <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Randomness, proofs and approximation">
+
+Randomness is a resource. The class BPP contains problems solvable in polynomial time by algorithms that flip coins and err with probability at most $1/3$; primality had fast randomised tests (Solovay–Strassen, Miller–Rabin, 1970s) a quarter of a century before AKS made it deterministic, and many believe $\mathrm{BPP} = \mathrm{P}$. The **PCP theorem** (Arora–Safra; Arora, Lund, Motwani, Sudan and Szegedy, 1992) says every NP statement has a proof that can be checked, with high confidence, by reading only a **constant** number of randomly chosen bits. Its consequences are sharp: Håstad (2001) proved that, unless $\mathrm{P} = \mathrm{NP}$, no polynomial-time algorithm can guarantee to satisfy more than a $7/8 + \varepsilon$ fraction of the clauses of a satisfiable 3-CNF formula — while a uniformly random assignment satisfies $7/8$ of them on average, since each clause fails with probability $1/8$. And random instances, as in the experiment above, have their own probabilistic theory. See <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Primes are easy, factors seem hard">
+
+Deciding primality and finding factors look like twin problems, but they have very different complexity. In 2002 Manindra Agrawal and his students Neeraj Kayal and Nitin Saxena at IIT Kanpur proved that **PRIMES is in P**, using a polynomial identity: for $\gcd(a, n) = 1$, $n$ is prime if and only if $(X + a)^n \equiv X^n + a \pmod n$, checked cleverly modulo $X^r - 1$ for a small $r$. Factoring is in $\mathrm{NP} \cap \mathrm{coNP}$ but no polynomial-time classical algorithm is known, and the security of RSA (Rivest, Shamir and Adleman, 1977; found earlier, in secret, by Clifford Cocks at GCHQ in 1973) depends on that. The discrete logarithm problem in finite fields and on elliptic curves plays the same role for Diffie–Hellman key exchange. Shor's quantum algorithm solves both, by finding the period of $x \mapsto a^x \bmod N$ with a quantum Fourier transform. See <TopicLink id="math.number.elementary-number-theory">elementary number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Spin glasses and the cavity method">
+
+Finding the ground state of an Ising spin glass — spins $\sigma_i = \pm 1$ on a lattice minimising $-\sum_{ij} J_{ij} \sigma_i \sigma_j$ with random couplings $J_{ij}$ — is NP-hard for three-dimensional lattices (Barahona, 1982): physics knows NP-hard problems in nature, which is one reason to doubt that physical systems can efficiently solve them. In the other direction, statistical physicists used the non-rigorous **cavity method** to predict the 3-SAT threshold $r \approx 4.267$ and a "clustering" of solutions into exponentially many distant groups just below it (Mézard, Parisi and Zecchina, 2002), which inspired the survey-propagation algorithm. Several of these predictions have since been proved for large $k$ — an instance where physical heuristics guided rigorous mathematics. Quantum computers define the class BQP; it contains factoring, and is believed not to contain the NP-complete problems.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Before the definitions.** Mathematicians have long distinguished methods that "work in principle" from methods that work. In the Soviet Union in the 1950s, Sergey Yablonsky and others studied *perebor* — brute-force search — and asked whether it could be avoided for problems such as minimising Boolean circuits. On 20 March 1956 Kurt Gödel wrote to John von Neumann asking how fast one could decide whether a mathematical statement has a proof of length $n$, observing that an algorithm running in linear or quadratic time would have consequences of the greatest importance; the letter came to light only in the late 1980s.
+- **Measuring computation (1960s).** Michael Rabin and Dana Scott introduced nondeterminism for finite automata (1959). Juris Hartmanis and Richard Stearns defined time complexity classes and proved the hierarchy theorem (1965). Alan Cobham and Jack Edmonds (1965) independently proposed polynomial time as the mathematical notion of feasibility.
+- **NP-completeness (1971–73).** Stephen Cook, at the University of Toronto, proved that SAT is NP-complete in 1971. Leonid Levin, working in Moscow, independently found the same phenomenon for six "universal search problems" (published 1973); he later emigrated to the United States. Richard Karp (1972) showed that 21 well-known combinatorial problems are NP-complete, revealing how widespread the phenomenon is. Michael Garey and David Johnson's 1979 book catalogued hundreds more.
+- **Barriers and breakthroughs.** Baker, Gill and Solovay found the relativisation barrier (1975); Leonid Khachiyan put linear programming in P (1979); Alexander Razborov proved exponential lower bounds for monotone circuits (1985) and, with Steven Rudich, the natural proofs barrier (1994); the PCP theorem was proved in 1992; Agrawal, Kayal and Saxena put primality in P (2002).
+- **A prize.** In 2000 the Clay Mathematics Institute listed P versus NP among its seven Millennium Prize Problems, with a prize of one million US dollars for a solution.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Sanjeev Arora and Boaz Barak, *Computational Complexity: A Modern Approach* (2009) — the standard graduate text, from the basics to PCP and beyond.
+- Michael Sipser, *Introduction to the Theory of Computation* (1996; 3rd edition 2012) — Part Three is an excellent first course.
+- Michael R. Garey and David S. Johnson, *Computers and Intractability: A Guide to the Theory of NP-Completeness* (1979) — the classic guide, with a catalogue of NP-complete problems.
+- Christos H. Papadimitriou, *Computational Complexity* (1994).
+- Cristopher Moore and Stephan Mertens, *The Nature of Computation* (2011) — wide-ranging, with physics and random instances.
+- Avi Wigderson, *Mathematics and Computation* (2019) — a survey of the field's connections to the rest of mathematics.
+- Lance Fortnow, *The Golden Ticket: P, NP, and the Search for the Impossible* (2013) — a non-technical introduction.
+
+Next steps in the Lumenary: <TopicLink id="math.found.proof-theory">proof theory</TopicLink> (proof complexity), <TopicLink id="math.applied.cryptography">cryptography</TopicLink>, and <TopicLink id="math.discrete.graph-theory">graph theory</TopicLink>, the home of many NP-complete problems.
+
+</Section>

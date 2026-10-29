@@ -1,0 +1,446 @@
+---
+slug: representable-functors
+topic: math.cat.representable-functors
+title: Representable functors
+subtitle: When the elements of $F(X)$ are secretly arrows out of one fixed object — and why that object is then unique up to unique isomorphism.
+level: ug2
+ages: Undergraduate
+minutes: 100
+order: 6030
+objectives:
+  - Show that the forgetful functor $\cat{Grp} \to \cat{Set}$ is represented by $\Z$ and that the contravariant power-set functor is represented by $\{0, 1\}$
+  - Define universal elements and prove that representations of a functor correspond exactly to its universal elements
+  - Prove that a representing object, together with its universal element, is unique up to unique isomorphism
+  - Express products, free objects, quotients and limits as representing objects of suitable functors
+  - Recognise functors that are not representable, and keep covariant and contravariant representability apart
+narrators: []
+lean:
+  - Lumenary.RepresentableFunctors.powerset
+  - Lumenary.RepresentableFunctors.powerset_representable
+  - Lumenary.RepresentableFunctors.int_hom_eq_zpow
+  - Lumenary.RepresentableFunctors.intHomEquiv
+  - Lumenary.RepresentableFunctors.int_hom_equiv_natural
+  - Lumenary.RepresentableFunctors.forget_grp_corepresentable
+  - Lumenary.RepresentableFunctors.IsUniversal
+  - Lumenary.RepresentableFunctors.universal_of_corepresentable
+  - Lumenary.RepresentableFunctors.corepresentableOfUniversal
+  - Lumenary.RepresentableFunctors.corepresentable_equiv_universal
+  - Lumenary.RepresentableFunctors.universal_unique
+  - Lumenary.RepresentableFunctors.subsingleton_of_corepresentable
+  - Lumenary.RepresentableFunctors.imagePowerset
+  - Lumenary.RepresentableFunctors.image_powerset_not_corepresentable
+  - Lumenary.RepresentableFunctors.pairsOfMaps
+  - Lumenary.RepresentableFunctors.product_represents
+  - Lumenary.RepresentableFunctors.respectingMaps
+  - Lumenary.RepresentableFunctors.quotient_corepresents
+  - Lumenary.RepresentableFunctors.free_monoid_universal
+  - Lumenary.RepresentableFunctors.limit_of_representable
+compute: [representable_functors_counting]
+trails: [products-by-maps]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Elements as arrows">
+
+Here are five ways of saying the same kind of thing.
+
+- An **element** of a set $X$ is the same as a function $\{\ast\} \to X$ from a one-point set.
+- An element $g$ of a group $G$ is the same as a group homomorphism $\Z \to G$: send $n$ to $g^n$.
+- A **subset** $S \subseteq X$ is the same as a function $\chi_S : X \to \{0, 1\}$: send the points of $S$ to $1$ and the others to $0$.
+- A **solution** $(x, y)$ of $x^2 + y^2 = 1$ in a commutative ring $R$ — say $\left(\tfrac{3}{5}, \tfrac{4}{5}\right)$ in $\Q$, or $(2, 2)$ in $\Z/7$ — is the same as a ring homomorphism $\Z[x, y]/(x^2 + y^2 - 1) \to R$.
+- An **open set** $U$ of a topological space $X$ is the same as a continuous map from $X$ to the two-point Sierpiński space.
+
+In each case a construction $F$ — elements, subsets, solutions, open sets — turns out to be nothing but the arrows into or out of **one fixed object**: $\{\ast\}$, $\Z$, $\{0,1\}$, a quotient of a polynomial ring, the Sierpiński space. Such an $F$ is called **representable**, and the fixed object is its **representing object**.
+
+This is more than a curiosity. If $F(X)$ "is" $\Hom(A, X)$, then everything about $F$ is encoded in the single object $A$: to construct $A$ is to solve a whole family of problems at once. Products, free groups, quotients, tensor products, limits and the parameter spaces ("moduli spaces") of algebraic geometry are all defined this way. This lesson builds on <TopicLink id="math.cat.natural-transformations">natural transformations</TopicLink>, since "is the same as" will mean "is naturally isomorphic to", and it prepares for <TopicLink id="math.cat.yoneda">the Yoneda lemma</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Probing with a test object">
+
+Think of an object $A$ as a measuring device. For any object $X$, the set $\Hom(A, X)$ records all the ways $A$ can be "placed inside" $X$ — its **$A$-shaped elements**. A map $g : X \to Y$ moves $A$-shaped elements of $X$ to $A$-shaped elements of $Y$ by composition. So every object $A$ gives a functor $\Hom(A, -) : \mathcal{C} \to \cat{Set}$.
+
+Now start from the other end: you have a functor $F : \mathcal{C} \to \cat{Set}$, some construction of "things in $X$". Is there a single test object $A$ whose $A$-shaped elements are exactly the $F$-things, compatibly with all maps? If so, there must be one special $F$-thing living on $A$ itself: the one corresponding to $\id_A$. Call it $u \in F(A)$. Every other $F$-thing $y \in F(X)$ is then obtained by pushing $u$ along exactly one arrow $A \to X$. That special element is a **universal element**, and the main theorem of this lesson says that representations and universal elements are the same thing.
+
+In the group example, $A = \Z$ and $u = 1$: every element $g$ of every group is the image of $1$ under exactly one homomorphism $\Z \to G$. In the subset example (where arrows go *into* the test object), $A = \{0, 1\}$ and $u = \{1\}$: every subset of every set is the preimage of $\{1\}$ under exactly one function.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $\mathcal{C}$ is **locally small**: each $\Hom(A, B)$ is a set. Composition is written $g \circ f$ ("$g$ after $f$").
+
+<Definition term="hom functors">
+
+For an object $A$ of $\mathcal{C}$:
+
+- the **covariant hom functor** $\Hom(A, -) : \mathcal{C} \to \cat{Set}$ sends $X$ to $\Hom(A, X)$ and $g : X \to Y$ to post-composition $g \circ - : \Hom(A, X) \to \Hom(A, Y)$;
+- the **contravariant hom functor** $\Hom(-, A) : \mathcal{C}^{\mathrm{op}} \to \cat{Set}$ sends $X$ to $\Hom(X, A)$ and $g : X \to Y$ to pre-composition $- \circ g : \Hom(Y, A) \to \Hom(X, A)$.
+
+</Definition>
+
+<Definition term="representable functor">
+
+A functor $F : \mathcal{C} \to \cat{Set}$ is **representable** if there is an object $A$ and a natural isomorphism $\theta : \Hom(A, -) \cong F$. A functor $G : \mathcal{C}^{\mathrm{op}} \to \cat{Set}$ is **representable** if there is an object $A$ and a natural isomorphism $\theta : \Hom(-, A) \cong G$. The pair $(A, \theta)$ is a **representation** and $A$ a **representing object**.
+
+</Definition>
+
+Some authors (and Mathlib) call the covariant case *corepresentable* and keep *representable* for the contravariant one; always check which variance is meant.
+
+<Definition term="universal element">
+
+A **universal element** of $F : \mathcal{C} \to \cat{Set}$ is a pair $(A, u)$ with $u \in F(A)$ such that for every object $X$ and every $y \in F(X)$ there is a **unique** arrow $f : A \to X$ with $F(f)(u) = y$.
+
+For contravariant $G : \mathcal{C}^{\mathrm{op}} \to \cat{Set}$, a universal element is $(A, u)$ with $u \in G(A)$ such that for every $X$ and $y \in G(X)$ there is a unique $f : X \to A$ with $G(f)(u) = y$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "A", tex: "A", row: 0, col: 0 },
+    { id: "X", tex: "X", row: 1, col: 0 },
+    { id: "FA", tex: "u \\in F(A)", row: 0, col: 2 },
+    { id: "FX", tex: "y \\in F(X)", row: 1, col: 2 }
+  ]}
+  arrows={[
+    { from: "A", to: "X", tex: "\\exists!\\, f", style: "dashed", labelSide: "right" },
+    { from: "FA", to: "FX", tex: "F(f)" }
+  ]}
+  caption="A universal element: every element $y$ of every $F(X)$ is the image of $u$ along exactly one arrow $f : A \to X$."
+/>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Elements of sets">
+
+The identity functor $\cat{Set} \to \cat{Set}$ is represented by a one-point set $\{\ast\}$ with universal element $\ast$: an element $x \in X$ is the image of $\ast$ under exactly one function, $\ast \mapsto x$. The functor $X \mapsto X \times X$ is represented by a two-element set $\{1, 2\}$ (a pair is a function from $\{1, 2\}$), and $X \mapsto X^n$ by an $n$-element set.
+
+</Example>
+
+<Example title="Underlying sets of algebraic structures">
+
+- $U : \cat{Grp} \to \cat{Set}$ is represented by $\Z$ with universal element $1$ (proved in the next section).
+- $U : \cat{Ab} \to \cat{Set}$: also $(\Z, 1)$. $U : \cat{Mon} \to \cat{Set}$: the monoid $(\N, +)$ with $1$.
+- $U : \cat{Ring} \to \cat{Set}$ (rings with $1$): the polynomial ring $\Z[x]$ with universal element $x$ — for each $r \in R$ there is exactly one ring homomorphism $\Z[x] \to R$ with $x \mapsto r$, evaluation at $r$.
+- $U : \cat{Vect}_k \to \cat{Set}$: the one-dimensional space $k$ with universal element $1$. $U : \cat{Top} \to \cat{Set}$: the one-point space.
+- $G \mapsto U(G) \times U(G)$ on groups: the free group $F_2 = \langle a, b \rangle$ with universal element $(a, b)$.
+
+</Example>
+
+<Example title="Subsets and the two-element set">
+
+The **contravariant power-set functor** $\mathcal{P} : \cat{Set}^{\mathrm{op}} \to \cat{Set}$ sends $X$ to its set of subsets and $f : X \to Y$ to the preimage map $\mathcal{P}(f) = f^{-1} : \mathcal{P}(Y) \to \mathcal{P}(X)$. It is represented by $2 = \{0, 1\}$ with universal element $\{1\} \in \mathcal{P}(2)$: for each $S \subseteq X$ there is exactly one function $\chi : X \to 2$ with $\chi^{-1}(\{1\}) = S$, the characteristic function $\chi_S$. Naturality is the identity $\chi_{f^{-1}(S)} = \chi_S \circ f$.
+
+</Example>
+
+<Example title="Open sets and the Sierpiński space">
+
+Let $\mathbb{S} = \{0, 1\}$ with open sets $\varnothing$, $\{1\}$, $\{0, 1\}$. The functor $\mathcal{O} : \cat{Top}^{\mathrm{op}} \to \cat{Set}$, sending a space to its set of open subsets and a continuous map to preimage, is represented by $(\mathbb{S}, \{1\})$: the function $\chi_U : X \to \mathbb{S}$ is continuous exactly when $\chi_U^{-1}(\{1\}) = U$ is open. The *same* object with the universal element $\{0\}$ (a closed set of $\mathbb{S}$) represents the functor of **closed** subsets. One object can represent different functors; the universal element is part of the data.
+
+</Example>
+
+<Example title="Solutions of equations">
+
+On commutative rings, the functor $C(R) = \{(x, y) \in R^2 \mid x^2 + y^2 = 1\}$ is represented by $A = \Z[x, y]/(x^2 + y^2 - 1)$ with universal element the pair of cosets $(\bar x, \bar y)$: a homomorphism $A \to R$ is determined by the images of $\bar x, \bar y$, which can be any solution in $R$. Likewise $R \mapsto R^\times$ (units) is represented by $\Z[x, x^{-1}]$, and on groups $G \mapsto \{g \mid g^n = 1\}$ is represented by $\Z/n$.
+
+</Example>
+
+<Example title="Non-examples">
+
+- The **covariant** power-set functor $\mathcal{P}_\ast : \cat{Set} \to \cat{Set}$, with $\mathcal{P}_\ast(f)(S) = f(S)$ (direct image), is **not** representable (Proposition 5 below), although its contravariant cousin is.
+- The constant functor $\cat{Set} \to \cat{Set}$ with value a two-element set is not representable, for the same reason.
+- $G : \cat{Set}^{\mathrm{op}} \to \cat{Set}$, sending $X$ to the set of equivalence relations on $X$ (pulled back along maps), is not representable: if $G \cong \Hom(-, A)$ then $|G(n)| = |A|^n$, but $|G(1)| = 1$ forces $|A| = 1$, while $|G(2)| = 2$.
+
+</Example>
+
+</Section>
+
+<Section id="theorems" kind="proof" title="The main theorems">
+
+<Theorem name="Theorem 1 (representations are universal elements)">
+
+Let $F : \mathcal{C} \to \cat{Set}$ and let $A$ be an object.
+
+1. If $\theta : \Hom(A, -) \Rightarrow F$ is a natural isomorphism, then $u = \theta_A(\id_A)$ is a universal element, and $\theta_X(f) = F(f)(u)$ for every $f : A \to X$.
+2. If $(A, u)$ is a universal element, then $\theta_X(f) = F(f)(u)$ defines a natural isomorphism $\theta : \Hom(A, -) \cong F$.
+3. These two constructions are mutually inverse: representations of $F$ by $A$ correspond bijectively to universal elements $u \in F(A)$.
+
+</Theorem>
+
+<Proof>
+
+(1) Let $f : A \to X$. Naturality of $\theta$ along $f$ says $\theta_X \circ \Hom(A, f) = F(f) \circ \theta_A$. Apply both sides to $\id_A$: since $\Hom(A, f)(\id_A) = f \circ \id_A = f$, we get $\theta_X(f) = F(f)(\theta_A(\id_A)) = F(f)(u)$. Each $\theta_X$ is a bijection, so for every $y \in F(X)$ there is exactly one $f$ with $\theta_X(f) = y$, that is, with $F(f)(u) = y$. So $(A, u)$ is universal.
+
+(2) Each $\theta_X : \Hom(A, X) \to F(X)$, $f \mapsto F(f)(u)$, is a bijection: that is precisely the "exists unique" in the definition of a universal element. Naturality: for $g : X \to Y$ and $f : A \to X$, functoriality of $F$ gives $\theta_Y(g \circ f) = F(g \circ f)(u) = F(g)\big(F(f)(u)\big) = F(g)(\theta_X(f))$.
+
+(3) Starting from $\theta$, part (1) shows that the isomorphism built in (2) from $u = \theta_A(\id_A)$ is $f \mapsto F(f)(u) = \theta_X(f)$, i.e. $\theta$ itself. Starting from $u$, the isomorphism of (2) sends $\id_A$ to $F(\id_A)(u) = u$.
+
+</Proof>
+
+The dual statement, for contravariant functors and universal elements with arrows *into* $A$, follows by applying Theorem 1 to $\mathcal{C}^{\mathrm{op}}$. The argument in (1) — "a natural transformation out of $\Hom(A, -)$ is determined by where it sends $\id_A$" — is the heart of the Yoneda lemma, which removes the word "isomorphism".
+
+<Theorem name="Theorem 2 (uniqueness up to unique isomorphism)">
+
+If $(A, u)$ and $(A', u')$ are universal elements of $F : \mathcal{C} \to \cat{Set}$, then there is exactly one arrow $\varphi : A \to A'$ with $F(\varphi)(u) = u'$, and it is an isomorphism. In particular any two representing objects of $F$ are isomorphic.
+
+</Theorem>
+
+<Proof>
+
+Universality of $(A, u)$ gives a unique $\varphi : A \to A'$ with $F(\varphi)(u) = u'$; universality of $(A', u')$ gives a unique $\psi : A' \to A$ with $F(\psi)(u') = u$. Then
+$$
+F(\psi \circ \varphi)(u) = F(\psi)\big(F(\varphi)(u)\big) = F(\psi)(u') = u = F(\id_A)(u).
+$$
+Both $\psi \circ \varphi$ and $\id_A$ send $u$ to $u$, so by the uniqueness clause for $(A, u)$ (with $X = A$, $y = u$) they are equal. Symmetrically $\varphi \circ \psi = \id_{A'}$. So $\varphi$ is an isomorphism, and it is the only arrow sending $u$ to $u'$.
+
+</Proof>
+
+The isomorphism is unique *once the universal elements are fixed*. An object can carry several universal elements: $(\Z, 1)$ and $(\Z, -1)$ both represent $U : \cat{Grp} \to \cat{Set}$, and the unique isomorphism between them is $n \mapsto -n$.
+
+<Theorem name="Theorem 3 (groups and subsets)">
+
+1. $(\Z, 1)$ is a universal element of $U : \cat{Grp} \to \cat{Set}$, so $\Hom(\Z, G) \cong U(G)$ naturally in $G$, by $\varphi \mapsto \varphi(1)$.
+2. $(2, \{1\})$ is a universal element of $\mathcal{P} : \cat{Set}^{\mathrm{op}} \to \cat{Set}$, so $\mathcal{P}(X) \cong \Hom(X, 2)$ naturally in $X$.
+
+</Theorem>
+
+<Proof>
+
+(1) Let $G$ be a group and $g \in G$. The map $\varphi(n) = g^n$ is a homomorphism $\Z \to G$, because $g^{m + n} = g^m g^n$ for all integers $m, n$, and $\varphi(1) = g$. If $\psi : \Z \to G$ is any homomorphism with $\psi(1) = g$, then $\psi(0) = e$, $\psi(n + 1) = \psi(n)\,g$ and $\psi(n - 1) = \psi(n)\,g^{-1}$, so by induction upwards and downwards from $0$, $\psi(n) = g^n$ for every $n \in \Z$. Hence $\varphi$ is the unique homomorphism with $\varphi(1) = g$. By Theorem 1 the bijections $\varphi \mapsto \varphi(1) = U(\varphi)(1)$ are natural: for $h : G \to H$, $(h \circ \varphi)(1) = h(\varphi(1))$.
+
+(2) Given $S \subseteq X$, a function $\chi : X \to 2$ satisfies $\mathcal{P}(\chi)(\{1\}) = \chi^{-1}(\{1\}) = S$ exactly when $\chi(x) = 1$ for $x \in S$ and $\chi(x) = 0$ otherwise. So $\chi_S$ exists and is unique; apply (the dual of) Theorem 1.
+
+</Proof>
+
+<Theorem name="Theorem 4 (universal properties are representability)">
+
+1. **Products.** Objects $A, B$ have a product $(P, p_1, p_2)$ if and only if $(P, (p_1, p_2))$ is a universal element of $X \mapsto \Hom(X, A) \times \Hom(X, B)$ (contravariant). Dually, coproducts represent $X \mapsto \Hom(A, X) \times \Hom(B, X)$.
+2. **Free groups.** For a set $S$, the free group $(F(S), \iota)$ is a universal element of $G \mapsto \Hom_{\cat{Set}}(S, U(G))$: every map $S \to U(G)$ extends uniquely to a homomorphism $F(S) \to G$. Presentations generalise this: $\langle S \mid R \rangle$ represents $G \mapsto \{\text{maps } S \to G \text{ satisfying the relations } R\}$.
+3. **Quotients.** For $N \trianglelefteq G$, $(G/N, \pi)$ is a universal element of $H \mapsto \{\varphi : G \to H \mid N \subseteq \ker \varphi\}$. For an equivalence relation $\sim$ on a set $X$, $(X/{\sim}, \pi)$ represents $Y \mapsto \{f : X \to Y \mid a \sim b \Rightarrow f(a) = f(b)\}$.
+4. **Limits.** A diagram $D : J \to \mathcal{C}$ has a limit if and only if the functor $X \mapsto \{\text{cones over } D \text{ with apex } X\}$ is representable; a limit is a universal element (a universal cone).
+
+</Theorem>
+
+<Proof>
+
+In each case, write out the definition of a universal element and compare it with the defining universal property — they are word for word the same. For (1): a universal element is $(P, (p_1, p_2))$ such that for every $X$ and every pair $(f, g) \in \Hom(X, A) \times \Hom(X, B)$ there is a unique $h : X \to P$ with $(p_1 \circ h, p_2 \circ h) = (f, g)$, because the functor acts on $h$ by precomposition in both coordinates. That is the definition of a product. For (3) with groups: $\pi : G \to G/N$ kills $N$, and the factorisation theorem says every $\varphi$ with $N \subseteq \ker \varphi$ factors as $\varphi = \bar\varphi \circ \pi$ for exactly one $\bar\varphi$; since the functor acts by post-composition, this is universality of $(G/N, \pi)$. Items (2) and (4) are the same unwinding. Theorem 2 then gives, for free, that products, free groups, quotients and limits are unique up to a unique isomorphism compatible with the structure maps.
+
+</Proof>
+
+<Theorem name="Proposition 5 (a necessary condition)">
+
+If $F : \cat{Set} \to \cat{Set}$ is representable, then $F(\{\ast\})$ has exactly one element. If $G : \cat{Set}^{\mathrm{op}} \to \cat{Set}$ is representable by $A$, then $G(\varnothing)$ has exactly one element and $|G(X)| = |A|^{|X|}$ for finite $X$. Consequently the covariant power-set functor is not representable.
+
+</Theorem>
+
+<Proof>
+
+From any set $A$ there is exactly one function $A \to \{\ast\}$, so $F(\{\ast\}) \cong \Hom(A, \{\ast\})$ is a one-element set. Into any $A$ there is exactly one function from $\varnothing$, and there are $|A|^n$ functions from an $n$-element set. For the covariant power set, $\mathcal{P}_\ast(\{\ast\}) = \{\varnothing, \{\ast\}\}$ has two elements.
+
+</Proof>
+
+A more conceptual necessary condition: a covariant representable functor $\Hom(A, -)$ **preserves all limits** (maps into a limit are compatible families of maps into the diagram), and dually a contravariant one turns colimits into limits. Freyd's representability criterion, a corollary of his adjoint functor theorem, gives a converse: if $\mathcal{C}$ is complete and locally small, a functor $\mathcal{C} \to \cat{Set}$ is representable if and only if it preserves small limits and satisfies a "solution set" condition (Mac Lane, *Categories for the Working Mathematician*, Chapter V). We do not prove it here.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Representable functors in Lean">
+
+In Mathlib, `F.RepresentableBy Y` (for `F : Cᵒᵖ ⥤ Type`) is a natural bijection `(X ⟶ Y) ≃ F(X)`, and `F.CorepresentableBy X` (for covariant `F : C ⥤ Type`) is a natural bijection `(X ⟶ Y) ≃ F(Y)`. Morphisms in the category of types are functions wrapped as `↾f`.
+
+**The power-set functor and `Bool`.** The functor is defined with preimages, and the representation sends a characteristic function `χ : X → Bool` to `{x | χ x = true}`. Naturality holds by `rfl`: the preimage of $\{x \mid \chi\, x = \mathrm{true}\}$ under $f$ *is* $\{y \mid \chi(f\, y) = \mathrm{true}\}$. The inverse needs to decide `x ∈ S`, which uses classical logic — a hint of the logician's viewpoint below.
+
+<Lean decl="Lumenary.RepresentableFunctors.powerset" />
+
+<Lean decl="Lumenary.RepresentableFunctors.powerset_representable" />
+
+**Groups and $\Z$.** First the induction from Theorem 3, then the bijection $\Hom(\Z, G) \cong G$ and its naturality. (Mathlib writes the integers as a multiplicative group `Multiplicative ℤ`.) Finally Mathlib's own statement for its category `GrpCat`, built on Joël Riou's natural isomorphism `GrpCat.coyonedaObjIsoForget`.
+
+<Lean decl="Lumenary.RepresentableFunctors.int_hom_eq_zpow" />
+
+<Lean decl="Lumenary.RepresentableFunctors.intHomEquiv" />
+
+<Lean decl="Lumenary.RepresentableFunctors.int_hom_equiv_natural" />
+
+<Lean decl="Lumenary.RepresentableFunctors.forget_grp_corepresentable" />
+
+**Universal elements: Theorems 1 and 2 in full generality.** The definition, both directions of Theorem 1, the bijection between them, and the uniqueness theorem. The proof of `universal_unique` follows the human proof line by line: build $\varphi$ and $\psi$, then compare $\psi \circ \varphi$ with the identity using the uniqueness clause.
+
+<Lean decl="Lumenary.RepresentableFunctors.IsUniversal" />
+
+<Lean decl="Lumenary.RepresentableFunctors.universal_of_corepresentable" />
+
+<Lean decl="Lumenary.RepresentableFunctors.corepresentableOfUniversal" />
+
+<Lean decl="Lumenary.RepresentableFunctors.corepresentable_equiv_universal" />
+
+<Lean decl="Lumenary.RepresentableFunctors.universal_unique" />
+
+**Not every functor is representable (Proposition 5).** A corepresentable functor on types has at most one element over the one-point type, and so the covariant power-set functor has no corepresentation at all — `IsEmpty` of the type of corepresentations.
+
+<Lean decl="Lumenary.RepresentableFunctors.subsingleton_of_corepresentable" />
+
+<Lean decl="Lumenary.RepresentableFunctors.imagePowerset" />
+
+<Lean decl="Lumenary.RepresentableFunctors.image_powerset_not_corepresentable" />
+
+**Universal properties as representations (Theorem 4).** Products and quotients of types are proved here; free monoids and limits apply Mathlib (`FreeMonoid.lift`, `IsLimit.ofRepresentableBy`).
+
+<Lean decl="Lumenary.RepresentableFunctors.pairsOfMaps" />
+
+<Lean decl="Lumenary.RepresentableFunctors.product_represents" />
+
+<Lean decl="Lumenary.RepresentableFunctors.respectingMaps" />
+
+<Lean decl="Lumenary.RepresentableFunctors.quotient_corepresents" />
+
+<Lean decl="Lumenary.RepresentableFunctors.free_monoid_universal" />
+
+<Lean decl="Lumenary.RepresentableFunctors.limit_of_representable" />
+
+**What is and is not formalised.** Theorems 1 and 2 are proved independently for every locally small category and every functor to types. Theorem 3 is proved independently (with Mathlib's category-level statement cited alongside), Theorem 4 is proved for products and quotients in `Type` and cited from Mathlib for free monoids and limits, and Proposition 5 is proved for functors on `Type`. The open-set, ring and free-group examples and Freyd's criterion are not formalised in this module.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting arrows">
+
+Representability makes counting predictions: if $G \mapsto \{g \mid g^n = 1\}$ is represented by $\Z/n$, then the number of homomorphisms $\Z/n \to G$ must equal the number of elements of $G$ with $g^n = 1$. The experiment checks this by brute force — trying *every* function $\Z/n \to S_3$ — and also checks naturality of subsets versus characteristic functions for all maps between small sets, and applies the counting test of Proposition 5 to some functors on finite sets.
+
+<Python id="representable_functors_counting" />
+
+What to notice: $|\Hom(\Z/n, S_3)|$ is $1, 4, 3, 4$ for $n = 1, 2, 3, 4$, exactly the number of solutions of $g^n = 1$ in $S_3$ (the identity, three transpositions, two 3-cycles). The Klein four-group $V_4 = \langle a, b \mid a^2, b^2, ab = ba \rangle$ gives $10$ homomorphisms, one for each commuting pair of elements of order dividing $2$. In part 3, a functor whose sizes fit no formula $n^a$ or $a^n$ cannot be representable; a sequence that does fit (like $2^n$ for subsets) is consistent with representability but does not prove it — naturality matters too. This is exhaustive evidence for finitely many cases, not a proof.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: the product as a representing object">
+
+The product $A \times B$ represents the functor "pairs of maps into $A$ and $B$". In the widget, choose maps $f : Z \to A$ and $g : Z \to B$; then try to build a map $h : Z \to A \times B$ with $\pi_1 \circ h = f$ and $\pi_2 \circ h = g$. Notice that you have no freedom at all: each $h(z)$ is forced to be $(f(z), g(z))$. That forced, unique choice is what "the pair $(\pi_1, \pi_2)$ is a universal element" means.
+
+<ProductMaps />
+
+<CommutativeDiagram
+  objects={[
+    { id: "Z", tex: "Z", row: 0, col: 1 },
+    { id: "P", tex: "A \\times B", row: 1, col: 1 },
+    { id: "A", tex: "A", row: 1, col: 0 },
+    { id: "B", tex: "B", row: 1, col: 2 }
+  ]}
+  arrows={[
+    { from: "Z", to: "A", tex: "f", labelSide: "right" },
+    { from: "Z", to: "B", tex: "g" },
+    { from: "Z", to: "P", tex: "h = \\langle f, g \\rangle", style: "dashed" },
+    { from: "P", to: "A", tex: "\\pi_1" },
+    { from: "P", to: "B", tex: "\\pi_2", labelSide: "right" }
+  ]}
+  caption="$\Hom(Z, A \times B) \cong \Hom(Z, A) \times \Hom(Z, B)$, naturally in $Z$: the universal element is the pair of projections."
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every functor to $\cat{Set}$ is representable."** Far from it. The covariant power-set functor, the constant two-element functor and the equivalence-relation functor are not, by simple counting (Proposition 5). Representability is a strong condition: a covariant representable functor preserves every limit that exists.
+
+</Misconception>
+
+<Misconception>
+
+**Confusing covariant and contravariant representability.** $\Hom(A, -)$ is covariant (arrows *out of* $A$); $\Hom(-, A)$ is contravariant (arrows *into* $A$). Subsets are represented *contravariantly* by $\{0, 1\}$ — a subset of $X$ is a map $X \to \{0, 1\}$, and maps act by preimage. The same objects with direct images form a covariant functor that is not representable at all. Before asking "what represents $F$?", check which way $F$ acts on arrows.
+
+</Misconception>
+
+<Misconception>
+
+**"The representing object is unique, so the representation is unique."** The object is unique up to isomorphism, but a representation also includes the natural isomorphism, equivalently the universal element. $\Z$ represents $U : \cat{Grp} \to \cat{Set}$ in exactly two ways, with universal elements $1$ and $-1$ (Exercise). What *is* unique is the isomorphism between two representations once their universal elements are fixed (Theorem 2).
+
+</Misconception>
+
+<Misconception>
+
+**"Representable means equal to a hom functor."** It means *naturally isomorphic* to one. $\mathcal{P}(X)$ is a set of subsets, not literally a set of functions; the content of the statement is the natural bijection $S \mapsto \chi_S$. (In Lean, where `Set X` is *defined* as `X → Prop`, the power set happens to be represented by `Prop` on the nose.)
+
+</Misconception>
+
+<Misconception>
+
+**"A generator is a universal element."** Universality is relative to the functor. The element $1 \in \Z/6$ is a universal element of the functor $G \mapsto \{g \in G \mid g^6 = 1\}$, but *not* of the forgetful functor $U : \cat{Grp} \to \cat{Set}$: there is no homomorphism $\Z/6 \to \Z$ sending $1$ to $1$, so the "exists" half fails. And a set $A$ with $|A| \ge 2$ fails to represent the identity functor through any of its elements because the "unique" half fails: many functions $A \to X$ send a given point to $x$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="algebra" title="Presentations, free objects and tensor products">
+
+To the algebraist, representability is the reason presentations work. The group $\langle S \mid R \rangle$ is *defined* to represent the functor "$S$-tuples of elements satisfying $R$". So $\Z/n = \langle a \mid a^n \rangle$ represents $n$-th roots of $1$, and $\Z^2 = \langle a, b \mid ab = ba \rangle$ represents commuting pairs. Counting gives real theorems: the number of commuting pairs in a finite group is $|\Hom(\Z^2, G)| = |G| \cdot k(G)$, where $k(G)$ is the number of conjugacy classes (for $S_3$: $6 \cdot 3 = 18$). For modules over a commutative ring $R$, the tensor product $M \otimes_R N$ is the representing object of $P \mapsto \{R\text{-bilinear maps } M \times N \to P\}$ — its universal element is $(m, n) \mapsto m \otimes n$ — and this, not a choice of construction, is what one uses in practice. See <TopicLink id="math.algebra.groups">groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="The functor of points and moduli spaces">
+
+Grothendieck's algebraic geometry turns the motivation upside down. A geometric object $X$ is studied through its **functor of points** $R \mapsto X(R)$, the solutions of its equations with coordinates in each commutative ring $R$: the circle $x^2 + y^2 = 1$ has the rational points $\left(\tfrac{a^2 - b^2}{a^2 + b^2}, \tfrac{2ab}{a^2 + b^2}\right)$ (Pythagorean triples), points over $\Z/p$, over $\C$, and so on, all at once. An affine scheme is precisely a *representable* functor on commutative rings, represented by its coordinate ring. A **moduli problem** asks for a space whose points classify some objects: the Grassmannian scheme $\mathrm{Gr}(k, n)$ represents the functor whose value on $\operatorname{Spec} R$ is the set of rank-$k$ direct summands of $R^n$ (over a field $F$: the $k$-dimensional subspaces of $F^n$). Some natural moduli functors are *not* representable — the functor of elliptic curves up to isomorphism fails because elliptic curves have automorphisms such as $P \mapsto -P$ — which leads to coarse moduli spaces (the $j$-line) and to stacks. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Classifying spaces and Brown representability">
+
+In topology, representing objects are **classifying spaces**. The Sierpiński space represents open sets, as above. Much deeper: on the homotopy category of pointed connected CW complexes, E. H. Brown's representability theorem (1962) says that every contravariant functor to sets that turns wedge sums into products and satisfies a Mayer–Vietoris condition is representable. Applied to singular cohomology it gives Eilenberg–MacLane spaces $K(G, n)$ with
+$$
+H^n(X; G) \cong [X, K(G, n)]
+$$
+(homotopy classes of maps) for CW complexes $X$; for instance $K(\Z, 1)$ is the circle and $K(\Z/2, 1)$ is $\mathbb{RP}^\infty$. Similarly, isomorphism classes of real vector bundles of rank $n$ over a paracompact space $X$ correspond to $[X, \mathrm{Gr}_n(\R^\infty)]$, so characteristic classes are cohomology classes of the classifying space. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Representable containers and memoisation">
+
+A functional programmer meets representable functors as containers. A container type `F a` is representable if `F a ≅ (K → a)` naturally in `a` for some index type `K`: pairs `(a, a)` with `K = Bool`, vectors of length $n$ with `K = Fin n`, infinite streams with `K = ℕ`. Lists are not: at the empty type there is one list (the empty one), which forces `K` to be empty, yet there are infinitely many lists of booleans — Proposition 5 in disguise. The isomorphism is the basis of **memoisation**: a function `ℕ → a` can be stored as the lazy stream of its values and looked up instead of recomputed.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Truth values as a representing object">
+
+The object representing "subsets" is an object of **truth values**: $\{0, 1\}$ for sets, the Sierpiński space for open sets. In Lean, `Set X` is defined to be `X → Prop`, so the power-set functor is represented by `Prop` definitionally, and representing it by `Bool` instead needs classical logic, because turning a proposition into a boolean requires deciding it. In an elementary topos the representing object of subobjects is the **subobject classifier** $\Omega$, and its internal logic is in general intuitionistic, not two-valued; see <TopicLink id="math.cat.elementary-topoi">elementary topoi</TopicLink>. Informally, the Sierpiński space fits this picture too: its "truth values" behave like *observable* properties, confirmed as soon as evidence is seen but never certified false by any finite observation.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trail">
+
+The universal property of the product, explored from first principles with finite sets: exactly the statement that $(\pi_1, \pi_2)$ is a universal element.
+
+<Trail slug="products-by-maps" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Universal mapping problems** were formulated by **Pierre Samuel** in "On universal mappings and free topological groups" (*Bulletin of the AMS*, 1948), and systematised by Bourbaki in the chapter on structures of *Théorie des ensembles* (1957).
+- **Daniel Kan** introduced adjoint functors in 1958; universal elements and adjunctions are two faces of the same idea.
+- **Alexander Grothendieck** made representable functors the backbone of algebraic geometry in his Séminaire Bourbaki lectures of 1959–62 (collected as *Fondements de la géométrie algébrique*), constructing Hilbert and Picard schemes as representing objects and asking of each moduli problem whether its functor is representable.
+- In topology, **Samuel Eilenberg** and **Saunders Mac Lane** constructed the spaces $K(G, n)$ in the 1940s and 50s, and **Edgar H. Brown Jr.** proved his representability theorem in "Cohomology theories" (*Annals of Mathematics*, 1962).
+- The Sierpiński space is named after the Polish mathematician **Wacław Sierpiński**. **Nobuo Yoneda**'s lemma (1954), the subject of the next lesson, is the general principle behind Theorem 1.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Emily Riehl, *Category Theory in Context* (2016), Chapter 2 — representable functors, universal properties and the Yoneda lemma, with many examples.
+- Tom Leinster, *Basic Category Theory* (2014), Chapter 4 — a gentle account of representables.
+- Saunders Mac Lane, *Categories for the Working Mathematician* (1971; 2nd edition 1998), Chapters III and V — universal arrows, representability and Freyd's adjoint functor theorem.
+- David Eisenbud and Joe Harris, *The Geometry of Schemes* (2000), Chapter VI — schemes as functors of points and representability.
+- Allen Hatcher, *Algebraic Topology* (2002), Section 4.E — the Brown representability theorem.
+- John Milnor and James Stasheff, *Characteristic Classes* (1974) — Grassmannians as classifying spaces for vector bundles.
+
+</Section>

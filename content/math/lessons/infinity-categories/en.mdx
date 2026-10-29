@@ -1,0 +1,425 @@
+---
+slug: infinity-categories
+topic: math.cat.infinity-categories
+title: ∞-categories
+subtitle: Categories in which composition is defined only up to a contractible space of choices — modelled by simplicial sets in which inner horns can be filled.
+level: research
+ages: Research (graduate background)
+minutes: 130
+order: 8019
+objectives:
+  - Define simplicial sets, horns, Kan complexes and quasi-categories, and recognise nerves of categories and singular complexes of spaces as examples
+  - Prove that nerves of categories have unique inner horn fillers, and that the nerve of a non-groupoid is a quasi-category but not a Kan complex
+  - Explain why composition in a quasi-category is defined only up to homotopy, prove that any two composites are homotopic, and construct the homotopy category
+  - Survey the models of $(\infty, 1)$-categories (quasi-categories, complete Segal spaces, simplicial categories) and how they are compared
+  - Separate established results (the homotopy hypothesis for Kan complexes, Joyal's theorems) from guiding principles and open problems
+narrators: []
+lean:
+  - Lumenary.InfinityCategories.quasicategory_iff
+  - Lumenary.InfinityCategories.kan_is_quasicategory
+  - Lumenary.InfinityCategories.nerve_is_quasicategory
+  - Lumenary.InfinityCategories.nerve_triangle_iff
+  - Lumenary.InfinityCategories.nerve_composite_unique
+  - Lumenary.InfinityCategories.groupoid_outer_horn
+  - Lumenary.InfinityCategories.groupoid_outer_horn_right
+  - Lumenary.InfinityCategories.nerve_fin_two_not_kan
+  - Lumenary.InfinityCategories.nerveAdjunction
+  - Lumenary.InfinityCategories.hoNerveIso
+compute: [infinity_categories_horns]
+trails: [arrows-that-compose]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why the homotopy category is not enough">
+
+Homotopy theory studies spaces up to homotopy equivalence, chain complexes up to quasi-isomorphism, and many similar situations where "sameness" is weaker than isomorphism. The classical move is to pass to a **homotopy category**: keep the objects and replace morphisms by homotopy classes. This is useful, but it throws away essential information.
+
+- **Homotopy colimits are not colimits in the homotopy category.** Gluing two discs along their boundary circle gives $S^2$, the homotopy pushout of $* \leftarrow S^1 \rightarrow *$. Every map $S^2 \to Y$ restricts to null-homotopic maps on the two discs, so in the homotopy category all maps $S^2 \to Y$ look the same on the pieces — yet for simply connected $Y$ their homotopy classes correspond to the elements of $\pi_2(Y)$. The missing information is *which homotopy* glues the pieces along the circle. In fact the homotopy category of spaces does not have all pushouts.
+- **Constructions are not functorial.** In a triangulated category the cone of a morphism is unique only up to non-unique isomorphism (see <TopicLink id="math.cat.stable-infinity-categories">Stable ∞-categories</TopicLink>).
+- **Gluing fails.** Derived categories of sheaves on the pieces of an open cover cannot, in general, be glued to the derived category of the whole space at the level of triangulated categories.
+
+The cure is to remember the homotopies, the homotopies between homotopies, and so on: an **$(\infty, 1)$-category** has objects, morphisms, 2-morphisms between morphisms, 3-morphisms, …, with all $k$-morphisms for $k \ge 2$ invertible. Concretely, between any two objects there is a *space* of morphisms, and composition is defined up to a contractible space of choices. This lesson builds the most widely used model, **quasi-categories** (Boardman and Vogt's *weak Kan complexes*, developed by Joyal and Lurie), which are special simplicial sets. It assumes <TopicLink id="math.cat.higher-categories">Higher categories</TopicLink> and <TopicLink id="math.geom.algebraic-topology">Algebraic topology</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Triangles that witness composition">
+
+In a category, $h = g \circ f$ is a *property* of three morphisms. In an ∞-category it is *data*: a 2-dimensional cell $\sigma$ with boundary $f$, $g$, $h$, a "witness" (or homotopy) that $h$ is a composite of $f$ and $g$. Witnesses for associativity are 3-dimensional cells, and so on. Simplices are the natural shapes for this bookkeeping: a 2-simplex is a triangle with edges $f : x_0 \to x_1$, $g : x_1 \to x_2$, $h : x_0 \to x_2$.
+
+<Figure caption="Left: an inner horn Λ²₁ — two composable edges f and g. Filling it means choosing a composite h together with a triangle σ witnessing it. Right: an outer horn Λ²₀ — edges f and h out of the same vertex. Filling it means finding g with g∘f = h, i.e. dividing by f, which is possible for all f only when f can be inverted.">
+<svg viewBox="0 0 440 170" role="img" aria-label="Two triangles. Left: vertices 0, 1, 2; solid edges f from 0 to 1 and g from 1 to 2; dashed edge h from 0 to 2 and shaded interior. Right: solid edges f from 0 to 1 and h from 0 to 2; dashed edge from 1 to 2 marked with a question mark.">
+  <polygon points="30,140 110,30 190,140" fill="var(--sky-soft)" stroke="none" opacity="0.6" />
+  <line x1="30" y1="140" x2="110" y2="30" stroke="var(--human)" strokeWidth="2.5" />
+  <line x1="110" y1="30" x2="190" y2="140" stroke="var(--human)" strokeWidth="2.5" />
+  <line x1="30" y1="140" x2="190" y2="140" stroke="var(--ink-2)" strokeWidth="2" strokeDasharray="6 4" />
+  <circle cx="30" cy="140" r="4" fill="var(--ink-2)" />
+  <circle cx="110" cy="30" r="4" fill="var(--ink-2)" />
+  <circle cx="190" cy="140" r="4" fill="var(--ink-2)" />
+  <text x="20" y="160" fontSize="13" fill="var(--ink-2)">0</text>
+  <text x="105" y="20" fontSize="13" fill="var(--ink-2)">1</text>
+  <text x="192" y="160" fontSize="13" fill="var(--ink-2)">2</text>
+  <text x="58" y="80" fontSize="14" fill="var(--ink-2)">f</text>
+  <text x="155" y="80" fontSize="14" fill="var(--ink-2)">g</text>
+  <text x="105" y="158" fontSize="14" fill="var(--ink-2)">h</text>
+  <text x="104" y="110" fontSize="15" fill="var(--gold)">σ</text>
+  <line x1="250" y1="140" x2="330" y2="30" stroke="var(--human)" strokeWidth="2.5" />
+  <line x1="250" y1="140" x2="410" y2="140" stroke="var(--human)" strokeWidth="2.5" />
+  <line x1="330" y1="30" x2="410" y2="140" stroke="var(--ink-2)" strokeWidth="2" strokeDasharray="6 4" />
+  <circle cx="250" cy="140" r="4" fill="var(--ink-2)" />
+  <circle cx="330" cy="30" r="4" fill="var(--ink-2)" />
+  <circle cx="410" cy="140" r="4" fill="var(--ink-2)" />
+  <text x="240" y="160" fontSize="13" fill="var(--ink-2)">0</text>
+  <text x="325" y="20" fontSize="13" fill="var(--ink-2)">1</text>
+  <text x="412" y="160" fontSize="13" fill="var(--ink-2)">2</text>
+  <text x="278" y="80" fontSize="14" fill="var(--ink-2)">f</text>
+  <text x="375" y="80" fontSize="14" fill="var(--ink-2)">?</text>
+  <text x="325" y="158" fontSize="14" fill="var(--ink-2)">h</text>
+</svg>
+</Figure>
+
+This picture explains the whole definition. A **Kan complex** is a simplicial set in which *every* horn can be filled: a model for spaces, or ∞-groupoids, where every morphism is invertible up to homotopy. A **quasi-category** asks only for *inner* horns to be filled: composites always exist, but morphisms need not be invertible. Fillers are not required to be unique — only, as we shall see, unique up to a contractible space of choices.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Simplicial sets, horns and quasi-categories">
+
+<Definition term="simplex category and simplicial set">
+
+The **simplex category** $\Delta$ has objects the finite ordinals $[n] = \{0 < 1 < \dots < n\}$ for $n \ge 0$ and morphisms the order-preserving maps. A **simplicial set** is a functor $X : \Delta^{\mathrm{op}} \to \mathbf{Set}$. We write $X_n = X([n])$ for the set of **$n$-simplices**, $d_i : X_n \to X_{n-1}$ for the **face maps** (induced by the injection $[n-1] \to [n]$ that skips $i$) and $s_i : X_n \to X_{n+1}$ for the **degeneracy maps** (induced by the surjection $[n+1] \to [n]$ that repeats $i$). A simplex is **degenerate** if it is in the image of some $s_i$.
+
+</Definition>
+
+<Definition term="standard simplex, boundary and horn">
+
+The **standard $n$-simplex** is the representable simplicial set $\Delta[n] = \mathrm{Hom}_\Delta(-, [n])$. By the Yoneda lemma, maps $\Delta[n] \to X$ correspond to $n$-simplices of $X$. The **boundary** $\partial\Delta[n] \subset \Delta[n]$ is the union of the faces $d_i\Delta[n]$, and for $0 \le k \le n$ the **horn** $\Lambda^n_k \subset \Delta[n]$ is the union of all faces except the $k$-th. A horn is **inner** if $0 < k < n$ and **outer** if $k = 0$ or $k = n$. A map $\Lambda^n_k \to X$ is a family of $(n-1)$-simplices $(x_i)_{i \ne k}$ with $d_i x_j = d_{j-1} x_i$ for all $i < j$ with $i, j \ne k$. A **filler** is an $n$-simplex $x$ with $d_i x = x_i$ for $i \ne k$.
+
+</Definition>
+
+<Definition term="Kan complex and quasi-category">
+
+A simplicial set $X$ is a **Kan complex** if every horn $\Lambda^n_k \to X$ ($n \ge 1$, $0 \le k \le n$) has a filler, and a **quasi-category** (or **∞-category**, in Joyal and Lurie's terminology) if every *inner* horn $\Lambda^n_k \to X$ ($0 < k < n$) has a filler.
+
+</Definition>
+
+<Definition term="nerve and singular complex">
+
+The **nerve** $N(\mathcal{C})$ of a category has $N(\mathcal{C})_n = $ the set of functors $[n] \to \mathcal{C}$, that is, strings $c_0 \to c_1 \to \dots \to c_n$ of $n$ composable morphisms; $d_i$ composes at $c_i$ (or drops $c_0$ or $c_n$), and $s_i$ inserts an identity. The **singular complex** $\mathrm{Sing}(T)$ of a topological space has $\mathrm{Sing}(T)_n = $ the set of continuous maps $|\Delta^n| \to T$ from the topological $n$-simplex.
+
+</Definition>
+
+<Definition term="objects, morphisms and homotopy in a quasi-category">
+
+Let $X$ be a quasi-category. Its **objects** are its vertices; a **morphism** $f : x \to y$ is an edge with $d_1 f = x$ and $d_0 f = y$; the **identity** of $x$ is $s_0 x$. Two morphisms $f, f' : x \to y$ are **homotopic**, $f \simeq f'$, if there is a 2-simplex $\sigma$ with $d_2 \sigma = f$, $d_1 \sigma = f'$ and $d_0 \sigma = \mathrm{id}_y$. Given $f : x \to y$ and $g : y \to z$, a **composite** of $g$ and $f$ is any edge $h = d_1\sigma$ where $\sigma$ fills the inner horn $(d_0, d_2) = (g, f)$.
+
+</Definition>
+
+<Definition term="homotopy category">
+
+The **homotopy category** $hX$ of a quasi-category $X$ has the vertices of $X$ as objects and homotopy classes of morphisms as morphisms, with $[g] \circ [f] = [h]$ for any composite $h$ of $g$ and $f$. A morphism of $X$ is an **equivalence** if its class is an isomorphism in $hX$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Nerves: quasi-categories with unique fillers">
+
+In $N(\mathcal{C})$ a horn $\Lambda^2_1$ is a composable pair $(f, g)$, and its only filler is the string $(f, g)$ itself, whose long edge is $g \circ f$. Theorem 1 below shows that *every* inner horn in a nerve has exactly one filler. Outer horns are another matter: a horn $\Lambda^2_0$ given by $f : x_0 \to x_1$ and $h : x_0 \to x_2$ fills exactly when there is $g$ with $g \circ f = h$. In a groupoid take $g = h \circ f^{-1}$; in the poset $[1] = \{0 < 1\}$ the horn with $f : 0 \to 1$ and $h = \mathrm{id}_0$ has no filler, since there is no morphism $1 \to 0$.
+
+</Example>
+
+<Example title="Singular complexes: Kan complexes">
+
+For any space $T$, $\mathrm{Sing}(T)$ is a Kan complex: a horn is a continuous map from a union of faces of $|\Delta^n|$, and there is a retraction $|\Delta^n| \to |\Lambda^n_k|$ along which it extends. Its homotopy category is the **fundamental groupoid** $\Pi_1(T)$: objects are points, and morphisms are homotopy classes of paths relative to their endpoints. $\mathrm{Sing}(T)$ is not a nerve once $T$ has a non-constant path: "concatenate at the midpoint" and "concatenate at time one third" give different edges, and both are long edges of fillers of the same inner horn.
+
+</Example>
+
+<Example title="Simplicial groups">
+
+Every simplicial group (a functor $\Delta^{\mathrm{op}} \to \mathbf{Grp}$) is a Kan complex (Moore). Through the **Dold–Kan correspondence**, simplicial abelian groups are equivalent to chain complexes concentrated in non-negative degrees, so chain complexes give a large supply of Kan complexes whose homotopy groups are homology groups.
+
+</Example>
+
+<Example title="Non-examples">
+
+- The horn $\Lambda^2_1$ itself, viewed as a simplicial set, is not a quasi-category: the identity map $\Lambda^2_1 \to \Lambda^2_1$ is an inner horn with no filler (there is no non-degenerate 2-simplex, and the long edge is missing).
+- The boundary $\partial \Delta[2]$ is not a quasi-category: the inner horn $\Lambda^2_1 \hookrightarrow \partial\Delta[2]$ would need a 2-simplex of $\partial\Delta[2]$ with three distinct vertices, and every 2-simplex of $\partial\Delta[2]$ is degenerate. (The long edge exists but nothing *witnesses* that it is a composite.)
+- $N([1])$ is a quasi-category (a nerve) but not a Kan complex (an outer horn fails, as above). This is proved in Lean below.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central theorems">
+
+<Theorem name="Theorem 1 (nerves and unique fillers)">
+
+A simplicial set is isomorphic to the nerve of a category if and only if every inner horn $\Lambda^n_k \to X$ ($0 < k < n$) has a **unique** filler. In particular, nerves are quasi-categories.
+
+</Theorem>
+
+<Proof>
+
+We prove that nerves have unique inner fillers, and sketch the converse.
+
+*Spines.* An $n$-simplex of $N(\mathcal{C})$ is a functor $[n] \to \mathcal{C}$, which is determined by its **spine**: the objects $c_0, \dots, c_n$ and the $n$ arrows $c_{i-1} \to c_i$ (all other arrows $c_i \to c_j$ are composites). So two simplices of the nerve with the same spine are equal.
+
+*Uniqueness.* Let $0 < k < n$ and let $h : \Lambda^n_k \to N(\mathcal{C})$ be a horn. Each spine edge $\{i-1, i\}$ of $\Delta[n]$ lies in a face $d_j\Delta[n]$ with $j \notin \{i-1, i\}$ and $j \ne k$: for $n = 2$, $k = 1$ the edges $\{0,1\}$ and $\{1,2\}$ lie in $d_2$ and $d_0$; for $n \ge 3$ there are at least two vertices outside $\{i-1, i\}$, and one of them differs from $k$. So $h$ determines the whole spine, and any two fillers have the same spine; hence there is at most one filler.
+
+*Existence.* Let $x$ be the $n$-simplex whose spine is the one determined by $h$. We must show $d_j x = h_j$ for every $j \ne k$; since both are simplices of the nerve, it suffices to compare spines. If $j = 0$ or $j = n$, the spine of $d_j x$ consists of spine edges of $x$, which agree with $h$. If $0 < j < n$, the spine of $d_j x$ also contains the edge $\{j-1, j+1\}$, which in $x$ is the composite of the edges $\{j-1, j\}$ and $\{j, j+1\}$. In $h$ this edge is also that composite, because the triangle $\{j-1, j, j+1\}$ lies in the horn: it is contained in a face $d_m\Delta[n]$ with $m \notin \{j-1, j, j+1\}$ and $m \ne k$ (for $n \ge 4$ there are at least two choices of $m$; for $n = 3$ the only choice is $m \in \{0, 3\}$, which is not $k$ because $k$ is inner; for $n = 2$ the case $0 < j < n$, $j \neq k$ does not occur), and $h$ restricted to it is a 2-simplex of the nerve, that is, a commuting triangle. So $d_j x$ and $h_j$ have the same spine, and are equal.
+
+*Converse (sketch).* If every inner horn of $X$ has a unique filler, define a category with objects $X_0$, morphisms $X_1$, identities $s_0 x$, and $g \circ f :=$ the long edge of the unique filler of the horn $(f, g)$. The unit laws come from degenerate 2-simplices, and associativity from unique fillers of $\Lambda^3_1$ (or $\Lambda^3_2$): the four faces of the filling 3-simplex show that the two bracketings agree. Unique filling in higher dimensions then shows by induction that every simplex of $X$ is determined by its spine, which identifies $X$ with the nerve. (Details: Lurie, *Higher Topos Theory*, §1.1.2, or Joyal's notes.)
+
+</Proof>
+
+<Theorem name="Theorem 2 (composites are unique up to homotopy)">
+
+Let $X$ be a quasi-category, $f : x \to y$ and $g : y \to z$. If $h$ and $h'$ are both composites of $g$ and $f$, then $h \simeq h'$.
+
+</Theorem>
+
+<Proof>
+
+Let $\sigma$ and $\sigma'$ be 2-simplices with $(d_2, d_0, d_1)$ equal to $(f, g, h)$ and $(f, g, h')$. Build a horn $\Lambda^3_1 \to X$ on vertices $x, y, z, z$ by prescribing three faces:
+
+- $d_3 = \sigma$ on vertices $\{0, 1, 2\}$, with edges $f$, $g$, $h$;
+- $d_2 = \sigma'$ on vertices $\{0, 1, 3\}$, with edges $f$, $g$, $h'$;
+- $d_0 = s_1 g$ on vertices $\{1, 2, 3\}$, the degenerate 2-simplex with edges $g$, $\mathrm{id}_z$, $g$ (by the simplicial identities $d_2 s_1 g = d_1 s_1 g = g$ and $d_0 s_1 g = s_0 d_0 g = \mathrm{id}_z$).
+
+They agree on shared edges: $\{0, 1\}$ is $f$ in $\sigma$ and $\sigma'$; $\{1, 2\}$ is $g$ in $\sigma$ and $s_1 g$; $\{1, 3\}$ is $g$ in $\sigma'$ and $s_1 g$. The horn $\Lambda^3_1$ is inner, so it has a filler $\tau$. Its missing face $d_1 \tau$, on vertices $\{0, 2, 3\}$, has edges $d_2 = h$ (edge $\{0,2\}$), $d_0 = \mathrm{id}_z$ (edge $\{2, 3\}$) and $d_1 = h'$ (edge $\{0, 3\}$): by definition it is a homotopy $h \simeq h'$.
+
+</Proof>
+
+Arguments of the same kind, with other horns $\Lambda^3_1$ and $\Lambda^3_2$, show that $\simeq$ is an equivalence relation and that composition of homotopy classes is well defined, associative and unital (Boardman and Vogt, 1973; Joyal). So $hX$ is a category. For a nerve, $h N(\mathcal{C}) \cong \mathcal{C}$; for $\mathrm{Sing}(T)$, $h\,\mathrm{Sing}(T) \cong \Pi_1(T)$. The functor $X \mapsto hX$ is left adjoint to the nerve.
+
+<Theorem name="Theorem 3 (Joyal; stated)">
+
+A simplicial set $X$ is a quasi-category if and only if the restriction map $\mathrm{Fun}(\Delta[2], X) \to \mathrm{Fun}(\Lambda^2_1, X)$ is a trivial Kan fibration.
+
+</Theorem>
+
+Here $\mathrm{Fun}(A, X)$ is the simplicial set of maps $A \times \Delta[n] \to X$. The fibre over a composable pair $(f, g)$ is the space of all pairs (composite, witnessing 2-simplex), and the theorem says it is **contractible** (non-empty, connected, with trivial higher homotopy). This is the precise meaning of "composition is defined up to a contractible space of choices". See Lurie, *Higher Topos Theory*, §2.3, where it is attributed to Joyal.
+
+<Theorem name="Theorem 4 (Joyal, 2002; stated)">
+
+A quasi-category $X$ is a Kan complex if and only if its homotopy category $hX$ is a groupoid.
+
+</Theorem>
+
+So Kan complexes are exactly the ∞-categories in which every morphism is an equivalence: **∞-groupoids**. One direction is easy to believe from the picture of outer horns: filling $\Lambda^2_0$ produces left inverses up to homotopy. The converse — that homotopy invertibility of edges forces all outer horns in all dimensions to fill — is Joyal's theorem ("Quasi-categories and Kan complexes", *J. Pure Appl. Algebra* 175, 2002).
+
+<Theorem name="Theorem 5 (the homotopy hypothesis for Kan complexes; stated)">
+
+Geometric realisation and the singular complex form a Quillen equivalence between simplicial sets with the Kan–Quillen model structure (fibrant objects: Kan complexes) and topological spaces (Quillen, 1967). Consequently the homotopy theory of Kan complexes is equivalent to the homotopy theory of CW complexes.
+
+</Theorem>
+
+This is the established, precise form of Grothendieck's **homotopy hypothesis**, "∞-groupoids are spaces", for one particular definition of ∞-groupoid. For other definitions (algebraic weak ∞-groupoids in the style of Batanin or Grothendieck) the corresponding statement is a guiding principle, proved in some cases and open in others.
+
+<Theorem name="Theorem 6 (models of (∞,1)-categories; stated)">
+
+The following model categories are connected by chains of Quillen equivalences: quasi-categories (Joyal's model structure on simplicial sets), complete Segal spaces (Rezk, 2001), Segal categories, and simplicial categories (Bergner's model structure). The comparisons are due to Joyal and Tierney (2007), Bergner (2007) and Lurie (*Higher Topos Theory*, 2009), the last via the homotopy coherent nerve of Cordier.
+
+</Theorem>
+
+Toën (2005) characterised the homotopy theory of $(\infty, 1)$-categories axiomatically, so that any model satisfying his axioms is equivalent to these. This is why results proved in one model can be used in another, and why Riehl and Verity can develop ∞-category theory "model-independently" in an **∞-cosmos**.
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: what is known and what is open">
+
+**Established.** Inside quasi-categories, Joyal and Lurie developed the main tools of category theory: joins and slices, limits and colimits, adjunctions, Kan extensions, the Yoneda lemma, presentable ∞-categories and ∞-topoi, and the straightening–unstraightening equivalence (an ∞-categorical Grothendieck construction) (Lurie, *Higher Topos Theory*, 2009; Cisinski, 2019; Riehl–Verity, 2022; Lurie's online *Kerodon*). This machinery underlies Lurie's *Higher Algebra* (stable ∞-categories, $E_n$-algebras), derived and spectral algebraic geometry (Toën–Vezzosi; Lurie), modern algebraic K-theory, factorization homology and much of contemporary homotopy theory.
+
+**Established but subtle.** The ∞-categorical Yoneda lemma and the existence of (co)limits are theorems, but their proofs in quasi-categories are long; the same statements are short in an ∞-cosmos (Riehl–Verity), at the price of building the framework first.
+
+**Open or in progress.**
+
+- *$(\infty, n)$-categories.* There are many models (Rezk's $\Theta_n$-spaces, $n$-fold complete Segal spaces, complicial sets, …), and Barwick and Schommer-Pries (2021) gave axioms that characterise the homotopy theory of $(\infty, n)$-categories up to equivalence; comparison of all proposed models is ongoing.
+- *Synthetic and formal foundations.* Riehl and Shulman (2017) proposed a simplicial homotopy type theory in which ∞-categories are types with a "Segal" property; developing it fully, and formalising ∞-category theory in proof assistants (Mathlib has quasi-categories, nerves and the homotopy category; a community project is formalising Riehl–Verity's ∞-cosmoi in Lean), are active, open-ended projects.
+- *Weak ∞-groupoids and the homotopy hypothesis* for algebraic definitions of ∞-groupoid (Theorem 5 and the remark after it).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Quasi-categories in Lean and Mathlib">
+
+Mathlib defines simplicial sets (`SSet`), standard simplices `Δ[n]`, horns `Λ[n, i]`, Kan complexes (as fibrant objects of the Kan–Quillen model structure) and quasi-categories (`SSet.Quasicategory`, inner horn filling). It proves that Kan complexes are quasi-categories and that nerves are quasi-categories (via the *strict Segal condition*: simplices are determined by spines, as in Theorem 1), and it constructs the homotopy category functor, left adjoint to the nerve. In Mathlib the nerve composes diagrammatically: the 2-simplex with edges $f : x_0 \to x_1$, $g : x_1 \to x_2$, $h : x_0 \to x_2$ (an `Edge.CompStruct`) witnesses `f ≫ g = h`, which is $g \circ f = h$.
+
+The definition, unfolded, and the two basic library facts:
+
+<Lean decl="Lumenary.InfinityCategories.quasicategory_iff" />
+
+<Lean decl="Lumenary.InfinityCategories.kan_is_quasicategory" />
+
+<Lean decl="Lumenary.InfinityCategories.nerve_is_quasicategory" />
+
+Horn filling in dimension 2, for nerves: a triangle witnesses a composite; inner horns fill uniquely; outer horns fill (uniquely) in groupoids.
+
+<Lean decl="Lumenary.InfinityCategories.nerve_triangle_iff" />
+
+<Lean decl="Lumenary.InfinityCategories.nerve_composite_unique" />
+
+<Lean decl="Lumenary.InfinityCategories.groupoid_outer_horn" />
+
+<Lean decl="Lumenary.InfinityCategories.groupoid_outer_horn_right" />
+
+The non-example from the examples section, proved from the definitions: the two edges of an outer horn are glued into a map `Λ[2, 0] ⟶ nerve (Fin 2)` (using Mathlib's description of `Λ[2, 0]` as a pushout of two copies of `Δ[1]`), the Kan property fills it, and the vertices of the filling 2-simplex force an arrow $1 \to 0$ in the poset $\{0 < 1\}$, that is, $1 \le 0$:
+
+<Lean decl="Lumenary.InfinityCategories.nerve_fin_two_not_kan" />
+
+Finally, the homotopy category and the fact that the nerve loses nothing:
+
+<Lean decl="Lumenary.InfinityCategories.nerveAdjunction" />
+
+<Lean decl="Lumenary.InfinityCategories.hoNerveIso" />
+
+**What is not formalised.** Theorem 2 in a general quasi-category, Theorems 3–6, limits and colimits in quasi-categories and the ∞-categorical Yoneda lemma are not formalised here; as far as we know, Joyal's theorem (Theorem 4) and the Joyal model structure are not yet in Mathlib.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting horns and fillers">
+
+The experiment enumerates every horn $\Lambda^2_k$ and $\Lambda^3_k$ in the nerves of four small categories — the poset $0 < 1 < 2$, the monoid $\{1, e\}$ with $e^2 = e$, the group $\Z/3$, and the walking isomorphism — and counts fillers. Look for three patterns: inner horns always have exactly one filler (Theorem 1); outer horns fill in the two groupoids (their nerves are Kan complexes); and in the idempotent monoid an outer horn may have *no* filler or *two* fillers. Note also that outer 3-horns always fill in the poset: a poset is thin, so every triangle commutes.
+
+<Python id="infinity_categories_horns" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: witnesses and homotopies">
+
+A composite in a quasi-category is not an arrow but a triangle. Here is the 2-simplex $\sigma$ witnessing $h$ as a composite of $f$ and $g$, next to the 2-simplex that *defines* a homotopy $h \simeq h'$ (its third edge is an identity):
+
+<CommutativeDiagram
+  objects={[
+    { id: "x", tex: "x", row: 1, col: 0 },
+    { id: "y", tex: "y", row: 0, col: 1 },
+    { id: "z", tex: "z", row: 1, col: 2 },
+    { id: "s", tex: "\\sigma", row: 0.62, col: 1 },
+    { id: "x2", tex: "x", row: 1, col: 3 },
+    { id: "z2", tex: "z", row: 0, col: 4 },
+    { id: "z3", tex: "z", row: 1, col: 5 },
+    { id: "t", tex: "\\tau", row: 0.62, col: 4 }
+  ]}
+  arrows={[
+    { from: "x", to: "y", tex: "f" },
+    { from: "y", to: "z", tex: "g" },
+    { from: "x", to: "z", tex: "h", labelSide: "right" },
+    { from: "x2", to: "z2", tex: "h" },
+    { from: "z2", to: "z3", tex: "\\mathrm{id}_z" },
+    { from: "x2", to: "z3", tex: "h'", labelSide: "right" }
+  ]}
+  size="sm"
+  caption="Left: a 2-simplex $\sigma$ with $d_2\sigma = f$, $d_0\sigma = g$, $d_1\sigma = h$. Right: a 2-simplex $\tau$ with $d_0\tau = \mathrm{id}_z$ is a homotopy $h \simeq h'$."
+/>
+
+To see Theorem 2 in action, imagine the tetrahedron with vertices $x, y, z, z$: its faces are $\sigma$, $\sigma'$, the degenerate triangle $(g, \mathrm{id}_z, g)$, and the missing face — a $\tau$ as on the right. Filling the inner horn produces the missing face, and so the homotopy.
+
+Try it on the experiment's output: in the idempotent monoid $\{1, e\}$, the outer horn with $f = e$, $h = e$ has two fillers $g = 1$ and $g = e$. Why does no such ambiguity ever arise for inner horns in a nerve? (Answer: the filler of an inner horn is determined by the spine, which the horn contains.)
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"An ∞-category is a category with more arrows."** Its composition and coherence are homotopical: composites are not unique, only unique up to a contractible space of choices, and associativity holds up to specified higher simplices. The extra information lives in the higher simplices, not in additional 1-morphisms.
+
+</Misconception>
+
+<Misconception>
+
+**"The homotopy hypothesis is a single theorem."** It is a guiding principle ("∞-groupoids are spaces") whose precise form depends on the definition of ∞-groupoid. For Kan complexes it is Quillen's theorem (Theorem 5); for various algebraic definitions it is proved in some cases and open in others.
+
+</Misconception>
+
+<Misconception>
+
+**"Composition in a quasi-category is a function $X_1 \times_{X_0} X_1 \to X_1$."** There is no preferred composite: a composable pair may have many fillers, with different long edges. What is canonical is the *space* of fillers, which is contractible (Theorem 3), and the composite in the homotopy category $hX$.
+
+</Misconception>
+
+<Misconception>
+
+**"Quasi-categories and Kan complexes are the same."** Every Kan complex is a quasi-category, but not conversely: $N([1])$ is a quasi-category in which the outer horn with edges $0 \to 1$ and $\mathrm{id}_0$ cannot be filled. By Joyal's theorem, a quasi-category is Kan exactly when all its morphisms are invertible up to homotopy.
+
+</Misconception>
+
+<Misconception>
+
+**"An ∞-category is determined by its homotopy category."** Very different ∞-categories can have equivalent homotopy categories, and homotopy limits and colimits cannot in general be computed in the homotopy category. That is the whole reason for the theory.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Spaces are ∞-groupoids">
+
+From the topologist's side, an ∞-groupoid is a space: points are objects, paths are morphisms, homotopies are 2-morphisms, and Kan complexes are the combinatorial model (Theorem 5). The homotopy groups of a Kan complex $X$ at a vertex $x$ can be defined combinatorially, and $hX = \Pi_1(X)$. An ∞-category is then a "directed space": the quasi-category condition allows paths that cannot be reversed. Mapping spaces $\mathrm{Map}_X(x, y)$ in a quasi-category are Kan complexes, so an ∞-category is a category "enriched in spaces" up to homotopy — and the simplicial-category model (Theorem 6) makes this literal. See <TopicLink id="math.geom.homotopy-theory">Homotopy theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Higher algebra and the Dold–Kan correspondence">
+
+The Dold–Kan correspondence (Dold, Kan, 1958) is an equivalence between simplicial abelian groups and chain complexes in non-negative degrees, under which homotopy groups become homology groups. It is the bridge by which homological algebra becomes a special case of ∞-category theory: the derived ∞-category of a ring is built from chain complexes, and its homotopy category is the classical derived category (see <TopicLink id="math.cat.derived-categories">Derived categories</TopicLink>). Algebraic structures that are associative or commutative only up to coherent homotopy — $A_\infty$- and $E_\infty$-algebras, going back to Stasheff and to Boardman–Vogt — are the algebra of ∞-categories, developed systematically in Lurie's *Higher Algebra*.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Derived intersections and higher stacks">
+
+Algebraic geometers meet ∞-groupoids when moduli problems have automorphisms (stacks take values in groupoids) and when intersections are not transversal. Serre's intersection formula (1965) computes the intersection multiplicity of subvarieties $V, W$ at a point as $\sum_i (-1)^i \operatorname{length} \mathrm{Tor}_i^{\mathcal{O}}(\mathcal{O}_V, \mathcal{O}_W)$; the higher Tor terms are invisible in the ordinary scheme-theoretic intersection. In **derived algebraic geometry** (Toën–Vezzosi; Lurie) the intersection is a homotopy pullback in an ∞-category of derived schemes, whose structure sheaf remembers all the $\mathrm{Tor}_i$ — Serre's formula becomes the Euler characteristic of a derived object. See <TopicLink id="math.geom.algebraic-geometry">Algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Homotopy type theory as an internal language">
+
+In homotopy type theory, types behave like ∞-groupoids: iterated identity types form a weak ∞-groupoid (Lumsdaine; van den Berg and Garner). Shulman (2019) proved that every Grothendieck $(\infty, 1)$-topos — a well-behaved ∞-category of "sheaves of spaces" — models homotopy type theory with univalent universes, so type-theoretic proofs yield theorems in every ∞-topos. This is the logician's view of an ∞-topos: a universe of sets in which equality is a space of paths. See <TopicLink id="math.found.homotopy-type-theory">Homotopy type theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="One theory, many models">
+
+From the categorical point of view, quasi-categories, complete Segal spaces and simplicial categories are different *presentations* of one homotopy theory (Theorem 6), as different coordinate systems present one manifold. The relationship between a category and an ∞-category is like that between a set and a space: the nerve embeds categories fully faithfully into ∞-categories, with left adjoint the homotopy category, exactly as sets embed into spaces as the discrete ones with left adjoint $\pi_0$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="arrows-that-compose" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1950s: combinatorial homotopy theory.** Daniel Kan (born in the Netherlands, working in the United States) introduced the extension condition now called the Kan condition (1957) and, in the same period, adjoint functors (1958). Albrecht Dold and Kan found the Dold–Kan correspondence (1958), and John Moore showed simplicial groups are Kan complexes.
+- **1967: model categories.** Daniel Quillen's *Homotopical Algebra* axiomatised homotopy theory and proved that simplicial sets and spaces have equivalent homotopy theories.
+- **1973: weak Kan complexes.** Michael Boardman and Rainer Vogt (UK and Germany) introduced simplicial sets with inner horn fillers in their study of homotopy-invariant algebraic structures.
+- **1980s.** William Dwyer and Daniel Kan developed simplicial localisation; Jean-Marc Cordier (France) introduced the homotopy coherent nerve (1982); Grothendieck's *Pursuing Stacks* (1983) set out the homotopy hypothesis.
+- **2000s: the theory takes shape.** André Joyal (Québec) showed that quasi-categories support a full category theory and built the Joyal model structure; Charles Rezk introduced complete Segal spaces (2001); Julia Bergner (2007) and Joyal–Tierney (2007) compared models; Bertrand Toën (2005) gave axioms; Toën and Gabriele Vezzosi (France and Italy) built homotopical algebraic geometry; Jacob Lurie's *Higher Topos Theory* (2009) and *Higher Algebra* made the theory a working tool.
+- **2010s–today.** Textbooks and model-independent approaches by Denis-Charles Cisinski (2019) and Emily Riehl and Dominic Verity (2022), Lurie's *Kerodon*, and the first formalisations in proof assistants.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+A suggested path: Groth's short course or Riehl's notes for orientation; Cisinski or Riehl–Verity for a textbook; *Higher Topos Theory* and *Kerodon* as references.
+
+- Moritz Groth, "A short course on ∞-categories", in *Handbook of Homotopy Theory* (2020).
+- Denis-Charles Cisinski, *Higher Categories and Homotopical Algebra* (2019).
+- Emily Riehl and Dominic Verity, *Elements of ∞-Category Theory* (2022).
+- Jacob Lurie, *Higher Topos Theory* (2009), Chapters 1–2; and *Kerodon*, an online textbook.
+- André Joyal, "Quasi-categories and Kan complexes", *J. Pure Appl. Algebra* 175 (2002).
+- Julia Bergner, *The Homotopy Theory of (∞,1)-Categories* (2018).
+- J. M. Boardman and R. M. Vogt, *Homotopy Invariant Algebraic Structures on Topological Spaces* (Lecture Notes in Mathematics 347, 1973).
+- Paul Goerss and John F. Jardine, *Simplicial Homotopy Theory* (1999) — for Kan complexes and the Kan–Quillen model structure.
+
+</Section>

@@ -1,0 +1,573 @@
+---
+slug: type-theory
+topic: math.found.type-theory
+title: Type theory and propositions as types
+subtitle: A proof is a program and a proposition is the type of its proofs — the idea behind Lean, and a foundation for mathematics quite unlike set theory.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6036
+objectives:
+  - Type-check terms of the simply typed λ-calculus and read them as proofs in intuitionistic propositional logic
+  - Explain dependent function (Π) and dependent pair (Σ) types and use them to express ∀ and ∃
+  - Define the natural numbers and lists as inductive types and derive their induction principles from their recursors
+  - Prove, with a Kripke model, that some classical tautologies such as Peirce's law are uninhabited types
+  - Contrast a type-theoretic foundation such as Lean's, where every term has a type, with ZFC, where everything is a set
+narrators: []
+lean:
+  - Lumenary.TypeTheory.k_combinator
+  - Lumenary.TypeTheory.s_combinator
+  - Lumenary.TypeTheory.and_comm_term
+  - Lumenary.TypeTheory.or_elim_term
+  - Lumenary.TypeTheory.not_not_em
+  - Lumenary.TypeTheory.peirce_classical
+  - Lumenary.TypeTheory.exists_larger
+  - Lumenary.TypeTheory.ttChoice
+  - Lumenary.TypeTheory.prop_choice
+  - Lumenary.TypeTheory.N
+  - Lumenary.TypeTheory.N.induction
+  - Lumenary.TypeTheory.N.add
+  - Lumenary.TypeTheory.N.zero_add
+  - Lumenary.TypeTheory.N.succ_ne_zero
+  - Lumenary.TypeTheory.N.succ_injective
+  - Lumenary.TypeTheory.Lst
+  - Lumenary.TypeTheory.Lst.induction
+  - Lumenary.TypeTheory.Lst.length_append
+  - Lumenary.TypeTheory.Ty
+  - Lumenary.TypeTheory.Tm
+  - Lumenary.TypeTheory.HasType
+  - Lumenary.TypeTheory.Derivable
+  - Lumenary.TypeTheory.s_typed
+  - Lumenary.TypeTheory.HasType.derivable
+  - Lumenary.TypeTheory.Derivable.exists_term
+  - Lumenary.TypeTheory.curry_howard
+  - Lumenary.TypeTheory.self_application_untypable
+  - Lumenary.TypeTheory.KripkeModel
+  - Lumenary.TypeTheory.KripkeModel.Forces
+  - Lumenary.TypeTheory.forces_mono
+  - Lumenary.TypeTheory.Derivable.sound
+  - Lumenary.TypeTheory.peirceModel
+  - Lumenary.TypeTheory.peirce_not_derivable
+  - Lumenary.TypeTheory.peirce_uninhabited
+compute: [type_theory_inference, type_theory_inhabitation]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What is a proof?">
+
+Here is a complete, machine-checked Lean proof that $A$ implies "$B$ implies $A$":
+
+```lean
+theorem k_combinator (A B : Prop) : A → B → A :=
+  fun a _ => a
+```
+
+The proof is not a list of sentences. It is a **program**: the function that takes a proof `a` of $A$, ignores a proof of $B$, and hands back `a`. Lean checks the proof by checking that this program has the type `A → B → A` — exactly as a compiler checks that a function returning an integer really returns an integer.
+
+This is the **propositions-as-types** principle, also called the **Curry–Howard correspondence**: a proposition is a type, a proof is a term of that type, and proving is programming. It goes back to the constructive reading of logic by Brouwer, Heyting and Kolmogorov, was observed by Haskell Curry and made precise by William Howard, and grew, through the work of Per Martin-Löf, Jean-Yves Girard, Thierry Coquand and others, into the **dependent type theories** on which Lean, Rocq (formerly Coq) and Agda are built.
+
+Type theory began elsewhere: Bertrand Russell introduced types in 1908 to block paradoxes such as "the set of all sets that are not members of themselves". So type theory is at once a logic, a programming language and a foundation of mathematics. This lesson develops all three, building on <TopicLink id="math.comp.lambda-calculus">the λ-calculus</TopicLink> and <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The constructive reading of the connectives">
+
+What must one *have* in order to have a proof? The **Brouwer–Heyting–Kolmogorov** (BHK) interpretation answers connective by connective:
+
+| A proof of … | is … | as a type |
+| --- | --- | --- |
+| $A \wedge B$ | a pair: a proof of $A$ and a proof of $B$ | product $A \times B$ |
+| $A \vee B$ | a proof of $A$ or a proof of $B$, *labelled with which* | sum $A + B$ |
+| $A \to B$ | a method turning any proof of $A$ into a proof of $B$ | function type $A \to B$ |
+| $\top$ | trivial | unit type $1$ |
+| $\bot$ | impossible: there is none | empty type $0$ |
+| $\neg A$ | a method turning a proof of $A$ into a proof of $\bot$ | $A \to 0$ |
+| $\forall x{:}X.\; P(x)$ | a function sending each $x$ to a proof of $P(x)$ | $\Pi$-type $\prod_{x : X} P(x)$ |
+| $\exists x{:}X.\; P(x)$ | a witness $x$ together with a proof of $P(x)$ | $\Sigma$-type $\sum_{x : X} P(x)$ |
+
+Read this way, a proof of $A \vee B$ must *decide* which disjunct holds, and a proof of $\exists x.\, P(x)$ must *produce* a witness. That is why excluded middle, $A \vee \neg A$, is not automatically available: a method for deciding every proposition is a lot to ask. The resulting logic is **intuitionistic**. It proves fewer theorems than classical logic, but each of its proofs carries computational content.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="typing judgement">
+
+A **typing judgement** $\Gamma \vdash t : A$ asserts that the term $t$ has type $A$ in the **context** $\Gamma = x_1 : A_1, \dots, x_n : A_n$, a list of typed variables (hypotheses). A judgement is not a proposition that can be true or false *inside* the theory; it is the basic act of the theory, checked by rules.
+
+</Definition>
+
+<Definition term="simply typed λ-calculus with products and sums">
+
+Types: base types $p, q, \dots$, and $A \to B$, $A \times B$, $A + B$, $1$, $0$. The typing rules come in pairs, an **introduction** rule that builds a term of a type and an **elimination** rule that uses one:
+$$
+\dfrac{(x : A) \in \Gamma}{\Gamma \vdash x : A}
+\qquad
+\dfrac{\Gamma, x : A \vdash t : B}{\Gamma \vdash \lambda x{:}A.\, t : A \to B}
+\qquad
+\dfrac{\Gamma \vdash s : A \to B \quad \Gamma \vdash u : A}{\Gamma \vdash s\, u : B}
+$$
+$$
+\dfrac{\Gamma \vdash s : A \quad \Gamma \vdash t : B}{\Gamma \vdash (s, t) : A \times B}
+\qquad
+\dfrac{\Gamma \vdash p : A \times B}{\Gamma \vdash \pi_1\, p : A \qquad \Gamma \vdash \pi_2\, p : B}
+$$
+$$
+\dfrac{\Gamma \vdash s : A}{\Gamma \vdash \mathsf{inl}\, s : A + B}
+\qquad
+\dfrac{\Gamma \vdash t : B}{\Gamma \vdash \mathsf{inr}\, t : A + B}
+\qquad
+\dfrac{\Gamma \vdash e : A + B \quad \Gamma, x : A \vdash s : C \quad \Gamma, y : B \vdash t : C}{\Gamma \vdash \mathsf{case}\; e\; \mathsf{of}\; \mathsf{inl}\, x \Rightarrow s \mid \mathsf{inr}\, y \Rightarrow t : C}
+$$
+together with $\Gamma \vdash \ast : 1$ and $\dfrac{\Gamma \vdash e : 0}{\Gamma \vdash \mathsf{abort}\, e : C}$. Computation rules say that eliminating what was just introduced cancels: $(\lambda x.\, t)\, u \to t[u/x]$, $\pi_1(s, t) \to s$, and $\mathsf{case}$ applied to $\mathsf{inl}\, s$ continues with the first branch.
+
+</Definition>
+
+<Definition term="Curry–Howard correspondence">
+
+Erasing the terms from these rules leaves the rules of **natural deduction** for intuitionistic propositional logic: $\to$-introduction discharges a hypothesis, $\to$-elimination is modus ponens, and so on. So: propositions correspond to types, proofs to terms, provability to **inhabitation** of a type, and the computation rules to the removal of *detours* — an introduction immediately followed by an elimination.
+
+</Definition>
+
+<Definition term="dependent types: Π and Σ">
+
+A **type family** $B : A \to \mathsf{Type}$ assigns a type $B(a)$ to each $a : A$ — for example $\mathrm{Vec}(n)$, the lists of length exactly $n$, or the proposition $n < m$ for fixed $n$. An element of the **dependent function type** $\prod_{x : A} B(x)$ sends each $a : A$ to an element of $B(a)$ — the output type depends on the input. An element of the **dependent pair type** $\sum_{x : A} B(x)$ is a pair $(a, b)$ with $a : A$ and $b : B(a)$. When $B$ is a family of propositions, $\prod$ is $\forall$ and $\sum$ is $\exists$. When $B$ is constant, $\prod_{x:A} B = A \to B$ and $\sum_{x:A} B = A \times B$.
+
+</Definition>
+
+<Definition term="inductive type">
+
+An **inductive type** is freely generated by its constructors. The natural numbers $\N$ have constructors $\mathsf{zero} : \N$ and $\mathsf{succ} : \N \to \N$; lists over $A$ have $\mathsf{nil}$ and $\mathsf{cons} : A \to \mathrm{List}(A) \to \mathrm{List}(A)$. Each comes with a **recursor** (eliminator). For $\N$:
+$$
+\mathsf{rec} : \prod_{P : \N \to \mathsf{Type}} P(\mathsf{zero}) \to \Big(\prod_{n : \N} P(n) \to P(\mathsf{succ}\, n)\Big) \to \prod_{n : \N} P(n),
+$$
+with computation rules $\mathsf{rec}\, P\, z\, s\, \mathsf{zero} = z$ and $\mathsf{rec}\, P\, z\, s\, (\mathsf{succ}\, n) = s\, n\, (\mathsf{rec}\, P\, z\, s\, n)$. With $P$ constant it defines functions by recursion; with $P$ a family of propositions it *is* the principle of induction.
+
+</Definition>
+
+<Definition term="universes">
+
+Types are terms too, so they need types: **universes** $\mathsf{Type}_0 : \mathsf{Type}_1 : \mathsf{Type}_2 : \cdots$. Lean also has the universe $\mathsf{Prop}$ of propositions, in which any two proofs of the same proposition are equal (**proof irrelevance**). A single universe containing itself, $\mathsf{Type} : \mathsf{Type}$, makes the theory inconsistent (Girard's paradox, 1972) — a type-theoretic echo of Russell's paradox.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples: proofs as programs">
+
+<Example title="Three classical combinators are three tautologies">
+
+- $I = \lambda x{:}A.\, x : A \to A$ proves $A \to A$.
+- $K = \lambda x{:}A.\, \lambda y{:}B.\, x : A \to B \to A$ proves $A \to (B \to A)$.
+- $S = \lambda f.\, \lambda g.\, \lambda x.\, f\, x\, (g\, x) : (A \to B \to C) \to (A \to B) \to A \to C$.
+
+The typing derivation of $S$ *is* a natural-deduction proof: assume $f : A \to B \to C$, $g : A \to B$, $x : A$; then $f\, x : B \to C$ and $g\, x : B$ by modus ponens, so $f\, x\, (g\, x) : C$; discharge the three assumptions. The composition $\lambda f\, g\, x.\, f\,(g\, x) : (B \to C) \to (A \to B) \to A \to C$ is the transitivity of implication.
+
+</Example>
+
+<Example title="Negation and double negation">
+
+With $\neg A = A \to 0$:
+
+- $\lambda a.\, \lambda k.\, k\, a : A \to \neg\neg A$ (given $a$, any refutation $k$ of $A$ yields $\bot$).
+- $\lambda h.\, \lambda a.\, h\,(\lambda k.\, k\, a) : \neg\neg\neg A \to \neg A$.
+- $\lambda f.\, \lambda k.\, \lambda a.\, k\,(f\, a) : (A \to B) \to (\neg B \to \neg A)$, contraposition.
+- $\lambda h.\, h\,(\mathsf{inr}\,(\lambda a.\, h\,(\mathsf{inl}\, a))) : \neg\neg(A + \neg A)$: excluded middle cannot be refuted.
+
+But no closed term has type $\neg\neg A \to A$, or $A + \neg A$, or **Peirce's law** $((A \to B) \to A) \to A$, for a base type $A$ — although all three are classical tautologies. Theorem 4 proves this for Peirce's law.
+
+</Example>
+
+<Example title="Products and functions: currying">
+
+$\lambda f\, a\, b.\, f\,(a, b) : (A \times B \to C) \to (A \to B \to C)$ and $\lambda g\, p.\, g\,(\pi_1\, p)\,(\pi_2\, p) : (A \to B \to C) \to (A \times B \to C)$. Logically: "$A \wedge B$ implies $C$" is equivalent to "$A$ implies that $B$ implies $C$". The two terms are mutually inverse up to βη-equality — a type isomorphism, not merely a logical equivalence.
+
+</Example>
+
+<Example title="Dependent types">
+
+- $\lambda n.\, (n + 1, \text{proof that } n < n + 1) : \prod_{n : \N} \sum_{m : \N} n < m$ proves $\forall n\, \exists m.\, n < m$ — and you can run it to compute a witness.
+- $\sum_{n : \N} (n > 0)$ is the type of positive natural numbers: a number paired with a certificate.
+- $\mathrm{append} : \prod_{m, n : \N} \mathrm{Vec}(m) \to \mathrm{Vec}(n) \to \mathrm{Vec}(m + n)$: the type records the length, so a type checker can rule out reading past the end of a list.
+
+</Example>
+
+<Example title="Recursion and induction from one recursor">
+
+Addition on $\N$ by recursion on the second argument: $m + \mathsf{zero} = m$, $m + \mathsf{succ}\, n = \mathsf{succ}(m + n)$. Then $m + 0 = m$ holds *by computation*, but $0 + n = n$ does not — it needs induction: $0 + \mathsf{zero} = \mathsf{zero}$, and if $0 + n = n$ then $0 + \mathsf{succ}\, n = \mathsf{succ}(0 + n) = \mathsf{succ}\, n$. Both the definition and the proof are applications of the same recursor, with different $P$.
+
+</Example>
+
+</Section>
+
+<Section id="theorems" kind="proof" title="The main theorems">
+
+We work with the implicational fragment — types built from base types $p_0, p_1, \dots$ by $\to$ — where everything can be proved completely (and is, in Lean); the extensions to $\times$, $+$, $1$, $0$ add more cases of the same kind.
+
+**Natural deduction** $\Gamma \vdash A$ has three rules: if $A \in \Gamma$ then $\Gamma \vdash A$; from $\Gamma, A \vdash B$ infer $\Gamma \vdash A \to B$; from $\Gamma \vdash A \to B$ and $\Gamma \vdash A$ infer $\Gamma \vdash B$.
+
+<Theorem name="Theorem 1 (Curry–Howard)">
+
+For every context $\Gamma = A_1, \dots, A_n$ and type $A$: $\;\Gamma \vdash A$ is derivable in natural deduction if and only if there is a term $t$ with $x_1 : A_1, \dots, x_n : A_n \vdash t : A$.
+
+</Theorem>
+
+<Proof>
+
+($\Leftarrow$) By induction on the typing derivation, erase the terms: a variable $x_i : A_i$ becomes the hypothesis $A_i \in \Gamma$; an abstraction becomes $\to$-introduction; an application becomes $\to$-elimination.
+
+($\Rightarrow$) By induction on the natural-deduction derivation, build terms: a hypothesis $A = A_i$ becomes the variable $x_i$; if $\Gamma, A \vdash B$ is realised by $t$ (with a new variable $x : A$), then $\Gamma \vdash A \to B$ is realised by $\lambda x{:}A.\, t$; if $\Gamma \vdash A \to B$ and $\Gamma \vdash A$ are realised by $s$ and $u$, then $\Gamma \vdash B$ is realised by $s\, u$.
+
+</Proof>
+
+The correspondence goes further than provability. A **detour** in a proof — introduce $A \to B$ by discharging $A$, then immediately apply it to a proof of $A$ — is a β-redex $(\lambda x.\, t)\, u$, and removing it means substituting the proof $u$ for the hypothesis $x$, which is β-reduction. Types are preserved by reduction (**subject reduction**: if $\Gamma \vdash t : A$ and $t \to t'$ then $\Gamma \vdash t' : A$, proved from a substitution lemma for typings). So Prawitz's normalisation theorem for natural deduction (1965) and the normalisation of the simply typed λ-calculus (Turing; Tait 1967 for strong normalisation; see <TopicLink id="math.comp.lambda-calculus">the λ-calculus</TopicLink>) are the same theorem.
+
+<Theorem name="Corollary 2 (self-application is not typable)">
+
+For no context $\Gamma$ and types $A, T$ is $\Gamma \vdash \lambda x{:}A.\, x\, x : T$.
+
+</Theorem>
+
+<Proof>
+
+A typing of $x\, x$ under $x : A$ requires $x : C \to B$ and $x : C$ for some $B, C$, so $A = C \to B$ and $A = C$, giving $C = C \to B$. That is impossible: by induction on $C$, no type equals a function type out of itself ($C \to B$ has more symbols than $C$).
+
+</Proof>
+
+So the terms $\Omega$ and $Y$ of the untyped calculus have no types — as they must not, since under Curry–Howard a non-terminating term of every type would prove every proposition.
+
+To show that a type is **empty** we need a semantics in which the rules are sound but the type is "false".
+
+<Definition term="Kripke model">
+
+A **Kripke model** is a preordered set $(W, \le)$ of *states of knowledge* together with, for each state $w$, a set of atoms known at $w$, such that knowledge persists: if $w \le v$ and $p$ is known at $w$, then $p$ is known at $v$. **Forcing** is defined by recursion on types: $w \Vdash p$ if $p$ is known at $w$, and
+$$
+w \Vdash A \to B \quad\iff\quad \text{for every } v \ge w,\ v \Vdash A \text{ implies } v \Vdash B .
+$$
+
+</Definition>
+
+<Theorem name="Theorem 3 (soundness of natural deduction for Kripke models)">
+
+(a) **Persistence**: if $w \le v$ and $w \Vdash A$ then $v \Vdash A$. (b) If $\Gamma \vdash A$ and $w \Vdash B$ for every $B \in \Gamma$, then $w \Vdash A$.
+
+</Theorem>
+
+<Proof>
+
+(a) Induction on $A$. For atoms this is the persistence condition. For $A \to B$: if $w \Vdash A \to B$ and $v \ge w$, then every $u \ge v$ also satisfies $u \ge w$ (transitivity), so $u \Vdash A$ implies $u \Vdash B$; hence $v \Vdash A \to B$.
+
+(b) Induction on the derivation, for all states $w$ at once. Hypothesis rule: immediate. $\to$-introduction: suppose $\Gamma, A \vdash B$ and $w$ forces all of $\Gamma$. Let $v \ge w$ with $v \Vdash A$. By (a), $v$ forces all of $\Gamma$, so $v$ forces all of $\Gamma, A$, and the induction hypothesis gives $v \Vdash B$. Hence $w \Vdash A \to B$. $\to$-elimination: from $w \Vdash A \to B$ and $w \Vdash A$, apply the definition with $v = w$ (reflexivity) to get $w \Vdash B$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Peirce's law is uninhabited)">
+
+Let $p, q$ be distinct base types. There is no closed term $t$ with $\vdash t : ((p \to q) \to p) \to p$, although this type is a classical tautology.
+
+</Theorem>
+
+<Proof>
+
+Take two states $w_0 \le w_1$, with $p$ known only at $w_1$ and $q$ known nowhere.
+
+- $w_0 \not\Vdash p \to q$: at the later state $w_1$, $p$ holds and $q$ does not. Similarly $w_1 \not\Vdash p \to q$.
+- Hence $w_0 \Vdash (p \to q) \to p$: at $w_0$ and at $w_1$ the hypothesis $p \to q$ is not forced, so the implication holds vacuously.
+- But $w_0 \not\Vdash p$. So $w_0 \not\Vdash ((p \to q) \to p) \to p$, taking $v = w_0$ in the definition.
+
+By Theorem 3, Peirce's law is not derivable in natural deduction, and by Theorem 1 no closed term has its type. It is a classical tautology: if $p$ is true the conclusion holds, and if $p$ is false then $p \to q$ is true, so $(p \to q) \to p$ forces $p$ to be true — a contradiction, so that case cannot occur.
+
+</Proof>
+
+With forcing extended by $w \Vdash A \vee B$ iff $w \Vdash A$ or $w \Vdash B$, and $\bot$ forced nowhere, the same two-state model refutes excluded middle: $w_0 \not\Vdash p$, and $w_0 \not\Vdash \neg p$ because $p$ becomes known at $w_1$. Conversely, **Glivenko's theorem** (1929) says that for every classical propositional tautology $A$, the double negation $\neg\neg A$ is intuitionistically provable — so classical logic is "intuitionistic logic seen through a double negation".
+
+<Theorem name="Theorem 5 (induction is the recursor)">
+
+In a type theory with the inductive type $\N$ and its recursor, the induction principle
+$$
+\prod_{P : \N \to \mathsf{Prop}} P(\mathsf{zero}) \to \Big(\prod_{n} P(n) \to P(\mathsf{succ}\, n)\Big) \to \prod_{n} P(n)
+$$
+is inhabited, by the recursor itself. Moreover the constructors are injective and have disjoint images, so $\N$ is freely generated by them. The same holds for lists, with the principle "$P(\mathsf{nil})$ and $P(l) \to P(\mathsf{cons}\, a\, l)$ imply $P(l)$ for all $l$".
+
+</Theorem>
+
+<Proof>
+
+Induction is $\mathsf{rec}$ with motive $P$. For disjointness, define by recursion $\mathsf{isZero} : \N \to \mathsf{Prop}$ with $\mathsf{isZero}(\mathsf{zero}) = \top$ and $\mathsf{isZero}(\mathsf{succ}\, n) = \bot$; if $\mathsf{succ}\, n = \mathsf{zero}$, transporting the proof of $\top = \mathsf{isZero}(\mathsf{zero})$ along this equality gives a proof of $\bot$. For injectivity, define $\mathsf{pred}$ by recursion with $\mathsf{pred}(\mathsf{succ}\, n) = n$; if $\mathsf{succ}\, m = \mathsf{succ}\, n$ then $m = \mathsf{pred}(\mathsf{succ}\, m) = \mathsf{pred}(\mathsf{succ}\, n) = n$. Lists are identical in structure.
+
+</Proof>
+
+Note how much the recursor does: in ZFC, $\N$ is constructed as a set (the least inductive set), and induction is a theorem about it; in type theory, $\N$ is *defined* by its constructors and its eliminator, and induction is part of the definition.
+
+<Theorem name="Theorem 6 (the type-theoretic axiom of choice)">
+
+For types $A, B$ and a relation $R : A \to B \to \mathsf{Type}$, the type
+$$
+\Big(\prod_{x : A} \sum_{y : B} R(x, y)\Big) \to \sum_{f : A \to B} \prod_{x : A} R(x, f\, x)
+$$
+is inhabited, without any axiom.
+
+</Theorem>
+
+<Proof>
+
+The term $\lambda h.\, \big(\lambda x.\, \pi_1(h\, x),\; \lambda x.\, \pi_2(h\, x)\big)$ has this type: $h$ assigns to each $x$ a pair, and the choice function is its first component.
+
+</Proof>
+
+This explains a famous difference. In type theory a proof of $\forall x\, \exists y\, R$ built from Σ already *is* a choice function. Lean, however, puts $\exists$ in $\mathsf{Prop}$, where proofs are irrelevant and cannot be inspected to extract a witness; there, the corresponding statement is Lean's `Classical.axiomOfChoice`, derived from the axiom `Classical.choice`. Excluded middle is then provable (Diaconescu's argument), so Lean's mathematics is classical — by explicit axioms on top of a constructive core.
+
+<Theorem name="Theorem 7 (normalisation and consistency, stated)">
+
+Every term of the simply typed λ-calculus with products and sums is strongly normalising, and closed normal terms of a type are built by an introduction rule of that type. Hence there is no closed term of type $0$: intuitionistic propositional logic is consistent. Type checking is decidable. (Proofs: Girard, Lafont and Taylor 1989; Sørensen and Urzyczyn 2006.)
+
+</Theorem>
+
+For stronger theories the analogous statements are deep: strong normalisation of Girard's System F (1972) has no proof in second-order arithmetic, and Lean's theory, with its impredicative $\mathsf{Prop}$, proof irrelevance and quotients, is known to have an undecidable definitional equality in general, while being consistent relative to ZFC with inaccessible cardinals (Carneiro 2019).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Type theory in Lean — and about Lean">
+
+The Lean module has two halves: Lean's own logic used as a type theory, and a small type theory *defined inside* Lean, about which we prove theorems.
+
+**Proofs are programs.** Each proof is a λ-term. Look at the axiom lists Lean reports: the first four use no axioms at all, while Peirce's law depends on `Classical.choice`, through `Classical.em`.
+
+<Lean decl="Lumenary.TypeTheory.k_combinator" />
+
+<Lean decl="Lumenary.TypeTheory.s_combinator" />
+
+<Lean decl="Lumenary.TypeTheory.and_comm_term" />
+
+<Lean decl="Lumenary.TypeTheory.or_elim_term" />
+
+<Lean decl="Lumenary.TypeTheory.not_not_em" />
+
+<Lean decl="Lumenary.TypeTheory.peirce_classical" />
+
+**Π and Σ (Theorem 6).** With subtypes `{y // R x y}` (a Σ-type whose second component is a proof), choice is a definition with no axioms; with `∃`, it needs `Classical.choice`.
+
+<Lean decl="Lumenary.TypeTheory.exists_larger" />
+
+<Lean decl="Lumenary.TypeTheory.ttChoice" />
+
+<Lean decl="Lumenary.TypeTheory.prop_choice" />
+
+**Inductive types (Theorem 5).** A home-made copy of the natural numbers: the induction principle is literally `N.rec` with the predicate as motive, $0 + n = n$ is proved with it, and freeness comes from the recursor. Then lists.
+
+<Lean decl="Lumenary.TypeTheory.N" />
+
+<Lean decl="Lumenary.TypeTheory.N.induction" />
+
+<Lean decl="Lumenary.TypeTheory.N.add" />
+
+<Lean decl="Lumenary.TypeTheory.N.zero_add" />
+
+<Lean decl="Lumenary.TypeTheory.N.succ_ne_zero" />
+
+<Lean decl="Lumenary.TypeTheory.N.succ_injective" />
+
+<Lean decl="Lumenary.TypeTheory.Lst" />
+
+<Lean decl="Lumenary.TypeTheory.Lst.induction" />
+
+<Lean decl="Lumenary.TypeTheory.Lst.length_append" />
+
+**Curry–Howard as a theorem (Theorem 1).** Simple types, terms with de Bruijn indices, the typing judgement and natural deduction, defined as inductive predicates. The typing derivation of $S$ is built rule by rule, and the two directions of Theorem 1 are proved by induction on derivations.
+
+<Lean decl="Lumenary.TypeTheory.Ty" />
+
+<Lean decl="Lumenary.TypeTheory.Tm" />
+
+<Lean decl="Lumenary.TypeTheory.HasType" />
+
+<Lean decl="Lumenary.TypeTheory.Derivable" />
+
+<Lean decl="Lumenary.TypeTheory.s_typed" />
+
+<Lean decl="Lumenary.TypeTheory.HasType.derivable" />
+
+<Lean decl="Lumenary.TypeTheory.Derivable.exists_term" />
+
+<Lean decl="Lumenary.TypeTheory.curry_howard" />
+
+<Lean decl="Lumenary.TypeTheory.self_application_untypable" />
+
+**Kripke models and Peirce's law (Theorems 3 and 4).**
+
+<Lean decl="Lumenary.TypeTheory.KripkeModel" />
+
+<Lean decl="Lumenary.TypeTheory.KripkeModel.Forces" />
+
+<Lean decl="Lumenary.TypeTheory.forces_mono" />
+
+<Lean decl="Lumenary.TypeTheory.Derivable.sound" />
+
+<Lean decl="Lumenary.TypeTheory.peirceModel" />
+
+<Lean decl="Lumenary.TypeTheory.peirce_not_derivable" />
+
+<Lean decl="Lumenary.TypeTheory.peirce_uninhabited" />
+
+There is a pleasing loop here. Lean proves `peirce_classical`, Peirce's law for its own propositions — using an axiom — and also proves `peirce_uninhabited`, that Peirce's law has no term in the simply typed λ-calculus. No contradiction: the first is about Lean's logic with `Classical.choice`, the second about a different, weaker formal system that Lean studies as a mathematical object.
+
+**What is and is not formalised.** Theorems 1, 3, 4 (implicational fragment), 5 and 6 and Corollary 2 are proved independently, in core Lean without Mathlib. Not formalised: the extension to products, sums and the empty type, subject reduction, normalisation (Theorem 7), Glivenko's theorem, and anything about the metatheory of Lean itself.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Type inference and proof search">
+
+Given an untyped term, can we find its type? The first experiment infers the **most general** (principal) simple type by collecting equations between type variables and solving them by unification — the algorithm behind type inference in ML and Haskell. Read through Curry–Howard, the principal type is the most general formula the term proves, so each one is checked to be a tautology.
+
+<Python id="type_theory_inference" />
+
+$\omega = \lambda x.\, x\, x$ and $Y$ fail the **occurs check** — the equation $t_0 = t_0 \to t_1$ of Corollary 2. Every principal type found is a tautology, as Curry–Howard predicts.
+
+The converse fails, and the second experiment measures how badly. Truth tables decide classical validity; **intuitionistic provability**, i.e. inhabitation, is decided by Dyckhoff's contraction-free sequent calculus G4ip (1992), whose proof search always terminates.
+
+<Python id="type_theory_inhabitation" />
+
+What to notice: Peirce's law, double-negation elimination, excluded middle, one of De Morgan's laws and the converse of contraposition are classical tautologies without λ-terms; their double negations all have terms (Glivenko). Among all $102$ implicational formulas in $p, q$ with at most four atoms, $48$ are tautologies and $46$ are inhabited — the gap consists exactly of Peirce's law and its mirror image. These are exact decisions for the listed formulas, resting on the correctness of the two decision procedures; Theorem 4 is the proof for Peirce's law.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: a tautology with no proof term">
+
+Check in the truth table that Peirce's law is a classical tautology. Then compare it with $p \to \neg\neg p$ type-theoretically: both are tautologies, but only one is an inhabited type.
+
+<TruthTable formula="((p → q) → p) → p" showSubformulas={true} title="Peirce's law" subtitle="True in every row — yet no λ-term has this type. Truth tables check classical validity, not constructive proof." />
+
+The Kripke model of Theorem 4 has just two states. Knowledge grows from left to right, and each implication must hold at every later state.
+
+<Figure caption="The two-state Kripke model refuting Peirce's law. At w₀ nothing is known; at w₁ the atom p is known. Since p → q fails at w₁, it fails at w₀ too, so (p → q) → p holds vacuously at w₀ — but p does not.">
+
+<svg viewBox="0 0 360 150" role="img" aria-label="Two states of knowledge, w0 on the left and w1 on the right, joined by an arrow labelled 'later'. Under w0: p not known, q not known. Under w1: p known, q not known.">
+  <circle cx="80" cy="60" r="30" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="280" cy="60" r="30" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="112" y1="60" x2="240" y2="60" stroke="var(--ink-2)" strokeWidth="2" />
+  <polygon points="248,60 236,54 236,66" fill="var(--ink-2)" />
+  <text x="180" y="50" fontSize="12" textAnchor="middle" fill="var(--ink-2)">later</text>
+  <text x="80" y="65" fontSize="14" textAnchor="middle" fill="var(--ink-2)">w₀</text>
+  <text x="280" y="65" fontSize="14" textAnchor="middle" fill="var(--ink-2)">w₁</text>
+  <text x="80" y="115" fontSize="12" textAnchor="middle" fill="var(--formal)">p: no   q: no</text>
+  <text x="280" y="115" fontSize="12" textAnchor="middle" fill="var(--human)">p: yes   q: no</text>
+</svg>
+
+</Figure>
+
+Try it: decide at which states $p \to q$, $(p \to q) \to p$, $\neg p$ and $\neg\neg p$ are forced (with $\bot$ forced nowhere). You should find that $\neg\neg p$ is forced at $w_0$ although $p$ is not — the model refutes $\neg\neg p \to p$ as well.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Type theory and set theory are interchangeable."** They have different primitive notions. In ZFC everything is a set and membership $x \in y$ is a global relation between any two objects; in type theory every term has a type as part of its very formation, and the basic act is the judgement $t : A$, not a proposition. The two are related by *interpretations* — each can model the other with suitable extra assumptions — not by being the same theory.
+
+</Misconception>
+
+<Misconception>
+
+**"Types are just sets."** A set may belong to many unrelated sets ($\{1\} \in \{\{1\}\}$ and $\{1\} \in \{\{1\}, 2\}$), while a term has one type, fixed when it is written. In Lean, `(2 : ℕ) ∈ (3 : ℕ)` is not false; it is meaningless, and is rejected before anyone asks whether it is true. In ZFC with von Neumann numerals, $2 \in 3$ is true — an accident of the encoding that type theory deliberately makes inexpressible.
+
+</Misconception>
+
+<Misconception>
+
+**"Every program is a meaningful proof."** Only terminating, total programs are. A non-terminating term of every type — such as a fixed-point combinator applied to the identity — would prove every proposition, including $\bot$. That is why consistent type theories exclude unrestricted recursion: Lean accepts recursive definitions only when it can see that they terminate (structural or well-founded recursion), and functions marked `partial` cannot be unfolded in proofs.
+
+</Misconception>
+
+<Misconception>
+
+**"Curry–Howard means proofs are classical, or that truth tables decide provability."** The correspondence is with *intuitionistic* logic. Peirce's law and excluded middle are classical tautologies (every truth-table row is true) but uninhabited types. Classical reasoning can be added — by axioms, as in Lean, or via continuations (Griffin, 1990) — but it is not free.
+
+</Misconception>
+
+<Misconception>
+
+**"An `∃`-proof in Lean gives you a witness you can compute with."** In Lean, `∃ x, P x` lives in `Prop`, where proofs are irrelevant, so a proof cannot be pattern-matched to produce data. To compute, use a Σ-type such as `{x // P x}` (Theorem 6); to merely use existence inside proofs, `Classical.choose` is available at the price of an axiom.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="logic" title="Intuitionism and the double-negation translation">
+
+For Brouwer, mathematics was a mental construction, and a proof of $\exists x.\, P(x)$ that produces no $x$ was not a proof at all. Heyting (1930) formalised the resulting logic, and Kripke (1965) gave it the possible-worlds semantics used in Theorem 4, for which it is complete. The two logics are tightly linked: Glivenko's theorem for propositional logic, and the Gödel–Gentzen negative translation for first-order logic and arithmetic, embed classical logic into intuitionistic logic by inserting double negations. So intuitionistic logic does not reject classical theorems; it makes finer distinctions, separating statements with computational content from those without. See <TopicLink id="math.found.proof-theory">proof theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Open sets as truth values, types as spaces">
+
+Tarski (1938) found a topological semantics of intuitionistic logic: interpret propositions as **open subsets** of a space, with $\wedge$, $\vee$ as intersection and union, $U \to V$ as the interior of $(X \setminus U) \cup V$, and $\neg U$ as the interior of the complement. On $\R$, take $p = (0, \infty)$: then $\neg p = (-\infty, 0)$ and $p \vee \neg p = \R \setminus \{0\}$, which is not all of $\R$ — excluded middle fails at the boundary point $0$. Every intuitionistic propositional theorem denotes the whole space, and the propositional formulas true in all such interpretations over $\R$ are exactly the intuitionistic theorems. In **homotopy type theory** the picture deepens: types are spaces, terms are points, proofs of $a = b$ are paths, and Voevodsky's univalence axiom identifies equivalent types. See <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Heyting algebras">
+
+Algebraically, intuitionistic propositional logic is the theory of **Heyting algebras**: bounded lattices with an operation $a \to b$ characterised by $c \le (a \to b) \iff c \wedge a \le b$. Formulas modulo provable equivalence form the free Heyting algebra on the atoms (the Lindenbaum algebra), and a formula is provable exactly when it equals $1$ in every Heyting algebra. A three-element chain $0 < \tfrac12 < 1$ already refutes Peirce's law: with $p = \tfrac12$, $q = 0$, one computes $p \to q = 0$, $(p \to q) \to p = 1$, and $((p \to q) \to p) \to p = \tfrac12 \ne 1$. Boolean algebras are exactly the Heyting algebras satisfying $a \vee \neg a = 1$.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Proof assistants and certified programs">
+
+Dependent types let a program carry its specification: a sorting function of type $\prod_{l} \sum_{l'} \mathrm{Sorted}(l') \times \mathrm{Perm}(l, l')$ cannot be written incorrectly, because the type checker verifies the proof. Proof assistants based on type theory have checked the Four Colour Theorem and the Feit–Thompson theorem (Gonthier and collaborators, in Coq, 2005 and 2012), the Kepler conjecture (Hales and collaborators, using HOL Light and Isabelle, 2014–17), and large parts of modern mathematics in Lean's Mathlib; verified compilers such as CompCert are written and proved correct in Coq. Type *inference*, as in the experiment above, is the everyday face of the same theory in ML, Haskell and Rust. See <TopicLink id="math.comp.formal-methods">formal methods</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Cartesian closed and locally cartesian closed categories">
+
+The simply typed λ-calculus with products is the internal language of **cartesian closed categories** (Lambek): types are objects, terms are arrows, and $\lambda$ is the adjunction $\Hom(A \times B, C) \cong \Hom(A, C^B)$. Dependent types correspond to **locally cartesian closed categories** (Seely, 1984), where a type family over $A$ is an object of the slice category over $A$ and $\Sigma$ and $\Pi$ are the left and right adjoints of pulling back. Toposes add a subobject classifier — a type of propositions. See <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="sets" kind="sets" title="Types and sets: two foundations">
+
+| | ZFC | Lean's type theory |
+| --- | --- | --- |
+| primitive notion | membership $x \in y$, one global relation | the typing judgement $t : A$ |
+| what objects are | sets, all of one kind | terms, each with its type |
+| logic | classical first-order logic, *underneath* the axioms | built in: propositions are types |
+| natural numbers | constructed: $0 = \varnothing$, $n + 1 = n \cup \{n\}$ | an inductive type, with induction as its eliminator |
+| functions | sets of ordered pairs | primitive ($\lambda$-terms) |
+| choice | the axiom of choice | `Classical.choice`, an explicit axiom |
+| paradox control | separation instead of comprehension | universes $\mathsf{Type}_0 : \mathsf{Type}_1 : \cdots$ |
+
+Neither foundation is "the right one"; they are mutually interpretable given extra assumptions. Mathlib builds a model of ZFC inside Lean (`ZFSet`, from a type of well-founded trees, using choice), and, conversely, Lean's type theory has set-theoretic models in which types are sets, assuming as many inaccessible cardinals as there are universes in use (Werner 1997 for the calculus of inductive constructions; Carneiro 2019 for Lean). Everyday mathematics transfers easily between the two; differences show up in what can even be *said* (no global $\in$) and in which proofs carry computational content. Compare <TopicLink id="math.found.zfc">ZFC</TopicLink>.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Bertrand Russell** introduced the theory of types (1908), developed with **Alfred North Whitehead** in *Principia Mathematica* (1910–13), to avoid the paradoxes. **Alonzo Church** simplified it to the simple theory of types in 1940.
+- **L. E. J. Brouwer** founded intuitionism (from 1907); **Arend Heyting** (Netherlands, 1930) and **Andrey Kolmogorov** (Soviet Union, 1932) gave the proof interpretation of the connectives; **Valery Glivenko** (1929) proved his double-negation theorem; **Gerhard Gentzen** invented natural deduction (1935) and **Dag Prawitz** (Sweden) proved its normalisation (1965); **Saul Kripke** gave his semantics in 1965.
+- **Haskell Curry** noticed that the types of combinators are axioms of implicational logic (1934; with Robert Feys, 1958). **William Howard**'s notes "The formulae-as-types notion of construction" circulated from 1969 and were published in 1980. **N. G. de Bruijn**'s Automath project (Netherlands, from 1967) was the first proof checker built on these ideas.
+- **Per Martin-Löf** (Sweden) developed intuitionistic type theory with dependent types from the early 1970s. **Jean-Yves Girard** (France) introduced System F and found Girard's paradox (1972), and **John Reynolds** independently found the polymorphic λ-calculus (1974). **Thierry Coquand** and **Gérard Huet** created the calculus of constructions (1985–88), extended with inductive types by Coquand and **Christine Paulin-Mohring** (1990) — the basis of Coq/Rocq and of Lean.
+- **Leonardo de Moura** started Lean at Microsoft Research in 2013; Lean 4 (with Sebastian Ullrich) followed in 2021. **Vladimir Voevodsky**'s univalent foundations (from 2009) connected type theory with homotopy theory.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Rob Nederpelt and Herman Geuvers, *Type Theory and Formal Proof: An Introduction* (2014) — from the simply typed λ-calculus to the calculus of constructions, step by step.
+- Jean-Yves Girard, Yves Lafont and Paul Taylor, *Proofs and Types* (1989) — Curry–Howard, normalisation and System F.
+- Morten Heine Sørensen and Paweł Urzyczyn, *Lectures on the Curry–Howard Isomorphism* (2006) — intuitionistic logic, Kripke models and typed calculi with full proofs.
+- Jeremy Avigad, Leonardo de Moura, Soonho Kong and Sebastian Ullrich, *Theorem Proving in Lean 4* — the official introduction to Lean's dependent type theory.
+- Per Martin-Löf, *Intuitionistic Type Theory* (1984) — notes of lectures given in Padua, the classic statement of the theory.
+- The Univalent Foundations Program, *Homotopy Type Theory: Univalent Foundations of Mathematics* (2013).
+- Mario Carneiro, *The Type Theory of Lean* (MSc thesis, Carnegie Mellon University, 2019) — the metatheory of Lean's logic.
+
+</Section>

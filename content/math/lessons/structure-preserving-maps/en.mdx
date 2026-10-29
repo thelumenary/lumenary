@@ -1,0 +1,519 @@
+---
+slug: structure-preserving-maps
+topic: math.cat.structure-preserving-maps
+title: "Structure-preserving maps: homomorphisms and isomorphisms"
+subtitle: How logarithm tables turned multiplication into addition, why the last digit of a product needs only the last digits, and what it means — precisely — for two structures to be "the same".
+level: g9-12
+ages: Ages 14–18
+minutes: 70
+order: 4024
+objectives:
+  - Check whether a map preserves an operation, for example reduction modulo $n$ from $(\Z, +)$ to clock arithmetic, or $\exp$ from $(\R, +)$ to $(\R_{>0}, \times)$
+  - Prove that composites of structure-preserving maps preserve structure, and that the inverse of a bijective operation-preserving map preserves the operation
+  - Give a structure-preserving bijection whose inverse is not structure-preserving, for orders or graphs
+  - Decide whether two small structures are isomorphic, using invariants such as the number of elements with $x \ast x = e$, and explain what an isomorphism transfers
+  - Count the homomorphisms between two clock arithmetics
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.StructurePreservingMaps.PreservesOp
+  - Lumenary.StructurePreservingMaps.preservesOp_id
+  - Lumenary.StructurePreservingMaps.PreservesOp.comp
+  - Lumenary.StructurePreservingMaps.PreservesOp.inverse
+  - Lumenary.StructurePreservingMaps.reduce_add
+  - Lumenary.StructurePreservingMaps.reduce_mul
+  - Lumenary.StructurePreservingMaps.reduce_not_injective
+  - Lumenary.StructurePreservingMaps.map_zero_of_preservesOp
+  - Lumenary.StructurePreservingMaps.map_neg_of_preservesOp
+  - Lumenary.StructurePreservingMaps.comm_of_surjective
+  - Lumenary.StructurePreservingMaps.exp_preserves
+  - Lumenary.StructurePreservingMaps.posMul
+  - Lumenary.StructurePreservingMaps.expPos
+  - Lumenary.StructurePreservingMaps.logPos
+  - Lumenary.StructurePreservingMaps.expPos_preserves
+  - Lumenary.StructurePreservingMaps.log_exp_inverse
+  - Lumenary.StructurePreservingMaps.logPos_preserves
+  - Lumenary.StructurePreservingMaps.no_injective_hom_zmod4_klein
+  - Lumenary.StructurePreservingMaps.zmod4_not_iso_klein
+  - Lumenary.StructurePreservingMaps.crt6
+  - Lumenary.StructurePreservingMaps.crt6_iso
+  - Lumenary.StructurePreservingMaps.crt6Library
+  - Lumenary.StructurePreservingMaps.PreservesRel
+  - Lumenary.StructurePreservingMaps.bijection_not_iso
+  - Lumenary.StructurePreservingMaps.coloring_is_hom
+compute: [structure_preserving_maps_finite_search]
+trails: [inverses-and-structure, clock-arithmetic]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Multiplying by adding">
+
+In 1614 the Scottish mathematician John Napier published tables of **logarithms**; the Swiss clockmaker Jost Bürgi published similar tables in 1620. Their purpose was practical. Astronomers, navigators and surveyors spent days multiplying long numbers by hand, and a logarithm table turned every multiplication into an addition:
+
+$$
+\log(x \cdot y) = \log x + \log y.
+$$
+
+To multiply $x$ by $y$, look up $\log x$ and $\log y$, *add* them, and look the sum up backwards. A slide rule does the same with two sliding logarithmic scales, and engineers used slide rules until pocket calculators replaced them in the 1970s.
+
+A second, much older trick: to check $3847 \times 26 = 100\,022$, add the digits. $3 + 8 + 4 + 7 = 22$, and $2 + 2 = 4$; $2 + 6 = 8$; $4 \times 8 = 32$, and $3 + 2 = 5$. On the other side, $1 + 0 + 0 + 0 + 2 + 2 = 5$. They agree, so the product passes the check. This is **casting out nines**, and it works because replacing a number by its digit sum does not change its remainder on division by $9$.
+
+Both tricks rest on the same idea: a map from one number world to another that **respects the operations**, so that you can do a calculation in whichever world is easier. Such maps are called **homomorphisms**, and they are among the most important ideas in mathematics.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Translate, calculate, translate back">
+
+Imagine two worlds, each with its own way of combining things. A map $f$ from the first world to the second **preserves the operation** if these two routes always agree:
+
+1. combine $x$ and $y$ in the first world, then translate the result with $f$;
+2. translate $x$ and $y$ with $f$ first, then combine them in the second world.
+
+For logarithms, route 1 is "multiply, then take the log" and route 2 is "take logs, then add". For casting out nines, route 1 is "multiply, then reduce mod $9$" and route 2 is "reduce mod $9$, then multiply".
+
+<Narrator who="chloe">
+
+If the translation can also be undone — and the undoing respects the operations too — then the two worlds are *the same structure wearing different clothes*. That is what "isomorphic" will mean. The fun is that this "sameness" is perfectly precise: we will prove that two groups with four elements each are **not** the same.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Homomorphisms and isomorphisms">
+
+A **binary operation** on a set $A$ is a rule $\ast$ that combines any two elements $x, y \in A$ into an element $x \ast y \in A$ — like $+$ or $\times$ on numbers, or composition of symmetries.
+
+<Definition term="operation-preserving map (homomorphism)">
+
+Let $\ast$ be an operation on $A$ and $\star$ an operation on $B$. A function $f : A \to B$ **preserves the operation**, and is called a **homomorphism** from $(A, \ast)$ to $(B, \star)$, if
+
+$$
+f(x \ast y) = f(x) \star f(y) \qquad \text{for all } x, y \in A.
+$$
+
+If a set carries several operations (such as $+$ and $\times$), a homomorphism must preserve each of them.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "AA", tex: "A \\times A", row: 0, col: 0 },
+    { id: "A", tex: "A", row: 0, col: 1 },
+    { id: "BB", tex: "B \\times B", row: 1, col: 0 },
+    { id: "B", tex: "B", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "AA", to: "A", tex: "\\ast" },
+    { from: "AA", to: "BB", tex: "f \\times f", labelSide: "right" },
+    { from: "A", to: "B", tex: "f" },
+    { from: "BB", to: "B", tex: "\\star", labelSide: "right" },
+  ]}
+  caption="Combine then translate (top, then right) equals translate then combine (left, then bottom): $f(x \ast y) = f(x) \star f(y)$."
+/>
+
+Structures can also be built from **relations** rather than operations: an order $\le$, or the edges of a graph. For relations, "preserving" means that related inputs have related outputs.
+
+<Definition term="order-preserving map; graph homomorphism">
+
+A function $f$ between ordered sets is **order-preserving** if $x \le y$ implies $f(x) \le f(y)$. A **graph homomorphism** from a graph $G$ to a graph $H$ is a function from the vertices of $G$ to the vertices of $H$ that sends adjacent vertices to adjacent vertices.
+
+</Definition>
+
+<Definition term="isomorphism; isomorphic">
+
+An **isomorphism** is a structure-preserving bijection whose inverse is **also** structure-preserving. Two structures are **isomorphic**, written $A \cong B$, if there is an isomorphism between them.
+
+</Definition>
+
+The clause about the inverse looks fussy. For operations it turns out to be automatic (Theorem 3); for relations it is not (Example after Theorem 3).
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples and non-examples">
+
+<Example title="Reduction modulo n">
+
+Write $\Z/n$ for clock arithmetic with $n$ hours: the remainders $0, 1, \dots, n - 1$, added and multiplied "mod $n$". The map $r : \Z \to \Z/n$ sending each integer to its remainder preserves both operations:
+
+$$
+r(a + b) = r(a) + r(b), \qquad r(a \cdot b) = r(a) \cdot r(b) \qquad \text{(computed mod } n).
+$$
+
+For instance with $n = 12$: $r(17 + 20) = r(37) = 1$, and $r(17) + r(20) = 5 + 8 = 13$, which is $1$ mod $12$. Reduction is **not injective**: $r(0) = r(12) = r(24) = 0$. It forgets information — on purpose. Casting out nines is the case $n = 9$, with the extra fact that a number and its digit sum have the same remainder mod $9$ (because $10 \equiv 1$).
+
+</Example>
+
+<Example title="exp and ln">
+
+The exponential function satisfies $e^{x + y} = e^x e^y$, so $\exp : (\R, +) \to (\R_{>0}, \times)$ is a homomorphism from the real numbers under addition to the positive real numbers under multiplication. It is a bijection, with inverse $\ln$ (see <TopicLink id="math.analysis.exponential-logarithmic-functions">exponential and logarithmic functions</TopicLink>), and $\ln(uv) = \ln u + \ln v$ says the inverse is also a homomorphism. So $\exp$ is an **isomorphism**: as far as their operations are concerned, $(\R, +)$ and $(\R_{>0}, \times)$ are the same structure. Under this dictionary, $0$ corresponds to $1$, and the negative $-x$ to the reciprocal $1/e^x$.
+
+</Example>
+
+<Example title="Doubling">
+
+$d : \Z \to \Z$, $d(x) = 2x$, preserves addition: $2(x + y) = 2x + 2y$. It is injective but not surjective; its image is the set $2\Z$ of even numbers. So $d$ is an isomorphism from $(\Z, +)$ to $(2\Z, +)$ — a structure isomorphic to a proper part of itself. But $d$ does **not** preserve multiplication: $d(3 \cdot 5) = 30$, while $d(3) \cdot d(5) = 60$. Preserving one operation says nothing about another.
+
+</Example>
+
+<Example title="Signs">
+
+The sign map $\operatorname{sgn} : (\R \setminus \{0\}, \times) \to (\{1, -1\}, \times)$, with $\operatorname{sgn}(x) = 1$ for $x > 0$ and $-1$ for $x < 0$, preserves multiplication: this is the sign rule "negative times negative is positive" (proved in <TopicLink id="math.number.integers">Integers</TopicLink>) packaged as a homomorphism.
+
+</Example>
+
+<Example title="Non-examples">
+
+- $s(x) = x + 1$ on $(\Z, +)$: $s(0 + 0) = 1$, but $s(0) + s(0) = 2$.
+- $q(x) = x^2$ on $(\R, +)$: $q(1 + 1) = 4$, but $q(1) + q(1) = 2$. (On $(\R, \times)$, however, $q$ *is* a homomorphism: $(xy)^2 = x^2 y^2$.)
+- $g(x) = 3x + 1$ on $(\R, +)$: $g(0 + 0) = 1 \ne 2 = g(0) + g(0)$. Only the lines through the origin, $x \mapsto cx$, preserve addition on $\R$ — the first glimpse of **linear maps** (<TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>).
+
+</Example>
+
+<Example title="Colourings are graph homomorphisms">
+
+Let $K_3$ be the triangle graph, with three vertices called red, green, blue, each adjacent to the other two. A graph homomorphism $G \to K_3$ sends adjacent vertices of $G$ to *adjacent*, hence *different*, colours. That is exactly a proper colouring of $G$ with three colours. So "can $G$ be 3-coloured?" is the question "is there a homomorphism $G \to K_3$?" — and indeed the Lean library Mathlib *defines* colourings this way.
+
+</Example>
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore">
+
+First, reduction modulo $k$. Colour every integer by its remainder, then add a member of one family to a member of another — again and again. The family of the sum depends only on the two families. That sentence *is* the statement that reduction mod $k$ preserves addition.
+
+<RemainderColors />
+
+Second, graph homomorphisms. Colour the vertices so that adjacent vertices get different colours. Each proper colouring with $k$ colours is a homomorphism to the complete graph $K_k$. Which graphs have a homomorphism to $K_2$, a single edge? Which need $K_4$?
+
+<GraphExplorer presets={["cycle6", "petersen", "wheel", "k4"]} preset="cycle6" mode="colour" modes={["colour"]} title="A colouring is a homomorphism to a complete graph" />
+
+Third, $\exp$ and $\ln$. The two graphs are mirror images in the line $y = x$, as the graphs of inverse functions always are. Under the isomorphism, $0 \mapsto 1$ (identity to identity) — find both points.
+
+<FunctionPlot
+  fns={["exp(x)", "ln(x)", "x"]}
+  labels={["y = eˣ", "y = ln x", "y = x"]}
+  points={[[0, 1, "(0, 1)"], [1, 0, "(1, 0)"]]}
+  x={[-3, 4]}
+  y={[-3, 4]}
+  aspect="equal"
+  title="exp and ln undo each other"
+/>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The theorems, with proofs">
+
+<Theorem name="Theorem 1 (composites and identities)">
+
+If $f : (A, \ast) \to (B, \star)$ and $g : (B, \star) \to (C, \bullet)$ are homomorphisms, then so is $g \circ f : (A, \ast) \to (C, \bullet)$. Every identity map $\mathrm{id}_A : (A, \ast) \to (A, \ast)$ is a homomorphism.
+
+</Theorem>
+
+<Proof>
+
+For all $x, y \in A$:
+
+$$
+(g \circ f)(x \ast y) = g\big(f(x \ast y)\big) = g\big(f(x) \star f(y)\big) = g(f(x)) \bullet g(f(y)) = (g \circ f)(x) \bullet (g \circ f)(y),
+$$
+
+using first that $f$ is a homomorphism, then that $g$ is. For the identity, both sides of $\mathrm{id}(x \ast y) = \mathrm{id}(x) \ast \mathrm{id}(y)$ equal $x \ast y$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (homomorphisms of groups)">
+
+Let $A$ and $B$ be groups written additively (identity $0$, inverse $-x$), and let $f : A \to B$ preserve addition. Then $f(0) = 0$ and $f(-x) = -f(x)$ for every $x$.
+
+</Theorem>
+
+<Proof>
+
+$f(0) + f(0) = f(0 + 0) = f(0) = f(0) + 0$. Adding $-f(0)$ on the left of both sides gives $f(0) = 0$. Then $f(-x) + f(x) = f(-x + x) = f(0) = 0$, so $f(-x)$ is the additive inverse of $f(x)$; inverses in a group are unique, so $f(-x) = -f(x)$.
+
+</Proof>
+
+So a map preserving the operation automatically preserves the identity and inverses. For $\exp$ this says $e^0 = 1$ and $e^{-x} = 1/e^x$ — consequences of $e^{x+y} = e^x e^y$ alone.
+
+<Theorem name="Theorem 3 (inverses of bijective homomorphisms)">
+
+Let $f : (A, \ast) \to (B, \star)$ be a bijective homomorphism, with inverse $g : B \to A$. Then $g$ is a homomorphism. Hence a bijective homomorphism of groups or rings — or of any sets with operations — is an isomorphism.
+
+</Theorem>
+
+<Proof>
+
+Let $u, v \in B$. Since $f(g(u)) = u$ and $f(g(v)) = v$,
+
+$$
+g(u \star v) = g\big(f(g(u)) \star f(g(v))\big) = g\big(f(g(u) \ast g(v))\big) = g(u) \ast g(v).
+$$
+
+The second equality uses that $f$ is a homomorphism (read from right to left), the third that $g(f(a)) = a$ for every $a \in A$. If there are several operations, apply the argument to each.
+
+</Proof>
+
+For instance, $\ln(uv) = \ln u + \ln v$ follows from $e^{x + y} = e^x e^y$ by Theorem 3, without looking at how $\ln$ is defined.
+
+<Example title="Counterexample: for relations the inverse can fail">
+
+Let $G$ be the graph with two vertices $a, b$ and **no** edge, and $H$ the graph with two vertices $a, b$ joined by an edge. The identity map on vertices, $G \to H$, is a bijection, and it is a graph homomorphism (there are no edges in $G$ to check). Its inverse $H \to G$ is not a homomorphism: the edge $ab$ of $H$ goes to a non-edge of $G$. So $G$ and $H$ are not isomorphic, although there is a structure-preserving bijection between them.
+
+The same happens for orders (the Lean section uses $\{\text{false}, \text{true}\}$ with "only $x \le x$" versus "false $\le$ true") and for spaces: the map $t \mapsto (\cos t, \sin t)$ from $[0, 2\pi)$ onto the circle is a continuous bijection whose inverse is not continuous — it tears the circle open at $(1, 0)$.
+
+</Example>
+
+This is why the definition of isomorphism demands a structure-preserving inverse. Next: what is an isomorphism good for?
+
+<Theorem name="Theorem 4 (isomorphisms transfer structure)">
+
+Let $f : (A, \ast) \to (B, \star)$ be a surjective homomorphism.
+
+1. If $\ast$ is commutative, so is $\star$.
+2. If $e$ is an identity for $\ast$, then $f(e)$ is an identity for $\star$.
+
+If $f$ is an isomorphism, then moreover, for every $x \in A$: $x \ast x = e$ if and only if $f(x) \star f(x) = f(e)$; so $A$ and $B$ have the same number of elements with $x \ast x = e$.
+
+</Theorem>
+
+<Proof>
+
+1. Let $u, v \in B$. By surjectivity $u = f(x)$ and $v = f(y)$ for some $x, y$. Then $u \star v = f(x) \star f(y) = f(x \ast y) = f(y \ast x) = f(y) \star f(x) = v \star u$.
+2. With $u = f(x)$: $f(e) \star u = f(e) \star f(x) = f(e \ast x) = f(x) = u$, and similarly $u \star f(e) = u$.
+
+For the last part, $f(x) \star f(x) = f(x \ast x)$, and since $f$ is injective, $f(x \ast x) = f(e)$ exactly when $x \ast x = e$. So $f$ restricts to a bijection between the two sets of such elements.
+
+</Proof>
+
+The same argument works for any property stated purely in terms of the operation: **isomorphic structures share every structural property.** This gives a powerful way to prove that two structures are *not* isomorphic: find a structural property that one has and the other lacks.
+
+<Example title="Two groups of four elements that are not the same">
+
+Compare clock arithmetic $\Z/4 = \{0, 1, 2, 3\}$ under addition with the symmetries of a non-square rectangle: do nothing ($e$), the half turn ($h$), and the reflections in the horizontal and vertical axes ($r$, $s$), combined by doing one after the other. Each has four elements, and each is commutative. But in the rectangle group, **every** symmetry is undone by repeating it: $e \circ e = h \circ h = r \circ r = s \circ s = e$. In $\Z/4$ only two elements satisfy $x + x = 0$, namely $0$ and $2$; for instance $1 + 1 = 2 \ne 0$. By Theorem 4 an isomorphism would preserve the number of such elements, so **$\Z/4$ and the rectangle group are not isomorphic**, even though they have the same size.
+
+On the other hand, the rectangle group *is* isomorphic to $\Z/2 \times \Z/2$ (pairs of bits added coordinatewise), via $e \mapsto (0,0)$, $h \mapsto (1,1)$, $r \mapsto (1,0)$, $s \mapsto (0,1)$. And $\Z/4$ is isomorphic to $\{1, 2, 3, 4\}$ under multiplication mod $5$, via $k \mapsto 2^k \bmod 5$: $0 \mapsto 1$, $1 \mapsto 2$, $2 \mapsto 4$, $3 \mapsto 3$. That last one is a logarithm table for clock arithmetic — the two ideas of the motivation, in one example.
+
+</Example>
+
+Finally, a counting theorem that uses everything so far. (It needs Euclid's lemma from <TopicLink id="math.number.divisibility-gcd">divisibility and gcd</TopicLink>.)
+
+<Theorem name="Theorem 5 (homomorphisms between clocks)">
+
+The number of homomorphisms $(\Z/m, +) \to (\Z/n, +)$ is $\gcd(m, n)$.
+
+</Theorem>
+
+<Proof>
+
+Let $f$ be a homomorphism and $a = f(1)$. Every $k \in \Z/m$ is $1 + 1 + \cdots + 1$ ($k$ times), so $f(k) = a + \cdots + a = ka$ (mod $n$): $f$ is determined by $a$. Moreover, adding $1$ to itself $m$ times gives $0$ in $\Z/m$, so $ma \equiv f(0) = 0 \pmod n$ by Theorem 2. That is, $n$ divides $ma$.
+
+Conversely, if $n \mid ma$, define $f(k) = ka \bmod n$ for $k = 0, \dots, m - 1$. For $k, l \in \Z/m$ the sum in $\Z/m$ is $k + l - \varepsilon m$ with $\varepsilon \in \{0, 1\}$, so $f(k + l) \equiv (k + l)a - \varepsilon\, ma \equiv ka + la \pmod n$, because $n \mid ma$. So $f$ is a homomorphism. Homomorphisms therefore correspond to the values $a \in \{0, 1, \dots, n - 1\}$ with $n \mid ma$.
+
+Count them. Let $d = \gcd(m, n)$, $m = dm'$, $n = dn'$, so $\gcd(m', n') = 1$. Then $n \mid ma \iff n' \mid m'a \iff n' \mid a$, the last step by Euclid's lemma. The multiples of $n'$ in $\{0, \dots, n - 1\}$ are $0, n', 2n', \dots, (d - 1)n'$: there are exactly $d$ of them.
+
+</Proof>
+
+For example, there are $\gcd(4, 6) = 2$ homomorphisms $\Z/4 \to \Z/6$: $a = 0$ (everything to $0$) and $a = 3$. And there are $\gcd(m, n) = 1$ — only the zero map — when $m$ and $n$ have no common factor.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Homomorphisms in Lean">
+
+We define "preserves the operation" directly, for any two operations on any two types:
+
+<Lean decl="Lumenary.StructurePreservingMaps.PreservesOp" />
+
+Theorems 1 and 3 are then short `calc` proofs that follow the human proofs line by line:
+
+<Lean decl="Lumenary.StructurePreservingMaps.preservesOp_id" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.PreservesOp.comp" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.PreservesOp.inverse" />
+
+Reduction modulo $n$ preserves both operations by two library facts about the map `ℤ → ZMod n` (Mathlib's name for $\Z/n$), and it is not injective:
+
+<Lean decl="Lumenary.StructurePreservingMaps.reduce_add" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.reduce_mul" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.reduce_not_injective" />
+
+Theorem 2, for additive groups, and part 1 of Theorem 4:
+
+<Lean decl="Lumenary.StructurePreservingMaps.map_zero_of_preservesOp" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.map_neg_of_preservesOp" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.comm_of_surjective" />
+
+Now $\exp$ and $\ln$. We build the positive reals as a **subtype** — the reals together with a proof of positivity — and show that $\ln(uv) = \ln u + \ln v$ follows from $e^{x+y} = e^x e^y$ via Theorem 3:
+
+<Lean decl="Lumenary.StructurePreservingMaps.exp_preserves" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.posMul" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.expPos" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.logPos" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.expPos_preserves" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.log_exp_inverse" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.logPos_preserves" />
+
+Isomorphic or not? $\Z/4$ is not isomorphic to $\Z/2 \times \Z/2$ (the rectangle group in disguise), while $\Z/6 \cong \Z/2 \times \Z/3$. The latter is checked case by case by `decide`, and Mathlib proves the general Chinese remainder theorem:
+
+<Lean decl="Lumenary.StructurePreservingMaps.no_injective_hom_zmod4_klein" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.zmod4_not_iso_klein" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.crt6" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.crt6_iso" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.crt6Library" />
+
+Relations, and the counterexample to "bijective homomorphisms are isomorphisms":
+
+<Lean decl="Lumenary.StructurePreservingMaps.PreservesRel" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.bijection_not_iso" />
+
+<Lean decl="Lumenary.StructurePreservingMaps.coloring_is_hom" />
+
+<Narrator who="gideon">
+
+What is and isn't formalised here: Theorems 1, 2 and 3, part 1 of Theorem 4, the $\Z/4$ example, the counterexample and the $\exp$/$\ln$ isomorphism are all proved. Theorem 5 is **not** formalised; the computation below checks it for $m, n \le 6$, and the human proof above covers the rest. Mathlib's own homomorphisms are *bundled* — a map together with its proofs, written `ℤ →+* ZMod n` — and `map_add`, `map_zero`, `map_neg` are its versions of our theorems.
+
+</Narrator>
+
+</Section>
+
+<Section id="computation" kind="computation" title="Hunting homomorphisms by brute force">
+
+<Narrator who="margaret">
+
+I'll list *every* map from $\Z/m$ to $\Z/n$ — all $n^m$ of them — and keep the ones that preserve addition. Then I'll try all $24$ bijections between pairs of four-element groups.
+
+</Narrator>
+
+<Python id="structure_preserving_maps_finite_search" />
+
+The table is the experiment that *suggests* Theorem 5; the theorem's proof is what makes it true for every $m$ and $n$. The zeros in part 2 are explained by the invariant in part 3, exactly as in Theorem 4. This is **exhaustive-finite** evidence: certain for these structures, silent about others.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Same number of elements, so isomorphic."** $\Z/4$ and the symmetries of a non-square rectangle both have four elements, but they are not isomorphic: in the rectangle group every element is its own inverse, and in $\Z/4$ the element $1$ is not. Size is just one structural property among many.
+
+</Misconception>
+
+<Misconception>
+
+**"Isomorphic means equal."** Isomorphic structures can have entirely different elements — numbers and symmetries, sums and products. An isomorphism is a *dictionary* between them, and different dictionaries can exist (there are two isomorphisms $\Z/4 \to \{1, 2, 3, 4\}$ under multiplication mod $5$).
+
+</Misconception>
+
+<Misconception>
+
+**"Every structure-preserving bijection has a structure-preserving inverse."** True for operations (Theorem 3), false for relations: the bijection from the edgeless two-vertex graph to the one-edge graph preserves edges, but its inverse does not.
+
+</Misconception>
+
+<Misconception>
+
+**"A homomorphism must be injective" (or surjective).** Reduction mod $n$ is surjective but far from injective, and the zero map $x \mapsto 0$ is a homomorphism that is usually neither. A homomorphism only has to respect the operation. Losing information on purpose is what makes casting out nines quick.
+
+</Misconception>
+
+<Misconception>
+
+**"Preserving one operation means preserving all of them."** Doubling preserves addition but not multiplication; squaring preserves multiplication but not addition. For a ring, a homomorphism must preserve each operation separately.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="The same idea, seen by others">
+
+<Viewpoint lens="algebra" title="Kernels and the first isomorphism theorem">
+
+The **kernel** of a group homomorphism $f$ is the set of elements sent to the identity. For reduction $\Z \to \Z/n$ it is $n\Z$, the multiples of $n$. The kernel measures exactly what $f$ forgets: $f(x) = f(y)$ if and only if $x - y$ is in the kernel. The **first isomorphism theorem** says that the image of any group homomorphism is isomorphic to the domain "divided by" the kernel; for reduction, this is the statement that $\Z/n$ is $\Z$ with multiples of $n$ treated as zero. See <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink> and <TopicLink id="math.algebra.groups">groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Klein: geometry is what isomorphisms preserve">
+
+The structure-preserving bijections of the Euclidean plane are the **isometries** — maps preserving distance: translations, rotations, reflections and glide reflections. Two figures are congruent when an isometry carries one to the other, and Euclidean geometry studies exactly the properties that isometries preserve (length, angle, area). Felix Klein's Erlangen programme (1872) turned this into a definition: a geometry is a space together with a group of transformations, and its theorems are the statements invariant under that group. Allow all similarities and you get the geometry of shape without size; allow all projective maps and only properties such as incidence and cross-ratio survive. See <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Homeomorphisms">
+
+For spaces, the structure is *nearness*, the structure-preserving maps are the **continuous** maps, and the isomorphisms are the **homeomorphisms**: continuous bijections with continuous inverses. The map $t \mapsto (\cos t, \sin t)$ from $[0, 2\pi)$ to the circle is a continuous bijection but not a homeomorphism, and indeed an interval and a circle are not homeomorphic: removing a point from the inside of an interval disconnects it, while removing any one point of a circle leaves it connected. "A coffee mug is a doughnut" is a slogan for one homeomorphism. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="The Chinese remainder theorem">
+
+The map $\Z/6 \to \Z/2 \times \Z/3$, $x \mapsto (x \bmod 2, x \bmod 3)$, is a ring isomorphism: knowing a number's remainders mod $2$ and mod $3$ is the same as knowing its remainder mod $6$. More generally $\Z/mn \cong \Z/m \times \Z/n$ whenever $\gcd(m, n) = 1$. The theorem is named after the *Sunzi Suanjing* (China, written between the 3rd and 5th centuries), which asks for a number leaving remainders $2, 3, 2$ on division by $3, 5, 7$. It is the product of <TopicLink id="math.cat.intro-universal-properties">products by maps</TopicLink> meeting the isomorphisms of this lesson.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Same sentences, different structures">
+
+If two structures are isomorphic, they satisfy exactly the same statements written in the language of their structure (first-order sentences). The converse fails: the ordered sets $(\Q, <)$ and $(\R, <)$ satisfy exactly the same first-order sentences about $<$ — both are dense linear orders without endpoints — but they are not isomorphic, because $\Q$ is countable and $\R$ is not (<TopicLink id="math.found.countability">countability</TopicLink>). Telling structures apart, and deciding which properties first-order logic can see, is the subject of <TopicLink id="math.found.model-theory">model theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Is there an isomorphism? An algorithmic question">
+
+Deciding whether two graphs with $n$ vertices are isomorphic by trying all $n!$ bijections is hopeless already for $n = 30$. Clever invariants (degree sequences, numbers of triangles, colour refinement) rule out most pairs quickly, but no invariant computable in polynomial time is known to separate all non-isomorphic graphs. In 2015 László Babai announced an algorithm running in quasi-polynomial time, $\exp\big((\log n)^{O(1)}\big)$; whether graph isomorphism can be decided in polynomial time remains open. See <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="categories" kind="categories" title="Isomorphisms in a category">
+
+Groups with homomorphisms form a category; so do rings with ring homomorphisms, ordered sets with order-preserving maps, graphs with graph homomorphisms and spaces with continuous maps — Theorem 1 is precisely what makes each of these a category (see <TopicLink id="math.cat.composition">Composition</TopicLink>). In any category, an **isomorphism** is an arrow $f : A \to B$ with an arrow $g : B \to A$ such that $g \circ f = \mathrm{id}_A$ and $f \circ g = \mathrm{id}_B$.
+
+This one definition gives the right notion everywhere: bijections for sets, group isomorphisms for groups, homeomorphisms for spaces. Theorem 3 says that in the category of groups, the isomorphisms are exactly the bijective arrows; the graph counterexample shows that in the category of graphs, being bijective is *not* enough. Category theory's lesson is to define "the same" by arrows, never by elements — which is also the lesson of <TopicLink id="math.cat.intro-universal-properties">products by maps</TopicLink>.
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="inverses-and-structure" />
+
+<Trail slug="clock-arithmetic" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Remainder arithmetic** is ancient. The *Sunzi Suanjing* (China, 3rd–5th century) solved simultaneous remainder problems; Indian astronomers including Āryabhaṭa (499) and Brahmagupta (628) developed methods (*kuṭṭaka*) for related problems. The check by nines was used by arithmeticians writing in Arabic and reached Europe in Fibonacci's *Liber Abaci* (1202).
+- **Logarithms**: John Napier (1614) and Jost Bürgi (1620) published the first tables; Henry Briggs's base-10 tables (1617, 1624) became standard for three centuries.
+- **Isomorphism** as a word for "the same group" appears in Camille Jordan's *Traité des substitutions* (1870). Felix Klein's Erlangen programme (1872) organised geometry by groups of structure-preserving transformations.
+- In the 1920s, **Emmy Noether** and her students in Göttingen made homomorphisms and the isomorphism theorems the backbone of algebra, an approach spread worldwide by Bartel van der Waerden's *Moderne Algebra* (1930–31).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- F. William Lawvere and Stephen H. Schanuel, *Conceptual Mathematics: A First Introduction to Categories* (1997; 2nd edition 2009) — structure-preserving maps of many kinds, gently.
+- Charles C. Pinter, *A Book of Abstract Algebra* (1982; 2nd edition 1990), chapters on isomorphism and homomorphisms — friendly and full of exercises.
+- Nathan Carter, *Visual Group Theory* (2009) — groups and homomorphisms through pictures.
+- M. A. Armstrong, *Groups and Symmetry* (1988) — symmetry groups of figures and their isomorphisms.
+
+</Section>

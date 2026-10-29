@@ -1,0 +1,579 @@
+---
+slug: algebraic-topology
+topic: math.geom.algebraic-topology
+title: Algebraic topology
+subtitle: Turning holes into groups — singular and cellular homology, exact sequences, cohomology rings, and what they prove about spheres, dimension and fixed points.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7016
+objectives:
+  - Define singular chains, homology and chain homotopies, and prove that $\partial \circ \partial = 0$ and that chain-homotopic maps induce the same map on homology
+  - Prove that homology is a homotopy-invariant functor and deduce that $\R^m$ and $\R^n$ are not homeomorphic for $m \neq n$, and the Brouwer fixed-point theorem
+  - Compute the homology of spheres, projective spaces and surfaces with Mayer–Vietoris and cellular homology, and relate it to the Euler characteristic
+  - Compute cohomology rings of simple spaces and use cup products to distinguish $\C P^2$ from $S^2 \vee S^4$, which have isomorphic homology
+  - State and apply the Lefschetz fixed-point theorem
+narrators: []
+lean:
+  - Lumenary.AlgebraicTopology.ChainCx
+  - Lumenary.AlgebraicTopology.IsCycle
+  - Lumenary.AlgebraicTopology.IsBoundary
+  - Lumenary.AlgebraicTopology.boundary_isCycle
+  - Lumenary.AlgebraicTopology.ChainMap
+  - Lumenary.AlgebraicTopology.chainMap_boundary
+  - Lumenary.AlgebraicTopology.ChainHomotopy
+  - Lumenary.AlgebraicTopology.homotopic_maps_agree_on_homology
+  - Lumenary.AlgebraicTopology.euler_poincare
+  - Lumenary.AlgebraicTopology.rp2_cellular
+  - Lumenary.AlgebraicTopology.rp2_h1
+  - Lumenary.AlgebraicTopology.no_retraction
+  - Lumenary.AlgebraicTopology.d_squared
+  - Lumenary.AlgebraicTopology.homotopy_invariance
+compute: [algebraic_topology_homology, algebraic_topology_lefschetz]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Holes, dimension and fixed points">
+
+Three questions that sound unrelated:
+
+1. Is the plane $\R^2$ homeomorphic to space $\R^3$? Both are infinite, connected, contractible, and have the same cardinality — and Peano's curve maps an interval *onto* a square. Why should dimension be a topological invariant at all?
+2. Stir a cup of coffee: does some particle end where it began? Equivalently, must every continuous map $D^n \to D^n$ of a closed ball have a fixed point?
+3. A sphere and a torus are both closed surfaces. What precisely is the "hole" in the torus, and how do we prove the sphere has none?
+
+The <TopicLink id="math.geom.fundamental-group">fundamental group</TopicLink> answers the third question and the two-dimensional cases of the others, but it only sees loops, and higher homotopy groups are notoriously hard to compute. **Homology** is the tool that works in every dimension. It assigns to each space $X$ a sequence of abelian groups $H_0(X), H_1(X), H_2(X), \dots$ — roughly, $H_n$ counts the $n$-dimensional holes — and to each continuous map a homomorphism, in a way that is unchanged by homotopy and computable by exact sequences and cell decompositions. With it, all three questions have short answers: $H_{n-1}(\R^n \setminus \{0\}) \cong \Z$ detects $n$; the sphere $S^{n-1}$ is not a retract of the ball because its homology does not vanish; the torus has $H_1 \cong \Z^2$ and the sphere has $H_1 = 0$.
+
+This lesson assumes <TopicLink id="math.geom.fundamental-group">homotopy and the fundamental group</TopicLink>, <TopicLink id="math.algebra.quotients">quotient groups</TopicLink> and <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Cycles that bound and cycles that don't">
+
+Draw a closed curve on a surface. Sometimes it is the boundary of a piece of the surface; sometimes, like a loop around the hole of an annulus, it is not. Homology makes this precise with formal sums. A **chain** is a formal integer combination of oriented pieces (points, curve segments, triangles, …); its **boundary** is the formal sum of the oriented pieces of its edge. A **cycle** is a chain with zero boundary; a **boundary** is a chain that is the boundary of something one dimension higher. The key algebraic fact is that *a boundary has no boundary* — the edge of a triangle is a closed loop — so every boundary is a cycle, and
+
+$$
+H_n = \frac{\text{$n$-cycles}}{\text{$n$-boundaries}}
+$$
+
+measures the cycles that do *not* bound: the holes.
+
+<Figure caption="In the annulus, the gold loop z₂ around the hole is a cycle that is not the boundary of anything; the small loop z₁ bounds the disc it encloses. So z₁ is zero in H₁ and z₂ generates H₁ ≅ ℤ.">
+<svg viewBox="0 0 320 220" role="img" aria-label="An annulus. A large gold loop circles the central hole; a small loop sits off to one side without enclosing the hole.">
+  <circle cx="160" cy="110" r="95" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <circle cx="160" cy="110" r="32" fill="var(--paper-2)" stroke="var(--ink-2)" strokeWidth="2" />
+  <circle cx="160" cy="110" r="62" fill="none" stroke="var(--gold)" strokeWidth="3" />
+  <circle cx="160" cy="34" r="12" fill="var(--paper-2)" stroke="var(--human)" strokeWidth="3" />
+  <path d="M 222 104 L 222 116 M 216 110 L 222 116 L 228 110" fill="none" stroke="var(--gold)" strokeWidth="2.5" />
+  <text x="186" y="30" fontSize="15" fill="var(--ink-2)">z₁</text>
+  <text x="232" y="160" fontSize="15" fill="var(--ink-2)">z₂</text>
+</svg>
+</Figure>
+
+Two features make the idea powerful. First, homology is **functorial**: a map $f : X \to Y$ pushes chains forward and induces homomorphisms $f_* : H_n(X) \to H_n(Y)$ with $(g \circ f)_* = g_* \circ f_*$ and $\mathrm{id}_* = \mathrm{id}$. Second, it is **homotopy invariant** and **local-to-global computable**: deforming $f$ does not change $f_*$, and the homology of $U \cup V$ is controlled by that of $U$, $V$ and $U \cap V$. Functoriality turns topological impossibility into algebraic impossibility: if a retraction $r : D^n \to S^{n-1}$ existed, then $r_* \circ i_* = \mathrm{id}$ on $H_{n-1}(S^{n-1}) \cong \Z$ would factor through $H_{n-1}(D^n) = 0$.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="chain complex; homology">
+
+A **chain complex** $C_\bullet$ is a sequence of abelian groups and homomorphisms $\cdots \to C_{n+1} \xrightarrow{\partial_{n+1}} C_n \xrightarrow{\partial_n} C_{n-1} \to \cdots$ with $\partial_n \circ \partial_{n+1} = 0$. Elements of $Z_n = \ker \partial_n$ are **cycles**, elements of $B_n = \operatorname{im} \partial_{n+1}$ are **boundaries**, and the $n$-th **homology group** is $H_n(C) = Z_n / B_n$. A **chain map** $f : C_\bullet \to D_\bullet$ is a family $f_n : C_n \to D_n$ with $\partial f_n = f_{n-1} \partial$; it sends cycles to cycles and boundaries to boundaries, so it induces $f_* : H_n(C) \to H_n(D)$.
+
+</Definition>
+
+<Definition term="singular chains">
+
+The **standard $n$-simplex** is $\Delta^n = \{ (t_0, \dots, t_n) \in \R^{n+1} : t_i \ge 0,\ \sum t_i = 1 \}$, with face maps $\delta_i : \Delta^{n-1} \to \Delta^n$ inserting a $0$ in position $i$. A **singular $n$-simplex** in a space $X$ is a continuous map $\sigma : \Delta^n \to X$. The group $C_n(X)$ of **singular $n$-chains** is the free abelian group on all singular $n$-simplices, and
+
+$$
+\partial \sigma = \sum_{i=0}^{n} (-1)^i\, \sigma \circ \delta_i .
+$$
+
+The homology of $(C_\bullet(X), \partial)$ is the **singular homology** $H_n(X)$. A continuous map $f$ induces the chain map $f_\sharp(\sigma) = f \circ \sigma$ and hence $f_* : H_n(X) \to H_n(Y)$. With coefficients in an abelian group $G$ one uses $C_n(X) \otimes G$ and writes $H_n(X; G)$.
+
+</Definition>
+
+<Definition term="reduced and relative homology">
+
+**Reduced homology** $\tilde H_n(X)$ is the homology of the augmented complex $\cdots \to C_1(X) \to C_0(X) \xrightarrow{\varepsilon} \Z \to 0$, with $\varepsilon(\sum n_i \sigma_i) = \sum n_i$. For non-empty $X$, $H_0(X) \cong \tilde H_0(X) \oplus \Z$ and $\tilde H_n = H_n$ for $n > 0$; a point has $\tilde H_\bullet = 0$. For $A \subseteq X$ the **relative homology** $H_n(X, A)$ is the homology of $C_\bullet(X)/C_\bullet(A)$.
+
+</Definition>
+
+<Definition term="chain homotopy">
+
+Chain maps $f, g : C_\bullet \to D_\bullet$ are **chain homotopic** if there are homomorphisms $h_n : C_n \to D_{n+1}$ with $f_n - g_n = \partial_{n+1} h_n + h_{n-1} \partial_n$ for all $n$.
+
+</Definition>
+
+<Definition term="exact sequence">
+
+A sequence of homomorphisms $\cdots \to A \xrightarrow{f} B \xrightarrow{g} C \to \cdots$ is **exact** at $B$ if $\operatorname{im} f = \ker g$. A **short exact sequence** of chain complexes $0 \to A_\bullet \xrightarrow{i} B_\bullet \xrightarrow{j} C_\bullet \to 0$ is a pair of chain maps that is exact in every degree.
+
+</Definition>
+
+<Definition term="CW complex">
+
+A **CW complex** is built inductively: $X^0$ is a discrete set of points ($0$-cells), and $X^n$ is obtained from $X^{n-1}$ by attaching $n$-cells, i.e. forming $X^{n-1} \sqcup_\alpha D^n_\alpha$ modulo $x \sim \varphi_\alpha(x)$ for continuous **attaching maps** $\varphi_\alpha : S^{n-1} \to X^{n-1}$. Then $X = \bigcup_n X^n$ with the weak topology (a set is open if and only if it meets each $X^n$ in an open set). $X^n$ is the $n$-**skeleton**.
+
+</Definition>
+
+<Definition term="degree">
+
+A map $f : S^n \to S^n$ ($n \ge 1$) induces multiplication by an integer on $H_n(S^n) \cong \Z$, its **degree** $\deg f$. Homotopic maps have equal degree; a reflection has degree $-1$; the antipodal map of $S^n$ has degree $(-1)^{n+1}$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="First examples">
+
+<Example title="A point, and path components">
+
+For a point, $C_n = \Z$ for every $n$ (one singular simplex in each dimension), and $\partial_n$ is $0$ for $n$ odd and an isomorphism for $n$ even, $n \ge 2$. So $H_0(\mathrm{pt}) = \Z$ and $H_n(\mathrm{pt}) = 0$ for $n > 0$.
+
+For any space, $H_0(X)$ is free abelian on the path components. Indeed, if $X$ is path connected, $\varepsilon : C_0(X) \to \Z$ is onto and its kernel consists of boundaries: a path $\gamma$ from $x_0$ to $x$ is a singular $1$-simplex with $\partial \gamma = x - x_0$, so every chain $\sum n_i x_i$ with $\sum n_i = 0$ equals $\partial \sum n_i \gamma_i$. The general case splits over path components.
+
+</Example>
+
+<Example title="H₁ is the abelianised fundamental group">
+
+A loop $\gamma : [0, 1] \to X$ is a singular $1$-simplex with $\partial \gamma = 0$, so it is a cycle. The **Hurewicz theorem in degree one** says that for path-connected $X$ the map $\pi_1(X, x_0) \to H_1(X)$, $[\gamma] \mapsto [\gamma]$, is surjective with kernel the commutator subgroup: $H_1(X) \cong \pi_1(X)^{\mathrm{ab}}$ (Hatcher, Theorem 2A.1). So $H_1(S^1) \cong \Z$, $H_1(T^2) \cong \Z^2$, and for the figure eight $S^1 \vee S^1$, whose fundamental group is free on two generators, $H_1 \cong \Z^2$: homology forgets the order in which loops are traversed.
+
+</Example>
+
+<Example title="The answers we will prove">
+
+| space | non-zero homology groups | $\chi$ |
+| --- | --- | --- |
+| sphere $S^n$, $n \ge 1$ | $H_0 \cong H_n \cong \Z$ | $1 + (-1)^n$ |
+| torus $T^2$ | $H_0 \cong \Z$, $H_1 \cong \Z^2$, $H_2 \cong \Z$ | $0$ |
+| orientable surface $M_g$ of genus $g$ | $H_0 \cong \Z$, $H_1 \cong \Z^{2g}$, $H_2 \cong \Z$ | $2 - 2g$ |
+| projective plane $\R P^2$ | $H_0 \cong \Z$, $H_1 \cong \Z/2$ | $1$ |
+| Klein bottle | $H_0 \cong \Z$, $H_1 \cong \Z \oplus \Z/2$ | $0$ |
+| $\C P^n$ | $H_{2k} \cong \Z$ for $0 \le k \le n$ | $n + 1$ |
+
+Torsion such as the $\Z/2$ in $H_1(\R P^2)$ is a genuinely new phenomenon: twice the generating loop bounds (the loop that goes twice around the cross-cap), though the loop itself does not.
+
+</Example>
+
+</Section>
+
+<Section id="machine" kind="proof" title="The basic machine">
+
+<Theorem name="Lemma 1 (the boundary of a boundary is zero)">
+
+For singular chains, $\partial_{n-1} \circ \partial_n = 0$.
+
+</Theorem>
+
+<Proof>
+
+First, the **simplicial identity** $\delta_i \circ \delta_j = \delta_{j+1} \circ \delta_i$ for $i \le j$: both sides send $(t_0, \dots, t_{n-2})$ to the point of $\Delta^n$ obtained by inserting zeros in positions $i$ and $j + 1$. Now for a singular $n$-simplex $\sigma$,
+
+$$
+\partial \partial \sigma = \sum_{i=0}^{n} \sum_{j=0}^{n-1} (-1)^{i+j}\, \sigma \circ \delta_i \circ \delta_j .
+$$
+
+Split the double sum into the terms with $j \ge i$ and those with $j < i$. For $j \ge i$ rewrite $\sigma \delta_i \delta_j = \sigma \delta_{j+1} \delta_i$ and put $(i', j') = (j + 1, i)$; this is a bijection from $\{ (i, j) : 0 \le i \le j \le n - 1 \}$ onto $\{ (i', j') : 0 \le j' < i' \le n \}$, and the sign $(-1)^{i + j} = -(-1)^{i' + j'}$ is reversed. So the two halves cancel term by term, and $\partial\partial\sigma = 0$; by linearity $\partial \partial = 0$ on all chains.
+
+</Proof>
+
+<Theorem name="Lemma 2 (chain homotopic maps agree on homology)">
+
+If $f, g : C_\bullet \to D_\bullet$ are chain homotopic, then $f_* = g_* : H_n(C) \to H_n(D)$ for all $n$.
+
+</Theorem>
+
+<Proof>
+
+Let $z \in C_n$ be a cycle. Then $f(z) - g(z) = \partial h(z) + h(\partial z) = \partial h(z)$ is a boundary, so $[f(z)] = [g(z)]$ in $H_n(D)$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (homotopy invariance)">
+
+If $f \simeq g : X \to Y$ are homotopic maps, then $f_* = g_* : H_n(X) \to H_n(Y)$ for every $n$. Consequently a homotopy equivalence induces isomorphisms on all homology groups, and a contractible space has $\tilde H_\bullet = 0$.
+
+</Theorem>
+
+<Proof>
+
+*Proof sketch* (complete details in Hatcher, Theorem 2.10). Let $F : X \times [0, 1] \to Y$ be a homotopy from $f$ to $g$. In $\Delta^n \times [0, 1]$ let $v_i = (e_i, 0)$ and $w_i = (e_i, 1)$; the prism $\Delta^n \times [0, 1]$ is the union of the $n + 1$ affine $(n+1)$-simplices $[v_0, \dots, v_i, w_i, \dots, w_n]$. The **prism operator** $P : C_n(X) \to C_{n+1}(Y)$,
+
+$$
+P(\sigma) = \sum_{i=0}^{n} (-1)^i\, F \circ (\sigma \times \mathrm{id}) \big|_{[v_0, \dots, v_i, w_i, \dots, w_n]} ,
+$$
+
+satisfies $\partial P + P \partial = g_\sharp - f_\sharp$. Geometrically: the boundary of the prism is the top ($g \circ \sigma$) minus the bottom ($f \circ \sigma$) minus the prism over the boundary of $\sigma$; algebraically it is a cancellation of the same kind as in Lemma 1, where the interior faces cancel in pairs. So $f_\sharp$ and $g_\sharp$ are chain homotopic and Lemma 2 applies. If $g \circ f \simeq \mathrm{id}$ and $f \circ g \simeq \mathrm{id}$ then $g_* f_* = \mathrm{id}$ and $f_* g_* = \mathrm{id}$, and a contractible space is homotopy equivalent to a point.
+
+</Proof>
+
+<Theorem name="Theorem 4 (long exact sequence)">
+
+A short exact sequence $0 \to A_\bullet \xrightarrow{i} B_\bullet \xrightarrow{j} C_\bullet \to 0$ of chain complexes gives a long exact sequence
+
+$$
+\cdots \to H_n(A) \xrightarrow{i_*} H_n(B) \xrightarrow{j_*} H_n(C) \xrightarrow{\delta} H_{n-1}(A) \xrightarrow{i_*} H_{n-1}(B) \to \cdots
+$$
+
+</Theorem>
+
+<Proof>
+
+*Construction of $\delta$.* Let $c \in C_n$ be a cycle. Choose $b \in B_n$ with $j(b) = c$. Then $j(\partial b) = \partial c = 0$, so $\partial b = i(a)$ for a unique $a \in A_{n-1}$; and $i(\partial a) = \partial \partial b = 0$ with $i$ injective, so $a$ is a cycle. Put $\delta[c] = [a]$. *Well defined:* another lift $b' = b + i(a')$ changes $a$ to $a + \partial a'$; replacing $c$ by $c + \partial c'$ and lifting $c'$ to $b''$ changes $b$ by $\partial b''$ plus an element of $i(A_n)$, which changes $a$ by a boundary. *Exactness at $H_n(C)$:* if $c = j(b)$ with $\partial b = 0$ then $a = 0$, so $\delta j_* = 0$; conversely if $\delta[c] = 0$, say $a = \partial a'$, then $b - i(a')$ is a cycle with $j(b - i(a')) = c$, so $[c] \in \operatorname{im} j_*$. Exactness at $H_n(A)$ and $H_n(B)$ is proved by similar diagram chases (Hatcher, Theorem 2.16).
+
+</Proof>
+
+The short exact sequence $0 \to C_\bullet(A) \to C_\bullet(X) \to C_\bullet(X)/C_\bullet(A) \to 0$ gives the long exact sequence of the pair $(X, A)$. The local-to-global version is the following.
+
+<Theorem name="Theorem 5 (Mayer–Vietoris)">
+
+If $X = U \cup V$ where the interiors of $U$ and $V$ cover $X$, there is a long exact sequence
+
+$$
+\cdots \to H_n(U \cap V) \xrightarrow{(\iota_*, -\iota_*)} H_n(U) \oplus H_n(V) \xrightarrow{\ \iota_* + \iota_*\ } H_n(X) \xrightarrow{\partial} H_{n-1}(U \cap V) \to \cdots ,
+$$
+
+and the same holds for reduced homology when $U \cap V \neq \varnothing$.
+
+</Theorem>
+
+<Proof>
+
+*Proof sketch.* There is a short exact sequence $0 \to C_\bullet(U \cap V) \to C_\bullet(U) \oplus C_\bullet(V) \to C^{\{U, V\}}_\bullet(X) \to 0$, where $C^{\{U, V\}}_\bullet(X)$ consists of chains that are sums of simplices lying in $U$ or in $V$; Theorem 4 gives a long exact sequence for it. The substantial input is that the inclusion $C^{\{U, V\}}_\bullet(X) \hookrightarrow C_\bullet(X)$ induces isomorphisms on homology, proved by repeated barycentric subdivision and the Lebesgue number lemma (Hatcher, Proposition 2.21). We use it without proof.
+
+</Proof>
+
+<Theorem name="Theorem 6 (homology of spheres)">
+
+For $n \ge 0$: $\tilde H_n(S^n) \cong \Z$ and $\tilde H_k(S^n) = 0$ for $k \neq n$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $n$. $S^0$ is two points, so $H_0 = \Z^2$, $\tilde H_0 = \Z$, and higher groups vanish. For $n \ge 1$ let $U = S^n \setminus \{N\}$ and $V = S^n \setminus \{S\}$ (north and south poles). Both are homeomorphic to $\R^n$ by stereographic projection, so contractible, and $U \cap V \cong S^{n-1} \times (-1, 1) \simeq S^{n-1}$. In the reduced Mayer–Vietoris sequence the terms $\tilde H_k(U) \oplus \tilde H_k(V)$ vanish, so
+
+$$
+0 \to \tilde H_k(S^n) \xrightarrow{\ \partial\ } \tilde H_{k-1}(S^{n-1}) \to 0
+$$
+
+is exact and $\tilde H_k(S^n) \cong \tilde H_{k-1}(S^{n-1})$ for every $k$. The induction hypothesis finishes the proof.
+
+</Proof>
+
+<Theorem name="Corollary 7 (invariance of dimension)">
+
+If $\R^m$ and $\R^n$ are homeomorphic, then $m = n$.
+
+</Theorem>
+
+<Proof>
+
+If one of $m, n$ is $0$, the space is a point, and $\R^k$ is a point only for $k = 0$. Let $m, n \ge 1$ and let $h : \R^m \to \R^n$ be a homeomorphism. It restricts to a homeomorphism $\R^m \setminus \{0\} \cong \R^n \setminus \{h(0)\}$. The map $x \mapsto x / |x|$ is a deformation retraction of $\R^m \setminus \{0\}$ onto $S^{m-1}$, and likewise $\R^n \setminus \{h(0)\} \simeq S^{n-1}$. By Theorem 3, $\tilde H_\bullet(S^{m-1}) \cong \tilde H_\bullet(S^{n-1})$, and by Theorem 6 the only non-zero group sits in degree $m - 1$ on one side and $n - 1$ on the other. So $m = n$.
+
+</Proof>
+
+<Theorem name="Corollary 8 (Brouwer fixed-point theorem)">
+
+Every continuous map $f : D^n \to D^n$ ($n \ge 1$) has a fixed point.
+
+</Theorem>
+
+<Proof>
+
+Suppose $f(x) \neq x$ for all $x$. Let $r(x)$ be the point where the ray from $f(x)$ through $x$ meets $S^{n-1}$: $r(x) = x + t(x)\,(x - f(x))$ with $t(x)$ the larger root of the quadratic equation $|x + t (x - f(x))|^2 = 1$; this root is non-negative because $|x| \le 1$, it is $0$ when $|x| = 1$, and it depends continuously on $x$ by the quadratic formula. Then $r : D^n \to S^{n-1}$ is continuous and $r(x) = x$ for $x \in S^{n-1}$, i.e. $r \circ i = \mathrm{id}_{S^{n-1}}$. Applying $\tilde H_{n-1}$ gives $r_* \circ i_* = \mathrm{id}$ on $\tilde H_{n-1}(S^{n-1}) \cong \Z$, which factors through $\tilde H_{n-1}(D^n) = 0$ (the disc is contractible). This is impossible, so $f$ has a fixed point.
+
+</Proof>
+
+</Section>
+
+<Section id="cellular" kind="proof" title="Cellular homology and the Euler characteristic">
+
+Singular chains are enormous; for a CW complex there is a much smaller chain complex with the same homology. Put $C_n^{\mathrm{CW}}(X) = H_n(X^n, X^{n-1})$, which is free abelian on the $n$-cells, with differential the composite $H_n(X^n, X^{n-1}) \to H_{n-1}(X^{n-1}) \to H_{n-1}(X^{n-1}, X^{n-2})$ of maps from the long exact sequences of pairs.
+
+<Theorem name="Theorem 9 (cellular homology)">
+
+$H_n(C^{\mathrm{CW}}_\bullet(X)) \cong H_n(X)$. Moreover the **cellular boundary formula** holds: $d(e^n_\alpha) = \sum_\beta d_{\alpha\beta}\, e^{n-1}_\beta$, where $d_{\alpha\beta}$ is the degree of the composite $S^{n-1} \xrightarrow{\varphi_\alpha} X^{n-1} \to X^{n-1}/(X^{n-1} \setminus e^{n-1}_\beta) \cong S^{n-1}$.
+
+</Theorem>
+
+The proof uses the long exact sequences of the pairs $(X^n, X^{n-1})$ and the computation $H_k(X^n, X^{n-1}) = 0$ for $k \neq n$ (Hatcher, Theorem 2.35 and the formula on p. 140). In practice: $d(e^1) = (\text{end}) - (\text{start})$, and if a $2$-cell is attached along a word in the $1$-cells of a complex with one $0$-cell, $d(e^2)$ is the vector of exponent sums of the letters in that word.
+
+<Example title="Spheres, complex projective spaces, surfaces">
+
+- $S^n = e^0 \cup e^n$: for $n \ge 2$ all differentials vanish, recovering Theorem 6.
+- $\C P^n = e^0 \cup e^2 \cup \dots \cup e^{2n}$: cells only in even dimensions, so all differentials vanish and $H_{2k}(\C P^n) \cong \Z$ for $0 \le k \le n$, zero otherwise.
+- The torus: one $0$-cell, $1$-cells $a, b$, one $2$-cell attached along $a b a^{-1} b^{-1}$. Then $d_2(e^2) = a + b - a - b = 0$ and $d_1 = 0$, so $H_\bullet(T^2) = \Z, \Z^2, \Z$. The same argument for $M_g$ (word $\prod_{i=1}^g a_i b_i a_i^{-1} b_i^{-1}$) gives $\Z, \Z^{2g}, \Z$.
+- The Klein bottle: word $a b a^{-1} b$, so $d_2(e^2) = 2b$ and $H_1 = \Z^2 / \langle 2b \rangle \cong \Z \oplus \Z/2$, $H_2 = \ker d_2 = 0$. The surface $N_h$ with $h$ cross-caps (word $a_1^2 \cdots a_h^2$) has $H_1 \cong \Z^{h-1} \oplus \Z/2$ and $H_2 = 0$.
+
+</Example>
+
+<Example title="Real projective space">
+
+$\R P^n = e^0 \cup e^1 \cup \dots \cup e^n$, where $e^k$ is attached by the double cover $S^{k-1} \to \R P^{k-1}$. Composing with the collapse $\R P^{k-1} \to \R P^{k-1}/\R P^{k-2} \cong S^{k-1}$, the two sheets contribute the identity and the antipodal map, of degrees $1$ and $(-1)^k$. So $d_k = 1 + (-1)^k$: zero for $k$ odd, multiplication by $2$ for $k$ even. Hence
+
+$$
+H_k(\R P^n) \cong \begin{cases} \Z & k = 0, \text{ or } k = n \text{ odd}, \\ \Z/2 & k \text{ odd},\ 0 < k < n, \\ 0 & \text{otherwise.} \end{cases}
+$$
+
+With coefficients in $\Z/2$ every differential becomes zero and $H_k(\R P^n; \Z/2) \cong \Z/2$ for $0 \le k \le n$: homology depends on the coefficients.
+
+</Example>
+
+<Theorem name="Theorem 10 (Euler–Poincaré)">
+
+For a finite CW complex $X$ with $c_n$ cells of dimension $n$, define $\chi(X) = \sum_n (-1)^n c_n$. Then $\chi(X) = \sum_n (-1)^n \operatorname{rank} H_n(X)$. In particular $\chi$ does not depend on the cell structure and is a homotopy invariant.
+
+</Theorem>
+
+<Proof>
+
+Tensor the cellular chain complex with $\Q$: since $\Q$ is flat, $H_n(C \otimes \Q) \cong H_n(C) \otimes \Q$, whose dimension is $\operatorname{rank} H_n(X)$. So we may work with a finite complex of finite-dimensional $\Q$-vector spaces $C_n$ with cycles $Z_n$, boundaries $B_n$ and homology $H_n$. Rank–nullity for $\partial_n : C_n \to C_{n-1}$ gives $\dim C_n = \dim Z_n + \dim B_{n-1}$, and $\dim H_n = \dim Z_n - \dim B_n$. Hence
+
+$$
+\sum_n (-1)^n \dim C_n = \sum_n (-1)^n \big( \dim H_n + \dim B_n + \dim B_{n-1} \big) = \sum_n (-1)^n \dim H_n ,
+$$
+
+because the terms $\dim B_n$ cancel in the telescoping sum.
+
+</Proof>
+
+So $V - E + F = 2$ for every cell decomposition of $S^2$ (Euler's polyhedron formula), $\chi(M_g) = 2 - 2g$, $\chi(N_h) = 2 - h$, $\chi(\R P^n) = 1$ or $0$ as $n$ is even or odd, and $\chi(\C P^n) = n + 1$.
+
+</Section>
+
+<Section id="cohomology" kind="proof" title="Cohomology and cup products">
+
+Dualising gives more structure. For a commutative ring $R$, the **singular cochains** are $C^n(X; R) = \operatorname{Hom}(C_n(X), R)$ with $\delta \varphi = \varphi \circ \partial$, and **singular cohomology** $H^n(X; R)$ is their cohomology. It is contravariant: $f : X \to Y$ induces $f^* : H^n(Y; R) \to H^n(X; R)$. By the universal coefficient theorem, $H^n(X; \Z) \cong \operatorname{Hom}(H_n(X), \Z) \oplus \operatorname{Ext}(H_{n-1}(X), \Z)$, so the cohomology *groups* carry no new information. The new information is a product.
+
+<Definition term="cup product">
+
+For $\varphi \in C^k(X; R)$ and $\psi \in C^l(X; R)$, define $\varphi \smile \psi \in C^{k+l}(X; R)$ by evaluating on the front $k$-face and the back $l$-face:
+
+$$
+(\varphi \smile \psi)(\sigma) = \varphi\big(\sigma|_{[v_0, \dots, v_k]}\big)\, \psi\big(\sigma|_{[v_k, \dots, v_{k+l}]}\big).
+$$
+
+It satisfies $\delta(\varphi \smile \psi) = \delta\varphi \smile \psi + (-1)^k \varphi \smile \delta\psi$, so it descends to cohomology, making $H^\bullet(X; R) = \bigoplus_n H^n(X; R)$ a ring with unit. This ring is **graded commutative** ($\alpha \smile \beta = (-1)^{kl} \beta \smile \alpha$) and **natural** ($f^*(\alpha \smile \beta) = f^*\alpha \smile f^*\beta$).
+
+</Definition>
+
+The standard computations (Hatcher, §3.2): $H^\bullet(T^2; \Z)$ is the exterior algebra on two classes $\alpha, \beta$ of degree $1$, with $\alpha \smile \beta$ generating $H^2$; $H^\bullet(\C P^n; \Z) \cong \Z[x]/(x^{n+1})$ with $|x| = 2$; $H^\bullet(\R P^n; \Z/2) \cong \Z/2[a]/(a^{n+1})$ with $|a| = 1$. For a wedge sum, $\tilde H^\bullet(X \vee Y) \cong \tilde H^\bullet(X) \times \tilde H^\bullet(Y)$ as rings: the restrictions to the two summands identify the cohomology, and products of a class from $X$ with a class from $Y$ vanish.
+
+<Theorem name="Theorem 11 (cup products see more than homology)">
+
+$\C P^2$ and $S^2 \vee S^4$ have isomorphic homology and cohomology groups, but they are not homotopy equivalent.
+
+</Theorem>
+
+<Proof>
+
+Both have $H^0 \cong H^2 \cong H^4 \cong \Z$ and all other groups zero ($\C P^2 = e^0 \cup e^2 \cup e^4$, and $S^2 \vee S^4 = e^0 \cup e^2 \cup e^4$ with the $4$-cell attached by a constant map). In $\C P^2$ a generator $x \in H^2$ has $x \smile x$ generating $H^4$ (by the ring computation above, which rests on Poincaré duality). In $S^2 \vee S^4$, let $u \in H^2$ and let $j : S^4 \to S^2 \vee S^4$ be the inclusion; $j^* : H^4(S^2 \vee S^4) \to H^4(S^4)$ is an isomorphism, and $j^*(u \smile u) = j^* u \smile j^* u = 0$ because $j^* u \in H^2(S^4) = 0$. So every square of a degree-$2$ class vanishes. A homotopy equivalence would induce a ring isomorphism $H^\bullet(\C P^2) \cong H^\bullet(S^2 \vee S^4)$, which would preserve "the square of a generator of $H^2$ generates $H^4$". Contradiction.
+
+</Proof>
+
+The same argument shows that $T^2$ is not homotopy equivalent to $S^1 \vee S^1 \vee S^2$, although their homology groups agree. Geometrically, $x \smile x \neq 0$ in $\C P^2$ because two projective lines meet in a point; in $T^2$, $\alpha \smile \beta \neq 0$ because a meridian and a longitude meet once.
+
+</Section>
+
+<Section id="lefschetz" kind="human" title="The Lefschetz fixed-point theorem">
+
+Brouwer's theorem is the first case of a general principle: a global algebraic count forces fixed points.
+
+<Theorem name="Theorem 12 (Lefschetz, 1926; Hopf)">
+
+Let $X$ be a compact triangulable space (or a retract of a finite simplicial complex) and $f : X \to X$ continuous. Its **Lefschetz number** is $L(f) = \sum_k (-1)^k \operatorname{tr}\big(f_* : H_k(X; \Q) \to H_k(X; \Q)\big)$. If $L(f) \neq 0$, then $f$ has a fixed point.
+
+</Theorem>
+
+The proof (Hatcher, Theorem 2C.3) uses simplicial approximation: if $f$ had no fixed point, a fine subdivision would give a simplicial approximation moving every simplex off itself, so the traces on the *chain* level would be zero, and the Hopf trace formula — the trace version of Theorem 10 — shows that the alternating sum of traces on chains equals $L(f)$.
+
+Examples. If $X$ is contractible then $L(f) = 1$ for every $f$: Brouwer again. For $f : S^n \to S^n$ of degree $d$, $L(f) = 1 + (-1)^n d$, so every map of degree $d \neq (-1)^{n+1}$ has a fixed point — and the antipodal map, of degree exactly $(-1)^{n+1}$, has none. For $\mathrm{id}_X$ we get $L = \chi(X)$. So if a closed manifold $M$ carries a nowhere-vanishing vector field, its flow $\varphi_t$ for small $t > 0$ is homotopic to the identity and has no fixed points (by compactness, periodic orbits have periods bounded below), and therefore $\chi(M) = L(\varphi_t) = 0$. For a map of $\C P^2$ with $f^* x = m x$, naturality of the cup product forces $f^*(x^2) = m^2 x^2$, so $L(f) = 1 + m + m^2 \neq 0$: *every* self-map of $\C P^2$ has a fixed point.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Homological algebra in Lean">
+
+The algebraic heart of the lesson is proved from first principles with a small, self-contained notion of chain complex of abelian groups. (Mathlib's general notion is `ChainComplex V ℕ` for an arbitrary preadditive category `V`; ours keeps every element visible.)
+
+<Lean decl="Lumenary.AlgebraicTopology.ChainCx" />
+
+<Lean decl="Lumenary.AlgebraicTopology.IsCycle" />
+
+<Lean decl="Lumenary.AlgebraicTopology.IsBoundary" />
+
+<Lean decl="Lumenary.AlgebraicTopology.boundary_isCycle" />
+
+Chain maps preserve boundaries, which is what makes $f_*$ well defined on homology, and Lemma 2 is proved with a `calc` block that mirrors the one-line human proof: $f(z) - g(z) = \partial h(z) + h(\partial z) = \partial h(z)$.
+
+<Lean decl="Lumenary.AlgebraicTopology.ChainMap" />
+
+<Lean decl="Lumenary.AlgebraicTopology.chainMap_boundary" />
+
+<Lean decl="Lumenary.AlgebraicTopology.ChainHomotopy" />
+
+<Lean decl="Lumenary.AlgebraicTopology.homotopic_maps_agree_on_homology" />
+
+Theorem 10 for a two-dimensional complex of vector spaces — for instance the cellular chains of a surface over $\Q$ or $\Z/2$ — is the rank–nullity argument of the proof, with the homology groups written explicitly as quotients. It is the formal content of "$V - E + F = b_0 - b_1 + b_2$".
+
+<Lean decl="Lumenary.AlgebraicTopology.euler_poincare" />
+
+The cellular chain complex of $\R P^2$ is $\Z \xrightarrow{2} \Z \xrightarrow{0} \Z$. The next two declarations compute what happens to it with integer and with $\Z/2$ coefficients, and identify $H_1(\R P^2) = \Z / 2\Z$ with $\Z/2$ using Mathlib:
+
+<Lean decl="Lumenary.AlgebraicTopology.rp2_cellular" />
+
+<Lean decl="Lumenary.AlgebraicTopology.rp2_h1" />
+
+The functoriality step of Corollary 8 holds for *any* functor into a category with zero morphisms, and is proved in that generality:
+
+<Lean decl="Lumenary.AlgebraicTopology.no_retraction" />
+
+Mathlib already contains the topological foundations. Lemma 1 holds for the alternating face map complex of any simplicial object — singular chains are the case of the singular simplicial set — and Theorem 3 is a recent addition to Mathlib (by Joël Riou and Fabian Odermatt), built on homotopy invariance for simplicial sets:
+
+<Lean decl="Lumenary.AlgebraicTopology.d_squared" />
+
+<Lean decl="Lumenary.AlgebraicTopology.homotopy_invariance" />
+
+**What is and is not formalised.** Formalised independently: boundaries are cycles, chain maps induce maps on homology, Lemma 2, Theorem 10 in dimension two, the cellular computation for $\R P^2$, and the functorial no-retraction argument. From Mathlib: Lemma 1 and Theorem 3 for singular homology. Not formalised: Mayer–Vietoris, excision and the computation $\tilde H_n(S^n) \cong \Z$ (not yet in Mathlib for singular homology), so Corollaries 7 and 8 are not formalised end to end; cellular homology of CW complexes; cup products; and the Lefschetz theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing homology by machine">
+
+Homology of a finite simplicial complex is linear algebra over $\Z$: write down the boundary matrices and put them in **Smith normal form**. The ranks give the Betti numbers and the diagonal entries larger than $1$ give the torsion. The experiment does this for explicit triangulations of four surfaces, over $\Z$ and over $\Z/2$, and checks Theorem 10 in each case.
+
+<Python id="algebraic_topology_homology" />
+
+The $\Z/2$ Betti numbers of $\R P^2$ and the Klein bottle are larger than the integral ones — torsion $\Z/2$ in $H_1$ shows up twice mod $2$, as the universal coefficient theorem predicts — yet the Euler characteristic is the same. The computation is exact, but only for these triangulations; that the answer does not depend on the triangulation is Theorem 3.
+
+The second experiment tests the Lefschetz theorem on maps of the torus $x \mapsto Ax \pmod{\Z^2}$ for integer matrices $A$. Since $f_*$ is $1$, $A$ and $\det A$ on $H_0, H_1, H_2$, the Lefschetz number is $1 - \operatorname{tr} A + \det A = \det(I - A)$, and the fixed points can be counted exactly.
+
+<Python id="algebraic_topology_lefschetz" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: cells, gluings and the Euler characteristic">
+
+In the **Surfaces and genus** tab, refine a cell structure with the three moves (split an edge, cut a face, add a vertex). The numbers $V$, $E$, $F$ change, but $V - E + F$ never does — the elementary shadow of Theorem 10, which explains *why*: $\chi$ is computed from homology, which does not see the cell structure at all.
+
+<EulerCounter tab="surfaces" subtitle="χ = V − E + F does not depend on how the surface is cut into cells." />
+
+The next widget shows the gluing words used in the cellular computations. Walk the flatlander around the Klein bottle ($a b a^{-1} b$) and the projective plane ($a b a b$) and watch it come back mirror-reversed. Count, for each word, the exponent sum of each letter: that is the cellular boundary $d_2(e^2)$, and a non-zero exponent sum is exactly where the torsion in $H_1$ comes from.
+
+<SurfaceGluing surface="klein" surfaces={["torus", "klein", "rp2", "sphere"]} subtitle="The torus word has exponent sums 0, 0; the Klein bottle 0, 2; the projective plane 2, 2." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Homology determines the homotopy type."** It does not. $\C P^2$ and $S^2 \vee S^4$ have the same homology but different cohomology rings (Theorem 11). More strikingly, Poincaré's **homology sphere** — the quotient of $SO(3)$ by the icosahedral group — has the homology of $S^3$ but a fundamental group of order $120$. Even a map inducing isomorphisms on all homology groups need not be a homotopy equivalence; Whitehead's theorem requires extra hypotheses such as simple connectivity (see <TopicLink id="math.geom.homotopy-theory">homotopy theory</TopicLink>).
+
+</Misconception>
+
+<Misconception>
+
+**"Homology groups are the same as homotopy groups."** Only in the first non-trivial degree, by the Hurewicz theorem. Homology vanishes above the dimension of a CW complex, but homotopy groups do not: $H_3(S^2) = 0$ while $\pi_3(S^2) \cong \Z$, and the groups $\pi_{n+k}(S^n)$ are known only in a limited range. Homology is computable precisely because it satisfies excision and Mayer–Vietoris, which homotopy groups do not.
+
+</Misconception>
+
+<Misconception>
+
+**"$H_1$ is the fundamental group."** $H_1$ is the *abelianisation* of $\pi_1$. For the figure eight, $\pi_1$ is free on two generators $a, b$ and $aba^{-1}b^{-1} \neq 1$, but in $H_1 \cong \Z^2$ the commutator is zero.
+
+</Misconception>
+
+<Misconception>
+
+**"Torsion in homology means non-orientable."** For closed surfaces, torsion in $H_1$ occurs exactly for the non-orientable ones. But the lens spaces $L(p, q)$ are orientable $3$-manifolds with $H_1 \cong \Z/p$. Orientability of a closed connected $n$-manifold is detected instead by $H_n(M; \Z) \cong \Z$ (orientable) versus $0$ (non-orientable).
+
+</Misconception>
+
+<Misconception>
+
+**"The Euler characteristic depends on the triangulation, and homology on the cells chosen."** Both are invariants of the homotopy type (Theorems 3 and 10). This is the point of the definition: a quantity computed from a combinatorial structure turns out not to depend on it.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="A homotopy-invariant functor, characterised by axioms">
+
+Homology is a functor $H_n : \mathbf{hTop} \to \mathbf{Ab}$ from the homotopy category, with long exact sequences of pairs and excision. Eilenberg and Steenrod showed that these properties, together with the **dimension axiom** $H_n(\mathrm{pt}) = 0$ for $n \neq 0$, determine homology on finite CW complexes. Their consequences include the Jordan–Brouwer separation theorem (an embedded $S^{n-1} \subset S^n$ has complement with exactly two components) and Brouwer's **invariance of domain** (an injective continuous map $\R^n \to \R^n$ is open), both via Alexander duality. Dropping the dimension axiom gives *generalised* homology theories such as K-theory and bordism — see <TopicLink id="math.geom.stable-homotopy-theory">stable homotopy theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Duality and intersection">
+
+For a closed oriented $n$-manifold $M$, **Poincaré duality** $H^k(M; \Z) \cong H_{n-k}(M; \Z)$ turns the cup product into intersection: if submanifolds $A$, $B$ meet transversally, the Poincaré dual of $A \cap B$ is the cup product of their duals. This is why $x^2$ generates $H^4(\C P^2)$ (two lines meet in a point) and why the intersection form on $H_2$ of a $4$-manifold is a central invariant. The Euler characteristic is also geometric: by Gauss–Bonnet, $\int_M K \, dA = 2\pi \chi(M)$ for a closed surface, a theme continued in <TopicLink id="math.geom.vector-bundles-characteristic-classes">vector bundles and characteristic classes</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Holes detected by differential forms">
+
+On a smooth manifold, the **de Rham theorem** identifies $H^k(M; \R)$ with closed $k$-forms modulo exact ones. On $\R^2 \setminus \{0\}$, the form $d\theta = (x\,dy - y\,dx)/(x^2 + y^2)$ is closed but not exact, since $\oint_{S^1} d\theta = 2\pi \neq 0$; it represents the generator of $H^1$. Hodge theory goes further: on a compact Riemannian manifold every class has a unique harmonic representative, so the Betti numbers are dimensions of spaces of solutions of an elliptic PDE. See <TopicLink id="math.geom.differential-forms">differential forms</TopicLink> and <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Homological algebra">
+
+The chain complex is the real object; homology is its first invariant. Lemmas 1 and 2 and Theorem 4 belong to **homological algebra**, which grew out of topology and now runs through algebra: derived functors $\operatorname{Tor}$ and $\operatorname{Ext}$ measure how tensor products and $\operatorname{Hom}$ fail to be exact, and appear in the Künneth and universal coefficient theorems; group cohomology is the cohomology of a $K(G, 1)$. Emmy Noether's insistence on groups rather than Betti numbers is what made this possible. The modern frame is the derived category, where chain complexes are considered up to quasi-isomorphism — see <TopicLink id="math.cat.derived-categories">derived categories</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Homology of data">
+
+Because homology of a finite complex is Smith normal form, it is algorithmic, and **persistent homology** applies it to data: build complexes from a point cloud at every scale and record when holes are born and die, producing a *barcode* that is stable under perturbation of the data (Cohen-Steiner, Edelsbrunner and Harer, 2007). On a graph, the Euler–Poincaré formula reads $V - E = b_0 - b_1$, so the number of independent cycles is $b_1 = E - V + b_0$ — the cyclomatic number used in circuit analysis and software engineering.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Kirchhoff's laws are homology">
+
+In an electrical network, currents form a $1$-chain on the circuit graph. **Kirchhoff's current law** (1847) says that, without external sources, the current is a cycle: $\partial I = 0$. The **voltage law** says that voltage drops form a coboundary: they are differences of a potential, $V = \delta \phi$. The space of steady currents therefore has dimension $b_1 = E - V + 1$ for a connected network, and Kirchhoff's own count of independent loops is an early computation of a Betti number. Hermann Weyl later (1923) made this connection with combinatorial topology explicit.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Why category theory was invented">
+
+Eilenberg and Mac Lane introduced categories, functors and natural transformations in 1945 precisely to say what "natural" means for maps such as $H_n(X) \to H_n(X, A)$ and the universal coefficient isomorphisms. Homology is a functor; the connecting homomorphism $\delta$ is a natural transformation; Theorem 3 says $H_n$ factors through the homotopy category. See <TopicLink id="math.cat.categories">categories</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Polyhedra and surfaces.** Leonhard Euler stated $V - E + F = 2$ for polyhedra in 1750 and published proofs in 1758; René Descartes' unpublished notes (c. 1630) contain an equivalent statement about angular defects. Bernhard Riemann (1851, 1857) introduced the connectivity of surfaces in his work on what are now Riemann surfaces, and Enrico Betti (1871) defined higher connectivity numbers.
+- **Analysis situs.** Henri Poincaré's *Analysis Situs* (1895) and its five complements (1899–1904) created the subject: homology with integer coefficients, torsion, the fundamental group, the duality theorem that bears his name, and in 1904 the homology sphere showing that homology does not detect $S^3$.
+- **Brouwer and Lefschetz.** L. E. J. Brouwer proved the fixed-point theorem and the invariance of dimension and of domain in 1910–1912, introducing the degree of a map. Solomon Lefschetz proved his fixed-point theorem in 1926; Heinz Hopf extended it in 1928–29.
+- **Groups, not numbers.** In the mid-1920s Emmy Noether in Göttingen urged topologists to treat homology as groups; Pavel Alexandroff and Heinz Hopf credited her influence in their 1935 *Topologie*. Leopold Vietoris and Walther Mayer developed the Mayer–Vietoris sequence (1929–30).
+- **Cohomology.** James W. Alexander and Andrey Kolmogorov independently introduced cohomology and products at the 1935 Moscow topology conference; Eduard Čech and Hassler Whitney gave the cup product its modern form (1936–38). Lev Pontryagin's duality theorems were part of the same period.
+- **Foundations.** Samuel Eilenberg defined singular homology in its modern form (1944); Eilenberg and Saunders Mac Lane introduced category theory (1945); Eilenberg and Norman Steenrod axiomatised homology (1945, book 1952); J. H. C. Whitehead introduced CW complexes (1949).
+- **Today.** Algebraic topology is a working tool from algebraic geometry to robotics and data analysis; persistent homology, introduced by Herbert Edelsbrunner, David Letscher and Afra Zomorodian (2002) and developed by Gunnar Carlsson and others, is used in fields from materials science to neuroscience.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Allen Hatcher, *Algebraic Topology* (2002) — the standard first course; Chapter 2 (homology) and Chapter 3 (cohomology) cover this lesson, with the proofs sketched here in full.
+- James R. Munkres, *Elements of Algebraic Topology* (1984) — careful simplicial and singular homology, with many computations.
+- Glen E. Bredon, *Topology and Geometry* (1993) — homology and cohomology together with smooth manifolds and de Rham theory.
+- Raoul Bott and Loring W. Tu, *Differential Forms in Algebraic Topology* (1982) — the analyst's and geometer's route via de Rham cohomology.
+- Tammo tom Dieck, *Algebraic Topology* (2008), and J. P. May, *A Concise Course in Algebraic Topology* (1999) — more categorical treatments.
+- Herbert Edelsbrunner and John Harer, *Computational Topology: An Introduction* (2010) — algorithms and persistent homology.
+- Jean Dieudonné, *A History of Algebraic and Differential Topology, 1900–1960* (1989).
+
+Reading path: Hatcher Chapter 2 with this lesson; then Chapter 3 or Bott–Tu; then <TopicLink id="math.geom.homotopy-theory">homotopy theory</TopicLink> and <TopicLink id="math.geom.vector-bundles-characteristic-classes">characteristic classes</TopicLink>.
+
+</Section>

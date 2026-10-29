@@ -1,0 +1,512 @@
+---
+slug: numerical-methods
+topic: math.comp.numerical-methods
+title: Numerical methods
+subtitle: How computers find roots, derivatives and integrals with numbers that are almost never exact — and how to prove how wrong the answer can be.
+level: ug1
+ages: Undergraduate (first or second year)
+minutes: 120
+order: 5021
+objectives:
+  - Explain binary floating-point representation, machine epsilon and the unit roundoff, and prove that subtracting nearly equal numbers amplifies relative error (catastrophic cancellation)
+  - Implement bisection and Newton's method, prove that bisection always converges for a continuous function with a sign change and that Newton's method converges quadratically near a simple root, and give examples where Newton fails
+  - Define the order of convergence of an iterative method and estimate it from computed errors
+  - Derive the error of polynomial interpolation and of difference quotients, and balance truncation error against rounding error
+  - Implement the composite trapezoidal and Simpson rules and prove their error bounds $O(h^2)$ and $O(h^4)$ for smooth integrands
+narrators: []
+lean:
+  - Lumenary.NumericalMethods.IsBinary64
+  - Lumenary.NumericalMethods.one_add_eps_is_binary64
+  - Lumenary.NumericalMethods.machine_epsilon
+  - Lumenary.NumericalMethods.RoundsTo
+  - Lumenary.NumericalMethods.cancellation_bound
+  - Lumenary.NumericalMethods.bisectStep
+  - Lumenary.NumericalMethods.bisect
+  - Lumenary.NumericalMethods.bisect_width
+  - Lumenary.NumericalMethods.bisect_sign
+  - Lumenary.NumericalMethods.bisection_converges
+  - Lumenary.NumericalMethods.heron_error
+  - Lumenary.NumericalMethods.heron_ge_sqrt
+  - Lumenary.NumericalMethods.heron_quadratic
+  - Lumenary.NumericalMethods.newton_error_step
+  - Lumenary.NumericalMethods.taylor_lagrange
+  - Lumenary.NumericalMethods.newton_algebraic
+  - Lumenary.NumericalMethods.simpson_exact_cubic
+  - Lumenary.NumericalMethods.simpson_not_exact_quartic
+  - Lumenary.NumericalMethods.trapezoid_error
+compute: [numerical_methods_floating_point, numerical_methods_root_finding, numerical_methods_differentiation]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Numbers that are almost right">
+
+Nearly four thousand years ago a scribe in Mesopotamia pressed a small clay tablet — now called YBC 7289 and kept at Yale — with a square, its diagonals, and the number $1;24,51,10$ in base $60$. That is $1 + \frac{24}{60} + \frac{51}{60^2} + \frac{10}{60^3} \approx 1.4142130$, the ratio of a square's diagonal to its side, correct to about six decimal places. The true value $\sqrt 2 = 1.41421356\ldots$ is irrational: **no** finite expansion in any base is exact. Every practical computation with it is an approximation.
+
+Modern computers face the same fact on a vast scale. A weather model, a bridge design or a vaccine-trial analysis performs billions of arithmetic operations on numbers stored with about sixteen significant digits, so almost every operation rounds. Usually that is harmless. Sometimes it is not: in 1982 the Vancouver Stock Exchange started a new index at $1000$ and recomputed it thousands of times a day, *truncating* to three decimals each time; within two years it read about $520$ while the correctly computed value was above $1000$.
+
+**Numerical analysis** is the mathematics of computing with approximations: designing methods that find roots, derivatives and integrals from finitely many arithmetic operations, and *proving* how large their errors can be. This lesson treats the three classical sources of error — rounding, truncation and the failure of hypotheses — through floating-point arithmetic, root finding, interpolation and differentiation, and numerical integration.
+
+It assumes <TopicLink id="math.analysis.single-variable-calculus">calculus of one variable</TopicLink> (the mean value theorem and Taylor's theorem with remainder) and some <TopicLink id="math.comp.programming-intro">programming</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Three kinds of error, and how fast they shrink">
+
+Computing $\int_0^1 e^{-x^2}dx$ on a laptop involves three different approximations.
+
+- **Modelling error**: the integral itself may be only a model of something physical. Numerical analysis takes the mathematical problem as given.
+- **Truncation (discretisation) error**: we replace the integral by a finite sum, say the trapezoidal rule with $n$ strips. Even with exact arithmetic the sum differs from the integral, typically by about $C/n^2$.
+- **Rounding error**: every operation in the sum is done in floating point and is rounded to about $16$ significant digits.
+
+Truncation error shrinks as we work harder; rounding error tends to *grow* with the number of operations. Good methods balance the two, and good analysis predicts the balance. The key measure of a method is how fast its error shrinks: an error that is halved at each step (bisection) gains one correct binary digit per step, while an error that is squared at each step (Newton's method) **doubles the number of correct digits** per step:
+
+$$
+10^{-1} \to 10^{-2} \to 10^{-4} \to 10^{-8} \to 10^{-16}.
+$$
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="floating-point number">
+
+A (binary, normalised) **floating-point number** with precision $p$ is a number $\pm m \cdot 2^{e}$ where the **significand** $m$ is an integer with $2^{p-1} \le m < 2^p$ and the **exponent** $e$ is an integer in a fixed range. The IEEE 754 **binary64** format ("double precision", Python's `float`) has $p = 53$ and exponents giving magnitudes from about $10^{-308}$ to $10^{308}$, plus zero, subnormal numbers, $\pm\infty$ and NaN ("not a number").
+
+</Definition>
+
+<Definition term="machine epsilon and unit roundoff">
+
+**Machine epsilon** $\varepsilon$ is the gap between $1$ and the next larger floating-point number: $\varepsilon = 2^{1-p}$, which is $2^{-52} \approx 2.2 \times 10^{-16}$ for binary64. The **unit roundoff** is $u = \varepsilon/2 = 2^{-53} \approx 1.1 \times 10^{-16}$, the largest relative error made by rounding to nearest.
+
+</Definition>
+
+<Definition term="absolute and relative error">
+
+If $\hat x$ approximates $x$, its **absolute error** is $|\hat x - x|$ and, for $x \ne 0$, its **relative error** is $|\hat x - x|/|x|$. A relative error of about $10^{-k}$ means about $k$ correct significant digits.
+
+</Definition>
+
+<Definition term="order of convergence">
+
+A sequence $x_n \to r$ with errors $e_n = |x_n - r|$ **converges with order $p \ge 1$** if $e_{n+1} \le C e_n^{\,p}$ for some constant $C$ and all large $n$ (with $C < 1$ when $p = 1$). Order $1$ is **linear**, order $2$ **quadratic**. In practice one estimates $p \approx \log(e_{n+1}/e_n)/\log(e_n/e_{n-1})$.
+
+</Definition>
+
+<Definition term="condition number">
+
+For a differentiable function $f$ with $f(x) \ne 0$, the (relative) **condition number** $\kappa_f(x) = \left|\frac{x f'(x)}{f(x)}\right|$ measures how much a small relative change in $x$ is magnified in $f(x)$. A problem with a large condition number is **ill-conditioned**: no method can solve it accurately from inexact data.
+
+</Definition>
+
+</Section>
+
+<Section id="floating" kind="proof" title="Floating point and rounding error">
+
+<Theorem name="Proposition 1 (rounding)">
+
+If $x$ is a real number in the normal range of binary64 and $\mathrm{fl}(x)$ is the nearest binary64 number, then $\mathrm{fl}(x) = x(1 + \delta)$ with $|\delta| \le u = 2^{-53}$.
+
+</Theorem>
+
+<Proof>
+
+Take $x > 0$ and let $2^{E} \le x < 2^{E+1}$. In this interval the binary64 numbers are $m \cdot 2^{E - 52}$ for $2^{52} \le m < 2^{53}$, spaced $2^{E-52}$ apart (and $2^{E+1}$ is also one). So the nearest one is within half the spacing: $|\mathrm{fl}(x) - x| \le 2^{E - 53} \le 2^{-53} x$.
+
+</Proof>
+
+IEEE 754 requires $+$, $-$, $\times$, $\div$ and $\sqrt{\ }$ to be **correctly rounded**: the computed result is $\mathrm{fl}$ of the exact result. This gives the **standard model** $\mathrm{fl}(a \circ b) = (a \circ b)(1 + \delta)$, $|\delta| \le u$, on which error analysis is built. So floating-point arithmetic is not random or vague; it is exact arithmetic followed by one well-defined rounding. But it is not ordinary arithmetic either: $0.1$ is stored as $\frac{3602879701896397}{2^{55}}$, so $0.1 + 0.2 \ne 0.3$ in floating point, and addition is not associative: $(1 + 2^{-53}) + 2^{-53} = 1$ but $1 + (2^{-53} + 2^{-53}) = 1 + 2^{-52}$.
+
+<Theorem name="Theorem 2 (cancellation)">
+
+Suppose $\hat x = x(1 + \delta_1)$ and $\hat y = y(1 + \delta_2)$ with $|\delta_1|, |\delta_2| \le u$, and $x \ne y$. Then
+
+$$
+\big|(\hat x - \hat y) - (x - y)\big| \le u\,(|x| + |y|), \qquad \text{so} \qquad \frac{|(\hat x - \hat y) - (x - y)|}{|x - y|} \le u\,\frac{|x| + |y|}{|x - y|}.
+$$
+
+</Theorem>
+
+<Proof>
+
+$(\hat x - \hat y) - (x - y) = x\delta_1 - y\delta_2$, and $|x\delta_1 - y\delta_2| \le |x|\,u + |y|\,u$.
+
+</Proof>
+
+The subtraction itself is exact or nearly so; the danger is that it **exposes** errors already present in $\hat x$ and $\hat y$. If $x$ and $y$ agree in their first $k$ digits, the factor $(|x| + |y|)/|x - y|$ is about $10^{k}$, and $k$ digits are lost. This is **catastrophic cancellation**, and $(|x| + |y|)/|x - y|$ is exactly the condition number of subtraction.
+
+<Example title="Two cures for cancellation">
+
+- For small $x$, $\cos x$ is close to $1$, and $(1 - \cos x)/x^2$ computed directly loses digits: at $x = 10^{-8}$ the computer finds $\cos x$ rounds to exactly $1$ and returns $0$ instead of $\tfrac12$. The identity $1 - \cos x = 2\sin^2(x/2)$ removes the subtraction, and $2\sin^2(x/2)/x^2$ is accurate to full precision.
+- The roots of $x^2 - 10^8 x + 1 = 0$ are about $10^8$ and $10^{-8}$. The formula $\frac{10^8 - \sqrt{10^{16} - 4}}{2}$ for the small root subtracts two nearly equal numbers and is wrong by $25\%$. Computing the large root first and using the product of the roots, $x_1 x_2 = 1$, gives the small root to full precision.
+
+</Example>
+
+A computed answer is **backward stable** if it is the exact answer to a slightly perturbed problem (perturbations of relative size about $u$). Then its accuracy is limited only by the problem's condition number: *error* $\lesssim$ *condition number* $\times$ *backward error*. This way of thinking, due largely to James Wilkinson, separates what is the method's fault from what is the problem's.
+
+</Section>
+
+<Section id="roots" kind="proof" title="Finding roots: bisection and Newton's method">
+
+**Bisection.** Given a continuous $f$ on $[a, b]$ with $f(a) \le 0 \le f(b)$, look at the midpoint $m = (a + b)/2$. If $f(m) \le 0$, replace $a$ by $m$; otherwise replace $b$ by $m$. Repeat.
+
+<Theorem name="Theorem 3 (bisection)">
+
+After $n$ steps the interval $[a_n, b_n]$ has length $(b - a)/2^n$, still satisfies $f(a_n) \le 0 \le f(b_n)$, and contains a root $c$ of $f$. The midpoint $m_n$ satisfies $|m_n - c| \le (b - a)/2^{n+1}$. So bisection always converges, linearly with rate $\tfrac12$.
+
+</Theorem>
+
+<Proof>
+
+The length is halved at each step, and the sign condition is preserved by construction: we keep $[m, b_n]$ only when $f(m) \le 0$, and $[a_n, m]$ only when $f(m) > 0$. By the intermediate value theorem $f$ has a root $c \in [a_n, b_n]$, and the midpoint of an interval is within half its length of every point in it.
+
+</Proof>
+
+Bisection is slow — about $3.3$ steps per decimal digit — but it needs only continuity and a sign change, and it cannot fail. Its proof rests on the completeness of $\R$: the nested intervals shrink to a point, which is a root.
+
+**Newton's method.** Replace $f$ near the current guess $x_n$ by its tangent line, and take the tangent's zero as the next guess:
+
+$$
+x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}.
+$$
+
+For $f(x) = x^2 - a$ this is $x_{n+1} = \frac12\left(x_n + \frac{a}{x_n}\right)$ — the method Heron of Alexandria described in the first century CE. (It is one plausible way the Babylonian value could have been found, but how the scribes actually computed it is not recorded.)
+
+<Theorem name="Theorem 4 (local quadratic convergence of Newton's method)">
+
+Let $f$ be twice continuously differentiable on an open interval containing $r$, with $f(r) = 0$ and $f'(r) \ne 0$. Then there is $\delta > 0$ such that for every starting value with $|x_0 - r| \le \delta$, the Newton iterates are defined, stay within $\delta$ of $r$, converge to $r$, and satisfy
+
+$$
+|x_{n+1} - r| \le M\,|x_n - r|^2, \qquad M = \frac{\max_{|x - r| \le \delta}|f''(x)|}{2\min_{|x - r| \le \delta}|f'(x)|}.
+$$
+
+Moreover $\frac{x_{n+1} - r}{(x_n - r)^2} \to \frac{f''(r)}{2f'(r)}$.
+
+</Theorem>
+
+<Proof>
+
+Since $f'$ is continuous and $f'(r) \ne 0$, there is $\delta_0 > 0$ with $f' \ne 0$ on $I_0 = [r - \delta_0, r + \delta_0]$. Let $M_0$ be the quotient $M$ computed on $I_0$ (finite, since $f''$ and $1/f'$ are continuous on the closed interval), and put $\delta = \min(\delta_0, 1/(2M_0))$ (or $\delta = \delta_0$ if $M_0 = 0$). Then $M \le M_0$ on the smaller interval.
+
+Suppose $|x_n - r| \le \delta$. Taylor's theorem with the Lagrange remainder at $x_n$ gives a $\xi_n$ between $x_n$ and $r$ with
+
+$$
+0 = f(r) = f(x_n) + f'(x_n)(r - x_n) + \tfrac12 f''(\xi_n)(r - x_n)^2.
+$$
+
+Dividing by $f'(x_n) \ne 0$ and rearranging,
+
+$$
+x_{n+1} - r = x_n - r - \frac{f(x_n)}{f'(x_n)} = \frac{f''(\xi_n)}{2f'(x_n)}\,(x_n - r)^2 .
+$$
+
+Hence $|x_{n+1} - r| \le M|x_n - r|^2 \le M\delta\,|x_n - r| \le \tfrac12|x_n - r|$. By induction every iterate stays within $\delta$ of $r$, $|x_n - r| \le \delta/2^n \to 0$, and the quadratic bound holds at every step. Finally $\xi_n \to r$ and $x_n \to r$, so by continuity the ratio tends to $f''(r)/(2f'(r))$.
+
+</Proof>
+
+The hypotheses are all needed, and Newton's method can fail badly when they are not met or when the start is too far away.
+
+<Example title="When Newton's method fails or slows down">
+
+- **No convergence from a bad start.** For $f(x) = x^3 - 2x + 2$ and $x_0 = 0$: $x_1 = 0 - \frac{2}{-2} = 1$ and $x_2 = 1 - \frac{1}{1} = 0$. The iterates cycle $0, 1, 0, 1, \dots$ forever, although $f$ has a real root near $-1.77$. For $f(x) = \arctan x$, starts with $|x_0| > 1.39$ (roughly) make the iterates oscillate with growing size.
+- **Not differentiable at the root.** For $f(x) = \sqrt[3]{x}$ (real cube root), $f'(0)$ does not exist and $x_{n+1} = x_n - \frac{x_n^{1/3}}{\frac13 x_n^{-2/3}} = -2x_n$: every start except $0$ diverges.
+- **A double root.** For $f(x) = (x - 1)^2$, $f'(1) = 0$ and $x_{n+1} - 1 = \frac12(x_n - 1)$: convergence, but only linear. (For a root of multiplicity $m$, the modified step $x - m f(x)/f'(x)$ restores quadratic convergence.)
+
+</Example>
+
+**The secant method** replaces $f'(x_n)$ by the slope $\frac{f(x_n) - f(x_{n-1})}{x_n - x_{n-1}}$ through the last two points. It needs no derivative, and under the hypotheses of Theorem 4 it converges with order $\varphi = (1 + \sqrt5)/2 \approx 1.618$: its errors satisfy $e_{n+1} \approx C e_n e_{n-1}$, and the exponents of $e_n$ follow the Fibonacci recurrence (see <TopicLink id="math.discrete.recurrences-generating-functions">recurrences</TopicLink>). Practical root finders, such as Brent's method, combine bisection's safety with the speed of secant-type steps.
+
+</Section>
+
+<Section id="interpolation" kind="proof" title="Interpolation and numerical differentiation">
+
+Given $n + 1$ distinct nodes $x_0, \dots, x_n$ and values $f(x_i)$, there is exactly one polynomial $p$ of degree at most $n$ with $p(x_i) = f(x_i)$ for all $i$: the **Lagrange form** is $p(x) = \sum_i f(x_i)\prod_{j \ne i}\frac{x - x_j}{x_i - x_j}$, and uniqueness holds because the difference of two such polynomials has $n + 1$ roots and degree at most $n$.
+
+<Theorem name="Theorem 5 (interpolation error)">
+
+If $f$ has $n + 1$ continuous derivatives on $[a, b]$, which contains the nodes, then for every $x \in [a, b]$ there is $\xi \in (a, b)$ with
+
+$$
+f(x) - p(x) = \frac{f^{(n+1)}(\xi)}{(n+1)!}\prod_{i=0}^{n}(x - x_i).
+$$
+
+</Theorem>
+
+<Proof>
+
+If $x$ is a node, both sides are $0$. Otherwise let $w(t) = \prod_i (t - x_i)$ and choose the constant $K$ so that $g(t) = f(t) - p(t) - K w(t)$ vanishes at $t = x$. Then $g$ has at least $n + 2$ zeros in $[a, b]$ (the nodes and $x$). By Rolle's theorem $g'$ has at least $n + 1$ zeros between them, $g''$ at least $n$, …, and $g^{(n+1)}$ at least one, $\xi$. Since $p^{(n+1)} = 0$ and $w^{(n+1)} = (n+1)!$, we get $0 = f^{(n+1)}(\xi) - K(n+1)!$, and $g(x) = 0$ is the claimed formula.
+
+</Proof>
+
+More nodes need not help. For Runge's function $1/(1 + 25x^2)$ on $[-1, 1]$, interpolants at **equally spaced** nodes oscillate wildly near the ends and diverge as $n \to \infty$ (Runge, 1901), because $\prod(x - x_i)$ is huge there and the derivatives of $f$ grow fast. Choosing **Chebyshev nodes** $x_i = \cos\frac{(2i + 1)\pi}{2n + 2}$ makes $\max|\prod(x - x_i)|$ as small as possible, namely $2^{-n}$, and for functions as smooth as this one the interpolants converge.
+
+**Numerical differentiation.** Taylor's theorem gives
+
+$$
+\frac{f(x + h) - f(x)}{h} = f'(x) + \frac{h}{2}f''(\xi), \qquad \frac{f(x + h) - f(x - h)}{2h} = f'(x) + \frac{h^2}{6}f'''(\eta)
+$$
+
+(for the central difference, use the intermediate value theorem to combine the two third-derivative terms). So the truncation error of the forward difference is $O(h)$ and of the central difference $O(h^2)$. But if each value of $f$ carries an error up to $\epsilon \approx u|f(x)|$, the forward difference also carries a rounding error up to $2\epsilon/h$, so its total error is at most about
+
+$$
+E(h) = \frac{h}{2}M_2 + \frac{2\epsilon}{h}, \qquad \text{minimised at } h^* = 2\sqrt{\epsilon/M_2}, \text{ where } E(h^*) = 2\sqrt{\epsilon M_2}.
+$$
+
+With $\epsilon \approx 10^{-16}$ the best step is $h \approx 10^{-8}$, giving only about $8$ correct digits; smaller $h$ is *worse*. For the central difference the optimum is $h \approx \epsilon^{1/3} \approx 10^{-5}$, with about $11$ digits. The third experiment shows both V-shaped error curves.
+
+</Section>
+
+<Section id="integration" kind="proof" title="Numerical integration">
+
+Divide $[a, b]$ into $n$ strips of width $h = (b - a)/n$ with points $x_k = a + kh$. The **composite trapezoidal rule** and, for even $n$, the **composite Simpson rule** are
+
+$$
+T_h = h\Big(\tfrac12 f(x_0) + f(x_1) + \cdots + f(x_{n-1}) + \tfrac12 f(x_n)\Big), \qquad S_h = \frac{h}{3}\Big(f(x_0) + 4f(x_1) + 2f(x_2) + 4f(x_3) + \cdots + 4f(x_{n-1}) + f(x_n)\Big).
+$$
+
+The trapezoidal rule integrates the piecewise-linear interpolant of $f$; Simpson's rule integrates a quadratic interpolant on each pair of strips.
+
+<Theorem name="Theorem 6 (trapezoidal rule)">
+
+If $f$ is twice differentiable on $[a, b]$ with $|f''| \le M_2$, then $|T_h - \int_a^b f| \le \frac{(b - a)h^2}{12}M_2$.
+
+</Theorem>
+
+<Proof>
+
+Consider one strip, shifted to $[0, h]$, and define $E(t) = \frac{t}{2}\big(f(0) + f(t)\big) - \int_0^t f(s)\,ds$ for $0 \le t \le h$: the error of a single trapezoid of width $t$. Then $E(0) = 0$ and, by the fundamental theorem of calculus,
+
+$$
+E'(t) = \tfrac12\big(f(0) + f(t)\big) + \tfrac{t}{2}f'(t) - f(t) = \tfrac12\big(f(0) - f(t)\big) + \tfrac{t}{2}f'(t), \qquad E'(0) = 0,
+$$
+
+$$
+E''(t) = -\tfrac12 f'(t) + \tfrac12 f'(t) + \tfrac{t}{2}f''(t) = \tfrac{t}{2}f''(t).
+$$
+
+So $|E''(t)| \le \frac{M_2}{2}t$. Integrating from $0$ (using $E'(0) = 0$, then $E(0) = 0$): $|E'(t)| \le \frac{M_2}{4}t^2$ and $|E(t)| \le \frac{M_2}{12}t^3$. Each of the $n$ strips therefore contributes at most $\frac{M_2}{12}h^3$, and $n h^3 = (b - a)h^2$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (Simpson's rule)">
+
+If $f$ is four times differentiable on $[a, b]$ with $|f^{(4)}| \le M_4$ and $n$ is even, then $|S_h - \int_a^b f| \le \frac{(b - a)h^4}{180}M_4$.
+
+</Theorem>
+
+<Proof>
+
+Consider one pair of strips, shifted to $[-h, h]$, and for $0 \le t \le h$ let $E(t) = \frac{t}{3}\big(f(-t) + 4f(0) + f(t)\big) - \int_{-t}^{t} f(s)\,ds$. Differentiating three times (each time some terms cancel):
+
+$$
+E'(t) = -\tfrac23\big(f(t) + f(-t)\big) + \tfrac43 f(0) + \tfrac{t}{3}\big(f'(t) - f'(-t)\big),
+$$
+
+$$
+E''(t) = -\tfrac13\big(f'(t) - f'(-t)\big) + \tfrac{t}{3}\big(f''(t) + f''(-t)\big), \qquad E'''(t) = \tfrac{t}{3}\big(f'''(t) - f'''(-t)\big),
+$$
+
+with $E(0) = E'(0) = E''(0) = 0$. By the mean value theorem $f'''(t) - f'''(-t) = 2t f^{(4)}(\zeta)$ for some $\zeta$, so $|E'''(t)| \le \frac23 M_4 t^2$. Integrating three times from $0$: $|E''(t)| \le \frac29 M_4 t^3$, $|E'(t)| \le \frac{1}{18}M_4 t^4$, $|E(t)| \le \frac{1}{90}M_4 t^5$. There are $n/2$ pairs, each contributing at most $\frac{M_4}{90}h^5$, and $\frac{n}{2}\cdot h^5 = \frac{(b - a)h^4}{2}$.
+
+</Proof>
+
+So for smooth integrands, halving $h$ divides the trapezoidal error by about $4$ and Simpson's by about $16$. The bounds also explain **degrees of exactness**: the trapezoidal rule is exact for polynomials of degree $\le 1$ ($f'' = 0$), Simpson's rule for degree $\le 3$ ($f^{(4)} = 0$) — one degree more than its quadratic interpolants would suggest, by symmetry — but not for $x^4$. Two warnings, both visible in the third experiment:
+
+- **Hypotheses matter.** For $\sqrt x$ on $[0, 1]$, $f''$ is unbounded near $0$; both rules then converge only like $h^{1.5}$.
+- **Bounds are not estimates.** For a smooth *periodic* function integrated over a full period, the trapezoidal rule converges faster than any power of $h$ (the error terms cancel; this follows from the Euler–Maclaurin formula), so it beats Simpson's rule there.
+
+Combining $T_h$ and $T_{h/2}$ as $\frac{4T_{h/2} - T_h}{3}$ cancels the $h^2$ term of the error and gives exactly Simpson's rule; repeating the idea (**Richardson extrapolation**) gives Romberg integration.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Numerical analysis in Lean">
+
+Lean has a hardware type `Float`, but its operations are opaque to proofs: Lean can *run* `0.1 + 0.2` but cannot reason about it. So we formalise a **model**: binary64 numbers as real numbers of the form $m \cdot 2^e$, and rounding as "a relative error of at most $u$". First, machine epsilon — no binary64 number lies strictly between $1$ and $1 + 2^{-52}$:
+
+<Lean decl="Lumenary.NumericalMethods.IsBinary64" />
+
+<Lean decl="Lumenary.NumericalMethods.one_add_eps_is_binary64" />
+
+<Lean decl="Lumenary.NumericalMethods.machine_epsilon" />
+
+The cancellation bound (Theorem 2), with the standard model as a definition:
+
+<Lean decl="Lumenary.NumericalMethods.RoundsTo" />
+
+<Lean decl="Lumenary.NumericalMethods.cancellation_bound" />
+
+**Bisection** (Theorem 3). The method is a definition; its loop invariant and its halving property are proved by induction, and Mathlib's intermediate value theorem supplies the root:
+
+<Lean decl="Lumenary.NumericalMethods.bisectStep" />
+
+<Lean decl="Lumenary.NumericalMethods.bisect" />
+
+<Lean decl="Lumenary.NumericalMethods.bisect_width" />
+
+<Lean decl="Lumenary.NumericalMethods.bisect_sign" />
+
+<Lean decl="Lumenary.NumericalMethods.bisection_converges" />
+
+**Newton's method.** For square roots the error identity is exact algebra, which gives quadratic convergence directly. For a general $f$ we formalise the algebraic step of Theorem 4's proof, and cite Mathlib's Taylor theorem, which supplies the remainder term; we have not assembled the full local convergence theorem (choosing $\delta$ and running the induction) in Lean.
+
+<Lean decl="Lumenary.NumericalMethods.heron_error" />
+
+<Lean decl="Lumenary.NumericalMethods.heron_ge_sqrt" />
+
+<Lean decl="Lumenary.NumericalMethods.heron_quadratic" />
+
+<Lean decl="Lumenary.NumericalMethods.newton_error_step" />
+
+<Lean decl="Lumenary.NumericalMethods.taylor_lagrange" />
+
+Mathlib also has Newton's method for polynomials over any commutative ring, with an algebraic form of quadratic convergence (see the algebraist's viewpoint below):
+
+<Lean decl="Lumenary.NumericalMethods.newton_algebraic" />
+
+**Integration.** Simpson's rule is exact for cubics but not for $x^4$, proved with the fundamental theorem of calculus; and Mathlib contains the composite trapezoidal rule with the error bound of Theorem 6 — proved, as it happens, by the same "differentiate the error twice" argument as the lesson. Simpson's error bound (Theorem 7) is not formalised here.
+
+<Lean decl="Lumenary.NumericalMethods.simpson_exact_cubic" />
+
+<Lean decl="Lumenary.NumericalMethods.simpson_not_exact_quartic" />
+
+<Lean decl="Lumenary.NumericalMethods.trapezoid_error" />
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: rounding, convergence and balance">
+
+The first experiment finds machine epsilon, shows the exact value Python stores for $0.1$, and watches cancellation destroy $(1 - \cos x)/x^2$ and the quadratic formula — and the rearranged formulas repair them. Note how the naive value at $x = 10^{-6}$ is *printed* with twelve digits but has only four correct.
+
+<Python id="numerical_methods_floating_point" />
+
+The second solves $x^2 = 2$ with $50$-digit decimal arithmetic, so rounding does not mask the convergence, and estimates the orders of bisection, Newton and the secant method; then it shows Newton's method at a double root and in a $2$-cycle.
+
+<Python id="numerical_methods_root_finding" />
+
+The third shows the V-shaped total error of difference quotients, and how the smoothness hypotheses govern the convergence of the trapezoidal and Simpson rules.
+
+<Python id="numerical_methods_differentiation" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: Newton's method, Runge's phenomenon, the trapezoidal rule">
+
+Newton's method is the iteration of the map $N(x) = x - f(x)/f'(x)$, and a root of $f$ is a fixed point of $N$ with $N'(r) = 0$ — which is why the cobweb hits the fixed point so fast. For $\sqrt 2$, start at $x_0 = 3$ and count the steps until the cobweb is indistinguishable from the fixed point.
+
+<SequenceLab mode="cobweb" fn="x - (x^2 - 2)/(2*x)" x={[0.8, 3.2]} x0={3} N={8} title="Newton's method for x² = 2" subtitle="The map x ↦ (x + 2/x)/2 has a superattracting fixed point at √2." />
+
+Now the cubic $x^3 - 2x + 2$, started at $0$. The cobweb settles into a square: a cycle of period $2$. Try other starting values — those below about $-1$ find the root near $-1.77$.
+
+<SequenceLab mode="cobweb" fn="x - (x^3 - 2*x + 2)/(3*x^2 - 2)" x={[-2.2, 1.5]} x0={0} N={20} title="Newton's method can cycle" subtitle="For x³ − 2x + 2 the iterates from 0 alternate 0, 1, 0, 1, …" />
+
+Runge's phenomenon: Runge's function, its degree-$10$ interpolant at eleven equally spaced nodes (marked), and its degree-$10$ interpolant at Chebyshev nodes (coefficients rounded). The first overshoots to almost $2$ near $x = \pm 0.95$; the second stays within about $0.11$ everywhere.
+
+<FunctionPlot fns={["1/(1 + 25*x^2)", "1 - 3725/221*x^2 + 54525/442*x^4 - 51875/136*x^6 + 109375/221*x^8 - 390625/1768*x^10", "1 - 12.4765*x^2 + 61.443*x^4 - 133.445*x^6 + 130.106*x^8 - 46.6329*x^10"]} labels={["1/(1 + 25x²)", "equally spaced nodes", "Chebyshev nodes"]} points={[[-1, 0.0385], [-0.8, 0.0588], [-0.6, 0.1], [-0.4, 0.2], [-0.2, 0.5], [0, 1], [0.2, 0.5], [0.4, 0.2], [0.6, 0.1], [0.8, 0.0588], [1, 0.0385]]} x={[-1, 1]} y={[-0.6, 2.1]} title="Runge's phenomenon" />
+
+Finally, the trapezoidal rule on the periodic function $e^{\cos x}$ over $[0, 2\pi]$: increase the number of strips from $2$ to $8$ and watch the error collapse far faster than $h^2$. Then switch to the midpoint or left rule — for periodic functions over a full period they are just as good.
+
+<CalculusLab mode="riemann" fn="exp(cos(x))" interval={[0, "2*pi"]} exact="2*pi*1.2660658777520082" n={4} method="trapezoid" title="The trapezoidal rule on a periodic function" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Printing more digits means more accuracy."** The number of digits printed is a formatting choice; the number of *correct* digits is decided by the error analysis. Python prints the naive value of $(1 - \cos x)/x^2$ at $x = 10^{-6}$ as $0.500044450291$, of which only four digits are right; and $0.1$ printed to twenty digits is $0.10000000000000000555$, which says something about binary storage, not about your problem.
+
+</Misconception>
+
+<Misconception>
+
+**"Newton's method converges from any starting point."** Theorem 4 is *local*: it guarantees convergence only from starts close enough to a simple root. From $x_0 = 0$, Newton's method for $x^3 - 2x + 2$ cycles forever; for $\sqrt[3]{x}$ it diverges from every start except $0$; at a double root it converges only linearly. Robust software safeguards Newton steps with bisection.
+
+</Misconception>
+
+<Misconception>
+
+**"A smaller step size is always more accurate."** For difference quotients, rounding error grows like $\epsilon/h$; below $h \approx 10^{-8}$ the forward difference gets *worse*, and at $h = 10^{-16}$ it is typically useless.
+
+</Misconception>
+
+<Misconception>
+
+**"Floating-point arithmetic is random or unreliable."** It is deterministic and precisely specified: each basic operation returns the correctly rounded exact result. What fails are expectations borrowed from real arithmetic — associativity, exact decimals, and tests like `0.1 + 0.2 == 0.3`. Compare floats with a tolerance chosen by error analysis.
+
+</Misconception>
+
+<Misconception>
+
+**"A higher-order rule is always better."** The $O(h^4)$ bound for Simpson's rule needs a bounded fourth derivative. For $\sqrt x$ on $[0, 1]$ both rules converge like $h^{1.5}$, and for periodic functions over a period the trapezoidal rule beats Simpson's rule by far.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="analysis" title="Iteration, contraction and completeness">
+
+Newton's method is a **fixed-point iteration** $x_{n+1} = N(x_n)$. If a map $g$ sends a closed interval $I$ into itself and $|g'| \le L < 1$ on $I$, the mean value theorem gives $|g(x) - g(y)| \le L|x - y|$: $g$ is a **contraction**, and the Banach fixed-point theorem says it has exactly one fixed point in $I$, reached from every start, with linear rate $L$. The order of convergence is governed by derivatives at the fixed point: if $g'(r) \ne 0$ the convergence is linear; if $g'(r) = 0 \ne g''(r)$ it is quadratic. For Newton, $N'(x) = f(x)f''(x)/f'(x)^2$ vanishes at a simple root, which is the analytic reason for quadratic convergence. The Newton–Kantorovich theorem (1948) extends Theorem 4 to systems of equations and to Banach spaces, with a computable test on the starting point. See <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink> and <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Newton's method without limits: Hensel lifting">
+
+The identity behind quadratic convergence is algebraic. Over any commutative ring, if $f(x) \equiv 0 \pmod{q}$ and $f'(x)$ is invertible modulo $q$, then $x' = x - f(x)/f'(x)$ satisfies $f(x') \equiv 0 \pmod{q^2}$, by Taylor expansion of the polynomial $f$. For example, $x^2 \equiv 2 \pmod 7$ has the solution $3$; one Newton step lifts it to $x' \equiv 3 - \frac{7}{6} \equiv 10 \pmod{49}$, and indeed $10^2 = 100 = 2 + 2 \cdot 49$. Repeating gives solutions modulo $7^4, 7^8, \dots$ — **Hensel's lemma**, the $p$-adic Newton method that builds $\sqrt 2$ in the $7$-adic numbers. Mathlib's `newton_algebraic` above is a version with "error" meaning a nilpotent element: after $n$ steps $f(x)^{2^n}$ divides $f$ at the new point. The same idea, with power series in place of numbers, computes reciprocals and square roots of power series in computer algebra. See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink> and <TopicLink id="math.number.congruences">congruences</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Tangent lines and basins in the complex plane">
+
+Geometrically, each Newton step follows the tangent line of the graph down to the axis; convexity explains much of its behaviour (if $f$ is increasing and convex on $[r, \infty)$, every start to the right of $r$ converges monotonically). In the complex plane the same formula $z \mapsto z - f(z)/f'(z)$ solves polynomial equations, and Arthur Cayley (1879) asked which starting points converge to which root. For $z^2 - 1$ the answer is clean: the half-planes $\mathrm{Re}\,z > 0$ and $\mathrm{Re}\,z < 0$. For $z^3 - 1$ the three **basins of attraction** have a common, fractal boundary — the Julia set of the Newton map — and every point of that boundary is a boundary point of all three basins. See <TopicLink id="math.analysis.complex-analysis">complex analysis</TopicLink> and <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Why bisection cannot fail">
+
+Bisection is the intermediate value theorem made into an algorithm, and the intermediate value theorem is a topological statement: a continuous image of the **connected** interval $[a, b]$ is connected, so it contains every value between $f(a)$ and $f(b)$. The proof that the nested intervals close in on a root uses the **completeness** of $\R$; over $\Q$, the function $x^2 - 2$ changes sign on $[1, 2]$ but has no root. In higher dimensions the analogue of a sign change is a non-zero **degree** (winding number) on a boundary: if a map $F : \R^2 \to \R^2$ winds non-trivially around $0$ on a loop, it has a zero inside (Brouwer), and bisection-like subdivision methods can locate it. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Monte Carlo: an error that ignores dimension">
+
+To integrate over the unit cube $[0, 1]^d$, average $f$ at $N$ independent uniformly random points. By the central limit theorem the error is about $\sigma/\sqrt N$, where $\sigma^2$ is the variance of $f$ — whatever the dimension. A tensor-product trapezoidal rule with $N$ points has only $N^{1/d}$ points per axis, so its error behaves like $N^{-2/d}$, which beats Monte Carlo only when $d < 4$. This is why high-dimensional integrals in statistics, finance and physics are computed by random sampling, and the error statement is probabilistic: a confidence interval, not a bound. (Rounding errors themselves are sometimes modelled as random, which explains why accumulated error often grows like $\sqrt n\,u$ rather than the worst case $n u$ — a heuristic, not a theorem.) See <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Cost, stability and standards">
+
+Speed of convergence is not the whole story: one Newton step costs an evaluation of $f$ and of $f'$, one secant step only of $f$, so per function evaluation the secant method (order $1.618$) is often faster than Newton (order $2$ per two evaluations, about $1.414$ per evaluation). For linear systems, Gaussian elimination with partial pivoting is backward stable in practice, while computing the inverse matrix explicitly is slower and less accurate; for least squares, the QR factorisation is preferred to the normal equations because squaring the matrix squares its condition number. Behind all of this stands the IEEE 754 standard (1985, revised 2008 and 2019), which made floating-point results reproducible across machines. See <TopicLink id="math.comp.algorithm-design">algorithm design</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ancient approximation.** The Old Babylonian tablet YBC 7289 (c. 1800–1600 BCE) gives $\sqrt 2$ to about six decimal places. Heron of Alexandria (1st century CE) described the iterative square-root method now seen as Newton's method for $x^2 = a$. The Chinese *Nine Chapters on the Mathematical Art* solved problems by the "excess and deficit" method, a form of linear interpolation (double false position). Liu Hui (263 CE) approximated $\pi$ with polygons of up to 3072 sides, and Zu Chongzhi (5th century) showed $3.1415926 < \pi < 3.1415927$. In Samarkand, Jamshīd al-Kāshī computed $2\pi$ to the equivalent of sixteen decimal places (1424) and found $\sin 1^\circ$ by a fixed-point iteration on a cubic equation.
+- **Newton, Raphson and Simpson.** Isaac Newton described his method for polynomial equations in *De analysi* (written 1669, published 1711), with the famous example $x^3 - 2x - 5 = 0$; Joseph Raphson published a streamlined version (1690), and Thomas Simpson (1740) gave the general form for non-polynomial equations using derivatives. Johannes Kepler's barrel rule (1615) is Simpson's rule for one panel, which Bonaventura Cavalieri and James Gregory also knew; Thomas Simpson popularised it (1743).
+- **Interpolation.** Newton developed divided-difference interpolation; the "Lagrange" form was published by Edward Waring (1779) and Leonhard Euler (1783) before Joseph-Louis Lagrange (1795). Carl Runge exhibited the divergence of equally spaced interpolation in 1901, and Pafnuty Chebyshev's polynomials (1850s) underlie the cure.
+- **The computer age.** John von Neumann and Herman Goldstine analysed rounding errors in matrix inversion (1947); James H. Wilkinson developed backward error analysis (*Rounding Errors in Algebraic Processes*, 1963). William Kahan led the design of the IEEE 754 floating-point standard (1985), for which he received the Turing Award (1989).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Richard L. Burden and J. Douglas Faires, *Numerical Analysis* (1978; many later editions, now with Annette Burden) — a standard first course with many worked examples.
+- Endre Süli and David F. Mayers, *An Introduction to Numerical Analysis* (2003) — rigorous and concise, with complete proofs of the error bounds.
+- Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms* (1996; 2nd edition 2002) — the reference on floating-point error analysis.
+- David Goldberg, "What every computer scientist should know about floating-point arithmetic", *ACM Computing Surveys* 23 (1991) — a classic tutorial on IEEE arithmetic.
+- Lloyd N. Trefethen, *Approximation Theory and Approximation Practice* (2013) — interpolation, Chebyshev points and Runge's phenomenon done right.
+- Lloyd N. Trefethen and David Bau III, *Numerical Linear Algebra* (1997) — conditioning and stability in the setting where they matter most.
+
+Next in the Lumenary: <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink> (linear systems, eigenvalues and differential equations), <TopicLink id="math.analysis.ordinary-differential-equations">ordinary differential equations</TopicLink> (Euler and Runge–Kutta methods) and <TopicLink id="math.applied.optimisation">optimisation</TopicLink> (Newton's method for minimisation).
+
+</Section>

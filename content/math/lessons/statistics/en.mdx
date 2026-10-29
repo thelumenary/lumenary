@@ -1,0 +1,559 @@
+---
+slug: statistics
+topic: math.prob.statistics
+title: Statistical inference
+subtitle: Probability runs from a model to the data; statistics runs back from the data to the model — estimators, likelihood, confidence intervals, tests, regression and Bayes, with honest accounting of uncertainty.
+level: ug1
+ages: Undergraduate (first or second year)
+minutes: 120
+order: 5015
+objectives:
+  - Define estimators and assess their bias, variance and mean squared error; prove that the sample mean and the sample variance with $n - 1$ are unbiased
+  - Write down likelihoods and derive maximum likelihood estimators, and state the Cramér–Rao bound
+  - Construct confidence intervals and perform hypothesis tests, interpreting confidence levels and p-values correctly
+  - Explain type I and type II errors and power, and why multiple testing needs a correction such as Bonferroni's
+  - Fit linear regression by least squares through the normal equations $X^\top X\beta = X^\top y$, and check its assumptions with residuals
+  - Compare frequentist and Bayesian inference through the beta–binomial model
+narrators: []
+lean:
+  - Lumenary.Statistics.sampleMean
+  - Lumenary.Statistics.sum_eq_card_mul_mean
+  - Lumenary.Statistics.sum_sq_dev_eq
+  - Lumenary.Statistics.sample_mean_unbiased
+  - Lumenary.Statistics.variance_sample_mean
+  - Lumenary.Statistics.sample_mean_memLp
+  - Lumenary.Statistics.bessel
+  - Lumenary.Statistics.sample_mean_consistent
+  - Lumenary.Statistics.variance_computing_formula
+  - Lumenary.Statistics.mse_decomposition
+  - Lumenary.Statistics.bernoulli_mle
+  - Lumenary.Statistics.normal_equations_minimize
+  - Lumenary.Statistics.minimizer_normal_equations
+  - Lumenary.Statistics.union_bound
+  - Lumenary.Statistics.bonferroni
+  - Lumenary.Statistics.fwer_independent_le
+  - Lumenary.Statistics.twenty_tests
+compute: [statistics_interval_coverage, statistics_multiple_testing, statistics_regression_residuals]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="From data back to the world">
+
+In a trial of a malaria vaccine in West Africa, some children receive the vaccine and some a control injection, and the numbers of malaria cases in the two groups are counted. The counts are data; the question is about the world: *how well does the vaccine protect children in general?* A soil scientist in Punjab measures wheat yields on forty plots treated with a new fertiliser. A survey team in Nairobi asks four hundred households whether they use mobile money. In each case we see a finite, random sample and want to say something about an unknown quantity — a protection rate, a mean yield, a population proportion — **with an honest statement of how uncertain we are**.
+
+<TopicLink id="math.prob.probability-theory">Probability theory</TopicLink> goes forwards: given the model (a coin with $P(\text{heads}) = p$), what data should we expect? **Statistical inference goes backwards**: given the data, what can we say about $p$? It does so by imagining the study repeated: an estimate computed from the data is itself a random variable, and its distribution across hypothetical repetitions — its **sampling distribution** — tells us how far to trust it.
+
+This lesson builds on probability theory (expectation, variance, the law of large numbers and the central limit theorem) and on the school-level ideas of samples, bias and margins of error in <TopicLink id="math.prob.statistical-inference-intro">statistical inference: first steps</TopicLink>. Matrix notation from <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink> appears in the section on regression.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Which parameter makes the data least surprising?">
+
+Suppose $7$ of $20$ seeds germinate. If the germination probability were $p = 0.9$, seeing only $7$ would be astonishing; if it were $p = 0.05$, also astonishing. The **likelihood** $L(p) = p^7(1 - p)^{13}$ measures, for each candidate $p$, how probable the observed data would be. It is largest at $p = 7/20 = 0.35$: the **maximum likelihood estimate**.
+
+<FunctionPlot
+  fns={["(x/(k/20))^k*((1 - x)/(1 - k/20))^(20 - k)", "(x/(k/20))^(4*k)*((1 - x)/(1 - k/20))^(80 - 4*k)"]}
+  labels={["n = 20 trials", "n = 80 trials, same proportion"]}
+  params={[{ name: "k", min: 1, max: 19, step: 1, value: 7, label: "successes in 20 trials" }]}
+  points={[["k/20", 1, "MLE"]]}
+  x={[0, 1]}
+  y={[-0.05, 1.1]}
+  xLabel="p"
+  yLabel="L(p) / L(p̂)"
+  title="Relative likelihood of a success probability"
+  subtitle="Both curves peak at the observed proportion. With four times as much data the likelihood is about half as wide: more data, less uncertainty."
+/>
+
+Two features of the picture carry the whole subject. The peak is our **estimate**. The width tells us how well the data pin the parameter down; with $n$ observations it shrinks like $1/\sqrt n$, the same square-root law as the standard deviation of a sample mean. Confidence intervals, tests and Bayesian posteriors are different ways of turning that width into a statement of uncertainty.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Models, estimators, intervals and tests">
+
+<Definition term="statistical model, statistic, estimator">
+
+A **parametric statistical model** is a family of distributions $\{P_\theta : \theta \in \Theta\}$ for the data $X = (X_1, \dots, X_n)$; often the $X_i$ are independent and identically distributed (an **i.i.d. sample**) from a density or mass function $f(x; \theta)$. A **statistic** is any function $T(X)$ of the data (not of $\theta$). An **estimator** of $\theta$ (or of a function $g(\theta)$) is a statistic used to estimate it; its value on the observed data is an **estimate**.
+
+</Definition>
+
+<Definition term="bias, mean squared error, standard error, consistency">
+
+The **bias** of an estimator $T$ is $\operatorname{bias}_\theta(T) = E_\theta[T] - \theta$; $T$ is **unbiased** if this is $0$ for every $\theta$. Its **mean squared error** is $\operatorname{MSE}_\theta(T) = E_\theta[(T - \theta)^2]$, and its **standard error** is its standard deviation $\sqrt{\operatorname{Var}_\theta T}$ (or an estimate of it). A sequence of estimators $T_n$ is **consistent** if $P_\theta(|T_n - \theta| \ge \varepsilon) \to 0$ for every $\varepsilon > 0$ and every $\theta$.
+
+</Definition>
+
+<Definition term="likelihood and maximum likelihood">
+
+For observed data $x$, the **likelihood** is $L(\theta) = f(x; \theta)$ — the probability or density of the data, regarded as a function of the parameter. For an i.i.d. sample $L(\theta) = \prod_i f(x_i; \theta)$, and the **log-likelihood** is $\ell(\theta) = \sum_i \log f(x_i; \theta)$. A **maximum likelihood estimate** (MLE) $\hat\theta$ maximises $L$ (equivalently $\ell$) over $\Theta$.
+
+</Definition>
+
+<Definition term="confidence interval">
+
+A **$(1 - \alpha)$ confidence interval** for $\theta$ is a pair of statistics $C(X) = [A(X), B(X)]$ such that $P_\theta\big(A(X) \le \theta \le B(X)\big) \ge 1 - \alpha$ for **every** $\theta$. The probability is over the data, with $\theta$ fixed: it is the interval that is random.
+
+</Definition>
+
+<Definition term="hypothesis test, errors, p-value">
+
+A **test** of a **null hypothesis** $H_0 : \theta \in \Theta_0$ against an **alternative** $H_1 : \theta \in \Theta_1$ rejects $H_0$ when a **test statistic** $T(X)$ falls in a **rejection region** $R$. A **type I error** is rejecting a true $H_0$; a **type II error** is failing to reject a false one. The test has **level** $\alpha$ if $P_\theta(T \in R) \le \alpha$ for all $\theta \in \Theta_0$, and its **power** at $\theta \in \Theta_1$ is $P_\theta(T \in R)$. If large values of $T$ count against $H_0$ and $t$ is the observed value, the **p-value** is $P_{H_0}(T \ge t)$: the probability, computed assuming the null hypothesis, of a result at least as extreme as the one observed.
+
+</Definition>
+
+</Section>
+
+<Section id="estimation" kind="proof" title="Good estimators: bias, variance and Bessel's correction">
+
+<Theorem name="Theorem (bias–variance decomposition)">
+
+If $T$ has finite variance, then $\operatorname{MSE}_\theta(T) = \operatorname{Var}_\theta(T) + \operatorname{bias}_\theta(T)^2$.
+
+</Theorem>
+
+<Proof>
+
+Write $m = E_\theta[T]$ and $T - \theta = (T - m) + (m - \theta)$. Squaring and taking expectations, the cross term $2(m - \theta)E[T - m]$ vanishes because $E[T - m] = 0$, leaving $E[(T - m)^2] + (m - \theta)^2$.
+
+</Proof>
+
+So an estimator can be bad in two ways — systematically off (bias) or erratic (variance) — and reducing one may increase the other.
+
+<Theorem name="Theorem (the sample mean)">
+
+Let $X_1, \dots, X_n$ have common mean $\mu$. Then $\bar X = \frac1n\sum_i X_i$ is unbiased for $\mu$. If moreover they are pairwise uncorrelated with common variance $\sigma^2$, then $\operatorname{Var}\bar X = \sigma^2/n$, and $\bar X$ is consistent: $P(|\bar X - \mu| \ge \varepsilon) \le \sigma^2/(n\varepsilon^2)$.
+
+</Theorem>
+
+<Proof>
+
+Unbiasedness is linearity of expectation. The variance of a sum of uncorrelated variables is the sum of the variances, so $\operatorname{Var}\bar X = \frac{1}{n^2}\cdot n\sigma^2$. Consistency is Chebyshev's inequality applied to $\bar X$ (this is the weak law of large numbers).
+
+</Proof>
+
+The standard error of a mean is therefore $\sigma/\sqrt n$: to halve it, quadruple the sample.
+
+How should we estimate $\sigma^2$? The natural guess $\frac1n\sum(X_i - \bar X)^2$ is too small on average, because the data are closer to their own mean $\bar X$ than to the true mean $\mu$. The key is an algebraic identity.
+
+<Theorem name="Lemma (shift identity)">
+
+For any numbers $x_1, \dots, x_n$ with mean $\bar x$, and any $c$, $\;\displaystyle\sum_{i=1}^n (x_i - \bar x)^2 = \sum_{i=1}^n (x_i - c)^2 - n(\bar x - c)^2.$ In particular $\bar x$ minimises $c \mapsto \sum_i (x_i - c)^2$.
+
+</Theorem>
+
+<Proof>
+
+Expand $(x_i - \bar x)^2 = \big((x_i - c) - (\bar x - c)\big)^2 = (x_i - c)^2 - 2(\bar x - c)(x_i - c) + (\bar x - c)^2$ and sum, using $\sum_i (x_i - c) = n(\bar x - c)$: the middle terms give $-2n(\bar x - c)^2$ and the last ones $+n(\bar x - c)^2$.
+
+</Proof>
+
+<Theorem name="Theorem (Bessel's correction)">
+
+Let $X_1, \dots, X_n$ ($n \ge 2$) be pairwise uncorrelated with common mean $\mu$ and variance $\sigma^2$. Then $E\big[\sum_i (X_i - \bar X)^2\big] = (n - 1)\sigma^2$, so the **sample variance**
+
+$$
+S^2 = \frac{1}{n - 1}\sum_{i=1}^n (X_i - \bar X)^2
+$$
+
+is an unbiased estimator of $\sigma^2$.
+
+</Theorem>
+
+<Proof>
+
+By the shift identity with $c = \mu$, $\sum_i (X_i - \bar X)^2 = \sum_i (X_i - \mu)^2 - n(\bar X - \mu)^2$. Taking expectations, $E[(X_i - \mu)^2] = \sigma^2$ and $E[(\bar X - \mu)^2] = \operatorname{Var}\bar X = \sigma^2/n$, so the expectation is $n\sigma^2 - n \cdot \sigma^2/n = (n - 1)\sigma^2$.
+
+</Proof>
+
+Geometrically, the residual vector $(X_i - \bar X)_i$ is confined to the $(n - 1)$-dimensional subspace of vectors whose entries sum to zero: one "degree of freedom" was used up in estimating $\mu$ (see the viewpoints).
+
+<Example title="Unbiased is not the same as best">
+
+For a normal sample, $\operatorname{Var}(S^2) = \frac{2\sigma^4}{n - 1}$ (a fact about the $\chi^2$ distribution), so $\operatorname{MSE}(S^2) = \frac{2\sigma^4}{n - 1}$. The biased estimator $\hat\sigma^2 = \frac{n-1}{n}S^2$ has bias $-\sigma^2/n$ and variance $\frac{2(n-1)\sigma^4}{n^2}$, so $\operatorname{MSE}(\hat\sigma^2) = \frac{(2n - 1)\sigma^4}{n^2}$, which is *smaller* than $\frac{2\sigma^4}{n - 1}$ for every $n \ge 2$. A little bias can buy a larger reduction in variance — the idea behind shrinkage estimators and much of modern statistics.
+
+</Example>
+
+</Section>
+
+<Section id="likelihood" kind="proof" title="Maximum likelihood">
+
+<Theorem name="Proposition (the Bernoulli MLE)">
+
+If $k$ of $n$ independent trials succeed, with $0 < k < n$, the log-likelihood $\ell(p) = k\log p + (n - k)\log(1 - p)$ on $(0, 1)$ is maximised exactly at $\hat p = k/n$.
+
+</Theorem>
+
+<Proof>
+
+*With calculus:* $\ell'(p) = \frac kp - \frac{n - k}{1 - p}$ is positive for $p < k/n$ and negative for $p > k/n$, so $\ell$ increases and then decreases. *Without calculus:* write $q = k/n$ and use $\log x \le x - 1$ (with equality only at $x = 1$):
+
+$$
+\ell(p) - \ell(q) = k\log\frac pq + (n - k)\log\frac{1 - p}{1 - q} \le k\Big(\frac pq - 1\Big) + (n - k)\Big(\frac{1 - p}{1 - q} - 1\Big) = np - k + n(1 - p) - (n - k) = 0,
+$$
+
+using $k/q = n$ and $(n - k)/(1 - q) = n$. Equality forces $p/q = 1$. (The second proof is the one formalised in Lean, and it is Gibbs' inequality from <TopicLink id="math.applied.information-theory">information theory</TopicLink> in disguise.)
+
+</Proof>
+
+<Example title="A gallery of maximum likelihood estimators">
+
+- **Poisson$(\lambda)$**: $\ell(\lambda) = \sum x_i \log\lambda - n\lambda - \sum\log x_i!$, so $\ell'(\lambda) = \sum x_i/\lambda - n = 0$ gives $\hat\lambda = \bar x$.
+- **Exponential with rate $\lambda$**: $\ell(\lambda) = n\log\lambda - \lambda\sum x_i$, so $\hat\lambda = 1/\bar x$. It is **biased**: since $\sum X_i$ has a Gamma$(n, \lambda)$ distribution, $E[1/\bar X] = \frac{n\lambda}{n - 1}$ for $n \ge 2$. (An MLE need not be unbiased; it is invariant under reparametrisation — the MLE of the mean $1/\lambda$ is $\bar x$, which is unbiased.)
+- **Normal$(\mu, \sigma^2)$**: setting both partial derivatives of $\ell = -\frac n2\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum(x_i - \mu)^2$ to zero gives $\hat\mu = \bar x$ and $\hat\sigma^2 = \frac1n\sum(x_i - \bar x)^2$, which is the biased $\frac{n-1}{n}S^2$.
+- **Uniform on $[0, \theta]$**: $L(\theta) = \theta^{-n}$ if $\theta \ge \max_i x_i$ and $0$ otherwise. It is not differentiable at its maximum, which is at the boundary: $\hat\theta = \max_i x_i$. Since $\max_i X_i$ has density $ny^{n-1}/\theta^n$ on $[0, \theta]$, $E[\hat\theta] = \frac{n}{n+1}\theta$; the estimator $\frac{n+1}{n}\max_i X_i$ is unbiased.
+
+</Example>
+
+How good can an estimator be? Define the **score** $U(\theta) = \ell'(\theta) = \sum_i \partial_\theta \log f(X_i; \theta)$ and the **Fisher information** $I(\theta) = E_\theta\big[(\partial_\theta \log f(X_1; \theta))^2\big]$.
+
+<Theorem name="Theorem (Cramér–Rao inequality)">
+
+Let $X_1, \dots, X_n$ be i.i.d. with density (or mass function) $f(x; \theta)$, $\theta$ in an open interval, and assume the regularity conditions: the set where $f > 0$ does not depend on $\theta$, $0 < I(\theta) < \infty$, and differentiation in $\theta$ may be taken under the integral (or sum) sign in the identities below. If $T$ is an unbiased estimator of $\theta$ with finite variance, then
+
+$$
+\operatorname{Var}_\theta(T) \ge \frac{1}{n\,I(\theta)}.
+$$
+
+</Theorem>
+
+<Proof>
+
+Write $L(x; \theta) = \prod_i f(x_i; \theta)$, so $U = \partial_\theta L / L$. Differentiating $\int L\,dx = 1$ gives $E_\theta[U] = \int \partial_\theta L\,dx = 0$. The $n$ terms of $U$ are i.i.d. with mean $0$, so $\operatorname{Var}_\theta U = nI(\theta)$. Differentiating $\int T(x) L(x; \theta)\,dx = \theta$ gives $E_\theta[TU] = 1$, hence $\operatorname{Cov}_\theta(T, U) = 1$. By the Cauchy–Schwarz inequality for covariances, $1 = \operatorname{Cov}(T, U)^2 \le \operatorname{Var}(T)\operatorname{Var}(U) = \operatorname{Var}(T)\cdot nI(\theta)$.
+
+</Proof>
+
+For the Bernoulli model, $\partial_p \log f(x; p) = \frac xp - \frac{1 - x}{1 - p}$ and $I(p) = \frac{1}{p(1 - p)}$, so the bound is $\frac{p(1-p)}{n} = \operatorname{Var}\hat p$: the sample proportion is **efficient**. The uniform model violates the regularity conditions (its support depends on $\theta$), and indeed its unbiased estimator has variance of order $1/n^2$, beating the "bound". Under regularity conditions the MLE is consistent and **asymptotically normal**: $\sqrt n(\hat\theta_n - \theta) \to N\big(0, 1/I(\theta)\big)$ in distribution (Fisher, 1925; made rigorous by Cramér, 1946) — it attains the Cramér–Rao bound in the limit, which is the main justification for using it.
+
+</Section>
+
+<Section id="intervals" kind="proof" title="Confidence intervals">
+
+<Theorem name="Theorem (the z-interval)">
+
+If $X_1, \dots, X_n$ are i.i.d. $N(\mu, \sigma^2)$ with $\sigma$ known, and $z = 1.96$ (so that $P(|Z| \le z) = 0.95$ for $Z \sim N(0, 1)$), then $\bar X \pm z\sigma/\sqrt n$ is a $95\%$ confidence interval for $\mu$.
+
+</Theorem>
+
+<Proof>
+
+$\bar X$ is normal (a sum of independent normals is normal) with mean $\mu$ and variance $\sigma^2/n$, so $Z = \frac{\bar X - \mu}{\sigma/\sqrt n} \sim N(0, 1)$ for every $\mu$. The event $\mu \in [\bar X - z\sigma/\sqrt n, \bar X + z\sigma/\sqrt n]$ is the event $|Z| \le z$, which has probability $0.95$.
+
+</Proof>
+
+The pattern — find a **pivot**, a function of the data and $\theta$ whose distribution does not depend on $\theta$, and invert it — gives most classical intervals:
+
+- **Unknown $\sigma$, normal data.** Replacing $\sigma$ by $S$ changes the pivot to $T = \frac{\bar X - \mu}{S/\sqrt n}$, which has **Student's $t$ distribution with $n - 1$ degrees of freedom** (Gosset, writing as "Student", 1908; proved by Fisher). The interval $\bar X \pm t_{n-1}\,S/\sqrt n$ has exact coverage; $t_{n-1} > 1.96$ (for example $t_4 = 2.776$) accounts for the extra uncertainty of estimating $\sigma$.
+- **Large samples.** By the central limit theorem, $\bar X \pm 1.96\,S/\sqrt n$ has coverage *approximately* $95\%$ for large $n$, for any distribution with finite variance.
+- **A proportion.** The **Wald interval** $\hat p \pm 1.96\sqrt{\hat p(1 - \hat p)/n}$ comes from the CLT. Its actual coverage can be far below $95\%$ when $n\hat p$ is small (with $n = 10$ and $p = 0.05$ it is $40\%$); the **Wilson interval** (1927), obtained by inverting the test rather than plugging in $\hat p$, behaves much better. The first experiment below computes these coverages exactly.
+
+<Example title="A survey of mobile-money use">
+
+Suppose $260$ of $400$ randomly chosen households in a city report using mobile money. Then $\hat p = 0.65$, the estimated standard error is $\sqrt{0.65 \cdot 0.35/400} \approx 0.024$, and the Wald interval is $0.65 \pm 0.047 = [0.603, 0.697]$; the Wilson interval is $[0.602, 0.695]$. The honest report is "about $65\%$, give or take $5$ percentage points" — together with how the households were sampled, since no interval repairs a biased sample.
+
+</Example>
+
+**What "95% confidence" means.** Before the data are collected, the procedure has a $95\%$ chance of producing an interval that covers $p$. After the data are in, $[0.603, 0.697]$ either contains $p$ or it does not; $p$ is not random in this framework, so "$P(0.603 \le p \le 0.697) = 0.95$" is not a frequentist statement. If the survey were repeated many times, about $95\%$ of the intervals would cover the true $p$. (The Bayesian credible interval below *does* support a probability statement about $p$, at the price of a prior.)
+
+</Section>
+
+<Section id="testing" kind="proof" title="Hypothesis tests and p-values">
+
+<Example title="Is the die loaded?">
+
+A die is rolled $600$ times and shows $120$ sixes; a fair die would give $100$ on average. Take $H_0 : p = \tfrac16$ against $H_1 : p > \tfrac16$, with test statistic $S$ = number of sixes. Under $H_0$, $S$ has mean $100$ and standard deviation $\sqrt{600 \cdot \tfrac16 \cdot \tfrac56} \approx 9.13$, and the p-value is $P_{H_0}(S \ge 120) \approx 0.018$ (exactly, from the binomial distribution; the normal approximation with continuity correction gives $0.016$). At level $\alpha = 0.05$ we reject $H_0$. This does **not** mean $P(H_0 \text{ true}) = 0.018$: it means that a fair die would produce $120$ or more sixes in about $1.8\%$ of such experiments.
+
+</Example>
+
+<Theorem name="Theorem (p-values are uniform under the null)">
+
+Suppose that under $H_0$ the test statistic $T$ has a continuous distribution function $F$, and the p-value is $P = 1 - F(T)$. Then $P_{H_0}(P \le \alpha) = \alpha$ for every $\alpha \in [0, 1]$: the test "reject when $P \le \alpha$" has type I error exactly $\alpha$.
+
+</Theorem>
+
+<Proof>
+
+It suffices to show that $F(T)$ is uniform on $[0, 1]$, since then $P(1 - F(T) \le \alpha) = P(F(T) \ge 1 - \alpha) = \alpha$. Let $u \in (0, 1)$. Because $F$ is continuous, non-decreasing and tends to $0$ and $1$ at $\mp\infty$, the set $\{x : F(x) \le u\}$ is a closed half-line $(-\infty, x_u]$ with $F(x_u) = u$ (intermediate value theorem). Hence $P(F(T) \le u) = P(T \le x_u) = F(x_u) = u$.
+
+</Proof>
+
+The **power** of a test depends on the true effect, the noise and the sample size. For a one-sided $z$-test of $H_0 : \mu = 0$ at level $0.05$ with known $\sigma$, we reject when $\sqrt n\,\bar X/\sigma > 1.645$; if the true mean is $\mu = \delta\sigma$, the power is $1 - \Phi(1.645 - \delta\sqrt n)$. For an effect of half a standard deviation ($\delta = 0.5$), the power is $0.47$ with $n = 10$, $0.80$ with $n = 25$ and $0.95$ with $n = 44$.
+
+<FunctionPlot
+  fns={["exp(-x^2/2)/sqrt(2*pi)", "exp(-(x - d)^2/2)/sqrt(2*pi)"]}
+  labels={["test statistic if H₀ is true", "test statistic if the effect is d"]}
+  params={[{ name: "d", min: 0, max: 5, step: 0.1, value: 2.5, label: "effect d = δ√n" }]}
+  points={[[1.645, 0, "reject →"]]}
+  x={[-4, 8]}
+  y={[-0.02, 0.45]}
+  shade={0}
+  shadeRange={[1.645, 8]}
+  title="Type I error, type II error and power"
+  subtitle="Shaded: the 5% chance of rejecting a true null (type I error). The part of the second curve to the left of 1.645 is the type II error; to the right, the power. Increase d by increasing n."
+/>
+
+Three facts complete the picture.
+
+1. **Tests and intervals are two views of one thing.** The two-sided $z$-test rejects $H_0 : \mu = \mu_0$ at level $\alpha$ exactly when $\mu_0$ lies outside the $(1 - \alpha)$ $z$-interval. A confidence interval is the set of parameter values that the data do not reject — and it shows the *size* of the effect, which a p-value alone hides.
+2. **Not rejecting is not accepting.** A study with low power will usually fail to reject even when the effect is real. "$p = 0.3$" means the data are compatible with no effect; they may be equally compatible with a large one. Report the interval.
+3. **Significance is not importance.** With enough data, a trivially small effect becomes "significant"; with too little, an important one does not.
+
+</Section>
+
+<Section id="multiple" kind="proof" title="Multiple testing">
+
+Run $20$ independent tests of true null hypotheses at level $0.05$. The chance that at least one is "significant" is $1 - 0.95^{20} \approx 0.64$. Search through enough variables, subgroups or outcome measures, and a spurious discovery is almost guaranteed — and if only the significant results are reported, the literature fills with false positives. The **family-wise error rate** (FWER) is the probability of at least one false rejection.
+
+<Theorem name="Theorem (Bonferroni correction)">
+
+If each of $m$ tests is carried out at level $\alpha/m$, the family-wise error rate is at most $\alpha$, whatever the dependence between the tests.
+
+</Theorem>
+
+<Proof>
+
+Let $A_i$ be the event that test $i$ falsely rejects; for true nulls $P(A_i) \le \alpha/m$ (for false nulls there is nothing to count). By the union bound $P(A_1 \cup \cdots \cup A_m) \le \sum_i P(A_i) \le m \cdot \alpha/m = \alpha$. The union bound itself follows from additivity: $A_1 \cup \cdots \cup A_m$ is the disjoint union of the sets $A_i \setminus (A_1 \cup \cdots \cup A_{i-1})$, each contained in $A_i$.
+
+</Proof>
+
+For independent tests the exact FWER is $1 - (1 - \alpha/m)^m$, and Bernoulli's inequality $(1 - a)^m \ge 1 - ma$ shows how close the union bound is. Bonferroni is safe but conservative: with many tests it loses power. The **Benjamini–Hochberg procedure** (1995) controls instead the **false discovery rate**, the expected proportion of false discoveries among all discoveries: sort the p-values $p_{(1)} \le \cdots \le p_{(m)}$, find the largest $k$ with $p_{(k)} \le k\alpha/m$, and reject the $k$ smallest. For independent tests it guarantees false discovery rate at most $\alpha m_0/m \le \alpha$, where $m_0$ is the number of true nulls (stated here without proof). The second experiment compares both procedures by simulation.
+
+Multiplicity also hides in choices that are never written down — which outcome, which subgroup, which covariates, when to stop collecting data. Pre-registering the analysis, reporting every test performed, and publishing code, data and random seeds so that others can rerun the analysis (see <TopicLink id="math.comp.computational-reproducibility">computational reproducibility</TopicLink>) are the practical defences.
+
+</Section>
+
+<Section id="regression" kind="proof" title="Linear regression and the normal equations">
+
+In the **linear model** $y = X\beta + \varepsilon$, the $n \times p$ matrix $X$ holds the explanatory variables (a first column of ones gives an intercept), $\beta \in \R^p$ is unknown, and $\varepsilon$ is random noise. The **least-squares estimate** minimises the residual sum of squares $\|y - X\beta\|^2 = \sum_i \big(y_i - (X\beta)_i\big)^2$.
+
+<Theorem name="Theorem (normal equations)">
+
+A vector $\hat\beta$ minimises $\|y - X\beta\|^2$ if and only if it satisfies the **normal equations** $X^\top X\hat\beta = X^\top y$. If the columns of $X$ are linearly independent, $X^\top X$ is invertible and the unique minimiser is $\hat\beta = (X^\top X)^{-1}X^\top y$.
+
+</Theorem>
+
+<Proof>
+
+*If.* Let $r = y - X\hat\beta$, so the normal equations say $X^\top r = 0$: the residual is orthogonal to every column of $X$. For any $\beta$, put $w = \hat\beta - \beta$; then $y - X\beta = r + Xw$ and
+
+$$
+\|y - X\beta\|^2 = \|r\|^2 + 2\,r^\top X w + \|Xw\|^2 = \|r\|^2 + 2\,(X^\top r)^\top w + \|Xw\|^2 = \|r\|^2 + \|Xw\|^2 \ge \|r\|^2 .
+$$
+
+*Only if.* If $\hat\beta$ is a minimiser, let $g = X^\top r$ and $t \in \R$. The same expansion gives $\|y - X(\hat\beta + tg)\|^2 = \|r\|^2 - 2t\|g\|^2 + t^2\|Xg\|^2$, which must be at least $\|r\|^2$ for every $t$. If $g \ne 0$, small $t > 0$ make $-2t\|g\|^2 + t^2\|Xg\|^2$ negative; so $g = 0$. *Uniqueness.* If $X^\top Xv = 0$ then $\|Xv\|^2 = v^\top X^\top Xv = 0$, so $Xv = 0$, and $v = 0$ when the columns are independent; thus $X^\top X$ is invertible.
+
+</Proof>
+
+The fitted values $\hat y = X\hat\beta$ are the **orthogonal projection** of $y$ onto the column space of $X$ — the viewpoints section takes this picture further. For a straight line $y = \beta_0 + \beta_1 x$, the two normal equations $\sum_i(y_i - \beta_0 - \beta_1x_i) = 0$ and $\sum_i x_i(y_i - \beta_0 - \beta_1x_i) = 0$ give
+
+$$
+\hat\beta_1 = \frac{\sum_i (x_i - \bar x)(y_i - \bar y)}{\sum_i (x_i - \bar x)^2} = r\,\frac{s_y}{s_x}, \qquad \hat\beta_0 = \bar y - \hat\beta_1\bar x,
+$$
+
+so the line passes through $(\bar x, \bar y)$, and the residuals sum to zero and are uncorrelated with $x$.
+
+<Example title="Hooke's law in a school laboratory">
+
+A physics class hangs masses of $0, 100, \dots, 500$ g on a spring and records the extensions $0.1, 2.0, 4.1, 5.9, 8.2, 9.9$ cm (illustrative numbers). With $x$ in hundreds of grams, the normal equations give exactly $\hat\beta_0 = \frac{8}{105} \approx 0.076$ cm and $\hat\beta_1 = \frac{347}{175} \approx 1.983$ cm per $100$ g, with $R^2 = 0.999$. The third experiment below solves the normal equations in exact arithmetic and checks the residuals.
+
+</Example>
+
+**Statistical properties.** If $X$ is fixed with independent columns, $E[\varepsilon] = 0$ and $\operatorname{Cov}(\varepsilon) = \sigma^2 I$, then $E[\hat\beta] = (X^\top X)^{-1}X^\top X\beta = \beta$ (unbiased) and $\operatorname{Cov}(\hat\beta) = \sigma^2(X^\top X)^{-1}$. The **Gauss–Markov theorem** (stated without proof) says $\hat\beta$ has the smallest variance among all linear unbiased estimators. The residual sum of squares divided by $n - p$ is unbiased for $\sigma^2$ — Bessel's correction is the special case $p = 1$, $X$ a column of ones. When an intercept is included, $\sum(y_i - \bar y)^2 = \sum(\hat y_i - \bar y)^2 + \sum(y_i - \hat y_i)^2$ (Pythagoras), and $R^2 = 1 - \frac{\sum(y_i - \hat y_i)^2}{\sum(y_i - \bar y)^2}$ is the fraction of variation "explained"; for a straight line, $R^2 = r^2$.
+
+**Check the residuals.** Every one of these properties rests on assumptions — linearity, constant variance, independence, and for intervals and tests often normality of the noise. They are checked by looking at the residuals $y_i - \hat y_i$: plotted against the fitted values they should show no pattern (a curve signals non-linearity, a funnel signals non-constant variance); a normal quantile plot checks normality; and points with large **leverage** $h_{ii}$ (the diagonal of the projection matrix $X(X^\top X)^{-1}X^\top$) deserve scrutiny, because they pull the line towards themselves. **Anscombe's quartet** (1973) makes the point unforgettable: four data sets with the same means, variances, correlation ($0.816$) and fitted line $y = 3.00 + 0.500x$ — one roughly linear, one a smooth curve, one linear with a single outlier, and one where a single point determines the slope. And no residual check turns correlation into causation: that needs design, such as randomisation.
+
+</Section>
+
+<Section id="bayes" kind="proof" title="Bayesian inference">
+
+The Bayesian approach treats the unknown parameter as random, with a **prior** distribution $\pi(\theta)$ expressing what is believed before the data. Bayes' theorem gives the **posterior**
+
+$$
+\pi(\theta \mid x) = \frac{L(\theta)\,\pi(\theta)}{\int L(\vartheta)\,\pi(\vartheta)\,d\vartheta} \;\propto\; \text{likelihood} \times \text{prior},
+$$
+
+and all conclusions are read off it: a posterior mean as an estimate, an interval of posterior probability $0.95$ (a **credible interval**) as a statement of uncertainty.
+
+<Theorem name="Theorem (beta–binomial conjugacy)">
+
+If $p$ has the Beta$(a, b)$ prior, with density proportional to $p^{a-1}(1 - p)^{b-1}$ on $(0, 1)$ ($a, b > 0$), and $k$ successes are observed in $n$ independent trials, then the posterior is Beta$(a + k, b + n - k)$, with mean
+
+$$
+\frac{a + k}{a + b + n} = w\cdot\frac{a}{a + b} + (1 - w)\cdot\frac kn, \qquad w = \frac{a + b}{a + b + n}.
+$$
+
+</Theorem>
+
+<Proof>
+
+The posterior density is proportional to $p^k(1 - p)^{n-k}\cdot p^{a-1}(1 - p)^{b-1} = p^{a + k - 1}(1 - p)^{b + n - k - 1}$, which is the Beta$(a + k, b + n - k)$ density up to its normalising constant; since both integrate to $1$, the constants agree. The mean of Beta$(\alpha, \beta)$ is $\alpha/(\alpha + \beta)$, and the weighted-average form is a rearrangement.
+
+</Proof>
+
+The posterior mean is a compromise between the prior mean and the data, and the data's weight $1 - w$ tends to $1$ as $n$ grows. With the uniform prior Beta$(1, 1)$ it is $\frac{k + 1}{n + 2}$, Laplace's **rule of succession**. For the survey above ($260$ of $400$), the uniform prior gives the posterior Beta$(261, 141)$, with mean $0.649$ and central $95\%$ credible interval $[0.602, 0.695]$ — numerically almost the same as the confidence intervals, with a different meaning: *given the model and the prior*, $P(0.602 \le p \le 0.695 \mid \text{data}) = 0.95$. This agreement is no accident: under regularity conditions, the **Bernstein–von Mises theorem** says that for large $n$ the posterior is approximately $N\big(\hat\theta, 1/(nI(\hat\theta))\big)$, whatever the (smooth, positive) prior. With little data, or many parameters, the prior matters, and should be reported and examined like any other assumption.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Statistics in Lean and Mathlib">
+
+Mathlib has no "statistics" library as such, but its probability theory — random variables as functions `X : Ω → ℝ`, expectation `μ[X]`, variance `Var[X; μ]`, independence `X ⟂ᵢ[μ] Y` — is exactly what the theory of estimation needs, and its linear algebra handles least squares. Data sets are functions summed over a `Finset`.
+
+**Estimators.** The sample mean as a definition; the shift identity; unbiasedness and the variance $\sigma^2/n$ of the sample mean; and Bessel's correction, proved as in the lesson. The hypotheses are pairwise independence (Mathlib's form of "uncorrelated" in `IndepFun.variance_sum`) with common mean and variance:
+
+<Lean decl="Lumenary.Statistics.sampleMean" />
+
+<Lean decl="Lumenary.Statistics.sum_eq_card_mul_mean" />
+
+<Lean decl="Lumenary.Statistics.sum_sq_dev_eq" />
+
+<Lean decl="Lumenary.Statistics.sample_mean_unbiased" />
+
+<Lean decl="Lumenary.Statistics.variance_sample_mean" />
+
+<Lean decl="Lumenary.Statistics.sample_mean_memLp" />
+
+<Lean decl="Lumenary.Statistics.bessel" />
+
+Consistency of the sample mean (Mathlib's Chebyshev inequality applied to $\bar X_n$), the computing formula for the variance, and the bias–variance decomposition:
+
+<Lean decl="Lumenary.Statistics.sample_mean_consistent" />
+
+<Lean decl="Lumenary.Statistics.variance_computing_formula" />
+
+<Lean decl="Lumenary.Statistics.mse_decomposition" />
+
+**Likelihood.** The calculus-free proof that $k/n$ maximises the Bernoulli log-likelihood, using Mathlib's `Real.log_le_sub_one_of_pos`:
+
+<Lean decl="Lumenary.Statistics.bernoulli_mle" />
+
+**Least squares.** Both directions of the normal-equations theorem, for any real matrix `X : Matrix n p ℝ`, with `⬝ᵥ` the dot product and `*ᵥ` matrix–vector multiplication:
+
+<Lean decl="Lumenary.Statistics.normal_equations_minimize" />
+
+<Lean decl="Lumenary.Statistics.minimizer_normal_equations" />
+
+**Multiple testing.** The union bound from Mathlib, the Bonferroni correction, Bernoulli's inequality for independent tests, and the "twenty tests" number:
+
+<Lean decl="Lumenary.Statistics.union_bound" />
+
+<Lean decl="Lumenary.Statistics.bonferroni" />
+
+<Lean decl="Lumenary.Statistics.fwer_independent_le" />
+
+<Lean decl="Lumenary.Statistics.twenty_tests" />
+
+**What is and is not formalised.** Proved here: the shift identity, unbiasedness of the sample mean and of $S^2$, the variance of the sample mean and its consistency bound, the bias–variance decomposition, the Bernoulli MLE, the normal equations in both directions, Bonferroni's correction and the multiple-testing inequalities. Cited from Mathlib: the union bound and the computing formula for the variance (and, inside the consistency proof, Chebyshev's inequality and the additivity of variance). Not formalised: the Cramér–Rao inequality, the asymptotic normality of the MLE, the uniformity of p-values, Student's $t$ distribution and the coverage of the $t$-interval, Gauss–Markov, Benjamini–Hochberg and beta–binomial conjugacy. The interval coverages, test sizes and powers in this lesson are computed numerically.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Coverage, false positives and residuals">
+
+Do confidence intervals deliver what they promise? First, the exact coverage of the Wald and Wilson intervals for a proportion, computed by summing binomial probabilities; then a simulation comparing the $z$-interval, the $t$-interval and the naive interval that plugs the sample standard deviation into the $z$-formula.
+
+<Python id="statistics_interval_coverage" />
+
+Next, multiple testing by simulation: null p-values are uniform, twenty uncorrected tests produce a false positive about $64\%$ of the time, Bonferroni restores control, and Benjamini–Hochberg finds more real effects at the price of a controlled fraction of false ones.
+
+<Python id="statistics_multiple_testing" />
+
+Finally, least squares: the normal equations solved exactly, residuals orthogonal to the columns of $X$, and Anscombe's quartet — identical summaries, different residual stories.
+
+<Python id="statistics_regression_residuals" />
+
+Part 1 of the first experiment is an **exact** computation; its part 2 and the second experiment are **statistical** evidence (seeded simulations with sampling error of about $0.01$); the third is exact and **numerical**. Simulations illustrate the theorems about coverage and error rates; they do not prove them.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The p-value is the probability that the null hypothesis is true."** The p-value is computed *assuming* $H_0$ is true: it is $P(\text{data at least this extreme} \mid H_0)$, not $P(H_0 \mid \text{data})$. Turning one into the other needs Bayes' theorem and a prior probability for $H_0$ — the same base-rate reasoning as in diagnostic testing. A p-value of $0.01$ can coexist with a high probability that $H_0$ is true if real effects are rare.
+
+</Misconception>
+
+<Misconception>
+
+**"A non-significant result proves there is no effect."** Failing to reject $H_0$ may simply reflect low power. A small trial with $p = 0.4$ can be compatible both with no effect and with a large benefit; the confidence interval shows which effect sizes remain plausible. Absence of evidence is not evidence of absence — claims of "no effect" need high power or an equivalence test.
+
+</Misconception>
+
+<Misconception>
+
+**"There is a 95% probability that the true value lies in this computed interval."** For a frequentist confidence interval, the $95\%$ describes the procedure over repeated samples; a particular interval either contains the fixed true value or not. A Bayesian credible interval does carry a probability statement — conditional on the model and the prior.
+
+</Misconception>
+
+<Misconception>
+
+**"An unbiased estimator is always better than a biased one."** Mean squared error is variance plus squared bias, and a small bias can buy a large reduction in variance: for normal data, dividing $\sum(X_i - \bar X)^2$ by $n$ (or $n + 1$) gives a smaller mean squared error than dividing by $n - 1$.
+
+</Misconception>
+
+<Misconception>
+
+**"Each test is at the 5% level, so my conclusions are 95% reliable."** With many tests, false positives accumulate: twenty independent true nulls give at least one "significant" result with probability $0.64$. Correct for multiplicity (Bonferroni, Benjamini–Hochberg), and count the tests that were run but not reported.
+
+</Misconception>
+
+<Misconception>
+
+**"A high $R^2$ means the model is right."** $R^2$ measures how much variation a straight-line (or linear) fit captures, not whether the model's assumptions hold or whether $x$ causes $y$. All four of Anscombe's data sets have $R^2 = 0.67$; only residual plots tell them apart. Causal conclusions need randomised design or careful causal reasoning.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Least squares is orthogonal projection; degrees of freedom are dimensions">
+
+Think of the data $y$ as a single point of $\R^n$. The model's possible means $X\beta$ fill the column space $V = \operatorname{col}(X)$, a $p$-dimensional subspace, and least squares picks the point of $V$ nearest to $y$: the **orthogonal projection** $\hat y = Hy$, with $H = X(X^\top X)^{-1}X^\top$ a symmetric idempotent matrix ($H^2 = H$). The normal equations say that the residual $y - \hat y$ is perpendicular to $V$, and the decomposition $\|y - \bar y\mathbf 1\|^2 = \|\hat y - \bar y\mathbf 1\|^2 + \|y - \hat y\|^2$ is **Pythagoras' theorem**; $R^2$ is $\cos^2$ of the angle between the centred data and the centred fit. "Degrees of freedom" are dimensions: if the noise is $\sigma^2$ times a standard normal vector in $\R^n$, its projection onto any $k$-dimensional subspace $W$ has $E\|P_W\varepsilon\|^2 = k\sigma^2$, by the rotational symmetry of the normal distribution. The residual lives in the $(n - p)$-dimensional orthogonal complement of $V$ — which is why the residual sum of squares is divided by $n - p$, and why Bessel divides by $n - 1$ (the complement of the line spanned by $\mathbf 1$). For normal data this geometry also explains why $\bar X$ and $S^2$ are independent (Cochran's theorem): they are built from projections onto orthogonal subspaces.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Information as curvature">
+
+The Fisher information has an analytic meaning: under the regularity conditions, $I(\theta) = -E_\theta\big[\partial_\theta^2\log f(X; \theta)\big]$, the expected **curvature** of the log-likelihood at its peak. A sharply curved likelihood pins $\theta$ down; a flat one does not — exactly the widths in the likelihood widget. The asymptotic normality of the MLE comes from a Taylor expansion of the score around $\hat\theta$: $0 = \ell'(\hat\theta) \approx \ell'(\theta) + (\hat\theta - \theta)\ell''(\theta)$, where $\ell'(\theta)/\sqrt n \to N(0, I(\theta))$ by the central limit theorem and $\ell''(\theta)/n \to -I(\theta)$ by the law of large numbers. The Cramér–Rao inequality is the Cauchy–Schwarz inequality in $L^2(P_\theta)$, and the whole asymptotic theory is an exercise in limits, estimates and uniformity — Le Cam's theory of local asymptotic normality (1960s) makes it precise. See <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Two meanings of probability">
+
+The frequentist reads $P$ as long-run frequency in repetitions of the experiment, so only data are random; parameters are fixed unknowns, and guarantees are statements about procedures (coverage, error rates). The Bayesian reads $P$ as a coherent degree of belief, so parameters may have distributions and the posterior answers directly "how probable is it that $p > 0.6$?". De Finetti's representation theorem (1931) connects the two: if a sequence of 0–1 observations is **exchangeable** (its probabilities are unchanged by permuting the order), then it is a mixture of i.i.d. Bernoulli sequences — mathematically, a prior over $p$ appears automatically. In practice the two schools usually agree when data are plentiful (Bernstein–von Mises) and differ instructively when they are not.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Resampling and simulation">
+
+When formulas are unavailable, computation substitutes for algebra. The **bootstrap** (Efron, 1979) estimates the sampling distribution of an estimator by recomputing it on many samples drawn *with replacement* from the data; **permutation tests** (Fisher's idea from the 1930s) obtain exact p-values by recomputing a statistic over rearrangements of group labels, which are equally likely under the null hypothesis of no difference; and **Markov chain Monte Carlo** (see <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>) samples from posterior distributions that cannot be computed in closed form, which made Bayesian methods practical from the 1990s. Each comes with its own conditions — the bootstrap, for example, can fail for the maximum of a uniform sample — so computation does not remove the need for theory.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Early data.** John Graunt's analysis of London's bills of mortality (1662) is often called the beginning of statistics; in the 18th century Thomas Bayes' essay (published by Richard Price in 1763) and Pierre-Simon Laplace's "inverse probability" (1774 onwards) gave the first systematic methods of inference, including the rule of succession.
+- **Least squares.** Adrien-Marie Legendre published the method of least squares in 1805; Carl Friedrich Gauss (1809) justified it with the normal law of errors and claimed earlier use, and later (1821–23) proved the optimality now called the Gauss–Markov theorem. Francis Galton's studies of heredity (1886) gave "regression" its name — regression towards the mean — and Karl Pearson developed correlation and the $\chi^2$ test (1900).
+- **The 20th-century synthesis.** William Sealy Gosset, a chemist at the Guinness brewery in Dublin, published the $t$ distribution as "Student" (1908) to analyse small samples. Ronald Fisher introduced maximum likelihood (1912–22), Fisher information, significance testing with p-values and the randomised design of experiments (*Statistical Methods for Research Workers*, 1925; *The Design of Experiments*, 1935). Jerzy Neyman and Egon Pearson formulated tests with two types of error and proved their optimal-test lemma (1933), and Neyman introduced confidence intervals (1937). Edwin Wilson's score interval dates from 1927.
+- **A global discipline.** Prasanta Chandra Mahalanobis founded the Indian Statistical Institute in Kolkata (1931) and pioneered large-scale sample surveys, used for India's National Sample Survey from 1950. C. R. Rao, working there, proved the information inequality in 1945; Harald Cramér proved it independently in Stockholm, and his *Mathematical Methods of Statistics* (1946) gave the subject its rigorous asymptotic theory. Bruno de Finetti in Italy (1931–37) and Harold Jeffreys in England (1939) developed Bayesian foundations.
+- **Computers and many tests.** Bradley Efron's bootstrap (1979) and Markov chain Monte Carlo methods transformed practice, and Yoav Benjamini and Yosef Hochberg's false discovery rate (1995) answered the needs of genomics and other fields where thousands of hypotheses are tested at once. Concerns about reproducibility led the American Statistical Association to issue a statement on the meaning and misuse of p-values in 2016.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- George Casella and Roger L. Berger, *Statistical Inference* (2nd edition, 2002) — the standard rigorous course: sufficiency, likelihood, Cramér–Rao, tests and intervals.
+- Larry Wasserman, *All of Statistics* (2004) — a fast, modern tour, including the bootstrap, multiple testing and Bayesian inference.
+- John A. Rice, *Mathematical Statistics and Data Analysis* (3rd edition, 2007) — theory with real data sets.
+- David Freedman, Robert Pisani and Roger Purves, *Statistics* (4th edition, 2007) — the clearest non-technical account of what tests, intervals and regression mean, and how they are misused.
+- Andrew Gelman, John Carlin, Hal Stern, David Dunson, Aki Vehtari and Donald Rubin, *Bayesian Data Analysis* (3rd edition, 2013).
+- Bradley Efron and Trevor Hastie, *Computer Age Statistical Inference* (2016) — how computation reshaped the classical theory.
+
+</Section>

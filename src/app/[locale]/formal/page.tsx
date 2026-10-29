@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { CheckCircle2, ChevronDown, ExternalLink, XCircle } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { getT, resolveLocale, formatNumber } from "@/i18n/server";
-import { getLeanReport, leanRegions } from "@/lib/content";
-import { highlight } from "@/lib/highlight";
+import { getLeanReport, lessonsByLeanFile } from "@/lib/content";
+import { href } from "@/lib/href";
+import { LEVEL_IDS } from "@/lib/schema";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { LeanBlock, webEditorUrl } from "@/components/lesson/LeanBlock";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const t = await getT(await resolveLocale(params));
@@ -15,18 +16,21 @@ export default async function FormalPage({ params }: { params: Promise<{ locale:
   const locale = await resolveLocale(params);
   const t = await getT(locale);
   const report = getLeanReport();
-  const regions = leanRegions();
   const modules = new Map<string, NonNullable<typeof report>["declarations"]>();
   for (const d of report?.declarations ?? []) {
-    const mod = d.file.replace(/^Lumenary\//, "").replace(/\.lean$/, "");
+    const mod = d.file.replace(/^(formal\/)?Lumenary\//, "").replace(/\.lean$/, "");
     modules.set(mod, [...(modules.get(mod) ?? []), d]);
   }
-  const exercises = await Promise.all(
-    (report?.exercises ?? []).map(async (ex) => {
-      const region = ex.region ? regions.get(ex.region) : undefined;
-      return { ex, region, html: region ? await highlight(region.code, "lean4") : "" };
-    }),
-  );
+  // Modules grouped by the level of the lesson that cites them.
+  const byFile = lessonsByLeanFile(locale);
+  const groupMap = new Map<string, { mod: string; decls: NonNullable<typeof report>["declarations"]; lesson?: { title: string; level: string }; exercises: number }[]>();
+  for (const [mod, decls] of modules) {
+    const lesson = byFile.get(`Lumenary/${mod}.lean`);
+    const exercises = (report?.exercises ?? []).filter((e) => e.file === `formal/LumenaryExercises/${mod}.lean`).length;
+    const key = lesson?.level ?? "other";
+    groupMap.set(key, [...(groupMap.get(key) ?? []), { mod, decls, lesson, exercises }]);
+  }
+  const groups = [...LEVEL_IDS, "other"].filter((l) => groupMap.has(l)).map((level) => ({ level, mods: groupMap.get(level)! }));
   const counts = {
     total: report?.declarations.length ?? 0,
     library: report?.declarations.filter((d) => d.provenance === "library").length ?? 0,
@@ -75,68 +79,34 @@ export default async function FormalPage({ params }: { params: Promise<{ locale:
         </section>
 
         <section>
-          <h2 className="text-3xl font-semibold text-ink">{t("formal.exercises")}</h2>
-          <p className="mt-3 max-w-3xl text-ink-2">{t("formal.exercisesLead")}</p>
-          <div className="mt-6 grid gap-5 lg:grid-cols-2">
-            {exercises.map(({ ex, region, html }) => (
-              <article key={ex.name} className="overflow-hidden rounded-xl border border-formal/25 bg-card shadow-[var(--shadow)]">
-                <header className="flex flex-wrap items-center gap-2 border-b border-formal/20 bg-formal-soft/60 px-4 py-2.5">
-                  <span className="font-mono text-sm font-semibold text-ink" dir="ltr">
-                    {ex.name.split(".").pop()}
-                  </span>
-                  <span className="chip">{ex.elaborates ? `sorry × ${ex.sorryCount}` : t("formal.failure")}</span>
-                  {region && (
-                    <a href={webEditorUrl(region.file)} target="_blank" rel="noopener noreferrer" className="link ms-auto inline-flex items-center gap-1 text-xs">
-                      {t("verify.openInLean")} <ExternalLink size={12} />
-                    </a>
-                  )}
-                </header>
-                <div className="code-frame" dangerouslySetInnerHTML={{ __html: html }} />
-                {ex.solution && (
-                  <details className="group border-t border-line">
-                    <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm font-semibold text-formal [&::-webkit-details-marker]:hidden">
-                      <ChevronDown size={15} className="transition-transform group-open:rotate-180" /> {t("formal.showSolution")}
-                    </summary>
-                    <div className="px-3 pb-3">
-                      <LeanBlock t={t} decl={ex.solution} />
-                    </div>
-                  </details>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section>
           <h2 className="text-3xl font-semibold text-ink">{t("formal.library")}</h2>
-          <div className="mt-6 space-y-8">
-            {[...modules.entries()].map(([mod, decls]) => (
-              <div key={mod}>
-                <h3 className="font-display text-xl font-semibold text-ink">
-                  {t("formal.module")} <span className="font-mono text-lg">Lumenary.{mod}</span>
-                </h3>
-                <ul className="mt-3 divide-y divide-line overflow-hidden rounded-xl border border-line bg-card">
-                  {decls.map((d) => (
-                    <li key={d.name}>
-                      <details className="group">
-                        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 text-sm [&::-webkit-details-marker]:hidden">
-                          {!d.usesSorry && report?.build.success ? <CheckCircle2 size={15} className="text-formal" aria-label={t("verify.formally-verified")} /> : <XCircle size={15} className="text-bad" />}
-                          <span className="font-mono font-semibold text-ink" dir="ltr">
-                            {d.name.replace("Lumenary.", "")}
+          <p className="mt-3 max-w-3xl text-ink-2">{t("formal.modulesLead")}</p>
+          <div className="mt-6 space-y-10">
+            {groups.map(({ level, mods }) => (
+              <div key={level}>
+                <h3 className="font-display text-xl font-semibold text-ink">{level === "other" ? t("formal.otherModules") : t(`levels.${level}`)}</h3>
+                <ul className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {mods.map(({ mod, decls, lesson, exercises: nEx }) => {
+                    const ok = report?.build.success && decls.every((d) => !d.usesSorry);
+                    return (
+                      <li key={mod}>
+                        <Link prefetch={false} href={href(locale, `formal/${mod}`)} className="card flex h-full flex-col gap-2 p-4 hover:shadow-[var(--shadow-lg)]">
+                          <span className="flex items-center gap-2">
+                            {ok ? <CheckCircle2 size={15} className="shrink-0 text-formal" aria-label={t("verify.formally-verified")} /> : <XCircle size={15} className="shrink-0 text-bad" />}
+                            <span className="font-mono text-sm font-semibold text-ink" dir="ltr">
+                              Lumenary.{mod}
+                            </span>
                           </span>
-                          <span className="text-xs text-muted">{d.kind}</span>
-                          <span className="chip">{t(`verify.${d.provenance}`)}</span>
-                          <span className="ms-auto font-mono text-xs text-muted" dir="ltr">
-                            {d.axioms.length ? d.axioms.join(", ") : t("verify.noAxioms")}
+                          {lesson && <span className="text-sm text-ink-2">{lesson.title}</span>}
+                          <span className="mt-auto flex flex-wrap gap-1.5 text-xs">
+                            <span className="chip">{t("formal.declarationCount", { n: formatNumber(locale, decls.length) })}</span>
+                            {nEx > 0 && <span className="chip">{t("formal.exerciseCount", { n: formatNumber(locale, nEx) })}</span>}
+                            <span className="chip">{t(`formal.foundation.${decls.some((d) => d.foundation === "mathlib") ? "mathlib" : "core"}`)}</span>
                           </span>
-                          <ChevronDown size={15} className="text-muted transition-transform group-open:rotate-180" />
-                        </summary>
-                        <div className="px-3 pb-3">
-                          <LeanBlock t={t} decl={d.name} />
-                        </div>
-                      </details>
-                    </li>
-                  ))}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}

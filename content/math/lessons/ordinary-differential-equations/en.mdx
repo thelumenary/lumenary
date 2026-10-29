@@ -1,0 +1,417 @@
+---
+slug: ordinary-differential-equations
+topic: math.analysis.ordinary-differential-equations
+title: Ordinary differential equations
+subtitle: Equations whose unknown is a whole function — how to solve the ones that can be solved, why most cannot, and the theorem that tells you a solution exists, is unique, and may still run off to infinity.
+level: ug1
+ages: Undergraduate (first or second year)
+minutes: 120
+order: 5012
+objectives:
+  - Solve separable equations, first-order linear equations (by an integrating factor) and linear equations with constant coefficients
+  - Solve linear systems $x' = Ax$ with the matrix exponential and eigenvalues, and classify planar phase portraits by trace and determinant
+  - State and prove the Picard–Lindelöf theorem, and give examples of non-uniqueness and of finite-time blow-up when its conclusions or hypotheses fail
+  - Analyse equilibria and their stability qualitatively, without solving the equation
+  - Compare exact, qualitative and numerical solutions, and say what kind of evidence each provides
+narrators: []
+lean:
+  - Lumenary.OrdinaryDifferentialEquations.exp_solves
+  - Lumenary.OrdinaryDifferentialEquations.exp_unique
+  - Lumenary.OrdinaryDifferentialEquations.integrating_factor
+  - Lumenary.OrdinaryDifferentialEquations.logistic_solves
+  - Lumenary.OrdinaryDifferentialEquations.blowup_solves
+  - Lumenary.OrdinaryDifferentialEquations.blowup_tendsto
+  - Lumenary.OrdinaryDifferentialEquations.halfSq
+  - Lumenary.OrdinaryDifferentialEquations.halfSq_solves
+  - Lumenary.OrdinaryDifferentialEquations.nonunique
+  - Lumenary.OrdinaryDifferentialEquations.sqrt_abs_not_lipschitz
+  - Lumenary.OrdinaryDifferentialEquations.picard_lindelof
+  - Lumenary.OrdinaryDifferentialEquations.unique_of_lipschitz
+  - Lumenary.OrdinaryDifferentialEquations.harmonic_solves
+  - Lumenary.OrdinaryDifferentialEquations.oscillator_unique
+  - Lumenary.OrdinaryDifferentialEquations.matrix_exp_solves
+compute: [ordinary_differential_equations_picard_iteration, ordinary_differential_equations_numerical_methods]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Laws of change">
+
+Most laws of nature do not tell you *what* a quantity is; they tell you how fast it **changes**. Radioactive carbon decays at a rate proportional to the amount present — which is how archaeologists date charcoal from Mungo in Australia or bone from Olduvai Gorge. A cup of chai cools at a rate proportional to its excess temperature over the room. An epidemic spreads at a rate proportional to the number of contacts between infected and susceptible people. A pendulum's acceleration is proportional to the sine of its angle.
+
+Each law is an **ordinary differential equation** (ODE): an equation relating an unknown function of one variable (usually time) to its derivatives. Solving it means finding the whole function. Three kinds of question arise:
+
+- **Explicit solution.** Some equations can be solved by formulas; this lesson covers the main classes.
+- **Existence and uniqueness.** Most equations cannot be solved by formulas. Is there a solution anyway? Only one? For how long?
+- **Qualitative behaviour.** Without a formula, what can we say — does the solution settle down, oscillate, blow up?
+
+This lesson assumes <TopicLink id="math.analysis.single-variable-calculus">calculus of one variable</TopicLink> and <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink> (eigenvalues and eigenvectors).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Following the arrows">
+
+An equation $x' = f(t, x)$ assigns a **slope** $f(t, x)$ to every point of the $(t, x)$-plane. Draw a short segment with that slope at many points: this is a **slope field**. A solution is a curve that is tangent to the segments everywhere — you "follow the arrows". Euler's method makes this literal: take a small step $h$ in the direction of the arrow, look again, repeat.
+
+<VectorField mode="slope" preset="logistic" title="The logistic equation x′ = x(1 − x)" subtitle="Click to draw solutions. Every solution starting with 0 < x < 1 rises towards 1; none ever crosses the lines x = 0 or x = 1." />
+
+Notice two things. Solutions never **cross**: if two solutions met at a point, they would be two solutions of the same initial value problem, and the uniqueness theorem below forbids that (for well-behaved $f$). And the horizontal lines $x = 0$ and $x = 1$ are solutions themselves — **equilibria** — which the other solutions approach or flee. Much of the theory is visible in the picture before any formula is written.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="ordinary differential equation">
+
+An **ordinary differential equation of order $n$** is an equation $F\big(t, x, x', \dots, x^{(n)}\big) = 0$ relating an unknown function $x$ of one variable $t$ to its first $n$ derivatives. A **solution** on an interval $I$ is an $n$ times differentiable function $x : I \to \R$ (or $\R^d$) satisfying the equation for every $t \in I$. An **initial value problem** (IVP) adds conditions $x(t_0) = x_0, \dots, x^{(n-1)}(t_0) = x_{n-1}$.
+
+</Definition>
+
+The equation is **linear** if it has the form $a_n(t)x^{(n)} + \cdots + a_1(t)x' + a_0(t)x = g(t)$, and **homogeneous** if moreover $g = 0$. A **first-order system** is $x' = f(t, x)$ with $x(t) \in \R^d$; it is **autonomous** if $f$ does not depend on $t$. Every $n$-th order equation $x^{(n)} = G(t, x, \dots, x^{(n-1)})$ becomes a first-order system for the vector $(x, x', \dots, x^{(n-1)})$ — for example, $x'' = -x$ becomes $(x, v)' = (v, -x)$ — so first-order systems are the general case.
+
+<Definition term="equilibrium and stability">
+
+An **equilibrium** of the autonomous system $x' = f(x)$ is a point $x^*$ with $f(x^*) = 0$; the constant function $x(t) = x^*$ is then a solution. It is **stable** if solutions starting close to $x^*$ stay close for all $t \ge 0$ (for every $\varepsilon > 0$ there is $\delta > 0$ such that $|x(0) - x^*| < \delta$ implies $|x(t) - x^*| < \varepsilon$ for all $t \ge 0$), and **asymptotically stable** if moreover such solutions tend to $x^*$.
+
+</Definition>
+
+<Definition term="Lipschitz condition">
+
+$f(t, x)$ is **Lipschitz in $x$** on a set $R$, with constant $K$, if $|f(t, x) - f(t, y)| \le K|x - y|$ for all $(t, x), (t, y) \in R$. By the mean value theorem, this holds on any closed box where $\partial f/\partial x$ is continuous (take $K$ = the maximum of its absolute value, or of the norm of the Jacobian matrix in several variables).
+
+</Definition>
+
+</Section>
+
+<Section id="solving" kind="proof" title="Equations we can solve">
+
+**Separable equations** $x' = g(t)\,h(x)$. Wherever $h(x) \ne 0$ we may write $\frac{x'}{h(x)} = g(t)$. If $H' = 1/h$ and $G' = g$, the chain rule shows that $\frac{d}{dt}H(x(t)) = \frac{x'(t)}{h(x(t))} = g(t)$, so $H(x(t)) = G(t) + C$; solve for $x$. In addition every zero $x^*$ of $h$ gives a constant solution $x \equiv x^*$. (The familiar shorthand "$\int dx/h(x) = \int g(t)\,dt$" is exactly this argument.)
+
+<Example title="Three separable equations, three behaviours">
+
+- **Logistic growth** $x' = x(1 - x)$. Partial fractions $\frac{1}{x(1-x)} = \frac1x + \frac1{1-x}$ give $\ln\left|\frac{x}{1 - x}\right| = t + c$, so $x(t) = \dfrac{1}{1 + Ce^{-t}}$. For $C > 0$ these rise from $0$ to $1$; together with $x \equiv 0$ and $x \equiv 1$ they are all the solutions in $[0, 1]$.
+- **Blow-up** $x' = x^2$, $x(0) = 1$. Here $-\frac1x = t + c$, so $x(t) = \dfrac{1}{1 - t}$, which tends to $+\infty$ as $t \to 1^-$. The right-hand side $x^2$ is perfectly smooth, yet the solution exists only on $(-\infty, 1)$.
+- **Non-uniqueness** $x' = \sqrt{|x|}$, $x(0) = 0$. Besides $x \equiv 0$ (from the zero of $h$), separation on $x > 0$ gives $2\sqrt{x} = t + c$, and gluing gives the solution $x(t) = t^2/4$ for $t \ge 0$, $x(t) = 0$ for $t < 0$. Indeed for every $c \ge 0$, the function equal to $0$ for $t \le c$ and $(t - c)^2/4$ for $t \ge c$ is a solution: infinitely many solutions share the same initial value.
+
+</Example>
+
+<VectorField mode="slope" f="sqrt(abs(y))" x={[-2, 4]} y={[-1, 4]} points={[[0, 0], [1, 0.25], [2, 1]]} title="x′ = √|x|: many solutions through one point" subtitle="The parabola through (2, 1) reaches the axis at t = 0 — exactly where the zero solution also passes. Which way should a solution starting at (0, 0) go?" />
+
+<Theorem name="Theorem (first-order linear equations)">
+
+Let $p, q$ be continuous on an interval $I$, $t_0 \in I$, and $P(t) = \int_{t_0}^t p(s)\,ds$. The initial value problem $y' + p(t)\,y = q(t)$, $y(t_0) = y_0$ has exactly one solution on $I$, namely
+
+$$
+y(t) = e^{-P(t)}\left(y_0 + \int_{t_0}^{t} q(s)\,e^{P(s)}\,ds\right).
+$$
+
+</Theorem>
+
+<Proof>
+
+The key identity, from the product and chain rules and $P' = p$, is
+
+$$
+\big(y\,e^{P}\big)' = (y' + p\,y)\,e^{P} .
+$$
+
+So $y$ solves the equation if and only if $(y e^P)' = q e^P$. *Existence:* the displayed $y$ has $y e^{P} = y_0 + \int_{t_0}^t q e^{P}$, whose derivative is $q e^P$ by the fundamental theorem of calculus, and $y(t_0) = y_0$. *Uniqueness:* if $y_1, y_2$ are solutions, $z = y_1 - y_2$ satisfies $(z e^{P})' = 0$ on the interval $I$, so $z e^P$ is constant, equal to its value $0$ at $t_0$.
+
+</Proof>
+
+The factor $e^{P}$ is the **integrating factor**. With $p = -a$ and $q = 0$ the theorem says that the only solutions of $x' = ax$ are $x(t) = x(0)e^{at}$ — the law of exponential growth and decay.
+
+**Linear equations with constant coefficients.** For $y'' + b\,y' + c\,y = 0$, try $y = e^{rt}$: it is a solution exactly when $r^2 + br + c = 0$, the **characteristic equation**.
+
+<Theorem name="Theorem (second-order constant-coefficient equations)">
+
+The real solutions of $y'' + by' + cy = 0$ form a two-dimensional vector space, with basis
+
+- $e^{r_1 t},\; e^{r_2 t}$ if the characteristic roots $r_1 \ne r_2$ are real;
+- $e^{rt},\; t\,e^{rt}$ if there is a double root $r$;
+- $e^{\alpha t}\cos\beta t,\; e^{\alpha t}\sin\beta t$ if the roots are $\alpha \pm i\beta$ with $\beta \ne 0$.
+
+</Theorem>
+
+<Proof>
+
+Write $D = d/dt$; the equation is $(D - r_1)(D - r_2)\,y = 0$, where $r_1, r_2$ are the roots (the factors commute because the coefficients are constant). *Each listed function is a solution:* $(D - r)e^{rt} = 0$; for a double root, $(D - r)(t e^{rt}) = e^{rt}$ and then $(D - r)e^{rt} = 0$; for complex roots, $e^{(\alpha + i\beta)t}$ is a complex solution, and since the equation has real coefficients its real and imaginary parts are real solutions. *They are independent:* their Wronskians at $t = 0$ are $r_2 - r_1$, $1$ and $\beta$, all non-zero. *The space is two-dimensional:* by the existence and uniqueness theorem below, the linear map $y \mapsto (y(0), y'(0))$ from solutions to $\R^2$ is a bijection.
+
+</Proof>
+
+The **damped oscillator** $m y'' + \gamma y' + k y = 0$ ($m, k > 0$, $\gamma \ge 0$) has roots $\frac{-\gamma \pm \sqrt{\gamma^2 - 4mk}}{2m}$: overdamped if $\gamma^2 > 4mk$ (two decaying exponentials), critically damped if $\gamma^2 = 4mk$, and underdamped if $\gamma^2 < 4mk$ (decaying oscillations $e^{-\gamma t/2m}\cos(\omega t + \phi)$). For an inhomogeneous equation $y'' + by' + cy = g(t)$, the general solution is one particular solution plus the general homogeneous solution, because the difference of two solutions solves the homogeneous equation.
+
+</Section>
+
+<Section id="systems" kind="proof" title="Linear systems and phase portraits">
+
+For a constant $d \times d$ matrix $A$, define the **matrix exponential**
+
+$$
+e^{tA} = \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = I + tA + \frac{t^2A^2}{2} + \cdots .
+$$
+
+The series converges absolutely for every $t$ in any operator norm, since $\|A^k\| \le \|A\|^k$, and it can be differentiated term by term (it is a power series in $t$ with infinite radius of convergence): $\frac{d}{dt}e^{tA} = A\,e^{tA} = e^{tA}A$. If $AB = BA$ then $e^{A + B} = e^A e^B$ (multiply the series, exactly as for numbers); in particular $e^{-tA}e^{tA} = I$.
+
+<Theorem name="Theorem (linear systems)">
+
+For every $x_0 \in \R^d$, the unique solution of $x' = Ax$ with $x(0) = x_0$ is $x(t) = e^{tA}x_0$, defined for all $t \in \R$. If $A$ has a basis of eigenvectors $v_1, \dots, v_d$ with eigenvalues $\lambda_1, \dots, \lambda_d$ and $x_0 = \sum c_i v_i$, then $x(t) = \sum c_i e^{\lambda_i t} v_i$.
+
+</Theorem>
+
+<Proof>
+
+$x(t) = e^{tA}x_0$ satisfies $x' = Ae^{tA}x_0 = Ax$ and $x(0) = x_0$. If $y$ is any solution, then $\big(e^{-tA}y(t)\big)' = -Ae^{-tA}y + e^{-tA}Ay = 0$ (as $A$ commutes with $e^{-tA}$), so $e^{-tA}y(t) = y(0) = x_0$ and $y(t) = e^{tA}x_0$. Finally, $A^k v_i = \lambda_i^k v_i$ gives $e^{tA}v_i = e^{\lambda_i t}v_i$.
+
+</Proof>
+
+Complex eigenvalues $\alpha \pm i\beta$ produce rotation combined with growth or decay at rate $e^{\alpha t}$: for $A = \begin{pmatrix} 0 & 1 \\ -1 & 0 \end{pmatrix}$ (that is, $x'' = -x$), $e^{tA} = \begin{pmatrix} \cos t & \sin t \\ -\sin t & \cos t \end{pmatrix}$, a rotation. Non-diagonalisable matrices, via the Jordan form, add polynomial factors $t^k e^{\lambda t}$.
+
+<Theorem name="Theorem (classification of planar linear systems)">
+
+Let $A$ be a real $2 \times 2$ matrix with trace $\tau$ and determinant $\Delta \ne 0$, and consider $x' = Ax$, whose only equilibrium is $0$. Then:
+
+- $\Delta < 0$: a **saddle** (unstable);
+- $\Delta > 0$ and $\tau^2 > 4\Delta$: a **node**, asymptotically stable if $\tau < 0$, unstable if $\tau > 0$;
+- $\Delta > 0$ and $\tau^2 < 4\Delta$: a **spiral** (focus), asymptotically stable if $\tau < 0$, unstable if $\tau > 0$, and a **centre** (stable, not asymptotically) if $\tau = 0$.
+
+</Theorem>
+
+<Proof>
+
+The eigenvalues are the roots of $\lambda^2 - \tau\lambda + \Delta = 0$, so $\lambda_1\lambda_2 = \Delta$ and $\lambda_1 + \lambda_2 = \tau$. If $\Delta < 0$ they are real with opposite signs: along one eigenvector solutions decay, along the other they grow. If $\Delta > 0$ and $\tau^2 > 4\Delta$ they are real, distinct, and of the same sign as $\tau$: all solutions $c_1e^{\lambda_1 t}v_1 + c_2e^{\lambda_2 t}v_2$ decay (or all grow). If $\tau^2 < 4\Delta$ they are $\frac\tau2 \pm i\beta$, and solutions are rotations multiplied by $e^{\tau t/2}$. (The boundary case $\tau^2 = 4\Delta$ gives degenerate or star nodes, with the stability of the sign of $\tau$.)
+
+</Proof>
+
+<VectorField mode="phase" f="y" g="-2*x - 0.6*y" points={[[2, 0], [-1.5, 1.5], [0, -2]]} title="A damped oscillator: x″ + 0.6x′ + 2x = 0" subtitle="Trace −0.6, determinant 2: a stable spiral. Edit the equations to make a saddle, a centre or a node." />
+
+</Section>
+
+<Section id="existence" kind="proof" title="Existence and uniqueness: the Picard–Lindelöf theorem">
+
+We now prove that well-behaved initial value problems have exactly one solution, at least for a short time. We write $|\cdot|$ for a norm on $\R^d$.
+
+<Theorem name="Theorem (Picard–Lindelöf)">
+
+Let $f(t, x)$ be continuous on the box $R = \{(t, x) : |t - t_0| \le a,\ |x - x_0| \le b\}$, with $|f| \le M$ on $R$, and Lipschitz in $x$ on $R$ with constant $K$. Let $h = \min(a, b/M)$. Then the initial value problem $x' = f(t, x)$, $x(t_0) = x_0$ has exactly one solution on $[t_0 - h, t_0 + h]$.
+
+</Theorem>
+
+<Proof>
+
+Write $I = [t_0 - h, t_0 + h]$.
+
+*Step 1: an integral equation.* By the fundamental theorem of calculus, a continuous $x : I \to \R^d$ with $|x(t) - x_0| \le b$ solves the IVP if and only if
+
+$$
+x(t) = x_0 + \int_{t_0}^{t} f(s, x(s))\,ds \qquad \text{for all } t \in I.
+$$
+
+*Step 2: Picard iterates.* Put $x_0(t) = x_0$ and $x_{k+1}(t) = x_0 + \int_{t_0}^t f(s, x_k(s))\,ds$. By induction each $x_k$ is continuous on $I$ with $|x_k(t) - x_0| \le M|t - t_0| \le Mh \le b$, so $(s, x_k(s))$ stays in $R$ and the next iterate is defined.
+
+*Step 3: an estimate.* We claim $|x_{k+1}(t) - x_k(t)| \le \dfrac{M K^k |t - t_0|^{k+1}}{(k + 1)!}$. For $k = 0$ this is $|x_1(t) - x_0| \le M|t - t_0|$. If it holds for $k$, then by the Lipschitz condition (for $t \ge t_0$; $t \le t_0$ is symmetric)
+
+$$
+|x_{k+2}(t) - x_{k+1}(t)| \le \int_{t_0}^{t} K\,|x_{k+1}(s) - x_k(s)|\,ds \le \int_{t_0}^t \frac{M K^{k+1}(s - t_0)^{k+1}}{(k+1)!}\,ds = \frac{M K^{k+1}(t - t_0)^{k+2}}{(k+2)!}.
+$$
+
+*Step 4: convergence.* Since $\sum_k M K^k h^{k+1}/(k+1)!$ converges (to $\frac{M}{K}(e^{Kh} - 1)$, or $Mh$ if $K = 0$), the Weierstrass M-test shows that $x_k = x_0 + \sum_{j < k}(x_{j+1} - x_j)$ converges uniformly on $I$ to a continuous function $x$ with $|x(t) - x_0| \le b$. As $|f(s, x_k(s)) - f(s, x(s))| \le K|x_k(s) - x(s)| \to 0$ uniformly, we may pass to the limit under the integral sign in the definition of $x_{k+1}$: $x$ satisfies the integral equation, hence solves the IVP.
+
+*Step 5: uniqueness (Grönwall's argument).* A solution $y$ on $I$ stays in the box: up to the first time it could leave, $|y(t) - x_0| \le M|t - t_0| \le Mh \le b$, so it never does. So let $x, y$ be two solutions with values in the box, and for $t \in [t_0, t_0 + h]$ put $u(t) = |x(t) - y(t)|$. Subtracting the integral equations, $u(t) \le K\int_{t_0}^t u(s)\,ds$. Let $U(t) = \int_{t_0}^t u$; then $U' = u \le KU$, so
+
+$$
+\big(e^{-K(t - t_0)}U(t)\big)' = e^{-K(t-t_0)}\big(u(t) - KU(t)\big) \le 0 .
+$$
+
+Since $U(t_0) = 0$, we get $e^{-K(t-t_0)}U(t) \le 0$; but $U \ge 0$, so $U \equiv 0$ and then $u \le KU = 0$. The same argument works for $t \le t_0$.
+
+</Proof>
+
+The same Grönwall argument gives **continuous dependence on initial data**: two solutions with $x(t_0) = x_0$ and $y(t_0) = y_0$ satisfy $|x(t) - y(t)| \le |x_0 - y_0|\,e^{K|t - t_0|}$. The factor $e^{K|t - t_0|}$ can be enormous, which is the seed of chaos in nonlinear systems.
+
+**What the theorem does not say.**
+
+1. *It is local.* The solution of $x' = x^2$, $x(0) = 1$ exists only for $t < 1$, although $x^2$ is smooth everywhere. In general, if $f$ is locally Lipschitz on $\R \times \R^d$, every solution extends to a maximal open interval $(\alpha, \omega)$, and if $\omega < \infty$ then $|x(t)| \to \infty$ as $t \to \omega$: solutions die only by escaping to infinity. Linear systems never blow up.
+2. *Continuity alone gives existence but not uniqueness.* Peano's theorem (1890) says that if $f$ is merely continuous, a solution exists for a short time; the proof uses compactness (Arzelà–Ascoli) instead of a contraction. For $x' = \sqrt{|x|}$ the right-hand side is continuous but not Lipschitz near $x = 0$, and uniqueness fails, as we saw.
+3. *It gives no formula.* Liouville showed in 1841 that the Riccati equation $x' = t^2 + x^2$ cannot be solved by quadratures (elementary functions and their integrals); its solutions need Bessel functions. Most ODEs, including the pendulum $\theta'' = -\sin\theta$ and the three-body problem, have no elementary closed-form solution — hence the importance of qualitative and numerical methods.
+
+</Section>
+
+<Section id="qualitative" kind="human" title="Qualitative behaviour">
+
+For an autonomous scalar equation $x' = f(x)$ with $f$ locally Lipschitz, uniqueness alone gives a complete picture. Solutions cannot cross the equilibria (zeros of $f$), so a solution starting between two consecutive equilibria stays between them, and since $x' = f(x)$ has a fixed sign there, it is monotone and tends to one of them (or to $\pm\infty$). Hence an equilibrium $x^*$ with $f'(x^*) < 0$ is asymptotically stable (arrows point towards it on both sides) and one with $f'(x^*) > 0$ is unstable. For the logistic equation $f(x) = x(1 - x)$, $f'(0) = 1$ and $f'(1) = -1$: the population moves away from extinction and settles at the carrying capacity.
+
+In the plane, an equilibrium $x^*$ of $x' = f(x)$ is studied through the **linearisation** $y' = Df(x^*)\,y$. The **Hartman–Grobman theorem** (Grobman 1959, Hartman 1960) says that if $Df(x^*)$ has no eigenvalue with zero real part (a *hyperbolic* equilibrium), then near $x^*$ the phase portrait is a continuous deformation of the linear one: saddles stay saddles and sinks stay sinks. A linear centre is not hyperbolic, and the nonlinear terms decide.
+
+Another tool is a **Lyapunov function**: a function $V$ with a strict minimum at $x^*$ that does not increase along solutions. For the damped pendulum $\theta'' = -\sin\theta - \gamma\theta'$, the energy $E = \tfrac12\theta'^2 + (1 - \cos\theta)$ satisfies $E' = \theta'\theta'' + \sin\theta\,\theta' = -\gamma\theta'^2 \le 0$, so the bottom equilibrium is stable — without solving the equation. Energy is also a powerful uniqueness tool: for $x'' = -x$, $E = x^2 + x'^2$ is constant, so a solution with $x(0) = x'(0) = 0$ stays at $0$ (this is formalised below).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Differential equations in Lean and Mathlib">
+
+In Mathlib, "$x$ solves $x' = f(t, x)$" is written `∀ t, HasDerivAt x (f t (x t)) t`. The lesson's module verifies explicit solutions, proves the integrating-factor uniqueness argument and the energy argument, and makes the failure modes precise.
+
+Exponential growth: the solution, and its uniqueness by the integrating factor $e^{-at}$ — a quantity with zero derivative is constant:
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.exp_solves" />
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.exp_unique" />
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.integrating_factor" />
+
+The logistic solution found by separation of variables, verified by differentiation:
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.logistic_solves" />
+
+Blow-up: $1/(1 - t)$ solves $x' = x^2$ and escapes to infinity as $t \to 1^-$:
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.blowup_solves" />
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.blowup_tendsto" />
+
+Non-uniqueness for $x' = \sqrt{|x|}$. The glued solution is written $(\max(t, 0))^2/4$; at $t = 0$ its derivative is found by squeezing, $|x(h)| \le h^2/4 = o(h)$. Then the reason Picard–Lindelöf does not apply — $\sqrt{|x|}$ is not Lipschitz:
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.halfSq" />
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.halfSq_solves" />
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.nonunique" />
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.sqrt_abs_not_lipschitz" />
+
+Mathlib's Picard–Lindelöf theorem. Its hypotheses `IsPicardLindelof f t₀ x₀ a r L K` are those of the lesson (continuity in $t$, Lipschitz constant $K$ on a ball of radius $a$, bound $L$ — our $M$ — and a time interval short enough that $L \cdot$ length $\le a$); its proof shows that an iterate of the Picard map is a contraction, a variant of our Steps 2–4. Uniqueness is proved with Grönwall's inequality, as in Step 5:
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.picard_lindelof" />
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.unique_of_lipschitz" />
+
+Second-order equations: the harmonic oscillator's solutions, and uniqueness by conservation of energy — a proof that does not use Picard–Lindelöf at all:
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.harmonic_solves" />
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.oscillator_unique" />
+
+Linear systems: the derivative of $e^{tA}$ for a square matrix $A$. Mathlib proves it in any complete normed algebra; to view matrices as one we choose an operator norm (as *local instances*, since $\R^{d \times d}$ has several natural norms):
+
+<Lean decl="Lumenary.OrdinaryDifferentialEquations.matrix_exp_solves" />
+
+**What is and is not formalised.** Independently proved: the explicit solutions above, uniqueness for $x' = ax$ and for $x'' = -x$, the integrating-factor identity, blow-up, non-uniqueness and the failure of the Lipschitz condition. Cited from Mathlib: Picard–Lindelöf existence, Grönwall-based uniqueness and the derivative of the matrix exponential. Not formalised here: the constant-coefficient theorem (dimension two of the solution space), the trace–determinant classification, Peano's theorem, Hartman–Grobman, and the maximal-interval "escape" theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Exact iterates and numerical solutions">
+
+Picard's proof is constructive: the iterates can be computed. For $x' = x$ they are the Taylor polynomials of $e^t$; for $x' = x^2$ they rebuild, term by term, the geometric series of $1/(1 - t)$ — whose radius of convergence $1$ foreshadows the blow-up.
+
+<Python id="ordinary_differential_equations_picard_iteration" />
+
+In practice ODEs are solved numerically. Euler's method $x_{k+1} = x_k + h\,f(t_k, x_k)$ applied to $x' = x$ on $[0, 1]$ with $n$ steps gives exactly $(1 + 1/n)^n$ — compound interest — whose error is about $e/(2n)$: Euler's method is **first order**. The classical Runge–Kutta method (Runge 1895, Kutta 1901) uses four slopes per step and is **fourth order**. The experiment also shows two things numerics cannot tell you: when a solution is about to blow up, and when a solution is not unique.
+
+<Python id="ordinary_differential_equations_numerical_methods" />
+
+The SymPy iterates are **exact** for the finitely many steps computed; the numerical solutions are **floating-point evidence**. Only the theorems guarantee convergence, existence and uniqueness.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Solutions exist for all time."** Even with a smooth right-hand side, solutions can blow up in finite time: $x' = x^2$, $x(0) = 1$ has the solution $1/(1 - t)$, which exists only for $t < 1$. Picard–Lindelöf is a *local* theorem. (Linear equations with continuous coefficients are the exception: their solutions exist on the whole interval.)
+
+</Misconception>
+
+<Misconception>
+
+**"Every differential equation can be solved in closed form."** Most cannot. $x' = e^{-t^2}$ has no elementary solution (its solutions are $\int e^{-t^2}dt$, the error function), and Liouville proved that $x' = t^2 + x^2$ cannot be solved by quadratures. Existence theorems, qualitative analysis and numerical methods are how we understand most equations.
+
+</Misconception>
+
+<Misconception>
+
+**"An initial condition always determines the solution."** Only when the right-hand side is Lipschitz (for example $C^1$) in $x$. $x' = \sqrt{|x|}$, $x(0) = 0$ has infinitely many solutions.
+
+</Misconception>
+
+<Misconception>
+
+**"A numerical solution that looks good is the solution."** Numerical methods follow *one* solution and can be fooled: started at $x(0) = 0$, every method for $x' = \sqrt{|x|}$ stays at $0$, missing the other solutions; and near a blow-up a fixed-step method lags behind. Error estimates assume smoothness that may fail.
+
+</Misconception>
+
+<Misconception>
+
+**"Separating variables means dividing by zero is fine."** Dividing by $h(x)$ loses the constant solutions at zeros of $h$ — exactly where non-uniqueness or equilibria live. Always check the zeros of $h$ separately.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Vector fields and flows">
+
+An autonomous system $x' = f(x)$ is a **vector field** on phase space, and its solutions are the **integral curves** — curves whose velocity at each point is the vector there. When solutions exist for all time, the map $\varphi_t$ sending $x_0$ to the solution's position at time $t$ is the **flow**: $\varphi_0 = \mathrm{id}$ and $\varphi_{s + t} = \varphi_s \circ \varphi_t$ (by uniqueness), a one-parameter group of diffeomorphisms. For $x' = Ax$ the flow is $e^{tA}$, a homomorphism from $(\R, +)$ to the matrix group $GL(d, \R)$. On a manifold the same ideas apply verbatim; Sophus Lie's study of the symmetries of differential equations led him to the groups now named after him. See <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink> and <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="What the plane allows: Poincaré–Bendixson and index theory">
+
+Topology constrains long-term behaviour. The **Poincaré–Bendixson theorem** says that a bounded trajectory of a $C^1$ planar system that does not approach any equilibrium tends to a periodic orbit (a limit cycle); so chaos is impossible for autonomous systems in the plane — it needs at least three dimensions, as in the Lorenz equations. The proof uses the Jordan curve theorem. The **index** of an isolated equilibrium (the number of turns the vector field makes along a small loop around it) is $+1$ for nodes, spirals and centres and $-1$ for saddles, and the indices of the equilibria inside a periodic orbit add up to $+1$ — so every periodic orbit in the plane encloses at least one equilibrium. The `VectorField` widget's loop mode computes such indices. See <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Fixed points in function spaces">
+
+The proof of Picard–Lindelöf is an instance of the **Banach fixed-point theorem**: the Picard map $T(x)(t) = x_0 + \int_{t_0}^t f(s, x(s))\,ds$ acts on a complete metric space of continuous functions, and (on a short interval, or with a weighted norm $\sup_t e^{-2K|t - t_0|}|x(t)|$) it is a contraction, so it has exactly one fixed point — the solution. Peano's theorem replaces the contraction by compactness: Euler polygons form an equicontinuous family, and the **Arzelà–Ascoli theorem** extracts a convergent subsequence. Both proofs view a differential equation as an equation for a point in an infinite-dimensional space, the starting idea of <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Linear equations are linear algebra">
+
+For a linear homogeneous equation the solutions form a vector space, and the existence and uniqueness theorem makes "initial data" an isomorphism with $\R^n$. Constant-coefficient equations are the polynomial algebra $\R[D]$ acting on functions: $p(D)y = 0$ factors as $\prod (D - r_i)^{m_i}$, and the solution space decomposes accordingly — the same mathematics as the Jordan normal form, since $t^k e^{rt}$ spans the generalised eigenspaces of $D$. Deeper, **differential Galois theory** (Picard and Vessiot, 1880s–1890s; Kolchin, 1940s) attaches to a linear ODE a group of symmetries of its solutions and characterises the equations solvable by quadratures by a solvability property of that group — a perfect parallel of Galois theory for polynomial equations. See <TopicLink id="math.algebra.fields-galois">fields and Galois theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Adding noise">
+
+Replace $x' = f(x)$ by "$x' = f(x) + \sigma \cdot$ noise". Made precise by Itô (1944), this is a **stochastic differential equation** $dX = f(X)\,dt + \sigma\,dW$, driven by Brownian motion $W$. Its solutions are random functions; their probability density evolves by a *partial* differential equation (the Fokker–Planck equation); and Euler's method becomes the Euler–Maruyama method, with increments $\sigma\sqrt{h}\,Z$ for standard normal $Z$. Noise can push a solution over a barrier between two stable equilibria, a mechanism used to model climate transitions and chemical reactions. See <TopicLink id="math.prob.stochastic-processes">stochastic processes</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Newton's second law is an ODE">
+
+Newton's law $m x'' = F(x, x', t)$ is a second-order ODE; with initial position and velocity, Picard–Lindelöf makes classical mechanics deterministic — for forces that are Lipschitz. (Norton's "dome", a frictionless surface on which $r'' = \sqrt r$, is a much-discussed example where the force fails to be Lipschitz and a ball at rest may start moving at an arbitrary time: the $x' = \sqrt{|x|}$ phenomenon in physical clothing.) The same damped-oscillator equation $Ly'' + Ry' + y/C = 0$ governs an electrical circuit with inductance, resistance and capacitance, so mechanical and electrical engineers share one theory. See <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Newton, Leibniz and the Bernoullis.** Isaac Newton's *Principia* (1687) solved the motion of planets — differential equations in all but name — and his fluxion manuscripts (1671) classify first-order equations. Gottfried Wilhelm Leibniz found the method of separation of variables (1691), and the brothers Jacob and Johann Bernoulli solved the equation now called Bernoulli's (1695–97). Jacopo Riccati studied his equation in 1724.
+- **Euler and Lagrange.** Leonhard Euler solved linear equations with constant coefficients through the characteristic equation (1743), introduced integrating factors, and described the numerical method named after him (*Institutiones calculi integralis*, 1768). Joseph-Louis Lagrange developed variation of parameters (1770s).
+- **Existence theory.** Augustin-Louis Cauchy gave the first existence proofs in the 1820s, using Euler polygons and later power series. Joseph Liouville proved that some equations cannot be solved by quadratures (1841) and introduced successive approximations for linear equations (1838); Rudolf Lipschitz isolated his condition (1868–76). Émile Picard developed successive approximations in general (1890) and Ernst Lindelöf sharpened the result (1894); Giuseppe Peano proved existence under continuity alone (1886, 1890). Sofya Kovalevskaya proved the Cauchy–Kovalevskaya existence theorem for analytic equations (1874) and found a new integrable case of the spinning top (1888), for which she won the Prix Bordin.
+- **Qualitative theory.** Henri Poincaré created the qualitative theory of differential equations (1881–86) and, studying the three-body problem (1890), discovered the sensitive dependence now called chaos. Aleksandr Lyapunov, in his 1892 thesis written in Kharkiv, founded stability theory. Ivar Bendixson completed the Poincaré–Bendixson theorem (1901). David Grobman (1959) and Philip Hartman (1960) proved the linearisation theorem, and Edward Lorenz's 1963 weather model made chaos famous.
+- **Numerical methods.** Carl Runge (1895), Karl Heun (1900) and Martin Kutta (1901) developed the Runge–Kutta methods; today's adaptive and stiff solvers descend from work by Germund Dahlquist, John Butcher and many others from the 1950s onwards.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Morris W. Hirsch, Stephen Smale and Robert L. Devaney, *Differential Equations, Dynamical Systems, and an Introduction to Chaos* (2004; 3rd edition 2013) — linear systems, phase portraits and existence theory, at this lesson's level.
+- Steven H. Strogatz, *Nonlinear Dynamics and Chaos* (1994; 2nd edition 2015) — qualitative methods with many applications.
+- Vladimir I. Arnold, *Ordinary Differential Equations* (1973; English translations 1978 and 1992) — geometric, with vector fields and flows from the start.
+- George F. Simmons, *Differential Equations with Applications and Historical Notes* (1972; 3rd edition 2016) — classical methods with rich history.
+- William E. Boyce and Richard C. DiPrima, *Elementary Differential Equations and Boundary Value Problems* (1965; many later editions) — a standard first course.
+- Ernst Hairer, Syvert P. Nørsett and Gerhard Wanner, *Solving Ordinary Differential Equations I: Nonstiff Problems* (1987) — numerical methods, with their history.
+
+Next in the Lumenary: <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>, <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>, <TopicLink id="math.analysis.pde-intro">partial differential equations</TopicLink>, <TopicLink id="math.applied.mathematical-biology">mathematical biology</TopicLink> and <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink>.
+
+</Section>

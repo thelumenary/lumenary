@@ -1,0 +1,490 @@
+---
+slug: additive-extremal-combinatorics
+topic: math.discrete.additive-extremal-combinatorics
+title: Extremal and additive combinatorics
+subtitle: How much structure is forced by size alone? Enough edges force a clique, enough integers force a progression, and even the primes — a set of density zero — contain progressions of every finite length.
+level: research
+ages: Research orientation (graph theory, the probabilistic method and elementary number theory assumed)
+minutes: 140
+order: 8013
+objectives:
+  - Prove Turán's theorem by Zykov symmetrisation and the Erdős–Szekeres bound for Ramsey numbers, and use random colourings for lower bounds
+  - State Szemerédi's regularity lemma and theorem, deduce Roth's theorem from the triangle removal lemma, and prove the key Fourier lemma of Roth's density-increment argument
+  - Prove Dvir's finite-field Kakeya theorem as an instance of the polynomial method, and describe the cap set and sum–product problems
+  - Describe the Green–Tao theorem and the current frontier, separating theorems from open problems such as the growth of Ramsey numbers
+narrators: []
+lean:
+  - Lumenary.AdditiveExtremalCombinatorics.turan_structure
+  - Lumenary.AdditiveExtremalCombinatorics.RamseyProp
+  - Lumenary.AdditiveExtremalCombinatorics.ramsey_one_left
+  - Lumenary.AdditiveExtremalCombinatorics.ramsey_one_right
+  - Lumenary.AdditiveExtremalCombinatorics.ramsey_step
+  - Lumenary.AdditiveExtremalCombinatorics.ramsey_binomial
+  - Lumenary.AdditiveExtremalCombinatorics.ramsey_diag
+  - Lumenary.AdditiveExtremalCombinatorics.sumset_lower
+  - Lumenary.AdditiveExtremalCombinatorics.cauchy_davenport_ordered
+  - Lumenary.AdditiveExtremalCombinatorics.cauchy_davenport_zmod
+  - Lumenary.AdditiveExtremalCombinatorics.stanley_three_ap_free
+  - Lumenary.AdditiveExtremalCombinatorics.roth_number_14
+  - Lumenary.AdditiveExtremalCombinatorics.roth_theorem
+  - Lumenary.AdditiveExtremalCombinatorics.szemeredi_regularity_lemma
+compute: [additive_extremal_combinatorics_turan_ramsey, additive_extremal_combinatorics_progressions]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Size forces structure">
+
+Four questions, each of the form *"how large must an object be before some structure is unavoidable?"*
+
+- **Cliques.** How many edges can a graph on $n$ vertices have without containing a triangle? Without a $K_4$? (Mantel, 1907; Turán, 1941.)
+- **Homogeneous sets.** How many people must be at a party before there are $k$ who all know each other or $k$ who are all strangers? For $k = 3$ the answer is $6$; for $k = 4$ it is $18$; for $k = 5$ nobody knows — it lies between $43$ and $46$.
+- **Progressions.** How large can a subset of $\{1, \dots, N\}$ be with no three terms in arithmetic progression? Roth (1953) proved: $o(N)$. Szemerédi (1975) proved the same for progressions of any length $k$.
+- **Primes.** The primes have density zero, so Szemerédi's theorem does not apply to them. Yet Green and Tao (2004) proved that they contain arithmetic progressions of every finite length: $7, 37, 67, 97, 127, 157$ is one of length six.
+
+**Extremal combinatorics** asks for the maximum size of an object avoiding a forbidden substructure (Turán numbers, Ramsey numbers); **additive combinatorics** studies the additive structure of sets of integers or of abelian groups (progressions, sumsets, sum–product phenomena). Szemerédi's theorem belongs to both, and the methods that grew around it — the regularity lemma, Fourier analysis and its higher-order generalisation, ergodic theory, the probabilistic method and the polynomial method — form one of the most active areas of modern mathematics. This lesson builds on <TopicLink id="math.discrete.graph-theory">graph theory</TopicLink> (where $R(3,3) = 6$, Mantel's theorem and the basic Ramsey bounds are proved), <TopicLink id="math.discrete.probabilistic-method">the probabilistic method</TopicLink> and <TopicLink id="math.number.elementary-number-theory">elementary number theory</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Structure versus randomness">
+
+A useful slogan (popularised by Tao): **every large object is a mixture of structure and randomness**, and both parts force patterns. A random set of integers of density $\alpha$ contains about $\alpha^3 N^2/4$ three-term progressions in $\{1, \dots, N\}$, simply by counting. A structured set — say all integers in a sub-progression, or all integers $x$ with $x\theta \bmod 1$ in a short interval — contains progressions for structural reasons. The proofs make this dichotomy precise:
+
+- **Graphs.** Szemerédi's regularity lemma splits any large graph into boundedly many pieces between which the edges look random. Counting then works as in a random graph.
+- **Integers.** Fourier analysis detects structure: if a set has few three-term progressions, its indicator function correlates with a character $x \mapsto e^{2\pi i r x/N}$, so it is denser on some long sub-progression. Iterating this **density increment** proves Roth's theorem. Longer progressions need "higher-order" Fourier analysis (Gowers norms).
+- **Lower bounds** go the other way: random objects are *unstructured*. A random red–blue colouring of $K_n$ has no large monochromatic clique, which is why Ramsey numbers grow exponentially. Ironically, nobody can construct colourings explicitly that are as good as random ones.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="Turán number and Turán graph">
+
+The **Turán number** $\mathrm{ex}(n, H)$ is the maximum number of edges of an $n$-vertex graph containing no copy of $H$. The **Turán graph** $T(n, r)$ is the complete $r$-partite graph on $n$ vertices with parts of sizes $\lfloor n/r \rfloor$ or $\lceil n/r \rceil$; it contains no $K_{r+1}$, and has $t(n, r) \le \left(1 - \tfrac1r\right)\tfrac{n^2}{2}$ edges.
+
+</Definition>
+
+<Definition term="Ramsey number">
+
+The **Ramsey number** $R(s, t)$ is the least $n$ such that every red–blue colouring of the edges of $K_n$ contains a red $K_s$ or a blue $K_t$. Equivalently: every graph on $n$ vertices contains a clique of size $s$ or an independent set of size $t$.
+
+</Definition>
+
+<Definition term="density, progressions and Roth numbers">
+
+A set $A \subseteq \Z$ has **positive upper density** if $\limsup_{N \to \infty} |A \cap [1, N]|/N > 0$. A **$k$-term arithmetic progression** ($k$-AP) is $a, a + d, \dots, a + (k-1)d$ with $d \neq 0$. The **Roth number** $r_k(N)$ is the largest size of a subset of $\{1, \dots, N\}$ with no $k$-AP; we write $r_3(N)$ for three-term progressions.
+
+</Definition>
+
+<Definition term="sumsets and doubling">
+
+For finite sets $A, B$ in an abelian group, $A + B = \{a + b : a \in A, b \in B\}$ and $A \cdot B$ similarly. The **doubling constant** of $A$ is $|A + A|/|A|$. A **generalised arithmetic progression** of dimension $d$ is a set $\{a_0 + x_1d_1 + \cdots + x_dd_d : 0 \le x_i \lt L_i\}$.
+
+</Definition>
+
+<Definition term="ε-regular pairs and partitions">
+
+For disjoint vertex sets $X, Y$ of a graph, the **density** is $d(X, Y) = e(X, Y)/(|X||Y|)$. The pair is **$\varepsilon$-regular** if $|d(X', Y') - d(X, Y)| \le \varepsilon$ for all $X' \subseteq X$, $Y' \subseteq Y$ with $|X'| \ge \varepsilon|X|$, $|Y'| \ge \varepsilon|Y|$. A partition $V = V_1 \cup \dots \cup V_k$ into parts of almost equal size is **$\varepsilon$-regular** if all but at most $\varepsilon k^2$ of the pairs $(V_i, V_j)$ are $\varepsilon$-regular.
+
+</Definition>
+
+<Definition term="Fourier transform on ℤ/Nℤ">
+
+For $f : \Z/N\Z \to \C$ put $\hat f(r) = \mathbb{E}_{x} f(x) e(-rx/N)$, where $e(t) = e^{2\pi i t}$ and $\mathbb{E}_x = \frac1N\sum_x$. Then $f(x) = \sum_r \hat f(r) e(rx/N)$ and **Parseval's identity** holds: $\sum_r |\hat f(r)|^2 = \mathbb{E}_x |f(x)|^2$.
+
+</Definition>
+
+<Definition term="cap set">
+
+A **cap set** is a subset of $\mathbb{F}_3^n$ containing no three distinct points on a line, i.e. no $x, y, z$, not all equal, with $x + y + z = 0$ — the $\mathbb{F}_3^n$ analogue of a 3-AP-free set.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Turán graphs">
+
+$T(6, 2) = K_{3,3}$ has $9$ edges and no triangle; $T(6, 3) = K_{2,2,2}$ (the octahedron) has $12$ edges and no $K_4$. The first experiment checks all $32768$ graphs on six vertices: these are the maxima, and the only graphs attaining them are copies of the Turán graphs ($10$ labelled copies of $K_{3,3}$, $15$ of $K_{2,2,2}$).
+
+</Example>
+
+<Example title="The Paley graph and R(4, 4) > 17">
+
+Join $x, y \in \Z/17$ when $x - y$ is a non-zero square ($\pm1, \pm2, \pm4, \pm8$). This graph is $8$-regular, it is isomorphic to its complement (multiply by the non-square $3$), every adjacent pair has exactly $3$ common neighbours and every non-adjacent pair $4$ — a "pseudo-random" graph. It has no $K_4$ and, by self-complementarity, no independent set of size $4$. So $R(4, 4) \ge 18$; Greenwood and Gleason (1955) showed $R(4, 4) = 18$.
+
+</Example>
+
+<Example title="Sets without three-term progressions">
+
+The integers whose base-$3$ digits are all $0$ or $1$ contain no 3-AP: if $a + c = 2b$ with such digits, then adding $a + c$ digit by digit produces no carries and neither does doubling $b$, so the digits agree and $a = b = c$. Below $3^m$ there are $2^m$ of them, about $N^{0.63}$. **Behrend** (1946) did much better: lattice points on a sphere in a high-dimensional box, read as base-$b$ digits, give $r_3(N) \ge N e^{-c\sqrt{\log N}}$. This is larger than $N^{1-\varepsilon}$ for every $\varepsilon$, yet still $o(N)$, as Roth's theorem requires. The squares, by contrast, contain many 3-APs ($1, 25, 49$; in general $(a^2 - 2ab - b^2)^2$, $(a^2 + b^2)^2$, $(a^2 + 2ab - b^2)^2$), but no 4-term progression (Fermat, proved by Euler).
+
+</Example>
+
+<Example title="Sums versus products">
+
+For $A = \{1, \dots, n\}$, $|A + A| = 2n - 1$ but $|A \cdot A|$ is much larger (asymptotically $n^2/(\log n)^{c+o(1)}$ with $c = 1 - \frac{1 + \log\log 2}{\log 2}$, by Ford's work on the multiplication table). For $A = \{1, 2, 4, \dots, 2^{n-1}\}$, $|A \cdot A| = 2n - 1$ but $|A + A| = \binom{n+1}{2}$. The second experiment computes both for $n = 20$: in each case one of the two is large.
+
+</Example>
+
+<Example title="Cap sets">
+
+In $\mathbb{F}_3^2$ the largest cap set has $4$ points (e.g. $(0,0), (0,1), (1,0), (1,1)$). The maximum sizes for $n = 1, \dots, 6$ are $2, 4, 9, 20, 45, 112$, the last found by Potechin (2008). They are the maximum numbers of cards in the game SET (for $n = 4$) with no "set" among them.
+
+</Example>
+
+</Section>
+
+<Section id="extremal" kind="proof" title="Extremal graph theory and Ramsey numbers">
+
+<Theorem name="Theorem 1 (Turán 1941)">
+
+Let $r \ge 1$. Every graph on $n$ vertices with no $K_{r+1}$ has at most $t(n, r)$ edges, with equality only for $T(n, r)$. In particular $\mathrm{ex}(n, K_{r+1}) \le \left(1 - \frac1r\right)\frac{n^2}{2}$.
+
+</Theorem>
+
+<Proof>
+
+(Zykov symmetrisation.) Let $G$ be $K_{r+1}$-free on $n$ vertices with the maximum number of edges. For a vertex $v$, "replacing $u$ by a copy of $v$" means deleting $u$ and adding a new vertex $v'$ adjacent exactly to $N(v)$. The new graph is still $K_{r+1}$-free: a clique cannot contain both $v$ and $v'$ (they are not adjacent), and a clique through $v'$ but not $v$ becomes a clique through $v$ when $v'$ is replaced by $v$.
+
+*Step 1: non-adjacency is transitive.* Suppose $u \not\sim v$ and $v \not\sim w$ but $u \sim w$ (so $u \neq w$). If $d(v) \lt d(u)$, replace $v$ by a copy of $u$: since $v \not\sim u$, this changes the edge count by $d(u) - d(v) \gt 0$, contradicting maximality; similarly if $d(v) \lt d(w)$. Otherwise $d(v) \ge d(u)$ and $d(v) \ge d(w)$; replace both $u$ and $w$ by copies of $v$ (neither is a neighbour of $v$, so $N(v)$ is unchanged). We lose $d(u) + d(w) - 1$ edges (the edge $uw$ is counted twice) and gain $2d(v)$, a net gain of at least $1$ — again a contradiction.
+
+So "equal or non-adjacent" is an equivalence relation, and $G$ is complete multipartite. It has at most $r$ parts, since one vertex from each of $r + 1$ parts would form a $K_{r+1}$.
+
+*Step 2: the parts are balanced.* A complete multipartite graph with parts of sizes $n_1, \dots, n_r$ has $\frac12\left(n^2 - \sum n_i^2\right)$ edges. If $n_i \ge n_j + 2$, moving a vertex from part $i$ to part $j$ changes the edge count by $(n_i - 1) - n_j \gt 0$. So in the extremal graph all parts differ in size by at most one: $G \cong T(n, r)$. Finally $\sum n_i^2 \ge n^2/r$ by the Cauchy–Schwarz inequality, giving the bound $\left(1 - \frac1r\right)\frac{n^2}{2}$.
+
+</Proof>
+
+Mantel's theorem is the case $r = 2$. Turán's theorem is the starting point of a large theory. The **Erdős–Stone theorem** (1946), in the form noted by Erdős and Simonovits (1966), says $\mathrm{ex}(n, H) = \left(1 - \frac{1}{\chi(H) - 1} + o(1)\right)\frac{n^2}{2}$: the chromatic number of $H$ alone determines the asymptotics — except when $H$ is bipartite, where it only says $o(n^2)$. Bipartite Turán problems are much harder: the Kővári–Sós–Turán theorem gives $\mathrm{ex}(n, K_{s,t}) = O(n^{2 - 1/s})$, and $\mathrm{ex}(n, C_4) \sim \frac12 n^{3/2}$, but even the order of magnitude of $\mathrm{ex}(n, C_8)$ is unknown.
+
+<Theorem name="Theorem 2 (Ramsey 1930; Erdős–Szekeres 1935)">
+
+$R(s, t) \le R(s - 1, t) + R(s, t - 1)$ for $s, t \ge 2$, and $R(s, t) \le \binom{s + t - 2}{s - 1}$. In particular $R(k, k) \le \binom{2k - 2}{k - 1} \lt 4^{k-1}$.
+
+</Theorem>
+
+<Proof>
+
+Colour $K_n$ with $n = R(s-1, t) + R(s, t-1)$ and pick a vertex $v$. Its $n - 1$ other vertices split into red neighbours and blue neighbours, and by the pigeonhole principle there are at least $R(s - 1, t)$ of the first or at least $R(s, t - 1)$ of the second. In the first case they contain a blue $K_t$ (done) or a red $K_{s-1}$, which with $v$ is a red $K_s$; the second case is symmetric. The binomial bound follows by induction on $s + t$ from $R(1, t) = R(s, 1) = 1$ and Pascal's rule. (The formal section proves exactly this in Lean, for graphs on any vertex type.)
+
+</Proof>
+
+<Theorem name="Theorem 3 (Erdős 1947; Spencer 1975)">
+
+For $k \ge 3$, $R(k, k) \gt 2^{k/2}$. More precisely $R(k, k) \ge (1 + o(1))\frac{\sqrt 2}{e}\, k\, 2^{k/2}$.
+
+</Theorem>
+
+<Proof>
+
+(First part.) Colour the edges of $K_n$, $n = \lfloor 2^{k/2} \rfloor$, independently at random. A fixed $k$-set is monochromatic with probability $2^{1 - \binom k2}$, so the expected number of monochromatic $K_k$ is $\binom nk 2^{1 - \binom k2} \lt \frac{n^k}{k!}2^{1 - \frac{k(k-1)}{2}} \le \frac{2^{1 + k/2}}{k!} \lt 1$. Some colouring therefore has none. (Optimising $n$ in the same computation gives $R(k, k) \gt (1 + o(1))\frac{1}{e\sqrt 2}k2^{k/2}$; the **deletion method** — take $n$ larger, then delete one vertex from each monochromatic $K_k$ — improves the constant to $\frac1e$, and Spencer's application of the Lovász local lemma to $\frac{\sqrt 2}{e}$.)
+
+</Proof>
+
+So $\sqrt2^{\,k} \lt R(k, k) \lt 4^k$. The lower bound has not been improved exponentially since 1947, and no explicit construction comes close to it. On the upper side, Thomason (1988), Conlon (2009) and Sah (2020) improved the lower-order factors, but the exponential base $4$ stood for 88 years until Campos, Griffiths, Morris and Sahasrabudhe (2023) proved $R(k, k) \le (4 - \varepsilon)^k$ for some $\varepsilon \gt 0$; subsequent work by Gupta, Ndiaye, Norin and Wei (2024) brought the base down to about $3.8$.
+
+</Section>
+
+<Section id="additive" kind="proof" title="Progressions: regularity, Fourier analysis and beyond">
+
+<Theorem name="Theorem 4 (Szemerédi's regularity lemma, 1975–78)">
+
+For every $\varepsilon \gt 0$ there is $M(\varepsilon)$ such that every graph has an $\varepsilon$-regular partition into $k$ parts with $1/\varepsilon \le k \le M(\varepsilon)$.
+
+</Theorem>
+
+The proof refines partitions step by step, using an "energy" (mean square density) that is bounded by $1$ and increases by $\varepsilon^5$ at each refinement as long as the partition is not regular; the resulting $M(\varepsilon)$ is a tower of $2$'s of height polynomial in $1/\varepsilon$, and Gowers (1997) showed that tower-type growth is necessary. Its most famous consequence:
+
+<Theorem name="Theorem 5 (triangle removal lemma; Ruzsa–Szemerédi 1978)">
+
+For every $\delta \gt 0$ there is $\varepsilon \gt 0$ such that every graph on $n$ vertices with at most $\varepsilon n^3$ triangles can be made triangle-free by deleting at most $\delta n^2$ edges.
+
+</Theorem>
+
+(Apply the regularity lemma, delete the edges inside parts, between irregular pairs and between sparse pairs — at most $\delta n^2$ in all — and observe that a triangle surviving among three dense regular pairs would force, by the counting lemma, $\gt \varepsilon n^3$ triangles.)
+
+<Theorem name="Theorem 6 (Roth 1953)">
+
+$r_3(N) = o(N)$: for every $\delta \gt 0$, every $A \subseteq \{1, \dots, N\}$ with $|A| \ge \delta N$ contains a three-term progression once $N$ is large enough.
+
+</Theorem>
+
+<Proof>
+
+(Via the removal lemma, Ruzsa–Szemerédi.) Let $A \subseteq \{1, \dots, N\}$ contain no 3-AP, and let $M = 2N + 1$, so that $2$ is invertible in $\Z/M$ and no progression of elements of $\{1, \dots, N\}$ wraps around. Build a tripartite graph with parts $X, Y, Z$, each a copy of $\Z/M$, joining $x \in X$ to $y \in Y$ if $y - x \in A$, $y \in Y$ to $z \in Z$ if $z - y \in A$, and $x \in X$ to $z \in Z$ if $(z - x)/2 \in A$. A triangle $(x, y, z)$ gives $a = y - x$, $b = z - y$, $c = (z - x)/2$ in $A$ with $a + b \equiv 2c \pmod M$, hence $a + b = 2c$ (all three lie in $[1, N]$ and $2N \lt M$): this is the progression $a, c, b$, which is trivial only if $a = b = c$. So the only triangles are the $M|A|$ "trivial" ones $(x, x + a, x + 2a)$, and they are **edge-disjoint** (each edge determines $x$ and $a$). Fix $\delta \gt 0$ and let $\varepsilon$ be as in the removal lemma. The graph has $n = 3M$ vertices and $M|A| \le M^2 \le \varepsilon(3M)^3$ triangles once $M \ge 1/(27\varepsilon)$, so deleting at most $\delta(3M)^2 = 9\delta M^2$ edges destroys all of them. Each deleted edge destroys at most one of the edge-disjoint triangles, so $M|A| \le 9\delta M^2$, i.e. $|A| \le 9\delta M \le 27\delta N$. As $\delta$ was arbitrary, $|A| = o(N)$.
+
+</Proof>
+
+Roth's original proof was **Fourier-analytic**, and it gives quantitative bounds ($r_3(N) \ll N/\log\log N$) that the removal lemma cannot. Its heart is the following lemma, which we prove in full.
+
+<Theorem name="Lemma 7 (the key lemma of Roth's argument)">
+
+Let $N$ be odd and $A \subseteq \Z/N\Z$ have density $\alpha = |A|/N$ with $N \ge 2/\alpha^2$. If $A$ contains no non-trivial 3-AP $x, x + d, x + 2d$ ($d \neq 0$), then $|\hat{1}_A(r)| \ge \alpha^2/2$ for some $r \neq 0$.
+
+</Theorem>
+
+<Proof>
+
+Let $f = 1_A$ and $\Lambda = \mathbb{E}_{x, d} f(x)f(x + d)f(x + 2d)$. Substituting $y = x + d$, $z = x + 2d$ (so $x + z = 2y$), and expanding each $f$ by Fourier inversion,
+
+$$
+\Lambda = \frac{1}{N^2}\sum_{x + z = 2y} f(x)f(y)f(z) = \sum_{r} \hat f(r)^2\, \hat f(-2r),
+$$
+
+because $\frac{1}{N^2}\sum_{x + z = 2y} e\big((r_1x + r_2y + r_3z)/N\big)$ is $1$ when $r_1 = r_3 = r$ and $r_2 = -2r$, and $0$ otherwise. If $A$ has no non-trivial 3-AP, only $d = 0$ contributes to $\Lambda$, so $\Lambda = \alpha/N \le \alpha^3/2$. The $r = 0$ term is $\hat f(0)^3 = \alpha^3$. Hence
+
+$$
+\frac{\alpha^3}{2} \le \Big|\sum_{r \neq 0} \hat f(r)^2\, \hat f(-2r)\Big| \le \max_{s \neq 0}|\hat f(s)| \sum_r |\hat f(r)|^2 = \alpha \max_{s \neq 0}|\hat f(s)|,
+$$
+
+using that $r \mapsto -2r$ is a bijection of the non-zero residues ($N$ odd) and Parseval's identity $\sum_r |\hat f(r)|^2 = \mathbb{E}|f|^2 = \alpha$. So some $|\hat f(s)| \ge \alpha^2/2$.
+
+</Proof>
+
+**The density increment (outline).** A large coefficient $\hat 1_A(s)$ means that $A$ correlates with the character $x \mapsto e(sx/N)$. By Dirichlet's approximation theorem one can partition $\{1, \dots, N\}$ into progressions of length about $\sqrt N$ on each of which $sx/N$ is nearly constant modulo $1$; averaging, $A$ has density at least $\alpha + c\alpha^2$ on one of them, for an absolute constant $c \gt 0$ (after a standard reduction to avoid wrap-around). Restrict to that progression, rescale it to $\{1, \dots, N'\}$ with $N' \approx \sqrt N$, and repeat. The density cannot exceed $1$, so after $O(1/\alpha)$ steps the process must stop — which can only happen because $A$ contains a 3-AP or $N$ has become too small. This gives $r_3(N) \ll N/\log\log N$.
+
+<Theorem name="Theorem 8 (Szemerédi 1975)">
+
+Every subset of the integers with positive upper density contains arbitrarily long arithmetic progressions; equivalently $r_k(N) = o(N)$ for every $k$.
+
+</Theorem>
+
+There are four fundamentally different proofs: Szemerédi's combinatorial proof (which introduced the regularity lemma); Furstenberg's ergodic-theoretic proof (1977), via a multiple recurrence theorem for measure-preserving systems; Gowers's proof (1998–2001) by "higher-order Fourier analysis" with the norms $\|f\|_{U^k}$, the first with reasonable bounds; and proofs via the **hypergraph** removal lemma (Gowers; Nagle, Rödl, Schacht and Skokan, 2004–07).
+
+<Theorem name="Theorem 9 (Green–Tao 2004, published 2008)">
+
+The primes contain arbitrarily long arithmetic progressions.
+
+</Theorem>
+
+The proof is a **transference principle**: Szemerédi's theorem holds not only for dense subsets of the integers but for dense subsets of suitably *pseudorandom* sparse sets. Green and Tao show that the primes are a dense subset of the "almost primes", weighted by a majorant built from the sieve weights of Goldston and Yıldırım, which is pseudorandom in the required sense. The theorem gives arbitrarily long **finite** progressions — the primes contain no infinite one (see the misconceptions). Tao and Ziegler (2008) extended it to polynomial progressions.
+
+<Theorem name="Theorem 10 (Dvir 2008: finite-field Kakeya)">
+
+If $K \subseteq \mathbb{F}_q^n$ contains a line in every direction, then $|K| \ge \binom{q + n - 1}{n} \ge q^n/n!$.
+
+</Theorem>
+
+<Proof>
+
+The polynomials of degree at most $q - 1$ in $n$ variables over $\mathbb{F}_q$ form a vector space of dimension $\binom{q - 1 + n}{n}$. If $|K|$ were smaller, the $|K|$ linear conditions "$P(k) = 0$ for $k \in K$" would have a non-zero solution: a polynomial $P \neq 0$ of degree $d \le q - 1$ vanishing on $K$. Since $K \neq \emptyset$, $P$ is not a non-zero constant, so $d \ge 1$. Write $P = P_d + (\text{lower terms})$ with $P_d \neq 0$ homogeneous of degree $d$. For every direction $v \neq 0$, $K$ contains a line $\{x + tv : t \in \mathbb{F}_q\}$, so $g(t) = P(x + tv)$, a polynomial in $t$ of degree at most $d \le q - 1$, has $q$ roots and is identically zero. Its coefficient of $t^d$ is $P_d(v)$, so $P_d(v) = 0$ for all $v \neq 0$, and $P_d(0) = 0$ by homogeneity. Thus $P_d$ vanishes on all of $\mathbb{F}_q^n$ although its degree in each variable is at most $q - 1$, which forces $P_d = 0$ (induct on $n$: a non-zero one-variable polynomial of degree $\le q - 1$ has fewer than $q$ roots). This contradiction proves $|K| \ge \binom{q + n - 1}{n}$.
+
+</Proof>
+
+The same philosophy — find a low-degree polynomial vanishing on the set, then exploit the structure — solved several famous problems: the **cap set problem** (Croot, Lev and Pach for $(\Z/4)^n$; Ellenberg and Gijswijt, 2016: every cap set in $\mathbb{F}_3^n$ has size at most $2.756^n$ for large $n$, using what is now called the slice-rank method), and Guth and Katz's near-solution of Erdős's distinct distances problem (2010). Over $\R^n$, the Kakeya conjecture is much harder; for $n = 3$ a proof was announced by Wang and Zahl in 2025.
+
+<Theorem name="Theorem 11 (Freiman 1964–73; Ruzsa 1994)">
+
+If $A \subset \Z$ is finite with $|A + A| \le K|A|$, then $A$ is contained in a generalised arithmetic progression of dimension at most $d(K)$ and size at most $C(K)|A|$.
+
+</Theorem>
+
+The simplest case is formalised below: $|A + A| \ge 2|A| - 1$, with equality only for arithmetic progressions. The **polynomial Freiman–Ruzsa conjecture** asks for bounds polynomial in $K$; Gowers, Green, Manners and Tao proved it in $\mathbb{F}_2^n$ in November 2023 (over $\Z$ it remains open).
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: known and open">
+
+**Recent theorems.** Kelley and Meka (2023) proved $r_3(N) \le N\exp\left(-c(\log N)^{1/12}\right)$, close in shape to Behrend's lower bound $N\exp(-c'\sqrt{\log N})$ (Bloom and Sisask improved $1/12$ to $1/9$); an earlier bound of Bloom and Sisask (2020) already settled the case $k = 3$ of the Erdős–Turán conjecture below. For longer progressions, Leng, Sah and Sawhney (2024) proved $r_k(N) \le N\exp\left(-(\log\log N)^{c_k}\right)$. In Ramsey theory: $R(3, t) = \Theta(t^2/\log t)$ (Ajtai–Komlós–Szemerédi, 1980; Kim, 1995); Mattheus and Verstraete (2023) showed $R(4, t) \ge c\, t^3/\log^4 t$, matching the upper bound up to logarithms; and the exponential improvement of the diagonal upper bound described above.
+
+**Open problems** (well documented; consult recent surveys for progress):
+
+- **Small Ramsey numbers.** $R(5, 5)$ is unknown; it lies between $43$ (Exoo, 1989) and $46$ (Angeltveit and McKay, 2024).
+- **Growth of $R(k, k)$.** Does $\lim_k R(k, k)^{1/k}$ exist, and what is it? It lies between $\sqrt 2$ and about $3.8$. Erdős offered a prize for the existence of the limit.
+- **Erdős–Turán.** If $\sum_{a \in A} 1/a = \infty$, must $A$ contain arbitrarily long progressions? Known for $k = 3$; open for $k \ge 4$ (it would imply Green–Tao).
+- **Sum–product.** Erdős and Szemerédi (1983) proved $\max(|A + A|, |A \cdot A|) \ge |A|^{1 + c}$ for finite $A \subset \Z$ and conjectured exponent $2 - \varepsilon$. The best exponents known are $\tfrac43$ plus small explicit improvements (Solymosi, 2009; Konyagin–Shkredov; Rudnev–Stevens).
+- **Cap sets.** The largest cap set in $\mathbb{F}_3^n$ has size $c^n$ with $2.2 \lt c \le 2.756$ (roughly); the true base is unknown.
+- **Bipartite Turán problems**, such as the order of magnitude of $\mathrm{ex}(n, C_8)$ or $\mathrm{ex}(n, K_{4,4})$; and the polynomial Freiman–Ruzsa conjecture over $\Z$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Combinatorics in Lean and Mathlib">
+
+Additive combinatorics is one of the best-formalised parts of modern mathematics: Mathlib contains Szemerédi's regularity lemma, the triangle removal lemma, Roth's theorem, the Cauchy–Davenport theorem, Plünnecke–Ruzsa inequalities and Turán's theorem, much of it by Yaël Dillies and Bhavik Mehta. Moreover, the November 2023 proof of the polynomial Freiman–Ruzsa conjecture over $\mathbb{F}_2^n$ was completely formalised in Lean 4 with Mathlib about three weeks after it appeared, in an open collaborative project led by Terence Tao.
+
+Turán's theorem, structural form:
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.turan_structure" />
+
+Ramsey numbers. We define the Ramsey property for graphs on any vertex type and prove the Erdős–Szekeres recursion and its consequences ourselves, mirroring the proof of Theorem 2 (the <TopicLink id="math.discrete.graph-theory">graph theory</TopicLink> module proves $R(3, 3) = 6$ by a direct argument; here the bounds are general):
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.RamseyProp" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.ramsey_one_left" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.ramsey_one_right" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.ramsey_step" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.ramsey_binomial" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.ramsey_diag" />
+
+Sumsets: an independent proof of $|A + B| \ge |A| + |B| - 1$ in $\Z$, Mathlib's general version, and Cauchy–Davenport in $\Z/p\Z$:
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.sumset_lower" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.cauchy_davenport_ordered" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.cauchy_davenport_zmod" />
+
+Three-term progressions: a base-$3$ set checked by the kernel, hence $r_3(14) \ge 8$; Roth's theorem; and the regularity lemma.
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.stanley_three_ap_free" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.roth_number_14" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.roth_theorem" />
+
+<Lean decl="Lumenary.AdditiveExtremalCombinatorics.szemeredi_regularity_lemma" />
+
+**What is and is not formalised.** Formalised here: the Ramsey recursion and the bounds $R(s, t) \le \binom{s+t-2}{s-1}$ and $R(k+1, k+1) \le 4^k$; the sumset bound; an explicit 3-AP-free set. From Mathlib: Turán, Cauchy–Davenport, Roth (via removal, not via Lemma 7), the regularity lemma. Not formalised: Erdős's lower bound and the deletion method, Lemma 7 and the density increment, Szemerédi's theorem for $k \ge 4$, Green–Tao, Dvir's theorem and the cap set bound (the latter has been formalised in Lean 3 by Dahmen, Hölzl and Lewis, 2019, but is not in Mathlib), and the sum–product estimates.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Exhaustive searches and what they cannot show">
+
+The first experiment confirms Turán's theorem on six vertices by checking all $32768$ labelled graphs, verifies that the Paley graph on $17$ vertices has no homogeneous $4$-set (so $R(4, 4) \gt 17$), and tabulates the probabilistic lower bounds and the Erdős–Szekeres upper bound for $R(k, k)$.
+
+<Python id="additive_extremal_combinatorics_turan_ramsey" />
+
+The second computes the Roth numbers $r_3(N)$ for $N \le 40$ exactly by backtracking (each search is pruned using the smaller Roth numbers already computed), finds the progressions of primes of lengths $3$ to $7$ with the smallest last term, and compares $|A + A|$ with $|A \cdot A|$.
+
+<Python id="additive_extremal_combinatorics_progressions" />
+
+These computations are exact and exhaustive for the sizes shown, so they *prove* finite statements such as $R(4, 4) \gt 17$ or $r_3(40) = 15$ (assuming the code is correct). They say nothing reliable about asymptotics: $r_3(N)/N$ falls from $0.5$ to $0.38$ between $N = 10$ and $N = 40$, but Roth's theorem — that it tends to $0$ — is invisible at this scale, and Behrend's construction shows the decay is slower than any power of $N$. The same caution applies to Ramsey numbers: the exhaustive methods that settle $R(4, 4)$ are hopeless for $R(5, 5)$, where $K_{43}$ has $2^{903}$ colourings.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Exploring extremal and pseudo-random graphs">
+
+**A Turán graph.** $T(7, 3)$ has parts of sizes $3, 2, 2$ and $16$ edges. Use the colouring tab: three colours suffice (one per part), so it has no $K_4$; "Fewest possible?" confirms that it needs exactly three. Then try to add an edge mentally: any new edge lies inside a part, and together with one vertex from each of the other two parts it creates a $K_4$ — Turán's theorem says no $K_4$-free graph on $7$ vertices has more edges.
+
+<GraphExplorer
+  nodes={["a1", "a2", "a3", "b1", "b2", "c1", "c2"]}
+  edges={[["a1", "b1"], ["a1", "b2"], ["a1", "c1"], ["a1", "c2"], ["a2", "b1"], ["a2", "b2"], ["a2", "c1"], ["a2", "c2"], ["a3", "b1"], ["a3", "b2"], ["a3", "c1"], ["a3", "c2"], ["b1", "c1"], ["b1", "c2"], ["b2", "c1"], ["b2", "c2"]]}
+  positions={[[0, 0], [0, 1.5], [0, 3], [3, 0.5], [3, 2.5], [1.5, 4.5], [1.5, -1.5]]}
+  modes={["colour", "degrees"]}
+  title="The Turán graph T(7, 3)"
+  subtitle="Complete 3-partite with parts {a}, {b}, {c}: 16 edges and no K₄."
+/>
+
+**The Paley graph on 17 vertices.** Open the matrix tab and look at $A^2$: its off-diagonal entries count common neighbours, and they take only two values — $3$ for adjacent pairs, $4$ for non-adjacent pairs. Every pair "sees" almost exactly the number of common neighbours a random graph of density $\tfrac12$ would give ($\approx 15/4$). This **quasirandomness** (in the sense of Chung, Graham and Wilson) is why the graph has no homogeneous $4$-set, and why Paley graphs are good, though not optimal for large $k$, Ramsey colourings.
+
+<GraphExplorer
+  nodes={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]}
+  edges={[[0,1],[0,2],[0,4],[0,8],[0,9],[0,13],[0,15],[0,16],[1,2],[1,3],[1,5],[1,9],[1,10],[1,14],[1,16],[2,3],[2,4],[2,6],[2,10],[2,11],[2,15],[3,4],[3,5],[3,7],[3,11],[3,12],[3,16],[4,5],[4,6],[4,8],[4,12],[4,13],[5,6],[5,7],[5,9],[5,13],[5,14],[6,7],[6,8],[6,10],[6,14],[6,15],[7,8],[7,9],[7,11],[7,15],[7,16],[8,9],[8,10],[8,12],[8,16],[9,10],[9,11],[9,13],[10,11],[10,12],[10,14],[11,12],[11,13],[11,15],[12,13],[12,14],[12,16],[13,14],[13,15],[14,15],[14,16],[15,16]]}
+  modes={["matrix", "degrees"]}
+  title="The Paley graph on Z/17"
+  subtitle="x ~ y when x − y is a non-zero square mod 17: no 4-clique and no independent 4-set."
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Small Ramsey numbers are easy to compute."** $R(3, 3) = 6$ is a pleasant exercise and $R(4, 4) = 18$ took real work, but $R(5, 5)$ is still unknown: deciding whether every colouring of $K_{43}$ contains a monochromatic $K_5$ means, naively, examining $2^{903}$ colourings. Erdős's famous quip imagined aliens demanding $R(5, 5)$ on pain of destroying Earth — we should marshal all our computers — but demanding $R(6, 6)$, when we should rather try to destroy the aliens.
+
+</Misconception>
+
+<Misconception>
+
+**"Green–Tao says the primes contain an infinite arithmetic progression."** They contain arbitrarily long **finite** progressions, and no infinite one: if $a, a + d, a + 2d, \dots$ are all prime with $a \ge 2$, then the term $a + ad = a(1 + d)$ is composite. Likewise Szemerédi's theorem gives arbitrarily long finite progressions in dense sets, not infinite ones (the set of numbers with an even number of decimal digits has positive upper density and contains no infinite progression).
+
+</Misconception>
+
+<Misconception>
+
+**"An infinite set must contain long progressions."** Size in the sense of cardinality is not enough: the powers of $2$ contain no 3-AP at all ($2^a + 2^c = 2^{b+1}$ forces $a = c$). Szemerédi needs positive density; Green–Tao needs the special pseudorandomness of the primes; and the Erdős–Turán conjecture asks whether divergence of $\sum 1/a$ suffices.
+
+</Misconception>
+
+<Misconception>
+
+**"The probabilistic method gives constructions."** It proves existence: most colourings of $K_n$ with $n \approx 2^{k/2}$ avoid monochromatic $K_k$, but no one can write one down explicitly for large $k$. The best explicit constructions — from Frankl and Wilson (1981) to recent work on randomness extractors by Chattopadhyay, Zuckerman, Cohen, Li and others — still give lower bounds far below $2^{k/2}$.
+
+</Misconception>
+
+<Misconception>
+
+**"The regularity lemma gives good bounds."** It gives qualitative theorems with tower-type bounds, and Gowers showed that the towers cannot be avoided in the lemma itself. Quantitative results such as Kelley–Meka's bound for $r_3(N)$ come from Fourier-analytic and probabilistic methods instead.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Borsuk–Ulam, Kneser and recurrence">
+
+Topology proves combinatorial theorems that resist combinatorics. Kneser conjectured (1955) that if the $k$-subsets of $\{1, \dots, n\}$ are coloured with $n - 2k + 1$ colours, two disjoint subsets get the same colour; Lovász (1978) proved it with the Borsuk–Ulam theorem, founding **topological combinatorics** (Bárány's and Greene's short proofs followed). In the other direction, **topological dynamics** proves Ramsey-type statements: Furstenberg and Weiss (1978) deduced van der Waerden's theorem — any finite colouring of $\Z$ has monochromatic progressions of every length — from a multiple recurrence theorem for commuting homeomorphisms of a compact metric space. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Incidences and the sum–product theorem">
+
+Elekes (1997) proved $\max(|A + A|, |A \cdot A|) \gg |A|^{5/4}$ for finite $A \subset \R$ by pure geometry. Consider the point set $P = (A + A) \times (A \cdot A)$ and the $|A|^2$ lines $\ell_{a,b} : y = a(x - b)$ for $a, b \in A$. Each line contains the $|A|$ points $(b + c, ac)$, $c \in A$, of $P$, so there are at least $|A|^3$ incidences. The **Szemerédi–Trotter theorem** bounds the incidences between $m$ points and $n$ lines in the plane by $O(m^{2/3}n^{2/3} + m + n)$; hence $|A|^3 \ll (|A + A||A \cdot A|)^{2/3}|A|^{4/3}$, so $|A + A||A \cdot A| \gg |A|^{5/2}$. Geometry over finite fields is subtler (no ordering), which is why the polynomial method and Dvir's theorem were such breakthroughs.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Fourier analysis, Gowers norms and ergodic theory">
+
+Three-term progressions are controlled by Fourier coefficients (Lemma 7): the count is $\sum_r \hat f(r)^2\hat f(-2r)$. Four-term progressions are not — there are sets with uniformly tiny Fourier coefficients but the "wrong" number of 4-APs, such as $\{x : x^2\theta \bmod 1 \in [0, \varepsilon)\}$. Gowers introduced the uniformity norms $\|f\|_{U^k}$ that do control $(k+1)$-APs, and the inverse theorems for these norms (Green–Tao–Ziegler, 2012) identify the obstructions as **nilsequences**: polynomial phases on nilmanifolds. Furstenberg's correspondence principle translates Szemerédi's theorem into multiple recurrence for a measure-preserving system $(X, \mu, T)$: $\mu(E \cap T^{-n}E \cap \cdots \cap T^{-(k-1)n}E) \gt 0$ for some $n$ whenever $\mu(E) \gt 0$; the structure theory of Host–Kra (2005) found the same nilmanifolds. See <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink> and <TopicLink id="math.analysis.ergodic-theory">ergodic theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random graphs and quasirandomness">
+
+The random graph $G(n, \tfrac12)$ has clique number and independence number about $2\log_2 n$ with high probability — which is exactly why $R(k, k) \ge 2^{k/2}$. Chung, Graham and Wilson (1989) showed that many "random-like" properties of a graph sequence of density $p$ are equivalent: the right count of $4$-cycles ($\approx p^4n^4$), the right count of every fixed subgraph, small second eigenvalue, uniform edge distribution. The Paley graphs are quasirandom in this sense. The dichotomy "quasirandom or structured" is the probabilistic face of the regularity lemma, and Lovász and Szegedy's theory of **graph limits** (graphons) packages it analytically. See <TopicLink id="math.discrete.probabilistic-method">the probabilistic method</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Primes and pseudorandomness">
+
+For number theorists the prize is the primes. Van der Corput (1939) proved that the primes contain infinitely many 3-APs, using the circle method of Hardy and Littlewood; Green and Tao proved arbitrarily long progressions, and Green, Tao and Ziegler (2010–12) then proved the Hardy–Littlewood asymptotic for the number of $k$-APs of primes up to $N$, and for any "finite complexity" linear pattern. The Möbius function's lack of correlation with nilsequences (Green–Tao) is a key input. Twin primes, a pattern of "infinite complexity" for these methods, remain out of reach, although Zhang (2013) and Maynard–Tao proved bounded gaps between primes.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Unprovability and ultrafilters">
+
+Ramsey's theorem was a lemma in logic (on the decision problem, 1930). A mild strengthening of the finite Ramsey theorem — the homogeneous set must be "large", of size at least its minimum element — is true but **unprovable in Peano arithmetic** (Paris–Harrington, 1977), because the corresponding Ramsey function grows faster than any function PA can prove total. In the other direction, ultrafilters give slick proofs: Hindman's theorem (any finite colouring of $\N$ has an infinite set all of whose finite sums have one colour) follows from the existence of an idempotent ultrafilter in $\beta\N$ (Galvin–Glazer). See <TopicLink id="math.found.incompleteness">incompleteness</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1907–1930.** Willem Mantel's triangle theorem (1907); Issai Schur (1916) proves that any finite colouring of $\{1, \dots, n\}$, $n$ large, has a monochromatic solution of $x + y = z$, motivated by Fermat's Last Theorem modulo $p$; B. L. van der Waerden (1927) proves his theorem on monochromatic progressions; Frank Ramsey (1930) proves his theorem as a lemma in logic.
+- **1935–1947.** Erdős and Szekeres rediscover Ramsey's theorem in a geometric problem (1935); Erdős and Turán conjecture that dense sets contain long progressions (1936); Pál Turán proves his theorem (1941), while in a labour camp; Erdős's random colourings found the probabilistic method (1947); Behrend's construction (1946).
+- **1953–1978.** Klaus Roth's theorem (1953); Gregory Freiman's structure theory of sets with small doubling (1960s); Endre Szemerédi's theorem (1969 for $k = 4$, 1975 in general) and the regularity lemma; Hillel Furstenberg's ergodic proof (1977); Ruzsa–Szemerédi's removal lemma (1978); Lovász's proof of Kneser's conjecture (1978).
+- **1983–2008.** Erdős–Szemerédi's sum–product theorem (1983); Imre Ruzsa's new proof of Freiman's theorem (1994); Elekes's incidence proof (1997); Timothy Gowers's quantitative Szemerédi theorem (1998–2001); Ben Green and Terence Tao's theorem on primes (2004); Zeev Dvir's Kakeya theorem (2008).
+- **2010–2024.** Larry Guth and Nets Katz on distinct distances (2010); Croot–Lev–Pach and Ellenberg–Gijswijt on cap sets (2016); Kelley–Meka on three-term progressions and Campos–Griffiths–Morris–Sahasrabudhe on diagonal Ramsey numbers (2023); the polynomial Freiman–Ruzsa conjecture over $\mathbb{F}_2^n$ (Gowers–Green–Manners–Tao, 2023), formalised in Lean within weeks; $R(5, 5) \le 46$ (Angeltveit–McKay, 2024).
+
+The subject grew largely from the Hungarian school around Paul Erdős — Turán, Rényi, Sós, Szemerédi, Lovász, Ruzsa, Elekes — and is now pursued worldwide, from Brazil (IMPA, where Morris works) and India to Israel, China and beyond.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Yufei Zhao, *Graph Theory and Additive Combinatorics: Exploring Structure and Randomness* (2023) — the best modern introduction: Turán, regularity, removal, Roth via Fourier, Freiman, sum–product, with exercises.
+- Terence Tao and Van H. Vu, *Additive Combinatorics* (2006) — the standard reference for sumsets, Freiman's theorem, Fourier and higher-order methods.
+- Stasys Jukna, *Extremal Combinatorics, with Applications in Computer Science* (2001; 2nd ed. 2011) — short chapters on Turán, Ramsey, the probabilistic and linear-algebra methods.
+- Noga Alon and Joel H. Spencer, *The Probabilistic Method* (1992; 4th ed. 2016) — random colourings, deletion, the local lemma.
+- Ronald L. Graham, Bruce L. Rothschild and Joel H. Spencer, *Ramsey Theory* (2nd ed. 1990).
+- Larry Guth, *Polynomial Methods in Combinatorics* (2016) — Dvir's theorem, incidences, distinct distances.
+- Ben Green and Terence Tao, "The primes contain arbitrarily long arithmetic progressions", *Annals of Mathematics* 167 (2008).
+- Jordan S. Ellenberg and Dion Gijswijt, "On large subsets of $\mathbb{F}_q^n$ with no three-term arithmetic progression", *Annals of Mathematics* 185 (2017).
+
+A reading path: Zhao, Chapters 1–6 (extremal graph theory, regularity, Roth) → Tao–Vu for the additive theory → Alon–Spencer for probabilistic tools → Guth for the polynomial method → the Green–Tao paper and the survey literature on higher-order Fourier analysis.
+
+</Section>

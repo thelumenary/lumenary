@@ -1,0 +1,550 @@
+---
+slug: elementary-topoi
+topic: math.cat.elementary-topoi
+title: Elementary topos theory
+subtitle: Categories that behave like the universe of sets — with finite limits, function sets and an object of truth values — in which truth can be partial and logic becomes intuitionistic.
+level: grad
+ages: Graduate
+minutes: 130
+order: 7035
+objectives:
+  - State the axioms of an elementary topos and verify them for $\cat{Set}$ and for presheaf categories $[\cat{C}^{\mathrm{op}}, \cat{Set}]$, computing their subobject classifiers
+  - Prove that the subobject classifier of a presheaf topos is the presheaf of sieves
+  - Prove that the subobjects of a presheaf form a Heyting algebra, and show that the topos of presheaves on $\{0 < 1\}$ is not Boolean
+  - Explain Grothendieck toposes as categories of sheaves, and why a topos is more general than a topological space
+  - State the axioms of ETCS and compare ETCS with ZFC, including their consistency strength
+narrators: []
+lean:
+  - Lumenary.ElementaryTopoi.Psh
+  - Lumenary.ElementaryTopoi.Sub
+  - Lumenary.ElementaryTopoi.Omega
+  - Lumenary.ElementaryTopoi.chi
+  - Lumenary.ElementaryTopoi.pullbackTrue
+  - Lumenary.ElementaryTopoi.pullbackTrue_chi
+  - Lumenary.ElementaryTopoi.chi_pullbackTrue
+  - Lumenary.ElementaryTopoi.subEquivHom
+  - Lumenary.ElementaryTopoi.Sub.himp
+  - Lumenary.ElementaryTopoi.Sub.le_himp_iff
+  - Lumenary.ElementaryTopoi.Sub.instHeytingAlgebra
+  - Lumenary.ElementaryTopoi.sub_one_trichotomy
+  - Lumenary.ElementaryTopoi.sub_one_not_boolean
+  - Lumenary.ElementaryTopoi.not_not_later
+  - Lumenary.ElementaryTopoi.presheaf_category_is_topos
+  - Lumenary.ElementaryTopoi.presheaf_tensor_eq_prod
+compute: [elementary_topoi_omega]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What is special about sets?">
+
+Almost all of mathematics can be carried out inside the category $\cat{Set}$ of sets and functions. Which features of $\cat{Set}$ does it actually use? Three stand out:
+
+1. we can form **finite limits** — products, solution sets of equations, inverse images;
+2. we can form **function sets** $Y^X$, and functions of two variables correspond to functions into function sets;
+3. **subsets are the same as predicates**: a subset $A \subseteq X$ is the same thing as its characteristic function $\chi_A : X \to \{0, 1\}$.
+
+Around 1969–70, F. William Lawvere and Myles Tierney took these three features as *axioms* for a category. The result, an **elementary topos**, turned out to describe a remarkable range of "universes of sets": sheaves on a topological space, sets equipped with a group action, sets that vary along stages of knowledge, a universe in which every function $\N \to \N$ is computable. Mathematics can be done inside each of them — but in most of them the logic is **intuitionistic**: a statement can be "true on part of the space", and the law of excluded middle need not hold.
+
+About a decade earlier Alexander Grothendieck had reached the same objects from algebraic geometry, as the right notion of "generalised space" for cohomology. Topos theory is where these two lines meet. This lesson builds on <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink> (cartesian closed categories, Heyting algebras), <TopicLink id="math.cat.limits-colimits">limits</TopicLink> and <TopicLink id="math.cat.yoneda">the Yoneda lemma</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Truth values that are not just true or false">
+
+Take a very small space, the **Sierpiński space** $S = \{a, b\}$ whose open sets are $\varnothing \subset \{a\} \subset S$. A sheaf $F$ on $S$ amounts to a set $F(S)$ of global sections, a set $F(\{a\})$ of sections over the open point, and a restriction map $F(S) \to F(\{a\})$. (The empty open set contributes a single section, and no cover of $S$ omits $S$ itself, so there is no gluing condition.)
+
+So consider a set $A_1$ ("sections over the whole space"), a set $A_0$ ("sections over the open point") and a map $\mathrm{res} : A_1 \to A_0$, together with a sub-collection: subsets $S_1 \subseteq A_1$ and $S_0 \subseteq A_0$ with $\mathrm{res}(S_1) \subseteq S_0$. For a global section $x \in A_1$, *how true* is "$x \in S$"? There are three possibilities:
+
+- $x \in S_1$: true everywhere;
+- $x \notin S_1$ but $\mathrm{res}(x) \in S_0$: true on the open point $\{a\}$ only;
+- $\mathrm{res}(x) \notin S_0$: true nowhere.
+
+The truth value of "$x \in S$" is the **open set on which it holds**: $S$, $\{a\}$ or $\varnothing$. In $\cat{Set}$ — sheaves on a one-point space — only "everywhere" and "nowhere" are possible, and we get the familiar two truth values.
+
+<Figure caption="A presheaf on 0 < 1: three sections a, b, c at stage 1 restrict to sections x, y at stage 0. The sub-presheaf S (filled) contains a and x. Then 'a is in S' is true, 'b is in S' is true only after restriction (b is not in S, but its restriction x is), and 'c is in S' is false.">
+<svg viewBox="0 0 380 190" role="img" aria-label="Three dots a, b, c in a top row labelled stage 1 map by restriction arrows to two dots x, y in a bottom row labelled stage 0; a and x are filled to show the sub-presheaf.">
+  <text x="20" y="54" fontSize="13" fill="var(--ink-2)">stage 1</text>
+  <text x="20" y="154" fontSize="13" fill="var(--ink-2)">stage 0</text>
+  <line x1="120" y1="58" x2="166" y2="138" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="210" y1="58" x2="174" y2="138" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="300" y1="58" x2="300" y2="138" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="120" cy="50" r="9" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="210" cy="50" r="9" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="300" cy="50" r="9" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="170" cy="146" r="9" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="300" cy="146" r="9" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <text x="120" y="30" fontSize="14" textAnchor="middle" fill="var(--ink-2)">a</text>
+  <text x="210" y="30" fontSize="14" textAnchor="middle" fill="var(--ink-2)">b</text>
+  <text x="300" y="30" fontSize="14" textAnchor="middle" fill="var(--ink-2)">c</text>
+  <text x="170" y="178" fontSize="14" textAnchor="middle" fill="var(--ink-2)">x</text>
+  <text x="300" y="178" fontSize="14" textAnchor="middle" fill="var(--ink-2)">y</text>
+  <text x="340" y="104" fontSize="12" fill="var(--ink-2)">res</text>
+</svg>
+</Figure>
+
+Topos theory takes this seriously: an object $\Omega$ of truth values, whose "elements" may be partial truths, and a logic computed from it.
+
+<Analogy>
+
+Lawvere's slogan is that the objects of a topos are **variable sets** — sets varying over the points of a space, over stages of time or knowledge, or under the action of a group. The slogan is a guide to intuition, not a definition: the definition below mentions only objects, arrows and universal properties.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $\mathcal{E}$ is a category with finite limits; $1$ denotes a terminal object.
+
+<Definition term="subobject">
+
+A **subobject** of $X$ is an isomorphism class of monomorphisms $m : U \rightarrowtail X$, where $m \cong m'$ when $m' = m \circ \theta$ for an isomorphism $\theta$. Subobjects of $X$ form a poset $\mathrm{Sub}(X)$, ordered by factorisation. Pulling back along $f : Y \to X$ gives a monotone map $f^* : \mathrm{Sub}(X) \to \mathrm{Sub}(Y)$.
+
+</Definition>
+
+<Definition term="subobject classifier">
+
+A **subobject classifier** is an object $\Omega$ with an arrow $\mathrm{true} : 1 \to \Omega$ such that for every monomorphism $m : U \rightarrowtail X$ there is a **unique** arrow $\chi_m : X \to \Omega$ for which the square below is a pullback. Equivalently, $\mathrm{Sub}(X) \cong \mathcal{E}(X, \Omega)$, naturally in $X$: the functor $\mathrm{Sub} : \mathcal{E}^{\mathrm{op}} \to \cat{Set}$ is representable, represented by $\Omega$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "U", tex: "U", row: 0, col: 0 },
+    { id: "one", tex: "1", row: 0, col: 1 },
+    { id: "X", tex: "X", row: 1, col: 0 },
+    { id: "Om", tex: "\\Omega", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "U", to: "one", tex: "!" },
+    { from: "U", to: "X", tex: "m", style: "hook", labelSide: "right" },
+    { from: "one", to: "Om", tex: "\\mathrm{true}" },
+    { from: "X", to: "Om", tex: "\\chi_m", style: "dashed", labelSide: "right" },
+  ]}
+  caption="The subobject classifier: every mono $m$ is the pullback of $\mathrm{true}$ along exactly one $\chi_m$."
+/>
+
+<Definition term="elementary topos">
+
+An **elementary topos** is a category $\mathcal{E}$ that
+
+1. has all finite limits,
+2. is **cartesian closed**: every functor $- \times X$ has a right adjoint $(-)^X$, so $\mathcal{E}(Z \times X, Y) \cong \mathcal{E}(Z, Y^X)$ naturally, and
+3. has a subobject classifier $\mathrm{true} : 1 \to \Omega$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "ZX", tex: "Z \\times X", row: 0, col: 0 },
+    { id: "YXX", tex: "Y^X \\times X", row: 1, col: 0 },
+    { id: "Y", tex: "Y", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "ZX", to: "YXX", tex: "\\lambda f \\times \\mathrm{id}", style: "dashed", labelSide: "right" },
+    { from: "YXX", to: "Y", tex: "\\mathrm{ev}", labelSide: "right" },
+    { from: "ZX", to: "Y", tex: "f" },
+  ]}
+  caption="Cartesian closure: each $f : Z \times X \to Y$ factors through evaluation by a unique $\lambda f : Z \to Y^X$."
+/>
+
+Combining (2) and (3) gives **power objects** $PX = \Omega^X$ with $\mathrm{Sub}(Z \times X) \cong \mathcal{E}(Z, PX)$; a classical theorem says that "finite limits + power objects" is an equivalent definition. Finite colimits are *not* assumed: Robert Paré (1974) proved that they follow, because the functor $P = \Omega^{(-)} : \mathcal{E}^{\mathrm{op}} \to \mathcal{E}$ is monadic.
+
+<Definition term="Boolean topos">
+
+A topos is **Boolean** if every subobject $U \rightarrowtail X$ has a complement: some $V$ with $U \wedge V = 0$ and $U \vee V = X$ in $\mathrm{Sub}(X)$. Equivalently, $[\mathrm{true}, \mathrm{false}] : 1 + 1 \to \Omega$ is an isomorphism, where $\mathrm{false}$ classifies $0 \rightarrowtail 1$.
+
+</Definition>
+
+<Definition term="presheaf; sieve">
+
+For a small category $\cat{C}$, a **presheaf** is a functor $X : \cat{C}^{\mathrm{op}} \to \cat{Set}$; for $f : d \to c$ we write $X(f) : X(c) \to X(d)$, $x \mapsto x \cdot f$ ("restriction along $f$"). A **sieve** on $c$ is a set $S$ of arrows with codomain $c$ that is closed under precomposition: $f \in S$ implies $f \circ g \in S$. For $h : c' \to c$, the **pullback** of $S$ is the sieve $h^*S = \{ g : d \to c' \mid h \circ g \in S \}$ on $c'$. The **maximal sieve** $t_c$ consists of all arrows into $c$.
+
+</Definition>
+
+<Definition term="Grothendieck topology; Grothendieck topos">
+
+A **Grothendieck topology** $J$ on $\cat{C}$ assigns to each object $c$ a set $J(c)$ of "covering" sieves such that the maximal sieve covers, covers are stable under pullback ($S \in J(c) \Rightarrow h^*S \in J(c')$), and covering is local (if $S \in J(c)$ and $R$ is a sieve on $c$ with $f^*R \in J(d)$ for all $f : d \to c$ in $S$, then $R \in J(c)$). A presheaf $X$ is a **sheaf** if, for every covering sieve $S$ on $c$, every compatible family $(x_f \in X(d))_{f : d \to c \in S}$ — one with $x_f \cdot g = x_{f \circ g}$ — is $(x \cdot f)_f$ for exactly one $x \in X(c)$. A **Grothendieck topos** is a category equivalent to the category $\mathrm{Sh}(\cat{C}, J)$ of sheaves on a small site.
+
+</Definition>
+
+<Definition term="natural numbers object">
+
+A **natural numbers object** is a diagram $1 \xrightarrow{0} N \xrightarrow{s} N$ such that for every $1 \xrightarrow{a} A \xrightarrow{u} A$ there is a unique $h : N \to A$ with $h \circ 0 = a$ and $h \circ s = u \circ h$ — definition by recursion, as an axiom.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Sets">
+
+$\cat{Set}$ is a topos with $\Omega = \{0, 1\}$ and $\mathrm{true} = 1$ (proved below). It is Boolean and has a natural numbers object $\N$. The category $\cat{FinSet}$ of finite sets is also a topos — same $\Omega$, finite function sets — but has no natural numbers object.
+
+</Example>
+
+<Example title="Sets with a group action">
+
+For a group $G$, the category $G\text{-}\cat{Set}$ of left $G$-sets is the presheaf category on the one-object category with arrows the elements of $G$ (with composition reversed). A sieve on the unique object is a set of arrows closed under precomposition; since every arrow is invertible, a non-empty sieve contains everything. So $\Omega = \{0, 1\}$ with the trivial action, and $G\text{-}\cat{Set}$ is **Boolean**. Yet for $G \neq 1$ it is not equivalent to $\cat{Set}$: the epimorphism $G \to 1$ ($G$ acting on itself) has no section, because a section would pick a point of $G$ fixed by every group element. Boolean does not imply "every epimorphism splits"; by **Diaconescu's theorem** (1975) the converse implication does hold in every topos.
+
+</Example>
+
+<Example title="The Sierpiński topos">
+
+Presheaves on the poset $\mathbf{2} = \{0 < 1\}$ (viewed as a category with one arrow $0 \to 1$) are exactly the triples $(A_1, A_0, \mathrm{res} : A_1 \to A_0)$ of the intuition section, and this category is equivalent to sheaves on the Sierpiński space. By the theorem below its subobject classifier is the presheaf of sieves:
+
+- sieves on $0$: $\varnothing$ and $\{\mathrm{id}_0\}$, so $\Omega(0)$ has 2 elements;
+- sieves on $1$: $\varnothing$, $\{0 \to 1\}$ and $\{0 \to 1, \mathrm{id}_1\}$, so $\Omega(1)$ has 3 elements;
+- restriction $\Omega(1) \to \Omega(0)$ pulls back along $0 \to 1$: $\varnothing \mapsto \varnothing$, while both non-empty sieves go to $\{\mathrm{id}_0\}$.
+
+The three elements of $\Omega(1)$ are exactly the three truth values "true", "true only after restriction" and "false" of the intuition section.
+
+</Example>
+
+<Example title="Sheaves on a space">
+
+For a topological space $X$, $\mathrm{Sh}(X)$ — sheaves on the site of open sets, covered by open covers — is a Grothendieck topos. Its subobject classifier is $\Omega(U) = \{ V \subseteq U \text{ open} \}$ with restriction $V \mapsto V \cap U'$. For a subsheaf $A \subseteq F$ and $s \in F(U)$, $\chi(s)$ is the **largest open subset of $U$ on which $s$ belongs to $A$** (the union of all such opens; the restrictions of $s$ glue inside $A$ because $A$ is a sheaf). The global truth values $\mathrm{Sub}(1) \cong \mathcal{O}(X)$ form the frame of open sets, whose Heyting negation is $\neg V = \operatorname{int}(X \setminus V)$. So for $X = \R$ and $V = (0, \infty)$ we get $V \vee \neg V = \R \setminus \{0\}$: excluded middle fails on the open set of truth values.
+
+</Example>
+
+<Example title="Non-examples">
+
+- $\cat{Grp}$: the trivial group is both initial and terminal. In any topos the initial object is *strict* (every arrow into $0$ is an isomorphism), so $0 \cong 1$ would make every arrow $X \to 1 \cong 0$ an isomorphism and every object initial. Hence a topos with $0 \cong 1$ is trivial, and $\cat{Grp}$ is not a topos.
+- $\cat{Pos}$ (posets and monotone maps) is cartesian closed but not a topos: the identity function from the two-element discrete poset to the chain $0 < 1$ is monic and epic but not an isomorphism, whereas every topos is *balanced* (monic + epic implies iso, since every mono is the equaliser of $\chi_m$ and $\mathrm{true} \circ {!}$).
+- $\cat{Top}$ is not even cartesian closed: $- \times \mathbb{Q}$ does not preserve all quotients, so it cannot be a left adjoint.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Set and presheaf categories are toposes">
+
+<Theorem name="Theorem 1 (Set is a topos)">
+
+$\cat{Set}$ is an elementary topos, with subobject classifier $\mathrm{true} = 1 : \{*\} \to \{0, 1\}$.
+
+</Theorem>
+
+<Proof>
+
+Finite limits: the one-point set is terminal, $X \times Y$ is a product, and $\{(x, y) \mid f(x) = g(y)\}$ is a pullback of $f : X \to Z \leftarrow Y : g$. Exponentials: let $Y^X$ be the set of all functions $X \to Y$; a function $f : Z \times X \to Y$ corresponds to $\lambda f(z) = f(z, -)$, and this is a bijection natural in $Z$ (currying). Classifier: monomorphisms in $\cat{Set}$ are injections, and $m : U \rightarrowtail X$ is isomorphic to the inclusion of its image $A = m(U)$. Define $\chi(x) = 1$ if $x \in A$ and $0$ otherwise. The pullback of $\mathrm{true}$ along $\chi$ is $\{x \mid \chi(x) = 1\} = A$, so the square is a pullback. If $\phi : X \to \{0, 1\}$ also has pullback $A$, then $\phi(x) = 1 \iff x \in A \iff \chi(x) = 1$, so $\phi = \chi$, since $\{0,1\}$ has only two elements.
+
+</Proof>
+
+Now fix a small category $\cat{C}$ and write $\widehat{\cat{C}} = [\cat{C}^{\mathrm{op}}, \cat{Set}]$ and $y : \cat{C} \to \widehat{\cat{C}}$ for the Yoneda embedding, $y(c) = \cat{C}(-, c)$.
+
+<Theorem name="Lemma 2 (subobjects of presheaves)">
+
+A natural transformation $m : U \to X$ in $\widehat{\cat{C}}$ is a monomorphism if and only if every component $m_c$ is injective. Hence $\mathrm{Sub}(X)$ is isomorphic to the poset of **subpresheaves** of $X$: families $U(c) \subseteq X(c)$ closed under restriction.
+
+</Theorem>
+
+<Proof>
+
+If every $m_c$ is injective, $m$ is clearly monic. Conversely let $m$ be monic and $u, v \in U(c)$ with $m_c(u) = m_c(v)$. By Yoneda, $u$ and $v$ correspond to natural transformations $\hat u, \hat v : y(c) \to U$, and $m \circ \hat u$, $m \circ \hat v$ correspond to $m_c(u) = m_c(v)$, so $m \circ \hat u = m \circ \hat v$. Since $m$ is monic, $\hat u = \hat v$, i.e. $u = v$. Finally, a pointwise injective $m$ is isomorphic to the inclusion of its image, which is a subpresheaf by naturality.
+
+</Proof>
+
+<Theorem name="Theorem 3 (presheaf categories are toposes)">
+
+$\widehat{\cat{C}}$ is an elementary topos. Its subobject classifier is the **presheaf of sieves**: $\Omega(c)$ is the set of sieves on $c$, $\Omega(h)(S) = h^*S$, and $\mathrm{true}_c = t_c$ is the maximal sieve. The characteristic map of a subpresheaf $U \subseteq X$ is
+
+$$
+\chi_c(x) = \{\, f : d \to c \mid x \cdot f \in U(d) \,\}.
+$$
+
+</Theorem>
+
+<Proof>
+
+*Finite limits* are computed objectwise: $(X \times_Z Y)(c) = X(c) \times_{Z(c)} Y(c)$, with the evident restriction maps, has the universal property because a cone in $\widehat{\cat{C}}$ is a cone at every object, naturally.
+
+*Exponentials.* If $Y^X$ exists, Yoneda forces $Y^X(c) \cong \widehat{\cat{C}}(y(c), Y^X) \cong \widehat{\cat{C}}(y(c) \times X, Y)$. Defining $Y^X(c) = \widehat{\cat{C}}(y(c) \times X, Y)$, with restriction by precomposition with $y(h) \times \mathrm{id}$, one checks that $Z \times X \to Y$ corresponds naturally to $Z \to Y^X$; we omit this routine verification (Mac Lane and Moerdijk 1992, Chapter I).
+
+*The classifier.* First, $\Omega$ is a presheaf: $h^*S$ is a sieve, $\mathrm{id}^*S = S$ and $(h \circ k)^*S = k^*(h^*S)$. Note the key fact
+
+$$
+f \in S \iff f^*S = t_d \qquad (f : d \to c), \tag{$*$}
+$$
+
+since $f^*S$ contains $\mathrm{id}_d$ iff $f \in S$, and a sieve containing an identity is maximal.
+
+Let $U \subseteq X$ be a subpresheaf and define $\chi$ as in the statement.
+
+- *$\chi_c(x)$ is a sieve:* if $x \cdot f \in U(d)$ and $g : e \to d$, then $x \cdot (f \circ g) = (x \cdot f) \cdot g \in U(e)$, because $U$ is closed under restriction.
+- *$\chi$ is natural:* for $h : c' \to c$, $h^*\chi_c(x) = \{ g \mid x \cdot (h \circ g) \in U \} = \{ g \mid (x \cdot h) \cdot g \in U \} = \chi_{c'}(x \cdot h)$.
+- *Pullback:* pullbacks are computed objectwise, and by $(*)$ with $f = \mathrm{id}_c$, $\chi_c(x) = t_c \iff \mathrm{id}_c \in \chi_c(x) \iff x \in U(c)$. So the pullback of $\mathrm{true}$ along $\chi$ is $U$.
+- *Uniqueness:* let $\phi : X \to \Omega$ be natural with pullback of $\mathrm{true}$ equal to $U$. For $x \in X(c)$ and $f : d \to c$,
+  $$
+  f \in \phi_c(x) \overset{(*)}{\iff} f^*\phi_c(x) = t_d \iff \phi_d(x \cdot f) = t_d \iff x \cdot f \in U(d) \iff f \in \chi_c(x),
+  $$
+  using naturality of $\phi$ in the second step and the pullback property in the third. So $\phi = \chi$.
+
+By Lemma 2 every subobject is represented by a subpresheaf, so $\mathrm{true} : 1 \to \Omega$ is a subobject classifier.
+
+</Proof>
+
+<Note>
+
+Yoneda also *predicts* $\Omega$: if a classifier exists, $\Omega(c) \cong \widehat{\cat{C}}(y(c), \Omega) \cong \mathrm{Sub}(y(c))$, and a subpresheaf of $\cat{C}(-, c)$ is precisely a sieve on $c$. For sheaves on a site the classifier is the sheaf of *closed* sieves (Mac Lane and Moerdijk 1992, Chapter III).
+
+</Note>
+
+</Section>
+
+<Section id="logic" kind="proof" title="The internal logic is intuitionistic">
+
+<Theorem name="Theorem 4 (subobjects form a Heyting algebra)">
+
+For a presheaf $X$ on $\cat{C}$, the subpresheaves of $X$ form a Heyting algebra, with $\wedge$ and $\vee$ computed objectwise, $0 = \varnothing$, $1 = X$ and
+
+$$
+(U \Rightarrow V)(c) = \{\, x \in X(c) \mid \text{for all } f : d \to c,\; x \cdot f \in U(d) \implies x \cdot f \in V(d) \,\}.
+$$
+
+</Theorem>
+
+<Proof>
+
+Objectwise intersections and unions of subpresheaves are subpresheaves, and the distributive lattice laws hold objectwise. $U \Rightarrow V$ is closed under restriction: if $x \in (U \Rightarrow V)(c)$ and $g : e \to c$, then for $f : d \to e$ we have $(x \cdot g) \cdot f = x \cdot (g \circ f)$, so the condition for $x \cdot g$ at $f$ is the condition for $x$ at $g \circ f$. Residuation, $W \le (U \Rightarrow V) \iff W \wedge U \le V$:
+
+- ($\Rightarrow$) if $x \in W(c) \cap U(c)$, apply the defining condition with $f = \mathrm{id}_c$ to get $x \in V(c)$;
+- ($\Leftarrow$) if $x \in W(c)$ and $x \cdot f \in U(d)$, then $x \cdot f \in W(d)$ because $W$ is a subpresheaf, so $x \cdot f \in (W \wedge U)(d) \subseteq V(d)$.
+
+</Proof>
+
+The quantifier "for all $f : d \to c$" — at every stage reachable from $c$ — is what separates $\Rightarrow$ from the Boolean $\neg U \cup V$. In particular negation is $(\neg U)(c) = \{ x \mid x \cdot f \notin U(d) \text{ for all } f \}$: "$x$ is *never* in $U$, at any stage reachable by restriction".
+
+More generally, in **every** elementary topos each $\mathrm{Sub}(X)$ is a Heyting algebra, the maps $f^*$ are Heyting algebra maps with adjoints $\exists_f \dashv f^* \dashv \forall_f$, and $\Omega$ is an internal Heyting algebra. This is what it means to say that the **internal logic of a topos is intuitionistic**: higher-order intuitionistic logic is sound for interpretation in any topos, and complete with respect to all toposes (Lambek and Scott 1986). For proofs see Mac Lane and Moerdijk (1992), Chapters IV and VI.
+
+<Theorem name="Proposition 5 (truth values of a presheaf topos on a poset)">
+
+Let $P$ be a poset, viewed as a category. Then $\mathrm{Sub}(1)$ in $\widehat{P}$ is the Heyting algebra of **down-sets** of $P$, with $S \Rightarrow T = \{ p \mid \text{for all } q \le p,\ q \in S \implies q \in T \}$. In particular, for $P = \{0 < 1\}$ there are exactly three truth values $0 < \tfrac12 < 1$ (the down-sets $\varnothing \subset \{0\} \subset \{0, 1\}$), and the topos is **not Boolean**: $\neg \tfrac12 = 0$, so $\tfrac12 \vee \neg\tfrac12 = \tfrac12 \neq 1$, although $\neg\neg\tfrac12 = 1$.
+
+</Theorem>
+
+<Proof>
+
+$1(p) = \{*\}$, so a subpresheaf of $1$ is a set $S$ of objects with $p \in S$, $q \le p \Rightarrow q \in S$: a down-set. The formula for $\Rightarrow$ is Theorem 4. For $\{0 < 1\}$: $\neg\{0\} = \{p \mid \text{no } q \le p \text{ lies in } \{0\}\} = \varnothing$, since $0 \le p$ for both $p$. Hence $\{0\} \vee \neg\{0\} = \{0\}$, and $\neg\neg\{0\} = \neg\varnothing = \{0, 1\}$. If $\{0\}$ had a complement $T$, disjointness would force $0 \notin T$, hence $T = \varnothing$ (a down-set), and then $\{0\} \cup T \neq \{0, 1\}$.
+
+</Proof>
+
+Since every finite distributive lattice is the lattice of down-sets of its poset of join-irreducible elements (Birkhoff's representation theorem), and a finite distributive lattice is automatically a Heyting algebra, **every finite Heyting algebra occurs as $\mathrm{Sub}(1)$ of a presheaf topos on a finite poset**. Combined with the finite model property of intuitionistic propositional logic, a propositional formula holds for all truth values of all such toposes exactly when it is intuitionistically provable. This is Kripke semantics in topos form: a Kripke frame $(W, \le)$ corresponds to presheaves on $W^{\mathrm{op}}$.
+
+</Section>
+
+<Section id="etcs" kind="human" title="ETCS: set theory in the language of arrows">
+
+Lawvere's **Elementary Theory of the Category of Sets** (1964) predates elementary toposes and axiomatises sets *structurally*: there is no global membership relation, only sets and functions. In the modern topos-theoretic packaging (following Lawvere, Tierney and others around 1970), ETCS says:
+
+<Definition term="ETCS">
+
+A model of ETCS is a category $\mathcal{S}$ such that
+
+1. $\mathcal{S}$ is an elementary topos (finite limits, function sets, a subobject classifier);
+2. $\mathcal{S}$ is **well-pointed**: $0 \not\cong 1$, and arrows are determined by their effect on elements, where an *element* of $X$ is an arrow $1 \to X$ — if $f \circ x = g \circ x$ for all $x : 1 \to X$ then $f = g$;
+3. $\mathcal{S}$ has a **natural numbers object**;
+4. **choice**: every epimorphism has a section.
+
+</Definition>
+
+Leinster (2014) spells these out as ten informal axioms — associativity of composition, a set with exactly one element, functions determined by their effect on elements, and so on. Some consequences: a well-pointed topos is Boolean and two-valued, so $\Omega \cong 1 + 1 = \{\mathrm{false}, \mathrm{true}\}$; and by Diaconescu's theorem the choice axiom alone already implies excluded middle.
+
+**Comparison with ZFC.**
+
+| | ZFC | ETCS |
+| --- | --- | --- |
+| Primitive notions | sets and a global membership relation $\in$ | sets (objects) and functions (arrows), with composition |
+| Elements | sets are made of sets; "is $2 \in 3$?" is meaningful | an element of $X$ is an arrow $1 \to X$; elements have no internal structure |
+| Subsets | subsets via Separation | subobjects, classified by maps $X \to \Omega$ |
+| Extensionality | two sets with the same members are equal | well-pointedness: two functions agreeing on elements are equal |
+| Infinity | an inductive set | a natural numbers object |
+| Replacement | an axiom scheme | not included |
+
+**Consistency strength.** ETCS is equiconsistent with **bounded Zermelo set theory with choice** — Zermelo set theory with Separation restricted to formulas whose quantifiers are bounded, and without Replacement (Mitchell 1972, Cole 1973, Osius 1974). Since ZFC proves the consistency of bounded Zermelo set theory (for instance $V_{\omega + \omega}$ is a model), ZFC proves the consistency of ETCS; and ETCS cannot prove the consistency of ZFC unless ZFC is inconsistent (ZFC interprets ETCS, so this would contradict Gödel's second incompleteness theorem). So ETCS is **strictly weaker than ZFC** in consistency strength. Adding a suitable categorical **axiom of replacement** to ETCS yields a theory of the same strength as ZFC (McLarty 2004; see also Leinster 2014). Much of mathematics outside set theory itself uses neither Replacement nor global membership — a point stressed by Lawvere and by Mac Lane — which is why many working mathematicians find ETCS a faithful description of how sets are actually used; see <TopicLink id="math.found.zfc">ZFC</TopicLink> for the other side.
+
+</Section>
+
+<Section id="formal" kind="formal" title="The Sierpiński topos in Lean">
+
+We formalise the subobject classifier of the Sierpiński topos from scratch, and cite Mathlib for the general theorem about presheaf categories.
+
+A presheaf on $\{0 < 1\}$ is a pair of types with a restriction map; subpresheaves are pairs of sets closed under restriction (Lemma 2 justifies using them as subobjects):
+
+<Lean decl="Lumenary.ElementaryTopoi.Psh" />
+
+<Lean decl="Lumenary.ElementaryTopoi.Sub" />
+
+A sieve on $1$ is encoded by two propositions — "contains $\mathrm{id}_1$" and "contains $0 \to 1$" — with the first implying the second. This is the sieve description of Theorem 3, and it is faithful even intuitionistically: we never decide whether a proposition is true.
+
+<Lean decl="Lumenary.ElementaryTopoi.Omega" />
+
+The characteristic map and the pullback of $\mathrm{true}$ are defined exactly as in the proof of Theorem 3, and the two round trips are the existence and uniqueness halves of the classifier axiom:
+
+<Lean decl="Lumenary.ElementaryTopoi.chi" />
+
+<Lean decl="Lumenary.ElementaryTopoi.pullbackTrue" />
+
+<Lean decl="Lumenary.ElementaryTopoi.pullbackTrue_chi" />
+
+<Lean decl="Lumenary.ElementaryTopoi.chi_pullbackTrue" />
+
+<Lean decl="Lumenary.ElementaryTopoi.subEquivHom" />
+
+Theorem 4 for this topos: Heyting implication is defined with the "now and after restriction" clause, the residuation law is proved, and Mathlib's `HeytingAlgebra.ofHImp` packages the result as a genuine `HeytingAlgebra` instance — so all of Mathlib's Heyting-algebra lemmas apply to subpresheaves.
+
+<Lean decl="Lumenary.ElementaryTopoi.Sub.himp" />
+
+<Lean decl="Lumenary.ElementaryTopoi.Sub.le_himp_iff" />
+
+<Lean decl="Lumenary.ElementaryTopoi.Sub.instHeytingAlgebra" />
+
+Proposition 5: three truth values, a subobject without complement, and a truth value that is "not not true" without being true.
+
+<Lean decl="Lumenary.ElementaryTopoi.sub_one_trichotomy" />
+
+<Lean decl="Lumenary.ElementaryTopoi.sub_one_not_boolean" />
+
+<Lean decl="Lumenary.ElementaryTopoi.not_not_later" />
+
+The axiom lists shown with each declaration are instructive: the classifier bijection and `not_not_later` use only `propext` and `Quot.sound`, not `Classical.choice`, while the trichotomy — a statement *about* the topos, made in our classical metatheory — needs a classical case split on two propositions and so depends on `Classical.choice`.
+
+Finally, Mathlib proves the general Theorem 3: every presheaf category on a small category has finite limits, a subobject classifier (built, as in our proof, from the presheaf of sieves) and internal homs for the pointwise product.
+
+<Lean decl="Lumenary.ElementaryTopoi.presheaf_category_is_topos" />
+
+The closed structure is with respect to Mathlib's monoidal structure on functor categories, which is the pointwise cartesian product — so this is cartesian closure:
+
+<Lean decl="Lumenary.ElementaryTopoi.presheaf_tensor_eq_prod" />
+
+**What is and is not formalised.** Formalised: the Sierpiński classifier (independently), the Heyting algebra of subpresheaves on $\{0 < 1\}$ and its failure to be Boolean (independently), and Theorem 3 in general (from Mathlib). Not formalised here: our concrete `Psh` is not proved equivalent to Mathlib's functor category on $\{0 < 1\}^{\mathrm{op}}$; Theorem 4 for arbitrary presheaf categories; the Heyting algebra of subobjects in an arbitrary topos and the internal language (Mathlib has the lattice of subobjects in a general category, `Subobject B`, but we found no Heyting structure or internal language for toposes); and ETCS.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing truth values">
+
+For presheaves on a finite poset everything is finite and can be computed: the sieves $\Omega(p)$, the subpresheaves of a small presheaf, all natural maps into $\Omega$, and the Heyting operations on truth values. The experiment checks the classifier bijection of Theorem 3 for every presheaf on $\{0 < 1\}$ with at most four sections at stage 1 and three at stage 0, and finds which posets give Boolean truth values.
+
+<Python id="elementary_topoi_omega" />
+
+Two things to notice. The number of subpresheaves of $A$ — and hence, by the bijection, of natural maps $A \to \Omega$ — is $\prod_{y \in A_0} (1 + 2^{k_y})$, where $k_y$ is the size of the fibre of $\mathrm{res}$ over $y$ (see the exercises). And among the posets tried only the discrete one gives a Boolean algebra of truth values. This is always so: the only possible complement of a down-set $D$ is $P \setminus D$, and if $a < b$ then $P \setminus {\downarrow} a$ contains $b$ but not $a$, so it is not a down-set and ${\downarrow} a$ has no complement. The computation is exhaustive only for the listed finite cases; the theorems above are what cover all presheaves.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Classical tautologies under three truth values">
+
+The truth-table explorer below computes **classical** (two-valued) truth tables — the logic of the Boolean topos $\cat{Set}$. Both formulas are classical tautologies, so their columns agree.
+
+<TruthTable formula="¬¬(p ∨ ¬p)" compare="p ∨ ¬p" showSubformulas={true} title="Two classical tautologies" />
+
+In the Sierpiński topos the truth values form the chain $0 < \tfrac12 < 1$, where $a \Rightarrow b = 1$ if $a \le b$ and $a \Rightarrow b = b$ otherwise, and $\neg a = a \Rightarrow 0$:
+
+| $p$ | $\neg p$ | $p \vee \neg p$ | $\neg\neg p$ | $\neg\neg(p \vee \neg p)$ | $\neg\neg p \Rightarrow p$ |
+| --- | --- | --- | --- | --- | --- |
+| $0$ | $1$ | $1$ | $0$ | $1$ | $1$ |
+| $\tfrac12$ | $0$ | $\tfrac12$ | $1$ | $1$ | $\tfrac12$ |
+| $1$ | $0$ | $1$ | $1$ | $1$ | $1$ |
+
+Try other formulas in the explorer and then evaluate them by hand on the three-element chain. Peirce's law $((p \to q) \to p) \to p$ is a classical tautology that fails at $p = \tfrac12$, $q = 0$. The weak De Morgan law $\neg(p \wedge q) \to \neg p \vee \neg q$ survives on the chain, but fails for presheaves on the poset $0 < 2 > 1$ (take $p$, $q$ to be the down-sets $\{0\}$ and $\{1\}$). In the other direction, a formula that is not a classical tautology already fails at the truth values $0$ and $1$ of any non-degenerate topos.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A topos is a kind of topological space."** Every space $X$ gives a topos $\mathrm{Sh}(X)$, and for sober spaces $X$ can be recovered from it. But many toposes are not of this form. In $G\text{-}\cat{Set}$ for a non-trivial group $G$, the terminal object has only two subobjects, so if it were $\mathrm{Sh}(X)$ the frame $\mathcal{O}(X)$ would be $\{0, 1\}$ and the topos would be $\mathrm{Sh}(\mathrm{pt}) \simeq \cat{Set}$ — but $G$ is a non-initial $G$-set with no global element, which is impossible in $\cat{Set}$. Toposes generalise spaces (and even locales), not the other way round; and elementary toposes such as $\cat{FinSet}$ or Hyland's effective topos are not Grothendieck toposes at all.
+
+</Misconception>
+
+<Misconception>
+
+**"The internal logic of every topos is classical, because that of $\cat{Set}$ is."** The internal logic is intuitionistic in general: in the Sierpiński topos, and in $\mathrm{Sh}(\R)$, excluded middle fails for some truth values. Boolean toposes (such as $\cat{Set}$ and $G\text{-}\cat{Set}$) are the special case.
+
+</Misconception>
+
+<Misconception>
+
+**"Intuitionistic logic says excluded middle is false."** It does not assume excluded middle; it does not refute it. $\neg\neg(p \vee \neg p)$ holds in every topos, and $\cat{Set}$ is a topos where $p \vee \neg p$ holds outright.
+
+</Misconception>
+
+<Misconception>
+
+**"A topos is a model of ZFC."** An elementary topos need not even be well-pointed or have a natural numbers object. The toposes that model set theory à la Lawvere are the well-pointed ones with a natural numbers object and choice (ETCS), a theory equiconsistent with bounded Zermelo set theory — strictly weaker than ZFC.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Truth values are open sets">
+
+In $\mathrm{Sh}(X)$ the truth value of a proposition about sections is the open set where it holds, and $\mathrm{Sub}(1) \cong \mathcal{O}(X)$. Only the frame of opens matters: $\mathrm{Sh}(X)$ depends on $X$ only through $\mathcal{O}(X)$, so toposes see *locales* — "spaces without points" — rather than point-set spaces. A **point** of a topos $\mathcal{E}$ is a geometric morphism $\cat{Set} \to \mathcal{E}$; for a sober space, the points of $\mathrm{Sh}(X)$ are exactly the points of $X$. The topos $\mathrm{Sh}(X)$ is Boolean exactly when $\mathcal{O}(X)$ is a Boolean algebra, i.e. every open set is closed — for $\R$, connectedness rules this out. See <TopicLink id="math.geom.sheaves">sheaves</TopicLink> and <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Grothendieck: a topos is a generalised space">
+
+Grothendieck, with Artin and Verdier in SGA 4, introduced toposes so that a space could be replaced by its category of sheaves — and then generalised to sites that are not spaces at all. For a scheme $X$, the **étale site** (étale maps $U \to X$, covered by jointly surjective families) gives the étale topos $X_{\text{ét}}$, whose sheaf cohomology with $\ell$-adic coefficients was the tool for the Weil conjectures, completed by Deligne (1974). Morphisms of these generalised spaces are **geometric morphisms** $f : \mathcal{F} \to \mathcal{E}$, adjoint pairs $f^* \dashv f_*$ with $f^*$ preserving finite limits; a continuous map $X \to Y$ induces one $\mathrm{Sh}(X) \to \mathrm{Sh}(Y)$, and cohomology $H^n(\mathcal{E}, A)$ is defined for every topos as the derived functors of global sections. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Classifying toposes">
+
+Many algebraic theories have a **classifying topos**: a Grothendieck topos $\mathcal{B}$ such that models of the theory in any Grothendieck topos $\mathcal{E}$ correspond (naturally in $\mathcal{E}$) to geometric morphisms $\mathcal{E} \to \mathcal{B}$. The functor category $[\cat{FinSet}, \cat{Set}]$ classifies *objects*; the functor category from finitely presented commutative rings to sets classifies *commutative rings* (a ring in $\mathrm{Sh}(X)$ is a sheaf of rings, so ringed spaces are geometric morphisms into it); and $G\text{-}\cat{Set}$ classifies $G$-torsors, so geometric morphisms $\mathrm{Sh}(X) \to G\text{-}\cat{Set}$ are principal $G$-bundles on $X$ for a discrete group $G$ — a topos-theoretic $BG$. Olivia Caramello's programme of "toposes as bridges" exploits the fact that one topos may classify several theories.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Kripke models and forcing">
+
+Presheaves on a poset are Kripke models of intuitionistic logic, and the Kripke–Joyal semantics extends the forcing clauses to the whole internal language of any topos. Forcing itself is topos-theoretic: for a poset $P$ of conditions, the sheaves on $P$ for the dense ("double negation") topology form a Boolean topos. Tierney (1972) used Cohen's poset to build a topos in which the continuum hypothesis fails, a topos-theoretic version of Cohen's independence proof; see <TopicLink id="math.found.forcing">forcing</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="The effective topos">
+
+Martin Hyland's **effective topos** $\mathcal{E}\!f\!f$ (1982) is built from Kleene's realizability: a proposition is true when some program computes a witness for it. Its natural numbers object is the usual $\N$, but internally **every function $\N \to \N$ is computable** — Church's thesis holds as an internal statement — and the topos is not Boolean (excluded middle for the halting problem has no realizer). It is an elementary topos that is not a Grothendieck topos, and a model for constructive mathematics in which computability is built in.
+
+</Viewpoint>
+
+<Viewpoint lens="sets" title="Structural set theory">
+
+From the set-theoretic side, ETCS is a **structural** set theory: the theory of a well-pointed topos with a natural numbers object and choice. It is equiconsistent with bounded Zermelo set theory with choice, while never asking whether one set is an element of another. Lawvere's view is that this is how sets are actually used; the comparison with ZFC above makes precise what is gained and lost.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Grothendieck toposes (1960s).** Alexander Grothendieck introduced sites, sheaves on sites and toposes in his Séminaire de Géométrie Algébrique at the IHÉS near Paris; the theory was written up with Michael Artin and Jean-Louis Verdier in SGA 4 (seminar 1963–64, published 1972–73), as the foundation for étale cohomology. The word *topos* is Grothendieck's.
+- **ETCS (1964).** F. William Lawvere's "An elementary theory of the category of sets" axiomatised sets through functions alone.
+- **Elementary toposes (1969–70).** Lawvere and Myles Tierney, working together in Halifax, isolated the axioms of an elementary topos; Lawvere presented them in his address "Quantifiers and sheaves" at the 1970 International Congress in Nice. Tierney's "Sheaf theory and the continuum hypothesis" (1972) recast Cohen's forcing in topos language.
+- **The 1970s.** Peter Freyd ("Aspects of topoi", 1972), Robert Paré (finite colimits, 1974), Radu Diaconescu (choice implies excluded middle, 1975), William Mitchell, J. C. Cole and Gerhard Osius (comparisons with set theory), André Joyal (Kripke–Joyal semantics) and many others built the subject; Peter Johnstone's *Topos Theory* (1977) and Robert Goldblatt's *Topoi* (1979) made it teachable.
+- **Since then.** Martin Hyland's effective topos (1982), Joyal and Tierney's Galois theory of toposes (1984), Mac Lane and Moerdijk's textbook (1992), Johnstone's *Elephant* (2002), Caramello's work on classifying toposes, and the extension to $\infty$-toposes (see <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink>), which model <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink>. Research groups across Europe, the Americas and Australia (notably the Sydney category theory seminar) have shaped the field.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Saunders Mac Lane and Ieke Moerdijk, *Sheaves in Geometry and Logic: A First Introduction to Topos Theory* (1992) — the standard course text; Chapters I, III, IV and VI cover this lesson.
+- Robert Goldblatt, *Topoi: The Categorial Analysis of Logic* (1979; revised 1984) — gentle and logic-oriented, including ETCS and Kripke semantics.
+- Peter T. Johnstone, *Sketches of an Elephant: A Topos Theory Compendium* (2002) — the reference work.
+- F. William Lawvere, "An elementary theory of the category of sets", *Proceedings of the National Academy of Sciences* 52 (1964); and F. William Lawvere and Robert Rosebrugh, *Sets for Mathematics* (2003).
+- Tom Leinster, "Rethinking set theory", *American Mathematical Monthly* 121 (2014) — ETCS in ten informal axioms.
+- J. L. Bell, *Toposes and Local Set Theories* (1988), and J. Lambek and P. J. Scott, *Introduction to Higher Order Categorical Logic* (1986), for the internal language.
+- Olivia Caramello, *Theories, Sites, Toposes* (2017), for classifying toposes.
+
+Reading path: Goldblatt or Leinster first, then Mac Lane–Moerdijk, then the Elephant as needed.
+
+</Section>

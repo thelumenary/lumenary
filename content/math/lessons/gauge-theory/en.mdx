@@ -1,0 +1,551 @@
+---
+slug: gauge-theory
+topic: math.applied.gauge-theory
+title: Gauge theory and the geometry of physics
+subtitle: Forces are curvature. A phase carried around a loop comes back changed — even through regions where no field is felt — and the same equations that describe this reshaped the topology of four-dimensional space.
+level: research
+ages: Research orientation (vector bundles, Lie groups and quantum mechanics assumed)
+minutes: 140
+order: 8022
+objectives:
+  - Describe principal bundles, connections, gauge transformations and curvature, and prove that curvature transforms by conjugation and satisfies the Bianchi identity
+  - Write Maxwell's equations as $dF = 0$, $d{\star}F = J$ and derive the Yang–Mills equations $d_A{\star}F_A = 0$ as Euler–Lagrange equations
+  - Define instantons, prove the energy bound $\mathrm{YM}(A) \ge 8\pi^2|k|$ with equality exactly for (anti-)self-dual connections, and explain the topological charge as a characteristic number
+  - Explain the Aharonov–Bohm effect as holonomy of a flat connection, classifying flat $U(1)$ connections on the punctured plane
+  - State Donaldson's theorem and the Yang–Mills existence and mass gap problem, separating theorems from open problems
+narrators: []
+lean:
+  - Lumenary.GaugeTheory.LatticeConnection
+  - Lumenary.GaugeTheory.Step
+  - Lumenary.GaugeTheory.Step.shift
+  - Lumenary.GaugeTheory.transport
+  - Lumenary.GaugeTheory.endpoint
+  - Lumenary.GaugeTheory.holonomy
+  - Lumenary.GaugeTheory.gauge
+  - Lumenary.GaugeTheory.gauge_mul
+  - Lumenary.GaugeTheory.transport_gauge
+  - Lumenary.GaugeTheory.holonomy_gauge
+  - Lumenary.GaugeTheory.holonomy_loop_conj
+  - Lumenary.GaugeTheory.holonomy_loop_abelian
+  - Lumenary.GaugeTheory.plaquette
+  - Lumenary.GaugeTheory.trace_conj
+  - Lumenary.GaugeTheory.wilson_loop_gauge_invariant
+  - Lumenary.GaugeTheory.field_strength_gauge_invariant
+  - Lumenary.GaugeTheory.bianchi
+  - Lumenary.GaugeTheory.hodgeStar
+  - Lumenary.GaugeTheory.normSq
+  - Lumenary.GaugeTheory.wedgeSelf
+  - Lumenary.GaugeTheory.hodge_star_hodge_star
+  - Lumenary.GaugeTheory.abs_wedge_le
+  - Lumenary.GaugeTheory.self_dual_iff
+  - Lumenary.GaugeTheory.anti_self_dual_iff
+compute: [gauge_theory_chern_number, gauge_theory_wilson_loops]
+trails: [loops-around-a-hole]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Forces as curvature">
+
+In 1959 Yakir Aharonov and David Bohm proposed an experiment. Send electrons around both sides of a long, thin, perfectly shielded solenoid and let the two beams interfere. Outside the solenoid the magnetic field is zero; classically the electrons feel no force. Yet the interference pattern shifts by an amount proportional to the magnetic flux trapped inside — a flux the electrons never touch. The effect was confirmed decisively by Akira Tonomura and collaborators at Hitachi in 1986, with the solenoid's field sealed inside a superconductor.
+
+What the electrons feel is not the field but the **holonomy** of a connection: the phase acquired by parallel transport around a loop. The magnetic field is the **curvature** of that connection, and curvature is holonomy around infinitesimal loops; where the curvature vanishes, holonomy around a large loop can still be non-trivial if the loop encircles a hole. This is the geometry of gauge theory, in which every fundamental force of the Standard Model is described by a connection on a principal bundle and its field strength by curvature.
+
+The same mathematics turned out to be a powerful tool in pure mathematics. In 1983 Simon Donaldson used the moduli spaces of solutions of the Yang–Mills equations — **instantons** — to prove that many topological 4-manifolds admit no smooth structure, and, combined with Michael Freedman's work, that $\R^4$ carries exotic smooth structures, a phenomenon that occurs in no other dimension. And the quantum version of the theory contains one of the Millennium Problems: to construct quantum Yang–Mills theory rigorously and prove that it has a **mass gap**.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Comparing phases at different points">
+
+A quantum particle carries an internal phase, a point of $U(1)$, or for the weak and strong forces an internal frame acted on by $SU(2)$ or $SU(3)$. There is no canonical way to compare internal frames at different points: one needs a rule of **parallel transport**. That rule is a **connection**.
+
+The lattice picture of Kenneth Wilson (1974) makes this concrete. Place the particle on a grid. On each oriented edge from $x$ to $y$ put a group element $U_{xy} \in G$ — the transporter — with $U_{yx} = U_{xy}^{-1}$. Transport along a path is the product of the transporters on its edges. A **gauge transformation** is an independent change of frame $g(x) \in G$ at every vertex, under which $U_{xy} \mapsto g(x) U_{xy} g(y)^{-1}$. Physical quantities must not depend on the arbitrary choice of frames, so they must be **gauge invariant**.
+
+What is invariant? Transport around a closed loop based at $x$ changes only by conjugation, $g(x) \cdot \mathrm{hol} \cdot g(x)^{-1}$, so its trace — the **Wilson loop** — is invariant, and for the abelian group $U(1)$ the holonomy itself is. Around the smallest loop, one square (a **plaquette**), the holonomy measures the field strength through that square: it is the lattice curvature.
+
+<Figure caption="Wilson's lattice gauge field. Each edge carries a transporter U in the gauge group; transport around a square (the plaquette, in gold) is the lattice curvature. A gauge transformation g at each vertex changes every U, but the trace of the transport around any closed loop is unchanged.">
+<svg viewBox="0 0 360 200" role="img" aria-label="A square grid of vertices; one square is highlighted with a circulating arrow inside it, and one vertex is circled to mark a gauge transformation">
+  <g stroke="var(--ink-2)" strokeWidth="1.5">
+    <line x1="40" y1="40" x2="320" y2="40" />
+    <line x1="40" y1="100" x2="320" y2="100" />
+    <line x1="40" y1="160" x2="320" y2="160" />
+    <line x1="40" y1="40" x2="40" y2="160" />
+    <line x1="110" y1="40" x2="110" y2="160" />
+    <line x1="180" y1="40" x2="180" y2="160" />
+    <line x1="250" y1="40" x2="250" y2="160" />
+    <line x1="320" y1="40" x2="320" y2="160" />
+  </g>
+  <rect x="110" y="100" width="70" height="60" fill="var(--sky-soft)" stroke="var(--gold)" strokeWidth="3" />
+  <path d="M 125 145 L 165 145 L 165 115 L 125 115" fill="none" stroke="var(--formal)" strokeWidth="2" />
+  <polygon points="125,111 117,115 125,119" fill="var(--formal)" />
+  <g fill="var(--ink-2)">
+    <circle cx="40" cy="40" r="4" /><circle cx="110" cy="40" r="4" /><circle cx="180" cy="40" r="4" /><circle cx="250" cy="40" r="4" /><circle cx="320" cy="40" r="4" />
+    <circle cx="40" cy="100" r="4" /><circle cx="110" cy="100" r="4" /><circle cx="180" cy="100" r="4" /><circle cx="250" cy="100" r="4" /><circle cx="320" cy="100" r="4" />
+    <circle cx="40" cy="160" r="4" /><circle cx="110" cy="160" r="4" /><circle cx="180" cy="160" r="4" /><circle cx="250" cy="160" r="4" /><circle cx="320" cy="160" r="4" />
+  </g>
+  <text x="145" y="178" textAnchor="middle" fontSize="12" fill="var(--ink-2)">U</text>
+  <text x="192" y="134" fontSize="12" fill="var(--ink-2)">U</text>
+  <text x="262" y="90" fontSize="12" fill="var(--human)">g(x)</text>
+  <circle cx="250" cy="100" r="8" fill="none" stroke="var(--human)" strokeWidth="2" />
+</svg>
+</Figure>
+
+The continuum theory is the limit in which the transporter along a short edge $v$ is $U \approx 1 - A(v)$ for a Lie-algebra-valued $1$-form $A$, the **gauge potential**, and the plaquette around the square spanned by $\varepsilon v, \varepsilon w$ is $1 - \varepsilon^2 F(v, w) + O(\varepsilon^3)$ (with suitable sign conventions), where $F = dA + A \wedge A$ is the **curvature** or field strength.
+
+<Analogy>
+
+Carry a compass needle around a triangle on the Earth's surface, always keeping it "parallel" to itself: it comes back rotated by an angle equal to the enclosed curvature (the spherical excess). Gauge fields do the same to internal phases instead of tangent vectors. The analogy is close — the Levi-Civita connection is a connection on the frame bundle — but it is still an analogy: in gauge theory the bundle is an independent, internal one, and the connection is a dynamical field rather than determined by a metric.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+We assume <TopicLink id="math.geom.vector-bundles-characteristic-classes">vector bundles and characteristic classes</TopicLink>, <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>, <TopicLink id="math.geom.differential-forms">differential forms</TopicLink> and, for the physics, <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>. Let $G$ be a compact Lie group (think $U(1)$, $SU(2)$, $SU(3)$), realised as a matrix group with Lie algebra $\mathfrak{g}$.
+
+<Definition term="principal bundle">
+
+A **principal $G$-bundle** is a smooth map $\pi : P \to M$ with a smooth right action of $G$ on $P$ that is free and preserves fibres, which is **locally trivial**: every point of $M$ has a neighbourhood $U$ with a diffeomorphism $\pi^{-1}(U) \cong U \times G$ commuting with the projections and turning the action into right multiplication on $G$. So $G$ acts simply transitively on each fibre. Local sections $s_\alpha : U_\alpha \to P$ give trivialisations, related by **transition functions** $g_{\alpha\beta} : U_\alpha \cap U_\beta \to G$ with $s_\beta = s_\alpha g_{\alpha\beta}$. A representation $G \to GL(V)$ gives an **associated vector bundle** $P \times_G V$, whose sections are the matter fields.
+
+</Definition>
+
+<Definition term="connection, gauge potential and gauge transformation">
+
+A **connection** on $P$ is a $\mathfrak{g}$-valued $1$-form $\omega$ on $P$ that restricts to the Maurer–Cartan form on each fibre and is equivariant, $R_g^*\omega = \operatorname{Ad}(g^{-1})\omega$; equivalently, a $G$-invariant choice of horizontal subspaces $\ker\omega$ complementary to the fibres. In a local section $s$ it is described by the **gauge potential** $A = s^*\omega$, a $\mathfrak{g}$-valued $1$-form on $U$, and the covariant derivative of a matter field is $\nabla \psi = d\psi + A\psi$. A change of section $s' = s g$, with $g : U \to G$, is a **gauge transformation**:
+
+$$
+A' = g^{-1} A g + g^{-1} dg, \qquad \psi' = g^{-1}\psi .
+$$
+
+</Definition>
+
+<Definition term="curvature and holonomy">
+
+The **curvature** of $\omega$ is $\Omega = d\omega + \frac12[\omega \wedge \omega]$; locally it is the $\mathfrak{g}$-valued $2$-form
+
+$$
+F_A = dA + A \wedge A .
+$$
+
+The connection is **flat** if $F_A = 0$. Parallel transport along a loop $\gamma$ based at $x$ gives the **holonomy** $\operatorname{hol}_\gamma(A) \in G$, well defined up to conjugation (the choice of frame at $x$).
+
+</Definition>
+
+<Definition term="Yang–Mills functional and equations">
+
+On a compact oriented Riemannian manifold $M$, with the $\operatorname{Ad}$-invariant inner product $\langle X, Y \rangle = -\operatorname{tr}(XY)$ on $\mathfrak{g}$ and the Hodge star $\star$, the **Yang–Mills functional** is
+
+$$
+\mathrm{YM}(A) = \int_M |F_A|^2 \, d\mathrm{vol} = -\int_M \operatorname{tr}(F_A \wedge \star F_A).
+$$
+
+Its Euler–Lagrange equations are the **Yang–Mills equations** $d_A {\star} F_A = 0$, where $d_A \beta = d\beta + A \wedge \beta - (-1)^k \beta \wedge A$ on $\mathfrak{g}$-valued $k$-forms.
+
+</Definition>
+
+<Definition term="instanton and topological charge">
+
+On an oriented Riemannian $4$-manifold, $\star$ maps $2$-forms to $2$-forms with $\star^2 = 1$, so $\Lambda^2 = \Lambda^+ \oplus \Lambda^-$ splits into **self-dual** and **anti-self-dual** forms. A connection is an **instanton** (anti-self-dual, ASD) if $F_A = -\star F_A$. For an $SU(2)$-bundle $E$ over a closed oriented $4$-manifold, the **topological charge** is the characteristic number
+
+$$
+k = c_2(E)[M] = \frac{1}{8\pi^2} \int_M \operatorname{tr}(F_A \wedge F_A),
+$$
+
+which by Chern–Weil theory is an integer independent of $A$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Electromagnetism is a U(1) gauge theory">
+
+For $G = U(1)$, $\mathfrak{g} = i\R$ and $A = -i\,\frac{q}{\hbar}\,a$ for a real $1$-form $a$, the electromagnetic potential, so that $\nabla = d - i\frac{q}{\hbar} a$ for a particle of charge $q$. Gauge transformations $g = e^{-iq\lambda/\hbar}$ act by $a \mapsto a + d\lambda$ (and $\psi \mapsto e^{iq\lambda/\hbar}\psi$), and the curvature is the real $2$-form $F = da$ (times $-iq/\hbar$). In space-time with coordinates $(t, x, y, z)$ and units $c = 1$, write
+
+$$
+a = a_x\, dx + a_y\, dy + a_z\, dz - \varphi\, dt, \qquad F = da = B_x\, dy\wedge dz + B_y\, dz \wedge dx + B_z\, dx \wedge dy + (E_x\, dx + E_y\, dy + E_z\, dz) \wedge dt .
+$$
+
+Comparing coefficients gives $B = \operatorname{curl}\vec a$ and $E = -\nabla\varphi - \partial_t \vec a$, where $\vec a = (a_x, a_y, a_z)$ is the vector potential and $\varphi$ the electric potential. The identity $dF = 0$ has two kinds of components: the coefficient of $dx \wedge dy \wedge dz$ is $\operatorname{div} B$, and the coefficient of $dy \wedge dz \wedge dt$ is $\partial_t B_x + (\operatorname{curl} E)_x$ (and cyclically). So $dF = 0$ is exactly the pair of **homogeneous Maxwell equations**
+
+$$
+\operatorname{div} B = 0, \qquad \partial_t B + \operatorname{curl} E = 0 .
+$$
+
+The other pair needs the Minkowski metric: with the Lorentzian Hodge star and the current $3$-form $J$ (charge density $\rho$ and current $j$), $d{\star}F = J$ encodes Gauss's law $\operatorname{div} E = \rho$ and the Ampère–Maxwell law $\operatorname{curl} B - \partial_t E = j$ (up to sign conventions for $\star$). Applying $d$ to it gives $dJ = 0$: charge conservation is a consequence of the field equations. Maxwell's four equations become two.
+
+</Example>
+
+<Example title="The Dirac monopole and charge quantisation">
+
+Cover $S^2$ by the two hemispheres $U_N$, $U_S$, overlapping near the equator, and glue trivial $U(1)$-bundles by the transition function $e^{in\phi}$, $n \in \Z$. A connection is a pair of real potentials $a_N$, $a_S$ with $a_N - a_S = n\, d\phi$ on the overlap, and the curvature $F = da_N = da_S$ is a global $2$-form. By Stokes,
+
+$$
+\int_{S^2} F = \oint_{\text{equator}} a_N - \oint_{\text{equator}} a_S = \oint n\, d\phi = 2\pi n ,
+$$
+
+so $\frac{1}{2\pi}\int_{S^2} F = n$ is the first Chern number of the bundle, an integer that no choice of connection can change. Physically, a magnetic monopole of total flux $\Phi_m$ can coexist with a particle of charge $q$ only if $q\Phi_m \in 2\pi\hbar\,\Z$ (Dirac, 1931): if a single monopole exists anywhere, electric charge is quantised. The case $n = 1$ is the Hopf bundle $S^3 \to S^2$.
+
+</Example>
+
+<Example title="The Aharonov–Bohm solenoid: a flat connection with holonomy">
+
+Outside an infinitely long solenoid of flux $\Phi$ along the $z$-axis, the potential can be taken to be $a = \frac{\Phi}{2\pi}\, d\theta$ on $\R^2 \setminus \{0\}$ (times the $z$-direction). Then $F = da = 0$ there: no magnetic field. But for a loop $\gamma$ winding $w$ times around the solenoid,
+
+$$
+\operatorname{hol}_\gamma = \exp\Big(\frac{iq}{\hbar}\oint_\gamma a\Big) = \exp\Big(\frac{iq}{\hbar}\, w\,\Phi\Big).
+$$
+
+Two electron paths on either side of the solenoid differ by a loop of winding number one, so their phases differ by $q\Phi/\hbar$, which shifts the interference fringes. The shift is invisible exactly when $q\Phi/\hbar \in 2\pi\Z$ — whence the flux quantum $h/q$ for a charge $q$. Theorem 5 below shows that the holonomy is the *only* gauge-invariant information in a flat connection on the punctured plane.
+
+</Example>
+
+<Example title="The BPST instanton">
+
+Identify $\R^4$ with the quaternions $\mathbb{H}$ and $\mathfrak{su}(2)$ with the imaginary quaternions. Belavin, Polyakov, Schwarz and Tyupkin (1975) found the $SU(2)$ connection
+
+$$
+A = \operatorname{Im}\Big( \frac{\bar x\, dx}{1 + |x|^2} \Big), \qquad F_A = \frac{d\bar x \wedge dx}{(1 + |x|^2)^2},
+$$
+
+whose curvature is (anti-)self-dual, depending on the orientation convention, with $\frac{1}{8\pi^2}\int |F_A|^2 = 1$. Its energy density is concentrated in a ball of radius $1$; rescaling $x \mapsto x/\lambda$ and translating give a $5$-parameter family of charge-one instantons, which extends to $S^4 = \R^4 \cup \{\infty\}$. The Atiyah–Drinfeld–Hitchin–Manin construction (1978) describes all instantons on $S^4$ by linear algebra.
+
+</Example>
+
+<Example title="Lattice gauge fields">
+
+On the lattice $\Z^2$ a $U(1)$ gauge field is a phase $e^{i a_e}$ on each edge; its curvature is the plaquette angle $\theta_p = a_1 + a_2 - a_3 - a_4$ around each square (reduced to $(-\pi, \pi]$). On a periodic $N \times N$ lattice — a discrete torus — the reduced angles add up to $2\pi Q$ with $Q \in \Z$, a lattice version of the first Chern number; the first experiment computes it. In Wilson's lattice formulation of quantum chromodynamics the link variables are $SU(3)$ matrices and the action is a sum over plaquettes of $1 - \frac13\operatorname{Re}\operatorname{tr} U_p$.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Curvature, the Yang–Mills equations and the instanton bound">
+
+<Theorem name="Proposition 1 — curvature transforms by conjugation">
+
+If $A' = g^{-1}Ag + g^{-1}dg$, then $F_{A'} = g^{-1} F_A\, g$. Consequently $\operatorname{tr}(F_A \wedge F_A)$, $\operatorname{tr}(F_A \wedge \star F_A)$ and $|F_A|^2$ are gauge invariant; for $G = U(1)$, $F_A$ itself is.
+
+</Theorem>
+
+<Proof>
+
+Use $d(g^{-1}) = -g^{-1}\, dg\, g^{-1}$ and the graded Leibniz rule $d(\alpha\beta) = d\alpha\, \beta - \alpha\, d\beta$ for a matrix of $1$-forms $\alpha$:
+
+$$
+dA' = -g^{-1}dg\, g^{-1} \wedge A g + g^{-1}\, dA\, g - g^{-1}A \wedge dg - g^{-1}dg\, g^{-1} \wedge dg ,
+$$
+
+$$
+A' \wedge A' = g^{-1}A\wedge A\, g + g^{-1}A \wedge dg + g^{-1}dg\, g^{-1} \wedge A g + g^{-1}dg\, g^{-1} \wedge dg .
+$$
+
+Adding, every term containing $dg$ cancels against one in the other line (first with third, third with second, fourth with fourth), leaving $F_{A'} = g^{-1}(dA + A \wedge A)g$. The invariance statements follow from $\operatorname{tr}(g^{-1}Xg\, g^{-1}Yg) = \operatorname{tr}(XY)$.
+
+</Proof>
+
+<Theorem name="Proposition 2 — the Bianchi identity">
+
+$d_A F_A = dF_A + A \wedge F_A - F_A \wedge A = 0$. For $G = U(1)$ this is $dF = 0$.
+
+</Theorem>
+
+<Proof>
+
+$dF_A = d(dA) + d(A \wedge A) = dA \wedge A - A \wedge dA$. On the other hand $A \wedge F_A - F_A \wedge A = A \wedge dA + A\wedge A\wedge A - dA \wedge A - A\wedge A\wedge A = A \wedge dA - dA \wedge A$. The two cancel.
+
+</Proof>
+
+<Theorem name="Theorem 3 — the Yang–Mills equations">
+
+$A$ is a critical point of $\mathrm{YM}$ (for compactly supported variations) if and only if $d_A^* F_A = 0$, equivalently $d_A{\star}F_A = 0$. Every instanton solves the Yang–Mills equations.
+
+</Theorem>
+
+<Proof>
+
+For a $\mathfrak{g}$-valued $1$-form $\alpha$, $F_{A + t\alpha} = F_A + t\, d_A\alpha + t^2\, \alpha \wedge \alpha$. Hence
+
+$$
+\frac{d}{dt}\Big|_{t=0} \mathrm{YM}(A + t\alpha) = 2\int_M \langle d_A\alpha, F_A\rangle\, d\mathrm{vol} = 2\int_M \langle \alpha, d_A^* F_A\rangle\, d\mathrm{vol},
+$$
+
+which vanishes for all $\alpha$ iff $d_A^* F_A = 0$. On $2$-forms $d_A^* = \pm\star d_A \star$, so this is $d_A{\star}F_A = 0$. If $F_A = -\star F_A$, then $d_A{\star}F_A = -d_A F_A = 0$ by the Bianchi identity.
+
+</Proof>
+
+<Theorem name="Theorem 4 — the instanton bound">
+
+Let $A$ be a connection on an $SU(2)$-bundle $E$ over a closed oriented Riemannian $4$-manifold, with $k = c_2(E)[M]$. Then
+
+$$
+\mathrm{YM}(A) \ \ge\ 8\pi^2 |k|,
+$$
+
+with equality if and only if $A$ is anti-self-dual (when $k \gt 0$) or self-dual (when $k \lt 0$); for $k = 0$, equality means $A$ is flat. Instantons minimise the Yang–Mills energy in their topological class.
+
+</Theorem>
+
+<Proof>
+
+Split $F = F^+ + F^-$ with $\star F^\pm = \pm F^\pm$. The spaces $\Lambda^+$ and $\Lambda^-$ are orthogonal, so $|F|^2 = |F^+|^2 + |F^-|^2$, and $\alpha \wedge \beta = \langle \alpha, \star\beta \rangle\,d\mathrm{vol}$ shows $\Lambda^+ \wedge \Lambda^- = 0$. With $|X|^2 d\mathrm{vol} = -\operatorname{tr}(X \wedge \star X)$,
+
+$$
+\operatorname{tr}(F \wedge F) = \operatorname{tr}(F^+\wedge F^+) + \operatorname{tr}(F^- \wedge F^-) = \big(-|F^+|^2 + |F^-|^2\big)\, d\mathrm{vol}.
+$$
+
+By Chern–Weil, $8\pi^2 k = \int (|F^-|^2 - |F^+|^2)$, while $\mathrm{YM}(A) = \int (|F^+|^2 + |F^-|^2)$. Hence $\mathrm{YM}(A) \ge |8\pi^2 k|$, with equality iff $F^+ = 0$ or $F^- = 0$ everywhere, matching the sign of $k$.
+
+</Proof>
+
+The pointwise inequality $|F \wedge F| \le |F|^2$ with its equality cases is formalised below; Chern–Weil theory, which turns the integral into the integer $k$, is not.
+
+<Theorem name="Theorem 5 — flat U(1) connections on the punctured plane">
+
+Let $M = \R^2 \setminus \{0\}$ and consider $U(1)$ connections $\nabla = d - i\frac{q}{\hbar}a$ on the trivial bundle. Gauge-equivalence classes of flat connections are in bijection with $U(1)$, via the holonomy $e^{iq\Phi/\hbar}$ around the unit circle, $\Phi = \oint_{S^1} a$. More generally, on a connected manifold $M$, flat connections on principal $G$-bundles, up to isomorphism, correspond to $\operatorname{Hom}(\pi_1(M), G)/G$ (homomorphisms up to conjugation), via holonomy.
+
+</Theorem>
+
+<Proof>
+
+Flatness means $da = 0$. By de Rham's theorem for the punctured plane, $H^1_{dR}(M) \cong \R$ via $[a] \mapsto \oint_{S^1} a$, so $a = \frac{\Phi}{2\pi}d\theta + df$ for a smooth function $f$ (see <TopicLink id="math.geom.differential-forms">differential forms</TopicLink>). The gauge transformation $g = e^{iqf/\hbar}$ changes $a$ by $-df$ and so removes it. A general gauge transformation $g : M \to U(1)$ changes $a$ by $-\frac{\hbar}{q}\cdot\frac{1}{i}g^{-1}dg$, and $\frac{1}{i}g^{-1}dg$ is a closed real $1$-form with period $2\pi n$ around the circle, $n$ the winding number of $g$; conversely $g = e^{-in\theta}$ shifts $a$ by $\frac{\hbar}{q}\, n\, d\theta$. So $\frac{\Phi}{2\pi}d\theta$ and $\frac{\Phi'}{2\pi}d\theta$ are gauge equivalent iff $\frac{q}{\hbar}(\Phi - \Phi') \in 2\pi\Z$, i.e. iff $e^{iq\Phi/\hbar} = e^{iq\Phi'/\hbar}$. The holonomy is gauge invariant (the group is abelian) and equals $e^{iq\Phi/\hbar}$.
+
+</Proof>
+
+</Section>
+
+<Section id="four-manifolds" kind="human" title="Gauge theory and the topology of four-manifolds">
+
+Every closed oriented $4$-manifold $M$ has an **intersection form** $Q_M$ on $H_2(M; \Z)/\text{torsion}$, a unimodular symmetric bilinear form. **Freedman (1982)** showed that simply connected closed *topological* $4$-manifolds are classified by $Q_M$ together with one $\Z/2$-invariant, and that every unimodular form occurs. In particular there is a topological $4$-manifold with intersection form $-E_8 \oplus -E_8$, negative definite and not diagonalisable.
+
+**Donaldson's theorem (1983).** *If a smooth closed simply connected oriented $4$-manifold has negative definite intersection form, then the form is diagonalisable over $\Z$, i.e. isomorphic to $\langle -1 \rangle \oplus \cdots \oplus \langle -1 \rangle$.* (In 1987 Donaldson removed the hypothesis of simple connectivity.) So the topological manifold with form $-E_8 \oplus -E_8$ has no smooth structure.
+
+The idea of the proof is a cobordism made of instantons. Take the $SU(2)$-bundle with $c_2 = 1$ and a generic metric. The index theorem gives the dimension of the moduli space $\mathcal{M}$ of ASD connections modulo gauge as $8k - 3(1 - b_1 + b^+) = 8 - 3 = 5$. Uhlenbeck's compactness theorem and Taubes' gluing show that one end of $\mathcal{M}$ is a collar on $M$ itself (instantons concentrating at a point of $M$), and $\mathcal{M}$ is a smooth $5$-manifold except at finitely many reducible connections, one for each pair $\pm e$ of classes with $e \cdot e = -1$, where it is a cone on $\mathbb{CP}^2$. Cutting out the cones, $\mathcal{M}$ is an oriented cobordism between $M$ and a disjoint union of copies of $\pm\mathbb{CP}^2$, so the signatures agree, and a lattice-theoretic argument shows the form must be diagonal.
+
+Consequences and descendants, all theorems:
+
+- **Exotic $\R^4$.** Combining Freedman's and Donaldson's results gives smooth manifolds homeomorphic but not diffeomorphic to $\R^4$; Taubes showed there are uncountably many. In every other dimension $\R^n$ has a unique smooth structure.
+- **Donaldson invariants** (polynomial invariants from counts of instantons) distinguish homeomorphic, non-diffeomorphic simply connected $4$-manifolds.
+- **Seiberg–Witten theory (1994)**, an abelian gauge theory with a spinor field, reproduces and extends much of Donaldson theory with far simpler analysis; Kronheimer and Mrowka used it to prove the Thom conjecture (1994).
+- **Furuta's 10/8 theorem (2001):** a smooth closed spin $4$-manifold with indefinite intersection form satisfies $b_2 \ge \frac{10}{8}|\sigma| + 2$; Hopkins, Lin, Shi and Xu improved the additive constant (2018).
+- **Low dimensions.** Floer's instanton homology (1988) for $3$-manifolds; Witten's interpretation of the Jones polynomial through Chern–Simons gauge theory (1989; see <TopicLink id="math.geom.knot-theory">knot theory</TopicLink>); Kronheimer and Mrowka's proofs of Property P (2004) and that Khovanov homology detects the unknot (2011). See <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Section>
+
+<Section id="physics-open" kind="human" title="Physics, and what is open">
+
+**The Standard Model** is a quantum gauge theory with gauge group $SU(3) \times SU(2) \times U(1)$ (up to a finite quotient): $SU(3)$ for the strong force (quantum chromodynamics), $SU(2) \times U(1)$ for the electroweak force, broken to the $U(1)$ of electromagnetism by the Higgs mechanism. Its mathematical consistency at the level of perturbation theory rests on 't Hooft and Veltman's proof of renormalisability (1971–72), and the weakness of the strong force at short distances on the asymptotic freedom of Gross and Wilczek and of Politzer (1973). Lattice gauge theory makes the theory computable: Wilson (1974) showed that at strong coupling Wilson loops obey an **area law** $\langle W(C)\rangle \approx e^{-\sigma\,\mathrm{Area}(C)}$, a signature of confinement, and large-scale Monte Carlo simulations now compute hadron masses from first principles — numerical evidence of great precision, not proof.
+
+**Open problems** (as of the references; check recent surveys):
+
+- **Yang–Mills existence and mass gap** (Clay Millennium Problem, 2000): prove that for every compact simple gauge group $G$ a non-trivial quantum Yang–Mills theory exists on $\R^4$, satisfying axioms at least as strong as those of constructive quantum field theory, and that it has a mass gap $\Delta \gt 0$. No four-dimensional interacting quantum gauge theory has been constructed rigorously.
+- **The smooth $4$-dimensional Poincaré conjecture**: is every smooth homotopy $4$-sphere diffeomorphic to $S^4$? (Freedman proved the topological version in 1982.)
+- **The 11/8 conjecture** (Matsumoto, 1982): a smooth closed spin $4$-manifold satisfies $b_2 \ge \frac{11}{8}|\sigma|$. Furuta's 10/8 theorem and its improvements are the best results.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Gauge invariance in Lean and Mathlib">
+
+Mathlib has Lie groups and Lie algebras, smooth vector bundles and differential forms on normed spaces, but not yet principal bundles or connections. Formalised here: Wilson's lattice gauge theory, with gauge covariance proved by induction on paths and for any structure group; the gauge invariance of the electromagnetic field strength and the Bianchi identity in the continuum, using Mathlib's exterior derivative; and the pointwise algebra of Theorem 4.
+
+The lattice: links, paths, transport and gauge transformations.
+
+<Lean decl="Lumenary.GaugeTheory.LatticeConnection" />
+
+<Lean decl="Lumenary.GaugeTheory.Step" />
+
+<Lean decl="Lumenary.GaugeTheory.Step.shift" />
+
+<Lean decl="Lumenary.GaugeTheory.transport" />
+
+<Lean decl="Lumenary.GaugeTheory.endpoint" />
+
+<Lean decl="Lumenary.GaugeTheory.holonomy" />
+
+<Lean decl="Lumenary.GaugeTheory.gauge" />
+
+<Lean decl="Lumenary.GaugeTheory.gauge_mul" />
+
+Gauge covariance of transport along one step and then along any path, and its consequences for loops:
+
+<Lean decl="Lumenary.GaugeTheory.transport_gauge" />
+
+<Lean decl="Lumenary.GaugeTheory.holonomy_gauge" />
+
+<Lean decl="Lumenary.GaugeTheory.holonomy_loop_conj" />
+
+<Lean decl="Lumenary.GaugeTheory.holonomy_loop_abelian" />
+
+<Lean decl="Lumenary.GaugeTheory.plaquette" />
+
+For matrix groups, the trace kills the conjugation, so Wilson loops are gauge invariant:
+
+<Lean decl="Lumenary.GaugeTheory.trace_conj" />
+
+<Lean decl="Lumenary.GaugeTheory.wilson_loop_gauge_invariant" />
+
+In the continuum, for $G = U(1)$ (where $F = dA$ with no $A \wedge A$ term), with $1$-forms on a real normed space represented as Mathlib's continuous alternating maps:
+
+<Lean decl="Lumenary.GaugeTheory.field_strength_gauge_invariant" />
+
+<Lean decl="Lumenary.GaugeTheory.bianchi" />
+
+Finally the algebra of self-duality in four Euclidean dimensions, with $2$-forms written in the basis $(dx_0\wedge dx_1, dx_0 \wedge dx_2, dx_0 \wedge dx_3; dx_2 \wedge dx_3, dx_3 \wedge dx_1, dx_1 \wedge dx_2)$:
+
+<Lean decl="Lumenary.GaugeTheory.hodgeStar" />
+
+<Lean decl="Lumenary.GaugeTheory.normSq" />
+
+<Lean decl="Lumenary.GaugeTheory.wedgeSelf" />
+
+<Lean decl="Lumenary.GaugeTheory.hodge_star_hodge_star" />
+
+<Lean decl="Lumenary.GaugeTheory.abs_wedge_le" />
+
+<Lean decl="Lumenary.GaugeTheory.self_dual_iff" />
+
+<Lean decl="Lumenary.GaugeTheory.anti_self_dual_iff" />
+
+**Not formalised:** principal bundles and connections; non-abelian curvature and Proposition 1 in the continuum; Chern–Weil theory and the integrality of $k$; the Yang–Mills equations; instanton moduli spaces, Uhlenbeck compactness and Donaldson's theorem; and the lattice charge $Q$ of the first experiment (its integrality would be a nice exercise in finite sums).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Lattice gauge fields, computed">
+
+The first experiment builds $U(1)$ gauge fields on a periodic $12 \times 12$ lattice with uniform flux $2\pi k/N^2$ per plaquette, computes the integer charge $Q = \frac{1}{2\pi}\sum_p \theta_p$, and checks that random gauge transformations leave every plaquette angle and $Q$ unchanged. Then it adds noise to the links: $Q$ remains an integer in every case (each link appears in two plaquettes with opposite signs), stays equal to $k$ for small noise, and jumps around for very rough fields — a lattice artefact, since rough lattice fields are not close to any smooth connection. The "naive" density $\sum \sin\theta_p / 2\pi$, the obvious discretisation of $\frac{1}{2\pi}\int F$, is not an integer.
+
+<Python id="gauge_theory_chern_number" />
+
+The second experiment illustrates gauge covariance for $SU(2)$ — the holonomy matrix changes, its trace does not — and then the Aharonov–Bohm effect on a lattice: a $U(1)$ field whose curvature vanishes on every square except one. Loops that never touch that square pick up the phase $e^{iw\Phi}$, where $w$ is the winding number; two different "Dirac strings" (vector potentials) for the same flux give the same answers, because they differ by a gauge transformation.
+
+<Python id="gauge_theory_wilson_loops" />
+
+Both are floating-point computations on specific configurations — numerical illustrations of the theorems proved above and in Lean.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: the Aharonov–Bohm potential">
+
+The vector potential outside a solenoid, $a = \frac{\Phi}{2\pi}\, d\theta$, drawn as the vector field $\frac{1}{x^2 + y^2}(-y, x)$ (with $\Phi = 2\pi$). Drag the loop: away from the origin the curl — the magnetic field — is zero, so loops that do not enclose the origin have zero circulation; loops around the origin have circulation $2\pi$ however you deform them. Green's theorem fails visibly when the loop encloses the singularity.
+
+<VectorField mode="field" f="-y/(x^2 + y^2)" g="x/(x^2 + y^2)" title="The vector potential of a thin solenoid" subtitle="Zero field outside the solenoid, non-zero circulation around it." />
+
+The holonomy of the flat connection is $\exp(iq\Phi w/\hbar)$, where $w$ is the winding number of the loop around the solenoid. Count winding numbers here: a loop that goes twice around picks up twice the phase, and a loop that curls around without enclosing the hole picks up none.
+
+<WindingNumber loop="circle" loops={["circle", "twice", "figureEight", "miss"]} title="Holonomy counts windings" subtitle="The Aharonov–Bohm phase is the winding number times qΦ/ℏ." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A gauge transformation changes the physics."** A gauge transformation is a change of the arbitrary local frames used to describe the field; physical quantities — field strengths for $U(1)$, Wilson loops, energies, the topological charge — are gauge invariant by definition and by Proposition 1. In the quantum theory one goes further and declares gauge-equivalent configurations to be the same state. (A *global* symmetry, the same element of $G$ at every point, is different: it can have physical consequences such as conservation laws.)
+
+</Misconception>
+
+<Misconception>
+
+**"A flat connection has no observable effects."** Its holonomy around non-contractible loops can be non-trivial and measurable, as in the Aharonov–Bohm effect, where electrons travel only through a region of zero field. By Theorem 5, holonomy is exactly the gauge-invariant content of a flat connection.
+
+</Misconception>
+
+<Misconception>
+
+**"The vector potential is just a calculational device."** Classically the field strength suffices locally, but globally the potential carries more information: the holonomy $e^{iq\oint a/\hbar}$, which the field strength does not determine on a non-simply-connected region. Wu and Yang (1975) summarised this as: the field strength under-describes electromagnetism, the potential over-describes it, and the phase factors (holonomies) describe it exactly.
+
+</Misconception>
+
+<Misconception>
+
+**"Instantons are particles moving in time."** They are solutions of the Euclidean (imaginary-time) field equations, localised in space *and* time. In quantum field theory they describe tunnelling between topologically distinct vacua; in mathematics they are simply anti-self-dual connections, and their moduli spaces are the objects of study.
+
+</Misconception>
+
+<Misconception>
+
+**"Gauge theory proved the existence of quantum Yang–Mills theory."** Donaldson theory and Seiberg–Witten theory use the *classical* Yang–Mills and Seiberg–Witten equations; their success in topology is rigorous mathematics. The quantum theory, with its mass gap, remains a Millennium Problem; physical arguments and lattice simulations are evidence, not proof.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Characteristic classes and moduli spaces">
+
+The topologist sees two things. First, principal bundles are classified by homotopy classes of maps to the classifying space $BG$, and connections compute their characteristic classes by Chern–Weil: the integer $k = c_2$ of an $SU(2)$-bundle over $S^4$ corresponds to $\pi_3(SU(2)) = \pi_3(S^3) \cong \Z$, the clutching function on the equatorial $S^3$. Second, moduli spaces of solutions of gauge-theoretic equations are new topological spaces attached to a manifold, and their topology — dimension by the index theorem, ends by compactness theorems, orientations — yields invariants: Donaldson polynomials, Seiberg–Witten invariants, Floer homologies. The flat connections themselves form the character variety $\operatorname{Hom}(\pi_1(M), G)/G$ (see <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Holonomy, curvature and stable bundles">
+
+For the geometer, curvature is infinitesimal holonomy: transporting around a small parallelogram spanned by $\varepsilon u, \varepsilon v$ gives $1 - \varepsilon^2 F(u, v) + O(\varepsilon^3)$, exactly as for the Levi-Civita connection in <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>. On complex manifolds gauge theory meets algebraic geometry: Narasimhan and Seshadri (1965) showed that stable holomorphic bundles on a compact Riemann surface are those admitting flat unitary connections, and Donaldson and Uhlenbeck–Yau extended this to Hermitian–Yang–Mills connections on Kähler manifolds (the Kobayashi–Hitchin correspondence; see <TopicLink id="math.geom.complex-kahler-geometry">Kähler geometry</TopicLink>). On a Kähler surface, ASD connections are the same as such Hermitian–Yang–Mills connections, which is how Donaldson computed his invariants for algebraic surfaces.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Gauge fixing, compactness and bubbling">
+
+The Yang–Mills equations are not elliptic as they stand, because the infinite-dimensional gauge group acts on solutions; after fixing a gauge (for example the Coulomb gauge $d^*(A - A_0) = 0$), the ASD equation plus the gauge condition is an elliptic system whose linearisation is Fredholm, with index computed by the Atiyah–Singer index theorem. Karen Uhlenbeck's theorems (1982) — existence of Coulomb gauges with estimates, removable singularities, and compactness up to **bubbling**, where energy $8\pi^2$ concentrates at points — are the analytic foundation of Donaldson theory. The same phenomenon appears for harmonic maps and pseudo-holomorphic curves (see <TopicLink id="math.geom.symplectic-geometry">symplectic geometry</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Lie algebras, representations and invariant polynomials">
+
+Algebraically, the gauge group determines which forces exist (one gauge field for each basis element of $\mathfrak{g}$: eight gluons for $\mathfrak{su}(3)$) and the representation determines the charges of matter. Chern–Weil theory is the statement that each $\operatorname{Ad}$-invariant polynomial $P$ on $\mathfrak{g}$ gives a closed form $P(F_A)$ whose cohomology class does not depend on $A$: a ring homomorphism from invariant polynomials to $H^*(M; \R)$. Moduli of flat connections on surfaces are algebraic and symplectic at once (Atiyah–Bott, 1983; Goldman), and the ADHM construction turns instantons on $S^4$ into solutions of quadratic matrix equations.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Where the idea came from">
+
+Hermann Weyl (1918) tried to unify gravity and electromagnetism by a local change of *scale*; after Vladimir Fock and Fritz London noticed that quantum mechanics needs a local change of *phase* instead, Weyl reformulated the idea as the $U(1)$ gauge invariance of electromagnetism (1929). Chen-Ning Yang and Robert Mills (1954), and independently Ronald Shaw, generalised it to the non-abelian group $SU(2)$, and Ryoyu Utiyama (1956) to arbitrary groups. Physicists worked with potentials and field strengths for two decades before Wu and Yang's 1975 "dictionary" showed that their gauge fields were exactly the mathematicians' connections on fibre bundles — an independent discovery of the same structure. The physics of the strong force, confinement and the mass gap remains a source of hard mathematical problems.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Lattice gauge theory as an algorithm">
+
+Wilson's lattice formulation turns quantum gauge theory into a well-defined finite-dimensional integral over link variables, weighted by $e^{-S}$ with $S = \beta\sum_p (1 - \frac1N \operatorname{Re}\operatorname{tr} U_p)$. Monte Carlo sampling of this integral (Creutz, 1980, onwards) is one of the largest scientific computations ever undertaken: lattice QCD computes the masses of the proton and other hadrons from the theory's few parameters to within a few per cent. Such results are numerical evidence with careful error estimates; the continuum limit itself has not been constructed rigorously, which is the content of the mass gap problem. Gauge invariance is built into the algorithm exactly — it is the theorem formalised in this lesson's Lean code.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+The topological heart of the Aharonov–Bohm effect is the winding number of a loop around a hole. This optional trail explores it from the beginning.
+
+<Trail slug="loops-around-a-hole" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1865–1931: electromagnetism and phases.** James Clerk Maxwell's equations (1865). Hermann Weyl's gauge idea (1918), recast as phase invariance after Vladimir Fock (1926) and Fritz London (1927), in Weyl's 1929 paper. Paul Dirac's monopole and charge quantisation (1931).
+- **1949–1959: potentials matter.** Werner Ehrenberg and Raymond Siday (1949), then Yakir Aharonov and David Bohm (1959), predicted the effect of enclosed flux on electron interference; Akira Tonomura's group at Hitachi confirmed it beyond doubt (1986).
+- **1954–1975: non-abelian gauge theory.** Chen-Ning Yang and Robert Mills (1954), Ronald Shaw (1955), Ryoyu Utiyama (1956). The Higgs mechanism (Englert–Brout, Higgs, Guralnik–Hagen–Kibble, 1964). Gerard 't Hooft and Martinus Veltman's renormalisation (1971–72). David Gross, Frank Wilczek and David Politzer's asymptotic freedom (1973). Kenneth Wilson's lattice gauge theory (1974). Tai Tsun Wu and Yang's dictionary between gauge fields and fibre bundles (1975). Alexander Belavin, Alexander Polyakov, Albert Schwarz and Yuri Tyupkin found instantons (1975).
+- **1978–1983: mathematics takes over.** Michael Atiyah, Nigel Hitchin and Isadore Singer studied self-duality on 4-manifolds (1978); Atiyah, Vladimir Drinfeld, Hitchin and Yuri Manin constructed all instantons on $S^4$ (1978). Karen Uhlenbeck's compactness theorems (1982) and Clifford Taubes' existence theorems (1982) laid the analytic foundations. Atiyah and Raoul Bott studied Yang–Mills over Riemann surfaces (1983), building on M. S. Narasimhan and C. S. Seshadri (1965). Simon Donaldson's theorem (1983), with Michael Freedman's classification (1982), revealed exotic $\R^4$; both received Fields Medals in 1986.
+- **1988–today.** Andreas Floer's instanton homology (1988); Edward Witten's topological quantum field theories and Chern–Simons theory (1988–89; Fields Medal 1990); Nathan Seiberg and Witten's equations (1994); Mikio Furuta's 10/8 theorem (2001); Peter Kronheimer and Tomasz Mrowka's work on knots and 3-manifolds. Uhlenbeck received the Abel Prize in 2019, in part for her work in gauge theory.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- John Baez and Javier P. Muniain, *Gauge Fields, Knots and Gravity* (1994) — a friendly route from Maxwell's equations in forms to Chern–Simons theory.
+- Mikio Nakahara, *Geometry, Topology and Physics* (1990; 2nd ed. 2003) — bundles, connections, characteristic classes and instantons for physicists.
+- Gregory L. Naber, *Topology, Geometry and Gauge Fields: Foundations* (1997) — the BPST instanton and the Hopf bundle in full detail.
+- Daniel S. Freed and Karen K. Uhlenbeck, *Instantons and Four-Manifolds* (1984; 2nd ed. 1991) — the analysis behind Donaldson's theorem.
+- S. K. Donaldson and P. B. Kronheimer, *The Geometry of Four-Manifolds* (1990) — the definitive account of Donaldson theory.
+- John W. Morgan, *The Seiberg–Witten Equations and Applications to the Topology of Smooth Four-Manifolds* (1996).
+- Arthur Jaffe and Edward Witten, "Quantum Yang–Mills theory", in *The Millennium Prize Problems* (Clay Mathematics Institute, 2006) — the official statement of the mass gap problem.
+- Michael Creutz, *Quarks, Gluons and Lattices* (1983) — lattice gauge theory and its computation.
+
+A reading path: Baez–Muniain Part I → Nakahara Ch. 9–10 or Naber → Freed–Uhlenbeck → Donaldson–Kronheimer; and for the physics, Jaffe–Witten's problem statement.
+
+</Section>

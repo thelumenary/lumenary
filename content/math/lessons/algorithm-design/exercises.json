@@ -1,0 +1,294 @@
+{
+  "lesson": "algorithm-design",
+  "exercises": [
+    {
+      "id": "algorithm-design-merge-comparisons",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Two sorted lists have lengths $5$ and $7$. What is the largest number of comparisons the merging procedure can need to merge them?",
+      "answer": 11,
+      "feedback": [
+        {
+          "match": "12",
+          "message": "Almost: once one list is empty, the remaining items are copied without comparing. The very last item never needs a comparison."
+        },
+        {
+          "match": "35",
+          "message": "$5 \\times 7$ would compare every pair. Merging only compares the two *front* items, and each comparison moves one item to the output."
+        }
+      ],
+      "hints": [
+        "Each comparison moves exactly one item to the output.",
+        "In the worst case the lists run out at the same time: how many items are moved by comparisons before the last one?"
+      ],
+      "solution": "Each comparison sends one item to the output, and when one list is empty the rest is copied with no comparisons. At least one item (the last) is placed without a comparison, so at most $5 + 7 - 1 = 11$ comparisons are made. The bound is reached when the two largest items lie in different lists, for example $1, 2, 3, 4, 12$ and $5, 6, \\dots, 11$: four comparisons place $1, 2, 3, 4$, seven more place $5, \\dots, 11$ (each compared with $12$), and $12$ is copied at the end."
+    },
+    {
+      "id": "algorithm-design-lower-bound-five",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "What is the decision-tree lower bound $\\lceil \\log_2 n! \\rceil$ on the worst-case number of comparisons needed to sort $n = 5$ distinct items?",
+      "answer": 7,
+      "feedback": [
+        {
+          "match": "120",
+          "message": "$5! = 120$ is the number of leaves the tree needs. The number of comparisons is the *height*, and a tree of height $h$ has at most $2^h$ leaves."
+        },
+        {
+          "match": "8",
+          "message": "$8$ is what mergesort needs in the worst case. The lower bound asks for the smallest $h$ with $2^h \\ge 120$."
+        },
+        {
+          "match": "6",
+          "message": "$2^6 = 64$ leaves are not enough for $120$ orderings."
+        }
+      ],
+      "hints": [
+        "A decision tree that sorts $5$ items needs at least $5! = 120$ leaves.",
+        "Find the smallest $h$ with $2^h \\ge 120$."
+      ],
+      "solution": "The tree needs at least $5! = 120$ leaves, and a tree of height $h$ has at most $2^h$ leaves. Since $2^6 = 64 < 120 \\le 128 = 2^7$, the height is at least $7$. (Seven comparisons do suffice for five items — the 'merge insertion' method of Lester Ford and Selmer Johnson, 1959, achieves this — while mergesort uses $8$.) The Lean theorem `five_items_need_seven` proves the bound."
+    },
+    {
+      "id": "algorithm-design-mergesort-recurrence",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Mergesort's worst-case comparison count satisfies $C(1) = 0$ and $C(n) = 2C(n/2) + n - 1$ for $n$ a power of two. Compute $C(8)$.",
+      "answer": 17,
+      "feedback": [
+        {
+          "match": "24",
+          "message": "That is $8 \\log_2 8$, the upper bound $n\\lceil\\log_2 n\\rceil$. The exact recurrence subtracts $1$ for every merge."
+        },
+        {
+          "match": "7",
+          "message": "That is only the final merge. Add the comparisons made inside the two halves."
+        }
+      ],
+      "hints": [
+        "Compute $C(2)$, then $C(4)$, then $C(8)$.",
+        "$C(2) = 2 \\cdot 0 + 1 = 1$ and $C(4) = 2 \\cdot 1 + 3 = 5$."
+      ],
+      "solution": "$C(2) = 1$, $C(4) = 2 \\cdot 1 + 3 = 5$, $C(8) = 2 \\cdot 5 + 7 = 17$. In general $C(2^k) = k\\,2^k - 2^k + 1$ (check: $3 \\cdot 8 - 8 + 1 = 17$), a little below the bound $n \\log_2 n = 24$; the lower bound is $\\lceil \\log_2 8! \\rceil = \\lceil \\log_2 40320 \\rceil = 16$."
+    },
+    {
+      "id": "algorithm-design-mst-weight",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "The network of towns in the Explore section has these cable costs: $AB = 4$, $AC = 1$, $BC = 2$, $BD = 5$, $CD = 8$, $CE = 10$, $DE = 3$. Run Kruskal's algorithm. What is the total cost of the minimum spanning tree?",
+      "answer": 11,
+      "feedback": [
+        {
+          "match": "10",
+          "message": "Check for cycles: after taking $AC$ and $BC$, the edge $AB$ would close the cycle $A$–$B$–$C$ and must be skipped."
+        },
+        {
+          "match": "14",
+          "message": "Kruskal never needs $CD = 8$ here: after $AC, BC, DE$ the cheaper edge $BD = 5$ already joins the two components."
+        },
+        {
+          "match": "16",
+          "message": "That uses the expensive edge $CE$. Sort all edges by cost and take them in that order, skipping only those that close a cycle."
+        }
+      ],
+      "hints": [
+        "Sort the edges: $AC(1), BC(2), DE(3), AB(4), BD(5), CD(8), CE(10)$.",
+        "Take each edge unless its endpoints are already connected. Stop when you have $5 - 1 = 4$ edges."
+      ],
+      "solution": "In order of cost: take $AC (1)$, $BC (2)$, $DE (3)$; skip $AB (4)$, since $A$ and $B$ are already joined through $C$; take $BD (5)$, which joins $\\{A, B, C\\}$ to $\\{D, E\\}$. Now there are $4$ edges, a spanning tree of cost $1 + 2 + 3 + 5 = 11$. By Theorem 4 it is a minimum spanning tree."
+    },
+    {
+      "id": "algorithm-design-dijkstra-negative",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Run Dijkstra's algorithm from $s$ on the directed graph with edges $s \\to a$ (weight $1$), $s \\to b$ (weight $2$) and $b \\to a$ (weight $-2$). What does it report for $a$?",
+      "options": [
+        {
+          "id": "a",
+          "label": "$1$ — which is wrong, since the path $s \\to b \\to a$ has weight $0$.",
+          "correct": true,
+          "feedback": "Yes. $a$ is finished with tentative value $1$ before $b$ is processed, and finished vertices are never updated."
+        },
+        {
+          "id": "b",
+          "label": "$0$, the correct distance.",
+          "correct": false,
+          "feedback": "The correct distance is $0$, but Dijkstra finishes $a$ (value $1$, the smallest tentative value) before it looks at the edge $b \\to a$."
+        },
+        {
+          "id": "c",
+          "label": "$-2$",
+          "correct": false,
+          "feedback": "$-2$ is the weight of the edge $b \\to a$, not of a path from $s$."
+        },
+        {
+          "id": "d",
+          "label": "It detects the negative edge and stops with an error.",
+          "correct": false,
+          "feedback": "Dijkstra's algorithm does not check the signs of weights; it simply returns a wrong answer. Bellman–Ford is the right tool here."
+        }
+      ],
+      "hints": [
+        "After finishing $s$, the tentative values are $d(a) = 1$ and $d(b) = 2$. Which vertex is finished next?",
+        "Once a vertex is finished, its value never changes."
+      ],
+      "solution": "Dijkstra finishes $s$ ($d = 0$), then $a$ ($d(a) = 1$, the smaller tentative value), then $b$ ($d(b) = 2$). Relaxing $b \\to a$ would give $0$, but $a$ is already finished. So it reports $1$, while the true distance is $0$. The proof of Theorem 5 breaks at the step $\\delta(s, y) \\le \\delta(s, u)$, which needs non-negative weights."
+    },
+    {
+      "id": "algorithm-design-dijkstra-proof-step",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In the proof of Theorem 5 (Dijkstra), which step uses the hypothesis that all edge weights are non-negative?",
+      "options": [
+        {
+          "id": "a",
+          "label": "$\\delta(s, y) \\le \\delta(s, u)$, because $y$ lies on a shortest path to $u$.",
+          "correct": true,
+          "feedback": "Right: the part of the path from $y$ to $u$ must have weight $\\ge 0$. With a negative edge after $y$, $u$ could be closer than $y$."
+        },
+        {
+          "id": "b",
+          "label": "$d(y) \\le d(x) + w(x, y)$.",
+          "correct": false,
+          "feedback": "This holds because the edge $x \\to y$ was relaxed when $x$ was finished — whatever the sign of $w(x, y)$."
+        },
+        {
+          "id": "c",
+          "label": "$d(u) \\le d(y)$.",
+          "correct": false,
+          "feedback": "This holds because $u$ was chosen with the smallest tentative value among unfinished vertices."
+        },
+        {
+          "id": "d",
+          "label": "$\\delta(s, x) + w(x, y) = \\delta(s, y)$.",
+          "correct": false,
+          "feedback": "A prefix of a shortest path is a shortest path whenever shortest paths exist; this does not need non-negative weights."
+        }
+      ],
+      "hints": [
+        "Go through the chain of inequalities and ask, for each, *why* it is true.",
+        "Which inequality compares a vertex on the path with a vertex further along it?"
+      ],
+      "solution": "The chain is $d(y) \\le d(x) + w(x, y) = \\delta(s, y) \\le \\delta(s, u) \\le d(u) \\le d(y)$. Only $\\delta(s, y) \\le \\delta(s, u)$ uses non-negativity: it says the rest of the shortest path, from $y$ to $u$, cannot have negative weight. The counterexample in the previous exercise breaks exactly there."
+    },
+    {
+      "id": "algorithm-design-greedy-coins",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Suppose a currency has coins worth $1$, $4$ and $5$. For which amount does the greedy method (always use the largest coin that fits) **not** use the fewest coins?",
+      "options": [
+        {
+          "id": "a",
+          "label": "$8$",
+          "correct": true,
+          "feedback": "Yes: greedy pays $5 + 1 + 1 + 1$ (four coins), but $4 + 4$ uses two."
+        },
+        {
+          "id": "b",
+          "label": "$9$",
+          "correct": false,
+          "feedback": "Greedy pays $5 + 4$, two coins, and one coin cannot make $9$."
+        },
+        {
+          "id": "c",
+          "label": "$10$",
+          "correct": false,
+          "feedback": "Greedy pays $5 + 5$, which is optimal."
+        },
+        {
+          "id": "d",
+          "label": "$7$",
+          "correct": false,
+          "feedback": "Greedy pays $5 + 1 + 1$ (three coins); the alternative $4 + 1 + 1 + 1$ is worse, and no two coins sum to $7$."
+        }
+      ],
+      "hints": [
+        "For each amount, compute the greedy number of coins and look for a better combination.",
+        "Try using two of the middle coin."
+      ],
+      "solution": "For $8$, greedy takes $5$, then three $1$s: four coins, while $4 + 4$ takes two. For $7$, $9$ and $10$ greedy is optimal. As for coins $1, 3, 4$, the form of the greedy algorithm says nothing about its correctness; dynamic programming ($m(x) = 1 + \\min_c m(x - c)$) always finds the optimum."
+    },
+    {
+      "id": "algorithm-design-lcs-length",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "What is the length of a longest common subsequence of `AGGTAB` and `GXTXAYB`?",
+      "answer": 4,
+      "feedback": [
+        {
+          "match": "3",
+          "message": "There is a longer one. Look for `G`, then `T`, then `A`, then `B` in both strings."
+        },
+        {
+          "match": "5",
+          "message": "Check that your subsequence really appears, in order, in both strings: `GXTXAYB` has only one `G`."
+        }
+      ],
+      "hints": [
+        "Fill the table $L(i, j)$ row by row, or look for a long common pattern directly.",
+        "`G…T…A…B` appears in both strings, in order."
+      ],
+      "solution": "`GTAB` is a common subsequence: in `AGGTAB` take G (position 2), T (4), A (5), B (6); in `GXTXAYB` take G (1), T (3), A (5), B (7). No common subsequence is longer: the letters X and Y do not occur in `AGGTAB`, so a common subsequence uses only letters of `GXTXAYB` from G, T, A, B, and each of these occurs there only once — at most $4$ letters. The dynamic-programming table confirms $L(6, 7) = 4$."
+    },
+    {
+      "id": "algorithm-design-sort-spec",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "Which specification correctly says that a Lean function `sort : List ℕ → List ℕ` is a sorting function? (`Sorted l` means each entry is `≤` the later ones; `l₁ ~ l₂` means `l₁` is a permutation of `l₂`.)",
+      "options": [
+        {
+          "id": "a",
+          "label": "`∀ l, Sorted (sort l) ∧ sort l ~ l`",
+          "correct": true,
+          "feedback": "Yes: the output must be in order *and* contain exactly the input's items with the right multiplicities. Core Lean proves both for `List.mergeSort`."
+        },
+        {
+          "id": "b",
+          "label": "`∀ l, Sorted (sort l)`",
+          "correct": false,
+          "feedback": "The function `fun _ => []` satisfies this: the empty list is sorted. The specification must relate the output to the input."
+        },
+        {
+          "id": "c",
+          "label": "`∀ l, sort l ~ l`",
+          "correct": false,
+          "feedback": "The identity function satisfies this without sorting anything."
+        },
+        {
+          "id": "d",
+          "label": "`∀ l, Sorted (sort l) ∧ (sort l).length = l.length`",
+          "correct": false,
+          "feedback": "The function sending a list of length $n$ to $n$ zeros satisfies this. Equal length does not mean same items."
+        }
+      ],
+      "hints": [
+        "For each option, look for a silly function that satisfies it.",
+        "A correct specification must rule out both 'throw the data away' and 'do nothing'."
+      ],
+      "solution": "Only (a) is right. (b) is satisfied by the constant function `[]`, (c) by the identity, and (d) by a function that outputs the right number of zeros. Writing a specification forces you to say what correctness *means* — the same two properties, sortedness and permutation, that the lemma and Theorem 1 prove for mergesort."
+    },
+    {
+      "id": "algorithm-design-python-lcs",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Write `lcs_length(x, y)` that returns the length of a longest common subsequence of the strings `x` and `y`, by filling the dynamic-programming table of Theorem 6 in $O(mn)$ time.",
+      "starter": "def lcs_length(x, y):\n    # Fill a (len(x)+1) x (len(y)+1) table L with\n    # L[i][j] = LCS length of x[:i] and y[:j].\n    return 0\n",
+      "tests": "assert lcs_length('ABCBDAB', 'BDCABA') == 4\nassert lcs_length('AGGTAB', 'GXTXAYB') == 4\nassert lcs_length('', 'ABC') == 0\nassert lcs_length('ACGT', 'ACGT') == 4\nassert lcs_length('AAAA', 'BBB') == 0\nassert lcs_length('GATTACA' * 20, 'TAGCAT' * 20) == lcs_length('TAGCAT' * 20, 'GATTACA' * 20)\nprint('All tests passed!')\n",
+      "hints": [
+        "Start with `L = [[0] * (len(y) + 1) for _ in range(len(x) + 1)]`.",
+        "For `i` from 1 to `len(x)` and `j` from 1 to `len(y)`: if `x[i-1] == y[j-1]` then `L[i][j] = L[i-1][j-1] + 1`, else `L[i][j] = max(L[i-1][j], L[i][j-1])`."
+      ],
+      "solution": "```python\ndef lcs_length(x, y):\n    m, n = len(x), len(y)\n    L = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if x[i - 1] == y[j - 1]:\n                L[i][j] = L[i - 1][j - 1] + 1\n            else:\n                L[i][j] = max(L[i - 1][j], L[i][j - 1])\n    return L[m][n]\n```\n\nEach of the $(m+1)(n+1)$ entries is computed once, in constant time, from entries already filled in, so the running time is $O(mn)$. The last test uses strings of length $140$ and $120$: the plain recursion would never finish, but the table has only about $17\\,000$ cells. Correctness is Theorem 6 (and the Lean theorems `lcs_optimal` and `lcs_achieved`)."
+    }
+  ]
+}

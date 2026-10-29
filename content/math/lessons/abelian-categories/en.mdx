@@ -1,0 +1,453 @@
+---
+slug: abelian-categories
+topic: math.cat.abelian-categories
+title: Abelian categories
+subtitle: The axioms that make diagram chasing work — for modules, sheaves, representations and chain complexes at once.
+level: grad
+ages: Graduate
+minutes: 130
+order: 7033
+objectives:
+  - Define additive and abelian categories, kernels, cokernels, images and exact sequences, and exact functors
+  - Verify that $R\text{-}\cat{Mod}$ and sheaves of abelian groups on a space are abelian, and explain why free abelian groups, Banach spaces and vector bundles are additive but not abelian
+  - Prove that in an abelian category a monic epimorphism is an isomorphism
+  - Prove the five lemma and the snake lemma by diagram chasing, and explain how they transfer to every abelian category
+  - State the Freyd–Mitchell embedding theorem and explain what it does and does not allow
+narrators: []
+lean:
+  - Lumenary.AbelianCategories.isIso_of_mono_of_epi
+  - Lumenary.AbelianCategories.two_mul_injective
+  - Lumenary.AbelianCategories.two_mul_not_surjective
+  - Lumenary.AbelianCategories.two_mul_epi_torsion_free
+  - Lumenary.AbelianCategories.two_mul_not_epi_ab
+  - Lumenary.AbelianCategories.short_five_injective
+  - Lumenary.AbelianCategories.short_five_surjective
+  - Lumenary.AbelianCategories.module_cat_abelian
+  - Lumenary.AbelianCategories.sheaves_abelian
+  - Lumenary.AbelianCategories.sheaves_on_space_abelian
+  - Lumenary.AbelianCategories.five_lemma
+  - Lumenary.AbelianCategories.snake_lemma
+  - Lumenary.AbelianCategories.freyd_mitchell
+compute: [abelian_categories_snake, abelian_categories_free_cokernels]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Homological algebra without elements">
+
+Homology was born in topology and grew up in algebra: chain complexes of abelian groups or modules, exact sequences, long exact sequences, derived functors. By the early 1950s the same constructions were needed for sheaves on a topological space, for representations of groups and Lie algebras, for graded and filtered objects. Each setting had its own proofs of the same lemmas — the five lemma, the snake lemma, the existence of long exact sequences — usually by **chasing elements** around diagrams.
+
+In 1955 David Buchsbaum, and in 1957 Alexander Grothendieck in his "Tôhoku" paper, asked what a category must satisfy for all this to work. The answer is short: morphisms can be added; there are kernels and cokernels; and the two possible notions of "image" agree. Categories satisfying these axioms are **abelian**. Modules over any ring are the model example, sheaves of abelian groups on any space are the motivating one, and the Freyd–Mitchell theorem says, in a precise sense, that every small abelian category looks like a category of modules — so that element chases are legitimate everywhere.
+
+This lesson assumes <TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink> and <TopicLink id="math.algebra.modules">modules</TopicLink>, including exact sequences of modules.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Two images that must agree">
+
+In $R\text{-}\cat{Mod}$, a homomorphism $f : A \to B$ has a kernel $\ker f \subseteq A$, a cokernel $B / \operatorname{im} f$, and the first isomorphism theorem $A / \ker f \cong \operatorname{im} f$. Category-theoretically, kernels and cokernels are limits and colimits, but "image" and "$A / \ker f$" have to be expressed through them:
+
+- the **image** of $f$ is the kernel of its cokernel, $\ker(B \to \operatorname{coker} f)$ — the part of $B$ that the cokernel kills;
+- the **coimage** of $f$ is the cokernel of its kernel, $\operatorname{coker}(\ker f \to A)$ — $A$ with the kernel collapsed.
+
+There is always a canonical morphism $\operatorname{coim} f \to \operatorname{im} f$. The first isomorphism theorem says it is an isomorphism. An abelian category is, essentially, an additive category with kernels and cokernels in which **the first isomorphism theorem holds** for every morphism. When it fails, strange things happen: a morphism can be monic and epic without being invertible, and diagram chases break down.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Additive and abelian categories">
+
+<Definition term="preadditive and additive category">
+
+A category is **preadditive** (or **$\cat{Ab}$-enriched**) if each hom-set $\mathcal{A}(X, Y)$ is an abelian group and composition is bilinear: $h(f + g) = hf + hg$ and $(f + g)k = fk + gk$. It is **additive** if moreover it has a **zero object** $0$ (both initial and terminal) and all binary **biproducts**: objects $X \oplus Y$ with maps $i_X, i_Y$ into and $p_X, p_Y$ out of it such that $p_X i_X = \mathrm{id}$, $p_Y i_Y = \mathrm{id}$, $p_Y i_X = 0$, $p_X i_Y = 0$ and $i_X p_X + i_Y p_Y = \mathrm{id}_{X \oplus Y}$. In a preadditive category a biproduct is simultaneously a product and a coproduct (see <TopicLink id="math.cat.products-coproducts">products and coproducts</TopicLink>).
+
+</Definition>
+
+<Definition term="kernel, cokernel, image, coimage">
+
+In a category with a zero object, a **kernel** of $f : A \to B$ is a morphism $k : K \to A$ with $fk = 0$ that is universal: every $x : X \to A$ with $fx = 0$ factors uniquely as $x = k\bar{x}$. A **cokernel** is dually a universal $c : B \to Q$ with $cf = 0$. When they exist, $\operatorname{im} f = \ker(\operatorname{coker} f)$ and $\operatorname{coim} f = \operatorname{coker}(\ker f)$, and $f$ factors as $A \to \operatorname{coim} f \to \operatorname{im} f \to B$.
+
+</Definition>
+
+<Definition term="abelian category">
+
+An **abelian category** is an additive category in which every morphism has a kernel and a cokernel, every monomorphism is a kernel (of some morphism) and every epimorphism is a cokernel. Equivalently: an additive category with kernels and cokernels in which the canonical map $\operatorname{coim} f \to \operatorname{im} f$ is an isomorphism for every $f$.
+
+</Definition>
+
+<Definition term="exact sequence; exact functor">
+
+In an abelian category, $A \xrightarrow{f} B \xrightarrow{g} C$ is **exact at $B$** if $gf = 0$ and the induced map $\operatorname{im} f \to \ker g$ is an isomorphism. A **short exact sequence** is $0 \to A \to B \to C \to 0$ exact at $A$, $B$ and $C$. An additive functor $F$ between abelian categories is **exact** if it preserves short exact sequences, **left exact** if it sends $0 \to A \to B \to C$ exact to $0 \to FA \to FB \to FC$ exact, and **right exact** dually.
+
+</Definition>
+
+In an abelian category a morphism is monic iff its kernel is $0$ and epic iff its cokernel is $0$, and every morphism factors as an epimorphism followed by a monomorphism (through its image). These follow from the axioms with a little work; see Freyd, *Abelian Categories*, Chapter 2, or Weibel, *An Introduction to Homological Algebra*, Appendix A.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Modules, and categories built from them">
+
+For any ring $R$, $R\text{-}\cat{Mod}$ is abelian (proved below), in particular $\cat{Ab}$ and $\cat{Vect}_k$. Full subcategories closed under kernels, cokernels and finite direct sums are abelian too: finite abelian groups, finite-dimensional vector spaces, finitely generated modules over a noetherian ring. Chain complexes $\mathrm{Ch}(\mathcal{A})$ of objects of an abelian category, representations $\mathrm{Rep}_k(G)$ of a group, and functor categories $[\mathcal{C}, \mathcal{A}]$ (kernels and cokernels computed objectwise) are abelian.
+
+</Example>
+
+<Example title="Sheaves of abelian groups">
+
+For a topological space $X$, sheaves of abelian groups $\mathrm{Sh}(X; \cat{Ab})$ form an abelian category. The kernel of $\varphi : \mathcal{F} \to \mathcal{G}$ is computed openwise, $(\ker \varphi)(U) = \ker(\varphi_U)$, which is again a sheaf. The cokernel is **not** openwise: $U \mapsto \operatorname{coker}(\varphi_U)$ is only a presheaf, and the cokernel in sheaves is its sheafification. A sequence of sheaves is exact if and only if it is exact on every stalk. Grothendieck proved that $\mathrm{Sh}(X; \cat{Ab})$ satisfies his axiom AB5 and has a generator, hence has **enough injectives** — which is what makes sheaf cohomology $H^i(X, -)$, the right derived functors of global sections, possible (see <TopicLink id="math.geom.sheaves">sheaves</TopicLink>).
+
+</Example>
+
+<Example title="The exponential sequence">
+
+On $X = \C \setminus \{0\}$ let $\mathcal{O}$ be the sheaf of holomorphic functions and $\mathcal{O}^\times$ that of nowhere-vanishing ones (a sheaf of groups under multiplication). The sequence
+
+$$
+0 \to \underline{\Z} \xrightarrow{\ \cdot 2\pi i\ } \mathcal{O} \xrightarrow{\ \exp\ } \mathcal{O}^\times \to 0
+$$
+
+is exact as a sequence of sheaves: on a small disc every nonvanishing holomorphic function has a logarithm. But on global sections, $\exp : \mathcal{O}(X) \to \mathcal{O}^\times(X)$ is **not surjective**: the function $z$ has no holomorphic logarithm on $X$, since that would force $\oint_{|z| = 1} dz/z = 0$, whereas the integral is $2\pi i$. So the global-sections functor is left exact but not exact; the failure is measured by $H^1(X, \underline{\Z}) \cong \Z$, and the obstruction attached to $z$ is its **winding number**.
+
+</Example>
+
+<Example title="Additive but not abelian: free abelian groups">
+
+The full subcategory $\cat{FreeAb} \subseteq \cat{Ab}$ of free abelian groups is additive (direct sums of free groups are free) and has kernels (subgroups of free abelian groups are free); its full subcategory of finitely generated free groups $\Z^n$ even has cokernels (see the second experiment). But multiplication by $2$ on $\Z$ is monic (injective) and **epic in $\cat{FreeAb}$**: if $g, h : \Z \to F$ with $F$ free and $2g = 2h$, then $g = h$ because $F$ has no 2-torsion. It is not an isomorphism, so by Proposition 3 below $\cat{FreeAb}$ is not abelian. The cokernel of $\cdot 2$ in $\cat{Ab}$ is $\Z/2$, which is missing from $\cat{FreeAb}$; its cokernel in $\cat{FreeAb}$ is $\Z \to 0$ (every map to a free group killing $2\Z$ is zero), and the canonical map $\operatorname{coim} \to \operatorname{im}$ is $\cdot 2 : \Z \to \Z$, not an isomorphism. The second experiment computes this torsion for many integer matrices.
+
+</Example>
+
+<Example title="More non-examples">
+
+- **Banach spaces** with bounded linear maps: the inclusion $\ell^1 \hookrightarrow \ell^2$ is injective (monic) and has dense image (epic: two bounded maps agreeing on a dense subspace agree), but is not surjective, so it is not an isomorphism.
+- **Filtered vector spaces** with filtration-preserving maps: the identity of $k$, from the filtration $F^0 = k \supseteq F^1 = 0$ to the filtration $G^0 = G^1 = k \supseteq G^2 = 0$, is monic and epic but its inverse does not preserve the filtrations. (This is why Hodge theory needs *strict* morphisms.)
+- **Vector bundles** on $\C$: multiplication by $z$ on the trivial line bundle is monic, and epic among vector bundles (bundles have no torsion, so $g z = h z$ forces $g = h$), but not an isomorphism; its cokernel in sheaves is the skyscraper sheaf at $0$, which is not a bundle. Coherent sheaves fix this: they form an abelian category containing the vector bundles.
+- $\cat{Grp}$ is not even additive: hom-sets are not abelian groups in a way compatible with composition.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems">
+
+<Theorem name="Proposition 1 (R-Mod is abelian)">
+
+For every ring $R$, the category of left $R$-modules is abelian.
+
+</Theorem>
+
+<Proof>
+
+Hom-sets are abelian groups under pointwise addition and composition is bilinear; $0$ is a zero object and $A \oplus B$ with the usual inclusions and projections is a biproduct. The kernel of $f : A \to B$ is the inclusion of $\{a : f(a) = 0\}$ and the cokernel is the projection $B \to B / f(A)$; their universal properties are the usual factorisation properties of submodules and quotients. If $f$ is a monomorphism it is injective (test with maps $R \to A$), and then $f$ is the kernel of $B \to B / f(A)$: a map $x : X \to B$ with image in $f(A)$ factors uniquely through $f$. If $f$ is an epimorphism it is surjective (test with the two maps $B \to B / f(A)$ given by the projection and $0$), and then it is the cokernel of $\ker f \to A$ by the first isomorphism theorem.
+
+</Proof>
+
+<Theorem name="Proposition 2 (mono + epi = iso)">
+
+In an abelian category, a morphism that is both a monomorphism and an epimorphism is an isomorphism.
+
+</Theorem>
+
+<Proof>
+
+Let $f : X \to Y$ be monic and epic. Being monic, $f$ is the kernel of some $g : Y \to Z$; in particular $gf = 0 = 0 \circ f$, and since $f$ is epic, $g = 0$. Now $\mathrm{id}_Y$ satisfies $g \circ \mathrm{id}_Y = 0$, so by the universal property of the kernel there is $h : Y \to X$ with $fh = \mathrm{id}_Y$. Then $f(hf) = (fh)f = f = f \circ \mathrm{id}_X$, and since $f$ is monic, $hf = \mathrm{id}_X$.
+
+</Proof>
+
+<Theorem name="Corollary 3 (free abelian groups do not form an abelian category)">
+
+$\cat{FreeAb}$ is additive but not abelian.
+
+</Theorem>
+
+<Proof>
+
+As explained in the examples, $\cdot 2 : \Z \to \Z$ is monic and epic in $\cat{FreeAb}$ but not an isomorphism (it is not surjective, and an isomorphism in a full subcategory of $\cat{Ab}$ is a bijection). By Proposition 2, $\cat{FreeAb}$ is not abelian. The same argument works for torsion-free abelian groups.
+
+</Proof>
+
+Now the two great diagram lemmas, proved for modules by chasing elements.
+
+<Theorem name="Theorem 4 (the five lemma)">
+
+Consider a commutative diagram of $R$-modules with exact rows
+
+$$
+\begin{array}{ccccccccc}
+A_1 & \xrightarrow{f_1} & A_2 & \xrightarrow{f_2} & A_3 & \xrightarrow{f_3} & A_4 & \xrightarrow{f_4} & A_5 \\
+\downarrow h_1 & & \downarrow h_2 & & \downarrow h_3 & & \downarrow h_4 & & \downarrow h_5 \\
+B_1 & \xrightarrow{g_1} & B_2 & \xrightarrow{g_2} & B_3 & \xrightarrow{g_3} & B_4 & \xrightarrow{g_4} & B_5
+\end{array}
+$$
+
+If $h_2$ and $h_4$ are isomorphisms, $h_1$ is surjective and $h_5$ is injective, then $h_3$ is an isomorphism.
+
+</Theorem>
+
+<Proof>
+
+*Injective.* Let $h_3(x) = 0$. Then $h_4 f_3(x) = g_3 h_3(x) = 0$, so $f_3(x) = 0$ ($h_4$ injective) and $x = f_2(y)$ by exactness at $A_3$. Then $g_2 h_2(y) = h_3 f_2(y) = 0$, so $h_2(y) = g_1(z')$ (exactness at $B_2$), and $z' = h_1(z)$ ($h_1$ surjective). Now $h_2 f_1(z) = g_1 h_1(z) = h_2(y)$, so $f_1(z) = y$ ($h_2$ injective), and $x = f_2 f_1(z) = 0$.
+
+*Surjective.* Let $x' \in B_3$. Write $g_3(x') = h_4(u)$ ($h_4$ surjective). Then $h_5 f_4(u) = g_4 h_4(u) = g_4 g_3(x') = 0$, so $f_4(u) = 0$ ($h_5$ injective) and $u = f_3(v)$. Now $g_3(x' - h_3 v) = h_4(u) - h_4 f_3(v) = 0$, so $x' - h_3(v) = g_2(w')$ with $w' = h_2(w)$ ($h_2$ surjective), and $x' = h_3(v) + g_2 h_2(w) = h_3(v + f_2 w)$.
+
+</Proof>
+
+The proof splits into two "four lemmas": injectivity used only that $h_2, h_4$ are injective and $h_1$ surjective; surjectivity only that $h_2, h_4$ are surjective and $h_5$ injective.
+
+<Theorem name="Theorem 5 (the snake lemma)">
+
+Consider a commutative diagram of $R$-modules with exact rows
+
+$$
+\begin{array}{ccccccc}
+ & & A & \xrightarrow{f} & B & \xrightarrow{g} & C \to 0 \\
+ & & \downarrow \alpha & & \downarrow \beta & & \downarrow \gamma \\
+0 \to & & A' & \xrightarrow{f'} & B' & \xrightarrow{g'} & C'
+\end{array}
+$$
+
+Then there is a homomorphism $\delta : \ker \gamma \to \operatorname{coker} \alpha$ such that
+
+$$
+\ker \alpha \xrightarrow{\ f\ } \ker \beta \xrightarrow{\ g\ } \ker \gamma \xrightarrow{\ \delta\ } \operatorname{coker} \alpha \xrightarrow{\ \bar f'\ } \operatorname{coker} \beta \xrightarrow{\ \bar g'\ } \operatorname{coker} \gamma
+$$
+
+is exact. If $f$ is injective so is the first map, and if $g'$ is surjective so is the last.
+
+</Theorem>
+
+<Proof>
+
+The maps on kernels and cokernels are induced by $f, g, f', g'$ (commutativity makes them well defined).
+
+*Construction of $\delta$.* Let $z \in \ker \gamma$. Choose $b \in B$ with $g(b) = z$ ($g$ surjective). Then $g'\beta(b) = \gamma g(b) = 0$, so $\beta(b) = f'(a')$ for a unique $a' \in A'$ ($f'$ injective, row exact). Put $\delta(z) = [a'] \in \operatorname{coker} \alpha$. If $b_1$ is another choice, $b - b_1 = f(a)$ for some $a$, so $f'(a' - a'_1) = \beta f(a) = f'\alpha(a)$ and $a' - a_1' = \alpha(a)$: the class $[a']$ is independent of the choice. Linearity follows from the same independence.
+
+*Exactness at $\ker \beta$.* If $b \in \ker \beta$ and $g(b) = 0$, then $b = f(a)$, and $f'\alpha(a) = \beta(b) = 0$ gives $\alpha(a) = 0$. Conversely $gf = 0$.
+
+*Exactness at $\ker \gamma$.* If $z = g(b)$ with $\beta(b) = 0$, then $a' = 0$ and $\delta(z) = 0$. Conversely, if $\delta(z) = 0$ then $a' = \alpha(a)$, and $b - f(a)$ lies in $\ker \beta$ with $g(b - f(a)) = z$.
+
+*Exactness at $\operatorname{coker} \alpha$.* $\bar f'\delta(z) = [f'(a')] = [\beta(b)] = 0$. Conversely, if $[f'(a')] = 0$ in $\operatorname{coker}\beta$, then $f'(a') = \beta(b)$ for some $b$; $z = g(b)$ satisfies $\gamma(z) = g'\beta(b) = g'f'(a') = 0$, and using $b$ as the lift, $\delta(z) = [a']$.
+
+*Exactness at $\operatorname{coker}\beta$.* $\bar g' \bar f' = 0$. If $[g'(b')] = 0$ in $\operatorname{coker} \gamma$, write $g'(b') = \gamma(g(b)) = g'(\beta(b))$; then $b' - \beta(b) = f'(a')$, so $[b'] = \bar f'[a']$.
+
+The statements about the end maps are immediate.
+
+</Proof>
+
+<CommutativeDiagram
+  objects={[
+    { id: "ka", tex: "\\ker \\alpha", row: 0, col: 1 },
+    { id: "kb", tex: "\\ker \\beta", row: 0, col: 2 },
+    { id: "kc", tex: "\\ker \\gamma", row: 0, col: 3 },
+    { id: "A", tex: "A", row: 1, col: 1 },
+    { id: "B", tex: "B", row: 1, col: 2 },
+    { id: "C", tex: "C", row: 1, col: 3 },
+    { id: "z1", tex: "0", row: 1, col: 4 },
+    { id: "z0", tex: "0", row: 2, col: 0 },
+    { id: "A2", tex: "A'", row: 2, col: 1 },
+    { id: "B2", tex: "B'", row: 2, col: 2 },
+    { id: "C2", tex: "C'", row: 2, col: 3 },
+    { id: "ca", tex: "\\operatorname{coker} \\alpha", row: 3, col: 1 },
+    { id: "cb", tex: "\\operatorname{coker} \\beta", row: 3, col: 2 },
+    { id: "cc", tex: "\\operatorname{coker} \\gamma", row: 3, col: 3 }
+  ]}
+  arrows={[
+    { from: "ka", to: "kb", tex: "" },
+    { from: "kb", to: "kc", tex: "" },
+    { from: "ka", to: "A", tex: "", style: "hook" },
+    { from: "kb", to: "B", tex: "", style: "hook" },
+    { from: "kc", to: "C", tex: "", style: "hook" },
+    { from: "A", to: "B", tex: "f" },
+    { from: "B", to: "C", tex: "g" },
+    { from: "C", to: "z1", tex: "" },
+    { from: "A", to: "A2", tex: "\\alpha" },
+    { from: "B", to: "B2", tex: "\\beta" },
+    { from: "C", to: "C2", tex: "\\gamma" },
+    { from: "z0", to: "A2", tex: "" },
+    { from: "A2", to: "B2", tex: "f'", labelSide: "right" },
+    { from: "B2", to: "C2", tex: "g'", labelSide: "right" },
+    { from: "A2", to: "ca", tex: "", style: "epi" },
+    { from: "B2", to: "cb", tex: "", style: "epi" },
+    { from: "C2", to: "cc", tex: "", style: "epi" },
+    { from: "ca", to: "cb", tex: "" },
+    { from: "cb", to: "cc", tex: "" }
+  ]}
+  caption="The diagram of the snake lemma: kernels of the vertical maps on top, cokernels below."
+/>
+
+<CommutativeDiagram
+  objects={[
+    { id: "ka", tex: "\\ker \\alpha", row: 0, col: 0 },
+    { id: "kb", tex: "\\ker \\beta", row: 0, col: 1 },
+    { id: "kc", tex: "\\ker \\gamma", row: 0, col: 2 },
+    { id: "ca", tex: "\\operatorname{coker} \\alpha", row: 1, col: 0 },
+    { id: "cb", tex: "\\operatorname{coker} \\beta", row: 1, col: 1 },
+    { id: "cc", tex: "\\operatorname{coker} \\gamma", row: 1, col: 2 }
+  ]}
+  arrows={[
+    { from: "ka", to: "kb", tex: "f" },
+    { from: "kb", to: "kc", tex: "g" },
+    { from: "kc", to: "ca", tex: "\\delta", style: "dashed" },
+    { from: "ca", to: "cb", tex: "\\bar f'", labelSide: "right" },
+    { from: "cb", to: "cc", tex: "\\bar g'", labelSide: "right" }
+  ]}
+  caption="The six-term exact sequence: the connecting map $\delta$ is the snake's diagonal step from the top row to the bottom row."
+/>
+
+Applied to a short exact sequence of chain complexes, the snake lemma produces the connecting homomorphisms of the **long exact sequence in homology** — the engine behind Mayer–Vietoris and the long exact sequences of pairs in topology.
+
+<Theorem name="Theorem 6 (Freyd–Mitchell embedding theorem; Freyd 1964, Mitchell 1964)">
+
+Every small abelian category $\mathcal{A}$ admits a full, faithful and exact functor $\mathcal{A} \to R\text{-}\cat{Mod}$ for some ring $R$.
+
+</Theorem>
+
+The proof (Freyd's book, Chapter 7; Kashiwara–Schapira §9.6; Mathlib) embeds $\mathcal{A}$ into a Grothendieck abelian category — left exact functors $\mathcal{A} \to \cat{Ab}$, or $\mathrm{Ind}(\mathcal{A}^{\mathrm{op}})^{\mathrm{op}}$ — where an injective cogenerator exists, and then takes a hom functor out of a suitable projective generator.
+
+**What it allows.** To prove a diagram lemma in an arbitrary abelian category $\mathcal{A}$ — any statement about finitely many objects and morphisms, commutativity, exactness, monos, epis and isomorphisms, and the existence of morphisms between such objects — it suffices to prove it in module categories. Indeed: (1) the objects and morphisms of the diagram lie in a *small* full abelian subcategory $\mathcal{A}_0 \subseteq \mathcal{A}$ whose inclusion is exact (close the diagram under finite biproducts, kernels and cokernels, countably many times); (2) Freyd–Mitchell gives $F : \mathcal{A}_0 \to R\text{-}\cat{Mod}$ full, faithful and exact; (3) exact functors preserve exactness and commutativity, and a faithful exact functor also **reflects** them (it sends $X \neq 0$ to $FX \neq 0$, and exactness is the vanishing of homology objects), as well as monos, epis and isomorphisms; (4) a morphism such as $\delta$, constructed between images of objects in $R\text{-}\cat{Mod}$, comes from a unique morphism of $\mathcal{A}_0$ because $F$ is full and faithful. So Theorems 4 and 5 hold in **every** abelian category — in particular in $\mathrm{Sh}(X; \cat{Ab})$ and in $\mathrm{Ch}(\mathcal{A})$.
+
+**What it does not allow.** The embedding is not canonical, preserves only *finite* limits and colimits (not infinite products or direct sums), and does not preserve projective or injective objects, so $\mathrm{Ext}$ groups and derived functors are not computed by it. It is a theorem about **small** categories: for a large category like $\mathrm{Sh}(X; \cat{Ab})$ one either applies it to small subcategories as in (1), or — as Mathlib does — enlarges the universe so that the ring $R$ is itself "large". And it says nothing about non-abelian categories: in $\cat{FreeAb}$ or Banach spaces, element-wise reasoning about images and cokernels gives wrong answers.
+
+Alternatively, one can chase "generalised elements" (morphisms $T \to A$) or Mac Lane's *members* directly in $\mathcal{A}$; Mathlib proves both lemmas this way, without the embedding.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Abelian categories in Lean">
+
+Proposition 2 is formalised from the axiom "every monomorphism is a kernel", following the human proof line by line:
+
+<Lean decl="Lumenary.AbelianCategories.isIso_of_mono_of_epi" />
+
+For the counterexample we formalise the maps, not the category $\cat{FreeAb}$: multiplication by 2 is injective and not surjective; it is cancellable on the right among homomorphisms into torsion-free groups (that is, epic among free abelian groups); but it is not cancellable among homomorphisms into $\Z/2$.
+
+<Lean decl="Lumenary.AbelianCategories.two_mul_injective" />
+
+<Lean decl="Lumenary.AbelianCategories.two_mul_not_surjective" />
+
+<Lean decl="Lumenary.AbelianCategories.two_mul_epi_torsion_free" />
+
+<Lean decl="Lumenary.AbelianCategories.two_mul_not_epi_ab" />
+
+The short five lemma (the case $A_1 = B_1 = A_5 = B_5 = 0$ of Theorem 4) by element chasing, using Mathlib's `Function.Exact`:
+
+<Lean decl="Lumenary.AbelianCategories.short_five_injective" />
+
+<Lean decl="Lumenary.AbelianCategories.short_five_surjective" />
+
+Mathlib's abelian categories, with the general five lemma, snake lemma and Freyd–Mitchell theorem (proved in Mathlib by Markus Himmel in 2025):
+
+<Lean decl="Lumenary.AbelianCategories.module_cat_abelian" />
+
+<Lean decl="Lumenary.AbelianCategories.sheaves_abelian" />
+
+<Lean decl="Lumenary.AbelianCategories.sheaves_on_space_abelian" />
+
+<Lean decl="Lumenary.AbelianCategories.five_lemma" />
+
+<Lean decl="Lumenary.AbelianCategories.snake_lemma" />
+
+<Lean decl="Lumenary.AbelianCategories.freyd_mitchell" />
+
+**What is and is not formalised.** Independently proved here: Proposition 2, the arithmetic of the $\cat{FreeAb}$ counterexample, and the short five lemma for modules. From Mathlib: that modules and sheaves form abelian categories, the five and snake lemmas in arbitrary abelian categories, and Freyd–Mitchell. Not formalised here: the category $\cat{FreeAb}$ as a category (and hence Corollary 3 as a statement about it), the exponential sequence, and the transfer argument of Theorem 6 (Mathlib proves the diagram lemmas directly, so it does not need it).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Snakes and torsion, computed">
+
+The first experiment builds random morphisms of short exact sequences of vector spaces over $\mathbb{F}_5$, computes all kernels and cokernels and the connecting map $\delta$ by exact row reduction, and checks the six-term exact sequence at every term. (Over a field every short exact sequence splits, so the middle map has the block form $\begin{pmatrix} \alpha & x \\ 0 & \gamma \end{pmatrix}$, and $\delta(w)$ is the class of $x(w)$ — the snake's construction made concrete.)
+
+<Python id="abelian_categories_snake" />
+
+The second experiment measures how badly $\cat{FreeAb}$ fails to be abelian: for every $2 \times 2$ integer matrix with small entries it computes the invariant factors, hence the cokernel in $\cat{Ab}$ (with torsion) and in $\cat{FreeAb}$ (without), and the index of the image in its saturation — the failure of $\operatorname{coim} \to \operatorname{im}$ to be an isomorphism.
+
+<Python id="abelian_categories_free_cokernels" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every additive category is abelian."** Additivity only gives addition of morphisms, a zero object and biproducts. Free abelian groups, Banach spaces, filtered vector spaces and vector bundles are additive (several even have kernels and cokernels), yet each has a monic epimorphism that is not an isomorphism, which Proposition 2 forbids in an abelian category.
+
+</Misconception>
+
+<Misconception>
+
+**"Freyd–Mitchell lets us treat any abelian category as a category of modules."** It applies to *small* abelian categories, gives a non-canonical embedding, and preserves only finite limits and colimits. It is safe for finite diagram lemmas (via a small abelian subcategory containing the diagram), but not for statements about infinite products, injective or projective objects, or derived functors of a large category such as $\mathrm{Sh}(X; \cat{Ab})$.
+
+</Misconception>
+
+<Misconception>
+
+**"In sheaves, cokernels (and surjectivity) can be checked on sections over each open set."** Kernels can; cokernels cannot. $\exp : \mathcal{O} \to \mathcal{O}^\times$ on $\C \setminus \{0\}$ is an epimorphism of sheaves although it is not surjective on global sections. Epimorphisms of sheaves are the *locally* surjective maps (equivalently, surjective on stalks).
+
+</Misconception>
+
+<Misconception>
+
+**"An epimorphism is a surjective map."** In $\cat{Ab}$ yes, but "epic" depends on the category: $\cdot 2 : \Z \to \Z$ is epic in $\cat{FreeAb}$, and $\ell^1 \hookrightarrow \ell^2$ is epic among Banach spaces, though neither is surjective. In an abelian category, epic means "cokernel zero".
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Long exact sequences and sheaf cohomology">
+
+The snake lemma is the algebraic core of algebraic topology's long exact sequences. A short exact sequence of chain complexes $0 \to C'_\bullet \to C_\bullet \to C''_\bullet \to 0$ (for example, for a pair $(X, A)$, or for an open cover $X = U \cup V$) gives, by the snake lemma applied degreewise, the long exact sequence $\cdots \to H_n(C') \to H_n(C) \to H_n(C'') \xrightarrow{\ \partial\ } H_{n-1}(C') \to \cdots$, which yields Mayer–Vietoris and excision computations (see <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>). Sheaf cohomology lives in the abelian category $\mathrm{Sh}(X; \cat{Ab})$: the exponential sequence above gives $H^0(X, \mathcal{O}^\times) \to H^1(X, \underline{\Z}) \cong \Z$, sending a nonvanishing function to its winding number around the origin.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Coherent sheaves versus vector bundles">
+
+In algebraic and complex geometry, vector bundles are the natural objects but they do not form an abelian category: a map of bundles can change rank at special points, and its kernel and cokernel are then not bundles (multiplication by $z$ on the trivial line bundle over $\C$ has cokernel supported at the origin). Serre's **coherent sheaves** (1955) are the abelian envelope that fixes this: on a noetherian scheme or complex manifold they form an abelian category containing the vector bundles (locally free sheaves) and closed under kernels and cokernels. Much of modern geometry — derived categories of coherent sheaves, stability conditions, moduli of sheaves — starts here (see <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink> and <TopicLink id="math.geom.vector-bundles-characteristic-classes">vector bundles</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Banach spaces are quasi-abelian">
+
+Functional analysis lives in additive categories that are not abelian. In Banach spaces, every bounded map $f : A \to B$ has a kernel (the closed null space $N$) and a cokernel ($B$ modulo the *closure* of $f(A)$), so $\operatorname{coim} f = A/N$ and $\operatorname{im} f = \overline{f(A)}$. The canonical map $A/N \to \overline{f(A)}$ is injective with dense image, and by the open mapping theorem it is an isomorphism exactly when $f$ has closed range. So the failure of the abelian axiom is concentrated in maps with non-closed range, like $\ell^1 \hookrightarrow \ell^2$. Such categories are **quasi-abelian** (Schneiders 1999), and homological algebra still works there with a modified notion of exactness ("strict" morphisms), as in the theory of Fréchet and nuclear spaces (see <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Modules over everything">
+
+Freyd–Mitchell says abelian categories are categories of modules "up to exact embedding", but many important abelian categories are module categories on the nose or nearly: representations of a quiver $Q$ are modules over its path algebra $kQ$ (see <TopicLink id="math.algebra.path-algebras">path algebras</TopicLink>); $\mathrm{Rep}_k(G)$ is $kG\text{-}\cat{Mod}$; and by Gabriel–Popescu every Grothendieck abelian category is a localisation of a module category. Morita theory asks when $R\text{-}\cat{Mod} \simeq S\text{-}\cat{Mod}$ (for example $R$ and $M_n(R)$), showing that the category remembers less than the ring. Homological algebra — $\mathrm{Ext}$, $\mathrm{Tor}$, derived functors — is built entirely from the abelian structure (see <TopicLink id="math.algebra.homological-algebra">homological algebra</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Exactness as a property of limits">
+
+The abelian axioms are statements about finite limits and colimits plus enrichment in $\cat{Ab}$ (see <TopicLink id="math.cat.enriched-categories">enriched categories</TopicLink>). Barr's **exact categories** isolate the non-additive part — regular categories in which every equivalence relation is a kernel pair — and Tierney's theorem says that the abelian categories are exactly the additive Barr-exact categories. Elementary topoi are Barr-exact too, one reason why sheaves of sets and sheaves of abelian groups behave so similarly. Two refinements drive modern work: **Grothendieck abelian categories** (with exact filtered colimits and a generator, so with enough injectives) and **derived categories** $D(\mathcal{A})$, in which quasi-isomorphisms are inverted and the long exact sequences become distinguished triangles (see <TopicLink id="math.cat.derived-categories">derived categories</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Exact sequences and diagram chasing grew out of algebraic topology in the 1940s (Hurewicz; Eilenberg and Steenrod's axioms for homology, 1945–52). **Henri Cartan** and **Samuel Eilenberg**'s *Homological Algebra* (1956) developed derived functors for modules.
+- **David Buchsbaum** (thesis 1954, published 1955) introduced "exact categories" close to today's abelian categories; **Alexander Grothendieck**'s "Sur quelques points d'algèbre homologique" (*Tôhoku Mathematical Journal*, 1957) gave the modern axioms, the conditions AB1–AB6, and the existence of enough injectives in categories of sheaves — making sheaf cohomology a derived functor.
+- **Jean-Pierre Serre** introduced coherent sheaves (1955); **Pierre Gabriel**'s thesis (1962) developed abelian categories for algebraic geometry.
+- **Peter Freyd** and **Barry Mitchell** proved the embedding theorem (1964); Freyd's book *Abelian Categories* appeared the same year. **Saunders Mac Lane** gave the "members" approach to diagram chasing in *Homology* (1963).
+- Mathlib's formalisation of the snake lemma and the five lemma in general abelian categories, and of the Freyd–Mitchell theorem (completed by **Markus Himmel** in 2025), shows that these classical arguments can be checked by machine without passing to modules.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Charles A. Weibel, *An Introduction to Homological Algebra* (1994) — Chapter 1 and Appendix A on abelian categories and Freyd–Mitchell.
+- Peter Freyd, *Abelian Categories* (1964) — the original monograph, including the embedding theorem.
+- Masaki Kashiwara and Pierre Schapira, *Categories and Sheaves* (2006) — abelian and Grothendieck categories, Chapters 8–9.
+- Saunders Mac Lane, *Homology* (1963) and *Categories for the Working Mathematician*, Chapter VIII — diagram chasing with members.
+- Alexander Grothendieck, "Sur quelques points d'algèbre homologique", *Tôhoku Mathematical Journal* 9 (1957).
+- Robin Hartshorne, *Algebraic Geometry* (1977), Chapters II–III — sheaves of modules and sheaf cohomology.
+
+</Section>

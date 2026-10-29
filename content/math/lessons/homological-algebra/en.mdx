@@ -1,0 +1,425 @@
+---
+slug: homological-algebra
+topic: math.algebra.homological-algebra
+title: Homological algebra
+subtitle: Cycles modulo boundaries, long exact sequences, and the derived functors Ext and Tor — exact measurements of how far Hom and ⊗ are from being exact.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7012
+objectives:
+  - Compute the homology of chain complexes, and derive the long exact homology sequence of a short exact sequence of complexes from the snake lemma
+  - Prove that chain-homotopic maps induce the same map on homology, and prove the comparison theorem for projective resolutions
+  - Define left and right derived functors, explain why they measure the failure of exactness, and compute Ext and Tor over $\Z$ and $k[x]$
+  - Show that $\mathrm{Ext}^1(A, B)$ classifies extensions $0 \to B \to E \to A \to 0$ up to equivalence
+  - Distinguish isomorphism, quasi-isomorphism and homotopy equivalence of complexes, with counterexamples
+narrators: []
+lean:
+  - Lumenary.HomologicalAlgebra.rp2_d2
+  - Lumenary.HomologicalAlgebra.rp2_d1
+  - Lumenary.HomologicalAlgebra.rp2_dd
+  - Lumenary.HomologicalAlgebra.rp2_torsion_cycle
+  - Lumenary.HomologicalAlgebra.hom_zmod_two_int
+  - Lumenary.HomologicalAlgebra.not_split
+  - Lumenary.HomologicalAlgebra.tor_four_six
+  - Lumenary.HomologicalAlgebra.ext_four_six
+  - Lumenary.HomologicalAlgebra.long_exact_connecting
+  - Lumenary.HomologicalAlgebra.long_exact_after_connecting
+  - Lumenary.HomologicalAlgebra.homotopy_invariance
+  - Lumenary.HomologicalAlgebra.comparison
+  - Lumenary.HomologicalAlgebra.ext_via_resolution
+  - Lumenary.HomologicalAlgebra.ext_projective
+compute: [homological_algebra_tor_ext, homological_algebra_surface_homology]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Measuring what exactness loses">
+
+Homological algebra began in topology. To detect the "holes" of a space, Poincaré counted closed loops and surfaces (**cycles**) that do not bound anything, treating those that bound (**boundaries**) as trivial. Algebraically this is a sequence of groups and maps $\cdots \to C_2 \xrightarrow{d_2} C_1 \xrightarrow{d_1} C_0 \to 0$ with $d \circ d = 0$ — "the boundary of a boundary is empty" — and the invariant is the quotient $\ker d / \operatorname{im} d$, the **homology**.
+
+The same structure appears throughout algebra, for a different reason. The functors $\Hom_R(M, -)$, $\Hom_R(-, N)$ and $- \otimes_R N$ are not exact: they turn some short exact sequences into sequences that are exact only at one end (see <TopicLink id="math.algebra.modules">modules</TopicLink>). Homological algebra measures the failure precisely. Each such functor $F$ comes with a sequence of **derived functors** — $\mathrm{Ext}^n$ for $\Hom$, $\mathrm{Tor}_n$ for $\otimes$ — that repair the lost exactness in a long exact sequence. These groups answer concrete questions:
+
+- $\mathrm{Ext}^1(A, B)$ classifies the ways of building a module $E$ with submodule $B$ and quotient $A$;
+- $\mathrm{Tor}_1^\Z(A, \Z/n)$ is the $n$-torsion of $A$ — hence the name;
+- the homology of $\R P^2$ with coefficients in $\mathbb{F}_2$ differs from that with coefficients in $\Q$, by an amount computed by $\mathrm{Tor}$.
+
+This lesson assumes <TopicLink id="math.algebra.modules">modules</TopicLink>, exact sequences and <TopicLink id="math.cat.functors">functors</TopicLink>. The snake lemma is proved in <TopicLink id="math.cat.abelian-categories">abelian categories</TopicLink>; here we use it. Everything works in any abelian category with enough projectives (or injectives); for concreteness we work with modules over a ring $R$.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Cycles, boundaries and resolutions">
+
+Take the boundary of a triangle: vertices $u, v, w$ and oriented edges $[uv], [vw], [uw]$. Let $C_1 = \Z^3$ (edges) and $C_0 = \Z^3$ (vertices), with $d([uv]) = v - u$. The chain $z = [uv] + [vw] - [uw]$ goes once around the triangle and has $d(z) = 0$: it is a **cycle**. With no 2-cell to fill the triangle, it is not a boundary, and $H_1 = \ker d_1 = \Z z$ detects the hole. Fill the triangle with a 2-cell $F$, $d_2(F) = z$, and $H_1$ becomes $0$.
+
+The same quotient measures failure of exactness. A sequence $A \to B \to C$ with composite $0$ is exact exactly when its homology $\ker / \operatorname{im}$ vanishes. To measure how far a functor $F$ is from exact, homological algebra replaces a module $M$ by a **projective resolution** $\cdots \to P_1 \to P_0 \to M \to 0$ — an exact sequence of projective (for instance free) modules: generators, relations among the generators, relations among the relations, and so on. The resolution is a complex with homology only $M$ in degree $0$. Apply $F$ to the $P_i$ and take homology: if $F$ were exact, the result would again be just $F(M)$ in degree $0$; the higher homology groups $L_nF(M)$ measure exactly what $F$ fails to preserve. The comparison theorem below says the answer does not depend on which resolution we chose.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="chain complex, homology">
+
+A **chain complex** $C_\bullet$ is a sequence of modules and homomorphisms $\cdots \to C_{n+1} \xrightarrow{d_{n+1}} C_n \xrightarrow{d_n} C_{n-1} \to \cdots$ with $d_n \circ d_{n+1} = 0$ for all $n$. Its **cycles** are $Z_n = \ker d_n$, its **boundaries** $B_n = \operatorname{im} d_{n+1} \subseteq Z_n$, and its **homology** is $H_n(C) = Z_n / B_n$. A **cochain complex** has differentials raising the degree, $d^n : C^n \to C^{n+1}$, and cohomology $H^n = \ker d^n / \operatorname{im} d^{n-1}$. A complex is **exact** (acyclic) if all its homology vanishes.
+
+</Definition>
+
+<Definition term="chain map, quasi-isomorphism, chain homotopy">
+
+A **chain map** $f : C_\bullet \to D_\bullet$ is a family $f_n : C_n \to D_n$ with $d f_n = f_{n-1} d$; it sends cycles to cycles and boundaries to boundaries, so it induces $H_n(f) : H_n(C) \to H_n(D)$. It is a **quasi-isomorphism** if every $H_n(f)$ is an isomorphism. Two chain maps $f, g$ are **chain homotopic**, $f \simeq g$, if there are maps $s_n : C_n \to D_{n+1}$ with
+$$
+f_n - g_n = d_{n+1} s_n + s_{n-1} d_n \quad \text{for all } n.
+$$
+A **homotopy equivalence** is a chain map $f$ with a chain map $g$ such that $gf \simeq \mathrm{id}$ and $fg \simeq \mathrm{id}$.
+
+</Definition>
+
+<Definition term="short exact sequence of complexes">
+
+A sequence of chain maps $0 \to A_\bullet \xrightarrow{f} B_\bullet \xrightarrow{g} C_\bullet \to 0$ is **short exact** if $0 \to A_n \to B_n \to C_n \to 0$ is exact for every $n$.
+
+</Definition>
+
+<Definition term="projective and injective resolutions">
+
+A **projective resolution** of $M$ is a complex $P_\bullet$ of projective modules ($P_n = 0$ for $n < 0$) with a map $\varepsilon : P_0 \to M$ such that $\cdots \to P_1 \to P_0 \xrightarrow{\varepsilon} M \to 0$ is exact. Every module has one: take $P_0$ free on generators of $M$, then $P_1$ free on generators of $\ker \varepsilon$, and so on. An **injective resolution** $0 \to N \to I^0 \to I^1 \to \cdots$ is the dual notion, with the $I^n$ injective; every module has one. The **projective dimension** of $M$ is the shortest length of a projective resolution (possibly $\infty$); the **global dimension** of $R$ is the supremum of the projective dimensions of all modules.
+
+</Definition>
+
+<Definition term="derived functors; Tor and Ext">
+
+Let $F$ be an additive functor from $R$-modules to abelian groups. If $F$ is covariant and right exact, its **left derived functors** are $L_nF(M) = H_n(F(P_\bullet))$ for a projective resolution $P_\bullet \to M$. If $F$ is contravariant and left exact, its **right derived functors** are $R^nF(M) = H^n(F(P_\bullet))$. In particular
+$$
+\mathrm{Tor}_n^R(M, N) = H_n(P_\bullet \otimes_R N), \qquad \mathrm{Ext}^n_R(M, N) = H^n\bigl(\Hom_R(P_\bullet, N)\bigr).
+$$
+Equivalently, $\mathrm{Ext}^n_R(M, N) = H^n(\Hom_R(M, I^\bullet))$ for an injective resolution $N \to I^\bullet$, and $\mathrm{Tor}$ may be computed by resolving either variable ("balance"; Weibel, §2.7). For non-commutative $R$, $M$ is a right and $N$ a left module in $\mathrm{Tor}$.
+
+</Definition>
+
+<Definition term="extension; equivalence">
+
+An **extension** of $A$ by $B$ is a short exact sequence $0 \to B \to E \to A \to 0$. Two extensions $E, E'$ are **equivalent** if there is a homomorphism $E \to E'$ making both squares commute (it is then an isomorphism by the five lemma). The **split** extension is $0 \to B \to B \oplus A \to A \to 0$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="A complex with torsion homology">
+
+The real projective plane is a square with boundary word $abab$: one 2-cell $F$, two edges $a, b$, and two vertices $v, w$ ($a$ runs from $v$ to $w$, $b$ from $w$ to $v$). Its cellular chain complex is
+$$
+0 \to \Z \xrightarrow{\ d_2\ } \Z^2 \xrightarrow{\ d_1\ } \Z^2 \to 0, \qquad d_2(F) = 2a + 2b, \quad d_1(a) = w - v, \quad d_1(b) = v - w.
+$$
+Then $\ker d_1 = \Z(a + b)$ and $\operatorname{im} d_2 = \Z \cdot 2(a + b)$, so $H_1 \cong \Z/2$; $H_2 = \ker d_2 = 0$; and $H_0 = \Z^2 / \Z(w - v) \cong \Z$. With $\mathbb{F}_2$ coefficients, $d_2 = 0$ and $d_1$ has rank $1$, so $H_n(\R P^2; \mathbb{F}_2) = \mathbb{F}_2$ for $n = 0, 1, 2$. (Formalised in part below; computed for four surfaces in the second experiment.)
+
+</Example>
+
+<Example title="Resolutions">
+
+- Over $\Z$: $0 \to \Z \xrightarrow{n} \Z \to \Z/n \to 0$. Every abelian group has a free resolution of length $\leq 1$ (subgroups of free abelian groups are free), so $\Z$ has global dimension $1$.
+- Over $k[x]$: $0 \to k[x] \xrightarrow{x - a} k[x] \to k[x]/(x - a) \to 0$.
+- Over $k[x, y]$, the **Koszul resolution** of $k = k[x, y]/(x, y)$:
+$$
+0 \to k[x, y] \xrightarrow{\begin{pmatrix} -y \\ x \end{pmatrix}} k[x, y]^2 \xrightarrow{(x \ \ y)} k[x, y] \to k \to 0.
+$$
+- Over $\Z/4$, the module $\Z/2$ has the infinite periodic resolution $\cdots \xrightarrow{2} \Z/4 \xrightarrow{2} \Z/4 \xrightarrow{2} \Z/4 \to \Z/2 \to 0$, and no finite one: $\Z/4$ has infinite global dimension.
+
+</Example>
+
+<Example title="Tor and Ext over ℤ">
+
+Resolve $\Z/m$ by $0 \to \Z \xrightarrow{m} \Z \to 0$. Tensoring with $N$ gives $N \xrightarrow{m} N$, and $\Hom(-, N)$ gives $N \xrightarrow{m} N$ as well, so
+$$
+\mathrm{Tor}_0(\Z/m, N) = N/mN, \quad \mathrm{Tor}_1(\Z/m, N) = N[m] = \{x : mx = 0\}, \quad \mathrm{Hom}(\Z/m, N) = N[m], \quad \mathrm{Ext}^1(\Z/m, N) = N/mN,
+$$
+and all higher groups vanish. For $N = \Z/n$ each of these is cyclic of order $\gcd(m, n)$; for $N = \Z$: $\mathrm{Tor}_1(\Z/m, \Z) = 0$ and $\mathrm{Ext}^1(\Z/m, \Z) \cong \Z/m$. In general $\mathrm{Tor}_1^\Z(\Z/n, A)$ is the $n$-torsion subgroup of $A$ — the origin of the name "Tor".
+
+</Example>
+
+<Example title="Tor and Ext over k[x] and ℤ/4">
+
+Over $R = k[x]$, with $S_a = k[x]/(x - a)$, the resolution above gives $S_b \xrightarrow{x - a} S_b$, which is multiplication by $b - a$ on $k$. So $\mathrm{Tor}_1^{k[x]}(S_a, S_b) \cong \mathrm{Ext}^1_{k[x]}(S_a, S_b) \cong k$ if $a = b$, and $0$ otherwise: the two points must coincide to interact. Over $\Z/4$, the periodic resolution gives $\mathrm{Tor}_n^{\Z/4}(\Z/2, \Z/2) \cong \Z/2$ for **every** $n \geq 0$: derived functors over a ring of infinite global dimension need not stop.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The main theorems">
+
+<Theorem name="Theorem 1 (long exact homology sequence)">
+
+A short exact sequence of chain complexes $0 \to A_\bullet \xrightarrow{f} B_\bullet \xrightarrow{g} C_\bullet \to 0$ induces an exact sequence
+$$
+\cdots \to H_n(A) \xrightarrow{f_*} H_n(B) \xrightarrow{g_*} H_n(C) \xrightarrow{\ \partial\ } H_{n-1}(A) \xrightarrow{f_*} H_{n-1}(B) \xrightarrow{g_*} H_{n-1}(C) \to \cdots
+$$
+in which the **connecting homomorphism** is $\partial[c] = [a]$ where $c = g(b)$ and $d b = f(a)$.
+
+</Theorem>
+
+<Proof>
+
+Apply the snake lemma to the map of short exact sequences $d_n : (0 \to A_n \to B_n \to C_n \to 0) \to (0 \to A_{n-1} \to B_{n-1} \to C_{n-1} \to 0)$. Its kernel part says that $0 \to Z_n(A) \to Z_n(B) \to Z_n(C)$ is exact; applied to $d_{n+1}$, its cokernel part says that $A_n/B_n(A) \to B_n/B_n(B) \to C_n/B_n(C) \to 0$ is exact. Since $d \circ d = 0$, the differential induces maps $\bar d : C_n / B_n(C) \to Z_{n-1}(C)$, and similarly for $A$ and $B$, giving a commutative diagram with exact rows
+$$
+\begin{array}{ccccccc}
+A_n/B_n(A) & \to & B_n/B_n(B) & \to & C_n/B_n(C) & \to & 0 \\
+\downarrow \bar d & & \downarrow \bar d & & \downarrow \bar d & & \\
+0 \to Z_{n-1}(A) & \to & Z_{n-1}(B) & \to & Z_{n-1}(C). & &
+\end{array}
+$$
+The kernel of $\bar d : C_n/B_n \to Z_{n-1}$ is $Z_n / B_n = H_n(C)$ and its cokernel is $Z_{n-1}/B_{n-1} = H_{n-1}(C)$, and likewise for $A$ and $B$. The snake lemma now gives the exact sequence $H_n(A) \to H_n(B) \to H_n(C) \xrightarrow{\partial} H_{n-1}(A) \to H_{n-1}(B) \to H_{n-1}(C)$, and these six-term pieces overlap to form the long exact sequence. Unwinding the snake's construction: lift a cycle $c$ to $b \in B_n$; then $g(db) = dc = 0$, so $db = f(a)$ for a unique $a$, which is a cycle because $f(da) = ddb = 0$ and $f$ is injective; and $\partial[c] = [a]$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (homotopy invariance)">
+
+If $f \simeq g : C_\bullet \to D_\bullet$, then $H_n(f) = H_n(g)$ for all $n$. Hence a homotopy equivalence is a quasi-isomorphism, and additive functors, which preserve chain homotopies, send homotopy equivalences to homotopy equivalences.
+
+</Theorem>
+
+<Proof>
+
+For a cycle $z \in Z_n(C)$, $f(z) - g(z) = d s(z) + s(dz) = d s(z)$ is a boundary, so $[f(z)] = [g(z)]$. If $F$ is additive, applying it to $f - g = ds + sd$ gives $F(f) - F(g) = F(d)F(s) + F(s)F(d)$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (comparison theorem)">
+
+Let $P_\bullet \to M$ be a complex of projective modules over $M$ (that is, $P_n = 0$ for $n < 0$ and $\cdots \to P_1 \to P_0 \to M \to 0$ is a complex), and $Q_\bullet \to N$ a resolution (exact, not necessarily projective). Then every homomorphism $\varphi : M \to N$ lifts to a chain map $f : P_\bullet \to Q_\bullet$ compatible with the augmentations, and any two such lifts are chain homotopic.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* $\varphi \varepsilon_P : P_0 \to N$ lifts through the surjection $\varepsilon_Q : Q_0 \to N$ because $P_0$ is projective; call the lift $f_0$. Suppose $f_0, \dots, f_n$ have been built with $d f_k = f_{k-1} d$ (and $\varepsilon_Q f_0 = \varphi \varepsilon_P$). The map $f_n d : P_{n+1} \to Q_n$ lands in $\ker(Q_n \to Q_{n-1})$ (with $Q_{-1} = N$): indeed $d f_n d = f_{n-1} d d = 0$, or $\varepsilon_Q f_0 d = \varphi \varepsilon_P d = 0$ when $n = 0$. By exactness of $Q_\bullet \to N$, that kernel is the image of $d : Q_{n+1} \to Q_n$, so projectivity of $P_{n+1}$ gives $f_{n+1} : P_{n+1} \to Q_{n+1}$ with $d f_{n+1} = f_n d$.
+
+*Uniqueness up to homotopy.* Let $f, g$ be two lifts and $h = f - g$, a lift of $0$. We build $s_n : P_n \to Q_{n+1}$ with $h_n = d s_n + s_{n-1} d$, starting from $s_{-1} = 0$. Since $\varepsilon_Q h_0 = 0$, $h_0$ lands in $\ker \varepsilon_Q = \operatorname{im}(Q_1 \to Q_0)$; lift to $s_0$ with $d s_0 = h_0$. Inductively, $h_n - s_{n-1} d$ lands in $\ker(d : Q_n \to Q_{n-1})$, because
+$$
+d(h_n - s_{n-1} d) = h_{n-1} d - d s_{n-1} d = (h_{n-1} - d s_{n-1}) d = s_{n-2} d d = 0,
+$$
+and so, by exactness and projectivity of $P_n$, it equals $d s_n$ for some $s_n : P_n \to Q_{n+1}$.
+
+</Proof>
+
+<Theorem name="Corollary 4 (derived functors are well defined)">
+
+Any two projective resolutions of $M$ are homotopy equivalent, by a homotopy equivalence lifting $\mathrm{id}_M$ that is unique up to homotopy. Consequently $L_nF(M)$, $\mathrm{Tor}_n$ and $\mathrm{Ext}^n$ do not depend on the resolution, up to canonical isomorphism, and are functorial in $M$. Moreover:
+
+1. $L_0F = F$ for right exact $F$, so $\mathrm{Tor}_0(M, N) = M \otimes N$; and $\mathrm{Ext}^0(M, N) = \Hom(M, N)$;
+2. $L_nF(P) = 0$ for $n \geq 1$ if $P$ is projective; so $\mathrm{Tor}_n(P, N) = \mathrm{Ext}^n(P, N) = 0$;
+3. a short exact sequence $0 \to M' \to M \to M'' \to 0$ gives long exact sequences
+$$
+\cdots \to \mathrm{Tor}_1(M'', N) \to M' \otimes N \to M \otimes N \to M'' \otimes N \to 0,
+$$
+$$
+0 \to \Hom(M'', N) \to \Hom(M, N) \to \Hom(M', N) \to \mathrm{Ext}^1(M'', N) \to \mathrm{Ext}^1(M, N) \to \cdots.
+$$
+
+</Theorem>
+
+<Proof>
+
+If $P_\bullet, Q_\bullet$ resolve $M$, Theorem 3 gives lifts $f : P \to Q$ and $g : Q \to P$ of $\mathrm{id}_M$; $gf$ and $\mathrm{id}_P$ both lift $\mathrm{id}_M$, so $gf \simeq \mathrm{id}_P$ by uniqueness, and likewise $fg \simeq \mathrm{id}_Q$. By Theorem 2, $F(P)$ and $F(Q)$ have canonically isomorphic homology. (1): $P_1 \to P_0 \to M \to 0$ is exact and $F$ is right exact, so $H_0(F(P)) = \operatorname{coker} F(P_1 \to P_0) \cong F(M)$; dually for $\Hom$. (2): $P$ resolves itself ($P_0 = P$, $P_n = 0$ otherwise). (3): The **horseshoe lemma** builds projective resolutions $P'$, $P$, $P''$ forming a short exact sequence of complexes $0 \to P' \to P \to P'' \to 0$ that is split in each degree (since $P''_n$ is projective). Additive functors preserve split exact sequences, so $0 \to F(P') \to F(P) \to F(P'') \to 0$ is short exact, and Theorem 1 gives the long exact sequence (Weibel, Lemma 2.2.8 and Theorem 2.4.6).
+
+</Proof>
+
+<Theorem name="Theorem 5 (Ext¹ classifies extensions)">
+
+There is a bijection between equivalence classes of extensions $0 \to B \to E \to A \to 0$ and $\mathrm{Ext}^1_R(A, B)$, under which the split extension corresponds to $0$. In particular every extension of $A$ by $B$ splits if and only if $\mathrm{Ext}^1(A, B) = 0$.
+
+</Theorem>
+
+<Proof>
+
+Choose a short exact sequence $0 \to K \xrightarrow{\iota} P \xrightarrow{\pi} A \to 0$ with $P$ projective. Its long exact $\mathrm{Ext}(-, B)$ sequence, with $\mathrm{Ext}^1(P, B) = 0$, gives
+$$
+\mathrm{Ext}^1(A, B) \;\cong\; \operatorname{coker}\bigl(\iota^* : \Hom(P, B) \to \Hom(K, B)\bigr).
+$$
+*From extensions to classes.* Given $0 \to B \xrightarrow{j} E \xrightarrow{q} A \to 0$, lift $\pi$ through $q$ to $\beta : P \to E$ (projectivity). Then $q \beta \iota = \pi\iota = 0$, so $\beta \iota = j \varphi$ for a unique $\varphi : K \to B$. Another lift is $\beta + j\psi$ with $\psi : P \to B$, changing $\varphi$ to $\varphi + \psi\iota$; so the class $\Theta(E) = [\varphi]$ is well defined, and equivalent extensions give the same class.
+
+*From classes to extensions.* Given $\varphi : K \to B$, let $E_\varphi$ be the pushout $(B \oplus P)/\{(\varphi(k), -\iota(k)) : k \in K\}$, with $B \to E_\varphi$, $b \mapsto [b, 0]$, and $E_\varphi \to A$, $[b, p] \mapsto \pi(p)$. A diagram chase shows $0 \to B \to E_\varphi \to A \to 0$ is exact, and replacing $\varphi$ by $\varphi + \psi\iota$ gives an equivalent extension, via the map $E_{\varphi + \psi\iota} \to E_\varphi$, $[b, p] \mapsto [b + \psi(p), p]$.
+
+*They are inverse.* For $E_\varphi$, the lift $\beta(p) = [0, p]$ satisfies $\beta\iota(k) = [0, \iota(k)] = [\varphi(k), 0]$, so $\Theta(E_\varphi) = [\varphi]$. Conversely, for an extension $E$ with lift $\beta$ and class $[\varphi]$, the map $E_\varphi \to E$, $[b, p] \mapsto j(b) + \beta(p)$, is well defined and compatible with both ends, hence an equivalence. Finally, $\Theta(E) = 0$ iff $\varphi = \psi\iota$ for some $\psi$, iff the lift $\beta - j\psi$ vanishes on $K$ and so factors through $A$ as a section of $q$, iff $E$ splits.
+
+</Proof>
+
+Under this bijection, $\mathrm{Ext}^1(\Z/2, \Z) \cong \Z/2$ has two elements: the split extension $\Z \oplus \Z/2$ and $0 \to \Z \xrightarrow{2} \Z \to \Z/2 \to 0$. The group structure on $\mathrm{Ext}^1$ corresponds to the **Baer sum** of extensions (Baer, 1934). Higher $\mathrm{Ext}^n$ classify $n$-fold exact sequences $0 \to B \to E_n \to \cdots \to E_1 \to A \to 0$ up to a suitable equivalence (Yoneda).
+
+<Theorem name="Theorem 6 (three landmarks; stated)">
+
+1. **Universal coefficient theorem.** For a chain complex $C_\bullet$ of free abelian groups and an abelian group $G$ there are natural short exact sequences, split but not naturally,
+$$
+0 \to H_n(C) \otimes G \to H_n(C \otimes G) \to \mathrm{Tor}_1^\Z(H_{n-1}(C), G) \to 0.
+$$
+2. **Hilbert's syzygy theorem** (1890). Every finitely generated module over $k[x_1, \dots, x_n]$ has a free resolution of length at most $n$; the global dimension of $k[x_1, \dots, x_n]$ is exactly $n$.
+3. **Auslander–Buchsbaum–Serre** (1956). A Noetherian local ring is regular if and only if it has finite global dimension.
+
+</Theorem>
+
+Proofs: Hatcher, *Algebraic Topology*, Theorem 3A.3, or Weibel, Theorem 3.6.2 (universal coefficients); Weibel, §4.3–4.4, and Eisenbud, Chapter 19 (syzygies and regular rings). The third theorem is a striking use of homological algebra in <TopicLink id="math.algebra.commutative-algebra">commutative algebra</TopicLink>: it shows at once that localisations of regular local rings are regular, which had resisted direct attack.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: chain complexes of glued squares">
+
+Each surface below is a square with its sides glued in pairs. Its **cellular chain complex** has one 2-cell $F$, one 1-cell for each letter, and one 0-cell for each class of glued corners, and the boundary of $F$ is read off the word: $d_2(F)$ is the sum of the letters, with sign $-1$ for an inverse. So:
+
+- **torus** $aba^{-1}b^{-1}$: $d_2(F) = a + b - a - b = 0$, so $H_2 = \Z$ and $H_1 = \Z^2$;
+- **Klein bottle** $aba^{-1}b$: $d_2(F) = 2b$, so $H_2 = 0$ and $H_1 = \Z \oplus \Z/2$;
+- **projective plane** $abab$: $d_2(F) = 2a + 2b$, so $H_2 = 0$ and $H_1 = \Z/2$;
+- **sphere** $aa^{-1}bb^{-1}$: $d_2(F) = 0$ and three vertices, so $H_2 = \Z$, $H_1 = 0$.
+
+Walk the flatlander across the seams. Exactly on the non-orientable surfaces it comes back mirror-reversed — and exactly there $d_2(F) \neq 0$, so the 2-cell is not a cycle over $\Z$ and $H_1$ acquires the torsion $\Z/2$. Over $\mathbb{F}_2$ the coefficient $2$ vanishes, and every one of these closed surfaces has $H_2(X; \mathbb{F}_2) = \mathbb{F}_2$, as the universal coefficient theorem predicts: for the Klein bottle and $\R P^2$ this class comes from $\mathrm{Tor}_1(\Z/2, \mathbb{F}_2) = \mathbb{F}_2$.
+
+<SurfaceGluing surface="rp2" surfaces={["torus", "klein", "rp2", "sphere"]} title="Gluing words and boundary maps" subtitle="Where the flag flips, the boundary of the 2-cell is not zero." />
+
+The second experiment builds these chain complexes from the words and computes all their homology groups.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Homological algebra in Lean and Mathlib">
+
+We begin with the chain complex of $\R P^2$ as integer matrices, verify $d_1 d_2 = 0$, and prove that $H_1$ contains an element of order exactly $2$: the cycle $a + b$ is not a boundary, but twice it is.
+
+<Lean decl="Lumenary.HomologicalAlgebra.rp2_d2" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.rp2_d1" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.rp2_dd" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.rp2_torsion_cycle" />
+
+Next, the computation behind two misconceptions: there are no non-zero homomorphisms $\Z/2 \to \Z$, so the extension $0 \to \Z \to \Z \to \Z/2 \to 0$ does not split (its class in $\mathrm{Ext}^1(\Z/2, \Z)$ is non-zero), and the quasi-isomorphism from $[\Z \xrightarrow{2} \Z]$ to $\Z/2$ has no inverse chain map.
+
+<Lean decl="Lumenary.HomologicalAlgebra.hom_zmod_two_int" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.not_split" />
+
+The resolution computation of $\mathrm{Tor}_1(\Z/4, \Z/6)$ and $\mathrm{Ext}^1(\Z/4, \Z/6)$, as a kernel and a cokernel of multiplication by $4$ on $\Z/6$, decided by evaluation:
+
+<Lean decl="Lumenary.HomologicalAlgebra.tor_four_six" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.ext_four_six" />
+
+Mathlib develops homological algebra in an arbitrary abelian category. Its long exact sequence is built from the snake lemma, exactly as in Theorem 1; homotopy invariance, the comparison theorem and $\mathrm{Ext}$ as a derived functor are all there:
+
+<Lean decl="Lumenary.HomologicalAlgebra.long_exact_connecting" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.long_exact_after_connecting" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.homotopy_invariance" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.comparison" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.ext_via_resolution" />
+
+<Lean decl="Lumenary.HomologicalAlgebra.ext_projective" />
+
+**What is and is not formalised.** Proved here: $d_1 d_2 = 0$ for $\R P^2$ and an element of order $2$ in $H_1$; $\Hom(\Z/2, \Z) = 0$ and the non-splitting of $0 \to \Z \to \Z \to \Z/2 \to 0$; the sizes of $\mathrm{Tor}_1(\Z/4, \Z/6)$ and $\mathrm{Ext}^1(\Z/4, \Z/6)$ as a kernel and cokernel. From Mathlib: the long exact sequence, homotopy invariance, the comparison theorem, the independence of $\mathrm{Ext}$ from the resolution, and the vanishing of $\mathrm{Ext}$ on projectives. Not formalised here: the full computation $H_1(\R P^2) \cong \Z/2$ as a quotient module, Theorem 5 (Mathlib relates $\mathrm{Ext}^1$ in the derived category to short exact sequences, but we do not use it), the universal coefficient theorem, and the general formula $\mathrm{Tor}_1(\Z/m, \Z/n) \cong \Z/\gcd(m, n)$, which the first experiment checks for $m, n \leq 20$.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Tor, Ext and homology, computed">
+
+The first experiment computes $\mathrm{Tor}_0$, $\mathrm{Tor}_1$, $\Hom$ and $\mathrm{Ext}^1$ of $\Z/m$ and $\Z/n$ from the resolution $0 \to \Z \xrightarrow{m} \Z \to \Z/m \to 0$ for all $m, n \leq 20$, then recomputes $\mathrm{Tor}_1$ from a different, non-minimal resolution $0 \to \Z^2 \to \Z^2 \to \Z/m \to 0$ — a concrete instance of Corollary 4.
+
+<Python id="homological_algebra_tor_ext" />
+
+The second builds the cellular chain complexes of the four glued squares from the visualisation, computes their homology over $\Z$ (with torsion, by Smith normal form), over $\mathbb{F}_2$, $\mathbb{F}_3$ and $\Q$, and checks the universal coefficient theorem and the Euler characteristic $\chi = V - E + F = \sum (-1)^n \dim H_n$ in every case.
+
+<Python id="homological_algebra_surface_homology" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A quasi-isomorphism has an inverse chain map."** It need not. The chain map from $C = [\,0 \to \Z \xrightarrow{2} \Z \to 0\,]$ (degrees $1$ and $0$) to $\Z/2$ in degree $0$, given by reduction mod $2$, is a quasi-isomorphism: both complexes have homology $\Z/2$ in degree $0$ only. A chain map back would be a homomorphism $\Z/2 \to \Z$ in degree $0$, and the only one is $0$ (formalised above), which does not induce an isomorphism. Inverting quasi-isomorphisms formally is exactly what the <TopicLink id="math.cat.derived-categories">derived category</TopicLink> does. Homotopy equivalences, by contrast, do have inverses up to homotopy, and between bounded-below complexes of projectives every quasi-isomorphism is a homotopy equivalence.
+
+</Misconception>
+
+<Misconception>
+
+**"A complex is determined by its homology."** Not up to isomorphism: $C$ above and $\Z/2[0]$ have the same homology but different terms. Not even up to quasi-isomorphism in general: over $\Z/4$, the complex $D = [\,\Z/4 \xrightarrow{2} \Z/4\,]$ and $\Z/2[1] \oplus \Z/2[0]$ (zero differential) have the same homology, but every chain map $D \to \Z/2[1] \oplus \Z/2[0]$ kills $H_1(D) = 2\Z/4$ (a map $\Z/4 \to \Z/2$ sends $2$ to $0$), and every chain map in the other direction kills $H_0$ (its degree-$0$ component lands in $2\Z/4$). Since $D$ consists of projectives, any zigzag of quasi-isomorphisms could be replaced by a single chain map out of $D$, so the two complexes are not quasi-isomorphic (Weibel, §10.4). Over $\Z$, or any ring of global dimension at most $1$, every complex is quasi-isomorphic to the direct sum of its shifted homology groups.
+
+</Misconception>
+
+<Misconception>
+
+**"$\mathrm{Ext}^1(A, B)$ counts the possible middle modules $E$."** It classifies extensions up to *equivalence*, which remembers the maps. $\mathrm{Ext}^1_\Z(\Z/p, \Z/p) \cong \Z/p$ has $p$ elements, but there are only two isomorphism types of middle group: $\Z/p \oplus \Z/p$ (the split class $0$) and $\Z/p^2$, which carries the $p - 1$ non-zero classes, differing in how $\Z/p$ is embedded and how the quotient is identified with $\Z/p$.
+
+</Misconception>
+
+<Misconception>
+
+**"Tor and Ext depend on the resolution chosen."** The groups computed from different resolutions are canonically isomorphic (Corollary 4), and the first experiment checks one instance. What depends on choices is the *chain level*: the resolution itself, and the representing cocycles.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Homology theories and universal coefficients">
+
+Singular homology $H_n(X; G)$ is the homology of the singular chain complex $C_\bullet(X) \otimes G$, and the long exact sequence of Theorem 1, applied to $0 \to C_\bullet(A) \to C_\bullet(X) \to C_\bullet(X)/C_\bullet(A) \to 0$ or to a Mayer–Vietoris sequence, is the main computational tool of <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>. The universal coefficient theorem says that integral homology determines homology with any coefficients, with $\mathrm{Tor}$ as the correction: $H_2(\R P^2; \mathbb{F}_2) \cong \mathrm{Tor}_1(\Z/2, \mathbb{F}_2) = \mathbb{F}_2$ although $H_2(\R P^2; \Z) = 0$. The Künneth theorem has a $\mathrm{Tor}$ term too: $H_3(\R P^2 \times \R P^2; \Z) \cong \mathrm{Tor}_1(\Z/2, \Z/2) = \Z/2$, a class not visible in any product of homology classes. On a smooth manifold, the de Rham theorem identifies the cohomology of the cochain complex of differential forms, $d \circ d = 0$, with singular cohomology with real coefficients.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Sheaf cohomology and deformations">
+
+On a space or variety $X$, the global sections functor $\Gamma(X, -)$ on sheaves is left exact but not exact, and its right derived functors — computed with injective resolutions, which exist in the abelian category of sheaves — are **sheaf cohomology** $H^n(X, \mathcal{F})$. They measure the obstruction to passing from local to global solutions: on $\C \setminus \{0\}$ every nowhere-zero holomorphic function has a logarithm locally, and the obstruction to a global one lies in $H^1(X, \Z) \cong \Z$ (the winding number). In algebraic geometry, $\mathrm{Ext}$ groups of sheaves govern **deformation theory**: for a sheaf $\mathcal{F}$ on a projective variety, $\mathrm{Ext}^1(\mathcal{F}, \mathcal{F})$ is the tangent space to the space of first-order deformations of $\mathcal{F}$, and obstructions to extending them lie in $\mathrm{Ext}^2(\mathcal{F}, \mathcal{F})$ (see <TopicLink id="math.geom.sheaves">sheaves</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Group cohomology">
+
+For a group $G$ and a $G$-module $M$ (a module over the group ring $\Z G$), **group cohomology** is $H^n(G, M) = \mathrm{Ext}^n_{\Z G}(\Z, M)$, with $\Z$ the trivial module. In low degrees it is classical: $H^0(G, M) = M^G$, the invariants; $H^1(G, M)$ is crossed homomorphisms modulo principal ones; and $H^2(G, M)$ classifies group extensions $1 \to M \to E \to G \to 1$ inducing the given action, as Ext¹ classifies module extensions. For a cyclic group $C_n = \langle t \rangle$ there is a periodic free resolution of $\Z$ by $\Z C_n$, with maps alternating between $t - 1$ and $1 + t + \cdots + t^{n-1}$, so $H^{2k}(C_n, \Z) \cong \Z/n$ for $k \geq 1$ and $H^{2k+1}(C_n, \Z) = 0$. For finite $G$ and $n \geq 1$, $H^n(G, M)$ is annihilated by $|G|$, so it vanishes when $|G|$ acts invertibly on $M$ — the cohomological form of Maschke's theorem (see <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Galois cohomology and Kummer theory">
+
+For a field $K$ with absolute Galois group $G_K$, the cohomology of the Galois module $\overline{K}^\times$ carries arithmetic. Hilbert's Theorem 90 says $H^1(G_K, \overline{K}^\times) = 0$. Applying the long exact cohomology sequence to the Kummer sequence $1 \to \mu_n \to \overline{K}^\times \xrightarrow{x \mapsto x^n} \overline{K}^\times \to 1$ (exact when $n$ is invertible in $K$) gives
+$$
+H^1(G_K, \mu_n) \cong K^\times / (K^\times)^n,
+$$
+which classifies cyclic extensions of degree dividing $n$ when $\mu_n \subseteq K$ — **Kummer theory**, whose classical form predates cohomology. The next term, $H^2(G_K, \mu_n)$, is the $n$-torsion of the Brauer group, the central object of local and global class field theory (see <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Derived functors and derived categories">
+
+Derived functors are a categorical construction: in an abelian category with enough projectives, $L_nF$ is defined by the same recipe, and Grothendieck's Tôhoku paper (1957) set up the theory in that generality, including the existence of enough injectives in categories of sheaves (see <TopicLink id="math.cat.abelian-categories">abelian categories</TopicLink>). The modern view packages all $L_nF$ into one **total derived functor** $LF : D^-(\mathcal{A}) \to D^-(\mathcal{B})$ between derived categories, in which quasi-isomorphisms have become isomorphisms; $\mathrm{Ext}^n(A, B) = \Hom_{D(\mathcal{A})}(A, B[n])$, and long exact sequences become distinguished triangles (see <TopicLink id="math.cat.derived-categories">derived categories</TopicLink> and <TopicLink id="math.cat.triangulated-categories">triangulated categories</TopicLink>). The comparison theorem is then the statement that the homotopy category of bounded-below complexes of projectives is equivalent to $D^-(\mathcal{A})$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Henri Poincaré** introduced Betti numbers and torsion coefficients of spaces in *Analysis Situs* (1895) and its supplements. Around 1925 **Emmy Noether** pointed out that they are invariants of homology *groups*, an idea taken up by **Heinz Hopf**, **Pavel Alexandrov** and **Leopold Vietoris**; **Walther Mayer** gave an early purely algebraic treatment of chain complexes (1929).
+- **David Hilbert**'s syzygy theorem (1890) was the first theorem about free resolutions. **Reinhold Baer** studied extensions of abelian groups and their sum (1934). **Witold Hurewicz** introduced exact sequences in topology (1941), and **Samuel Eilenberg** and **Saunders Mac Lane** defined $\mathrm{Ext}$ and group cohomology in the 1940s, from questions in topology.
+- **Henri Cartan** and **Samuel Eilenberg**'s *Homological Algebra* (1956) created the subject in its modern form — projective and injective resolutions, derived functors, $\mathrm{Tor}$ and $\mathrm{Ext}$ for modules. **Nobuo Yoneda** described $\mathrm{Ext}^n$ by $n$-fold extensions (1954). **Alexander Grothendieck**'s Tôhoku paper (1957) extended the theory to abelian categories and sheaves.
+- **Maurice Auslander**, **David Buchsbaum** and **Jean-Pierre Serre** (1956) characterised regular local rings homologically, and **Jean-Louis Verdier**'s thesis (1960s) introduced derived and triangulated categories, following Grothendieck's ideas.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Charles A. Weibel, *An Introduction to Homological Algebra* (1994) — the standard graduate text: Chapters 1–3 cover this lesson.
+- Henri Cartan and Samuel Eilenberg, *Homological Algebra* (1956) — the founding text.
+- Joseph J. Rotman, *An Introduction to Homological Algebra* (2nd ed., 2009) — detailed, with many examples.
+- Peter J. Hilton and Urs Stammbach, *A Course in Homological Algebra* (2nd ed., 1997) — concise, with group cohomology.
+- Allen Hatcher, *Algebraic Topology* (2002) — Chapters 2–3 for homology, universal coefficients and Künneth from the topologist's side.
+- Sergei I. Gelfand and Yuri I. Manin, *Methods of Homological Algebra* (2nd ed., 2003) — derived categories and the modern viewpoint.
+
+</Section>

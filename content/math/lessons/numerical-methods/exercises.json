@@ -1,0 +1,163 @@
+{
+  "lesson": "numerical-methods",
+  "exercises": [
+    {
+      "id": "numerical-methods-bisection-steps",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Bisection is started on $[1, 2]$ to find $\\sqrt 2$ as a root of $x^2 - 2$. After $n$ halvings we report the midpoint of the current interval. What is the smallest $n$ for which Theorem 3 guarantees an error of at most $10^{-6}$?",
+      "answer": 19,
+      "feedback": [
+        { "match": "20", "message": "That uses the interval length $(b - a)/2^n$. Reporting the *midpoint* gains one more halving: the error is at most $(b - a)/2^{n+1}$." },
+        { "match": "6", "message": "Each step halves the bound, it does not divide it by $10$. You need $2^{n+1} \\ge 10^6$." }
+      ],
+      "hints": [
+        "Theorem 3: the midpoint after $n$ steps is within $(b - a)/2^{n+1}$ of a root.",
+        "Solve $1/2^{n+1} \\le 10^{-6}$, i.e. $2^{n+1} \\ge 10^6$. Recall $2^{10} = 1024$."
+      ],
+      "solution": "We need $(2 - 1)/2^{n+1} \\le 10^{-6}$, i.e. $2^{n+1} \\ge 10^6$. Since $2^{19} = 524\\,288 < 10^6 \\le 1\\,048\\,576 = 2^{20}$, we need $n + 1 \\ge 20$, so $n = 19$. That is about $3.3$ steps per decimal digit, the price of bisection's reliability."
+    },
+    {
+      "id": "numerical-methods-heron",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Newton's method for $x^2 - 2$ is $x_{n+1} = \\frac12\\left(x_n + \\frac{2}{x_n}\\right)$. Starting from $x_0 = 1$, compute exactly $x_1 = \\frac32$, $x_2 = \\frac{17}{12}$ and $x_3 = \\frac{p}{q}$ in lowest terms. Enter the numerator $p$.",
+      "answer": 577,
+      "feedback": [
+        { "match": "289", "message": "$289 = 17^2$ is part of the computation: $x_3 = \\frac12\\left(\\frac{17}{12} + \\frac{24}{17}\\right) = \\frac{289 + 288}{408}$." },
+        { "match": "41", "message": "$\\frac{41}{29}$ is a good approximation of $\\sqrt 2$, but it is not a Newton iterate from $1$. Apply the formula to $x_2 = \\frac{17}{12}$." }
+      ],
+      "hints": [
+        "$x_3 = \\frac12\\left(\\frac{17}{12} + \\frac{2 \\cdot 12}{17}\\right)$.",
+        "Use the common denominator $12 \\cdot 17 = 204$, then halve."
+      ],
+      "solution": "$x_3 = \\frac12\\left(\\frac{17}{12} + \\frac{24}{17}\\right) = \\frac12 \\cdot \\frac{289 + 288}{204} = \\frac{577}{408}$. Its error is about $2.1 \\times 10^{-6}$, compared with $2.5 \\times 10^{-3}$ for $x_2$: roughly squared, as Heron's error identity $x' - \\sqrt2 = (x - \\sqrt2)^2/(2x)$ predicts."
+    },
+    {
+      "id": "numerical-methods-cancellation-cure",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "For large $x$ (say $x = 10^{12}$), which formula computes $\\sqrt{x + 1} - \\sqrt{x}$ most accurately in floating point?",
+      "options": [
+        { "id": "a", "label": "$\\dfrac{1}{\\sqrt{x + 1} + \\sqrt{x}}$", "correct": true, "feedback": "Yes: multiplying by the conjugate turns the subtraction of two nearly equal numbers into an addition, so no cancellation occurs." },
+        { "id": "b", "label": "$\\sqrt{x + 1} - \\sqrt{x}$, as written", "correct": false, "feedback": "The two square roots agree in their first twelve or so digits, so the subtraction loses them: catastrophic cancellation (Theorem 2)." },
+        { "id": "c", "label": "$\\sqrt{(x + 1) - x}$", "correct": false, "feedback": "This is not even equal to the target: $\\sqrt{(x + 1) - x} = 1$, while $\\sqrt{x + 1} - \\sqrt x \\approx \\frac{1}{2\\sqrt x}$." },
+        { "id": "d", "label": "$\\sqrt{x}\\,\\big(\\sqrt{1 + 1/x} - 1\\big)$", "correct": false, "feedback": "Still a subtraction of nearly equal numbers: $\\sqrt{1 + 1/x}$ is within about $5 \\times 10^{-13}$ of $1$." }
+      ],
+      "hints": [
+        "Which formulas subtract two numbers that are almost equal?",
+        "Multiply and divide by $\\sqrt{x + 1} + \\sqrt x$."
+      ],
+      "solution": "$\\sqrt{x + 1} - \\sqrt x = \\frac{(x + 1) - x}{\\sqrt{x + 1} + \\sqrt x} = \\frac{1}{\\sqrt{x + 1} + \\sqrt x}$. The right-hand side involves only additions, a square root and a division, each with relative error at most $u$, so it is accurate to almost full precision. The original form subtracts two numbers that agree to about $12$ digits, losing them by Theorem 2."
+    },
+    {
+      "id": "numerical-methods-newton-hypothesis",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Newton's method for $f(x) = \\sqrt[3]{x}$ (the real cube root) gives $x_{n+1} = -2x_n$ and diverges from every $x_0 \\ne 0$, although $f(0) = 0$. Which hypothesis of Theorem 4 fails?",
+      "options": [
+        { "id": "a", "label": "$f$ is not differentiable at the root $0$ (its derivative blows up there), so it is not $C^2$ near the root.", "correct": true, "feedback": "Right. $f'(x) = \\frac13 x^{-2/3} \\to \\infty$ as $x \\to 0$: the tangent lines become vertical, and each step overshoots." },
+        { "id": "b", "label": "The root is not simple: $f'(0) = 0$.", "correct": false, "feedback": "At a root where $f'(0) = 0$ Newton typically converges linearly (as for $(x - 1)^2$). Here $f'(0)$ does not exist at all." },
+        { "id": "c", "label": "The starting point is too far from the root.", "correct": false, "feedback": "Every non-zero start fails, however close: $|x_{n+1}| = 2|x_n|$. No $\\delta$ works, because a hypothesis about $f$ itself fails." },
+        { "id": "d", "label": "$f$ is not continuous at $0$.", "correct": false, "feedback": "The cube root is continuous everywhere. The problem is its derivative." }
+      ],
+      "hints": [
+        "Compute $f'(x) = \\frac13 x^{-2/3}$. What happens as $x \\to 0$?",
+        "Theorem 4 needs $f$ twice continuously differentiable near $r$ and $f'(r) \\ne 0$."
+      ],
+      "solution": "Theorem 4 assumes that $f$ is $C^2$ on an interval around the root with $f'(r) \\ne 0$. The cube root is not differentiable at $0$ ($f'(x) = \\frac13 x^{-2/3}$ is unbounded), so the theorem does not apply — and indeed $x - f(x)/f'(x) = x - 3x = -2x$, so the iterates double in size and alternate in sign."
+    },
+    {
+      "id": "numerical-methods-simpson-cubic",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Apply Simpson's rule with $n = 2$ strips ($h = 2$) to $\\int_0^4 x^3\\,dx$. What value does it give?",
+      "answer": 64,
+      "feedback": [
+        { "match": "96", "message": "You have the bracket $0 + 4 \\cdot 8 + 64 = 96$; now multiply by $h/3 = 2/3$." },
+        { "match": "128", "message": "It looks as if you used $h = 4$. With $n = 2$ strips the strip width is $h = (4 - 0)/2 = 2$, and the factor is $h/3 = 2/3$." },
+        { "match": "80", "message": "That is the trapezoidal value $\\frac{h}{2}(0 + 2 \\cdot 8 + 64)$. Simpson's weights are $1, 4, 1$, times $h/3$." }
+      ],
+      "hints": [
+        "$S_h = \\frac{h}{3}\\big(f(0) + 4f(2) + f(4)\\big)$ with $h = 2$.",
+        "$f(0) = 0$, $f(2) = 8$, $f(4) = 64$."
+      ],
+      "solution": "$S_h = \\frac{2}{3}(0 + 4 \\cdot 8 + 64) = \\frac23 \\cdot 96 = 64$, which is exactly $\\int_0^4 x^3\\,dx = \\frac{4^4}{4} = 64$. Simpson's rule is exact for cubics because $f^{(4)} = 0$ (Theorem 7; the Lean theorem `simpson_exact_cubic`)."
+    },
+    {
+      "id": "numerical-methods-quadrature-facts",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which statements are true? (Choose all that apply.)",
+      "options": [
+        { "id": "a", "label": "The trapezoidal rule integrates every polynomial of degree $\\le 1$ exactly.", "correct": true, "feedback": "Yes: $f'' = 0$ in Theorem 6." },
+        { "id": "b", "label": "Simpson's rule integrates $x^4$ exactly.", "correct": false, "feedback": "On $[0, 1]$ it gives $\\frac{5}{24}$ instead of $\\frac15$ (proved in Lean: `simpson_not_exact_quartic`)." },
+        { "id": "c", "label": "For a smooth integrand, halving $h$ divides the trapezoidal error by about $4$.", "correct": true, "feedback": "Yes: the error is about $C h^2$ for smooth $f$." },
+        { "id": "d", "label": "Simpson's rule has error $O(h^4)$ for $\\int_0^1 \\sqrt x\\,dx$.", "correct": false, "feedback": "The fourth derivative of $\\sqrt x$ is unbounded near $0$, so Theorem 7 does not apply; the observed rate is about $h^{1.5}$." },
+        { "id": "e", "label": "Simpson's rule with step $h/2$ equals $\\frac{4T_{h/2} - T_h}{3}$.", "correct": true, "feedback": "Yes: this Richardson combination cancels the $h^2$ term of the trapezoidal error." }
+      ],
+      "hints": [
+        "Degree of exactness: which derivative appears in each error bound?",
+        "Check the hypotheses of Theorems 6 and 7 before applying them."
+      ],
+      "solution": "True: (a), (c), (e). (b) is false because Simpson's rule has degree of exactness $3$; (d) is false because the error bound needs a bounded fourth derivative, which $\\sqrt x$ lacks at $0$ — the third experiment measures a rate of $h^{1.5}$."
+    },
+    {
+      "id": "numerical-methods-optimal-step",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In binary64 arithmetic, approximately which step $h$ minimises the total error of the forward difference $\\frac{f(x + h) - f(x)}{h}$ for a typical smooth function with $f$, $f''$ of moderate size?",
+      "options": [
+        { "id": "a", "label": "$h \\approx 10^{-8}$", "correct": true, "feedback": "Yes: balancing truncation $\\frac{h}{2}M_2$ against rounding $\\frac{2\\epsilon}{h}$ with $\\epsilon \\approx 10^{-16}$ gives $h \\approx \\sqrt\\epsilon \\approx 10^{-8}$." },
+        { "id": "b", "label": "$h \\approx 10^{-16}$, the unit roundoff", "correct": false, "feedback": "At this size $x + h$ may round to $x$ itself, and the rounding error $2\\epsilon/h$ is of order $1$." },
+        { "id": "c", "label": "As small as possible: the error tends to $0$ as $h \\to 0$.", "correct": false, "feedback": "That is true in exact arithmetic only. In floating point the rounding error grows like $1/h$." },
+        { "id": "d", "label": "$h \\approx 10^{-2}$", "correct": false, "feedback": "Here the truncation error $\\frac h2 M_2 \\approx 10^{-2}$ dominates; smaller steps do better, down to about $10^{-8}$." }
+      ],
+      "hints": [
+        "The total error is about $\\frac{h}{2}M_2 + \\frac{2\\epsilon}{h}$ with $\\epsilon \\approx 10^{-16}$.",
+        "Minimise over $h$: set the derivative to zero, or make the two terms equal."
+      ],
+      "solution": "With $E(h) = \\frac{h}{2}M_2 + \\frac{2\\epsilon}{h}$, $E'(h) = 0$ gives $h^* = 2\\sqrt{\\epsilon/M_2} \\approx 10^{-8}$ for $\\epsilon \\approx 10^{-16}$ and $M_2 \\approx 1$, with error about $2\\sqrt{\\epsilon M_2} \\approx 10^{-8}$. The experiment on $\\sin$ at $1$ shows exactly this V shape."
+    },
+    {
+      "id": "numerical-methods-lean-epsilon",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "With `IsBinary64 x` meaning \"$x$ is a positive binary64 number\", which Lean statement says that $2^{-52}$ is the gap between $1$ and the next larger binary64 number?",
+      "options": [
+        { "id": "a", "label": "`IsBinary64 (1 + 2 ^ (-52 : ℤ)) ∧ ∀ x, IsBinary64 x → ¬ (1 < x ∧ x < 1 + 2 ^ (-52 : ℤ))`", "correct": true, "feedback": "Yes: $1 + 2^{-52}$ is representable, and nothing representable lies strictly between $1$ and it. (Together with `IsBinary64 1`, this is what the lesson proves.)" },
+        { "id": "b", "label": "`∀ x, IsBinary64 x → 1 + 2 ^ (-52 : ℤ) ≤ x`", "correct": false, "feedback": "This would say *every* binary64 number is at least $1 + 2^{-52}$ — false, since $1$ itself is one." },
+        { "id": "c", "label": "`∃ x, IsBinary64 x ∧ 1 < x ∧ x < 1 + 2 ^ (-52 : ℤ)`", "correct": false, "feedback": "This says the opposite: that some binary64 number lies in the gap." },
+        { "id": "d", "label": "`∀ x, ¬ (1 < x ∧ x < 1 + 2 ^ (-52 : ℤ))`", "correct": false, "feedback": "This is about all real numbers, and it is false: $1 + 2^{-53}$ lies in the gap. The hypothesis `IsBinary64 x` is essential." }
+      ],
+      "hints": [
+        "\"The next larger number is $1 + 2^{-52}$\" has two parts: it is a binary64 number, and none lies in between.",
+        "Watch the quantifier and the hypothesis on `x`."
+      ],
+      "solution": "Option (a) states both parts: $1 + 2^{-52}$ is representable, and no representable number lies strictly between $1$ and $1 + 2^{-52}$. These are the Lean theorems `one_add_eps_is_binary64` and `machine_epsilon`. Option (d) forgets the hypothesis `IsBinary64 x` and becomes false — a typical way a formal statement exposes a hidden assumption."
+    },
+    {
+      "id": "numerical-methods-python-newton",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Write `newton(f, df, x0, tol=1e-12, max_iter=50)` that runs Newton's method and returns `(x, n)`: the first iterate with `abs(f(x)) <= tol` and the number of steps taken. If a derivative is exactly `0`, or `max_iter` steps pass without success, return `(None, n)`.",
+      "starter": "def newton(f, df, x0, tol=1e-12, max_iter=50):\n    x = x0\n    return None, 0\n",
+      "tests": "x, n = newton(lambda x: x * x - 2, lambda x: 2 * x, 1.0)\nassert abs(x - 2 ** 0.5) < 1e-12 and n <= 6\nx, n = newton(lambda x: x ** 3 - 8, lambda x: 3 * x * x, 3.0)\nassert abs(x - 2.0) < 1e-10\nassert newton(lambda x: x * x + 1, lambda x: 2 * x, 0.0) == (None, 0), 'zero derivative at the start'\nx, n = newton(lambda x: x ** 3 - 2 * x + 2, lambda x: 3 * x * x - 2, 0.0)\nassert x is None and n == 50, 'the 0, 1, 0, 1 cycle never converges'\nx, n = newton(lambda x: x - 5, lambda x: 1.0, 5.0)\nassert (x, n) == (5.0, 0)\nprint('All tests passed!')\n",
+      "hints": [
+        "Loop: if `abs(f(x)) <= tol`, return `(x, n)`; if `df(x) == 0`, return `(None, n)`; otherwise update `x` and increase `n`.",
+        "Check the residual before taking a step, so that a start which is already a root returns `(x0, 0)`; after the loop, return `(None, max_iter)`."
+      ],
+      "solution": "```python\ndef newton(f, df, x0, tol=1e-12, max_iter=50):\n    x = x0\n    for n in range(max_iter):\n        if abs(f(x)) <= tol:\n            return x, n\n        d = df(x)\n        if d == 0:\n            return None, n\n        x = x - f(x) / d\n    if abs(f(x)) <= tol:\n        return x, max_iter\n    return None, max_iter\n```\n\nThe safeguards matter: a zero derivative would divide by zero, and the cycle for $x^3 - 2x + 2$ from $0$ would loop forever. Quadratic convergence (Theorem 4) explains why only a handful of steps are needed for $\\sqrt 2$; the tests are finite checks, not a proof."
+    }
+  ]
+}

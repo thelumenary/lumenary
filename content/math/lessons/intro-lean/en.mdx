@@ -1,0 +1,399 @@
+---
+slug: intro-lean
+topic: math.comp.intro-lean
+title: First steps in Lean
+subtitle: A proof assistant is a reader that never gets tired and never lets anything slide. Learn to write proofs it accepts — and learn exactly what its approval does, and does not, mean.
+level: g9-12
+ages: Ages 14–18
+minutes: 70
+order: 4026
+objectives:
+  - Write and check short Lean proofs of propositional tautologies and simple equalities using `rfl`, `intro`, `exact`, `constructor`, `cases`, `rw` and `simp`
+  - Explain the idea "propositions are types, proofs are terms", for example why a proof of $p \to q$ is a function
+  - Prove a statement about natural numbers by induction in Lean, and explain why $n + 0 = n$ holds by definition while $0 + n = n$ needs induction
+  - Read a Mathlib theorem statement, and distinguish applying a library theorem from proving a result independently
+  - Explain what a machine check guarantees (and what it does not), including `sorry`, axioms, and mis-stated theorems
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.IntroLean.two_add_two
+  - Lumenary.IntroLean.and_swap
+  - Lumenary.IntroLean.and_swap_tactics
+  - Lumenary.IntroLean.modus_ponens
+  - Lumenary.IntroLean.imp_trans
+  - Lumenary.IntroLean.or_swap
+  - Lumenary.IntroLean.contrapositive
+  - Lumenary.IntroLean.double_negation
+  - Lumenary.IntroLean.rw_chain
+  - Lumenary.IntroLean.rw_library
+  - Lumenary.IntroLean.simp_example
+  - Lumenary.IntroLean.add_zero_rfl
+  - Lumenary.IntroLean.zero_add_induction
+  - Lumenary.IntroLean.zero_add_library
+  - Lumenary.IntroLean.sumUpTo
+  - Lumenary.IntroLean.two_mul_sumUpTo
+  - Lumenary.IntroLean.prime_97
+  - Lumenary.IntroLean.infinitely_many_primes
+  - Lumenary.IntroLean.sqrt_two_irrational
+  - Lumenary.IntroLean.no_nat_sqrt_two
+  - Lumenary.IntroLean.nat_sub_truncates
+  - Lumenary.IntroLean.nat_div_rounds_down
+  - Lumenary.IntroLean.real_div_zero
+  - Lumenary.IntroLean.vacuous
+compute: [intro_lean_mini_checker]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Can a computer check a proof?">
+
+In 1998 Thomas Hales announced a proof of the **Kepler conjecture**: no way of stacking equal spheres fills space more densely than the familiar pyramid of oranges on a market stall. The proof combined hundreds of pages of argument with enormous computer calculations. After years of work, the referees reported that they were "99% certain" it was correct, but could not check every detail. So Hales started a new project, *Flyspeck*: to write the entire proof in a language so precise that a computer program could check every single step. It took a team of mathematicians in several countries more than a decade; the check was completed in 2014.
+
+Programs that check proofs are called **proof assistants**. In 2020 the mathematician Peter Scholze challenged the community to check a difficult new theorem of his and Dustin Clausen's in the proof assistant **Lean**; a team led by Johan Commelin finished in 2022, and Scholze wrote that the project had clarified parts of the argument for him. Today Lean's community library, **Mathlib**, contains well over a hundred thousand theorems, from school algebra to research mathematics, every one of them machine-checked.
+
+In this lesson you will write your first Lean proofs. You have seen Lean code throughout the Lumenary; now you will learn to read it, to write it — and to judge precisely what a green checkmark means.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A very strict reader">
+
+When you write a proof for a person, you can say "clearly" and skip a step. A proof assistant cannot be persuaded that way. It keeps track of two things:
+
+- the **goal**: what remains to be proved, and
+- the **hypotheses**: what you are allowed to use.
+
+Each step you write changes the goal, and Lean checks that the step is legal. When no goals remain, the proof is complete. If a step is wrong — or missing — Lean refuses and tells you which goal is still open.
+
+<Narrator who="gideon">
+
+Precise instructions are my favourite thing. A proof assistant is the ultimate precise reader: it accepts *only* what follows from the rules. That is annoying for an afternoon and wonderful for a lifetime — once it says yes, you never have to wonder whether you fooled yourself.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="The vocabulary">
+
+<Definition term="proof assistant">
+
+A **proof assistant** is a program that checks proofs written in a formal language. Its core, the **kernel**, is a small program that checks each step against the rules of the logic.
+
+</Definition>
+
+<Definition term="propositions as types">
+
+In Lean, a statement (a **proposition**) is a **type**, and a proof of it is a **term** of that type. Writing `h : p` means "`h` is a proof of `p`". Checking a proof means checking that the term really has the claimed type.
+
+</Definition>
+
+<Definition term="tactic">
+
+A **tactic** is a command that builds part of a proof by transforming the goal, such as `intro` (assume a hypothesis), `exact` (supply a proof), `rw` (rewrite with an equation) or `induction`. A proof written with tactics starts with `by`.
+
+</Definition>
+
+The connectives of logic each have a meaning in this language, closely matching the truth tables of <TopicLink id="math.found.propositional-logic">propositional logic</TopicLink>:
+
+| Statement | How to prove it in Lean | How to use a proof of it |
+| --- | --- | --- |
+| `p ∧ q` ("and") | give a pair `⟨hp, hq⟩` (tactic `constructor`) | take it apart (`obtain ⟨hp, hq⟩ := h`) |
+| `p ∨ q` ("or") | `Or.inl hp` or `Or.inr hq` | consider both cases (`cases h`) |
+| `p → q` ("implies") | a function from proofs of `p` to proofs of `q` (`intro hp`) | apply it: `h hp` is a proof of `q` |
+| `¬p` ("not") | means `p → False` | apply it to a proof of `p` to get `False` |
+| `a = b` | `rfl` if both sides compute to the same thing | rewrite with it (`rw [h]`) |
+
+</Section>
+
+<Section id="first-proofs" kind="formal" title="First proofs">
+
+The simplest proofs are computations. Lean evaluates both sides of `2 + 2 = 4`, finds the same number, and accepts `rfl` ("reflexivity: a thing equals itself"):
+
+<Lean decl="Lumenary.IntroLean.two_add_two" />
+
+Next, logic. Here is "if $p$ and $q$, then $q$ and $p$", written as a **term**: a function that takes the pair of proofs `⟨hp, hq⟩` and returns the swapped pair.
+
+<Lean decl="Lumenary.IntroLean.and_swap" />
+
+The same theorem with **tactics**. Read it alongside the goal state, which Lean displays after each line. After `intro h` and `obtain ⟨hp, hq⟩ := h` the state is
+
+```
+p q : Prop
+hp : p
+hq : q
+⊢ q ∧ p
+```
+
+— the hypotheses above the line, the goal after the turnstile `⊢`. Then `constructor` splits the goal into `⊢ q` and `⊢ p`, and `exact hq`, `exact hp` close them.
+
+<Lean decl="Lumenary.IntroLean.and_swap_tactics" />
+
+Implication is a function, so **modus ponens** — from $p \to q$ and $p$ conclude $q$ — is function application, and chaining implications is composing functions:
+
+<Lean decl="Lumenary.IntroLean.modus_ponens" />
+
+<Lean decl="Lumenary.IntroLean.imp_trans" />
+
+An "or" is proved by cases, and the **contrapositive** of <TopicLink id="math.found.proof-techniques">proof techniques</TopicLink> is a one-line function once you remember that `¬q` means `q → False`:
+
+<Lean decl="Lumenary.IntroLean.or_swap" />
+
+<Lean decl="Lumenary.IntroLean.contrapositive" />
+
+<Narrator who="chloe">
+
+Look at the axiom line under `contrapositive`: *no axioms*. It follows from the rules alone. Now look at the next one.
+
+</Narrator>
+
+`¬¬p → p` is true in every row of its truth table, yet it does not follow from the rules we have used. Lean proves it with a **classical** principle — proof by contradiction — and the axiom list says so honestly:
+
+<Lean decl="Lumenary.IntroLean.double_negation" />
+
+</Section>
+
+<Section id="tables" kind="visualization" title="Truth tables beside proofs">
+
+A truth table *checks* a propositional statement by trying every row; Lean *proves* it by building a term. Check that both formulas below are tautologies. Then notice the difference the axiom lists revealed: the first has a constructive proof, the second needs classical logic, even though their truth tables look equally innocent.
+
+<TruthTable formula="p ∧ q → q ∧ p" title="and_swap, row by row" />
+
+<TruthTable formula="¬¬p → p" title="Double negation: a tautology that needs classical logic in Lean" />
+
+</Section>
+
+<Section id="rewriting" kind="formal" title="Rewriting and simplifying">
+
+Equations are tools: if you know `h : a = b`, then `rw [h]` replaces `a` by `b` in the goal. Here two rewrites turn `a = c` into `c = c`, which `rw` closes automatically:
+
+<Lean decl="Lumenary.IntroLean.rw_chain" />
+
+You can rewrite with theorems from the library too. `Nat.add_comm a b` is the equation `a + b = b + a`:
+
+<Lean decl="Lumenary.IntroLean.rw_library" />
+
+`simp` is a more powerful automatic rewriter: it uses hundreds of simplification lemmas such as $x + 0 = x$, $x \cdot 1 = x$ and $x \cdot 0 = 0$, repeatedly, until nothing more changes.
+
+<Lean decl="Lumenary.IntroLean.simp_example" />
+
+</Section>
+
+<Section id="induction" kind="proof" title="Natural numbers and induction">
+
+Lean's natural numbers are built from two constructors: `0`, and the successor `n + 1` of any natural number $n$. Addition is defined by **recursion on the second argument**:
+
+$$
+n + 0 = n, \qquad n + (k + 1) = (n + k) + 1.
+$$
+
+The first rule is literally the statement $n + 0 = n$, so Lean accepts it by `rfl` for every $n$:
+
+<Lean decl="Lumenary.IntroLean.add_zero_rfl" />
+
+But $0 + n = n$ is different. With $n$ an unknown number, neither rule applies to $0 + n$ — the second argument $n$ is neither $0$ nor visibly of the form $k + 1$ — so the computation is stuck and `rfl` fails. We need a proof by **induction**.
+
+<Theorem name="Theorem">
+
+For every natural number $n$, $\;0 + n = n$.
+
+</Theorem>
+
+<Proof>
+
+By induction on $n$. *Base case:* $0 + 0 = 0$ by the first rule. *Inductive step:* assume $0 + k = k$. Then $0 + (k + 1) = (0 + k) + 1$ by the second rule, and this equals $k + 1$ by the assumption.
+
+</Proof>
+
+In Lean, each line of the human proof becomes one step:
+
+<Lean decl="Lumenary.IntroLean.zero_add_induction" />
+
+Lean's library already contains this fact as `Nat.zero_add`, so we could simply apply it. Both are machine-checked, but they say different things: the first is proved **here, from the definitions**; the second **uses** a theorem someone else proved. The Lumenary labels every declaration as *independent* or *library* to keep this distinction honest.
+
+<Lean decl="Lumenary.IntroLean.zero_add_library" />
+
+Here is a bigger induction: **Gauss's formula** $0 + 1 + \dots + n = \frac{n(n+1)}{2}$, stated without division as $2 \cdot (0 + 1 + \dots + n) = n(n + 1)$. We define the sum by recursion and prove the formula by induction; in the inductive step, the tactic `ring` does the algebra $k(k+1) + 2(k+1) = (k+1)(k+2)$.
+
+<Lean decl="Lumenary.IntroLean.sumUpTo" />
+
+<Lean decl="Lumenary.IntroLean.two_mul_sumUpTo" />
+
+</Section>
+
+<Section id="mathlib" kind="formal" title="Reading Mathlib">
+
+Much of using Lean is *reading* statements. Here is Euclid's theorem as Mathlib states it:
+
+```lean
+theorem Nat.exists_infinite_primes (n : ℕ) : ∃ p, n ≤ p ∧ Nat.Prime p
+```
+
+Read it piece by piece: the name; then the **arguments** in brackets (for any natural number `n`); then, after the colon, the **statement**: there exists `p` with `n ≤ p` and `p` prime. So: *for every $n$ there is a prime at least as large as $n$* — that is, there are infinitely many primes. Applying it is one line:
+
+<Lean decl="Lumenary.IntroLean.infinitely_many_primes" />
+
+Statements about general structures have two more kinds of bracket. For instance
+
+```lean
+theorem add_comm {G : Type*} [AddCommMagma G] (a b : G) : a + b = b + a
+```
+
+says: for any type `G` (in **curly braces**: Lean will work out `G` by itself from `a` and `b`), carrying an addition that is commutative (in **square brackets**: a *structure* Lean finds automatically — for ℕ, ℤ, ℝ…), and any `a b : G`, we have `a + b = b + a`.
+
+Two more library results. The first is certified by `norm_num`, an automated procedure that checks the arithmetic and hands the kernel a proof to re-check; the second is a famous theorem used as a black box:
+
+<Lean decl="Lumenary.IntroLean.prime_97" />
+
+<Lean decl="Lumenary.IntroLean.sqrt_two_irrational" />
+
+<Narrator who="margaret">
+
+Notice that `prime_97` lists three axioms — `propext`, `Classical.choice` and `Quot.sound`. These are the standard axioms of Mathlib's logic, the same for almost every theorem in the library. What you must *never* see in a finished proof is `sorryAx`.
+
+</Narrator>
+
+</Section>
+
+<Section id="guarantees" kind="human" title="What a machine check guarantees — and what it does not">
+
+When Lean accepts a theorem, the kernel has checked that the proof follows from Lean's rules and the axioms listed. That is a very strong guarantee — far stronger than "I read it carefully". But it guarantees exactly that, and nothing more.
+
+**1. `sorry` means "not proved".** Writing `sorry` tells Lean "trust me, I'll fill this in later". Lean accepts the file with a warning, and `#print axioms` reports that the theorem depends on `sorryAx`. A proof containing `sorry` is a plan, not a proof. (The Lean exercises of this lesson are statements with `sorry` for you to replace.)
+
+**2. The check is relative to the axioms and the kernel.** Lean's kernel is small and has been studied carefully, and its axioms are standard; but a proof is checked *relative to* them. That is why the Lumenary shows the axiom list under every declaration.
+
+**3. A correct proof of the wrong statement is still a correct proof.** This is the most important lesson about formal mathematics. The theorem below is proved correctly:
+
+<Lean decl="Lumenary.IntroLean.no_nat_sqrt_two" />
+
+It says that no *natural number* squares to $2$. It does **not** say that $\sqrt 2$ is irrational — that would need "no fraction squares to $2$", which is Mathlib's `irrational_sqrt_two` above. If someone announced "Lean has verified that $\sqrt 2$ is irrational" on the strength of `no_nat_sqrt_two`, the checkmark would be genuine and the claim false.
+
+**4. Definitions have conventions you must know.** Lean's functions are defined for *every* input, so some familiar operations get unfamiliar conventions:
+
+<Lean decl="Lumenary.IntroLean.nat_sub_truncates" />
+
+<Lean decl="Lumenary.IntroLean.nat_div_rounds_down" />
+
+<Lean decl="Lumenary.IntroLean.real_div_zero" />
+
+So the statement `∀ n : ℕ, n - 1 + 1 = n` is *false* in Lean (it fails at $n = 0$), and "$x / x = 1$" needs the hypothesis $x \ne 0$. These conventions are harmless once you know them — and dangerous if you don't.
+
+**5. Impossible hypotheses prove anything.** A theorem whose hypotheses can never all hold is true and useless:
+
+<Lean decl="Lumenary.IntroLean.vacuous" />
+
+So when you read a formal theorem, ask: *Is this statement what was claimed? Can its hypotheses actually happen? Which axioms does it use?* The machine checks the proof; checking the statement is the human's job.
+
+</Section>
+
+<Section id="computation" kind="computation" title="A toy proof checker">
+
+<Narrator who="margaret">
+
+How can a program check a proof? Let me build a tiny checker for one theory: natural numbers made from $0$ and the successor $S$, with the two rules of addition, A1: $a + 0 = a$ and A2: $a + S(b) = S(a + b)$. A proof is a chain of terms, and each link must be exactly one application of a rule.
+
+</Narrator>
+
+<Python id="intro_lean_mini_checker" />
+
+The checker accepts the proof of $2 + 2 = 4$ and rejects a chain that jumps. It also shows *mechanically* why $n + 0 = n$ is "true by computation" while $0 + n$ is stuck when $n$ is a variable — the same reason `rfl` fails in Lean. Checking $0 + k = k$ for the numerals $k = 0, \dots, 100$ is evidence; the two checked cases of the induction proof, together with the induction principle, are a proof. The verdicts are **exact**, but the toy is far simpler than Lean's kernel, which checks a whole logic, not one theory of addition.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Machine-checked means it says what was intended."** Lean checks that the proof proves the *formal* statement. Whether the formal statement matches the informal claim — natural numbers versus fractions, missing hypotheses, conventions like $1/0 = 0$ — must be checked by people.
+
+</Misconception>
+
+<Misconception>
+
+**"It compiles, so it's finished."** A file with `sorry` compiles with a warning. Only a proof whose axiom list is free of `sorryAx` is complete.
+
+</Misconception>
+
+<Misconception>
+
+**"Using a Mathlib lemma is the same as proving the result."** Applying `Nat.zero_add` gives a valid, checked proof, but the mathematical work was done elsewhere. Both are honest — as long as you say which one you did.
+
+</Misconception>
+
+<Misconception>
+
+**"`rfl` proves every true equation."** `rfl` works only when both sides *compute* to the same thing. $n + 0 = n$ does; $0 + n = n$ does not, though it is just as true.
+
+</Misconception>
+
+<Misconception>
+
+**"The proof assistant finds the proof for you."** Tactics like `simp`, `ring` and `norm_num` automate routine steps, and modern tools can search for short proofs; but the ideas — which induction, which invariant, which lemma — usually still come from the mathematician.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="The same ideas, seen by others">
+
+<Viewpoint lens="logic" title="Proofs are programs: the Curry–Howard correspondence">
+
+Haskell Curry (1934, 1958) and William Howard (1969) noticed that the rules for proofs and the rules for typed programs are the same rules: a proof of $p \to q$ is a function, a proof of $p \wedge q$ is a pair, a proof of $p \vee q$ is a tagged choice. Under this correspondence, `and_swap` is literally the program that swaps the two parts of a pair. The correspondence is with **constructive** logic, where a proof of $p \vee q$ must say which side holds; principles such as $\neg\neg p \to p$ or "$p \vee \neg p$" are added as axioms, which is exactly what `double_negation`'s axiom list shows. See <TopicLink id="math.found.type-theory">type theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="A small trusted core">
+
+The Dutch mathematician N. G. de Bruijn insisted that a proof checker's trusted core be small enough to check by hand — the **de Bruijn criterion**. Lean follows it: tactics, `simp` and `norm_num` may be large and clever, but everything they produce is re-checked by the small kernel, so a bug in a tactic can make it fail but cannot make a false theorem pass. Checking is computation: our toy checker in Python does on a small scale what the kernel does in general. Compare <TopicLink id="math.comp.algorithms-and-efficiency">algorithms and correctness</TopicLink>, where Lean checked loop invariants.
+
+</Viewpoint>
+
+<Viewpoint lens="sets" title="Types are not sets">
+
+In set theory, everything is a set, and $\N \subseteq \Z \subseteq \R$ literally. In Lean every term has exactly one type: `(2 : ℕ)` and `(2 : ℝ)` are different terms, and Lean inserts a **coercion** `↑` when a natural number is used as a real number. Statements like "$x \in \N$" for a real $x$ must be phrased differently. Both foundations can express ordinary mathematics; they organise it differently. See <TopicLink id="math.found.sets">sets</TopicLink> and <TopicLink id="math.found.zfc">ZFC</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Logic as a category">
+
+Types and functions form a category, and in it "and" is the **product**: a proof of $r \to p \wedge q$ is the same as a pair of proofs of $r \to p$ and $r \to q$ — the universal property of <TopicLink id="math.cat.intro-universal-properties">products by maps</TopicLink>. Implication is the "exponential" object, and Joachim Lambek showed in the 1970s and 1980s that typed λ-calculi correspond precisely to **cartesian closed categories**. Logic, programming and category theory are three views of one structure.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Equality as a path">
+
+In **homotopy type theory**, developed from the mid-2000s by Vladimir Voevodsky, Steve Awodey, Michael Warren and others, a proof of $a = b$ is pictured as a *path* from $a$ to $b$ in a space, and different proofs can be genuinely different paths — like two non-homotopic loops around a hole. Lean deliberately does not adopt this view: its propositions are *proof-irrelevant* (any two proofs of the same proposition are equal), which is incompatible with Voevodsky's univalence axiom. Homotopy type theory lives in other proof assistants. It is an honest example of a topological picture of logic — and of a design choice with consequences. See <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Deciding identities by normal forms">
+
+The tactic `ring` decides whether an equation holds in every commutative ring: it expands both sides into a **normal form** — a sum of monomials with coefficients, in a fixed order — and compares them. That is the algebraist's theorem that two polynomials are equal as polynomials exactly when their coefficients agree, turned into an algorithm that produces a checkable proof. The same strategy — compute normal forms, compare — is behind `simp` and `norm_num`.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Gottlob Frege**'s *Begriffsschrift* (Germany, 1879) created a fully formal language for logic. **Alfred North Whitehead** and **Bertrand Russell**'s *Principia Mathematica* (England, 1910–13) attempted to derive mathematics in such a language by hand — famously taking hundreds of pages to reach $1 + 1 = 2$.
+- The first computer proof checkers appeared around 1970: **Automath**, by N. G. de Bruijn in Eindhoven (Netherlands, from 1967), and **Mizar**, by Andrzej Trybulec in Poland (from 1973), whose library of formalised mathematics is still growing. **Robin Milner**'s LCF (Stanford and Edinburgh, 1970s) introduced tactics and the small trusted kernel.
+- **Per Martin-Löf** (Sweden) developed the type theory of the 1970s on which many systems build; **Thierry Coquand** and **Gérard Huet** created the Calculus of Constructions in France in the 1980s, the basis of Coq (renamed Rocq in 2025) and an ancestor of Lean's logic.
+- Landmarks: the **four colour theorem** checked in Coq by Georges Gonthier and Benjamin Werner (2005); the **odd order theorem** of group theory (Gonthier and a team, 2012); the **Kepler conjecture** (Flyspeck, 2014, in HOL Light and Isabelle); the **Liquid Tensor Experiment** in Lean (2022).
+- **Lean** was started by Leonardo de Moura at Microsoft Research in 2013; Lean 4 appeared in 2021. Mathlib is written by a worldwide volunteer community, and since 2024 Kevin Buzzard has led a project to formalise the proof of Fermat's Last Theorem in Lean.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Kevin Buzzard and Mohammad Pedramfar, *The Natural Number Game* — learn Lean by proving the properties of addition and multiplication yourself, in the browser.
+- Heather Macbeth, *The Mechanics of Proof* (2023) — an introduction to proof written for Lean, at this level.
+- Jeremy Avigad, Leonardo de Moura, Soonho Kong and Sebastian Ullrich, *Theorem Proving in Lean 4* — the official guide to Lean's logic.
+- Jeremy Avigad and Patrick Massot, *Mathematics in Lean* — the next step: real mathematics with Mathlib.
+- Daniel J. Velleman, *How to Prove It* (3rd edition, 2019) — proof techniques on paper, the perfect companion.
+
+</Section>

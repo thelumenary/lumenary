@@ -1,0 +1,666 @@
+---
+slug: real-analysis
+topic: math.analysis.real-analysis
+title: Real analysis
+subtitle: Calculus works — but *why*? One axiom about the real line, the **completeness** of $\R$, proves the theorems calculus quietly relies on, and explains exactly when limits may be swapped.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6016
+objectives:
+  - Use the completeness axiom to prove the monotone convergence theorem, the Bolzano–Weierstrass theorem and the Cauchy criterion
+  - Prove the intermediate value, extreme value and uniform continuity theorems for continuous functions on $[a, b]$
+  - Distinguish pointwise from uniform convergence, prove that uniform limits of continuous functions are continuous, and recognise when limits, integrals and derivatives can be interchanged
+  - Define the Riemann integral by upper and lower sums, prove that continuous functions are integrable and that the indicator function of $\Q$ is not
+  - Prove both parts of the fundamental theorem of calculus
+  - Explain, with Weierstrass's example, why continuity does not imply differentiability anywhere
+narrators: []
+lean:
+  - Lumenary.RealAnalysis.ConvergesTo
+  - Lumenary.RealAnalysis.IsCauchy
+  - Lumenary.RealAnalysis.UniformlyConvergesOn
+  - Lumenary.RealAnalysis.convergesTo_iff_tendsto
+  - Lumenary.RealAnalysis.limit_unique
+  - Lumenary.RealAnalysis.cauchy_of_convergesTo
+  - Lumenary.RealAnalysis.convergesTo_of_cauchy_of_subseq
+  - Lumenary.RealAnalysis.bolzano_weierstrass
+  - Lumenary.RealAnalysis.cauchy_iff_converges
+  - Lumenary.RealAnalysis.monotone_converges
+  - Lumenary.RealAnalysis.ivt_from_completeness
+  - Lumenary.RealAnalysis.ivt_library
+  - Lumenary.RealAnalysis.extreme_value
+  - Lumenary.RealAnalysis.uniform_limit_continuous
+  - Lumenary.RealAnalysis.uniform_limit_continuous_library
+  - Lumenary.RealAnalysis.pow_pointwise
+  - Lumenary.RealAnalysis.pow_not_uniform
+  - Lumenary.RealAnalysis.rationals_and_irrationals_dense
+  - Lumenary.RealAnalysis.ftc_one
+  - Lumenary.RealAnalysis.ftc_one_library
+  - Lumenary.RealAnalysis.ftc_two
+  - Lumenary.RealAnalysis.mean_value
+compute: [real_analysis_uniform_convergence, real_analysis_weierstrass_function]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="When calculus goes wrong">
+
+Here is a famous series:
+
+$$
+1 - \tfrac12 + \tfrac13 - \tfrac14 + \tfrac15 - \tfrac16 + \cdots = \ln 2 \approx 0.693.
+$$
+
+Now add up exactly the same numbers in a different order — two positive terms, then one negative:
+
+$$
+1 + \tfrac13 - \tfrac12 + \tfrac15 + \tfrac17 - \tfrac14 + \tfrac19 + \tfrac1{11} - \tfrac16 + \cdots = \tfrac32 \ln 2 \approx 1.040.
+$$
+
+Same terms, different sum. Riemann proved in 1854 that a series like this one, which converges but not absolutely, can be rearranged to add up to *any* real number you like. Addition of infinitely many numbers is not addition.
+
+The history of calculus is full of such surprises. In his *Cours d'analyse* of 1821, Augustin-Louis Cauchy "proved" that a convergent series of continuous functions has a continuous sum. Five years later Niels Henrik Abel pointed out that the Fourier series
+
+$$
+\sin x - \tfrac12 \sin 2x + \tfrac13 \sin 3x - \cdots
+$$
+
+converges for every $x$ to a function that jumps at $x = \pi$. In 1872 Karl Weierstrass presented a continuous function that has a tangent line *nowhere* — at a time when many mathematicians believed a continuous function must be differentiable at most points.
+
+Real analysis is the response: precise definitions of limit, continuity, convergence and integral, and proofs of everything calculus uses. All of it rests on one property of the real numbers, **completeness**: the real line has no holes. In this lesson you will prove, from that single axiom, the intermediate value theorem, the extreme value theorem, the Bolzano–Weierstrass theorem and the fundamental theorem of calculus, and you will learn exactly when two limiting processes can be swapped.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="No holes, and one N for everyone">
+
+The rational numbers are full of holes. The decimal approximations $1, 1.4, 1.41, 1.414, 1.4142, \dots$ to $\sqrt 2$ get closer and closer to each other, but in $\Q$ there is nothing for them to converge *to*. The set $\{x \in \Q : x^2 < 2\}$ is bounded above but has no least upper bound in $\Q$. Completeness says that in $\R$ this never happens: every sequence that "ought to converge" does, and every bounded set has a sharpest bound. Each of the great theorems of this lesson fails over $\Q$. The function $f(x) = x^2 - 2$ on $[0, 2] \cap \Q$ changes sign without ever being $0$.
+
+The second big idea is about **the order of quantifiers**. A sequence of functions $f_n$ converges to $f$ *pointwise* on $S$ if for each $x \in S$ the numbers $f_n(x)$ converge to $f(x)$. It converges *uniformly* if one threshold $N$ works for all $x$ at once: once $n \ge N$, the whole graph of $f_n$ lies inside a tube of width $\varepsilon$ around the graph of $f$.
+
+<Figure caption="Uniform convergence: for $n \ge N$ the whole graph of $f_n$ (solid) lies in the tube of half-width $\varepsilon$ around the limit $f$ (dashed). Pointwise convergence only asks each vertical line to be eventually inside the tube — at its own pace.">
+<svg viewBox="0 0 320 180" role="img" aria-label="A dashed curve surrounded by a shaded band, with a solid wiggly curve staying inside the band">
+  <path d="M 20 110 C 80 40, 140 40, 180 90 S 260 150, 300 70 L 300 100 C 260 180, 220 120, 180 120 S 80 70, 20 140 Z" fill="var(--sky-soft)" stroke="none" />
+  <path d="M 20 125 C 80 55, 140 55, 180 105 S 260 165, 300 85" fill="none" stroke="var(--ink-2)" strokeWidth="2" strokeDasharray="6 4" />
+  <path d="M 20 120 C 60 70, 100 50, 140 66 C 160 74, 170 96, 190 108 C 220 128, 250 150, 300 80" fill="none" stroke="var(--formal)" strokeWidth="2.5" />
+  <line x1="255" y1="140" x2="255" y2="170" stroke="var(--gold)" strokeWidth="2" />
+  <text x="262" y="166" fontSize="12" fill="var(--ink-2)">2ε</text>
+  <text x="24" y="160" fontSize="12" fill="var(--ink-2)">f (dashed), fₙ (solid)</text>
+</svg>
+</Figure>
+
+The difference matters because limits are delicate. The continuous functions $x^n$ on $[0, 1]$ converge pointwise to a function that is $0$ on $[0, 1)$ and jumps to $1$ at $x = 1$. The threshold $N$ that makes $x^n < \varepsilon$ gets larger and larger as $x$ approaches $1$, and no single $N$ works. Uniform convergence is precisely the hypothesis that rescues continuity, integrals and (with care) derivatives.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $|x - y|$ is the distance between real numbers. We take $\R$ to be an ordered field (the familiar rules of arithmetic and inequalities) with one extra axiom.
+
+<Definition term="supremum and the completeness axiom">
+
+An **upper bound** of $S \subseteq \R$ is a number $u$ with $x \le u$ for all $x \in S$. A **supremum** (least upper bound) of $S$ is an upper bound $s$ such that $s \le u$ for every upper bound $u$; we write $s = \sup S$. The **completeness axiom**: *every non-empty subset of $\R$ that is bounded above has a supremum.*
+
+</Definition>
+
+The supremum is characterised by an **approximation property**: an upper bound $s$ of $S$ is $\sup S$ if and only if for every $\varepsilon > 0$ there is $x \in S$ with $x > s - \varepsilon$. (Otherwise $s - \varepsilon$ would be a smaller upper bound.) Completeness implies the **Archimedean property**: $\N$ is not bounded above in $\R$. Indeed, if $s = \sup \N$ existed, some $n > s - 1$ would give $n + 1 > s$. Hence $1/n \to 0$.
+
+<Definition term="convergence and Cauchy sequences">
+
+A sequence $(a_n)$ **converges** to $L$, written $a_n \to L$, if for every $\varepsilon > 0$ there is $N$ such that $|a_n - L| < \varepsilon$ for all $n \ge N$. It is a **Cauchy sequence** if for every $\varepsilon > 0$ there is $N$ such that $|a_m - a_n| < \varepsilon$ for all $m, n \ge N$. A **subsequence** of $(a_n)$ is a sequence $(a_{\varphi(k)})_k$ with $\varphi : \N \to \N$ strictly increasing.
+
+</Definition>
+
+<Definition term="continuity and uniform continuity">
+
+Let $f : S \to \R$ with $S \subseteq \R$. $f$ is **continuous at** $c \in S$ if for every $\varepsilon > 0$ there is $\delta > 0$ such that $|f(x) - f(c)| < \varepsilon$ for all $x \in S$ with $|x - c| < \delta$; it is **continuous** if it is continuous at every point of $S$. It is **uniformly continuous** if for every $\varepsilon > 0$ there is a $\delta > 0$ that works at every point: $|f(x) - f(y)| < \varepsilon$ whenever $x, y \in S$ and $|x - y| < \delta$.
+
+</Definition>
+
+<Definition term="pointwise and uniform convergence">
+
+Let $f_n, f : S \to \R$. The sequence $(f_n)$ converges to $f$ **pointwise** on $S$ if $f_n(x) \to f(x)$ for each $x \in S$:
+$\forall x \in S\ \forall \varepsilon > 0\ \exists N\ \forall n \ge N : |f_n(x) - f(x)| < \varepsilon$.
+It converges **uniformly** on $S$ if
+$\forall \varepsilon > 0\ \exists N\ \forall n \ge N\ \forall x \in S : |f_n(x) - f(x)| < \varepsilon$,
+equivalently if $\sup_{x \in S} |f_n(x) - f(x)| \to 0$.
+
+</Definition>
+
+The only difference is where "$\forall x$" stands. In the uniform definition $N$ is chosen before $x$, so it cannot depend on $x$.
+
+<Definition term="Riemann integral (Darboux's formulation)">
+
+Let $f : [a, b] \to \R$ be bounded. A **partition** $P$ of $[a, b]$ is a finite list $a = x_0 < x_1 < \dots < x_n = b$. With $M_i = \sup_{[x_{i-1}, x_i]} f$ and $m_i = \inf_{[x_{i-1}, x_i]} f$, the **upper** and **lower sums** are
+
+$$
+U(f, P) = \sum_{i=1}^n M_i\,(x_i - x_{i-1}), \qquad L(f, P) = \sum_{i=1}^n m_i\,(x_i - x_{i-1}).
+$$
+
+$f$ is **Riemann integrable** if $\inf_P U(f, P) = \sup_P L(f, P)$; this common value is $\int_a^b f$.
+
+</Definition>
+
+Adding points to a partition (a **refinement**) can only lower upper sums and raise lower sums. Comparing any two partitions with their common refinement shows that *every* lower sum is at most *every* upper sum. Consequently $f$ is integrable if and only if for every $\varepsilon > 0$ there is a partition with $U(f, P) - L(f, P) < \varepsilon$ (**Riemann's criterion**).
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples, non-examples and warnings">
+
+<Example title="Limits, and how to prove them">
+
+- $a_n = \frac{n}{n+1} \to 1$: $|a_n - 1| = \frac{1}{n+1} < \varepsilon$ as soon as $n > 1/\varepsilon$, which happens for large $n$ by the Archimedean property.
+- $a_n = (-1)^n$ does not converge: any limit $L$ would satisfy $|1 - L| < \tfrac12$ and $|-1 - L| < \tfrac12$, so $2 = |1 - (-1)| < 1$. But it has convergent subsequences ($a_{2k} \to 1$, $a_{2k+1} \to -1$), as Bolzano–Weierstrass promises for a bounded sequence.
+- $a_n = (1 + 1/n)^n$ is increasing and bounded above by $3$, so it converges by the monotone convergence theorem below. Its limit is called $e$.
+
+</Example>
+
+<Example title="A Cauchy sequence of rationals with no rational limit">
+
+Define $q_1 = 1$ and $q_{n+1} = \frac{q_n}{2} + \frac{1}{q_n}$ (Newton's method for $x^2 = 2$). Every $q_n$ is rational, $q_n \to \sqrt 2$ in $\R$, and so $(q_n)$ is Cauchy. In $\Q$ it has no limit: if $q_n \to L$ in $\Q$ then $L = \frac L2 + \frac1L$, so $L^2 = 2$, which has no rational solution. Being Cauchy is about the sequence; converging is about the space it lives in.
+
+</Example>
+
+<Example title="Pointwise but not uniform">
+
+- $f_n(x) = x^n$ on $[0, 1]$: the pointwise limit is $f(x) = 0$ for $x < 1$, $f(1) = 1$. Convergence is uniform on $[0, r]$ for each $r < 1$ (the supremum of $|f_n|$ there is $r^n \to 0$) but not on $[0, 1)$, where the supremum is $1$ for every $n$.
+- $g_n(x) = \dfrac{nx}{1 + n^2x^2}$ converges pointwise to $0$ on $\R$, and every $g_n$ and the limit are continuous. Yet $g_n(1/n) = \tfrac12$, so the convergence is not uniform. Continuity of the limit does not imply uniform convergence.
+- $h_n(x) = 2n^2 x e^{-n^2x^2}$ converges to $0$ at every $x \in [0, 1]$, but $\int_0^1 h_n = 1 - e^{-n^2} \to 1$. The mass concentrates into a spike near $0$, and limit and integral cannot be swapped.
+
+</Example>
+
+<Example title="Functions that are and are not Riemann integrable">
+
+- **Dirichlet's function** $\mathbf 1_\Q$ ($1$ on rationals, $0$ on irrationals) is not integrable on $[0, 1]$: every interval of positive length contains rationals and irrationals, so on every partition $U = 1$ and $L = 0$.
+- **Thomae's function** ($f(p/q) = 1/q$ in lowest terms, $f = 0$ at irrationals) is discontinuous at every rational and continuous at every irrational, yet it *is* integrable with integral $0$: for $\varepsilon > 0$ only finitely many points have $f \ge \varepsilon$, and they can be enclosed in subintervals of tiny total length.
+- Every monotone function on $[a, b]$ is integrable. With $n$ equal pieces the sum $U - L$ telescopes to $\big(f(b) - f(a)\big)(b - a)/n$.
+
+</Example>
+
+</Section>
+
+<Section id="completeness" kind="proof" title="Completeness: three theorems about sequences">
+
+<Theorem name="Theorem 1 (monotone convergence)">
+
+An increasing sequence that is bounded above converges, to $\sup_n a_n$. (Likewise a decreasing sequence bounded below converges to its infimum.)
+
+</Theorem>
+
+<Proof>
+
+Let $s = \sup\{a_n : n \in \N\}$, which exists by completeness. Given $\varepsilon > 0$, the approximation property gives $N$ with $a_N > s - \varepsilon$. For $n \ge N$, monotonicity gives $s - \varepsilon < a_N \le a_n \le s$, so $|a_n - s| < \varepsilon$.
+
+</Proof>
+
+<Theorem name="Lemma 2 (every sequence has a monotone subsequence)">
+
+Every real sequence has a subsequence that is increasing or decreasing.
+
+</Theorem>
+
+<Proof>
+
+Call an index $m$ a **peak** if $a_m \ge a_n$ for every $n > m$ — from $a_m$ you can see to the horizon. If there are infinitely many peaks $m_1 < m_2 < \cdots$, then $a_{m_1} \ge a_{m_2} \ge \cdots$ is a decreasing subsequence. Otherwise let $n_1$ be larger than every peak. As $n_1$ is not a peak, some $n_2 > n_1$ has $a_{n_2} > a_{n_1}$; as $n_2$ is not a peak, some $n_3 > n_2$ has $a_{n_3} > a_{n_2}$; and so on. This gives an increasing subsequence.
+
+</Proof>
+
+<Theorem name="Theorem 3 (Bolzano–Weierstrass)">
+
+Every bounded sequence of real numbers has a convergent subsequence.
+
+</Theorem>
+
+<Proof>
+
+By Lemma 2 it has a monotone subsequence, which is bounded and hence converges by Theorem 1.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Cauchy criterion)">
+
+A sequence of real numbers converges if and only if it is a Cauchy sequence.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) If $a_n \to L$, choose $N$ with $|a_n - L| < \varepsilon/2$ for $n \ge N$. Then for $m, n \ge N$: $|a_m - a_n| \le |a_m - L| + |L - a_n| < \varepsilon$.
+
+($\Leftarrow$) Let $(a_n)$ be Cauchy. *It is bounded:* with $\varepsilon = 1$ there is $N$ such that $|a_n - a_N| < 1$ for $n \ge N$, so $|a_n| \le \max(|a_0|, \dots, |a_{N-1}|, |a_N| + 1)$ for all $n$. By Bolzano–Weierstrass some subsequence $a_{\varphi(k)} \to L$. *The whole sequence converges to $L$:* given $\varepsilon$, choose $N$ with $|a_m - a_n| < \varepsilon/2$ for $m, n \ge N$, and $K$ with $|a_{\varphi(k)} - L| < \varepsilon/2$ for $k \ge K$. For $n \ge N$ take $k = \max(K, n)$. Since $\varphi(k) \ge k \ge n \ge N$,
+
+$$
+|a_n - L| \le |a_n - a_{\varphi(k)}| + |a_{\varphi(k)} - L| < \tfrac\varepsilon2 + \tfrac\varepsilon2 = \varepsilon. \qquad \blacksquare
+$$
+
+</Proof>
+
+<Note>
+
+For an ordered field, the following are equivalent: the supremum property; the monotone convergence theorem; the Bolzano–Weierstrass theorem; "Cauchy sequences converge" together with the Archimedean property; the nested interval property together with the Archimedean property. Each fails in $\Q$. Up to a unique isomorphism, $\R$ is the only ordered field with these properties — see <TopicLink id="math.number.number-system-constructions">constructing ℤ, ℚ and ℝ</TopicLink> for its construction by Dedekind cuts or Cauchy sequences.
+
+</Note>
+
+</Section>
+
+<Section id="continuity" kind="proof" title="Continuous functions on a closed interval">
+
+We first record the link between ε–δ continuity and sequences. **If $f$ is continuous at $c$ and $x_n \to c$ (with $x_n$ in the domain), then $f(x_n) \to f(c)$.** Given $\varepsilon$, take the $\delta$ of continuity, then $N$ with $|x_n - c| < \delta$ for $n \ge N$; then $|f(x_n) - f(c)| < \varepsilon$ for $n \ge N$. Also, **limits of sequences in $[a, b]$ stay in $[a, b]$**: if $x_n \to x$ and $x > b$, then eventually $|x_n - x| < x - b$, forcing $x_n > b$.
+
+<Theorem name="Theorem 5 (intermediate value theorem)">
+
+If $f : [a, b] \to \R$ is continuous and $f(a) \le 0 \le f(b)$, then $f(c) = 0$ for some $c \in [a, b]$. Consequently a continuous function on $[a, b]$ takes every value between $f(a)$ and $f(b)$.
+
+</Theorem>
+
+<Proof>
+
+Let $S = \{x \in [a, b] : f(x) \le 0\}$. It contains $a$ and is bounded above by $b$, so $c = \sup S$ exists, and $a \le c \le b$. We show that $f(c)$ is neither positive nor negative.
+
+*Suppose $f(c) > 0$.* By continuity (with $\varepsilon = f(c)$) there is $\delta > 0$ with $f(x) > 0$ for all $x \in [a, b]$ with $|x - c| < \delta$. By the approximation property some $s \in S$ satisfies $c - \delta < s \le c$. Then $|s - c| < \delta$, so $f(s) > 0$, contradicting $s \in S$.
+
+*Suppose $f(c) < 0$.* Then $c \ne b$ (as $f(b) \ge 0$), so $c < b$. By continuity there is $\delta > 0$ with $f(x) < 0$ whenever $x \in [a, b]$ and $|x - c| < \delta$. The point $x = \min(c + \delta/2, b)$ lies in $[a, b]$, satisfies $c < x$ and $|x - c| < \delta$, so $f(x) < 0$ and $x \in S$. But $x > c = \sup S$, a contradiction.
+
+Hence $f(c) = 0$. For the general statement apply this to $f - y$ or $y - f$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (extreme value theorem)">
+
+A continuous function $f : [a, b] \to \R$ is bounded and attains its maximum and its minimum.
+
+</Theorem>
+
+<Proof>
+
+*Bounded:* otherwise for each $n$ there is $x_n \in [a, b]$ with $|f(x_n)| > n$. By Bolzano–Weierstrass a subsequence $x_{\varphi(k)}$ converges to some $x \in [a, b]$, and by continuity $f(x_{\varphi(k)}) \to f(x)$. A convergent sequence is bounded, but $|f(x_{\varphi(k)})| > \varphi(k) \ge k$. Contradiction.
+
+*Attains its maximum:* let $M = \sup f([a, b])$, finite by the first part. For each $n$ choose $x_n$ with $f(x_n) > M - 1/n$. A subsequence converges to some $c \in [a, b]$, and $f(c) = \lim f(x_{\varphi(k)})$. Since $M - 1/\varphi(k) < f(x_{\varphi(k)}) \le M$, this limit is $M$. Apply the same to $-f$ for the minimum.
+
+</Proof>
+
+Both hypotheses matter. On $(0, 1]$ the continuous function $1/x$ is unbounded, on $[0, \infty)$ the function $x$ is unbounded, and on $(-1, 1)$ the function $x$ is bounded but has no maximum. On the closed interval $[0, 1]$, the *discontinuous* function equal to $x$ for $x < 1$ and to $0$ at $x = 1$ is bounded, with supremum $1$, but never reaches it. What the proofs used about $[a, b]$ is that every sequence in it has a subsequence converging *in* it — **sequential compactness**. In the language of <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>, the intermediate value theorem is about connectedness and the extreme value theorem about compactness.
+
+<Theorem name="Theorem 7 (Heine–Cantor: uniform continuity)">
+
+A continuous function $f : [a, b] \to \R$ is uniformly continuous.
+
+</Theorem>
+
+<Proof>
+
+If not, there is $\varepsilon > 0$ such that for each $n$ some $x_n, y_n \in [a, b]$ satisfy $|x_n - y_n| < 1/n$ but $|f(x_n) - f(y_n)| \ge \varepsilon$. By Bolzano–Weierstrass a subsequence $x_{\varphi(k)}$ converges to some $c \in [a, b]$; then $y_{\varphi(k)} \to c$ too, since $|y_{\varphi(k)} - x_{\varphi(k)}| < 1/\varphi(k)$. By continuity at $c$, $f(x_{\varphi(k)}) - f(y_{\varphi(k)}) \to f(c) - f(c) = 0$, contradicting $|f(x_{\varphi(k)}) - f(y_{\varphi(k)})| \ge \varepsilon$.
+
+</Proof>
+
+On $(0, 1]$ the function $1/x$ is continuous but not uniformly continuous: $x = 1/n$ and $y = 1/(n+1)$ are very close, yet $|f(x) - f(y)| = 1$.
+
+</Section>
+
+<Section id="uniform" kind="proof" title="Uniform convergence and swapping limits">
+
+<Theorem name="Theorem 8 (uniform limit theorem)">
+
+If $f_n \to f$ uniformly on $S$ and every $f_n$ is continuous at $c \in S$, then $f$ is continuous at $c$. In particular, a uniform limit of continuous functions is continuous.
+
+</Theorem>
+
+<Proof>
+
+Let $\varepsilon > 0$. Choose $N$ with $|f_N(x) - f(x)| < \varepsilon/3$ for **all** $x \in S$ — here uniformity is used. Since $f_N$ is continuous at $c$, there is $\delta > 0$ with $|f_N(x) - f_N(c)| < \varepsilon/3$ for $x \in S$, $|x - c| < \delta$. For such $x$,
+
+$$
+|f(x) - f(c)| \le |f(x) - f_N(x)| + |f_N(x) - f_N(c)| + |f_N(c) - f(c)| < \tfrac\varepsilon3 + \tfrac\varepsilon3 + \tfrac\varepsilon3 = \varepsilon. \qquad \blacksquare
+$$
+
+</Proof>
+
+Where does the argument break for pointwise convergence? The first step would choose $N$ depending on $x$, and then $\delta$ (chosen for $f_N$) depends on $x$, which is circular. The example $x^n$ shows the theorem genuinely fails, and Theorem 8 gives a quick proof that $x^n \to 0$ is not uniform on $[0, 1]$: the limit is discontinuous.
+
+<Theorem name="Theorem 9 (integrals of uniform limits)">
+
+If $f_n \to f$ uniformly on $[a, b]$ and each $f_n$ is Riemann integrable, then $f$ is Riemann integrable and $\int_a^b f_n \to \int_a^b f$.
+
+</Theorem>
+
+<Proof>
+
+Let $\varepsilon_n = \sup_{[a, b]} |f_n - f| \to 0$. On every subinterval, $f_n - \varepsilon_n \le f \le f_n + \varepsilon_n$, so for every partition $P$
+
+$$
+U(f, P) - L(f, P) \le U(f_n, P) - L(f_n, P) + 2\varepsilon_n (b - a).
+$$
+
+Given $\varepsilon$, fix $n$ with $2\varepsilon_n (b - a) < \varepsilon/2$, then $P$ with $U(f_n, P) - L(f_n, P) < \varepsilon/2$: Riemann's criterion shows $f$ is integrable. Finally $\left|\int_a^b f_n - \int_a^b f\right| \le \int_a^b |f_n - f| \le \varepsilon_n (b - a) \to 0$.
+
+</Proof>
+
+For series this becomes the most useful test in analysis.
+
+<Theorem name="Theorem 10 (Weierstrass M-test)">
+
+If $|u_k(x)| \le M_k$ for all $x \in S$ and $\sum_k M_k < \infty$, then $\sum_k u_k$ converges uniformly on $S$. If moreover every $u_k$ is continuous, so is the sum.
+
+</Theorem>
+
+<Proof>
+
+Let $s_n(x) = \sum_{k \le n} u_k(x)$. For $m > n$, $|s_m(x) - s_n(x)| \le \sum_{k = n+1}^m M_k$, which is small for large $n$ *independently of $x$*. So each $(s_n(x))$ is Cauchy and converges (Theorem 4) to some $s(x)$. Letting $m \to \infty$ gives $|s(x) - s_n(x)| \le \sum_{k > n} M_k$ for all $x$, which tends to $0$: the convergence is uniform. Continuity follows from Theorem 8.
+
+</Proof>
+
+Derivatives are the most delicate. The functions $\sin(nx)/n$ converge uniformly to $0$ (the supremum is $1/n$), but their derivatives $\cos(nx)$ do not converge at all — at $x = \pi$ they alternate between $\pm 1$. Uniform convergence of the *derivatives* is what is needed.
+
+<Theorem name="Theorem 11 (derivatives of limits)">
+
+Let $f_n : [a, b] \to \R$ be continuously differentiable, suppose $f_n' \to g$ uniformly on $[a, b]$ and $f_n(x_0)$ converges for some $x_0 \in [a, b]$. Then $f_n$ converges uniformly to a differentiable function $f$ with $f' = g$.
+
+</Theorem>
+
+<Proof>
+
+By Theorem 8, $g$ is continuous. By the fundamental theorem of calculus (Theorem 15 below), $f_n(x) = f_n(x_0) + \int_{x_0}^x f_n'$. By Theorem 9 the right-hand side converges, uniformly in $x$ (the error is at most $|f_n(x_0) - L| + (b - a)\sup|f_n' - g|$), to $f(x) := L + \int_{x_0}^x g$, where $L = \lim f_n(x_0)$. By Theorem 14 below, $f' = g$.
+
+</Proof>
+
+Without some such hypothesis, anything can happen.
+
+<Theorem name="Theorem 12 (Weierstrass's function is not differentiable at 0)">
+
+Let $W(x) = \sum_{k \ge 0} a^k \cos(b^k \pi x)$ with $a = \tfrac12$ and $b = 13$. Then $W$ is continuous on $\R$ but not differentiable at $0$.
+
+</Theorem>
+
+<Proof>
+
+Continuity: the M-test with $M_k = a^k$. Now put $h_m = b^{-m}$. For $k \ge m$, $b^k h_m = 13^{k - m}$ is an odd integer, so $\cos(b^k \pi h_m) = -1$. Since $W(0) = \sum a^k = \frac{1}{1-a}$,
+
+$$
+\frac{W(h_m) - W(0)}{h_m} = b^m \sum_{k < m} a^k \big(\cos(\pi b^{k - m}) - 1\big) \;-\; \frac{2\,(ab)^m}{1 - a}.
+$$
+
+Using $0 \le 1 - \cos t \le t^2/2$, the first term has absolute value at most $\frac{\pi^2}{2} \sum_{k < m} a^k b^{2k - m} = \frac{\pi^2}{2} (ab)^m \sum_{j = 1}^m (ab^2)^{-j} \le \frac{\pi^2 (ab)^m}{2(ab^2 - 1)}$. Hence
+
+$$
+\left| \frac{W(h_m) - W(0)}{h_m} \right| \ge (ab)^m \left( \frac{2}{1 - a} - \frac{\pi^2}{2(ab^2 - 1)} \right) = 6.5^m \,(4 - 0.059\ldots) \to \infty.
+$$
+
+If $W'(0)$ existed, these difference quotients would converge to it.
+
+</Proof>
+
+The same function has no derivative at *any* point. **Theorem (Weierstrass, 1872; stated, not proved here).** *If $0 < a < 1$, $b$ is an odd integer and $ab > 1 + \frac{3\pi}{2}$, then $W$ is continuous and nowhere differentiable.* G. H. Hardy (1916) showed that $ab \ge 1$ suffices. A proof of a closely related example is in Stein and Shakarchi, *Fourier Analysis* (2003), chapter 4. Every partial sum of $W$ is infinitely differentiable; the limit is differentiable nowhere. The derivatives of the partial sums, of size about $(ab)^k$, are as far from converging uniformly as possible.
+
+</Section>
+
+<Section id="integration" kind="proof" title="The Riemann integral and the fundamental theorem">
+
+<Theorem name="Theorem 13 (continuous functions are integrable)">
+
+Every continuous $f : [a, b] \to \R$ is Riemann integrable. The indicator function $\mathbf 1_\Q$ of the rationals is not.
+
+</Theorem>
+
+<Proof>
+
+Let $\varepsilon > 0$. By Heine–Cantor there is $\delta > 0$ with $|f(s) - f(t)| < \varepsilon/(b - a)$ whenever $|s - t| < \delta$. Take a partition with all $x_i - x_{i-1} < \delta$. On each piece, the extreme value theorem gives $M_i = f(s)$ and $m_i = f(t)$ with $|s - t| < \delta$, so $M_i - m_i < \varepsilon/(b - a)$, and
+
+$$
+U(f, P) - L(f, P) = \sum_i (M_i - m_i)(x_i - x_{i-1}) < \frac{\varepsilon}{b - a} \sum_i (x_i - x_{i-1}) = \varepsilon.
+$$
+
+For $\mathbf 1_\Q$: every piece $[x_{i-1}, x_i]$ of positive length contains a rational and an irrational, so $M_i = 1$ and $m_i = 0$; every upper sum is $b - a$ and every lower sum is $0$.
+
+</Proof>
+
+We use three elementary properties of the integral, all proved directly from the definition: it is linear; it is additive over adjacent intervals, $\int_a^c f = \int_a^b f + \int_b^c f$ (with the convention $\int_b^a = -\int_a^b$); and $\left|\int_a^b g\right| \le (b - a) \sup_{[a, b]} |g|$.
+
+<Theorem name="Theorem 14 (fundamental theorem of calculus, part 1)">
+
+Let $f$ be Riemann integrable on $[a, b]$ and $F(x) = \int_a^x f$. If $f$ is continuous at $x_0 \in (a, b)$, then $F$ is differentiable at $x_0$ and $F'(x_0) = f(x_0)$.
+
+</Theorem>
+
+<Proof>
+
+Let $\varepsilon > 0$ and choose $\delta > 0$ such that $|f(t) - f(x_0)| < \varepsilon$ whenever $|t - x_0| < \delta$. For $0 < |h| < \delta$ (with $x_0 + h \in [a, b]$),
+
+$$
+F(x_0 + h) - F(x_0) - h f(x_0) = \int_{x_0}^{x_0 + h} \big(f(t) - f(x_0)\big)\,dt,
+$$
+
+whose absolute value is at most $|h| \cdot \varepsilon$. Dividing by $|h|$: $\left|\frac{F(x_0 + h) - F(x_0)}{h} - f(x_0)\right| \le \varepsilon$.
+
+</Proof>
+
+<Theorem name="Theorem 15 (fundamental theorem of calculus, part 2)">
+
+If $F$ is differentiable on $[a, b]$ (one-sided at the ends) and $F' = f$ is Riemann integrable, then $\int_a^b f = F(b) - F(a)$.
+
+</Theorem>
+
+<Proof>
+
+Let $P$ be any partition. By the mean value theorem, on each piece $F(x_i) - F(x_{i-1}) = f(t_i)(x_i - x_{i-1})$ for some $t_i \in (x_{i-1}, x_i)$, and $m_i \le f(t_i) \le M_i$. Summing, the sum telescopes:
+
+$$
+L(f, P) \le \sum_i f(t_i)(x_i - x_{i-1}) = F(b) - F(a) \le U(f, P).
+$$
+
+So $F(b) - F(a)$ lies between every lower sum and every upper sum. Since $f$ is integrable, the only such number is $\int_a^b f$.
+
+</Proof>
+
+The hypothesis that $F'$ is integrable cannot be dropped: Vito Volterra (1881) constructed a differentiable function whose derivative is bounded but not Riemann integrable. The Lebesgue integral repairs this partly (a bounded derivative is always Lebesgue integrable, and part 2 then holds), which is one of many reasons to continue to <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink>.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Real analysis in Lean and Mathlib">
+
+Mathlib states limits with **filters**: `Tendsto a atTop (𝓝 L)` says that $a$ eventually lands in every neighbourhood of $L$. That one notion covers limits of sequences, of functions at a point, from the left, at infinity, and much more. To connect it with the lesson, we define the ε–N notions directly and prove that they agree with Mathlib's.
+
+<Lean decl="Lumenary.RealAnalysis.ConvergesTo" />
+
+<Lean decl="Lumenary.RealAnalysis.IsCauchy" />
+
+<Lean decl="Lumenary.RealAnalysis.convergesTo_iff_tendsto" />
+
+The ε-arguments of the completeness section, written as `calc` chains that follow the human proofs line by line:
+
+<Lean decl="Lumenary.RealAnalysis.limit_unique" />
+
+<Lean decl="Lumenary.RealAnalysis.cauchy_of_convergesTo" />
+
+<Lean decl="Lumenary.RealAnalysis.convergesTo_of_cauchy_of_subseq" />
+
+<Lean decl="Lumenary.RealAnalysis.monotone_converges" />
+
+Bolzano–Weierstrass and the completeness of $\R$ are cited from Mathlib, and combined with the lemmas above to give Theorem 4:
+
+<Lean decl="Lumenary.RealAnalysis.bolzano_weierstrass" />
+
+<Lean decl="Lumenary.RealAnalysis.cauchy_iff_converges" />
+
+The intermediate value theorem, proved from the supremum exactly as in Theorem 5 (for a function continuous on all of $\R$; a function continuous on $[a, b]$ can be extended continuously by constants, so nothing is lost), next to Mathlib's general version and the extreme value theorem:
+
+<Lean decl="Lumenary.RealAnalysis.ivt_from_completeness" />
+
+<Lean decl="Lumenary.RealAnalysis.ivt_library" />
+
+<Lean decl="Lumenary.RealAnalysis.extreme_value" />
+
+Uniform convergence, the ε/3 argument of Theorem 8, and Mathlib's version (which works over any topological space):
+
+<Lean decl="Lumenary.RealAnalysis.UniformlyConvergesOn" />
+
+<Lean decl="Lumenary.RealAnalysis.uniform_limit_continuous" />
+
+<Lean decl="Lumenary.RealAnalysis.uniform_limit_continuous_library" />
+
+The example $x^n$: pointwise convergence to $0$ on $[0, 1)$, and a proof by Bernoulli's inequality that it is not uniform there:
+
+<Lean decl="Lumenary.RealAnalysis.pow_pointwise" />
+
+<Lean decl="Lumenary.RealAnalysis.pow_not_uniform" />
+
+Finally integration. Mathlib's integral `∫ t in a..b, f t` is the Lebesgue integral; for continuous $f$ it agrees with the Riemann integral. The first fundamental theorem is proved here by the estimate of Theorem 14, and the second is cited, together with the mean value theorem used in its proof:
+
+<Lean decl="Lumenary.RealAnalysis.ftc_one" />
+
+<Lean decl="Lumenary.RealAnalysis.ftc_one_library" />
+
+<Lean decl="Lumenary.RealAnalysis.mean_value" />
+
+<Lean decl="Lumenary.RealAnalysis.ftc_two" />
+
+<Lean decl="Lumenary.RealAnalysis.rationals_and_irrationals_dense" />
+
+**What is and is not formalised.** Proved here from the definitions: uniqueness of limits, convergent ⇒ Cauchy, the subsequence step of the Cauchy criterion, monotone convergence (Theorem 1), the intermediate value theorem (Theorem 5), the uniform limit theorem (Theorem 8), the non-uniformity of $x^n$, the first fundamental theorem (Theorem 14, for continuous $f$) and, in the solutions to the Lean exercises, the sum rule for limits. Cited from Mathlib: Bolzano–Weierstrass, completeness of $\R$, the extreme value theorem, the mean value theorem and the second fundamental theorem. Not formalised: Lemma 2, Heine–Cantor (in Mathlib as `CompactSpace.uniformContinuous_of_continuous`), Theorems 9–11, Weierstrass's function, and the non-integrability of $\mathbf 1_\Q$. Mathlib has no separate theory of the Riemann integral on $\R$ (its general `BoxIntegral` covers Riemann-type integrals on boxes), so for $\mathbf 1_\Q$ we formalise only the density facts the proof uses.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Measuring sup-distances, and a function with no tangent">
+
+Uniform convergence is a statement about one number per $n$, the supremum $\sup_S |f_n - f|$. The program computes it for the examples of this lesson, exactly where calculus gives a closed form and on a fine grid as a cross-check. Watch three things: $x^n$ on $[0, 1)$, where the supremum never moves from $1$; the spikes $h_n$, whose integrals tend to $1$ although $h_n \to 0$ at every point; and $\sin(nx)/n$, which converges uniformly while its derivatives keep oscillating.
+
+<Python id="real_analysis_uniform_convergence" />
+
+Notice that the grid's estimate of $\sup_{[0, 1)} x^{1000}$ is only about $0.95$. A grid of $20{,}000$ points never gets close enough to $1$. A grid can only bound a supremum from below, which is why the "exact" column comes from a proof. This is numerical illustration, not a proof of uniform or non-uniform convergence.
+
+The second program evaluates Weierstrass's function at the points $13^{-m}$ of Theorem 12. There the infinite tail can be summed *exactly*, so only $m$ cosines need floating point. The difference quotients at $0$ grow like $6.5^m$, while those of the smooth partial sum $W_3$ shrink to $W_3'(0) = 0$.
+
+<Python id="real_analysis_weierstrass_function" />
+
+Here the computation and the proof of Theorem 12 tell the same story, and the computation's numbers are reliable to many digits. But it examines one point, $x = 0$. "Nowhere differentiable" is a statement about uncountably many points, and only Weierstrass's argument (or Hardy's) covers them all.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: limits, tubes and spikes">
+
+**ε and N.** Shrink ε and see how far out you must go before every term of $(1 + 1/n)^n$ stays in the band around $e$. The convergence is slow: the error is about $e/(2n)$.
+
+<SequenceLab mode="sequence" term="(1 + 1/n)^n" limit="e" epsilon={0.05} N={80} title="(1 + 1/n)ⁿ → e: find N for each ε" />
+
+**Pointwise, not uniform.** Increase $n$. For any fixed $x < 1$ the curve $x^n$ eventually drops below the line $y = 0.1$, but there are always points just left of $1$ where it is still above. No tube of width $0.1$ around the limit ever contains the whole graph.
+
+<FunctionPlot fns={["x^n", "0.1"]} labels={["y = xⁿ", "y = 0.1"]} params={[{ name: "n", min: 1, max: 80, step: 1, value: 5 }]} x={[0, 1.05]} y={[-0.1, 1.1]} title="xⁿ on [0, 1]: the threshold N depends on x" />
+
+**Mass escaping into a spike.** The shaded area under $h_n(x) = 2n^2xe^{-n^2x^2}$ on $[0, 1]$ stays close to $1$, while the spike runs into the $y$-axis and $h_n(x) \to 0$ at every point.
+
+<FunctionPlot fns={["2*n^2*x*exp(-n^2*x^2)"]} labels={["hₙ(x)"]} params={[{ name: "n", min: 1, max: 12, step: 1, value: 2 }]} x={[0, 1]} y={[-0.5, 11]} shade={0} shadeRange={[0, 1]} title="Spikes: ∫hₙ → 1 but hₙ → 0 pointwise" />
+
+**Upper and lower sums.** For the continuous function $x^2$ on $[0, 1]$, compare the left and right sums (here, because $x^2$ is increasing, these *are* the lower and upper sums) as the number of strips grows. Their difference is exactly $1/n$.
+
+<CalculusLab mode="riemann" modes={["riemann"]} fn="x^2" interval={[0, 1]} exact="1/3" n={8} method="left" />
+
+**Towards a curve with no tangent.** These are partial sums of $\sum (1/2)^k \cos(5^k \pi x)$. Here $ab = 2.5 \ge 1$, so by Hardy's theorem the full sum is nowhere differentiable. Each extra term adds smaller, faster wiggles. Zoom in on any part of the last curve and it still looks rough.
+
+<FunctionPlot fns={["cos(pi*x)", "cos(pi*x) + 0.5*cos(5*pi*x)", "cos(pi*x) + 0.5*cos(5*pi*x) + 0.25*cos(25*pi*x)", "cos(pi*x) + 0.5*cos(5*pi*x) + 0.25*cos(25*pi*x) + 0.125*cos(125*pi*x)"]} labels={["1 term", "2 terms", "3 terms", "4 terms"]} x={[-0.5, 0.5]} y={[-2.2, 2.2]} title="Partial sums of a Weierstrass function" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A limit of continuous functions is continuous."** Only if the convergence is uniform (or at least locally uniform). The functions $x^n$ are continuous on $[0, 1]$ and their pointwise limit jumps at $1$. Cauchy's 1821 "sum theorem" made exactly this mistake. More generally, never interchange two limits — $\lim_n \lim_x$ versus $\lim_x \lim_n$, a limit and an integral, a limit and a derivative, two infinite sums — without a theorem that allows it. Theorems 8, 9 and 11 are such theorems. The examples $x^n$, $h_n$ and $\sin(nx)/n$ show that each needs its hypothesis.
+
+</Misconception>
+
+<Misconception>
+
+**"Every bounded function on $[0, 1]$ is Riemann integrable."** The indicator function of $\Q$ is bounded, but all its upper sums are $1$ and all its lower sums are $0$. Lebesgue's criterion (below) says precisely which bounded functions are integrable: those whose points of discontinuity form a set of measure zero. $\mathbf 1_\Q$ is discontinuous everywhere.
+
+</Misconception>
+
+<Misconception>
+
+**"If the terms get closer and closer together, the sequence converges."** Consecutive terms getting close is not enough. The partial sums $s_n = 1 + \frac12 + \cdots + \frac1n$ satisfy $s_{n+1} - s_n \to 0$, yet $s_n \to \infty$. The Cauchy condition asks that *all* pairs of late terms be close, $|a_m - a_n| < \varepsilon$ for all $m, n \ge N$, and $s_{2n} - s_n \ge \tfrac12$ shows the harmonic series fails it.
+
+</Misconception>
+
+<Misconception>
+
+**"Continuous functions are differentiable except at a few corners."** Weierstrass's function is continuous and differentiable nowhere. Worse, by the Baire category theorem (Banach and Mazurkiewicz, 1931), in the space of continuous functions on $[0, 1]$ with the sup-distance the nowhere-differentiable functions form a *comeagre* set — in the sense of category, "most" continuous functions are like Weierstrass's.
+
+</Misconception>
+
+<Misconception>
+
+**"Convergence and uniform convergence differ only for weird functions."** They differ already for $nx/(1 + n^2x^2)$, a smooth function with a smooth limit. And uniform convergence of $f_n$ says nothing about convergence of $f_n'$, as $\sin(nx)/n$ shows.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Connectedness, compactness and completeness">
+
+The three big theorems on $[a, b]$ are topological theorems in disguise. The intermediate value theorem says that a continuous image of a **connected** space is connected (and the connected subsets of $\R$ are the intervals). The extreme value theorem and Heine–Cantor say that $[a, b]$ is **compact**: every open cover has a finite subcover, equivalently (in metric spaces) every sequence has a convergent subsequence. Both are proved in <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink> for general spaces.
+
+Completeness, by contrast, is *not* a topological property. The interval $(0, 1)$ is homeomorphic to $\R$ (by $t \mapsto \tan(\pi t - \pi/2)$), yet $1/n$ is a Cauchy sequence in $(0, 1)$ with no limit there. Completeness belongs to the metric, and in complete metric spaces it yields the **Baire category theorem**: a countable union of closed sets with empty interior has empty interior. Applied to the complete space $C[0, 1]$, it shows that nowhere-differentiable functions are generic (Banach, 1931).
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Lebesgue: which functions are integrable, and when limits commute">
+
+Henri Lebesgue answered the question "which bounded functions are Riemann integrable?" exactly. **Lebesgue's criterion:** a bounded $f : [a, b] \to \R$ is Riemann integrable if and only if its set of discontinuities has measure zero (it can be covered by countably many intervals of total length less than any $\varepsilon > 0$). Thomae's function is discontinuous only on the countable set $\Q$, so it is integrable; $\mathbf 1_\Q$ is discontinuous everywhere, so it is not.
+
+Lebesgue's integral (1902) integrates $\mathbf 1_\Q$ (its integral is $0$) and, more importantly, comes with far better limit theorems. The **dominated convergence theorem** says: if $f_n \to f$ pointwise and $|f_n| \le g$ for one integrable $g$, then $\int f_n \to \int f$ — no uniformity needed. The spikes $h_n$ escape it, as they must: $\sup_n h_n(x) \approx 2/(ex)$ near $0$, which is not integrable. See <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink> and, for the space $C[0, 1]$ with the sup norm as a complete normed space, <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Rough paths and a probabilistic proof of approximation">
+
+Weierstrass's monster is the typical behaviour of randomness. The paths of **Brownian motion** are continuous and, with probability $1$, nowhere differentiable (Paley, Wiener and Zygmund, 1933). Over a time step $h$ a Brownian path moves about $\sqrt h$, so its difference quotients are of size $h^{-1/2} \to \infty$.
+
+Probability also proves one of the best theorems about uniform approximation. **Weierstrass approximation theorem:** every continuous $f$ on $[0, 1]$ is a uniform limit of polynomials. Sergei Bernstein's proof (1912) takes $S_n$ binomially distributed with parameters $n$ and $x$, and sets
+
+$$
+B_n f(x) = \mathbb E\!\left[f\!\left(\tfrac{S_n}{n}\right)\right] = \sum_{k=0}^n f\!\left(\tfrac kn\right) \binom nk x^k (1 - x)^{n-k}.
+$$
+
+The law of large numbers (Chebyshev's inequality: $\Pr(|S_n/n - x| \ge \delta) \le \frac{1}{4n\delta^2}$) and the uniform continuity of $f$ (Heine–Cantor) give $\sup_x |B_n f(x) - f(x)| \to 0$.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The only complete ordered field">
+
+To an algebraist, $\R$ is characterised by a universal statement: **every complete ordered field is isomorphic to $\R$, by a unique isomorphism.** The proof sends $1 \mapsto 1$, extends to $\Q$, and uses suprema to extend to everything. Remove completeness and many other ordered fields appear. Examples are the real algebraic numbers, the field $\R(t)$ of rational functions ordered so that $t$ is larger than every real number (non-Archimedean: $1/t$ is a positive infinitesimal), and the hyperreal numbers of non-standard analysis. Every theorem of this lesson fails in some ordered field, because every proof used completeness. Completion also depends on the distance chosen: completing $\Q$ for the $p$-adic absolute value gives the $p$-adic numbers $\Q_p$, where $\sum_n p^n = \frac{1}{1 - p}$ converges and a series converges as soon as its terms tend to $0$.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="How much does each theorem cost?">
+
+Logicians measure the strength of these theorems. In **reverse mathematics**, over the weak base theory RCA₀ ("computable mathematics"), the intermediate value theorem is provable outright. The Heine–Borel theorem for $[0, 1]$ is equivalent to weak König's lemma (WKL₀). The Bolzano–Weierstrass theorem is equivalent to the much stronger arithmetical comprehension (ACA₀) — see Simpson's *Subsystems of Second Order Arithmetic*. In **constructive analysis** (Bishop, 1967), the exact intermediate value theorem cannot be proved, since there is no algorithm to decide on which side of $0$ the value at a midpoint lies. An approximate version holds: for every $\varepsilon > 0$ there is $c$ with $|f(c)| < \varepsilon$. And Abraham Robinson's **non-standard analysis** (1961) makes Leibniz's infinitesimals rigorous using the compactness theorem of first-order logic.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Exhaustion.** Archimedes (3rd century BCE) computed the area of a parabolic segment by squeezing it between inscribed and circumscribed polygons — the ancestor of upper and lower sums. Liu Hui (3rd century CE, China) bounded $\pi$ by the same kind of squeeze with polygons of $3 \cdot 2^n$ sides.
+- **Infinite series in Kerala.** Mādhava of Saṅgamagrāma (c. 1340 – c. 1425) and his school in Kerala found the power series of sine, cosine and arctangent, with estimates for the error of truncation. Their derivations are recorded in Jyeṣṭhadeva's *Yuktibhāṣā* (c. 1530).
+- **Calculus and its critics.** Newton and Leibniz created the calculus in the 1660s–1680s. George Berkeley's *The Analyst* (1734) mocked infinitesimals as "ghosts of departed quantities", and no fully satisfactory answer came for a century.
+- **Rigour.** Bernard Bolzano's 1817 paper proved the intermediate value theorem from a form of completeness, and his manuscripts (published only in the twentieth century) contain a continuous nowhere-differentiable function. Cauchy's *Cours d'analyse* (1821) and his later lectures founded analysis on limits; Abel (1826) found the counterexample to Cauchy's sum theorem. Christoph Gudermann (1838) used the phrase "uniform convergence", and Philipp Ludwig von Seidel and George Gabriel Stokes isolated the concept in 1847. Karl Weierstrass, Gudermann's student, made it central in his Berlin lectures of the 1860s, where the ε–δ style took its modern form.
+- **The integral.** Bernhard Riemann defined his integral in his 1854 habilitation thesis on Fourier series (published 1868). Gaston Darboux (1875) gave the formulation by upper and lower sums used here, and Henri Lebesgue's 1902 thesis introduced the integral that superseded it.
+- **The real numbers.** In 1872 Richard Dedekind (cuts), Georg Cantor (Cauchy sequences, following Charles Méray, 1869) and Eduard Heine published constructions of $\R$. In the same year Weierstrass presented his nowhere-differentiable function to the Berlin Academy; Paul du Bois-Reymond published it in 1875.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Stephen Abbott, *Understanding Analysis* (2nd edition, 2015) — the friendliest rigorous introduction; motivates every definition by an example like the ones above.
+- Walter Rudin, *Principles of Mathematical Analysis* (3rd edition, 1976) — concise and complete; chapters 3, 4, 6 and 7 cover this lesson.
+- Terence Tao, *Analysis I* and *Analysis II* (2006) — builds everything from the axioms, very close in spirit to a formal proof.
+- David Bressoud, *A Radical Approach to Real Analysis* (1994; 2nd edition 2007) — the subject told through the historical crises (Fourier series, Cauchy's error) that created it.
+- Michael Spivak, *Calculus* (1967) — calculus done rigorously, with outstanding exercises.
+
+</Section>

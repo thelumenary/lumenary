@@ -1,0 +1,543 @@
+---
+slug: pde-intro
+topic: math.analysis.pde-intro
+title: Partial differential equations and Fourier series
+subtitle: Heat spreading through a rod, a plucked string, the shape of a soap film — three equations, one idea. Split the solution into pure frequencies, then ask the hard question of whether the pieces add back up.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6015
+objectives:
+  - Derive the heat, wave and Laplace equations, and solve the heat and wave equations on an interval by separation of variables and Fourier sine series
+  - Compute Fourier coefficients, prove Bessel's inequality and state Parseval's identity, and use them to sum series
+  - Prove Dirichlet's convergence theorem at points of differentiability, explain the Gibbs phenomenon with its constant $\tfrac{2}{\pi}\mathrm{Si}(\pi)$, and recognise when term-by-term differentiation fails
+  - Prove d'Alembert's formula for the wave equation on the line
+  - Prove uniqueness for the heat and wave equations with the maximum principle and energy methods, and state the mean value property of harmonic functions
+narrators: []
+lean:
+  - Lumenary.PdeIntro.heat_mode
+  - Lumenary.PdeIntro.heat_mode_boundary
+  - Lumenary.PdeIntro.laplace_mode
+  - Lumenary.PdeIntro.dalembert_solves
+  - Lumenary.PdeIntro.sin_orthogonal
+  - Lumenary.PdeIntro.heatStep
+  - Lumenary.PdeIntro.heatStep_bounded
+  - Lumenary.PdeIntro.heat_iterate_bounded
+  - Lumenary.PdeIntro.heat_step_unstable
+  - Lumenary.PdeIntro.fourier_orthonormal
+  - Lumenary.PdeIntro.fourier_series_l2
+  - Lumenary.PdeIntro.parseval
+  - Lumenary.PdeIntro.fourier_uniform
+  - Lumenary.PdeIntro.basel
+compute: [pde_intro_fourier_gibbs, pde_intro_heat_scheme]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Three equations that run the world">
+
+Heat a metal rod at its middle and hold its ends in ice water. How does the temperature evolve? Pluck a string on a kora in Bamako, a sitar in Varanasi or a guitar in Seville: why does it sound a note and its overtones, and nothing in between? Dip a bent wire loop into soapy water: what shape does the film take? Each question is answered by a **partial differential equation** (PDE) — an equation linking the rates of change of a function of several variables:
+
+$$
+u_t = k\,u_{xx} \;\;\text{(heat)}, \qquad u_{tt} = c^2 u_{xx} \;\;\text{(wave)}, \qquad u_{xx} + u_{yy} = 0 \;\;\text{(Laplace)}.
+$$
+
+In 1807 Joseph Fourier claimed something outrageous about the first one. Every initial temperature profile, he said, even one with corners and jumps, can be written as a sum of sine waves, and each sine wave simply decays at its own rate. The leading analysts of the day, Lagrange among them, did not believe that a discontinuous function could be a sum of smooth ones. Making sense of Fourier's claim took a century and created much of modern analysis: the Riemann and Lebesgue integrals, uniform convergence, set theory (Cantor began with the uniqueness of trigonometric series), and Hilbert spaces.
+
+Today Fourier's idea is everywhere. MP3 audio and JPEG images store a signal by its frequency content, an MRI scanner measures the Fourier transform of your body's tissue directly, and quantum mechanics computes atomic energy levels as the frequencies of a wave equation. This lesson solves the three classical equations on an interval and develops the theory of Fourier series that makes the solutions rigorous. It also proves that the solutions are unique.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Pure tones, and averages">
+
+**Heat** flows from hot to cold at a rate proportional to the temperature gradient (Fourier's law). In a thin rod, the heat in a small piece $[x, x + \Delta x]$ changes by the flux in at one end minus the flux out at the other. Dividing by $\Delta x$ and letting $\Delta x \to 0$ gives $u_t = k u_{xx}$. The sign tells the story: where the temperature profile is curved upwards ($u_{xx} > 0$, a cold dip), the temperature rises. Heat flattens bumps.
+
+**Sine waves are the natural modes.** If the initial profile is $\sin(nx)$, the solution keeps its shape and just shrinks: $u = e^{-kn^2t}\sin(nx)$. The decay rate grows like $n^2$, so wiggly components die almost instantly and the profile quickly smooths out. If the initial profile is a *sum* of sines, each one decays independently, because the equation is linear. So everything hinges on Fourier's claim that every reasonable profile is such a sum.
+
+**Waves** keep their shape and travel. A string's displacement satisfies $u_{tt} = c^2 u_{xx}$ (Newton's law for each small piece, with tension $\tau$ and density $\rho$, $c^2 = \tau/\rho$). Any shape $f$ moving right at speed $c$, $u = f(x - ct)$, is a solution, and so is any shape moving left.
+
+**Harmonic functions** — solutions of Laplace's equation — are steady states of heat flow. They have no bumps at all: the value at each point equals the *average* over any circle around it. So a harmonic function cannot have a maximum inside its domain.
+
+<Figure caption="Separation of variables on a string fixed at both ends: the first three modes $\sin x$, $\sin 2x$, $\sin 3x$ on $[0, \pi]$. Each oscillates (wave equation) or decays (heat equation) at its own rate, $n$ or $n^2$, without changing shape. A general solution is a superposition of them.">
+<svg viewBox="0 0 320 150" role="img" aria-label="Three sine curves on an interval, with one, two and three humps">
+  <line x1="20" y1="75" x2="300" y2="75" stroke="var(--ink-2)" strokeWidth="1" />
+  <path d="M 20 75 C 80 10, 240 10, 300 75" fill="none" stroke="var(--formal)" strokeWidth="2.5" />
+  <path d="M 20 75 C 50 25, 130 25, 160 75 C 190 125, 270 125, 300 75" fill="none" stroke="var(--compute)" strokeWidth="2" />
+  <path d="M 20 75 C 40 40, 93 40, 113 75 C 133 110, 187 110, 207 75 C 227 40, 280 40, 300 75" fill="none" stroke="var(--human)" strokeWidth="1.8" strokeDasharray="5 3" />
+  <circle cx="20" cy="75" r="4" fill="var(--gold)" />
+  <circle cx="300" cy="75" r="4" fill="var(--gold)" />
+  <text x="12" y="98" fontSize="12" fill="var(--ink-2)">0</text>
+  <text x="294" y="98" fontSize="12" fill="var(--ink-2)">π</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="the three classical equations">
+
+For $u = u(t, x)$ (or $u(x, y)$) and constants $k, c > 0$: the **heat equation** $u_t = k\,u_{xx}$, the **wave equation** $u_{tt} = c^2 u_{xx}$, and **Laplace's equation** $\Delta u = u_{xx} + u_{yy} = 0$. A solution of Laplace's equation is **harmonic**. All three are **linear**: sums and multiples of solutions are solutions (the *superposition principle*).
+
+</Definition>
+
+A problem consists of an equation plus side conditions. On a rod $[0, L]$ we impose **initial conditions** — $u(0, x) = \varphi(x)$ for heat, and also $u_t(0, x) = \psi(x)$ for waves — and **boundary conditions** such as the Dirichlet conditions $u(t, 0) = u(t, L) = 0$. Following Hadamard (1902), a problem is **well posed** if a solution exists, is unique, and depends continuously on the data.
+
+<Definition term="Fourier series">
+
+Let $f$ be $2\pi$-periodic and Riemann integrable on $[-\pi, \pi]$. Its **Fourier coefficients** are
+
+$$
+\hat f(n) = c_n = \frac{1}{2\pi}\int_{-\pi}^{\pi} f(x)\,e^{-inx}\,dx \quad (n \in \Z),
+$$
+
+and its **Fourier series** is $\sum_{n \in \Z} c_n e^{inx}$, with **partial sums** $S_N f(x) = \sum_{|n| \le N} c_n e^{inx}$. For real $f$ this is $\frac{a_0}{2} + \sum_{n \ge 1}(a_n \cos nx + b_n \sin nx)$ with $a_n = \frac1\pi \int_{-\pi}^{\pi} f(x) \cos nx\,dx$ and $b_n = \frac1\pi\int_{-\pi}^{\pi} f(x)\sin nx\,dx$.
+
+</Definition>
+
+<Definition term="Fourier sine series on [0, L]">
+
+For $f$ integrable on $[0, L]$, the **sine coefficients** are $b_n = \frac{2}{L}\int_0^L f(x)\sin\frac{n\pi x}{L}\,dx$ and the **sine series** is $\sum_{n \ge 1} b_n \sin\frac{n\pi x}{L}$. It is the full Fourier series of the *odd* $2L$-periodic extension of $f$.
+
+</Definition>
+
+<Definition term="inner product and L² norm">
+
+For complex-valued integrable functions on $[-\pi, \pi]$, put $\langle f, g \rangle = \frac{1}{2\pi}\int_{-\pi}^{\pi} f(x)\overline{g(x)}\,dx$ and $\|f\|_2 = \langle f, f\rangle^{1/2}$. The functions $e_n(x) = e^{inx}$ are **orthonormal**: $\langle e_m, e_n\rangle = 1$ if $m = n$ and $0$ otherwise, and $c_n = \langle f, e_n\rangle$.
+
+</Definition>
+
+A function on $[a, b]$ is **piecewise $C^1$** if it is continuously differentiable except at finitely many points, where $f$ and $f'$ have one-sided limits.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="The square wave">
+
+Let $f = \operatorname{sign}(\sin x)$: $f = 1$ on $(0, \pi)$ and $-1$ on $(-\pi, 0)$. It is odd, so $a_n = 0$, and
+
+$$
+b_n = \frac{2}{\pi}\int_0^\pi \sin nx\,dx = \frac{2}{\pi}\cdot\frac{1 - (-1)^n}{n} = \begin{cases} \frac{4}{\pi n} & n \text{ odd}, \\ 0 & n \text{ even}. \end{cases}
+$$
+
+So $f \sim \frac{4}{\pi}\left(\sin x + \frac{\sin 3x}{3} + \frac{\sin 5x}{5} + \cdots\right)$. At $x = \pi/2$ this gives Leibniz's series $\frac\pi4 = 1 - \frac13 + \frac15 - \cdots$.
+
+</Example>
+
+<Example title="The sawtooth and the triangle">
+
+For $f(x) = x$ on $(-\pi, \pi)$, integration by parts gives $b_n = \frac{2(-1)^{n+1}}{n}$, so $x \sim 2\left(\sin x - \frac{\sin 2x}{2} + \frac{\sin 3x}{3} - \cdots\right)$. The coefficients decay like $1/n$: the periodic extension jumps at $\pm\pi$. For the continuous **triangle wave** $f(x) = |x|$, $a_0 = \pi$ and $a_n = -\frac{4}{\pi n^2}$ for odd $n$ (zero for even $n \ge 2$). The coefficients decay like $1/n^2$, one power faster, because one more derivative is continuous. *Smoothness of $f$ is decay of $\hat f$.*
+
+</Example>
+
+<Example title="The heat equation with initial profile x(π − x)">
+
+On $[0, \pi]$, $\varphi(x) = x(\pi - x)$ has sine coefficients $b_n = \frac{2}{\pi}\int_0^\pi x(\pi - x)\sin nx\,dx = \frac{4(1 - (-1)^n)}{\pi n^3}$, that is $\frac{8}{\pi n^3}$ for odd $n$. So
+
+$$
+u(t, x) = \frac{8}{\pi}\sum_{n \text{ odd}} \frac{e^{-n^2 t}\sin nx}{n^3}.
+$$
+
+By $t = 1$ the second term is $e^{-8}/27 \approx 10^{-5}$ times the first: the profile is essentially $\frac{8}{\pi}e^{-t}\sin x$.
+
+</Example>
+
+<Example title="An ill-posed problem (Hadamard)">
+
+Pose Laplace's equation as an *initial-value* problem: $u_{xx} + u_{yy} = 0$ for $y > 0$ with $u(x, 0) = 0$ and $u_y(x, 0) = \frac{\sin nx}{n}$. The solution is $u_n = \frac{\sin nx \sinh ny}{n^2}$. As $n \to \infty$ the data tend to $0$ uniformly, but at $y = 1$ the solution has size $\frac{\sinh n}{n^2} \to \infty$. Tiny changes in the data cause enormous changes in the solution, so the problem is not well posed — even though a solution exists and is unique. Laplace's equation wants *boundary* data, not initial data.
+
+</Example>
+
+</Section>
+
+<Section id="separation" kind="proof" title="Separation of variables">
+
+We solve the heat equation on $[0, \pi]$ with $u(t, 0) = u(t, \pi) = 0$ and $u(0, x) = \varphi(x)$. (Rescaling $x$ handles any interval $[0, L]$.)
+
+**Step 1: separated solutions.** Look for $u = T(t)X(x)$. Then $T'X = kTX''$, so $\frac{T'}{kT} = \frac{X''}{X}$ wherever these are defined. The left side depends only on $t$ and the right only on $x$, so both equal a constant $-\lambda$. The problem $X'' = -\lambda X$ with $X(0) = X(\pi) = 0$ has a non-zero solution only when $\lambda = n^2$, $n = 1, 2, \dots$, with $X = \sin nx$. (For $\lambda \le 0$ the solutions are $A + Bx$ or combinations of $e^{\pm\sqrt{-\lambda}x}$, and the boundary conditions force them to vanish; for $\lambda > 0$, $X = A\cos\sqrt\lambda x + B\sin\sqrt\lambda x$, and $X(0) = 0$, $X(\pi) = 0$ force $A = 0$ and $\sqrt\lambda \in \Z$.) Then $T = e^{-kn^2t}$.
+
+**Step 2: superposition.** Formally, $u(t, x) = \sum_{n \ge 1} b_n e^{-kn^2t}\sin nx$ with $b_n$ the sine coefficients of $\varphi$, so that $u(0, x) = \varphi(x)$.
+
+<Theorem name="Theorem 1 (the series solves the heat equation)">
+
+Let $\varphi$ be integrable on $[0, \pi]$ with sine coefficients $b_n$. Then $u(t, x) = \sum_{n \ge 1} b_n e^{-kn^2t}\sin nx$ converges for $t > 0$, together with all its derivatives, uniformly on $[t_0, \infty) \times [0, \pi]$ for each $t_0 > 0$. The function $u$ is infinitely differentiable for $t > 0$, satisfies $u_t = k u_{xx}$ and $u(t, 0) = u(t, \pi) = 0$, and if $\varphi$ is continuous and piecewise $C^1$ with $\varphi(0) = \varphi(\pi) = 0$, then $u(t, x) \to \varphi(x)$ uniformly as $t \to 0^+$.
+
+</Theorem>
+
+<Proof>
+
+$|b_n| \le \frac2\pi\int_0^\pi|\varphi| =: B$. A derivative $\partial_t^i\partial_x^j$ of the $n$-th term is bounded by $B (kn^2)^i n^j e^{-kn^2t_0}$ for $t \ge t_0$, and $\sum_n n^{2i + j}e^{-kn^2t_0} < \infty$. By the Weierstrass M-test every differentiated series converges uniformly, so (by the theorem on derivatives of uniform limits in <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink>) we may differentiate term by term. Each term solves the equation and the boundary conditions, so $u$ does too. For the last claim, the hypotheses give $\sum|b_n| < \infty$ (Theorem 4 below, applied to the odd extension of $\varphi$, which is continuous and piecewise $C^1$). Then $|u(t, x) - \varphi(x)| \le \sum_n |b_n|(1 - e^{-kn^2t})$, which tends to $0$ uniformly by dominated convergence for series (or directly: split the sum at a large $N$).
+
+</Proof>
+
+Theorem 1 shows the **smoothing effect** of the heat equation. Even a discontinuous initial profile becomes infinitely differentiable instantly. Running time backwards is the opposite. The *backward* heat equation multiplies the $n$-th mode by $e^{+kn^2t}$, which explodes, so it is ill posed: you cannot un-mix milk from coffee.
+
+**The vibrating string.** The same method for $u_{tt} = c^2u_{xx}$ on $[0, \pi]$ with fixed ends gives $T'' = -c^2n^2T$, so
+
+$$
+u(t, x) = \sum_{n \ge 1}\big(a_n\cos nct + b_n\sin nct\big)\sin nx,
+$$
+
+with $a_n$ the sine coefficients of $u(0, \cdot)$ and $nc\,b_n$ those of $u_t(0, \cdot)$. The $n$-th mode vibrates at frequency $n$ times the fundamental: the **harmonic series** of overtones that gives a string its timbre. Here nothing decays, so convergence requires smoother data, and on the whole line d'Alembert's formula below is cleaner.
+
+</Section>
+
+<Section id="fourier" kind="proof" title="Fourier series: Bessel, Parseval and convergence">
+
+<Theorem name="Theorem 2 (Bessel's inequality; best approximation)">
+
+For $f$ integrable on $[-\pi, \pi]$ and every $N$: $\|f - S_Nf\|_2^2 = \|f\|_2^2 - \sum_{|n| \le N}|c_n|^2$. Hence $\sum_{n \in \Z}|c_n|^2 \le \|f\|_2^2$, and in particular $c_n \to 0$ (the **Riemann–Lebesgue lemma** for square-integrable $f$). Moreover $S_Nf$ is the closest trigonometric polynomial of degree $\le N$ to $f$ in the $L^2$ norm.
+
+</Theorem>
+
+<Proof>
+
+By orthonormality, $\langle f - S_Nf, e_n\rangle = c_n - c_n = 0$ for $|n| \le N$, so $f - S_Nf$ is orthogonal to every trigonometric polynomial $P$ of degree $\le N$. Pythagoras gives $\|f - P\|_2^2 = \|f - S_Nf\|_2^2 + \|S_Nf - P\|_2^2 \ge \|f - S_Nf\|_2^2$ (best approximation). Taking $P = 0$: $\|f\|_2^2 = \|f - S_Nf\|_2^2 + \|S_Nf\|_2^2$, and $\|S_Nf\|_2^2 = \sum_{|n|\le N}|c_n|^2$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (Parseval; stated)">
+
+For every square-integrable $f$ on $[-\pi, \pi]$, $\|f - S_Nf\|_2 \to 0$, and therefore
+
+$$
+\sum_{n \in \Z}|c_n|^2 = \frac{1}{2\pi}\int_{-\pi}^{\pi}|f(x)|^2\,dx.
+$$
+
+</Theorem>
+
+By Theorem 2, Parseval is equivalent to the density of trigonometric polynomials in $L^2$. For continuous $f$, density follows from **Fejér's theorem**: the averages $\sigma_N f = \frac{1}{N+1}\sum_{m=0}^N S_mf$ converge to $f$ *uniformly*, because they are convolutions with the positive kernel $F_N(t) = \frac{1}{N+1}\left(\frac{\sin((N+1)t/2)}{\sin(t/2)}\right)^2$, which concentrates at $0$. Continuous functions are in turn dense in $L^2$. Full proofs are in Stein and Shakarchi (2003), chapters 2–3, and Mathlib proves the Hilbert-space version (see the formal section).
+
+<Example title="Basel from Parseval">
+
+For $f(x) = x$, $|c_n| = |b_n|/2 = \frac1{|n|}$ for $n \ne 0$, and $\frac{1}{2\pi}\int_{-\pi}^{\pi}x^2\,dx = \frac{\pi^2}{3}$. Parseval gives $2\sum_{n\ge1}\frac{1}{n^2} = \frac{\pi^2}{3}$, that is, $\sum_{n\ge1}\frac{1}{n^2} = \frac{\pi^2}{6}$, Euler's 1734 answer to the Basel problem.
+
+</Example>
+
+$L^2$ convergence says nothing about any particular point. Pointwise convergence needs the **Dirichlet kernel**: substituting the coefficients into $S_Nf$ and summing the geometric series gives
+
+$$
+S_Nf(x) = \frac{1}{2\pi}\int_{-\pi}^{\pi}f(x - t)\,D_N(t)\,dt, \qquad D_N(t) = \sum_{|n|\le N}e^{int} = \frac{\sin\big((N + \frac12)t\big)}{\sin(t/2)},
+$$
+
+with $\frac{1}{2\pi}\int_{-\pi}^\pi D_N = 1$.
+
+<Theorem name="Theorem 4 (Dirichlet; uniform convergence)">
+
+Let $f$ be $2\pi$-periodic and integrable.
+
+(a) If $f$ is differentiable at $x$ (or merely Lipschitz near $x$), then $S_Nf(x) \to f(x)$.
+
+(b) If $f$ is piecewise $C^1$, then $S_Nf(x) \to \frac12\big(f(x^+) + f(x^-)\big)$ at every $x$.
+
+(c) If $f$ is continuous and piecewise $C^1$, then $\sum_n|c_n| < \infty$, and $S_Nf \to f$ uniformly.
+
+</Theorem>
+
+<Proof>
+
+(a) Since $\frac{1}{2\pi}\int D_N = 1$,
+
+$$
+S_Nf(x) - f(x) = \frac{1}{2\pi}\int_{-\pi}^{\pi}g(t)\sin\big((N + \tfrac12)t\big)\,dt, \qquad g(t) = \frac{f(x - t) - f(x)}{\sin(t/2)}.
+$$
+
+Near $t = 0$, $|f(x - t) - f(x)| \le C|t|$ and $|\sin(t/2)| \ge |t|/\pi$, so $g$ is bounded, hence square integrable. Expand $\sin((N + \frac12)t) = \sin Nt\cos\frac t2 + \cos Nt\sin\frac t2$. The integral becomes a combination of Fourier coefficients of the square-integrable functions $g(t)\cos\frac t2$ and $g(t)\sin\frac t2$, which tend to $0$ by the Riemann–Lebesgue lemma (Theorem 2).
+
+(b) Split the integral into $t > 0$ and $t < 0$. Since $D_N$ is even, $\frac{1}{2\pi}\int_0^\pi D_N = \frac12$. Repeat (a) on each half with $f(x^\mp)$ in place of $f(x)$, using the one-sided Lipschitz bounds that piecewise $C^1$ provides.
+
+(c) Integration by parts (valid because $f$ is continuous and periodic) gives $\widehat{f'}(n) = in\,c_n$. By Cauchy–Schwarz and Bessel for $f'$,
+
+$$
+\sum_{n \ne 0}|c_n| = \sum_{n\ne0}\frac{|\widehat{f'}(n)|}{|n|} \le \Big(\sum_{n\ne0}\frac1{n^2}\Big)^{1/2}\Big(\sum_n|\widehat{f'}(n)|^2\Big)^{1/2} < \infty.
+$$
+
+By the M-test, $S_Nf$ converges uniformly to some continuous $g$, and by (a) $g = f$.
+
+</Proof>
+
+**The Gibbs phenomenon.** Near a jump, convergence cannot be uniform: a uniform limit of continuous functions is continuous. But the failure has a precise, universal size. For the square wave, $S_n$ (with $n$ non-zero terms) has derivative $\frac{4}{\pi}\sum_{j=1}^n\cos((2j - 1)x) = \frac{2}{\pi}\frac{\sin 2nx}{\sin x}$. So its first maximum to the right of $0$ is at $x = \frac{\pi}{2n}$, where, with $t_j = \frac{(2j - 1)\pi}{2n}$,
+
+$$
+S_n\Big(\frac{\pi}{2n}\Big) = \frac{4}{\pi}\sum_{j=1}^{n}\frac{\sin t_j}{2j - 1} = \frac{2}{\pi}\sum_{j=1}^n\frac{\pi}{n}\cdot\frac{\sin t_j}{t_j} \;\longrightarrow\; \frac{2}{\pi}\int_0^\pi\frac{\sin t}{t}\,dt = \frac{2}{\pi}\mathrm{Si}(\pi) \approx 1.17898,
+$$
+
+because the middle sum is a midpoint Riemann sum. The partial sums overshoot the value $1$ by about $9\%$ of the jump $2$, ever closer to the discontinuity, and the overshoot never shrinks. Every jump discontinuity of a piecewise $C^1$ function shows the same proportional overshoot.
+
+**What can go wrong.** Continuity alone is *not* enough for pointwise convergence. Paul du Bois-Reymond (1873) constructed a continuous periodic function whose Fourier series diverges at a point, and Kolmogorov (1926) found an integrable function whose Fourier series diverges everywhere. In the positive direction, Lennart Carleson (1966) proved that the Fourier series of every square-integrable function converges almost everywhere — one of the deepest theorems of twentieth-century analysis.
+
+**Term-by-term differentiation can fail.** Differentiating $x = 2\sum(-1)^{n+1}\frac{\sin nx}{n}$ term by term gives $2\sum(-1)^{n+1}\cos nx$, whose terms do not even tend to $0$. The problem is the jump of the periodic sawtooth at $\pm\pi$. For a continuous, piecewise $C^1$ periodic function, $\widehat{f'}(n) = in\,c_n$, so the differentiated series is the Fourier series of $f'$. That series converges to $f'$ wherever Theorem 4 applies to $f'$.
+
+</Section>
+
+<Section id="waves" kind="proof" title="d'Alembert's formula">
+
+<Theorem name="Theorem 5 (d'Alembert)">
+
+Every $C^2$ solution of $u_{tt} = c^2u_{xx}$ on $\R^2$ has the form $u(t, x) = F(x - ct) + G(x + ct)$ with $F, G \in C^2(\R)$. The solution with $u(0, x) = \varphi(x)$ and $u_t(0, x) = \psi(x)$ ($\varphi \in C^2$, $\psi \in C^1$) is unique and given by
+
+$$
+u(t, x) = \frac{\varphi(x - ct) + \varphi(x + ct)}{2} + \frac{1}{2c}\int_{x - ct}^{x + ct}\psi(s)\,ds.
+$$
+
+</Theorem>
+
+<Proof>
+
+Change to **characteristic coordinates** $\xi = x - ct$, $\eta = x + ct$, and write $u(t, x) = w(\xi, \eta)$. The chain rule gives $u_x = w_\xi + w_\eta$, $u_t = c(w_\eta - w_\xi)$, and
+
+$$
+u_{tt} - c^2u_{xx} = c^2(w_{\xi\xi} - 2w_{\xi\eta} + w_{\eta\eta}) - c^2(w_{\xi\xi} + 2w_{\xi\eta} + w_{\eta\eta}) = -4c^2 w_{\xi\eta}.
+$$
+
+So $w_{\xi\eta} = 0$. Then $w_\xi$ does not depend on $\eta$, say $w_\xi = F'(\xi)$, and $w - F(\xi)$ has zero $\xi$-derivative, so it is a function $G(\eta)$. Conversely, every such sum solves the equation (proved in Lean below).
+
+For the initial values: $F + G = \varphi$ and $c(G' - F') = \psi$. Integrating the second, $G - F = \frac1c\int_0^x\psi + C$. Solving, $F(x) = \frac12\varphi(x) - \frac1{2c}\int_0^x\psi - \frac C2$ and $G(x) = \frac12\varphi(x) + \frac1{2c}\int_0^x\psi + \frac C2$. Substituting gives the formula, and since $F, G$ were forced, the solution is unique.
+
+</Proof>
+
+The formula shows two physical facts. **Finite speed of propagation:** $u(t, x)$ depends only on the data in $[x - ct, x + ct]$, the *domain of dependence*, so disturbances travel at speed exactly $c$. And **no smoothing**: a corner in $\varphi$ travels along the lines $x \pm ct$ forever, unlike for the heat equation.
+
+</Section>
+
+<Section id="uniqueness" kind="proof" title="Maximum principles and energy">
+
+<Theorem name="Theorem 6 (weak maximum principle for the heat equation)">
+
+Let $u$ be continuous on the rectangle $R = [0, T] \times [0, L]$, with $u_t, u_{xx}$ continuous for $0 < t \le T$, $0 < x < L$, and $u_t = ku_{xx}$ there. Then the maximum of $u$ over $R$ is attained on the **parabolic boundary** $\Gamma$: the bottom $t = 0$ or the sides $x = 0$, $x = L$.
+
+</Theorem>
+
+<Proof>
+
+Let $M = \max_\Gamma u$, and for $\varepsilon > 0$ put $v = u + \varepsilon x^2$, so that $v_t - kv_{xx} = -2k\varepsilon < 0$ inside. Suppose $v$ attains its maximum over $R$ at a point $(t_0, x_0)$ not on $\Gamma$, so $0 < t_0 \le T$ and $0 < x_0 < L$. In the $x$-direction this is an interior maximum, so $v_{xx}(t_0, x_0) \le 0$. In the $t$-direction it is a maximum at an interior point or at the top edge $t_0 = T$, so $v_t(t_0, x_0) \ge 0$. Then $v_t - kv_{xx} \ge 0$, a contradiction. So $\max_R v = \max_\Gamma v \le M + \varepsilon L^2$, hence $u \le v \le M + \varepsilon L^2$ on $R$. Let $\varepsilon \to 0$.
+
+</Proof>
+
+(Without the $\varepsilon x^2$ trick the argument fails: at an interior maximum of $u$ we only get $u_t \ge 0 \ge ku_{xx}$, which is consistent with $u_t = ku_{xx}$.)
+
+<Theorem name="Corollary 7 (uniqueness and stability for the heat equation)">
+
+The Dirichlet problem $u_t = ku_{xx}$ on $(0, T] \times (0, L)$, $u(0, x) = \varphi(x)$, $u(t, 0) = g(t)$, $u(t, L) = h(t)$ has at most one solution continuous on $R$. If $u_1, u_2$ solve it with initial data $\varphi_1, \varphi_2$ and the same boundary data, then $\max_R|u_1 - u_2| \le \max|\varphi_1 - \varphi_2|$.
+
+</Theorem>
+
+<Proof>
+
+$w = u_1 - u_2$ solves the heat equation with zero boundary data. Apply Theorem 6 to $w$ and to $-w$.
+
+</Proof>
+
+The **energy method** gives uniqueness by integration instead.
+
+<Theorem name="Theorem 8 (energy identities)">
+
+(a) If $w$ is a smooth solution of $w_t = kw_{xx}$ on $[0, L]$ with $w(t, 0) = w(t, L) = 0$, then $E(t) = \int_0^Lw^2\,dx$ is non-increasing.
+(b) If $w$ is a smooth solution of $w_{tt} = c^2w_{xx}$ with the same boundary conditions, then $E(t) = \frac12\int_0^L\big(w_t^2 + c^2w_x^2\big)\,dx$ is constant.
+Consequently both Dirichlet problems have at most one smooth solution.
+
+</Theorem>
+
+<Proof>
+
+(a) $E'(t) = 2\int_0^Lww_t = 2k\int_0^Lww_{xx} = 2k\big[ww_x\big]_0^L - 2k\int_0^Lw_x^2 = -2k\int_0^Lw_x^2 \le 0$. The boundary term vanishes because $w = 0$ at both ends.
+
+(b) $E'(t) = \int_0^L(w_tw_{tt} + c^2w_xw_{xt}) = c^2\int_0^L(w_tw_{xx} + w_xw_{xt}) = c^2\big[w_tw_x\big]_0^L = 0$, because $w_t = 0$ at the fixed ends.
+
+For uniqueness, the difference of two solutions has zero initial data, so $E(0) = 0$. In (a) this gives $E \equiv 0$ and $w \equiv 0$. In (b) it gives $w_t = w_x = 0$, so $w$ is constant, hence $0$.
+
+</Proof>
+
+For Laplace's equation the corresponding facts are the **mean value property** and the **maximum principle**.
+
+<Theorem name="Theorem 9 (harmonic functions)">
+
+Let $u$ be harmonic ($C^2$ with $\Delta u = 0$) on an open set $U \subseteq \R^2$. (a) If the closed disc $\overline{B(p, r)}$ lies in $U$, then $u(p) = \frac{1}{2\pi}\int_0^{2\pi}u(p + re^{i\theta})\,d\theta$. (b) If $U$ is connected and $u$ attains its maximum at a point of $U$, then $u$ is constant. Hence on a bounded domain, a harmonic function continuous up to the boundary attains its maximum and minimum on the boundary, and the Dirichlet problem for $\Delta u = 0$ has at most one solution.
+
+</Theorem>
+
+<Proof>
+
+(a) Let $m(s) = \frac{1}{2\pi}\int_0^{2\pi}u(p + se^{i\theta})\,d\theta$. Differentiating under the integral, $m'(s) = \frac{1}{2\pi}\int_0^{2\pi}\nabla u \cdot e^{i\theta}\,d\theta = \frac{1}{2\pi s}\oint_{|z-p|=s}\frac{\partial u}{\partial n}\,d\ell$. By the divergence theorem this equals $\frac{1}{2\pi s}\iint_{B(p,s)}\Delta u = 0$. So $m$ is constant, and $m(s) \to u(p)$ as $s \to 0$ by continuity.
+
+(b) The set where $u$ equals its maximum $M$ is closed in $U$. It is also open: if $u(p) = M$, the mean value property on every small circle around $p$ forces $u = M$ on those circles (an average of values $\le M$ equals $M$ only if all are $M$, by continuity). By connectedness it is all of $U$. For uniqueness, apply this to the difference of two solutions and its negative.
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="PDEs and Fourier series in Lean and Mathlib">
+
+Mathlib has a substantial theory of Fourier series on the circle $\R/T\Z$ (the type `AddCircle T`) but, at this version, no library of partial differential equations. So the PDE results below are proved directly, by computing derivatives with the chain rule. Partial derivatives are written as ordinary derivatives of one-variable slices: $u_t$ at $(t, x)$ is `deriv (fun s => u s x) t`.
+
+The separated solutions really solve their equations, and satisfy the boundary conditions:
+
+<Lean decl="Lumenary.PdeIntro.heat_mode" />
+
+<Lean decl="Lumenary.PdeIntro.heat_mode_boundary" />
+
+<Lean decl="Lumenary.PdeIntro.laplace_mode" />
+
+d'Alembert's travelling waves solve the wave equation (the easy half of Theorem 5):
+
+<Lean decl="Lumenary.PdeIntro.dalembert_solves" />
+
+Orthogonality of the sine modes, from an explicit antiderivative and the second fundamental theorem of calculus:
+
+<Lean decl="Lumenary.PdeIntro.sin_orthogonal" />
+
+A discrete analogue of the maximum principle (Theorem 6): the explicit finite-difference scheme, its convex-combination property when $r = k\,\Delta t/\Delta x^2 \le \frac12$, the resulting stability for all time, and the explosion of the sawtooth mode when $r = 1$. These are the facts behind the computation section.
+
+<Lean decl="Lumenary.PdeIntro.heatStep" />
+
+<Lean decl="Lumenary.PdeIntro.heatStep_bounded" />
+
+<Lean decl="Lumenary.PdeIntro.heat_iterate_bounded" />
+
+<Lean decl="Lumenary.PdeIntro.heat_step_unstable" />
+
+Mathlib's Fourier theory, for the circle $\R/T\Z$ with normalised Haar measure (for $T = 2\pi$ this is the measure $\frac{dx}{2\pi}$ of the lesson). It covers the orthonormal exponentials, $L^2$ convergence (the exponentials form a Hilbert basis), Parseval's identity (Theorem 3), uniform convergence for absolutely summable coefficients (the mechanism of Theorem 4(c)), and the Basel sum:
+
+<Lean decl="Lumenary.PdeIntro.fourier_orthonormal" />
+
+<Lean decl="Lumenary.PdeIntro.fourier_series_l2" />
+
+<Lean decl="Lumenary.PdeIntro.parseval" />
+
+<Lean decl="Lumenary.PdeIntro.fourier_uniform" />
+
+<Lean decl="Lumenary.PdeIntro.basel" />
+
+**What is and is not formalised.** Proved here: that the heat, Laplace and d'Alembert solutions satisfy their equations and boundary conditions, the orthogonality of sines on $[0, \pi]$, and the discrete maximum principle with its stability threshold. Cited from Mathlib: orthonormality, $L^2$ convergence, Parseval, uniform convergence for summable coefficients, and Basel. Not formalised: Theorem 1's term-by-term differentiation, Dirichlet's pointwise theorem, the Gibbs constant, the converse half of d'Alembert's theorem, the continuous maximum principles, the energy identities and the mean value property.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Overshoots, sums and schemes">
+
+The first program measures the two faces of Fourier convergence. On one side, the partial sums of the square wave, evaluated *exactly at their first peak* $x = \frac{\pi}{2n}$, settle at $1.17898\ldots$ rather than $1$. On the other, Parseval's identity for the sawtooth produces $\sum 1/n^2$, whose partial sums approach $\pi^2/6$ with error almost exactly $1/N$.
+
+<Python id="pde_intro_fourier_gibbs" />
+
+Notice that $S_n(0) = 0$ for every $n$, the average of the one-sided limits $\pm 1$, as Theorem 4(b) predicts. The values at $\pi/2$ converge to $1$, slowly and with oscillation, because the coefficients only decay like $1/n$. All of this is numerical evidence about finitely many $n$. The limits are theorems.
+
+The second program solves the heat equation twice: by the Fourier sine series of the third example, and by the **explicit finite-difference scheme**, which replaces $u_t$ and $u_{xx}$ by difference quotients on a grid. With $r = \Delta t/\Delta x^2 \le \frac12$ every new value is a weighted average of old ones, and the scheme obeys a discrete maximum principle — proved in Lean above. With $r = 0.6$ the grid's most oscillatory mode is multiplied by about $1 - 4r = -1.4$ per step, and the computation explodes.
+
+<Python id="pde_intro_heat_scheme" />
+
+With $r = 0.4$ fixed, halving $\Delta x$ divides the error by about $4$: the scheme is second-order accurate in space. The stability condition $r \le \frac12$ is severe — halving $\Delta x$ forces four times as many time steps. That is why implicit schemes, which have no such restriction, are used in practice, as discussed in <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink>.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: heat, harmonics and travelling waves">
+
+**Heat smooths.** The curve is the initial temperature $x(\pi - x)$; the other is the first four terms of the series solution at time $t$. Move $t$: the higher modes, with decay rates $9, 25, 49$, vanish almost at once, and the profile becomes a pure, shrinking sine.
+
+<FunctionPlot fns={["x*(pi - x)", "8/pi*(exp(-t)*sin(x) + exp(-9*t)*sin(3*x)/27 + exp(-25*t)*sin(5*x)/125 + exp(-49*t)*sin(7*x)/343)"]} labels={["u(0, x) = x(π − x)", "u(t, x), four terms"]} params={[{ name: "t", min: 0, max: 2, step: 0.01, value: 0.1 }]} x={[0, "pi"]} y={[-0.1, 2.6]} title="The heat equation on [0, π]" />
+
+**Fourier series and the Gibbs overshoot.** Add terms to the square-wave series. The partial sums converge at every point, but the spike next to each jump only gets narrower, never shorter: about $9\%$ of the jump, for ever.
+
+<SequenceLab mode="fourier" wave="square" N={10} />
+
+**Travelling waves.** d'Alembert's solution with initial bump $e^{-x^2}$ and zero initial velocity splits into two half-height bumps moving apart at speed $1$. Corners would travel just the same — there is no smoothing.
+
+<FunctionPlot fns={["0.5*exp(-(x - t)^2) + 0.5*exp(-(x + t)^2)"]} labels={["u(t, x)"]} params={[{ name: "t", min: 0, max: 6, step: 0.05, value: 0 }]} x={[-8, 8]} y={[-0.2, 1.1]} title="d'Alembert: u = ½φ(x − t) + ½φ(x + t)" />
+
+**Modes of a string.** The $n$-th standing wave $\sin(nx)\cos(nt)$ on $[0, \pi]$: $n - 1$ points (nodes) never move, and the time period is $2\pi/n$.
+
+<FunctionPlot fns={["sin(n*x)*cos(n*t)"]} params={[{ name: "n", min: 1, max: 6, step: 1, value: 2 }, { name: "t", min: 0, max: 6.3, step: 0.05, value: 0 }]} x={[0, "pi"]} y={[-1.2, 1.2]} title="Standing waves on a string" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The Fourier series of a continuous function converges to it at every point."** False: du Bois-Reymond (1873) found a continuous periodic function whose Fourier series diverges at a point, and later constructions make it diverge on any prescribed set of measure zero. What *is* true: convergence at every point where $f$ is differentiable, or Lipschitz, or where Dini's condition holds (Theorem 4); uniform convergence for continuous piecewise $C^1$ functions; uniform convergence of the Fejér averages for every continuous function; and almost-everywhere convergence for square-integrable functions (Carleson).
+
+</Misconception>
+
+<Misconception>
+
+**"A Fourier series can always be differentiated term by term."** The sawtooth $x = 2\sum(-1)^{n+1}\frac{\sin nx}{n}$ differentiates to a series whose terms do not tend to $0$. Term-by-term differentiation is justified when the function is continuous and piecewise $C^1$ *as a periodic function* (no jump where the period wraps around), or when the differentiated series converges uniformly. In Theorem 1 the factor $e^{-kn^2t}$ provides exactly that.
+
+</Misconception>
+
+<Misconception>
+
+**"Convergence in $L^2$ means convergence at each point."** $L^2$ convergence controls an average of $|f - S_Nf|^2$. It allows small sets of bad points, such as the Gibbs spikes, whose width shrinks while their height does not. Conversely, pointwise convergence does not imply $L^2$ convergence for general sequences of functions.
+
+</Misconception>
+
+<Misconception>
+
+**"If a solution exists and is unique, the problem is fine."** Hadamard's example — Laplace's equation with initial data — has unique solutions that do not depend continuously on the data. The backward heat equation is another example. In a computation, data always carry small errors, so continuous dependence is not optional.
+
+</Misconception>
+
+<Misconception>
+
+**"Separation of variables finds all solutions."** It finds the separated ones. That their superpositions give *every* solution needs two more facts: the completeness of the sine functions (Parseval) and the uniqueness theorems of the last section.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="analysis" title="An orthonormal basis of a Hilbert space">
+
+The space $L^2(-\pi, \pi)$ of square-integrable functions, with $\langle f, g\rangle = \frac{1}{2\pi}\int f\bar g$, is a **Hilbert space**: an inner product space that is complete (the Riesz–Fischer theorem, which needs the Lebesgue integral). The exponentials $e^{inx}$ form an orthonormal basis, and the map $f \mapsto (\hat f(n))_{n\in\Z}$ is an isometric isomorphism onto $\ell^2(\Z)$ — Parseval's identity. Separation of variables is the spectral theorem in disguise: $\sin nx$ are the eigenfunctions of the self-adjoint operator $-\frac{d^2}{dx^2}$ with Dirichlet conditions, with eigenvalues $n^2$, and the heat equation is solved by $e^{-tk(-d^2/dx^2)}$. See <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink> and <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Heat, strings and quantum energy levels">
+
+Fourier derived the heat equation from conservation of energy and his law of conduction, and the wave equation comes from Newton's second law for a string. The eigenvalue problem $-X'' = \lambda X$ reappears as the time-independent **Schrödinger equation** $-\frac{\hbar^2}{2m}X'' = EX$ for a particle in a box $[0, \pi]$. Its energy levels $E_n = \frac{\hbar^2 n^2}{2m}$ are the separation constants of this lesson, and quantisation is the boundary condition. Physical intuition also suggests theorems: conservation of energy for the string is Theorem 8(b), and "heat never makes a new hot spot" is Theorem 6. See <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Can one hear the shape of a drum?">
+
+On a bounded domain $\Omega \subset \R^2$ (a drum), the Dirichlet eigenvalues $0 < \lambda_1 < \lambda_2 \le \cdots$ of $-\Delta$ are the squares of the frequencies the drum can sound. **Weyl's law** (1911) says that the number of eigenvalues below $\lambda$ is asymptotic to $\frac{\operatorname{area}(\Omega)}{4\pi}\lambda$, so the sound determines the area. Mark Kac asked in 1966 whether it determines the *shape*. The answer is no: Gordon, Webb and Wolpert (1992) found two different polygons with exactly the same eigenvalues. On a Riemannian manifold the same questions lead to the heat kernel, whose short-time expansion encodes curvature, and to the heat-equation proof of the Atiyah–Singer index theorem.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Heat is the average of random walks">
+
+With $r = \frac12$, the explicit scheme reads $u_j^{\text{new}} = \frac12(u_{j-1} + u_{j+1})$: the new temperature is the *expected* old temperature seen by a walker who steps left or right with probability $\frac12$. In the limit, the solution of $u_t = \frac12u_{xx}$ on $\R$ is $u(t, x) = \mathbb E[\varphi(x + B_t)]$, with $B_t$ a Brownian motion. The heat kernel $\frac{1}{\sqrt{2\pi t}}e^{-x^2/2t}$ is the normal density of variance $t$. Harmonic functions become exit probabilities: the solution of the Dirichlet problem on $\Omega$ at $p$ is the expected boundary value at the point where a Brownian path from $p$ first leaves $\Omega$ (Kakutani, 1944). The mean value property is the symmetry of Brownian motion. See <TopicLink id="math.prob.stochastic-processes">stochastic processes</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Characters of the circle group">
+
+The functions $e_n(x) = e^{inx}$ are exactly the continuous homomorphisms from the circle group $\R/2\pi\Z$ to the unit circle in $\C$: $e_n(x + y) = e_n(x)e_n(y)$. They are its **characters**, and Fourier analysis is the representation theory of this abelian group. Translation $f \mapsto f(\cdot - a)$ multiplies $\hat f(n)$ by $e^{-ina}$, and differentiation multiplies it by $in$. So every translation-invariant linear operator — differential operators with constant coefficients, convolutions — becomes *diagonal*, and that is why Fourier series solve constant-coefficient PDEs. Replacing the circle by a finite cyclic group gives the discrete Fourier transform, computed by the fast Fourier transform. A compact non-abelian group gives the Peter–Weyl theorem.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Vibrating strings.** Jean le Rond d'Alembert derived and solved the wave equation in 1747. Leonhard Euler and Daniel Bernoulli (1753) argued over whether every solution is a superposition of sine modes, a debate that turned on what a "function" is.
+- **Heat.** Joseph Fourier submitted his memoir on heat conduction to the Paris Academy in 1807 and published *Théorie analytique de la chaleur* in 1822. His claim that arbitrary functions are sums of sines was resisted, but his solutions worked.
+- **Rigour.** Peter Gustav Lejeune Dirichlet proved the first convergence theorem in 1829. Bernhard Riemann's 1854 habilitation on trigonometric series introduced the Riemann integral and the localisation principle. Georg Cantor's work on the uniqueness of trigonometric series (1870s) led him to set theory. Paul du Bois-Reymond published his divergent example in 1873.
+- **Gibbs.** The overshoot was found by Henry Wilbraham in 1848, rediscovered by J. Willard Gibbs in 1898–1899 after the physicist Albert Michelson's harmonic analyser showed it, and named after Gibbs by Maxime Bôcher (1906).
+- **The twentieth century.** Lipót Fejér proved his theorem in 1900, aged twenty. Andrey Kolmogorov found divergent Fourier series of integrable functions (1923, 1926), and Lennart Carleson proved almost-everywhere convergence for $L^2$ (1966). On the PDE side, Sofia Kovalevskaya's 1875 thesis gave the Cauchy–Kovalevskaya existence theorem for analytic data, and Jacques Hadamard (1902) introduced well-posedness. Modern PDE theory builds on Sobolev spaces and weak solutions (Sergei Sobolev and Laurent Schwartz in the 1930s–1950s, Olga Ladyzhenskaya and many others); see <TopicLink id="math.analysis.pde-theory">the modern theory of PDEs</TopicLink>.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Walter A. Strauss, *Partial Differential Equations: An Introduction* (1992; 2nd edition 2008) — the standard first course; separation of variables, maximum principles and energy methods as here.
+- Elias M. Stein and Rami Shakarchi, *Fourier Analysis: An Introduction* (2003) — rigorous Fourier series, Fejér, Parseval and applications to PDEs.
+- T. W. Körner, *Fourier Analysis* (1988) — a wonderful collection of short chapters on the mathematics and its history.
+- Lawrence C. Evans, *Partial Differential Equations* (1998; 2nd edition 2010) — the next step: weak solutions and Sobolev spaces.
+
+</Section>

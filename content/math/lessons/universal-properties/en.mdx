@@ -1,0 +1,476 @@
+---
+slug: universal-properties
+topic: math.cat.universal-properties
+title: Universal properties
+subtitle: Describe an object not by what it is made of but by how it relates to everything else — products, quotients, free monoids, fields of fractions — and get uniqueness for free.
+level: ug1
+ages: Undergraduate
+minutes: 110
+order: 5018
+objectives:
+  - State the universal properties of products in $\cat{Set}$, $\cat{Grp}$ and $\cat{Top}$, of quotient sets and quotient groups, and of free monoids, and prove that the familiar constructions satisfy them
+  - Prove that any two objects with the same universal property are isomorphic by a unique isomorphism compatible with the structure maps
+  - Derive the first isomorphism theorem for groups from the universal property of quotients
+  - Explain why a universal property characterises an object without guaranteeing that it exists, using fields that have no product
+  - Recognise constructions such as the field of fractions and the tensor product as defined by universal properties
+narrators: []
+lean:
+  - Lumenary.UniversalProperties.UniversalArrow
+  - Lumenary.UniversalProperties.UniversalArrow.hom_ext
+  - Lumenary.UniversalProperties.UniversalArrow.lift_unit
+  - Lumenary.UniversalProperties.UniversalArrow.iso
+  - Lumenary.UniversalProperties.UniversalArrow.iso_compatible
+  - Lumenary.UniversalProperties.UniversalArrow.iso_unique
+  - Lumenary.UniversalProperties.UniversalArrow.isInitial
+  - Lumenary.UniversalProperties.initial_unique_library
+  - Lumenary.UniversalProperties.prod_universal
+  - Lumenary.UniversalProperties.group_prod_universal
+  - Lumenary.UniversalProperties.continuous_prod_library
+  - Lumenary.UniversalProperties.quotient_universal
+  - Lumenary.UniversalProperties.quotient_group_library
+  - Lumenary.UniversalProperties.evalWord
+  - Lumenary.UniversalProperties.evalWord_append
+  - Lumenary.UniversalProperties.free_monoid_unique
+  - Lumenary.UniversalProperties.free_monoid_library
+  - Lumenary.UniversalProperties.rat_universal_library
+  - Lumenary.UniversalProperties.no_field_maps_to_f2_f3
+compute: [universal_properties_products, universal_properties_free_monoid]
+trails: [products-by-maps, remainder-families]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What is an ordered pair, really?">
+
+In set theory an ordered pair is often *defined* as $(a, b) = \{\{a\}, \{a, b\}\}$ (Kuratowski, 1921). Norbert Wiener had proposed a different definition in 1914, and one could invent many more. No working mathematician cares which is used. What matters is one property: from a pair you can recover its first and second entries, and any two entries make exactly one pair.
+
+The same happens across mathematics. The integers can be built from pairs of natural numbers, the rationals from pairs of integers, the real numbers from Dedekind cuts or from Cauchy sequences. The constructions differ; the objects behave identically. A **universal property** says precisely *what* behaviour we care about, in terms of maps to or from the object — and then proves that this behaviour determines the object up to a unique isomorphism. You met the first example in <TopicLink id="math.cat.intro-universal-properties">products by maps</TopicLink>; this lesson develops the idea across <TopicLink id="math.cat.categories">categories</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The best solution to a problem">
+
+A universal property usually describes the **most efficient solution** to some problem, measured against all other solutions.
+
+- *Problem:* an object with a map to $A$ and a map to $B$. *Best solution:* the product $A \times B$ — every other solution $X$ (with $f : X \to A$, $g : X \to B$) maps to it in exactly one compatible way.
+- *Problem:* a monoid containing the letters of an alphabet $S$. *Best solution:* the monoid of words in $S$ — it satisfies no equations except those forced by the monoid axioms, so it maps to every other solution in exactly one compatible way.
+- *Problem:* a map out of a set $X$ that makes equivalent elements equal. *Best solution:* the quotient $X \to X/{\sim}$, through which every other solution factors uniquely.
+
+"Exactly one" packs two demands: **existence** (there is a compatible map) and **uniqueness** (there is only one). The second is easy to forget and is what makes the theory work.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="product">
+
+Let $A, B$ be objects of a category $\cat{C}$. A **product** of $A$ and $B$ is an object $P$ with morphisms $\pi_A : P \to A$ and $\pi_B : P \to B$ (the **projections**) such that for every object $X$ and every pair $f : X \to A$, $g : X \to B$ there is **exactly one** $h : X \to P$ with $\pi_A \circ h = f$ and $\pi_B \circ h = g$. We write $h = \langle f, g \rangle$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "X", tex: "X", row: 0, col: 1 },
+    { id: "P", tex: "P", row: 1, col: 1 },
+    { id: "A", tex: "A", row: 1, col: 0 },
+    { id: "B", tex: "B", row: 1, col: 2 },
+  ]}
+  arrows={[
+    { from: "X", to: "A", tex: "f", labelSide: "right" },
+    { from: "X", to: "B", tex: "g" },
+    { from: "X", to: "P", tex: "\\langle f, g \\rangle", style: "dashed" },
+    { from: "P", to: "A", tex: "\\pi_A" },
+    { from: "P", to: "B", tex: "\\pi_B", labelSide: "right" },
+  ]}
+  caption="Every pair $f, g$ factors through $P$ by exactly one dashed arrow."
+/>
+
+Reversing all arrows gives a **coproduct**: an object $Q$ with $\iota_A : A \to Q$, $\iota_B : B \to Q$ such that every pair $f : A \to Y$, $g : B \to Y$ factors as $f = h \circ \iota_A$, $g = h \circ \iota_B$ for exactly one $h : Q \to Y$. In $\cat{Set}$ the coproduct is the disjoint union.
+
+<Definition term="initial and terminal objects">
+
+An object $I$ is **initial** if for every object $Y$ there is exactly one morphism $I \to Y$, and **terminal** if for every $Y$ there is exactly one morphism $Y \to I$.
+
+</Definition>
+
+In $\cat{Set}$ the empty set is initial and every one-element set is terminal; in $\cat{Grp}$ the trivial group is both; in $\cat{Ring}$ the ring $\Z$ is initial (there is exactly one ring homomorphism $\Z \to R$, determined by $1 \mapsto 1$).
+
+The general shape covering free objects, quotients and many others is the following, where $U : \cat{D} \to \cat{C}$ is a functor (often a forgetful functor).
+
+<Definition term="universal arrow">
+
+A **universal arrow** from an object $X$ of $\cat{C}$ to a functor $U : \cat{D} \to \cat{C}$ is an object $F$ of $\cat{D}$ together with a morphism $\eta : X \to U(F)$ of $\cat{C}$ such that for every object $E$ of $\cat{D}$ and every morphism $f : X \to U(E)$ there is **exactly one** morphism $g : F \to E$ of $\cat{D}$ with $U(g) \circ \eta = f$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "X", tex: "X", row: 0, col: 0 },
+    { id: "UF", tex: "U(F)", row: 0, col: 1 },
+    { id: "UE", tex: "U(E)", row: 1, col: 1 },
+    { id: "F", tex: "F", row: 0, col: 2.2 },
+    { id: "E", tex: "E", row: 1, col: 2.2 },
+  ]}
+  arrows={[
+    { from: "X", to: "UF", tex: "\\eta" },
+    { from: "X", to: "UE", tex: "f", labelSide: "right" },
+    { from: "UF", to: "UE", tex: "U(g)" },
+    { from: "F", to: "E", tex: "g", style: "dashed" },
+  ]}
+  caption="In $\mathcal{C}$ (left): $f = U(g) \circ \eta$. In $\mathcal{D}$ (right): the unique $g$."
+/>
+
+<Definition term="free monoid">
+
+Let $U : \cat{Mon} \to \cat{Set}$ be the forgetful functor. A **free monoid** on a set $S$ is a universal arrow from $S$ to $U$: a monoid $F(S)$ with a function $\eta : S \to F(S)$ such that every function $f : S \to M$ into a monoid factors as $f = \bar f \circ \eta$ for exactly one monoid homomorphism $\bar f : F(S) \to M$.
+
+</Definition>
+
+<Note>
+
+A universal arrow $(F, \eta)$ is the same as an **initial object** of the category whose objects are pairs $(E, f)$ with $f : X \to U(E)$, and whose morphisms $(E, f) \to (E', f')$ are the $g : E \to E'$ with $U(g) \circ f = f'$. (This is a *comma category*, written $X \downarrow U$.) Products are likewise terminal objects of a category of "cones" over $A$ and $B$. So every universal property in this lesson says that some object is initial or terminal in a suitable category.
+
+</Note>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Products">
+
+- In $\cat{Set}$: the cartesian product $A \times B$ with the coordinate projections; $\langle f, g \rangle(x) = (f(x), g(x))$.
+- In $\cat{Grp}$: the direct product $G \times H$ with coordinatewise multiplication.
+- In $\cat{Top}$: $X \times Y$ with the **product topology** (generated by the sets $U \times V$ with $U, V$ open).
+- In $\cat{Vect}_k$: $V \times W = V \oplus W$; in this category it is also the coproduct.
+- In a **poset** regarded as a category, a product of $x$ and $y$ is an element $p \le x, y$ such that every $z \le x, y$ has $z \le p$: the **greatest lower bound** (meet) $x \wedge y$. In the subsets of a set it is $x \cap y$; for the positive integers ordered by divisibility it is $\gcd(x, y)$; in the poset of propositions ordered by entailment it is "$x$ and $y$".
+- **Products need not exist.** In the poset with two incomparable elements $a, b$ (and nothing else), $a$ and $b$ have no lower bound at all, hence no product. In the category of fields the product of $\mathbb{F}_2$ and $\mathbb{F}_3$ does not exist (Theorem 5).
+
+</Example>
+
+<Example title="Quotients">
+
+If $\sim$ is an equivalence relation on a set $X$, the quotient set $X/{\sim}$ of equivalence classes comes with $q : X \to X/{\sim}$, $q(x) = [x]$. For a normal subgroup $N$ of a group $G$, the quotient group $G/N$ comes with the homomorphism $q(g) = gN$. Both are universal among maps that "kill" the relation (Theorem 3). For instance $\Z \to \Z/n$ is universal among homomorphisms out of $\Z$ that vanish on $n\Z$ — the *Remainder families* trail explores these classes.
+
+</Example>
+
+<Example title="Free objects">
+
+- **Free monoid:** words in $S$ under concatenation (Theorem 4). On one letter $\{a\}$ it is $\{\varepsilon, a, aa, aaa, \dots\} \cong (\N, +)$.
+- **Free group:** reduced words in the letters $s$ and their formal inverses $s^{-1}$ (no $s s^{-1}$ or $s^{-1} s$ adjacent), multiplied by concatenating and cancelling. Every map from $S$ to a group extends uniquely to a homomorphism. That the reduced words form a group needs a careful argument (associativity is the subtle point); see Aluffi, *Algebra: Chapter 0*, §II.5. On one letter it is $\Z$.
+- **Free vector space:** $k[S]$, with basis $S$. "Every function $S \to W$ extends uniquely to a linear map $k[S] \to W$" is exactly what it means for $S$ to be a basis. So a **basis is a universal property**.
+
+</Example>
+
+<Example title="Field of fractions">
+
+$\Q$ with the inclusion $\Z \to \Q$ is universal among injective ring homomorphisms from $\Z$ into fields: if $\varphi : \Z \to K$ is injective and $K$ is a field, there is exactly one ring homomorphism $\bar\varphi : \Q \to K$ extending it, namely $\bar\varphi(a/b) = \varphi(a)\varphi(b)^{-1}$. The same holds for every integral domain $R$ and its field of fractions $\mathrm{Frac}(R)$; for example the field of rational functions $k(x) = \mathrm{Frac}(k[x])$.
+
+</Example>
+
+<Example title="Tensor products">
+
+For vector spaces $V, W$ over $k$, a **tensor product** is a vector space $V \otimes W$ with a bilinear map $\beta : V \times W \to V \otimes W$ such that every bilinear map $V \times W \to U$ equals $\ell \circ \beta$ for exactly one *linear* map $\ell : V \otimes W \to U$. The universal property turns bilinear algebra into linear algebra. Constructions exist (a quotient of the free vector space on $V \times W$; or, in finite dimensions, a space with basis $e_i \otimes f_j$), but almost every proof about tensor products uses only the universal property. This is the textbook case of a construction "best defined by its universal property".
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Uniqueness, existence and non-existence">
+
+<Theorem name="Theorem 1 (uniqueness up to unique isomorphism)">
+
+Let $(F, \eta)$ and $(F', \eta')$ be universal arrows from $X$ to $U : \cat{D} \to \cat{C}$. Then there is exactly one morphism $\varphi : F \to F'$ with $U(\varphi) \circ \eta = \eta'$, and it is an isomorphism.
+
+</Theorem>
+
+<Proof>
+
+*Existence and uniqueness of $\varphi$.* Apply the universal property of $(F, \eta)$ to $f = \eta' : X \to U(F')$: there is exactly one $\varphi : F \to F'$ with $U(\varphi) \circ \eta = \eta'$. Likewise there is exactly one $\psi : F' \to F$ with $U(\psi) \circ \eta' = \eta$.
+
+*$\psi \circ \varphi = \id_F$.* Both $\psi \circ \varphi$ and $\id_F$ are morphisms $F \to F$ that carry $\eta$ to $\eta$:
+
+$$
+U(\psi \circ \varphi) \circ \eta = U(\psi) \circ U(\varphi) \circ \eta = U(\psi) \circ \eta' = \eta, \qquad U(\id_F) \circ \eta = \eta.
+$$
+
+By the **uniqueness** clause of the universal property of $(F, \eta)$, applied to $f = \eta$, they are equal. By symmetry $\varphi \circ \psi = \id_{F'}$.
+
+</Proof>
+
+The same argument, word for word, shows that two initial objects are isomorphic by a unique isomorphism, that two products of $A$ and $B$ are isomorphic by a unique isomorphism commuting with the projections, and so on. This is why we may say *the* product, *the* free monoid, *the* quotient: any two choices are identified in exactly one sensible way. Notice where uniqueness was used — without it, $\psi \circ \varphi$ need not be the identity.
+
+<Theorem name="Theorem 2 (products exist in Set, Grp and Top)">
+
+The cartesian product, the direct product of groups and the product of spaces with the product topology satisfy the universal property of the product.
+
+</Theorem>
+
+<Proof>
+
+*In $\cat{Set}$.* Given $f, g$, the map $h(x) = (f(x), g(x))$ satisfies $\pi_A \circ h = f$, $\pi_B \circ h = g$. If $h'$ also does, then $h'(x)$ is a pair with first entry $f(x)$ and second entry $g(x)$, so $h'(x) = h(x)$.
+
+*In $\cat{Grp}$.* The same $h$ is the only candidate, since a homomorphism is in particular a function. It is a homomorphism: $h(xy) = (f(xy), g(xy)) = (f(x)f(y), g(x)g(y)) = (f(x), g(x))(f(y), g(y)) = h(x)h(y)$, because multiplication in $G \times H$ is coordinatewise. The projections are homomorphisms for the same reason.
+
+*In $\cat{Top}$.* Again $h$ is the only candidate. It is continuous: for open $U \subseteq A$ and $V \subseteq B$, $h^{-1}(U \times V) = f^{-1}(U) \cap g^{-1}(V)$ is open, and these sets $U \times V$ generate the topology. The projections are continuous since $\pi_A^{-1}(U) = U \times B$.
+
+</Proof>
+
+The product topology is not an arbitrary choice: it is the coarsest topology making both projections continuous, and that is exactly what the universal property demands. (For infinite products, the "box topology" generated by all products of open sets is finer, and it fails the universal property — see the topologist's viewpoint below.)
+
+<Theorem name="Theorem 3 (the universal property of quotients)">
+
+(a) Let $\sim$ be an equivalence relation on $X$. If $f : X \to Y$ satisfies $x \sim x' \Rightarrow f(x) = f(x')$, there is exactly one $\bar f : X/{\sim} \to Y$ with $\bar f \circ q = f$.
+(b) Let $N$ be a normal subgroup of $G$. If $f : G \to H$ is a homomorphism with $N \subseteq \ker f$, there is exactly one homomorphism $\bar f : G/N \to H$ with $\bar f \circ q = f$.
+
+</Theorem>
+
+<Proof>
+
+(a) Define $\bar f([x]) = f(x)$. This is **well defined**: if $[x] = [x']$ then $x \sim x'$, so $f(x) = f(x')$. Clearly $\bar f \circ q = f$. If also $g \circ q = f$, then $g([x]) = f(x) = \bar f([x])$ for every class, since every class is $[x]$ for some $x$ ($q$ is surjective).
+
+(b) The cosets of $N$ are the classes of the relation $x \sim x' \iff x^{-1}x' \in N$, and $N \subseteq \ker f$ gives $f(x) = f(x')$ whenever $x \sim x'$. So (a) gives a unique function $\bar f(gN) = f(g)$. It is a homomorphism: $\bar f(gN \cdot g'N) = \bar f(gg'N) = f(gg') = f(g)f(g') = \bar f(gN)\,\bar f(g'N)$.
+
+</Proof>
+
+<Theorem name="Corollary (first isomorphism theorem)">
+
+If $f : G \to H$ is a surjective homomorphism, then $\bar f : G/\ker f \to H$ is an isomorphism.
+
+</Theorem>
+
+<Proof>
+
+By Theorem 3(b) with $N = \ker f$ we get $\bar f$ with $\bar f(gN) = f(g)$. It is surjective because $f$ is. It is injective: if $\bar f(gN) = e$ then $f(g) = e$, so $g \in N$ and $gN = N$, the identity of $G/N$; a homomorphism with trivial kernel is injective. A bijective homomorphism is an isomorphism of groups.
+
+</Proof>
+
+<Theorem name="Theorem 4 (the free monoid is the monoid of words)">
+
+Let $S^\ast$ be the set of finite words in $S$ with concatenation and the empty word $\varepsilon$, and $\eta(s) = s$ the one-letter word. For every function $f : S \to M$ into a monoid there is exactly one monoid homomorphism $\bar f : S^\ast \to M$ with $\bar f(s) = f(s)$ for all $s \in S$, namely
+
+$$
+\bar f(s_1 s_2 \cdots s_k) = f(s_1)\, f(s_2) \cdots f(s_k), \qquad \bar f(\varepsilon) = 1.
+$$
+
+</Theorem>
+
+<Proof>
+
+*Existence.* The formula sends $\varepsilon$ to $1$ and one-letter words $s$ to $f(s)$; and $\bar f(vw) = \bar f(v)\,\bar f(w)$ because the product of the values of the letters of $vw$ is the product for $v$ followed by the product for $w$ (associativity in $M$ lets us regroup).
+
+*Uniqueness.* Let $h : S^\ast \to M$ be a homomorphism with $h(s) = f(s)$. We show $h(w) = \bar f(w)$ by induction on the length of $w$. For $w = \varepsilon$: $h(\varepsilon) = 1 = \bar f(\varepsilon)$, since homomorphisms preserve the unit. For $w = s\,v$ with $s \in S$: $h(sv) = h(s)\,h(v) = f(s)\,\bar f(v) = \bar f(sv)$.
+
+</Proof>
+
+With Theorem 1, Theorem 4 says: *any* free monoid on $S$ is isomorphic to $S^\ast$, by a unique isomorphism fixing the letters. For example $\{a\}^\ast \cong (\N, +)$ via $a^n \mapsto n$.
+
+<Theorem name="Theorem 5 (a universal property that nothing satisfies)">
+
+In the category of fields (with ring homomorphisms), $\mathbb{F}_2$ and $\mathbb{F}_3$ have no product.
+
+</Theorem>
+
+<Proof>
+
+A product would in particular be a field $K$ with ring homomorphisms $p : K \to \mathbb{F}_2$ and $q : K \to \mathbb{F}_3$. A ring homomorphism out of a field is injective (its kernel is an ideal not containing $1$, and the only such ideal of a field is $0$). Since $p(2) = 2 = 0$ in $\mathbb{F}_2$, injectivity gives $2 = 0$ in $K$; since $q(3) = 3 = 0$ in $\mathbb{F}_3$, also $3 = 0$ in $K$. Then $1 = 3 - 2 = 0$ in $K$, which is impossible in a field. So no field even has maps to both, let alone a universal one.
+
+</Proof>
+
+So a universal property is a *specification*. Theorem 1 says at most one object (up to unique isomorphism) meets it; whether any object does is a separate question, answered by a construction — or, as here, by a proof that none exists.
+
+<Theorem name="Theorem 6 (Q is the field of fractions of Z)">
+
+Let $K$ be a field and $\varphi : \Z \to K$ an injective ring homomorphism. There is exactly one ring homomorphism $\bar\varphi : \Q \to K$ with $\bar\varphi(n) = \varphi(n)$ for all $n \in \Z$.
+
+</Theorem>
+
+<Proof>
+
+*Uniqueness.* If $\bar\varphi$ extends $\varphi$ and $b \neq 0$, then $\bar\varphi(1/b)$ is an inverse of $\bar\varphi(b) = \varphi(b)$, and inverses are unique; so $\bar\varphi(a/b) = \varphi(a)\varphi(b)^{-1}$ is forced. (This is the argument that showed $\Z \to \Q$ is an epimorphism of rings in the lesson on categories.)
+
+*Existence.* Define $\bar\varphi(a/b) = \varphi(a)\varphi(b)^{-1}$; here $\varphi(b) \neq 0$ because $\varphi$ is injective. It is well defined: if $a/b = c/d$ then $ad = bc$, so $\varphi(a)\varphi(d) = \varphi(b)\varphi(c)$ and $\varphi(a)\varphi(b)^{-1} = \varphi(c)\varphi(d)^{-1}$. Checking that it preserves sums and products is routine algebra with fractions.
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Universal properties in Lean and Mathlib">
+
+We package the definition of a universal arrow as a Lean structure, with `lift f` the unique factorisation, `fac` its existence and `uniq` its uniqueness (Mathlib composes diagrammatically: `unit ≫ U.map g` is our $U(g) \circ \eta$):
+
+<Lean decl="Lumenary.UniversalProperties.UniversalArrow" />
+
+Theorem 1 then follows the human proof exactly. First, the uniqueness clause as a cancellation principle, and the fact that the factorisation of $\eta$ itself is the identity:
+
+<Lean decl="Lumenary.UniversalProperties.UniversalArrow.hom_ext" />
+
+<Lean decl="Lumenary.UniversalProperties.UniversalArrow.lift_unit" />
+
+Then the comparison isomorphism, its compatibility with the structure maps, and its uniqueness:
+
+<Lean decl="Lumenary.UniversalProperties.UniversalArrow.iso" />
+
+<Lean decl="Lumenary.UniversalProperties.UniversalArrow.iso_compatible" />
+
+<Lean decl="Lumenary.UniversalProperties.UniversalArrow.iso_unique" />
+
+Our structure connects to Mathlib's general machinery through the Note above: a universal arrow is an initial object of the comma category, which Mathlib calls `StructuredArrow X U`, and Mathlib proves that initial objects are unique up to unique isomorphism:
+
+<Lean decl="Lumenary.UniversalProperties.UniversalArrow.isInitial" />
+
+<Lean decl="Lumenary.UniversalProperties.initial_unique_library" />
+
+Products (Theorem 2). For spaces, Mathlib's lemma says precisely that a map into a product is continuous iff its components are:
+
+<Lean decl="Lumenary.UniversalProperties.prod_universal" />
+
+<Lean decl="Lumenary.UniversalProperties.group_prod_universal" />
+
+<Lean decl="Lumenary.UniversalProperties.continuous_prod_library" />
+
+Quotients (Theorem 3). Lean has quotient types built in; `Quotient.lift` is the existence half of the universal property, and `Quotient.ind` (every class is the class of some element) gives uniqueness:
+
+<Lean decl="Lumenary.UniversalProperties.quotient_universal" />
+
+<Lean decl="Lumenary.UniversalProperties.quotient_group_library" />
+
+The free monoid (Theorem 4), with words as Lean lists; the uniqueness proof is the induction on the length of a word. Mathlib's `FreeMonoid` is a type of lists with its own universal property:
+
+<Lean decl="Lumenary.UniversalProperties.evalWord" />
+
+<Lean decl="Lumenary.UniversalProperties.evalWord_append" />
+
+<Lean decl="Lumenary.UniversalProperties.free_monoid_unique" />
+
+<Lean decl="Lumenary.UniversalProperties.free_monoid_library" />
+
+Fields: the universal property of $\Q$ (Theorem 6, for fields of characteristic zero, which is the same as $\Z \to K$ being injective), and the non-existence of a product of $\mathbb{F}_2$ and $\mathbb{F}_3$ (Theorem 5), where `ZMod p` is $\mathbb{F}_p$:
+
+<Lean decl="Lumenary.UniversalProperties.rat_universal_library" />
+
+<Lean decl="Lumenary.UniversalProperties.no_field_maps_to_f2_f3" />
+
+Not formalised here: the free group (Mathlib has `FreeGroup` with `FreeGroup.lift`), the tensor product (Mathlib's `TensorProduct.lift`), and the existence half of the general field-of-fractions construction (Mathlib's `IsFractionRing.lift`).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Existence and uniqueness, counted">
+
+For finite sets the universal property of the product can be checked by counting. The first experiment confirms that maps $X \to A \times B$ correspond exactly to pairs of maps, then tests three candidate "products": for each pair $(f, g)$ it counts the maps $u : X \to P$ with $p \circ u = f$ and $q \circ u = g$. A genuine product gives the count $1$ every time; a count of $0$ is a failure of existence, a count above $1$ a failure of uniqueness.
+
+<Python id="universal_properties_products" />
+
+The second experiment takes the free monoid on two letters $L, R$ and the unique homomorphism to $2 \times 2$ integer matrices sending $L \mapsto \left(\begin{smallmatrix} 1 & 0 \\ 1 & 1 \end{smallmatrix}\right)$ and $R \mapsto \left(\begin{smallmatrix} 1 & 1 \\ 0 & 1 \end{smallmatrix}\right)$. Different words turn out to give different matrices, and a subtraction algorithm — Euclid's algorithm in disguise — reads the word back off the matrix. Homomorphisms to $(\N, +)$ or $(\Z, +)$, by contrast, forget almost everything.
+
+<Python id="universal_properties_free_monoid" />
+
+Both experiments are **exhaustive for bounded sizes**. They illustrate the theorems; they do not prove them. (That the $L, R$ homomorphism is injective for words of every length is a theorem: the decoding step always succeeds because exactly one of the two rows of a matrix of non-negative integers with determinant $1$, other than the identity, dominates the other.)
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: maps into a product, maps out of a quotient">
+
+Choose maps $f : Z \to A$ and $g : Z \to B$ between small finite sets, then try to build a map $h : Z \to A \times B$ that is compatible with the projections. You will find that each choice of $h(z)$ is forced: its first coordinate must be $f(z)$ and its second $g(z)$. That is existence and uniqueness, one element at a time.
+
+<ProductMaps />
+
+**The quotient that makes a torus.** Gluing opposite sides of a square is a quotient: points on opposite edges are declared equivalent. By the universal property of the quotient (topology), a continuous function on the torus is exactly a continuous function on the square taking equal values at glued points. Walk the flatlander off one edge and watch it re-enter through the partner edge; the tiling view shows the same functions as doubly periodic functions on the plane.
+
+<SurfaceGluing surfaces={["torus"]} showTiling title="A quotient of the square" subtitle="Opposite sides are identified; maps out of the torus are maps out of the square that respect the gluing." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A universal property constructs the object."** It only characterises it: if an object with the property exists, it is unique up to unique isomorphism. Existence needs a separate construction, and can fail — the fields $\mathbb{F}_2$ and $\mathbb{F}_3$ have no product, and two incomparable elements of a poset may have no meet.
+
+</Misconception>
+
+<Misconception>
+
+**"The uniqueness clause is a technicality."** Without it the theory collapses. The set $A \times B \times \{0, 1\}$ with the obvious projections receives a compatible map from every $X$ — but never just one, and it is not isomorphic to $A \times B$. The proof of Theorem 1 uses uniqueness at the decisive step.
+
+</Misconception>
+
+<Misconception>
+
+**"The product is one particular set."** $A \times B$ built from Kuratowski pairs, and the set $\{0, \dots, |A||B| - 1\}$ with suitable projections, are both products of finite sets $A$ and $B$. Neither is "the real one"; they are identified by a unique compatible bijection, and every statement made using only the universal property holds for both.
+
+</Misconception>
+
+<Misconception>
+
+**"Unique up to isomorphism is the same as unique up to unique isomorphism."** The extra word matters. Any two groups of order $5$ are isomorphic, but by four different isomorphisms; there is no canonical choice. Two products of $A$ and $B$ are related by *exactly one* isomorphism commuting with the projections, so identifying them never involves a choice.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Topologies forced by universal properties: products and gluing">
+
+The product topology is the unique topology on $\prod_i X_i$ making it the product in $\cat{Top}$: a map $Z \to \prod_i X_i$ is continuous iff every component $Z \to X_i$ is. For infinite products the **box topology** (generated by all products of open sets) is too fine to satisfy this: the diagonal map $\R \to \R^{\N}$, $t \mapsto (t, t, t, \dots)$, has continuous components, but the preimage of the box-open set $\prod_n (-1/n, 1/n)$ is $\{0\}$, which is not open. The universal property picks the right answer.
+
+Dually, the **quotient topology** on $X/{\sim}$ is the one making $q$ universal: a map out of $X/{\sim}$ is continuous iff its composite with $q$ is. Gluing opposite sides of a square gives a torus, and the universal property says that continuous maps out of the torus are the same as continuous maps out of the square that agree on glued points — equivalently, continuous functions on $\R^2$ that are periodic in both directions (quotient topologies are developed in <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>). The *universal cover* of a space, met with the <TopicLink id="math.geom.fundamental-group">fundamental group</TopicLink>, is another object named for a universal property.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="gcd, lcm and the Chinese remainder theorem">
+
+In the positive integers ordered by divisibility, the product of $a$ and $b$ is $\gcd(a, b)$ (the largest common divisor, in the sense that every common divisor divides it) and the coproduct is $\mathrm{lcm}(a, b)$. In rings, the **Chinese remainder theorem** says that for coprime $m, n$ the ring $\Z/mn$, with the reduction maps to $\Z/m$ and $\Z/n$, is a product of $\Z/m$ and $\Z/n$: the map $\Z/mn \to \Z/m \times \Z/n$ given by the universal property of the product ring is injective (if $m \mid x$ and $n \mid x$ then $mn \mid x$) and so bijective by counting. See <TopicLink id="math.number.divisibility-gcd">divisibility and gcd</TopicLink>. The rationals are the field of fractions of $\Z$, and the $p$-adic integers $\Z_p$ are the *limit* of $\cdots \to \Z/p^3 \to \Z/p^2 \to \Z/p$, a universal property of the kind studied in <TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Presentations: free objects modulo relations">
+
+Combining two universal properties gives **presentations**. The group $\langle S \mid R \rangle$ is the quotient of the free group $F(S)$ by the smallest normal subgroup containing the words in $R$. Its universal property: homomorphisms $\langle S \mid R \rangle \to G$ correspond exactly to functions $S \to G$ under which every relation in $R$ becomes true in $G$. For example, homomorphisms from the dihedral group $\langle r, s \mid r^n, s^2, (rs)^2 \rangle$ to $G$ are pairs of elements $(\rho, \sigma)$ of $G$ with $\rho^n = \sigma^2 = (\rho\sigma)^2 = e$. The same pattern defines polynomial rings ($k[x]$ is the free commutative $k$-algebra on $x$) and quotient rings $k[x]/(x^2 + 1)$, and lets one construct $\C$ as $\R[x]/(x^2 + 1)$.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="fold, reduce and MapReduce">
+
+The universal property of the free monoid is the `fold` (or `reduce`) of functional programming: given a value `f(s)` for each letter and a monoid $(M, \cdot, 1)$, there is exactly one way to evaluate every list compatibly with concatenation. Because the result is a monoid homomorphism, a long list can be cut into pieces, each piece reduced on a different machine, and the partial results combined with $\cdot$ — this is the algebra behind parallel "map-reduce" computations, and it works only because the operation is associative. Product types (pairs, records) and sum types (tagged unions) in programming languages are products and coproducts in a category of types.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="And, or, and the quantifiers">
+
+In the preorder of propositions ordered by entailment, the product of $P$ and $Q$ is $P \wedge Q$ (it entails both, and anything entailing both entails it), the coproduct is $P \vee Q$, the terminal object is "true" and the initial object is "false". The rules of natural deduction for $\wedge$ — from $P \wedge Q$ infer $P$ and infer $Q$; from $R \vdash P$ and $R \vdash Q$ infer $R \vdash P \wedge Q$ — are exactly the projections and the pairing of the universal property. F. William Lawvere (1969) showed that the quantifiers $\exists$ and $\forall$ are also characterised by universal properties (as adjoints to substitution) — see <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink> and <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="products-by-maps" />
+
+<Trail slug="remainder-families" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Many universal constructions are old. The Chinese remainder theorem appears in the *Sunzi Suanjing* (China, around the 3rd to 5th century), and Indian mathematicians from Āryabhaṭa (499) onwards solved such systems with the *kuṭṭaka* method. Fractions of integers are ancient; the abstract field of fractions of an integral domain belongs to the algebra of the late 19th and early 20th centuries (Dedekind, Steinitz).
+- Walther von Dyck (1882) studied groups given by generators and relations; Jakob Nielsen (1921) and Otto Schreier (1927) developed the theory of free groups. Hassler Whitney defined the tensor product of abelian groups in 1938.
+- Kazimierz Kuratowski gave his definition of the ordered pair in 1921, refining Norbert Wiener's of 1914.
+- **Pierre Samuel**, in "On universal mappings and free topological groups" (1948), formulated *universal mapping problems* in general, and the Bourbaki group made them a standard tool. Daniel Kan's adjoint functors (1958) showed that universal arrows for every object assemble into a functor, and Saunders Mac Lane's *Categories for the Working Mathematician* (1971) made universal properties the organising principle of category theory.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Tom Leinster, *Basic Category Theory* (2014), chapter 0 (an introduction through universal properties) and chapter 5 (limits).
+- Emily Riehl, *Category Theory in Context* (2016), chapter 2.
+- Paolo Aluffi, *Algebra: Chapter 0* (2009) — an algebra textbook built on universal properties from the start.
+- Saunders Mac Lane and Garrett Birkhoff, *Algebra* (1967; 3rd ed. 1988).
+
+</Section>

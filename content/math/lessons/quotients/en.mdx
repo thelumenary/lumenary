@@ -1,0 +1,546 @@
+---
+slug: quotients
+topic: math.algebra.quotients
+title: Quotient groups and quotient rings
+subtitle: Declare a whole subgroup to be the identity, or an ideal to be zero, and a new structure appears — clock arithmetic, the complex numbers, the field with four elements. Normality and ideals are exactly what makes this work.
+level: ug2
+ages: Undergraduate
+minutes: 110
+order: 6010
+objectives:
+  - Construct $G/N$ and $R/I$, and prove that the operations are well defined exactly when $N$ is normal, respectively when the additive subgroup $I$ is an ideal
+  - State and prove the universal property of quotients and the first, second and third isomorphism theorems
+  - Identify quotients such as $\Z/n\Z$, $\R/\Z$, $\mathrm{GL}_n(k)/\mathrm{SL}_n(k) \cong k^\times$ and $\R[x]/(x^2 + 1) \cong \C$ using the first isomorphism theorem
+  - Prove the Chinese remainder theorem for rings
+  - Show that $R/I$ is a field if and only if $I$ is maximal and a domain if and only if $I$ is prime, and use this to build finite fields such as $\mathbb{F}_4$ and $\mathbb{F}_9$
+narrators: []
+lean:
+  - Lumenary.Quotients.coset_mul_well_defined
+  - Lumenary.Quotients.normal_of_coset_mul_well_defined
+  - Lumenary.Quotients.ker_mk
+  - Lumenary.Quotients.universal_property
+  - Lumenary.Quotients.first_iso
+  - Lumenary.Quotients.second_iso
+  - Lumenary.Quotients.third_iso
+  - Lumenary.Quotients.quotient_comm
+  - Lumenary.Quotients.ideal_mul_well_defined
+  - Lumenary.Quotients.ideal_of_mul_well_defined
+  - Lumenary.Quotients.ring_first_iso
+  - Lumenary.Quotients.int_quotient_zmod
+  - Lumenary.Quotients.crt
+  - Lumenary.Quotients.maximal_iff_field
+  - Lumenary.Quotients.prime_iff_domain
+  - Lumenary.Quotients.zmod_isField_iff
+  - Lumenary.Quotients.zmod_four_not_domain
+  - Lumenary.Quotients.f4_irreducible
+  - Lumenary.Quotients.F4
+  - Lumenary.Quotients.f4_fact
+  - Lumenary.Quotients.f4_isField
+compute: [quotients_coset_products, quotients_polynomial_fields]
+trails: [clock-arithmetic, remainder-families]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Forgetting on purpose">
+
+A clock forgets. At $9$ o'clock, adding $5$ hours gives $2$, not $14$, because the clock treats multiples of $12$ as if they were $0$. The arithmetic that results, $\Z/12\Z$, is not a part of $\Z$. It is $\Z$ seen through a lens that cannot tell $2$ from $14$. Gauss built the theory of congruences on this idea in 1801, and it is everywhere in computing, from check digits to cryptography.
+
+The same move creates new number systems. Take the real polynomials $\R[x]$ and declare $x^2 + 1 = 0$. Every polynomial collapses to a remainder $a + bx$, and $x$ behaves exactly like $i$: the result is $\C$. Augustin-Louis Cauchy defined the complex numbers this way in 1847. Take polynomials over $\mathbb{F}_2 = \{0, 1\}$ and declare $x^2 + x + 1 = 0$: the result is a field with four elements, used in error-correcting codes. Take the symmetries of a square and ignore the difference between a symmetry and its composite with the half-turn: the eight symmetries collapse to four.
+
+Each time we form a **quotient**: we declare a whole subgroup to be the identity, or a whole ideal to be zero, and keep the operations. The question this lesson answers is *when this is legitimate*. A coset cannot be multiplied by multiplying representatives unless the answer is independent of the representatives chosen. For groups this happens exactly when the subgroup is **normal**, and for rings exactly when the subgroup is an **ideal**. Once quotients exist, the **isomorphism theorems** identify them, and the correspondence "$R/I$ is a field $\iff I$ is maximal" becomes a machine for building fields.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Collapsing a subgroup to a point">
+
+In $\Z$, collapse the subgroup $3\Z$ to $0$. Every integer becomes equivalent to its remainder, and the integers fall into three **remainder families**: $3\Z$, $1 + 3\Z$, $2 + 3\Z$. Adding families by adding representatives works: "(remainder 1) + (remainder 2) = (remainder 0)" holds however the representatives are chosen.
+
+Now try the same thing in the symmetric group $S_3$ with the subgroup $H = \{e, (1\,2)\}$. Its three left cosets are
+
+$$
+H = \{e, (1\,2)\}, \qquad (1\,3)H = \{(1\,3), (1\,2\,3)\}, \qquad (2\,3)H = \{(2\,3), (1\,3\,2)\}.
+$$
+
+Try to define $(aH)(bH) = abH$. Take $a = e$ or $a' = (1\,2)$, both in $H$, and $b = (1\,3)$. Then $ab = (1\,3)$ lies in $(1\,3)H$, but $a'b = (1\,2)(1\,3) = (1\,3\,2)$ lies in $(2\,3)H$. The "product" of $H$ and $(1\,3)H$ depends on which representative of $H$ we picked, so it is not defined at all. The subgroup $\{e, (1\,2)\}$ is not normal, and the first experiment below confirms for every subgroup of three small groups that this is the only obstruction.
+
+Ideals play the same role for rings. Collapsing an additive subgroup $I$ to $0$ always gives a well-defined addition, since addition is commutative. For multiplication to survive, $I$ must absorb products: if $x \equiv 0$ then $rx \equiv r \cdot 0 = 0$, so $rx \in I$.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Quotient groups and quotient rings">
+
+Recall from <TopicLink id="math.algebra.groups">groups</TopicLink> that the left cosets $aN$ of a subgroup $N$ partition $G$, with $aN = bN \iff a^{-1}b \in N$, and that $N$ is **normal** ($N \trianglelefteq G$) if $gNg^{-1} = N$ for all $g$. Recall from <TopicLink id="math.algebra.rings">rings</TopicLink> that rings have a $1$, homomorphisms preserve it, and an **ideal** is an additive subgroup absorbing multiplication.
+
+<Definition term="quotient group">
+
+For $N \trianglelefteq G$, the **quotient group** $G/N$ is the set of left cosets of $N$ with the product $(aN)(bN) = abN$. The **quotient map** is $\pi : G \to G/N$, $\pi(g) = gN$. Its order is $|G/N| = [G : N]$.
+
+</Definition>
+
+<Definition term="quotient ring">
+
+For a two-sided ideal $I$ of a ring $R$, the **quotient ring** $R/I$ is the set of cosets $a + I$ with $(a + I) + (b + I) = (a + b) + I$ and $(a + I)(b + I) = ab + I$. The quotient map is $\pi(a) = a + I$. We write $a \equiv b \pmod I$ when $a - b \in I$.
+
+</Definition>
+
+<Definition term="commutator subgroup and simple group">
+
+The **commutator subgroup** $[G, G]$ is the subgroup generated by all commutators $[a, b] = a^{-1}b^{-1}ab$. The quotient $G^{\mathrm{ab}} = G/[G, G]$ is the **abelianisation** of $G$. A non-trivial group is **simple** if its only normal subgroups are $\{e\}$ and $G$, that is, if it has no non-trivial quotients.
+
+</Definition>
+
+<Note>
+
+$G/N$ is **not** a subgroup of $G$. Its elements are subsets of $G$ (cosets), and it is the *image* of $G$ under $\pi$, not a part of $G$. $\Z$ has no subgroup of order $2$, yet $\Z/2\Z$ has order $2$.
+
+</Note>
+
+</Section>
+
+<Section id="examples" kind="examples" title="A gallery of quotients">
+
+The identifications below are justified by the first isomorphism theorem (Theorem 3 and Theorem 7). In each case we name the surjective homomorphism whose kernel is the subgroup or ideal.
+
+| quotient | is isomorphic to | via the homomorphism |
+| --- | --- | --- |
+| $\Z/n\Z$ | the integers modulo $n$ | reduction modulo $n$ |
+| $\R/\Z$ | the circle group $S^1 \subset \C^\times$ | $t \mapsto e^{2\pi i t}$ |
+| $\C^\times/\R_{\gt 0}$ | $S^1$ | $z \mapsto z/\lvert z\rvert$ |
+| $\C^\times/\mu_n$ | $\C^\times$ | $z \mapsto z^n$ |
+| $S_n/A_n$ ($n \ge 2$) | $\{\pm 1\} \cong \Z/2\Z$ | the sign |
+| $D_n/\langle r \rangle$ | $\Z/2\Z$ | rotation $\mapsto 0$, reflection $\mapsto 1$ |
+| $D_4/\langle r^2 \rangle$ | the Klein four-group | (Example below) |
+| $\mathrm{GL}_n(k)/\mathrm{SL}_n(k)$ | $k^\times$ | the determinant |
+| $S_4/V$ | $S_3$ | action on the three pairings of $\{1,2,3,4\}$ |
+| $\Z[x]/(x)$ | $\Z$ | $f \mapsto f(0)$ |
+| $\Z[x]/(2, x)$ | $\mathbb{F}_2$ | $f \mapsto f(0) \bmod 2$ |
+| $\R[x]/(x^2 + 1)$ | $\C$ | $f \mapsto f(i)$ |
+| $\Z[i]/(2 + i)$ | $\mathbb{F}_5$ | $a + bi \mapsto a - 2b \bmod 5$ |
+| $k[x, y]/(y - x^2)$ | $k[t]$ | $x \mapsto t$, $y \mapsto t^2$ |
+
+<Example title="The determinant and the special linear group">
+
+$\det : \mathrm{GL}_n(k) \to k^\times$ is a homomorphism, and it is surjective: $\det \operatorname{diag}(t, 1, \dots, 1) = t$. Its kernel is $\mathrm{SL}_n(k)$, which is therefore normal, and $\mathrm{GL}_n(k)/\mathrm{SL}_n(k) \cong k^\times$. Two matrices lie in the same coset exactly when they have the same determinant: the quotient remembers *only* the determinant.
+
+</Example>
+
+<Example title="Dihedral quotients">
+
+In $D_4$, the half-turn $r^2$ commutes with everything, so $N = \{e, r^2\}$ is normal (it is the centre). $D_4/N$ has four elements, $N, rN, sN, rsN$, and each squares to the identity: $(rN)^2 = r^2N = N$ and $(sN)^2 = N$. So $D_4/N$ is the Klein four-group. By contrast $D_4/\langle r \rangle \cong \Z/2\Z$ only records whether a symmetry flips the square over.
+
+</Example>
+
+<Example title="Rings with nilpotents and with idempotents">
+
+$\R[x]/(x^2)$ is the ring of **dual numbers** $a + b\varepsilon$ with $\varepsilon^2 = 0$. Here $(a + b\varepsilon)(c + d\varepsilon) = ac + (ad + bc)\varepsilon$, and $f(a + \varepsilon) = f(a) + f'(a)\varepsilon$ for every polynomial $f$, which gives automatic differentiation. $\R[x]/(x^2 - 1)$ looks similar but has idempotents $\frac{1 \pm x}{2}$ and is isomorphic to $\R \times \R$, by the Chinese remainder theorem below. Which quotient you get depends delicately on the polynomial, which is why the theorems that follow matter.
+
+</Example>
+
+</Section>
+
+<Section id="groups-proofs" kind="proof" title="Quotient groups and the isomorphism theorems">
+
+<Theorem name="Theorem 1 (when cosets multiply)">
+
+Let $H \le G$. The rule $(aH)(bH) = abH$ is well defined — independent of the representatives $a, b$ — if and only if $H$ is normal. In that case $G/H$ is a group with identity $H$ and inverses $(aH)^{-1} = a^{-1}H$, and $\pi : G \to G/H$ is a surjective homomorphism with kernel $H$.
+
+</Theorem>
+
+<Proof>
+
+*Normal implies well defined.* Suppose $aH = a'H$ and $bH = b'H$, i.e. $a^{-1}a' \in H$ and $b^{-1}b' \in H$. Then
+
+$$
+(ab)^{-1}(a'b') = b^{-1}a^{-1}a'b' = \big(b^{-1}(a^{-1}a')b\big)\big(b^{-1}b'\big).
+$$
+
+The first factor is a conjugate of an element of $H$, hence in $H$ by normality, and the second factor is in $H$. So $abH = a'b'H$.
+
+*Well defined implies normal.* Let $n \in H$ and $g \in G$. Since $eH = nH$, well-definedness gives $(eH)(g^{-1}H) = (nH)(g^{-1}H)$, that is, $g^{-1}H = ng^{-1}H$. So $(g^{-1})^{-1}(ng^{-1}) = gng^{-1} \in H$.
+
+*Group axioms.* Associativity, the identity and inverses are inherited: $(aH)(bH)(cH) = abcH$ however we bracket, $(eH)(aH) = aH$, and $(aH)(a^{-1}H) = H$. By definition $\pi(ab) = abH = \pi(a)\pi(b)$, $\pi$ is surjective, and $\pi(g) = H$ iff $g \in H$.
+
+</Proof>
+
+In particular every normal subgroup is the kernel of a homomorphism, namely $\pi$. (The groups lesson proved this differently, through the action on cosets.)
+
+<Theorem name="Theorem 2 (universal property)">
+
+Let $N \trianglelefteq G$ and let $\varphi : G \to H$ be a homomorphism with $N \subseteq \ker\varphi$. Then there is exactly one homomorphism $\bar\varphi : G/N \to H$ with $\bar\varphi \circ \pi = \varphi$, namely $\bar\varphi(gN) = \varphi(g)$. Its image is $\operatorname{im}\varphi$, and its kernel is $\ker\varphi / N = \pi(\ker\varphi)$.
+
+</Theorem>
+
+<CommutativeDiagram
+  objects={[
+    { id: "G", tex: "G", row: 0, col: 0 },
+    { id: "Q", tex: "G/N", row: 1, col: 0 },
+    { id: "H", tex: "H", row: 0, col: 1 },
+  ]}
+  arrows={[
+    { from: "G", to: "H", tex: "\\varphi" },
+    { from: "G", to: "Q", tex: "\\pi", labelSide: "right", style: "epi" },
+    { from: "Q", to: "H", tex: "\\bar\\varphi", style: "dashed", labelSide: "right" },
+  ]}
+  caption="Every homomorphism killing $N$ factors uniquely through the quotient map: $\bar\varphi \circ \pi = \varphi$."
+/>
+
+<Proof>
+
+*Uniqueness.* Any such $\bar\varphi$ must satisfy $\bar\varphi(gN) = \bar\varphi(\pi(g)) = \varphi(g)$, and every element of $G/N$ is some $gN$. *Existence.* If $gN = g'N$ then $g^{-1}g' \in N \subseteq \ker\varphi$, so $\varphi(g) = \varphi(g')$: the formula is well defined. It is a homomorphism because $\bar\varphi(gN\,g'N) = \varphi(gg') = \varphi(g)\varphi(g')$. Its image is clearly $\operatorname{im}\varphi$, and $\bar\varphi(gN) = e \iff g \in \ker\varphi$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (first isomorphism theorem)">
+
+For every homomorphism $\varphi : G \to H$, $\;G/\ker\varphi \cong \operatorname{im}\varphi$, via $g\ker\varphi \mapsto \varphi(g)$.
+
+</Theorem>
+
+<Proof>
+
+Apply Theorem 2 with $N = \ker\varphi$. The induced $\bar\varphi$ has kernel $\ker\varphi/\ker\varphi$, which is trivial, so it is injective. Its image is $\operatorname{im}\varphi$.
+
+</Proof>
+
+<CommutativeDiagram
+  objects={[
+    { id: "G", tex: "G", row: 0, col: 0 },
+    { id: "I", tex: "\\operatorname{im}\\varphi", row: 0, col: 1 },
+    { id: "Q", tex: "G/\\ker\\varphi", row: 1, col: 0 },
+    { id: "H", tex: "H", row: 0, col: 2 },
+  ]}
+  arrows={[
+    { from: "G", to: "I", tex: "\\varphi", style: "epi" },
+    { from: "I", to: "H", style: "hook" },
+    { from: "G", to: "Q", tex: "\\pi", labelSide: "right", style: "epi" },
+    { from: "Q", to: "I", tex: "\\bar\\varphi", style: "iso", labelSide: "right" },
+  ]}
+  caption="Every homomorphism is a surjection, followed by an isomorphism, followed by an inclusion."
+/>
+
+For example, $t \mapsto e^{2\pi i t}$ maps $(\R, +)$ onto the circle with kernel $\Z$, so $\R/\Z \cong S^1$. Reduction $\Z \to \Z/n\Z$ has kernel $n\Z$, which recovers the classification of cyclic groups from the groups lesson.
+
+<Theorem name="Theorem 4 (second isomorphism theorem)">
+
+Let $H \le G$ and $N \trianglelefteq G$. Then $HN = \{hn\}$ is a subgroup of $G$, $H \cap N \trianglelefteq H$, and $H/(H \cap N) \cong HN/N$.
+
+</Theorem>
+
+<Proof>
+
+$HN$ is a subgroup: $(hn)(h'n') = hh'\,(h'^{-1}nh')\,n' \in HN$ and $(hn)^{-1} = h^{-1}(hn^{-1}h^{-1}) \in HN$, by normality of $N$. Also $N \trianglelefteq HN$. The map $H \to HN/N$, $h \mapsto hN$, is a homomorphism. It is surjective because $hnN = hN$, and its kernel is $\{h \in H \mid h \in N\} = H \cap N$. Apply Theorem 3.
+
+</Proof>
+
+<Theorem name="Theorem 5 (correspondence and third isomorphism theorems)">
+
+Let $N \trianglelefteq G$. Then $K \mapsto K/N = \pi(K)$ is an inclusion-preserving bijection from subgroups $K$ of $G$ containing $N$ to subgroups of $G/N$, with inverse $\bar K \mapsto \pi^{-1}(\bar K)$. It matches normal subgroups with normal subgroups. If $N \subseteq M$ are both normal in $G$, then
+
+$$
+(G/N)\,/\,(M/N) \cong G/M.
+$$
+
+</Theorem>
+
+<Proof>
+
+$\pi^{-1}(\bar K)$ is a subgroup containing $\ker\pi = N$, and $\pi(\pi^{-1}(\bar K)) = \bar K$ since $\pi$ is surjective. For $K \supseteq N$, we have $\pi^{-1}(\pi(K)) = KN = K$. Both maps preserve inclusion. Normality corresponds because $\pi(gkg^{-1}) = \pi(g)\pi(k)\pi(g)^{-1}$ and $\pi$ is surjective. For the third theorem, the map $G/N \to G/M$, $gN \mapsto gM$, is well defined because $N \subseteq M$ (Theorem 2 applied to $G \to G/M$). It is surjective, and its kernel is $\{gN \mid g \in M\} = M/N$. Apply Theorem 3.
+
+</Proof>
+
+<Theorem name="Proposition 6 (abelian quotients)">
+
+For $N \trianglelefteq G$, the quotient $G/N$ is abelian if and only if $[G, G] \subseteq N$. In particular $[G, G]$ is normal, $G^{\mathrm{ab}}$ is the largest abelian quotient of $G$, and every quotient of an abelian group is abelian.
+
+</Theorem>
+
+<Proof>
+
+$aN\,bN = bN\,aN \iff abN = baN \iff (ba)^{-1}(ab) = a^{-1}b^{-1}ab \in N$. So $G/N$ is abelian iff every commutator lies in $N$, iff $[G, G] \subseteq N$. $[G, G]$ is normal because a conjugate of a commutator is a commutator: $g[a, b]g^{-1} = [gag^{-1}, gbg^{-1}]$.
+
+</Proof>
+
+For example, $[S_n, S_n] = A_n$ for $n \ge 2$, so $S_n^{\mathrm{ab}} \cong \Z/2\Z$. The groups $A_n$ ($n \ge 5$) are simple and have no non-trivial quotients at all. That fact is the group-theoretic core of the insolubility of the quintic in <TopicLink id="math.algebra.fields-galois">Galois theory</TopicLink>.
+
+</Section>
+
+<Section id="rings-proofs" kind="proof" title="Quotient rings, the Chinese remainder theorem, and fields">
+
+From here on $R$ is commutative, except in Theorem 7, which holds for two-sided ideals in any ring.
+
+<Theorem name="Theorem 7 (quotient rings)">
+
+Let $I$ be an additive subgroup of a ring $R$. The rule $(a + I)(b + I) = ab + I$ is well defined if and only if $I$ is a two-sided ideal. In that case $R/I$ is a ring, $\pi : R \to R/I$ is a surjective ring homomorphism with kernel $I$, and the universal property and the first isomorphism theorem $R/\ker f \cong \operatorname{im} f$ hold exactly as for groups.
+
+</Theorem>
+
+<Proof>
+
+Addition is well defined because $(R, +)$ is abelian, so $I$ is normal in it. If $I$ is an ideal and $a - a', b - b' \in I$, then $ab - a'b' = a(b - b') + (a - a')b' \in I$. Conversely, if multiplication is well defined and $x \in I$, compare $(r + I)(x + I)$ with $(r + I)(0 + I)$: since $x + I = 0 + I$, we get $rx + I = 0 + I$, so $rx \in I$; similarly $xr \in I$. The ring axioms are inherited from $R$, and $\pi$ is a homomorphism by construction. The universal property is proved as in Theorem 2, with every step now also respecting multiplication.
+
+</Proof>
+
+So the kernels of ring homomorphisms are exactly the two-sided ideals. One direction was proved in the rings lesson; the other is $\ker\pi = I$. As before, the correspondence theorem identifies the ideals of $R/I$ with the ideals of $R$ containing $I$.
+
+<Example title="The complex numbers as a quotient">
+
+Let $\varepsilon : \R[x] \to \C$, $f \mapsto f(i)$. It is surjective, since $\varepsilon(a + bx) = a + bi$. Its kernel is $(x^2 + 1)$. Clearly $x^2 + 1 \in \ker\varepsilon$; conversely, if $f(i) = 0$, divide $f = (x^2 + 1)q + (a + bx)$ with $a, b \in \R$. Then $0 = f(i) = a + bi$ forces $a = b = 0$. Hence $\R[x]/(x^2 + 1) \cong \C$, and the coset of $x$ is $i$. In the same way $\Q[x]/(x^2 - 2) \cong \Q(\sqrt 2) = \{a + b\sqrt2 \mid a, b \in \Q\}$.
+
+</Example>
+
+<Theorem name="Theorem 8 (Chinese remainder theorem)">
+
+If $I, J$ are ideals of $R$ with $I + J = R$, then $R/(I \cap J) \cong R/I \times R/J$, via $r + I \cap J \mapsto (r + I, r + J)$. In particular, for coprime $m, n$, $\;\Z/mn\Z \cong \Z/m\Z \times \Z/n\Z$ as rings.
+
+</Theorem>
+
+<Proof>
+
+The map $\rho : R \to R/I \times R/J$, $r \mapsto (r + I, r + J)$, is a ring homomorphism with kernel $I \cap J$. It is surjective: write $1 = e + f$ with $e \in I$, $f \in J$. Given $(x + I, y + J)$, let $r = xf + ye$. Then $r - x = x(f - 1) + ye = -xe + ye \in I$ and $r - y = xf + y(e - 1) = xf - yf \in J$. Apply the first isomorphism theorem. For $\Z$: if $\gcd(m, n) = 1$, Bézout gives $(m) + (n) = \Z$, and $(m) \cap (n) = (\operatorname{lcm}(m, n)) = (mn)$.
+
+</Proof>
+
+Taking unit groups gives $(\Z/mn\Z)^\times \cong (\Z/m\Z)^\times \times (\Z/n\Z)^\times$, so Euler's function is multiplicative. Without coprimality the theorem fails: $\Z/4\Z \not\cong \Z/2\Z \times \Z/2\Z$, since the first has an element of additive order $4$. The theorem is named after the *Sunzi Suanjing* (3rd–5th century), which asks for a number leaving remainders $2, 3, 2$ on division by $3, 5, 7$; the answer is $23$, unique modulo $105$.
+
+<Theorem name="Theorem 9 (fields and domains as quotients)">
+
+Let $R$ be commutative and $I$ an ideal. Then $R/I$ is a field if and only if $I$ is maximal, and $R/I$ is an integral domain if and only if $I$ is prime. Consequently every maximal ideal is prime.
+
+</Theorem>
+
+<Proof>
+
+*Field.* $R/I$ is the zero ring iff $I = R$, so assume $I \ne R$. By the correspondence theorem, the ideals of $R/I$ correspond to the ideals $J$ with $I \subseteq J \subseteq R$. A commutative ring with $0 \ne 1$ is a field iff its only ideals are $0$ and itself (rings lesson, Proposition 3). So $R/I$ is a field iff the only ideals containing $I$ are $I$ and $R$, iff $I$ is maximal.
+
+*Domain.* $R/I \ne 0$ iff $I \ne R$, and $(a + I)(b + I) = 0 + I$ means $ab \in I$. So "no zero divisors" in $R/I$ says exactly: $ab \in I \Rightarrow a \in I$ or $b \in I$. Finally, a field is a domain, so maximal ideals are prime.
+
+</Proof>
+
+<Theorem name="Corollary 10 (building fields)">
+
+(a) $\Z/n\Z$ ($n \ge 2$) is a field iff $n$ is prime. (b) For a field $k$ and $f \in k[x]$ of degree $d \ge 1$, the quotient $k[x]/(f)$ is a vector space over $k$ with basis $1, \bar x, \dots, \bar x^{d-1}$. It is a field iff $f$ is irreducible. If $k = \mathbb{F}_p$, it has $p^d$ elements.
+
+</Theorem>
+
+<Proof>
+
+(a) The ideals of $\Z$ containing $(n)$ are the $(m)$ with $m \mid n$, so $(n)$ is maximal iff $n$ is prime. (b) Division with remainder writes every $g$ uniquely as $qf + r$ with $\deg r \lt d$. So every coset has exactly one representative $r = c_0 + c_1x + \dots + c_{d-1}x^{d-1}$, which gives the basis and the count $p^d$. In the PID $k[x]$, $(f)$ is maximal iff $f$ is irreducible: the ideals containing $(f)$ are the $(g)$ with $g \mid f$ (rings lesson, Proposition 4), and $(g)$ is all of $k[x]$ iff $g$ is a unit, and equals $(f)$ iff $g$ is an associate of $f$. Apply Theorem 9.
+
+</Proof>
+
+<Example title="The fields with four and nine elements">
+
+Over $\mathbb{F}_2$, $x^2 + x + 1$ has no root, since its values at $0$ and $1$ are both $1$. A polynomial of degree $2$ or $3$ with no root has no linear factor, so it is irreducible. Hence $\mathbb{F}_4 = \mathbb{F}_2[x]/(x^2 + x + 1) = \{0, 1, \alpha, \alpha + 1\}$ with $\alpha^2 = \alpha + 1$, and its multiplication table is
+
+| $\times$ | $1$ | $\alpha$ | $\alpha + 1$ |
+| --- | --- | --- | --- |
+| $1$ | $1$ | $\alpha$ | $\alpha + 1$ |
+| $\alpha$ | $\alpha$ | $\alpha + 1$ | $1$ |
+| $\alpha + 1$ | $\alpha + 1$ | $1$ | $\alpha$ |
+
+Every non-zero element has an inverse, and $\alpha$ generates the multiplicative group (cyclic of order $3$). Over $\mathbb{F}_3$, $x^2 + 1$ has no root ($0, 1, 4 \equiv 0, 1, 2$ are the values $x^2$ takes, and none is $-1 \equiv 2$), so $\mathbb{F}_9 = \mathbb{F}_3[i]$ with $i^2 = -1$: "complex numbers modulo $3$". By contrast, $\mathbb{F}_2[x]/(x^2 + 1)$ is not a field, because $x^2 + 1 = (x + 1)^2$ over $\mathbb{F}_2$, so $\overline{x + 1}$ is a non-zero nilpotent. And $\Z/4\Z$, which also has four elements, is not a field at all ($2 \cdot 2 = 0$).
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Quotients in Lean and Mathlib">
+
+In Mathlib, `G ⧸ N` is defined for *any* subgroup as the type of left cosets (a quotient type by the relation $a^{-1}b \in N$). It receives a group structure only when an instance `N.Normal` is available, which is exactly Theorem 1. Likewise `R ⧸ I` for an ideal `I` is a ring. `QuotientGroup.mk' N : G →* G ⧸ N` is the quotient map, and `QuotientGroup.lift` is the universal property. `AdjoinRoot f` is Mathlib's name for $K[X]/(f)$.
+
+Theorem 1, both directions, proved here:
+
+<Lean decl="Lumenary.Quotients.coset_mul_well_defined" />
+
+<Lean decl="Lumenary.Quotients.normal_of_coset_mul_well_defined" />
+
+The kernel of the quotient map, and the universal property (existence from Mathlib's `lift`, uniqueness proved here):
+
+<Lean decl="Lumenary.Quotients.ker_mk" />
+
+<Lean decl="Lumenary.Quotients.universal_property" />
+
+The three isomorphism theorems, cited from Mathlib (each is an explicit `MulEquiv`; we record that one exists):
+
+<Lean decl="Lumenary.Quotients.first_iso" />
+
+<Lean decl="Lumenary.Quotients.second_iso" />
+
+<Lean decl="Lumenary.Quotients.third_iso" />
+
+<Lean decl="Lumenary.Quotients.quotient_comm" />
+
+Theorem 7 for commutative rings, both directions, and the first isomorphism theorem for rings:
+
+<Lean decl="Lumenary.Quotients.ideal_mul_well_defined" />
+
+<Lean decl="Lumenary.Quotients.ideal_of_mul_well_defined" />
+
+<Lean decl="Lumenary.Quotients.ring_first_iso" />
+
+$\Z/(n)$ and the Chinese remainder theorem:
+
+<Lean decl="Lumenary.Quotients.int_quotient_zmod" />
+
+<Lean decl="Lumenary.Quotients.crt" />
+
+Theorem 9 (from Mathlib) and Corollary 10(a) (proved here, by producing a zero divisor when $n$ is composite):
+
+<Lean decl="Lumenary.Quotients.maximal_iff_field" />
+
+<Lean decl="Lumenary.Quotients.prime_iff_domain" />
+
+<Lean decl="Lumenary.Quotients.zmod_isField_iff" />
+
+<Lean decl="Lumenary.Quotients.zmod_four_not_domain" />
+
+Finally, $\mathbb{F}_4$ as a quotient. The irreducibility of $X^2 + X + 1$ over `ZMod 2` is proved by checking both elements; once it is recorded as an instance, Lean finds the field structure on the quotient by itself:
+
+<Lean decl="Lumenary.Quotients.f4_irreducible" />
+
+<Lean decl="Lumenary.Quotients.F4" />
+
+<Lean decl="Lumenary.Quotients.f4_fact" />
+
+<Lean decl="Lumenary.Quotients.f4_isField" />
+
+**What is and is not formalised.** Proved independently here: both directions of Theorem 1 and of Theorem 7 (commutative case), the uniqueness half of the universal property, the commutativity of quotients of abelian groups, Corollary 10(a), and the irreducibility behind $\mathbb{F}_4$. Cited from Mathlib: the three isomorphism theorems for groups, the first for rings, $\Z/(n) \cong$ `ZMod n`, the Chinese remainder theorem for $\Z$, and Theorem 9. Not formalised here: the correspondence theorem (Mathlib has it as the order isomorphism `QuotientGroup.comapMk'OrderIso`), $\R[x]/(x^2 + 1) \cong \C$, the general Chinese remainder theorem for coprime ideals (Mathlib's `Ideal.quotientInfRingEquivPiQuotient`), and the count $\lvert\mathbb{F}_4\rvert = 4$.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Testing well-definedness, and building fields">
+
+The first program tests, for every subgroup of $S_3$, $D_4$ and $A_4$, whether "multiply representatives" gives a well-defined product of cosets, and separately whether the subgroup is normal. It lists the quotient groups and prints a witness of failure.
+
+<Python id="quotients_coset_products" />
+
+The two columns always agree, as Theorem 1 says they must. Note the quotient $D_4/\langle r^2 \rangle$ with three elements of order $2$ (the Klein group) and $A_4/V \cong \Z/3\Z$. A witness of failure is a complete proof that that particular subgroup is not normal. The agreement on all $26$ subgroups is evidence, and the proof is Theorem 1.
+
+The second program builds $\mathbb{F}_p[x]/(f)$ for several $p$ and $f$, searches every element for an inverse, compares with an exhaustive irreducibility test, and looks for a generator of the multiplicative group.
+
+<Python id="quotients_polynomial_fields" />
+
+Two rows deserve attention. $x^2 + x + 1$ over $\mathbb{F}_3$ has a root ($x = 1$), and the quotient has zero divisors. $x^4 + x + 1$ over $\mathbb{F}_2$ gives $\mathbb{F}_{16}$, and here "no root" alone would not have been enough evidence of irreducibility: $(x^2 + x + 1)^2 = x^4 + x^2 + 1$ also has no root in $\mathbb{F}_2$ but is reducible. That is why the program tests all factors up to degree $n/2$. That a generator always exists — the multiplicative group of a finite field is cyclic — is proved in <TopicLink id="math.number.elementary-number-theory">number theory</TopicLink> for $\mathbb{F}_p$ and in <TopicLink id="math.algebra.fields-galois">fields and Galois theory</TopicLink> in general.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: are the families well behaved?">
+
+Choose a modulus and two remainder families, then draw random representatives and add them. However you choose, the sum always lands in the same family. That is the statement that addition on $\Z/k\Z$ is well defined, the abelian case of Theorem 1 (every subgroup of an abelian group is normal). Ask yourself why the same experiment for products also always works: $k\Z$ is an ideal of $\Z$ (Theorem 7).
+
+<RemainderColors />
+
+The clock is the quotient group $\Z/k\Z$ made visible. In the multiplication tab, the residues with partners are the units. For prime $k$ they are all the non-zero residues, which is Corollary 10(a).
+
+<ClockLab />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"$G/N$ is a subgroup of $G$."** Its elements are cosets, which are subsets of $G$, and it is the image of $G$ under the quotient map. $\Z/2\Z$ is not isomorphic to any subgroup of $\Z$, since $\Z$ has no elements of finite order other than $0$. Quotients and subgroups are dual notions: images versus subsets.
+
+</Misconception>
+
+<Misconception>
+
+**"Define the operation on representatives and you are done."** An operation on cosets defined through representatives must be checked to be independent of the choice. For $\{e, (1\,2)\} \le S_3$ the check fails (see the intuition section); for normal subgroups and ideals it succeeds (Theorems 1 and 7). The same caution applies to maps *out of* a quotient: $gN \mapsto \varphi(g)$ is well defined only if $N \subseteq \ker\varphi$.
+
+</Misconception>
+
+<Misconception>
+
+**"Every non-zero $\Z/n\Z$ is a field."** Only for prime $n$. $\Z/6\Z$ has $2 \cdot 3 = 0$, and $\Z/4\Z$ has $2 \cdot 2 = 0$. The field with four elements is $\mathbb{F}_2[x]/(x^2 + x + 1)$, a different ring from $\Z/4\Z$.
+
+</Misconception>
+
+<Misconception>
+
+**"A quotient of a non-abelian group is non-abelian."** $S_3/A_3 \cong \Z/2\Z$ is abelian, and so is every quotient by a subgroup containing $[G, G]$ (Proposition 6). What is true is the other direction: quotients of abelian groups are abelian.
+
+</Misconception>
+
+<Misconception>
+
+**"If $N \cong N'$ then $G/N \cong G/N'$."** In $\Z/4\Z \times \Z/2\Z$, the subgroups $\langle (2, 0) \rangle$ and $\langle (0, 1) \rangle$ both have order $2$. The quotients are $\Z/2\Z \times \Z/2\Z$ and $\Z/4\Z$, which are not isomorphic. The quotient depends on how $N$ sits inside $G$, not just on $N$.
+
+</Misconception>
+
+<Misconception>
+
+**"The first isomorphism theorem says $G \cong \ker\varphi \times \operatorname{im}\varphi$."** It says $G/\ker\varphi \cong \operatorname{im}\varphi$. A group need not split as a product of a normal subgroup and the quotient: $\Z/4\Z$ has the subgroup $\{0, 2\}$ with quotient $\Z/2\Z$, but $\Z/4\Z \not\cong \Z/2\Z \times \Z/2\Z$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Quotient spaces">
+
+Topologists form quotients by gluing. The real line modulo the action of $\Z$ by translations is the circle: the quotient group $\R/\Z$ and the quotient space $\R/{\sim}$ (with $x \sim x + n$) are the same object, a *topological group*. The plane modulo $\Z^2$ is the torus, and a square with opposite sides glued is the same picture. More generally, if a group $\Gamma$ acts freely and properly discontinuously on a simply connected space $X$, then $X \to X/\Gamma$ is a covering map and $\pi_1(X/\Gamma) \cong \Gamma$ (see <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>). Under the Galois correspondence for coverings, normal subgroups of $\pi_1$ correspond to *regular* coverings, whose deck group is the quotient group. So normality is not only an algebraic accident: it is the condition for the intermediate covering to be symmetric.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Homogeneous spaces">
+
+If $G$ acts transitively on a space $X$, and $H$ is the stabiliser of a point, then orbit–stabiliser identifies $X$ with $G/H$. For example, the rotation group $\mathrm{SO}(3)$ acts transitively on the sphere with stabiliser $\mathrm{SO}(2)$, so $S^2 \cong \mathrm{SO}(3)/\mathrm{SO}(2)$; and the hyperbolic plane is $\mathrm{SL}_2(\R)/\mathrm{SO}(2)$. These coset spaces are geometric objects, not groups, unless $H$ is normal. Projective space is a quotient too: $\mathbb{P}^n(k) = (k^{n+1} \setminus \{0\})/k^\times$, lines through the origin. Klein's Erlangen programme reads a geometry as a pair $(G, G/H)$. Quotients by discrete groups of isometries produce new spaces: by the uniformisation theorem, every closed surface is a quotient of the sphere, the Euclidean plane or the hyperbolic plane by such a group — flat tori are $\R^2/\Z^2$-type quotients, and surfaces of genus at least $2$ are quotients of the hyperbolic plane by surface groups (<TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Residue rings and residue fields">
+
+$\Z/n\Z$ is the stage of elementary number theory, and the Chinese remainder theorem reduces it to prime powers $\Z/p^k\Z$. In a ring of algebraic integers $\mathcal{O}$, a non-zero prime ideal $\mathfrak{p}$ is maximal, and $\mathcal{O}/\mathfrak{p}$ is a finite **residue field**. In $\Z[i]$, for example, $\Z[i]/(2 + i) \cong \mathbb{F}_5$ while $\Z[i]/(3) \cong \mathbb{F}_9$. How a prime $p$ of $\Z$ behaves in $\mathcal{O}$ is read off from the quotient $\mathcal{O}/p\mathcal{O}$, which is a product of residue fields by the Chinese remainder theorem. The prime $p$ splits, stays inert or ramifies according to whether that quotient looks like $\mathbb{F}_p \times \mathbb{F}_p$, like $\mathbb{F}_{p^2}$, or has nilpotents, like $\mathbb{F}_p[x]/(x^2)$. In $\Z[i]$: $5$ splits, $3$ is inert and $2$ ramifies. See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Quotients are coequalisers">
+
+In the category of groups, the quotient map $\pi : G \to G/N$ is the **coequaliser** of two homomorphisms $N \rightrightarrows G$: the inclusion and the trivial map. Theorem 2 is exactly the universal property that defines a coequaliser: every map out of $G$ that equalises them (kills $N$) factors uniquely through $\pi$. The first isomorphism theorem says that in $\mathbf{Grp}$ every homomorphism factors as a regular epimorphism followed by a monomorphism, a property shared by all *regular categories*. In an abelian category, every epimorphism is the cokernel of its kernel. Quotients are colimits, as subgroups and kernels are limits (<TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink>). Rings work the same way, with the coequaliser of a pair $f, g : A \rightrightarrows R$ being $R$ modulo the ideal generated by all $f(a) - g(a)$.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Quotients as a way of building mathematics">
+
+Much of mathematics is built by quotients. $\Z$ is pairs of natural numbers modulo $(a, b) \sim (c, d) \iff a + d = b + c$, $\Q$ is fractions modulo cross-multiplication, and $\R$ is Cauchy sequences of rationals modulo null sequences (see <TopicLink id="math.number.number-system-constructions">constructing ℤ, ℚ and ℝ</TopicLink>). In logic, the **Lindenbaum–Tarski algebra** of a theory is the set of formulas modulo provable equivalence; it is a Boolean algebra, and the completeness theorem can be read through its quotients by maximal filters. Lean has quotient types built into its foundations, with the rule that a function on representatives descends to the quotient only when accompanied by a proof that it respects the relation. That rule is the formal version of "check that the operation is well defined", and it is why the Lean proofs above must supply normality.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Quotients begin with clocks and remainder families. These optional trails revisit them at a gentler pace.
+
+<Trail slug="clock-arithmetic" />
+
+<Trail slug="remainder-families" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Remainders.** The *Sunzi Suanjing* (China, 3rd–5th century) posed the remainder problem behind the Chinese remainder theorem. Āryabhaṭa (499) gave the *kuṭṭaka* ("pulveriser") method for linear congruences, and Qin Jiushao's *Mathematical Treatise in Nine Sections* (1247) gave a general algorithm (*dayan*) for simultaneous congruences. Gauss's *Disquisitiones Arithmeticae* (1801) introduced the notation $a \equiv b \pmod n$ and made congruence classes into objects of calculation.
+- **New numbers from quotients.** Cauchy (1847) defined the complex numbers as real polynomials computed modulo $i^2 + 1$. Leopold Kronecker (1887) showed in general how to adjoin a root of any polynomial by computing modulo an irreducible factor. That is Corollary 10, and it is the modern construction of finite fields.
+- **Quotient groups.** Galois (1830–32) recognised the importance of what we call normal subgroups ("proper decompositions"). Camille Jordan (1870) studied composition series, and Otto Hölder (1889) introduced the quotient group (*Faktorgruppe*) explicitly in proving the Jordan–Hölder theorem.
+- **Ideals and isomorphism theorems.** Dedekind's ideals (1871) and their quotients were developed by Hilbert, Lasker and Macaulay. Emmy Noether's papers of 1921 and 1927 gave the isomorphism theorems their modern general form, and B. L. van der Waerden's *Moderne Algebra* (1930–31), based on lectures by Noether and Emil Artin, made them standard.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- David S. Dummit and Richard M. Foote, *Abstract Algebra* (3rd edition, 2004), §3.1–3.3 (quotient groups and isomorphism theorems) and §7.3–7.6 (quotient rings, the Chinese remainder theorem, maximal and prime ideals).
+- Michael Artin, *Algebra* (2nd edition, 2011), the sections on quotient groups and on adjoining elements to rings.
+- Joseph J. Rotman, *Advanced Modern Algebra* (2nd edition, 2010) — isomorphism and correspondence theorems in groups, rings and modules.
+- Rudolf Lidl and Harald Niederreiter, *Introduction to Finite Fields and their Applications* (revised edition, 1994) — finite fields built as polynomial quotients, with applications to coding.
+- Emily Riehl, *Category Theory in Context* (2016), chapter 3 — quotients as colimits.
+
+</Section>

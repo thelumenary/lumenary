@@ -1,0 +1,513 @@
+---
+slug: vectors
+topic: math.geom.vectors
+title: Vectors and coordinate geometry
+subtitle: Arrows you can add, stretch and multiply — and a single product that measures lengths, angles and right angles in any number of dimensions.
+level: g9-12
+ages: Ages 14–18
+minutes: 75
+order: 4013
+objectives:
+  - Add vectors and multiply them by scalars, and interpret both geometrically and in coordinates
+  - Use the dot product to compute lengths, angles and projections, and to test perpendicularity
+  - Prove the Cauchy–Schwarz and triangle inequalities, including when equality holds
+  - Write vector and parametric equations of lines in the plane and in space, and of planes in space
+  - Prove geometric facts, such as that the diagonals of a parallelogram bisect each other, using vectors
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.Vectors.dot2
+  - Lumenary.Vectors.lagrange_identity
+  - Lumenary.Vectors.cauchy_schwarz_2d
+  - Lumenary.Vectors.cauchy_schwarz_2d_eq
+  - Lumenary.Vectors.line_vector_iff_normal
+  - Lumenary.Vectors.cauchy_schwarz
+  - Lumenary.Vectors.triangle_inequality
+  - Lumenary.Vectors.norm_add_le_library
+  - Lumenary.Vectors.pythagoras_iff_perp
+  - Lumenary.Vectors.cos_angle
+  - Lumenary.Vectors.perp_iff_right_angle
+  - Lumenary.Vectors.projection_perp
+  - Lumenary.Vectors.parallelogram_diagonals_bisect
+  - Lumenary.Vectors.centroid
+compute: [vectors_cauchy_schwarz, vectors_random_angles]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Where does the ferry really go?">
+
+A ferry crosses the Jamuna river in Bangladesh. Its engine drives it straight across at $4$ km/h relative to the water, but the river flows downstream at $3$ km/h. Where does the ferry actually go, and how fast? The two motions combine: each hour the ferry moves $4$ km across *and* $3$ km downstream. Its actual velocity is an arrow of length $\sqrt{4^2 + 3^2} = 5$ km/h, pointing diagonally. To land at the jetty directly opposite, the pilot must aim upstream.
+
+Quantities like velocity, force and displacement have a **size** and a **direction**. We call them **vectors**. They can be added (the ferry's velocity plus the river's) and scaled (twice as fast, or backwards). Once vectors are written in coordinates, a single operation — the **dot product** — gives lengths, angles, right angles and projections, and lets us prove geometric theorems with a few lines of algebra. The same ideas then work, unchanged, in three dimensions and in a thousand.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Arrows that can move">
+
+Picture a vector as an **arrow**. What matters is its length and its direction, not where it starts: sliding an arrow without turning or stretching it gives the same vector. The displacement "3 km east, 4 km north" is the same whether you start in Dhaka or in Lima.
+
+- To **add** two vectors, place the tail of the second at the tip of the first; the sum goes from the first tail to the second tip ("tip to tail"). Doing it in the other order gives the other two sides of a **parallelogram**, with the same diagonal: $u + v = v + u$.
+- To **scale** a vector by a number $t$, stretch it by the factor $|t|$, and reverse it if $t \lt 0$.
+
+Put the tail at the origin of a coordinate system, and the tip has coordinates: the vector "3 east, 4 north" becomes $(3, 4)$. Now the geometry becomes arithmetic: adding arrows is adding coordinates, and stretching arrows is multiplying coordinates.
+
+<Narrator who="chloe">
+
+A *point* is a place; a *vector* is a move. The point $(3, 4)$ and the vector $(3, 4)$ are written the same way, but the vector from $A = (1, 1)$ to $B = (4, 5)$ is $B - A = (3, 4)$ too. Many vectors problems become easy once you ask: is this a place or a move?
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="vector">
+
+A **vector** in the plane $\R^2$ is an ordered pair $v = (v_1, v_2)$ of real numbers; a vector in space $\R^3$ is a triple $(v_1, v_2, v_3)$; in general a vector in $\R^n$ is a list of $n$ real numbers, its **components**. The vector from point $A$ to point $B$ is $\overrightarrow{AB} = B - A$, computed component by component.
+
+</Definition>
+
+<Definition term="addition and scalar multiplication">
+
+For vectors $u, v$ in $\R^n$ and a real number $t$ (a **scalar**):
+
+$$
+u + v = (u_1 + v_1, \dots, u_n + v_n), \qquad t\,v = (t v_1, \dots, t v_n).
+$$
+
+The **zero vector** is $0 = (0, \dots, 0)$, and $-v = (-1)v$. Two vectors are **parallel** if one is a scalar multiple of the other.
+
+</Definition>
+
+<Definition term="dot product and length">
+
+The **dot product** of $u$ and $v$ in $\R^n$ is the **number**
+
+$$
+u \cdot v = u_1 v_1 + u_2 v_2 + \cdots + u_n v_n.
+$$
+
+The **length** (or norm) of $v$ is $|v| = \sqrt{v \cdot v} = \sqrt{v_1^2 + \cdots + v_n^2}$. A **unit vector** has length $1$; for $v \ne 0$, the vector $v / |v|$ is the unit vector in the direction of $v$.
+
+</Definition>
+
+In the plane, $|v| = \sqrt{v_1^2 + v_2^2}$ is the Pythagorean theorem; in space, $|v|^2 = v_1^2 + v_2^2 + v_3^2$ comes from using Pythagoras twice. The distance between points $A$ and $B$ is $|B - A|$.
+
+<Definition term="angle and perpendicularity">
+
+For non-zero vectors $u, v$, the **angle** $\theta$ between them, with $0 \le \theta \le \pi$, is given by
+
+$$
+\cos\theta = \frac{u \cdot v}{|u|\,|v|}.
+$$
+
+The vectors are **perpendicular** (orthogonal), $u \perp v$, if $u \cdot v = 0$.
+
+</Definition>
+
+In $\R^2$ and $\R^3$ we will *prove* that this angle is the angle you would measure between the arrows. In higher dimensions there is no picture to measure, and the formula becomes the definition; the Cauchy–Schwarz inequality below guarantees that the right-hand side lies between $-1$ and $1$, so the definition makes sense.
+
+<Definition term="lines and planes">
+
+The **line** through the point $p$ with direction $d \ne 0$ is the set $\{p + t\,d : t \in \R\}$, in $\R^2$ or $\R^3$. Writing out components gives **parametric equations**, such as $x = p_1 + t d_1$, $y = p_2 + t d_2$.
+
+The **plane** in $\R^3$ through $p$ with **normal vector** $n \ne 0$ is the set of points $x$ with $n \cdot (x - p) = 0$. With $n = (a, b, c)$ this is the familiar equation $ax + by + cz = n \cdot p$. A plane can also be written in vector form, $\{p + s\,u + t\,v : s, t \in \R\}$, with $u$ and $v$ non-parallel vectors lying in it.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Arithmetic, lengths and unit vectors">
+
+Let $u = (1, 2, 2)$ and $v = (2, -1, 2)$. Then $u + v = (3, 1, 4)$, $3u - v = (1, 7, 4)$, $|u| = \sqrt{1 + 4 + 4} = 3$ and $|v| = 3$. The unit vector in the direction of $u$ is $\tfrac13(1, 2, 2)$.
+
+</Example>
+
+<Example title="An angle in space">
+
+For the same $u$ and $v$: $u \cdot v = 2 - 2 + 4 = 4$, so $\cos\theta = \dfrac{4}{3 \cdot 3} = \dfrac49$ and $\theta = \arccos\tfrac49 \approx 63.6^\circ$. No protractor could measure this in space — but the dot product does it in one line.
+
+</Example>
+
+<Example title="Perpendicular or not?">
+
+$(2, 3) \cdot (3, -2) = 6 - 6 = 0$, so these vectors are perpendicular. In general, $(a, b)$ is perpendicular to $(-b, a)$: turning a vector by $90^\circ$ swaps its components and changes one sign. On the other hand $(1, 1, 1) \cdot (1, 1, -1) = 1 \ne 0$: those diagonals of a cube are not perpendicular.
+
+</Example>
+
+<Example title="Projection and work">
+
+A child pulls a sledge along level snow with a force $F = (30, 40)$ newtons (horizontal and vertical parts). The sledge moves along the displacement $d = (10, 0)$ metres. Only the part of the force along the motion does work: the **work** is $W = F \cdot d = 300$ joules. The **projection** of $F$ onto $d$ is
+
+$$
+\operatorname{proj}_d F = \frac{F \cdot d}{d \cdot d}\, d = \frac{300}{100}(10, 0) = (30, 0),
+$$
+
+and the rest, $F - \operatorname{proj}_d F = (0, 40)$, is perpendicular to $d$: it lifts the sledge a little but does no work along the ground.
+
+</Example>
+
+<Example title="A line through two points, and where it meets a plane">
+
+The line through $A = (1, 0, 0)$ and $B = (2, 2, 2)$ has direction $d = B - A = (1, 2, 2)$, so it is $\{(1 + t, 2t, 2t) : t \in \R\}$. Where does it meet the plane $x + y + z = 11$? Substitute: $(1 + t) + 2t + 2t = 11$, so $t = 2$ and the point is $(3, 4, 4)$. In the plane $\R^2$, the line through $(1, 2)$ with direction $(3, 1)$ has normal $(-1, 3)$ and equation $-(x - 1) + 3(y - 2) = 0$, that is, $-x + 3y = 5$.
+
+</Example>
+
+<Example title="A non-example: lengths do not add">
+
+$u = (3, 0)$ and $v = (0, 4)$ have $|u| + |v| = 7$, but $|u + v| = |(3, 4)| = 5$. Walking $3$ km east and then $4$ km north leaves you only $5$ km from home. Lengths add only when the vectors point the same way.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The dot product: theorems">
+
+Directly from the definition, by expanding components, the dot product is **symmetric**, $u \cdot v = v \cdot u$, and **distributes** over addition and scalars: $u \cdot (v + w) = u \cdot v + u \cdot w$ and $(t u) \cdot v = t (u \cdot v)$. Also $v \cdot v = |v|^2 \ge 0$, with equality only for $v = 0$. Everything below follows from these rules alone.
+
+<Theorem name="Theorem (geometric meaning of the dot product)">
+
+For non-zero vectors $u, v$ in $\R^2$ or $\R^3$ that make the angle $\theta$ (measured between the arrows drawn from a common tail),
+
+$$
+u \cdot v = |u|\,|v| \cos\theta.
+$$
+
+</Theorem>
+
+<Proof>
+
+Draw $u$ and $v$ from a common point $O$, ending at $P$ and $Q$. The third side of triangle $OPQ$ is the vector $u - v$. By the law of cosines (see <TopicLink id="math.geom.trigonometry">trigonometry</TopicLink>),
+
+$$
+|u - v|^2 = |u|^2 + |v|^2 - 2\,|u|\,|v|\cos\theta.
+$$
+
+On the other hand, by the rules above, $|u - v|^2 = (u - v)\cdot(u - v) = u\cdot u - 2\,u\cdot v + v \cdot v = |u|^2 - 2\,u \cdot v + |v|^2$. Comparing the two expressions gives $u \cdot v = |u|\,|v|\cos\theta$. (If $u$ and $v$ are parallel, the "triangle" is flat, and $\theta$ is $0$ or $\pi$; the same computation works directly.) $\blacksquare$
+
+</Proof>
+
+<Theorem name="Corollary">
+
+Non-zero vectors $u$ and $v$ are perpendicular exactly when $u \cdot v = 0$. Moreover, $|u + v|^2 = |u|^2 + |v|^2$ if and only if $u \cdot v = 0$ — Pythagoras' theorem and its converse in vector form.
+
+</Theorem>
+
+<Proof>
+
+$\cos\theta = 0$ exactly when $\theta = 90^\circ$. For the second statement, expand: $|u + v|^2 = |u|^2 + 2\,u\cdot v + |v|^2$. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Cauchy–Schwarz inequality">
+
+For all vectors $u, v$ in $\R^n$: $\;|u \cdot v| \le |u|\,|v|$. Equality holds exactly when $u$ and $v$ are parallel.
+
+</Theorem>
+
+<Proof>
+
+In $\R^2$ and $\R^3$ this follows from the last theorem, since $|\cos\theta| \le 1$. But in $\R^n$ we want to *define* angles using Cauchy–Schwarz, so we need a proof that does not use angles.
+
+If $v = 0$ both sides are $0$. Otherwise, for every real number $t$,
+
+$$
+0 \le |u - t v|^2 = |u|^2 - 2t\,(u \cdot v) + t^2 |v|^2.
+$$
+
+The right-hand side is a quadratic in $t$ with positive leading coefficient $|v|^2$ that is never negative, so it has at most one real root and its discriminant is at most zero (see <TopicLink id="math.algebra.quadratics">quadratics</TopicLink>):
+
+$$
+4 (u \cdot v)^2 - 4 |u|^2 |v|^2 \le 0, \qquad\text{that is,}\qquad (u \cdot v)^2 \le |u|^2|v|^2.
+$$
+
+Taking square roots gives the inequality. Equality means the discriminant is zero, so the quadratic has a root $t_0$, and then $|u - t_0 v| = 0$, i.e. $u = t_0 v$. Conversely, if $u = t v$ both sides equal $|t|\,|v|^2$. $\blacksquare$
+
+</Proof>
+
+In the plane there is an even more direct proof, **Lagrange's identity**:
+
+$$
+|u|^2|v|^2 - (u \cdot v)^2 = (u_1^2 + u_2^2)(v_1^2 + v_2^2) - (u_1 v_1 + u_2 v_2)^2 = (u_1 v_2 - u_2 v_1)^2 \ge 0,
+$$
+
+which you can check by expanding. The gap is a perfect square, and it vanishes exactly when $u_1 v_2 = u_2 v_1$, i.e. when $u$ and $v$ are parallel.
+
+<Theorem name="Triangle inequality">
+
+For all vectors $u, v$ in $\R^n$: $\;|u + v| \le |u| + |v|$, with equality exactly when one vector is a non-negative multiple of the other.
+
+</Theorem>
+
+<Proof>
+
+Using Cauchy–Schwarz in the middle step,
+
+$$
+|u + v|^2 = |u|^2 + 2\,u\cdot v + |v|^2 \le |u|^2 + 2\,|u|\,|v| + |v|^2 = (|u| + |v|)^2.
+$$
+
+Both $|u + v|$ and $|u| + |v|$ are non-negative, so $|u + v| \le |u| + |v|$. Equality holds exactly when $u \cdot v = |u|\,|v|$: by the equality case of Cauchy–Schwarz the vectors are parallel, and $u \cdot v \ge 0$ forces them to point the same way (or one to be zero). $\blacksquare$
+
+</Proof>
+
+<Theorem name="Projection">
+
+For $v \ne 0$, every vector $u$ splits as $u = p + w$ with $p = \dfrac{u \cdot v}{v \cdot v}\,v$ parallel to $v$ and $w = u - p$ perpendicular to $v$.
+
+</Theorem>
+
+<Proof>
+
+$w \cdot v = u \cdot v - \dfrac{u\cdot v}{v \cdot v}\,(v \cdot v) = 0$. $\blacksquare$
+
+</Proof>
+
+</Section>
+
+<Section id="geometry" kind="proof" title="Geometry proved with vectors">
+
+Vectors give short proofs of classical theorems. The trick is to name the points by their position vectors $a, b, c, \ldots$ (from a fixed origin) and to translate each geometric statement into an equation.
+
+<Theorem name="The diagonals of a parallelogram bisect each other">
+
+If $ABCD$ is a parallelogram, the midpoints of the diagonals $AC$ and $BD$ coincide.
+
+</Theorem>
+
+<Proof>
+
+"$ABCD$ is a parallelogram" means that the sides $AB$ and $DC$ are the same vector: $b - a = c - d$. Rearranging, $a + c = b + d$. The midpoint of $AC$ is $\tfrac12(a + c)$ and the midpoint of $BD$ is $\tfrac12(b + d)$, and these are equal. $\blacksquare$
+
+</Proof>
+
+<Theorem name="The medians of a triangle meet at the centroid">
+
+The three medians of a triangle $ABC$ (each joining a vertex to the midpoint of the opposite side) pass through the point $g = \tfrac13(a + b + c)$, which divides each median in the ratio $2 : 1$.
+
+</Theorem>
+
+<Proof>
+
+The midpoint of $BC$ is $m = \tfrac12(b + c)$. The point two thirds of the way from $A$ to $m$ is
+
+$$
+a + \tfrac23\,(m - a) = a + \tfrac13(b + c) - \tfrac23 a = \tfrac13(a + b + c).
+$$
+
+This expression does not change if we permute $a$, $b$, $c$, so the same point is two thirds of the way along each median. $\blacksquare$
+
+</Proof>
+
+<Theorem name="The diagonals of a rhombus are perpendicular">
+
+If $ABCD$ is a parallelogram with all sides equal, its diagonals are perpendicular.
+
+</Theorem>
+
+<Proof>
+
+Let $u = b - a$ and $v = d - a$, so the diagonals are $\overrightarrow{AC} = u + v$ and $\overrightarrow{DB} = u - v$. Then $(u + v)\cdot(u - v) = |u|^2 - |v|^2 = 0$, because $|u| = |v|$. $\blacksquare$
+
+</Proof>
+
+Compare these with the congruent-triangle proofs in <TopicLink id="math.geom.euclidean-geometry">Euclidean geometry and proof</TopicLink>: the vector proofs are shorter, but they hide the geometry inside the algebra. The rhombus argument, read backwards, is also a proof of **Thales' theorem**: if $|u| = |v|$ then $(u + v) \perp (u - v)$.
+
+<Note>
+
+**Lines in space can be skew.** In the plane, two distinct lines either meet in one point or are parallel. In space there is a third possibility: lines such as $\{(t, 0, 0)\}$ and $\{(0, t, 1)\}$ are not parallel (their directions are $(1, 0, 0)$ and $(0, 1, 0)$) and never meet (the first has $z = 0$, the second $z = 1$). Such lines are called **skew**.
+
+</Note>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Vectors in Lean">
+
+We start in coordinates. Here is the dot product of two vectors in the plane, Lagrange's identity, and the Cauchy–Schwarz inequality with its equality case, exactly as in the lesson:
+
+<Lean decl="Lumenary.Vectors.dot2" />
+
+<Lean decl="Lumenary.Vectors.lagrange_identity" />
+
+<Lean decl="Lumenary.Vectors.cauchy_schwarz_2d" />
+
+<Lean decl="Lumenary.Vectors.cauchy_schwarz_2d_eq" />
+
+The vector equation and the normal equation of a line in the plane describe the same set of points:
+
+<Lean decl="Lumenary.Vectors.line_vector_iff_normal" />
+
+Mathlib's general setting is a **real inner product space**: any collection of vectors with addition, scaling and a dot product obeying the rules at the start of the proofs section. It covers $\R^2$, $\R^3$ and $\R^n$ at once, and also spaces of functions. Mathlib writes `⟪u, v⟫` for $u \cdot v$ and `‖u‖` for $|u|$. Cauchy–Schwarz is in the library, and the triangle inequality is proved here from it:
+
+<Lean decl="Lumenary.Vectors.cauchy_schwarz" />
+
+<Lean decl="Lumenary.Vectors.triangle_inequality" />
+
+<Lean decl="Lumenary.Vectors.norm_add_le_library" />
+
+<Lean decl="Lumenary.Vectors.pythagoras_iff_perp" />
+
+In Mathlib the angle between vectors is *defined* by the arccosine of $u \cdot v / (|u|\,|v|)$, just as in our definition for $\R^n$:
+
+<Lean decl="Lumenary.Vectors.cos_angle" />
+
+<Lean decl="Lumenary.Vectors.perp_iff_right_angle" />
+
+<Lean decl="Lumenary.Vectors.projection_perp" />
+
+Finally, the two geometry theorems. Note how short the Lean proofs are: once the statement is in vector form, the geometry has become algebra. The tactic `module` checks identities between linear combinations of vectors:
+
+<Lean decl="Lumenary.Vectors.parallelogram_diagonals_bisect" />
+
+<Lean decl="Lumenary.Vectors.centroid" />
+
+<Narrator who="gideon">
+
+Notice that the general theorems hold in *every* real inner product space, not just in $\R^2$ and $\R^3$. That is the power of proving things from the rules of the dot product rather than from pictures: the proof is the same in a thousand dimensions.
+
+</Narrator>
+
+</Section>
+
+<Section id="computation" kind="computation" title="Exact checks and random directions">
+
+<Narrator who="margaret">
+
+First I check Cauchy–Schwarz and the triangle inequality on every pair of small integer vectors in space — exactly, with whole numbers — and find out precisely when equality happens.
+
+</Narrator>
+
+<Python id="vectors_cauchy_schwarz" />
+
+The equality cases are exactly the parallel pairs (for Cauchy–Schwarz) and the same-direction pairs (for the triangle inequality), just as the theorems say. The grid check is **exact and exhaustive**, but only for these $15{,}625$ pairs; SymPy's symbolic expansion verifies Lagrange's identity for all coordinates, and the proof explains it.
+
+Now something surprising. What is the angle between two *random* directions?
+
+<Python id="vectors_random_angles" />
+
+In the plane the angle can be anything. In $1000$ dimensions, two random vectors are almost always within a few degrees of perpendicular! The spread of $\cos\theta$ is about $1/\sqrt n$. This is **statistical evidence** from finite samples, matched against an exact formula for the variance. It is one face of the "concentration of measure" that makes high-dimensional geometry so different from our intuition — and so useful in statistics and machine learning.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: adding and projecting">
+
+Change the components of $u$ and $v$. The sum $u + v$ is the diagonal of the parallelogram; the copy of $v$ starting at the tip of $u$ shows "tip to tail". The short segment along $v$ is the projection of $u$ onto $v$. Try to make the projection vanish: that happens exactly when $u \cdot v = 0$.
+
+<FunctionPlot
+  mode="parametric"
+  fns={[["t*u1", "t*u2"], ["t*v1", "t*v2"], ["t*(u1 + v1)", "t*(u2 + v2)"], ["u1 + t*v1", "u2 + t*v2"], ["t*v1*(u1*v1 + u2*v2)/(v1^2 + v2^2)", "t*v2*(u1*v1 + u2*v2)/(v1^2 + v2^2)"]]}
+  labels={["u", "v", "u + v", "v, moved to the tip of u", "projection of u onto v"]}
+  params={[
+    { name: "u1", min: -3, max: 3, step: 0.5, value: 2 },
+    { name: "u2", min: -3, max: 3, step: 0.5, value: 1 },
+    { name: "v1", min: -3, max: 3, step: 0.5, value: 0.5 },
+    { name: "v2", min: -3, max: 3, step: 0.5, value: 2 },
+  ]}
+  points={[["u1", "u2", "u"], ["v1", "v2", "v"], ["u1 + v1", "u2 + v2", "u + v"]]}
+  t={[0, 1]}
+  x={[-6, 6]}
+  y={[-6, 6]}
+  editable={false}
+  title="Vector addition and projection"
+/>
+
+The complex plane is another picture of $\R^2$: the complex number $a + bi$ is the vector $(a, b)$, and adding complex numbers is adding vectors. Drag $z$ and $w$ and watch the parallelogram.
+
+<ComplexPlane mode="arithmetic" op="sum" z={[2, 1]} w={[0.5, 2]} title="Addition is the parallelogram rule" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A vector has a fixed starting point."** A vector records only a length and a direction. The arrow from $(0, 0)$ to $(3, 4)$ and the arrow from $(5, -1)$ to $(8, 3)$ are the same vector $(3, 4)$. (A *point* has a fixed location; the vector $\overrightarrow{AB} = B - A$ is the move from one point to another.)
+
+</Misconception>
+
+<Misconception>
+
+**"The dot product of two vectors is a vector."** It is a **number** (a scalar): $(1, 2) \cdot (3, 4) = 11$. So expressions such as $(u \cdot v) \cdot w$ with a dot between a number and a vector make no sense; $(u \cdot v)\,w$, a number times a vector, does. The product that gives a vector in $\R^3$ is the *cross product*, a different operation.
+
+</Misconception>
+
+<Misconception>
+
+**"$|u + v| = |u| + |v|$."** Only when $u$ and $v$ point in the same direction (or one is zero). In general $|u + v| \le |u| + |v|$: going via a detour is never shorter. For $u = (3, 0)$, $v = (0, 4)$: $5 \lt 7$.
+
+</Misconception>
+
+<Misconception>
+
+**"Perpendicular means the dot product is $1$" (or "parallel means $0$").** It is the other way round: perpendicular vectors have $u \cdot v = 0$, and for parallel vectors $|u \cdot v| = |u|\,|v|$, the largest possible value.
+
+</Misconception>
+
+<Misconception>
+
+**"Two lines that never meet are parallel."** True in the plane, false in space: skew lines never meet and are not parallel. Parallel means the directions are multiples of each other.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="A vector is anything you can add and scale">
+
+The rules we used — $u + v = v + u$, $(u + v) + w = u + (v + w)$, $t(u + v) = tu + tv$, and so on — are the axioms of a **vector space**. Lists of numbers satisfy them, but so do polynomials, matrices, solutions of the equation $y'' + y = 0$, and many more. Linear algebra studies all of these at once, together with the maps between them that respect addition and scaling (see <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>). Our proofs of Cauchy–Schwarz and the triangle inequality used only the rules of the dot product, so they hold in every inner product space.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Dot products of functions">
+
+On the space of continuous functions on $[0, 1]$, the formula $f \cdot g = \int_0^1 f(x)g(x)\,dx$ obeys all the rules of a dot product. Cauchy–Schwarz then says
+
+$$
+\left(\int_0^1 f g\,dx\right)^2 \le \int_0^1 f^2\,dx \int_0^1 g^2\,dx,
+$$
+
+which is how Viktor Bunyakovsky (1859) and Hermann Schwarz (1880s) found it, after Augustin-Louis Cauchy's version for sums (1821). In this space, $\sin(2\pi m x)$ and $\sin(2\pi n x)$ are *perpendicular* for $m \ne n$, and Fourier series are expansions in perpendicular directions — exactly like coordinates (see <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random directions in many dimensions">
+
+As the experiment showed, two random unit vectors in $\R^n$ have $\cos\theta$ with mean $0$ and variance exactly $1/n$. Since $\cos\theta$ is distributed like the first coordinate $x_1$ of a random point on the unit sphere, and $x_1^2 + \cdots + x_n^2 = 1$ with all coordinates equally distributed, each $x_i^2$ averages to $1/n$. So in high dimensions almost all pairs of directions are nearly perpendicular. Statisticians meet this whenever they compare many measurements at once; correlation coefficients are cosines of angles between data vectors.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Forces, velocities and work">
+
+Newton's laws are vector equations: forces add as vectors (the "parallelogram of forces"), and $F = ma$ holds component by component. The **work** done by a constant force $F$ along a displacement $d$ is $F \cdot d$, and the power delivered to a body moving with velocity $v$ is $F \cdot v$; perpendicular forces, like the pull of a string on a whirling stone, do no work. The cross product measures turning effects (torque) and oriented areas. Differential forms generalise both products to any dimension (see <TopicLink id="math.geom.differential-forms">differential forms</TopicLink> and <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Coordinates.** René Descartes (*La Géométrie*, 1637) and Pierre de Fermat connected geometry with algebra by describing points with numbers.
+- **Parallelograms of forces and velocities.** The rule for combining motions appears in ancient Greek mechanics; Simon Stevin (1586) used a parallelogram (or triangle) of forces, and Isaac Newton stated the parallelogram rule for forces as the first corollary to his laws of motion in the *Principia* (1687).
+- **Algebras of directed quantities.** Caspar Wessel (1799) and Jean-Robert Argand (1806) represented complex numbers as arrows in the plane. William Rowan Hamilton invented **quaternions** in 1843 for rotations in space, and Hermann Grassmann's *Ausdehnungslehre* (1844) developed vectors in any number of dimensions — far ahead of its time.
+- **Vector analysis.** In the 1880s Josiah Willard Gibbs in the USA and Oliver Heaviside in Britain independently extracted the dot and cross products from quaternions, creating the notation physicists and engineers still use.
+- **Inequalities.** Augustin-Louis Cauchy proved the inequality for sums in 1821; Viktor Bunyakovsky (1859) and Hermann Schwarz (1880s) proved it for integrals. In Russia and elsewhere it is often called the Cauchy–Bunyakovsky inequality.
+- **Abstraction.** Giuseppe Peano gave axioms for vector spaces in 1888, and in the 20th century David Hilbert's work on infinite-dimensional spaces made vectors a language for analysis, quantum mechanics and data science.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Tom M. Apostol, *Calculus, Volume 1* (1967), chapters 12–13 — vector algebra and its applications to analytic geometry.
+- Gilbert Strang, *Introduction to Linear Algebra* (1993; later editions) — vectors, dot products and much more, with a geometric emphasis.
+- Michael J. Crowe, *A History of Vector Analysis* (1967) — from Hamilton and Grassmann to Gibbs and Heaviside.
+
+</Section>

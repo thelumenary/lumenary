@@ -1,0 +1,470 @@
+---
+slug: chaining-functions
+topic: math.cat.chaining-functions
+title: Function machines in sequence
+subtitle: Feed the output of one function into the next, meet the function that does nothing, and learn why undoing a chain means undoing the last step first.
+level: g6-8
+ages: Ages 11–14
+minutes: 50
+order: 3018
+objectives:
+  - Compute the result of applying one function and then another, using tables, arrow diagrams and formulas
+  - Decide whether a chain is possible, by checking that every output of the first function is an allowed input of the second
+  - Recognise the identity function and explain why chaining it before or after any function changes nothing
+  - Find the inverses of simple bijections such as $x \mapsto x + 3$ and $x \mapsto 2x$ on $\Q$, and undo a chain by undoing its steps in reverse order
+  - Explain why a function that sends two inputs to the same output, such as $x \mapsto x^2$ on $\Z$, cannot be undone
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.ChainingFunctions.andThen
+  - Lumenary.ChainingFunctions.and_then_eq_comp
+  - Lumenary.ChainingFunctions.add_then_double
+  - Lumenary.ChainingFunctions.double_then_add
+  - Lumenary.ChainingFunctions.order_matters
+  - Lumenary.ChainingFunctions.add_mul_swap_iff
+  - Lumenary.ChainingFunctions.id_and_then
+  - Lumenary.ChainingFunctions.and_then_id
+  - Lumenary.ChainingFunctions.Undoes
+  - Lumenary.ChainingFunctions.sub_undoes_add
+  - Lumenary.ChainingFunctions.add_undoes_sub
+  - Lumenary.ChainingFunctions.halve_undoes_double
+  - Lumenary.ChainingFunctions.int_halve_undoes_double
+  - Lumenary.ChainingFunctions.int_double_not_undoes_halve
+  - Lumenary.ChainingFunctions.undo_chain
+  - Lumenary.ChainingFunctions.toFahrenheit
+  - Lumenary.ChainingFunctions.toCelsius
+  - Lumenary.ChainingFunctions.thirty_degrees
+  - Lumenary.ChainingFunctions.to_celsius_undoes
+  - Lumenary.ChainingFunctions.wrong_order_fails
+  - Lumenary.ChainingFunctions.injective_of_undoes
+  - Lumenary.ChainingFunctions.injective_of_undoes_library
+  - Lumenary.ChainingFunctions.square_cannot_be_undone
+compute: [chaining_functions_tables]
+trails: [arrows-that-compose]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Thirty degrees in Accra">
+
+Kofi lives in Accra, where the afternoon temperature is $30\,^\circ\mathrm{C}$. His cousin Maya in Chicago uses the Fahrenheit scale, so Kofi converts with the rule his teacher gave him: **multiply by $1.8$, then add $32$**.
+
+$$
+30 \xrightarrow{\ \times 1.8\ } 54 \xrightarrow{\ +32\ } 86.
+$$
+
+So it is $86\,^\circ\mathrm{F}$. Maya wants to check, so she converts back. She subtracts $32$ to get $54$, then divides by $1.8$ to get $30$. Perfect. But her friend Sam tries “divide by $1.8$, then subtract $32$” and gets
+
+$$
+86 \div 1.8 - 32 \approx 47.8 - 32 = 15.8.
+$$
+
+Sam used exactly the right two undoing steps — just in the wrong order — and got the wrong answer. This lesson explains why, and what “doing one thing after another” really means for functions.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Machines, tables and arrows">
+
+Think of a function as a **machine**: put an input in, and exactly one output comes out (see <TopicLink id="math.found.functions">functions</TopicLink>). Two machines can be placed in a row, so that whatever comes out of the first goes straight into the second. The whole row is a new machine.
+
+The same chain can be shown with **arrow diagrams**. Here the first function sends each person to their home city, and the second sends each city to its continent. Following two arrows in a row sends each person to a continent.
+
+<Figure caption="Two functions in sequence. Following an arrow from a person to their home city, and then an arrow from the city to its continent, defines a new function from people to continents.">
+<svg viewBox="0 0 440 215" role="img" aria-label="Three columns. People: Amina, Bo, Carlos, Dilnoza. Home cities: Kano, Chengdu, Lima, Tashkent. Continents: Africa, Asia, South America. Arrows: Amina to Kano, Bo to Chengdu, Carlos to Lima, Dilnoza to Tashkent; Kano to Africa, Chengdu to Asia, Lima to South America, Tashkent to Asia.">
+  <defs>
+    <marker id="cf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-2)" />
+    </marker>
+  </defs>
+  <g fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.2">
+    <rect x="15" y="15" width="90" height="170" rx="14" />
+    <rect x="160" y="15" width="100" height="170" rx="14" />
+    <rect x="305" y="15" width="122" height="170" rx="14" />
+  </g>
+  <g fontSize="12" fill="var(--ink-2)" textAnchor="middle">
+    <text x="60" y="44">Amina</text><text x="60" y="84">Bo</text><text x="60" y="124">Carlos</text><text x="60" y="164">Dilnoza</text>
+    <text x="210" y="44">Kano</text><text x="210" y="84">Chengdu</text><text x="210" y="124">Lima</text><text x="210" y="164">Tashkent</text>
+    <text x="366" y="54">Africa</text><text x="366" y="104">Asia</text><text x="366" y="154">South America</text>
+  </g>
+  <g fontSize="12" fill="var(--muted)" textAnchor="middle">
+    <text x="60" y="205">people</text><text x="210" y="205">home city</text><text x="366" y="205">continent</text>
+  </g>
+  <g stroke="var(--human)" strokeWidth="1.6" fill="none" markerEnd="url(#cf-arrow)">
+    <line x1="92" y1="40" x2="180" y2="40" /><line x1="78" y1="80" x2="180" y2="80" />
+    <line x1="92" y1="120" x2="186" y2="120" /><line x1="94" y1="160" x2="178" y2="160" />
+  </g>
+  <g stroke="var(--compute)" strokeWidth="1.6" fill="none" markerEnd="url(#cf-arrow)">
+    <line x1="232" y1="41" x2="342" y2="50" /><line x1="240" y1="82" x2="350" y2="98" />
+    <line x1="230" y1="122" x2="322" y2="146" /><line x1="242" y1="157" x2="350" y2="106" />
+  </g>
+</svg>
+</Figure>
+
+<Narrator who="chloe">
+
+Getting dressed is a chain too: socks, then shoes. To undo it you take off the shoes first and then the socks — the last thing you did is the first thing you undo. Kofi's conversion is “multiply, then add”, so undoing it must be “subtract, then divide”. Sam undid the steps in the same order as Kofi did them, which is like trying to take your socks off through your shoes.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="applying f, then g">
+
+Let $f : A \to B$ and $g : B \to C$ be functions. **Applying $f$, then $g$** sends each $a \in A$ to
+
+$$
+g\big(f(a)\big) \in C.
+$$
+
+This defines a new function from $A$ to $C$. Read $g(f(a))$ from the inside out: first work out $f(a)$, then feed the result to $g$.
+
+</Definition>
+
+The chain only makes sense if **every output of $f$ is an allowed input of $g$**. If $g$ is only defined on some set $B'$, the chain “$f$, then $g$” exists exactly when every value $f(a)$ lies in $B'$.
+
+<Definition term="identity function">
+
+For any set $A$, the **identity function** $\mathrm{id}_A : A \to A$ is defined by $\mathrm{id}_A(a) = a$. It returns every input unchanged — a machine that does nothing.
+
+</Definition>
+
+<Definition term="undoing and inverse functions">
+
+A function $g : B \to A$ **undoes** $f : A \to B$ if
+
+$$
+g\big(f(a)\big) = a \quad \text{for every } a \in A.
+$$
+
+If $g$ undoes $f$ **and** $f$ undoes $g$, then $f$ and $g$ are **inverse functions** of each other, and we write $g = f^{-1}$.
+
+</Definition>
+
+<Note>
+
+In the next lesson, on <TopicLink id="math.cat.composition">composition</TopicLink>, “$f$, then $g$” gets its own symbol, $g \circ f$, read “$g$ after $f$”. The order in the symbol matches the order in $g(f(a))$: the function written nearest to $a$ acts first.
+
+</Note>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Chaining tables">
+
+With the functions from the arrow diagram:
+
+| person | home city | continent |
+| --- | --- | --- |
+| Amina | Kano | Africa |
+| Bo | Chengdu | Asia |
+| Carlos | Lima | South America |
+| Dilnoza | Tashkent | Asia |
+
+The chain “home city, then continent” sends Amina to Africa, Bo and Dilnoza to Asia, and Carlos to South America. Notice that Bo and Dilnoza have **different** home cities but end up in the **same** continent: a chain can combine outputs that were separate after the first step.
+
+</Example>
+
+<Example title="Chaining formulas — and the order matters">
+
+Let $f(x) = x + 3$ and $g(x) = 2x$, both on the integers.
+
+- “$f$, then $g$”: $\;x \mapsto g(x + 3) = 2(x + 3) = 2x + 6$.
+- “$g$, then $f$”: $\;x \mapsto f(2x) = 2x + 3$.
+
+These never agree: $2x + 6$ and $2x + 3$ always differ by $3$. With a third step, “add $3$, then double, then subtract $6$” sends $x$ to $2(x + 3) - 6 = 2x$: the long chain is just doubling.
+
+</Example>
+
+<Example title="A chain that cannot be formed">
+
+Let $f(x) = x - 2$ on the rational numbers $\Q$, and let $g(x) = \tfrac{1}{x}$, which is defined only for $x \neq 0$. The chain “$f$, then $g$” would send $x$ to $\tfrac{1}{x - 2}$ — but at $x = 2$ the output of $f$ is $0$, which $g$ does not accept. So the chain is a function on $\Q$ **without** $2$, not on all of $\Q$.
+
+</Example>
+
+<Example title="Undoing">
+
+- “Subtract $3$” undoes “add $3$”, and “add $3$” undoes “subtract $3$”: they are inverses.
+- On $\Q$, “halve” undoes “double”, and “double” undoes “halve”: $\tfrac{2x}{2} = x$ and $2 \cdot \tfrac{x}{2} = x$.
+- On $\Z$, “square” **cannot** be undone: $2^2 = 4$ and $(-2)^2 = 4$, so a function undoing it would have to send $4$ back to both $2$ and $-2$.
+
+</Example>
+
+<Example title="Undoing the temperature conversion">
+
+“Celsius to Fahrenheit” is the chain “multiply by $\tfrac{9}{5}$, then add $32$” (and $\tfrac{9}{5} = 1.8$). Its undoing steps are “divide by $\tfrac{9}{5}$” (that is, multiply by $\tfrac{5}{9}$) and “subtract $32$”, and they must be done in reverse order:
+
+$$
+F \;\longmapsto\; \tfrac{5}{9}\,(F - 32).
+$$
+
+At $F = 86$ this gives $\tfrac{5}{9} \cdot 54 = 30$. Sam's order gives $\tfrac{5}{9} \cdot 86 - 32 = \tfrac{142}{9} \approx 15.8$.
+
+</Example>
+
+</Section>
+
+<Section id="proof" kind="proof" title="The rules of chaining and undoing">
+
+<Theorem name="Theorem 1 (doing nothing changes nothing)">
+
+For every function $f : A \to B$: “$\mathrm{id}_A$, then $f$” is $f$, and “$f$, then $\mathrm{id}_B$” is $f$.
+
+</Theorem>
+
+<Proof>
+
+Two functions are equal when they give the same output for every input. For each $a \in A$: “$\mathrm{id}_A$, then $f$” gives $f(\mathrm{id}_A(a)) = f(a)$, and “$f$, then $\mathrm{id}_B$” gives $\mathrm{id}_B(f(a)) = f(a)$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (when can adding and multiplying be swapped?)">
+
+Let $a$ and $m$ be integers. “Add $a$, then multiply by $m$” and “multiply by $m$, then add $a$” are the same function on $\Z$ exactly when $a = 0$ or $m = 1$.
+
+</Theorem>
+
+<Proof>
+
+The first chain sends $x$ to $m(x + a) = mx + ma$; the second sends $x$ to $mx + a$.
+
+If $a = 0$, both are $x \mapsto mx$. If $m = 1$, both are $x \mapsto x + a$. So in these cases the chains agree.
+
+Conversely, suppose the chains agree for every $x$. At $x = 0$ this says $ma = a$, so $(m - 1)a = 0$. A product of two integers is $0$ only if one of them is $0$, so $m = 1$ or $a = 0$.
+
+</Proof>
+
+So for most choices the order matters — Kofi's “multiply by $1.8$, then add $32$” is not the same as “add $32$, then multiply by $1.8$”.
+
+<Theorem name="Theorem 3 (socks and shoes)">
+
+Suppose $f : A \to B$ is undone by $f' : B \to A$, and $g : B \to C$ is undone by $g' : C \to B$. Then “$f$, then $g$” is undone by “$g'$, then $f'$”.
+
+</Theorem>
+
+<Proof>
+
+Take any $a \in A$. Doing $f$, then $g$, then $g'$, then $f'$ gives
+
+$$
+f'\Big(g'\big(g(f(a))\big)\Big) = f'\big(f(a)\big) = a.
+$$
+
+The first step uses that $g'$ undoes $g$ (applied to the input $f(a)$), and the second that $f'$ undoes $f$.
+
+</Proof>
+
+The proof shows why the order is forced: $g'$ can only cancel $g$ if it comes **directly** after it. In Sam's order, “divide by $1.8$” arrives while the $+32$ is still in the way.
+
+<Theorem name="Theorem 4 (undoable functions keep inputs apart)">
+
+If some function $g$ undoes $f$, then $f$ never sends two different inputs to the same output: whenever $f(a) = f(b)$, we have $a = b$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $f(a) = f(b)$. Apply $g$ to both sides: $g(f(a)) = g(f(b))$. Since $g$ undoes $f$, the left side is $a$ and the right side is $b$. So $a = b$.
+
+</Proof>
+
+In the language of the functions lesson, a function that can be undone is **injective**. Squaring on $\Z$ is not injective ($2^2 = (-2)^2$), so by Theorem 4 nothing can undo it. Conversely, an injective function on a non-empty set can always be undone: send each output back to the input it came from, and send everything that is never an output anywhere you like.
+
+<Note>
+
+**Undoing is not quite the same as being an inverse.** On $\Z$, “halve and round down” undoes “double”, because $\tfrac{2x}{2} = x$. But “double” does not undo “halve and round down”: $1$ is halved to $0$, and doubling gives $0$, not $1$. In fact doubling has no inverse function $\Z \to \Z$ at all, because odd numbers are never outputs, so nothing could be sent back to them. On $\Q$, doubling and halving are true inverses. A function has an inverse function exactly when it is a bijection — injective and surjective.
+
+</Note>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Chains and undoing in Lean">
+
+In Lean we write the chain “$f$, then $g$” as `andThen f g`. Lean only allows it when the output type of `f` is the input type of `g`, so the rule “every output must be an allowed input” is checked automatically.
+
+<Lean decl="Lumenary.ChainingFunctions.andThen" />
+
+Lean's own library writes the same function as `g ∘ f`; the two agree by definition:
+
+<Lean decl="Lumenary.ChainingFunctions.and_then_eq_comp" />
+
+Computing chains, and seeing that the order matters:
+
+<Lean decl="Lumenary.ChainingFunctions.add_then_double" />
+
+<Lean decl="Lumenary.ChainingFunctions.double_then_add" />
+
+<Lean decl="Lumenary.ChainingFunctions.order_matters" />
+
+<Lean decl="Lumenary.ChainingFunctions.add_mul_swap_iff" />
+
+The identity laws are true “by definition”: Lean accepts `rfl`, which means both sides compute to literally the same function.
+
+<Lean decl="Lumenary.ChainingFunctions.id_and_then" />
+
+<Lean decl="Lumenary.ChainingFunctions.and_then_id" />
+
+Undoing, and some examples on $\Z$ and $\Q$ (core Lean's `Rat` is the rational numbers):
+
+<Lean decl="Lumenary.ChainingFunctions.Undoes" />
+
+<Lean decl="Lumenary.ChainingFunctions.sub_undoes_add" />
+
+<Lean decl="Lumenary.ChainingFunctions.add_undoes_sub" />
+
+<Lean decl="Lumenary.ChainingFunctions.halve_undoes_double" />
+
+<Lean decl="Lumenary.ChainingFunctions.int_halve_undoes_double" />
+
+<Lean decl="Lumenary.ChainingFunctions.int_double_not_undoes_halve" />
+
+<Narrator who="gideon">
+
+Here is the socks-and-shoes theorem. The `calc` block is the human proof line by line. Then watch it do real work: the temperature conversion is a chain of two steps, so the theorem about **all** chains instantly proves that converting back works for **every** temperature — not just for $30\,^\circ\mathrm{C}$.
+
+</Narrator>
+
+<Lean decl="Lumenary.ChainingFunctions.undo_chain" />
+
+<Lean decl="Lumenary.ChainingFunctions.toFahrenheit" />
+
+<Lean decl="Lumenary.ChainingFunctions.toCelsius" />
+
+<Lean decl="Lumenary.ChainingFunctions.thirty_degrees" />
+
+<Lean decl="Lumenary.ChainingFunctions.to_celsius_undoes" />
+
+<Lean decl="Lumenary.ChainingFunctions.wrong_order_fails" />
+
+Finally, Theorem 4 and its consequence for squaring:
+
+<Lean decl="Lumenary.ChainingFunctions.injective_of_undoes" />
+
+Core Lean's library already knows Theorem 4, under the names `Function.LeftInverse` (for “undoes”) and `Function.Injective`; this version just applies it:
+
+<Lean decl="Lumenary.ChainingFunctions.injective_of_undoes_library" />
+
+<Lean decl="Lumenary.ChainingFunctions.square_cannot_be_undone" />
+
+What is formalised: every theorem of the proof section and every example above, using core Lean only. The small arithmetic steps are finished by tactics: `omega` for whole-number arithmetic, `grind` for rearranging fractions, and `decide +kernel`, which makes Lean's trusted kernel evaluate exact fraction arithmetic such as $\tfrac{9}{5} \cdot 30 + 32 = 86$. Mathlib, Lean's large mathematical library, builds on the same names: it proves, for instance, that a function has an inverse exactly when it is a bijection (`Function.bijective_iff_has_inverse`).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Chaining tables by computer">
+
+<Narrator who="margaret">
+
+A function on a small set is just a table, and a table is a Python dictionary. Chaining is looking things up twice: `g[f[a]]`. With tables I can test every function from $\{0, 1, 2\}$ to itself — all $3^3 = 27$ of them — and every pair of them.
+
+</Narrator>
+
+<Python id="chaining_functions_tables" />
+
+Three things to notice. First, the order of a chain matters for most pairs: only $141$ of the $729$ pairs $(f, g)$ give the same function in both orders. Second, exactly $6$ functions can be undone — the ones that never send two inputs to the same output, as Theorem 4 predicts. Third, undoing in the **right** order works for all $36$ pairs (Theorem 3), while undoing in the **wrong** order works for exactly the $18$ pairs whose order can be swapped. The computation shows that pattern for this small set; one of the exercises asks you to prove it.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: composition machines">
+
+Choose two machines and feed in a number. The widget runs them in both orders, so you can see at once whether the order matters. The “Arrow chains” tab shows chains of tables between small sets, as in our arrow diagram.
+
+<CompositionMachine />
+
+Things to try:
+
+- Find a pair of machines whose order **does not** matter. (Does every pair involving “Do nothing” work? Why — which theorem is that?)
+- “Square” and “Opposite”: does the order matter? Try a negative input.
+- Find a machine that undoes itself: doing it twice gives back your input.
+- “Add 1” then “Subtract 3”: which single machine would do the same as this chain?
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Writing “first $f$, then $g$” as $f(g(x))$.** In $f(g(x))$ you must work out $g(x)$ first, so $g$ acts first. “First $f$, then $g$” is $g(f(x))$: the function nearest to $x$ is the one that acts first.
+
+</Misconception>
+
+<Misconception>
+
+**“Every function can be undone.”** Squaring on $\Z$ sends $2$ and $-2$ to the same output, $4$, so no function can send $4$ back to the right place (Theorem 4). The same goes for any function that sends two inputs to one output, such as “round to the nearest ten”.
+
+</Misconception>
+
+<Misconception>
+
+**“To undo a chain, undo each step in the same order.”** Undo the **last** step **first**: socks, then shoes, is undone by shoes off, then socks off. “Multiply by $1.8$, then add $32$” is undone by “subtract $32$, then divide by $1.8$”.
+
+</Misconception>
+
+<Misconception>
+
+**Ignoring whether outputs are allowed inputs.** “Subtract $2$, then take the reciprocal” breaks at $x = 2$, because $\tfrac{1}{0}$ is not defined. Before chaining, check that every output of the first function is an input the second one accepts.
+
+</Misconception>
+
+<Misconception>
+
+**“If two chains agree for one input, they are the same function.”** “Add $3$, then double” and “double, then add $6$” agree everywhere, but “add $1$, then square” and “square, then add $1$” agree only at $x = 0$. Functions are equal only when they agree for **every** input.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="algebra" title="Undoing in reverse, everywhere">
+
+The functions from a set to itself that can be undone in both directions — the bijections — can be chained, every one has an inverse, and the identity does nothing. A collection of reversible transformations like this is a **group**, and Theorem 3 becomes the rule: the inverse of “$f$, then $g$” is “$g^{-1}$, then $f^{-1}$”. Anyone who solves a Rubik's cube uses it: to undo the moves $R$, then $U$, you do $U$ backwards and then $R$ backwards. The same reversal appears with matrices, where $(AB)^{-1} = B^{-1}A^{-1}$, and in solving equations: to solve $2(x + 3) = 20$, undo “add $3$, then double” by halving first and subtracting $3$ second.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Moves of a square">
+
+Rotations and reflections of a square are functions from the plane to itself, and they can be chained. Turning a square a quarter turn anticlockwise and then reflecting it in its vertical axis gives a different result from reflecting first and then turning — the corner that ends up at the top right is different. But two rotations about the centre can always be swapped. Which moves can be swapped with which is the beginning of the study of symmetry (see <TopicLink id="math.geom.symmetry-transformations">symmetry and transformations</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Pipelines and the undo button">
+
+Programs are built from chained functions: read the data, then clean it, then sort it, then display it. A text editor's undo button keeps a **stack** of the actions you have performed and undoes the most recent one first — socks and shoes again. Computer scientists call this “last in, first out”.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="categories" kind="categories" title="A glimpse of structure">
+
+Picture each set as a dot and each function as an arrow between dots. Chaining is following arrows head to tail, and it is only allowed when one arrow ends where the next begins. Every dot has a “do nothing” arrow, and Theorem 1 says that following it changes nothing. In the next lesson you will also see that it never matters how you group a long chain. Dots and arrows with exactly these features form a **category**, and sets with functions are the first example. The Arrows that compose trail lets you build chains in a small category of your own.
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trail">
+
+<Trail slug="arrows-that-compose" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Working backwards through a chain of operations is an old technique. **Āryabhaṭa**'s *Āryabhaṭīya* (499 CE) states the method of *inversion*: multipliers become divisors and divisors multipliers, additions become subtractions and subtractions additions, working from the end.
+- **Bhāskara II**'s *Līlāvatī* (1150) contains a famous problem: *a number is multiplied by $3$, increased by three quarters of the product, divided by $7$, decreased by a third of the result, multiplied by itself, decreased by $52$; then its square root is taken, $8$ is added and the result divided by $10$, giving $2$. What was the number?* Undoing the steps from the last to the first gives the answer, $28$ (try it in the exercises).
+- The word *function* was used by **Gottfried Wilhelm Leibniz** in the 1690s, and **Leonhard Euler** introduced the notation $f(x)$ in 1734. The modern idea of a function as any rule that gives exactly one output for each input is usually credited to **Peter Gustav Lejeune Dirichlet** (1837).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- F. William Lawvere and Stephen H. Schanuel, *Conceptual Mathematics: A First Introduction to Categories* (2nd edition, 2009), which begins with sets, maps and composition, including chains of maps drawn as arrows.
+- Israel M. Gelfand, Elena G. Glagoleva and Emmanuel E. Shnol, *Functions and Graphs* (1969) — a classic problem book for school students.
+- Richard Rusczyk, *Introduction to Algebra* (2007), the chapter on functions, including composition and inverses.
+
+</Section>

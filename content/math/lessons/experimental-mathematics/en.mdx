@@ -1,0 +1,417 @@
+---
+slug: experimental-mathematics
+topic: math.comp.experimental-mathematics
+title: "Experimental mathematics: conjectures and counterexamples"
+subtitle: Computation as a laboratory — finding patterns and closed forms, hunting counterexamples with stated bounds, detecting integer relations, and judging computer-assisted proofs, without ever mistaking evidence for proof.
+level: grad
+ages: Graduate
+minutes: 130
+order: 7041
+objectives:
+  - Generate and test conjectures numerically, and design a counterexample search whose bounds are stated and whose completeness can be checked
+  - Use high-precision arithmetic and integer-relation detection (PSLQ) to guess closed forms, and then prove them, as for the Bailey–Borwein–Plouffe formula
+  - Explain with examples — Fermat numbers, Euler's conjecture, prime races, π(x) and li(x), Borwein integrals — why patterns that hold in many cases can fail
+  - Assess computer-assisted proofs such as those of the four colour theorem and the Kepler conjecture, and how they were verified
+narrators: []
+lean:
+  - Lumenary.ExperimentalMathematics.fermat
+  - Lumenary.ExperimentalMathematics.fermat_prime_le_four
+  - Lumenary.ExperimentalMathematics.euler_641
+  - Lumenary.ExperimentalMathematics.fermat_conjecture_false
+  - Lumenary.ExperimentalMathematics.EulerConjectureFive
+  - Lumenary.ExperimentalMathematics.lander_parkin
+  - Lumenary.ExperimentalMathematics.euler_conjecture_five_false
+  - Lumenary.ExperimentalMathematics.IsIntegerRelation
+  - Lumenary.ExperimentalMathematics.golden_relation
+  - Lumenary.ExperimentalMathematics.no_relation_sqrt_two
+  - Lumenary.ExperimentalMathematics.bbpIntegrand
+  - Lumenary.ExperimentalMathematics.bbp_partial_fractions
+  - Lumenary.ExperimentalMathematics.bbp_integral
+  - Lumenary.ExperimentalMathematics.basel
+  - Lumenary.ExperimentalMathematics.collatzStep
+  - Lumenary.ExperimentalMathematics.CollatzConjecture
+  - Lumenary.ExperimentalMathematics.reachesOne
+  - Lumenary.ExperimentalMathematics.reachesOne_sound
+  - Lumenary.ExperimentalMathematics.collatz_up_to_500
+compute: [experimental_mathematics_integer_relations, experimental_mathematics_counterexamples]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Mathematics as an experimental science">
+
+Around 1731 Euler computed $1 + \tfrac14 + \tfrac19 + \tfrac1{16} + \cdots$ to many decimal places — no easy task, since the series converges painfully slowly — and obtained $1.644934\ldots$. He recognised the number as $\pi^2/6$, announced the result in 1735 with a daring argument treating $\sin x / x$ as an infinite polynomial, and spent years making it rigorous. As a teenager in the 1790s Gauss counted primes in tables and conjectured that their density near $x$ is about $1/\ln x$; the prime number theorem was proved a century later. Birch and Swinnerton-Dyer's famous conjecture came out of computations on Cambridge's EDSAC computer in the early 1960s.
+
+Computation lets mathematicians *see* patterns, *guess* closed forms, and *refute* conjectures with a single counterexample. It also misleads: primes $\equiv 3 \pmod 4$ lead primes $\equiv 1 \pmod 4$ for every $x$ below $26{,}861$, and the inequality $\pi(x) \lt \mathrm{li}(x)$ holds for every $x$ ever checked — yet both patterns fail. This lesson is about using computation as a laboratory: generating conjectures, designing searches with honest bounds, detecting integer relations at high precision, and judging computer-assisted proofs.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The experimental cycle">
+
+Experimental mathematics follows a cycle:
+
+1. **Explore.** Compute many cases, plot, tabulate; look sequences up in the *On-Line Encyclopedia of Integer Sequences* (OEIS).
+2. **Conjecture.** Formulate a precise statement that fits the data.
+3. **Test.** Try hard to *break* it: extend the range, look at extreme cases, compute to higher precision. A conjecture that survives honest attempts at refutation earns credibility — but not truth.
+4. **Prove or refute.** A counterexample settles the question at once; a proof settles it for ever. Often the experiment also suggests the proof, by revealing the structure behind the pattern.
+
+Different statements interact with computation differently. A statement "for all $n$, $P(n)$" with $P$ decidable — such as Goldbach's conjecture — can be **refuted** by a finite computation but never **confirmed** by one. A closed form such as "this constant equals $\pi^2/6$" can be tested to a thousand digits, but agreement to a thousand digits is still not a proof. And an existence statement can be settled by exhibiting an object, which the computer can then *certify*.
+
+The lesson assumes high-precision and floating-point computation from <TopicLink id="math.comp.numerical-methods">numerical methods</TopicLink> and search techniques such as meet-in-the-middle from <TopicLink id="math.comp.algorithm-design">algorithm design</TopicLink>; for how to package and report such computations, see <TopicLink id="math.comp.computational-reproducibility">computational reproducibility</TopicLink>.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="integer relation">
+
+An **integer relation** among real numbers $x_1, \dots, x_n$ is a non-zero vector $(a_1, \dots, a_n) \in \Z^n$ with $a_1 x_1 + \cdots + a_n x_n = 0$. For instance $(1, -1, -1)$ is an integer relation for $(\varphi^2, \varphi, 1)$, where $\varphi$ is the golden ratio. A number $\alpha$ is algebraic of degree at most $d$ exactly when $(1, \alpha, \dots, \alpha^d)$ has an integer relation.
+
+</Definition>
+
+<Definition term="exhaustive search up to a bound">
+
+A counterexample search for a statement $\forall n \in D\ P(n)$ is **exhaustive up to the bound $N$** if it checks every case $n \in D$ with $n \le N$ (or every case in an explicitly described finite set). Its report must state the bound, the exact set searched, and how completeness of the search was ensured.
+
+</Definition>
+
+<Definition term="computer-assisted proof">
+
+A **computer-assisted proof** is a proof in which some steps are carried out by computation — typically a reduction, proved by hand, of the theorem to finitely many cases, followed by a computer check of those cases. Its reliability depends on the reduction, the code, and the computing environment.
+
+</Definition>
+
+In this lesson a **conjecture** is a precise statement that has been proposed but neither proved nor refuted, and **numerical evidence** for an identity means agreement to a stated number of digits.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Patterns that failed, and one that did not">
+
+<Example title="Fermat numbers">
+
+Fermat (1640) observed that $F_n = 2^{2^n} + 1$ is prime for $n = 0, 1, 2, 3, 4$ — namely $3, 5, 17, 257, 65537$ — and conjectured that all are prime. Euler (1732) found $641 \mid F_5$. No further Fermat prime is known: $F_5, \dots, F_{32}$ are all known to be composite. Five confirming cases did not make a theorem, and the opposite conjecture — that only finitely many $F_n$ are prime — is also open.
+
+</Example>
+
+<Example title="Euler's sum-of-powers conjecture">
+
+Euler (1769) conjectured that a $k$-th power is never the sum of fewer than $k$ positive $k$-th powers (true for $k = 3$, by Fermat's last theorem for cubes). In 1966 Lander and Parkin published, in a two-sentence paper, a counterexample found by a computer search:
+
+$$
+27^5 + 84^5 + 110^5 + 133^5 = 144^5 .
+$$
+
+For fourth powers Elkies (1988) found $2682440^4 + 15365639^4 + 18796760^4 = 20615673^4$ using elliptic curves, and Frye then found the smallest example, $95800^4 + 217519^4 + 414560^4 = 422481^4$, by a search guided by Elkies's analysis. The first experiment below repeats Lander and Parkin's search exhaustively for $e \le 150$.
+
+</Example>
+
+<Example title="A prime race">
+
+Let $\pi(x; 4, a)$ be the number of primes $p \le x$ with $p \equiv a \pmod 4$. For every $x \lt 26861$ we have $\pi(x; 4, 3) \ge \pi(x; 4, 1)$, and the lead of the "3" team looks permanent. At $x = 26861$ the "1" team goes ahead (Leech, 1957) — for two values of $x$; it leads again from $616841$. Littlewood (1914) proved that the lead changes infinitely often.
+
+</Example>
+
+<Example title="π(x) and li(x)">
+
+The logarithmic integral $\mathrm{li}(x) = \int_0^x \frac{dt}{\ln t}$ (a principal value) is an excellent approximation to the prime-counting function $\pi(x)$, and $\pi(x) \lt \mathrm{li}(x)$ for every $x$ that has ever been checked — at least up to $10^{14}$ (Kotnik, 2008). For a long time it was widely believed always to hold. Littlewood (1914) proved that $\pi(x) - \mathrm{li}(x)$ changes sign infinitely often; the first sign change is known to occur below about $1.4 \times 10^{316}$ (Bays and Hudson, 2000, with later refinements), far beyond direct computation.
+
+</Example>
+
+<Example title="Borwein integrals">
+
+For $n = 0, 1, \dots, 6$,
+
+$$
+\int_0^\infty \prod_{k=0}^{n} \frac{\sin(x/(2k+1))}{x/(2k+1)}\, dx = \frac{\pi}{2},
+$$
+
+and the pattern seems certain. For $n = 7$ the integral is $\frac{\pi}{2} - 2.31 \times 10^{-11}$ approximately — exactly $\frac{467807924713440738696537864469}{935615849440640907310521750000}\,\pi$. The reason (D. and J. Borwein, 2001) is that the value is $\pi/2$ precisely while $\frac13 + \frac15 + \cdots + \frac1{2n+1} \lt 1$, and that sum first exceeds $1$ at $n = 7$. A numerical integrator working to eight digits would have "confirmed" the pattern.
+
+</Example>
+
+<Example title="A closed form found by computer">
+
+In 1995 Simon Plouffe, using David Bailey's implementation of the PSLQ algorithm, searched for an integer relation among $\pi$ and the eight constants $S_j = \sum_{k \ge 0} 16^{-k}/(8k + j)$, $j = 1, \dots, 8$, computed to high precision. The relation found,
+
+$$
+\pi = \sum_{k=0}^{\infty} \frac{1}{16^k}\left(\frac{4}{8k+1} - \frac{2}{8k+4} - \frac{1}{8k+5} - \frac{1}{8k+6}\right),
+$$
+
+is the **Bailey–Borwein–Plouffe (BBP) formula** (published 1997). It was then proved by elementary calculus (Theorem 2), and it has a striking consequence: hexadecimal digits of $\pi$ can be computed far after the point without computing the earlier ones (Theorem 3).
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Proofs behind the experiments">
+
+<Theorem name="Theorem 1 (Euler, 1732)">
+
+$641$ divides $F_5 = 2^{32} + 1$.
+
+</Theorem>
+
+<Proof>
+
+Note $641 = 5 \cdot 2^7 + 1 = 5^4 + 2^4$. Modulo $641$, the first form gives $5 \cdot 2^7 \equiv -1$, hence $5^4 \cdot 2^{28} = (5 \cdot 2^7)^4 \equiv 1$; the second gives $5^4 \equiv -2^4$. Therefore $2^{32} = 2^4 \cdot 2^{28} \equiv -5^4 \cdot 2^{28} \equiv -1$, i.e. $641 \mid 2^{32} + 1$. $\blacksquare$
+
+</Proof>
+
+Euler did not stumble on $641$: he had shown that every prime factor of $F_n$ has the form $2^{n+1}k + 1$ (later sharpened to $2^{n+2}k + 1$ by Lucas), so for $F_5$ only primes $64k + 1$ need testing — $193$, $257$, $449$, $577$, $641$ — a small search guided by theory.
+
+<Theorem name="Theorem 2 (Bailey, Borwein and Plouffe, 1997)">
+
+$\displaystyle \pi = \sum_{k=0}^{\infty} \frac{1}{16^k}\left(\frac{4}{8k+1} - \frac{2}{8k+4} - \frac{1}{8k+5} - \frac{1}{8k+6}\right).$
+
+</Theorem>
+
+<Proof>
+
+For $1 \le j \le 8$, expand $1/(1 - x^8)$ as a geometric series, which converges uniformly on $[0, 1/\sqrt2]$ (there $x^8 \le \tfrac1{16}$), and integrate term by term:
+
+$$
+\int_0^{1/\sqrt2} \frac{x^{j-1}}{1 - x^8}\, dx = \sum_{k \ge 0} \int_0^{1/\sqrt2} x^{8k + j - 1}\, dx = \sum_{k \ge 0} \frac{2^{-(8k+j)/2}}{8k + j} = 2^{-j/2} S_j .
+$$
+
+Hence
+
+$$
+4S_1 - 2S_4 - S_5 - S_6 = \int_0^{1/\sqrt2} \frac{4\sqrt2 - 8x^3 - 4\sqrt2\, x^4 - 8x^5}{1 - x^8}\, dx .
+$$
+
+Substitute $x = y/\sqrt2$. The integrand becomes $\dfrac{16(4 - 2y^3 - y^4 - y^5)}{16 - y^8}$, and factoring $4 - 2y^3 - y^4 - y^5 = -(y-1)(y^2+2)(y^2+2y+2)$ and $16 - y^8 = -(y^2-2)(y^2+2)(y^2-2y+2)(y^2+2y+2)$ gives
+
+$$
+4S_1 - 2S_4 - S_5 - S_6 = \int_0^1 \frac{16y - 16}{y^4 - 2y^3 + 4y - 4}\, dy = \int_0^1 \left(\frac{4y}{y^2 - 2} - \frac{4y - 8}{y^2 - 2y + 2}\right) dy
+$$
+
+by partial fractions. On $[0, 1]$ an antiderivative is $F(y) = 2\ln(2 - y^2) - 2\ln(y^2 - 2y + 2) + 4\arctan(y - 1)$, because $y^2 - 2y + 2 = 1 + (y - 1)^2$. So the integral is $F(1) - F(0) = 0 - (2\ln 2 - 2\ln 2 + 4\arctan(-1)) = \pi$. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Theorem 3 (BBP digit extraction)">
+
+Let $\{t\}$ denote the fractional part of $t$, and $d \ge 0$. Then
+
+$$
+\{16^d \pi\} = \big\{ 4\{16^d S_1\} - 2\{16^d S_4\} - \{16^d S_5\} - \{16^d S_6\} \big\},
+\qquad
+\{16^d S_j\} = \Big\{ \sum_{k=0}^{d} \frac{16^{d-k} \bmod (8k+j)}{8k+j} + \sum_{k \gt d} \frac{16^{d-k}}{8k+j} \Big\},
+$$
+
+so the hexadecimal digits of $\pi$ in positions $d + 1, d + 2, \dots$ can be computed with $O(d \log d)$ operations on numbers of $O(\log d)$ bits, without computing the first $d$ digits.
+
+</Theorem>
+
+<Proof>
+
+Multiply the BBP formula by $16^d$; fractional parts are additive modulo integers, which gives the first identity. In $16^d S_j = \sum_k 16^{d-k}/(8k+j)$, the terms with $k \le d$ are $16^{d-k}/(8k + j)$, whose integer part does not affect the fractional part, so $16^{d-k}$ may be reduced modulo $8k + j$; the remaining terms form a rapidly convergent tail. Each modular power costs $O(\log d)$ multiplications by binary exponentiation, and there are $O(d)$ of them. $\blacksquare$
+
+</Proof>
+
+In practice the sums are carried in floating point, so only the first several digits after position $d$ are reliable, and the computation below checks them against an independent exact calculation. No analogous formula is known for the *decimal* digits of $\pi$.
+
+How are such relations found? An integer relation algorithm takes approximations of $x_1, \dots, x_n$ and either returns a candidate relation or certifies that none exists with small coefficients.
+
+<Theorem name="Theorem 4 (integer relation detection; Ferguson, Bailey and Arno 1999) — stated, not proved here">
+
+Let $x \in \R^n$. The PSLQ algorithm, run in exact real arithmetic, maintains a lower-trapezoidal matrix $H$ with the property that every integer relation $m$ for $x$ satisfies $\|m\| \ge 1/\max_j |H_{jj}|$. If $x$ has an integer relation, PSLQ finds one after a number of iterations bounded by a polynomial in $n$ and $\log \|m_{\min}\|$, where $m_{\min}$ is a shortest relation.
+
+</Theorem>
+
+Integer relations can also be found with the LLL lattice-basis reduction algorithm (Lenstra, Lenstra and Lovász, 1982), as shown in polynomial time by Håstad, Just, Lagarias and Schnorr (1989). In real life the input is only known to finite precision, so two warnings apply. A "relation" with coefficients of size $10^{c}$ among $n$ numbers known to $D$ digits is meaningful only if $D$ comfortably exceeds $nc$: otherwise PSLQ finds spurious relations that disappear at higher precision. And the lower bound for relations is trustworthy only if the working precision was sufficient. A relation that persists when the precision is doubled is strong evidence — and the signal to look for a proof.
+
+<Theorem name="Theorem 5 (Littlewood 1914) — stated, not proved here">
+
+Both $\pi(x) - \mathrm{li}(x)$ and $\pi(x; 4, 1) - \pi(x; 4, 3)$ change sign infinitely often as $x \to \infty$.
+
+</Theorem>
+
+The proof uses the zeros of the Riemann zeta function and of the Dirichlet $L$-function for the character modulo $4$ (Ingham, 1932, chapter V). Rubinstein and Sarnak (1994) explained *why* the data mislead: **assuming** the generalised Riemann hypothesis and a linear-independence hypothesis on the zeros, the set of $x$ with $\pi(x;4,3) \gt \pi(x;4,1)$ has logarithmic density about $0.9959$ — the "3" team leads almost always, but not always. Note the three levels in that sentence: a theorem (Littlewood), a conditional theorem (Rubinstein–Sarnak), and numerical evidence (the race up to $10^5$ below).
+
+</Section>
+
+<Section id="computer-proofs" kind="human" title="Assessing computer-assisted proofs">
+
+A computer-assisted proof is as good as three things: the mathematical reduction to finitely many cases, the correctness of the computation, and the environment it ran in. The great examples show the ways in which each has been secured.
+
+- **The four colour theorem** (Appel and Haken, 1976). A hand-proved reduction showed that it suffices to check that each configuration in an unavoidable set of 1,936 is *reducible*, which a computer did in about 1,200 hours. Doubts about the unrefereeable computation (and some errors in the hand part, later corrected) led Robertson, Sanders, Seymour and Thomas (1997) to a new proof with 633 configurations and new, independently written programs; Gonthier (2005) then checked a complete proof in the Coq proof assistant — reduction and computation together.
+- **The Kepler conjecture** (Hales, with Ferguson, 1998). The densest packing of equal balls in space has density $\pi/\sqrt{18}$. The proof reduced the problem to several thousand configurations, described by planar graphs, and to many nonlinear inequalities, verified with interval arithmetic and linear programming. The referees reported that they were "99% certain" of its correctness but could not check every computation; the paper appeared in the *Annals of Mathematics* in 2005. Hales then led the Flyspeck project, which completed a formal proof in HOL Light and Isabelle in 2014.
+- **Non-existence of a projective plane of order 10** (Lam, Thiel and Swiercz, 1989) used thousands of hours on a Cray supercomputer; it has since been re-verified independently, including with SAT solvers that produce checkable certificates.
+- **SAT-solver proofs** such as the Boolean Pythagorean triples theorem (Heule, Kullmann and Marek, 2016: $\{1, \dots, 7824\}$ can be split into two classes with no Pythagorean triple inside a class, but $\{1, \dots, 7825\}$ cannot) and Keller's conjecture in dimension 7 (Brakensiek, Heule, Mackey and Narváez, 2020) produce *proof certificates* — for unsatisfiability, a DRAT proof — that are checked by independent, sometimes formally verified, checkers.
+- **Validated numerics** turns floating-point computation into proof by computing with intervals and outward rounding: Tucker's 2002 proof that the Lorenz equations have a strange attractor, and the numerical parts of Helfgott's 2013 proof of the ternary Goldbach conjecture (every odd number greater than $5$ is a sum of three primes), whose small cases were checked by a separate computation with Platt.
+
+Questions to ask of any computer-assisted proof: Is the reduction to finitely many cases proved, and where? Is the code available, and has it been independently reimplemented? Does the computation emit certificates that a simpler program can check? Were floating-point computations made rigorous? Has any part been formally verified? Compare <TopicLink id="math.comp.computational-reproducibility">computational reproducibility</TopicLink> and <TopicLink id="math.comp.formalising-published-mathematics">formalising published mathematics</TopicLink>.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Experiments and their proofs in Lean">
+
+Fermat's evidence, Euler's refutation by his own argument (no $2^{32}$ is computed), and the conclusion:
+
+<Lean decl="Lumenary.ExperimentalMathematics.fermat" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.fermat_prime_le_four" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.euler_641" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.fermat_conjecture_false" />
+
+Euler's sum-of-powers conjecture is *defined* as a proposition, and refuted by the counterexample:
+
+<Lean decl="Lumenary.ExperimentalMathematics.EulerConjectureFive" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.lander_parkin" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.euler_conjecture_five_false" />
+
+Integer relations: a relation that exists, and a proof that none exists for $(\sqrt2, 1)$ — the kind of statement no search can establish:
+
+<Lean decl="Lumenary.ExperimentalMathematics.IsIntegerRelation" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.golden_relation" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.no_relation_sqrt_two" />
+
+The analytic heart of Theorem 2 — partial fractions and the integral equal to $\pi$, proved with the fundamental theorem of calculus exactly as above:
+
+<Lean decl="Lumenary.ExperimentalMathematics.bbpIntegrand" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.bbp_partial_fractions" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.bbp_integral" />
+
+Euler's numerically discovered sum, from Mathlib:
+
+<Lean decl="Lumenary.ExperimentalMathematics.basel" />
+
+Finally the difference between a bounded check and a conjecture, made precise. The Collatz conjecture is stated as a definition; a bounded search is proved sound; and the search, run by Lean's kernel, proves the conjecture for $n \le 500$ — and nothing more:
+
+<Lean decl="Lumenary.ExperimentalMathematics.collatzStep" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.CollatzConjecture" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.reachesOne" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.reachesOne_sound" />
+
+<Lean decl="Lumenary.ExperimentalMathematics.collatz_up_to_500" />
+
+**Not formalised:** the first step of Theorem 2 (exchanging the series and the integral, and the substitution), so the BBP *formula* itself is proved here only on paper; Theorems 3–5; and the PSLQ algorithm. Mathlib does not yet contain Littlewood's theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments">
+
+The first experiment rediscovers the BBP formula: it computes $\pi$ and $S_1, \dots, S_8$ to $60$ digits with exact rational arithmetic, runs PSLQ, and rechecks the relation at $100$ digits. It then shows a spurious relation found at $8$ digits, a PSLQ lower bound when no relation is found, and BBP digit extraction checked against an exact computation.
+
+<Python id="experimental_mathematics_integer_relations" />
+
+The second experiment runs four searches with stated bounds: Euler's conjecture for fifth powers (exhaustive for $e \le 150$, by a meet-in-the-middle search over sums of two fifth powers), the prime race modulo $4$, $\pi(x)$ against $\mathrm{li}(x)$, and the exact values of the Borwein integrals.
+
+<Python id="experimental_mathematics_counterexamples" />
+
+Notice how each report is phrased: what was searched, how the search is known to be complete, and what kind of evidence the result is. That is the standard to apply to your own experiments, and to those you read.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: Euler's experiment and the four colour theorem">
+
+Euler's problem: the partial sums of $\sum 1/n^2$ creep towards $\pi^2/6$ with an error of about $1/N$ after $N$ terms, so a thousand terms give only three correct digits. Euler needed acceleration (the Euler–Maclaurin formula) to get enough digits to *recognise* the limit. Increase $N$ and watch how slowly the gap closes.
+
+<SequenceLab mode="series" term="1/n^2" limit="pi^2/6" N={1000} title="Euler's experiment: 1 + 1/4 + 1/9 + ⋯" />
+
+The colouring widget computes chromatic numbers of small graphs by exhaustive search — a finite computation that settles a finite question. The four colour theorem is a statement about *infinitely* many planar graphs; its proof needed a theorem reducing it to finitely many configurations before any computer could help. Try the wheel and the Petersen graph, then $K_5$, which is not planar.
+
+<GraphExplorer presets={["wheel", "k4", "petersen", "k5"]} mode="colour" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A pattern that holds in many cases is established."** The prime race holds for $26{,}860$ consecutive values; $\pi(x) \lt \mathrm{li}(x)$ holds beyond $10^{14}$; the Borwein pattern holds for seven integrals; Fermat had five primes. All fail. Evidence makes a conjecture worth trying to prove; only a proof (or a counterexample) settles it.
+
+</Misconception>
+
+<Misconception>
+
+**"We searched and found no counterexample" is a result.** Not without its bounds. A report must say exactly what was searched (which $n$, which parameters), how completeness was ensured (for example, why the meet-in-the-middle search misses no case), and that a negative result says nothing beyond the bound.
+
+</Misconception>
+
+<Misconception>
+
+**"PSLQ proved the formula."** An integer relation found numerically is a conjecture, however many digits support it — and at low precision it may be spurious. The BBP formula became a theorem when it was proved by calculus.
+
+</Misconception>
+
+<Misconception>
+
+**"Computer-assisted proofs are less reliable than human proofs."** Human proofs also contain errors, some found only decades later. What matters is whether each part can be checked: hand-proved reductions, open and independently reimplemented code, certificates, validated numerics and formal verification can make a computer-assisted proof among the most reliable in mathematics.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="number-theory" title="Relations, irrationality and transcendence">
+
+Finding an integer relation is easy to verify and hard to rule out. A proof that *no* relation exists is an irrationality or transcendence theorem: $(1, \alpha)$ has no relation iff $\alpha$ is irrational, and $(1, \alpha, \dots, \alpha^d)$ has none for every $d$ iff $\alpha$ is transcendental. Lindemann (1882) proved $\pi$ transcendental, and Apéry (1978) proved $\zeta(3)$ irrational — his proof itself began with mysterious, experimentally checked recurrences. But it is unknown whether $\pi + e$, $\pi e$ or Euler's constant $\gamma$ is irrational. Integer-relation searches give *bounds*: PSLQ can certify that $\gamma$ satisfies no polynomial of small degree with small coefficients — evidence, not proof. See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Lattices and the geometry of numbers">
+
+An integer relation is a short vector in a lattice. Scale the numbers by a large $C$ and consider the lattice in $\R^{n+1}$ spanned by the vectors $(e_i, \lfloor C x_i \rceil)$; a relation $a$ gives the lattice vector $(a, \sum a_i \lfloor Cx_i\rceil)$, whose last coordinate is unusually small. Minkowski's convex body theorem guarantees that short vectors exist; LLL finds a vector within a factor $2^{(n-1)/2}$ of the shortest in polynomial time, by a reduction process that makes the basis nearly orthogonal. Geometry is also the subject of the Kepler conjecture, where the computer's task was to rule out every competing local arrangement of spheres.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Why the numbers mislead">
+
+Riemann's explicit formula writes $\pi(x)$ as $\mathrm{li}(x)$ minus a correction from prime squares, about $\tfrac12 \mathrm{li}(\sqrt x) \approx \sqrt x/\ln x$, plus oscillating terms $\mathrm{li}(x^\rho)$ from the zeros $\rho = \tfrac12 + i\gamma$ of $\zeta$ (assuming the Riemann hypothesis). The oscillations have size about $\sqrt x/\ln x$ times $\sum_\gamma \sin(\gamma \ln x)/\gamma$, and they vary on the scale of $\ln x$, not $x$: to overcome the bias the zeros must align, which happens first only for astronomically large $x$. Prime races have the same anatomy, with Dirichlet $L$-functions. The lesson for experiments: asymptotic behaviour that lives on a logarithmic scale cannot be seen in data on a linear one. See <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Heuristics from random models">
+
+Cramér's model treats each $n$ as "prime" independently with probability $1/\ln n$. It predicts, for example, that the number of twin primes up to $x$ is about $C x/(\ln x)^2$ — with the correct constant only after Hardy and Littlewood corrected for divisibility by small primes — and the numerical agreement is spectacular. Such random models are heuristics: they suggest conjectures and the right size of answers, but they are not proofs, and Maier (1985) showed that Cramér's model fails in short intervals. Experimental mathematics often tests such predictions; the honest report distinguishes the heuristic, the data and the theorem.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="What a search can and cannot do">
+
+Goldbach's conjecture is a $\Pi_1$ statement: "for all $n$, a decidable property holds". If it is false, a finite computation exhibits the counterexample, and Peano arithmetic proves the refutation. So if Goldbach's conjecture is *independent* of PA it is true. The Collatz conjecture is $\Pi_2$ ("for all $n$ there exists $k$ …"): a counterexample could be a diverging trajectory, which no finite computation can display. Conway (1972) proved that a natural generalisation of the Collatz problem is undecidable. Logic thus classifies what experiments can achieve: $\Pi_1$ statements are refutable by search, $\Sigma_1$ statements confirmable by search, and anything more complex needs proof. See <TopicLink id="math.found.incompleteness">the incompleteness theorems</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Before computers.** Euler's numerical work on the Basel problem (1730s) and his factor of $F_5$ (1732); Gauss's prime tables (1790s); Ramanujan's notebooks, written in India in the 1900s–1910s, full of formulas found by extraordinary calculation and insight, many proved only decades later by Berndt and others.
+- **Machines.** D. N. and D. H. Lehmer built mechanical and photoelectric sieves for number theory in the 1920s and 1930s. Turing computed zeros of the Riemann zeta function on the Manchester Mark 1 (published 1953). Birch and Swinnerton-Dyer's computations on EDSAC led to their conjecture (published 1963–65). Lander and Parkin refuted Euler's conjecture in 1966.
+- **Counterexamples to famous conjectures.** Haselgrove (1958) disproved Pólya's conjecture on the parity of prime factors; Tanaka (1980) found the smallest counterexample, $906{,}150{,}257$. Odlyzko and te Riele (1985) disproved the Mertens conjecture without exhibiting a counterexample.
+- **Algorithms.** Ferguson and Forcade gave an integer relation algorithm (1979); Lenstra, Lenstra and Lovász gave LLL (1982); Ferguson and Bailey gave PSLQ (1992); in 2000 the journal *Computing in Science and Engineering* listed integer relation detection among the top ten algorithms of the twentieth century. Wu Wenjun in China developed a mechanical method for proving geometry theorems (1977), a landmark of automated reasoning.
+- **A discipline.** Sloane began collecting integer sequences in 1964; the OEIS has been online since 1996. The journal *Experimental Mathematics* was founded in 1992. Computer-assisted proofs — the four colour theorem (1976), the Kepler conjecture (1998; formal proof 2014), and Helfgott's ternary Goldbach theorem (2013), by a mathematician from Peru working in France and Germany — changed what mathematicians accept as proof and how they check it.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Jonathan Borwein and David Bailey, *Mathematics by Experiment: Plausible Reasoning in the 21st Century* (2004; 2nd ed. 2008), with its companion David Bailey, Jonathan Borwein and Roland Girgensohn, *Experimentation in Mathematics* (2004).
+- Richard K. Guy, "The strong law of small numbers", *American Mathematical Monthly* (1988).
+- Andrew Granville and Greg Martin, "Prime number races", *American Mathematical Monthly* (2006).
+- David Bailey, Peter Borwein and Simon Plouffe, "On the rapid computation of various polylogarithmic constants", *Mathematics of Computation* (1997); Helaman Ferguson, David Bailey and Steve Arno, "Analysis of PSLQ, an integer relation finding algorithm", *Mathematics of Computation* (1999).
+- Georges Gonthier, "Formal proof — the four-color theorem", *Notices of the AMS* (2008); Thomas Hales et al., "A formal proof of the Kepler conjecture", *Forum of Mathematics, Pi* (2017).
+- A. E. Ingham, *The Distribution of Prime Numbers* (1932), for Littlewood's theorem.
+
+</Section>

@@ -1,0 +1,413 @@
+---
+slug: riemann-surfaces
+topic: math.geom.riemann-surfaces
+title: Riemann surfaces
+subtitle: Where the square root becomes a function — complex analysis on surfaces, and the meeting point of analysis, topology and algebraic geometry.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7018
+objectives:
+  - Define Riemann surfaces by holomorphic atlases and construct them from charts, from algebraic equations such as $w^2 = z^3 - z$, and as quotients $\C/\Lambda$
+  - Prove the local normal form of holomorphic maps and that a non-constant holomorphic map between compact Riemann surfaces is a branched covering of a well-defined degree
+  - Prove the Riemann–Hurwitz formula and use it to compute the genus of hyperelliptic and Fermat curves
+  - Classify complex tori up to biholomorphism and explain why they form a one-complex-parameter family
+  - State the uniformisation theorem and the Riemann–Roch theorem and use them in examples
+narrators: []
+lean:
+  - Lumenary.RiemannSurfaces.no_continuous_sqrt
+  - Lumenary.RiemannSurfaces.holomorphic_constant_compact
+  - Lumenary.RiemannSurfaces.periodic_lattice
+  - Lumenary.RiemannSurfaces.doubly_periodic_constant
+  - Lumenary.RiemannSurfaces.lift_affine
+  - Lumenary.RiemannSurfaces.weierstrass_periodic
+  - Lumenary.RiemannSurfaces.weierstrass_cubic
+compute: [riemann_surfaces_riemann_hurwitz, riemann_surfaces_tori]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Making multivalued functions single-valued">
+
+Every non-zero complex number has two square roots, and no continuous choice of one of them works on all of $\C \setminus \{0\}$: follow $\sqrt z$ once round the origin and it comes back as $-\sqrt z$. The logarithm is worse, with infinitely many values. For a century these "multivalued functions" were handled by cutting the plane and keeping track of branches. In his 1851 dissertation Bernhard Riemann proposed a radical alternative: do not change the function, change its *domain*. Build a surface lying over the plane, with one sheet for each value, glued so that walking round a branch point carries you from one sheet to the next. On that surface the square root is an honest, single-valued holomorphic function.
+
+These **Riemann surfaces** turned out to be the natural home of an astonishing amount of mathematics. Compact Riemann surfaces are the same thing as complex algebraic curves (solution sets of polynomial equations $F(z, w) = 0$); their topology is a single number, the genus; the integrals of algebraic functions — elliptic integrals, which compute the arc length of an ellipse or the period of a pendulum — are integrals of $1$-forms over loops on them; and the same equations studied over the rational numbers are the elliptic curves of number theory.
+
+This lesson builds on <TopicLink id="math.analysis.complex-analysis">complex analysis</TopicLink>, <TopicLink id="math.geom.fundamental-group">the fundamental group and covering spaces</TopicLink>, and <TopicLink id="math.geom.surfaces-euler-characteristic">the classification of surfaces by their Euler characteristic</TopicLink>. It uses the language of <TopicLink id="math.geom.smooth-manifolds">manifolds</TopicLink>, with holomorphic charts in place of smooth ones.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Two sheets glued crosswise">
+
+Take two copies of the plane, cut each along the negative real axis, and glue the upper edge of the cut in sheet 1 to the lower edge of the cut in sheet 2, and vice versa. A path going once round $0$ starts on sheet 1, crosses the cut and continues on sheet 2, and only after a second turn returns to its starting point. On this two-sheeted surface (completed by one point over $0$ and one over $\infty$) the function "$\sqrt z$" takes the value $\sqrt z$ on sheet 1 and $-\sqrt z$ on sheet 2, and is continuous. In fact the surface is just another copy of the plane, with coordinate $w$, lying over the $z$-plane by $z = w^2$: the "two sheets" are the two preimages of each $z \ne 0$.
+
+<Figure caption="The Riemann surface of $\sqrt z$: two sheets over the $z$-plane, cut along the negative real axis and cross-glued. A loop round $0$ on the surface (gold) has to go round twice below before it closes. The point over $0$ is a branch point of order $2$.">
+<svg viewBox="0 0 320 210" role="img" aria-label="Two stacked parallelograms representing sheets, each with a slit from the centre to the left, and a gold curve passing from the upper sheet to the lower sheet through the slit">
+  <polygon points="60,40 300,40 260,95 20,95" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <polygon points="60,120 300,120 260,175 20,175" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="160" y1="67" x2="40" y2="67" stroke="var(--human)" strokeWidth="2.5" />
+  <line x1="160" y1="147" x2="40" y2="147" stroke="var(--human)" strokeWidth="2.5" />
+  <circle cx="160" cy="67" r="3.5" fill="var(--ink-2)" />
+  <circle cx="160" cy="147" r="3.5" fill="var(--ink-2)" />
+  <path d="M 100 60 C 120 45, 220 45, 230 67 C 225 85, 130 88, 100 74" fill="none" stroke="var(--gold)" strokeWidth="2.5" />
+  <path d="M 100 74 L 100 140" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="4 3" />
+  <path d="M 100 140 C 120 125, 220 125, 230 147 C 225 165, 130 168, 100 154" fill="none" stroke="var(--gold)" strokeWidth="2.5" />
+  <path d="M 100 154 L 100 60" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="4 3" />
+  <text x="270" y="35" fontSize="13" fill="var(--ink-2)">sheet 1</text>
+  <text x="270" y="115" fontSize="13" fill="var(--ink-2)">sheet 2</text>
+</svg>
+</Figure>
+
+The same recipe for $w = \sqrt{z^3 - z}$ needs two cuts — say from $-1$ to $0$ and from $1$ to $\infty$ — because a loop round one of the branch points $-1, 0, 1, \infty$ swaps the sheets while a loop round two of them does not. Two cut spheres glued crosswise along two slits make a **torus**: the Riemann surface of $\sqrt{z^3 - z}$ has genus $1$. Counting branch points to find the genus is the Riemann–Hurwitz formula.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Riemann surfaces and holomorphic maps">
+
+<Definition term="Riemann surface">
+
+A **Riemann surface** is a connected, Hausdorff, second countable space $X$ with an atlas of charts $\varphi_\alpha : U_\alpha \to \varphi_\alpha(U_\alpha) \subseteq \C$ whose transition maps $\varphi_\beta \circ \varphi_\alpha^{-1}$ are holomorphic (a maximal such atlas is a **complex structure**). Equivalently, a connected complex manifold of complex dimension $1$. (Second countability is in fact automatic, by Radó's theorem.)
+
+</Definition>
+
+<Definition term="holomorphic and meromorphic maps">
+
+A continuous map $f : X \to Y$ of Riemann surfaces is **holomorphic** if it is holomorphic in local coordinates. A **meromorphic function** on $X$ is a holomorphic map $X \to \mathbb P^1$ to the Riemann sphere not identically $\infty$; equivalently, a function holomorphic outside a discrete set of poles. The meromorphic functions form a field $\mathcal M(X)$.
+
+</Definition>
+
+<Definition term="ramification, degree, genus">
+
+By the local normal form (Theorem 1), a non-constant holomorphic $f$ is near each $p$ given in suitable coordinates by $z \mapsto z^k$ with $k = e_p \ge 1$, the **ramification index** (or multiplicity) of $f$ at $p$. Points with $e_p \ge 2$ are **ramification points**, and their images **branch points**. For compact $X$ the **degree** of $f$ is $\deg f = \sum_{p \in f^{-1}(q)} e_p$ (independent of $q$, by Theorem 2). The **genus** of a compact Riemann surface is the genus of the underlying closed orientable surface, so $\chi(X) = 2 - 2g$.
+
+</Definition>
+
+Holomorphic maps preserve orientation (the Jacobian determinant of $z \mapsto f(z)$ is $|f'(z)|^2 \ge 0$), so every Riemann surface is orientable: the Klein bottle and the projective plane carry no complex structure. Conversely, every orientable surface carries one (for example from a Riemannian metric and isothermal coordinates).
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="The plane, the sphere and their quotients">
+
+- $\C$, the unit disc $\mathbb D$, and every connected open subset of $\C$.
+- The **Riemann sphere** $\mathbb P^1 = \C \cup \{\infty\}$ with the two charts $z$ on $\C$ and $w = 1/z$ on $\mathbb P^1 \setminus \{0\}$; the transition $z \mapsto 1/z$ is holomorphic on $\C \setminus \{0\}$. Rational functions are exactly the meromorphic functions on $\mathbb P^1$, and a rational function $p/q$ (in lowest terms) has degree $\max(\deg p, \deg q)$.
+- **Complex tori.** Let $\Lambda = \Z\omega_1 + \Z\omega_2$ with $\omega_1, \omega_2$ linearly independent over $\R$. The quotient $\C/\Lambda$ is a compact Riemann surface of genus $1$: charts are local inverses of the projection $\pi : \C \to \C/\Lambda$ on small discs, and transition maps are translations $z \mapsto z + \omega$. Holomorphic functions on $\C/\Lambda$ are $\Lambda$-periodic entire functions — hence constant (Liouville; formalised below) — while meromorphic functions on $\C/\Lambda$ are the **elliptic functions**, such as the Weierstrass function $\wp(z) = \frac{1}{z^2} + \sum_{\omega \in \Lambda \setminus 0}\big(\frac{1}{(z - \omega)^2} - \frac{1}{\omega^2}\big)$.
+- **Quotients of the disc.** If $\Gamma$ is a group of Möbius transformations acting freely and properly discontinuously on $\mathbb D$ or on the upper half-plane $\mathbb H$, then $\mathbb H/\Gamma$ is a Riemann surface. Modular curves $\mathbb H/\Gamma(N)$ are of this kind (after removing elliptic fixed points or treating them as orbifold points).
+
+</Example>
+
+<Example title="Algebraic curves">
+
+Let $F(z, w)$ be a polynomial and $C = \{(z, w) \in \C^2 : F(z, w) = 0\}$. At points where $\partial F/\partial w \ne 0$ the implicit function theorem (holomorphic version) makes $z$ a local coordinate; where $\partial F/\partial z \ne 0$, $w$ is one. So if $C$ is **smooth** (no common zeros of $F$, $F_z$, $F_w$), it is a Riemann surface (if connected), and $(z, w) \mapsto z$ is a holomorphic map whose ramification points are where $F_w = 0$. Adding finitely many points at infinity (in $\mathbb P^2$, or by gluing in charts) gives a compact Riemann surface.
+
+For $w^2 = f(z)$ with $f$ a squarefree polynomial of degree $d$, the projection $(z, w) \mapsto z$ has degree $2$, ramified exactly over the roots of $f$ — and over $\infty$ when $d$ is odd. With $d = 3$, $f = z^3 - z$, there are four branch points $-1, 0, 1, \infty$, and the compact curve is a torus (Riemann–Hurwitz, below).
+
+</Example>
+
+<Example title="z² as a branched double cover">
+
+$f(w) = w^2$ from $\mathbb P^1$ to $\mathbb P^1$ has degree $2$. Every $z \ne 0, \infty$ has two preimages $\pm\sqrt z$; over $0$ and $\infty$ there is one preimage, with $e = 2$. Near $w = 0$ angles at the origin are doubled — the conformal map $z^2$ fails to be conformal exactly at its critical point — and the visualization below shows this. The inverse of this map is the Riemann surface of $\sqrt z$ from the intuition section.
+
+</Example>
+
+</Section>
+
+<Section id="local" kind="proof" title="Local structure of holomorphic maps">
+
+<Theorem name="Theorem 1 (local normal form)">
+
+Let $f : X \to Y$ be a non-constant holomorphic map and $p \in X$. There is a unique integer $k \ge 1$ and charts $z$ centred at $p$ and $w$ centred at $f(p)$ in which $f$ is $w = z^k$.
+
+</Theorem>
+
+<Proof>
+
+Choose any charts centred at $p$ and $f(p)$, so that $f$ becomes a holomorphic function $F$ near $0$ with $F(0) = 0$. Since $X$ is connected and $f$ is not constant, $F$ is not identically $0$ (identity theorem), so $F(z) = z^k g(z)$ with $k \ge 1$ and $g$ holomorphic, $g(0) \ne 0$. On a small disc $g$ takes values in a disc not containing $0$, on which a holomorphic logarithm exists; so $g = h^k$ with $h = \exp\big(\tfrac1k \log g\big)$ holomorphic and $h(0) \ne 0$. Then $\zeta = z\,h(z)$ has $\zeta'(0) = h(0) \ne 0$, so by the inverse function theorem it is a new coordinate near $p$, and in it $F = \zeta^k$. The integer $k$ is determined by $f$: it is the number of preimages near $p$ of each point near (but not equal to) $f(p)$. ∎
+
+</Proof>
+
+Consequences: a non-constant holomorphic map is **open** (since $z \mapsto z^k$ is), its fibres are **discrete**, and it is a local biholomorphism exactly where $e_p = 1$, i.e. where its derivative in charts is non-zero. Ramification points are isolated, so on a compact surface there are finitely many.
+
+<Theorem name="Theorem 2 (maps of compact surfaces are branched coverings)">
+
+Let $f : X \to Y$ be a non-constant holomorphic map with $X$ compact. Then $f$ is surjective, $Y$ is compact, every fibre is finite, and $d = \sum_{p \in f^{-1}(q)} e_p$ is the same for all $q \in Y$. Away from the finitely many branch points, $f$ is a $d$-sheeted covering map.
+
+</Theorem>
+
+<Proof>
+
+$f(X)$ is open (open mapping) and compact, hence closed; $Y$ is connected, so $f(X) = Y$, which is compact. Fibres are discrete and closed in the compact $X$, hence finite. Fix $q$ with $f^{-1}(q) = \{p_1, \dots, p_r\}$ and normal-form charts $z \mapsto z^{e_i}$ round each $p_i$, on disjoint neighbourhoods $U_i$. Shrink a neighbourhood $V$ of $q$ so that $f^{-1}(V) \subseteq \bigcup U_i$ (possible: $f(X \setminus \bigcup U_i)$ is compact and misses $q$). Then each $q' \in V \setminus \{q\}$ has exactly $e_i$ preimages in $U_i$, all with multiplicity $1$, so $\sum_{p \in f^{-1}(q')} e_p = \sum_i e_i$. Thus the function $q \mapsto \sum_{f^{-1}(q)} e_p$ is locally constant, hence constant on the connected $Y$. ∎
+
+</Proof>
+
+<Theorem name="Corollary 3">
+
+On a compact Riemann surface: (a) every holomorphic function is constant; (b) a non-constant meromorphic function has as many zeros as poles, counted with multiplicity; (c) if there is a meromorphic function of degree $1$, then $X \cong \mathbb P^1$.
+
+</Theorem>
+
+<Proof>
+
+(a) A holomorphic $f : X \to \C$ composed with $\C \subset \mathbb P^1$ is a holomorphic map to $\mathbb P^1$ that misses $\infty$; by Theorem 2 it must be constant. (b) A meromorphic $f : X \to \mathbb P^1$ has $\deg f = \sum_{f^{-1}(0)} e_p = \sum_{f^{-1}(\infty)} e_p$. (c) A degree-$1$ map is a bijective holomorphic map, hence a biholomorphism (its inverse is holomorphic by the local normal form with $k = 1$). ∎
+
+</Proof>
+
+</Section>
+
+<Section id="riemann-hurwitz" kind="proof" title="The Riemann–Hurwitz formula">
+
+<Theorem name="Theorem 4 (Riemann–Hurwitz)">
+
+Let $f : X \to Y$ be a non-constant holomorphic map of degree $n$ between compact Riemann surfaces of genera $g_X$ and $g_Y$. Then
+
+$$
+2g_X - 2 = n\,(2g_Y - 2) + \sum_{p \in X}(e_p - 1).
+$$
+
+</Theorem>
+
+<Proof>
+
+The sum is finite (ramification points are isolated). Choose a triangulation of $Y$ — with geodesic or smooth edges — whose vertices include all branch points, fine enough that each closed triangle lies in a disc over which $f$ is a trivial $n$-sheeted covering away from its vertices. Its preimage is a triangulation of $X$: each open face and open edge, avoiding branch points, has exactly $n$ preimages, so $F_X = nF_Y$ and $E_X = nE_Y$. A vertex $q$ has $\sum_{f^{-1}(q)} 1 = n - \sum_{p \in f^{-1}(q)}(e_p - 1)$ preimages, by Theorem 2. Hence $V_X = nV_Y - \sum_p (e_p - 1)$, and
+
+$$
+\chi(X) = V_X - E_X + F_X = n\,\chi(Y) - \sum_p (e_p - 1).
+$$
+
+Substituting $\chi = 2 - 2g$ gives the formula. ∎
+
+</Proof>
+
+<Example title="Genera from branched covers">
+
+- **$w = z^n$** on $\mathbb P^1$: $e = n$ at $0$ and $\infty$, so $-2 = n(-2) + 2(n - 1)$. ✓
+- **Hyperelliptic curves** $w^2 = f(z)$, $f$ squarefree of degree $d$: a double cover of $\mathbb P^1$ with $r$ branch points, each with $e = 2$, where $r = d$ for $d$ even and $r = d + 1$ for $d$ odd. Then $2g - 2 = 2(-2) + r$, so $g = (r - 2)/2$: genus $\lfloor (d - 1)/2\rfloor$. For $w^2 = z^3 - z$: $r = 4$, $g = 1$. In particular **a double cover of the sphere has an even number of branch points**.
+- **Fermat curves** $x^d + y^d = 1$ (compactified in $\mathbb P^2$): $(x, y) \mapsto x$ has degree $d$, total ramification over the $d$ points $x^d = 1$ (where $y = 0$, $e = d$), and is unramified at the $d$ points at infinity. So $2g - 2 = -2d + d(d - 1)$ and $g = (d-1)(d-2)/2$, in agreement with the genus formula for smooth plane curves of degree $d$.
+- **Unramified covers of tori are tori**: if $g_Y = 1$ and $f$ is unramified, then $2g_X - 2 = 0$. And there is no non-constant holomorphic map from a torus to a surface of genus $\ge 2$, or from $\mathbb P^1$ to a torus: in both cases the right-hand side exceeds the left.
+
+</Example>
+
+</Section>
+
+<Section id="tori" kind="proof" title="Complex tori: a one-parameter family">
+
+All complex tori $\C/\Lambda$ are homeomorphic (to $S^1 \times S^1$) and even diffeomorphic. They are not all biholomorphic.
+
+<Theorem name="Theorem 5 (classification of tori)">
+
+$\C/\Lambda \cong \C/\Lambda'$ (biholomorphically) if and only if $\Lambda' = a\Lambda$ for some $a \in \C^\times$. Every lattice is homothetic to $\Lambda_\tau = \Z + \Z\tau$ with $\operatorname{Im}\tau > 0$, and $\Lambda_\tau$, $\Lambda_{\tau'}$ are homothetic exactly when $\tau' = \frac{a\tau + b}{c\tau + d}$ for some $\begin{pmatrix} a & b \\ c & d\end{pmatrix} \in SL(2, \Z)$.
+
+</Theorem>
+
+<Proof>
+
+If $\Lambda' = a\Lambda$, then $z \mapsto az$ descends to a biholomorphism. Conversely, let $\phi : \C/\Lambda \to \C/\Lambda'$ be a biholomorphism; composing with a translation we may assume $\phi(0) = 0$. Since $\C$ is simply connected, $\phi \circ \pi$ lifts through the covering $\pi' : \C \to \C/\Lambda'$ to a holomorphic $F : \C \to \C$ with $F(0) = 0$. For each $\omega \in \Lambda$, $F(z + \omega) - F(z) \in \Lambda'$ depends continuously on $z$ and $\Lambda'$ is discrete, so it is a constant $c_\omega$. Hence $F'$ is $\Lambda$-periodic and entire, so constant (Liouville), and $F(z) = az$. Applying the same to $\phi^{-1}$ shows $a \ne 0$ and $a\Lambda = \Lambda'$.
+
+For the second part: rotating and scaling, any lattice $\Z\omega_1 + \Z\omega_2$ (ordered so that $\operatorname{Im}(\omega_2/\omega_1) > 0$) is homothetic to $\Z + \Z\tau$ with $\tau = \omega_2/\omega_1$. Two oriented bases of the same lattice differ by a matrix in $SL(2, \Z)$, $(\omega_2', \omega_1') = (a\omega_2 + b\omega_1, c\omega_2 + d\omega_1)$, which changes $\tau$ to $(a\tau + b)/(c\tau + d)$. ∎
+
+</Proof>
+
+So the isomorphism classes of tori correspond to points of $\mathbb H/SL(2, \Z)$, whose standard fundamental domain is $\{|\operatorname{Re}\tau| \le \frac12, |\tau| \ge 1\}$; the **$j$-invariant** $j : \mathbb H/SL(2, \Z) \to \C$ is a bijection. Tori form a family with **one complex parameter**: the square torus ($\tau = i$, $j = 1728$) and the hexagonal torus ($\tau = e^{2\pi i/3}$, $j = 0$) are different Riemann surfaces, and they have more automorphisms fixing $0$ than other tori ($\Z/4$ and $\Z/6$ instead of $\Z/2$). This is the first **moduli space**; for genus $g \ge 2$, the moduli space $\mathcal M_g$ has complex dimension $3g - 3$.
+
+<Theorem name="Theorem 6 (tori are cubic curves; stated)">
+
+The Weierstrass function satisfies $\wp'(z)^2 = 4\wp(z)^3 - g_2\wp(z) - g_3$, with $g_2 = 60\sum_{\omega \ne 0}\omega^{-4}$, $g_3 = 140\sum_{\omega \ne 0}\omega^{-6}$, and the map $z \mapsto [\wp(z) : \wp'(z) : 1]$ (with $0 \mapsto [0 : 1 : 0]$) is a biholomorphism from $\C/\Lambda$ onto the smooth projective cubic $y^2 = 4x^3 - g_2x - g_3$. Conversely, every smooth cubic arises this way.
+
+</Theorem>
+
+The differential equation is proved by noting that $\wp'^2 - 4\wp^3 + g_2\wp + g_3$ is an elliptic function whose Laurent expansion at $0$ has no pole and vanishing constant term, so by Corollary 3(a) it is identically $0$. Mathlib proves exactly this, and we cite it below. One more consequence of Corollary 3: **no elliptic function has a single simple pole** (per fundamental parallelogram). Indeed, the integral of $f$ round the boundary of a fundamental parallelogram $P$ (shifted to avoid poles) vanishes, because opposite sides cancel by periodicity; by the residue theorem it equals $2\pi i$ times the sum of residues in $P$. So the residues of an elliptic function sum to $0$, and a single simple pole is impossible — which also follows from Corollary 3(c), since a function of degree $1$ would make the torus a sphere.
+
+</Section>
+
+<Section id="big-theorems" kind="proof" title="Uniformisation and Riemann–Roch">
+
+<Theorem name="Theorem 7 (uniformisation; Koebe and Poincaré, 1907; stated)">
+
+Every simply connected Riemann surface is biholomorphic to exactly one of $\mathbb P^1$, $\C$ and the unit disc $\mathbb D$.
+
+</Theorem>
+
+Since the universal cover of a Riemann surface is a simply connected Riemann surface on which $\pi_1$ acts by biholomorphisms, every Riemann surface is $\mathbb P^1$, or $\C$, $\C^\times$ or a torus $\C/\Lambda$, or a quotient $\mathbb D/\Gamma$ by a discrete group of Möbius transformations. For compact surfaces this is decided by the genus: $g = 0$ gives $\mathbb P^1$, $g = 1$ gives a torus, $g \ge 2$ gives $\mathbb D/\Gamma$ with $\Gamma$ a cocompact Fuchsian group. Geometrically: every compact Riemann surface carries a conformal metric of constant curvature $+1$, $0$ or $-1$, matching the sign of $\chi$ — and by Gauss–Bonnet, a hyperbolic surface of genus $g$ has area $-2\pi\chi = 4\pi(g - 1)$. See <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>.
+
+A **divisor** on a compact Riemann surface is a finite formal sum $D = \sum n_p\, p$ of points, of degree $\sum n_p$. Let $L(D)$ be the space of meromorphic functions $f$ with $\operatorname{div}(f) + D \ge 0$ (poles allowed only where $D$ permits) together with $0$, and $\ell(D) = \dim L(D)$. Let $K$ be the divisor of any non-zero meromorphic $1$-form (a **canonical divisor**).
+
+<Theorem name="Theorem 8 (Riemann–Roch; Riemann 1857, Roch 1865; stated)">
+
+For every divisor $D$ on a compact Riemann surface of genus $g$,
+
+$$
+\ell(D) - \ell(K - D) = \deg D + 1 - g .
+$$
+
+</Theorem>
+
+<Example title="Riemann–Roch at work">
+
+- **Consequences for $K$.** $D = 0$ gives $\ell(K) = g$: there are exactly $g$ independent holomorphic $1$-forms. $D = K$ then gives $\deg K = 2g - 2$, matching Riemann–Hurwitz.
+- **Genus $0$.** On $\mathbb P^1$, $L(n\cdot\infty)$ is the space of polynomials of degree $\le n$, of dimension $n + 1 = n + 1 - 0$ (and $\ell(K - n\infty) = 0$ since $\deg K = -2$). In general, on a surface of genus $0$, $\ell(p) = 2$ for any point $p$, so there is a meromorphic function with a single simple pole: a degree-$1$ map to $\mathbb P^1$, and $X \cong \mathbb P^1$ by Corollary 3(c).
+- **Genus $1$.** For $n \ge 1$, $\ell(n\cdot 0) = n$: on $\C/\Lambda$, $L(0) = \C$, $L(1\cdot 0) = \C$ (no function with one simple pole), $L(2\cdot 0) = \langle 1, \wp\rangle$, $L(3\cdot 0) = \langle 1, \wp, \wp'\rangle$. The seven functions $1, \wp, \wp', \wp^2, \wp\wp', \wp^3, \wp'^2$ lie in the $6$-dimensional $L(6\cdot 0)$, so they satisfy a linear relation — the Weierstrass cubic. Every compact surface of genus $1$ is a cubic curve, hence a torus.
+- **Genus $2$.** $\ell(K) = 2$ and $\deg K = 2$, so the quotient of two holomorphic $1$-forms is a meromorphic function of degree $2$: every surface of genus $2$ is hyperelliptic, $w^2 = f(z)$ with $\deg f = 5$ or $6$.
+
+</Example>
+
+Riemann–Roch also shows that every compact Riemann surface has enough meromorphic functions to embed it in some $\mathbb P^N$ (for $\deg D \ge 2g + 1$, the functions in $L(D)$ give an embedding), and Chow's theorem then makes the image algebraic: **every compact Riemann surface is a smooth projective algebraic curve**. The hard analytic input is the *existence* of non-constant meromorphic functions, proved via harmonic functions (the Dirichlet principle) or Hodge theory; the proofs are in Forster, Chapters 2–3, and Miranda, Chapter VI.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Riemann surfaces in Lean and Mathlib">
+
+Mathlib's complex manifolds are manifolds modelled on $\C^n$ with holomorphic transition maps; a Riemann surface is the case $n = 1$. The theory of branched coverings, Riemann–Hurwitz, uniformisation and Riemann–Roch is not yet formalised. What we can do is prove the analytic facts on which the lesson's examples rest.
+
+First, the starting point of the whole subject: there is no continuous square root on $\C \setminus \{0\}$. The proof uses connectedness of $[0, 2\pi]$ in the form "two continuous functions with the same square and no zeros agree up to a global sign":
+
+<Lean decl="Lumenary.RiemannSurfaces.no_continuous_sqrt" />
+
+Corollary 3(a), from Mathlib, for any compact connected complex manifold:
+
+<Lean decl="Lumenary.RiemannSurfaces.holomorphic_constant_compact" />
+
+For complex tori we work with Mathlib's `PeriodPair` (a pair of $\R$-independent periods and the lattice they span). A function with both periods is invariant under the whole lattice; a doubly periodic entire function is constant (Liouville); and — the key step of Theorem 5 — a holomorphic map that commutes with the lattice up to constants is affine:
+
+<Lean decl="Lumenary.RiemannSurfaces.periodic_lattice" />
+
+<Lean decl="Lumenary.RiemannSurfaces.doubly_periodic_constant" />
+
+<Lean decl="Lumenary.RiemannSurfaces.lift_affine" />
+
+Finally, Theorem 6's differential equation, which Mathlib has recently formalised along with the Weierstrass function itself:
+
+<Lean decl="Lumenary.RiemannSurfaces.weierstrass_periodic" />
+
+<Lean decl="Lumenary.RiemannSurfaces.weierstrass_cubic" />
+
+**What is and is not formalised.** Proved here: the non-existence of a continuous square root on $\C \setminus \{0\}$, lattice invariance, Liouville for doubly periodic functions, and the affine-lift lemma of Theorem 5. Cited from Mathlib: constancy of holomorphic functions on compact complex manifolds, the periodicity of $\wp$ and the equation $\wp'^2 = 4\wp^3 - g_2\wp - g_3$. Not formalised: Theorems 1, 2 and 4 (Mathlib has the analytic ingredients — the identity theorem, the open mapping theorem, local inverses — but not holomorphic maps between Riemann surfaces as branched coverings), the full classification of tori (the lifting step uses covering space theory on the quotient $\C/\Lambda$), uniformisation, and Riemann–Roch.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Branch points, genera and the j-invariant">
+
+The first program checks Riemann–Hurwitz for rational maps of the sphere, measuring each ramification index numerically (as the number of solutions of $f(z) = f(p) + \varepsilon$ near $p$); computes genera of hyperelliptic and Fermat curves from their branch data; and continues square roots along loops, recording whether they come back with the same sign.
+
+<Python id="riemann_surfaces_riemann_hurwitz" />
+
+The last block is the intuition section made numerical: $\sqrt{z^3 - z}$ changes sign round a loop enclosing one branch point or three (the fourth branch point, $\infty$, is then also "inside" from the other side), and not round a loop enclosing two.
+
+The second program computes the $j$-invariant of $\C/(\Z + \Z\tau)$ from the $q$-expansions of the Eisenstein series, $j = 1728E_4^3/(E_4^3 - E_6^2)$, and reduces points of the upper half-plane to the fundamental domain.
+
+<Python id="riemann_surfaces_tori" />
+
+$j(\tau + 1)$, $j(-1/\tau)$ and $j(\tau)$ agree, the reduced point has the same $j$ as the original, and homothetic lattices have the same $j$ — all numerical evidence for Theorem 5 and the invariance of $j$.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: a branched double cover and a torus">
+
+The map $w = z^2$ is the projection of the Riemann surface of $\sqrt w$ onto the plane. Move the probe: the little right-angled cross stays right-angled (the map is conformal) everywhere except at $z = 0$, the ramification point, where angles are doubled and the cross opens to $180^\circ$. Each image point other than $0$ is hit twice, by $\pm z$.
+
+<ComplexPlane mode="map" map="z^2" title="w = z²: a branched double cover" subtitle="Conformal everywhere except at the branch point 0, where angles double." />
+
+A complex torus is the plane modulo a lattice. In the tiling view, copies of a fundamental parallelogram (here a square, $\tau = i$) tile the plane; the plane is the universal cover of the torus, and the deck transformations are the lattice translations. Walking off one edge of the square brings you back on the opposite edge — exactly the identification $z \sim z + 1 \sim z + \tau$.
+
+<SurfaceGluing surface="torus" surfaces={["torus"]} showTiling title="The torus ℂ/(ℤ + iℤ) and its universal cover" subtitle="Lattice translations are the deck transformations of ℂ → ℂ/Λ." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"All tori are biholomorphic."** They are all homeomorphic, even diffeomorphic, but the complex structure carries one complex parameter: $\C/\Lambda \cong \C/\Lambda'$ exactly when $\Lambda' = a\Lambda$, i.e. when the $\tau$'s are related by $SL(2, \Z)$, i.e. when the $j$-invariants agree. The square torus ($j = 1728$) and the hexagonal torus ($j = 0$) are different Riemann surfaces, and so are $\C/(\Z + i\Z)$ and $\C/(\Z + 2i\Z)$.
+
+</Misconception>
+
+<Misconception>
+
+**"The square root is a function on $\C \setminus \{0\}$, if we just choose carefully."** Any choice of square roots is discontinuous somewhere on every loop round $0$ (formalised above). Continuous branches exist on simply connected regions avoiding $0$, such as $\C \setminus (-\infty, 0]$, and the square root becomes a single-valued holomorphic function on its Riemann surface $\{(z, w) : w^2 = z\}$, the two-sheeted cover branched at $0$ and $\infty$.
+
+</Misconception>
+
+<Misconception>
+
+**"A Riemann surface is a surface in $\C^2$ or $\R^3$."** A Riemann surface is an abstract one-dimensional complex manifold; algebraic curves in $\C^2$ or $\mathbb P^2$ are important examples, but tori $\C/\Lambda$ and quotients $\mathbb D/\Gamma$ are defined intrinsically. It is a theorem (Riemann–Roch plus Chow) that every *compact* Riemann surface embeds in projective space as an algebraic curve.
+
+</Misconception>
+
+<Misconception>
+
+**"Complex dimension one means real dimension one."** A Riemann surface is a *curve* to an algebraic geometer (complex dimension $1$) and a *surface* to a topologist (real dimension $2$). The "complex line" $\C$ is a real plane, and the "projective line" $\mathbb P^1$ is a sphere.
+
+</Misconception>
+
+<Misconception>
+
+**"Every holomorphic function on a Riemann surface is constant."** Only on *compact* ones (Corollary 3). Non-compact Riemann surfaces have many holomorphic functions — in fact every non-compact Riemann surface is a Stein manifold, with holomorphic functions separating points (Behnke–Stein, 1949). On compact surfaces one works with meromorphic functions and $1$-forms instead.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Coverings, monodromy and moduli">
+
+Away from its branch points, a degree-$n$ map $X \to Y$ is an $n$-sheeted covering of $Y \setminus B$, so it is described by its **monodromy**: a homomorphism $\pi_1(Y \setminus B) \to S_n$ recording how loops permute the sheets. For $\sqrt{z^3 - z}$, every small loop round a branch point maps to the transposition $(1\,2)$. Conversely (the **Riemann existence theorem**), any such homomorphism with transitive image comes from a unique compact Riemann surface with a branched cover of $Y$ — so topology produces algebraic curves. The space of all complex structures on a closed surface of genus $g \ge 2$, modulo isotopy, is **Teichmüller space**, a complex manifold of dimension $3g - 3$ homeomorphic to a ball; dividing by the mapping class group gives the moduli space $\mathcal M_g$. See <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink> and <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Conformal structures and constant curvature">
+
+On an oriented surface, a complex structure is the same thing as a **conformal structure** — a Riemannian metric up to multiplication by positive functions — because holomorphic maps are exactly the orientation-preserving conformal maps (and isothermal coordinates exist for every metric). Uniformisation is then a statement in Riemannian geometry: every conformal class contains a metric of constant curvature, spherical, flat or hyperbolic according to the sign of $\chi$. A compact Riemann surface of genus $g \ge 2$ "is" a closed hyperbolic surface, obtained by gluing the sides of a hyperbolic $4g$-gon, and its geodesics and their lengths are a central object of study. See <TopicLink id="math.geom.non-euclidean-geometry">non-Euclidean geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Curves and their function fields">
+
+For a compact Riemann surface $X$, the field $\mathcal M(X)$ of meromorphic functions is a finitely generated extension of $\C$ of transcendence degree $1$ — for $w^2 = z^3 - z$ it is $\C(z)[w]/(w^2 - z^3 + z)$ — and $X \mapsto \mathcal M(X)$ is an equivalence (contravariant) between compact Riemann surfaces with non-constant holomorphic maps and such fields with $\C$-embeddings. A branched cover $X \to Y$ of degree $n$ corresponds to a field extension $\mathcal M(X) \supseteq \mathcal M(Y)$ of degree $n$, and Galois coverings to Galois extensions — the analogue, in geometry, of the Galois correspondence between subgroups and intermediate fields, now with the fundamental group of the punctured surface in the role of the Galois group. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink> and <TopicLink id="math.algebra.fields-galois">Galois theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Elliptic curves and Belyi's theorem">
+
+The torus $\C/\Lambda$ is the cubic curve $y^2 = 4x^3 - g_2x - g_3$, and the group law of $\C/\Lambda$ (addition of complex numbers) becomes the chord-and-tangent law on the cubic. When the coefficients are rational, the same equation defines an **elliptic curve over $\Q$**, whose rational points form a finitely generated abelian group (Mordell, 1922) — the subject of the Birch–Swinnerton-Dyer conjecture and of Wiles's proof of Fermat's Last Theorem, which hinges on the parametrisation of elliptic curves over $\Q$ by **modular curves** $\mathbb H/\Gamma_0(N)$. The $j$-function is itself a modular function, $j(\tau) = q^{-1} + 744 + 196884q + \cdots$, and its values at imaginary quadratic $\tau$ are algebraic integers (complex multiplication): $e^{\pi\sqrt{163}}$ is within $10^{-12}$ of an integer because $j\big(\frac{1 + i\sqrt{163}}{2}\big) = -640320^3$. **Belyi's theorem** (1979) says a compact Riemann surface can be defined by equations with algebraic coefficients exactly when it admits a meromorphic function branched over only three points. See <TopicLink id="math.number.arithmetic-geometry">arithmetic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Harmonic functions and Hodge theory">
+
+Riemann's own approach was analytic: he constructed meromorphic functions and differentials by solving the Laplace equation with prescribed singularities, using the Dirichlet principle (later made rigorous by Hilbert, 1900). In modern terms, the **Hodge decomposition** $H^1(X; \C) = H^{1,0} \oplus H^{0,1}$ splits the $2g$-dimensional cohomology into holomorphic and antiholomorphic $1$-forms, $g$ dimensions each — the analytic meaning of the genus. Integrating the $g$ holomorphic forms over the $2g$ loops of a basis of $H_1$ gives the **period matrix**, and $X \mapsto \operatorname{Jac}(X) = \C^g/\text{periods}$ is the Abel–Jacobi construction; Torelli's theorem says the polarised Jacobian determines $X$. For a torus, the period matrix is $(1, \tau)$, recovering Theorem 5.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Potential flow and worldsheets">
+
+Two-dimensional potential theory lives naturally on Riemann surfaces: a steady, irrotational, incompressible planar flow has a holomorphic complex potential, and conformal maps transport flows from one region to another (the Joukowski map $z + 1/z$ turns flow round a cylinder into flow round an aerofoil). In string theory, the trajectory of a string sweeps out a two-dimensional "worldsheet", and perturbative amplitudes are (heuristically) integrals over moduli spaces of Riemann surfaces, one genus at a time; this physical intuition has led to deep, rigorously proved results about the cohomology of $\mathcal M_g$ (Witten's conjecture, proved by Kontsevich, 1992). The physics is a guide, not a proof.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Elliptic functions.** Integrals such as $\int dx/\sqrt{1 - x^4}$ (the lemniscate) were studied by Fagnano and Euler in the eighteenth century. Carl Friedrich Gauss (unpublished, around 1800), Niels Henrik Abel (1827) and Carl Jacobi (1829) inverted elliptic integrals and discovered that the resulting functions are doubly periodic. Karl Weierstrass's lectures in Berlin (from the 1860s) introduced $\wp$ and its differential equation.
+- **Riemann.** Bernhard Riemann's dissertation (1851) introduced Riemann surfaces and conformal mapping; his *Theorie der Abel'schen Functionen* (1857) used them to study integrals of algebraic functions, introduced the genus, and proved the inequality $\ell(D) \ge \deg D + 1 - g$ that his student Gustav Roch completed to the Riemann–Roch theorem (1865). Adolf Hurwitz proved the ramification formula (1891).
+- **Rigour and uniformisation.** Felix Klein popularised Riemann's ideas (1882), and with Henri Poincaré developed the theory of Fuchsian groups in the early 1880s. The uniformisation theorem was proved independently by Paul Koebe and Poincaré in 1907. Hermann Weyl's *Die Idee der Riemannschen Fläche* (1913) gave the first rigorous definition of a Riemann surface by charts, a model for the definition of manifolds.
+- **Modern developments.** Srinivasa Ramanujan's work on the Eisenstein series $P$, $Q$, $R$ (1916) and on singular moduli fed into the arithmetic of the $j$-function. Oswald Teichmüller (1930s–1940s), Lars Ahlfors and Lipman Bers founded the theory of moduli of Riemann surfaces; David Mumford and Pierre Deligne studied $\mathcal M_g$ algebraically (1969). Gennadi Belyi's theorem (1979) inspired Alexander Grothendieck's *dessins d'enfants* (1984).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Rick Miranda, *Algebraic Curves and Riemann Surfaces* (1995) — concrete and example-driven: Riemann–Hurwitz, divisors, Riemann–Roch, algebraic curves.
+- Otto Forster, *Lectures on Riemann Surfaces* (1981) — covering spaces, sheaf cohomology, Riemann–Roch, Abel's theorem and uniformisation, in complete detail.
+- Simon Donaldson, *Riemann Surfaces* (2011) — a modern, analytic route to uniformisation and Riemann–Roch.
+- Hershel M. Farkas and Irwin Kra, *Riemann Surfaces* (2nd edition, 1992) — the classical function theory, including Weierstrass points and theta functions.
+- Joseph H. Silverman, *The Arithmetic of Elliptic Curves* (2nd edition, 2009) — Chapter VI for complex tori and the Weierstrass function, then the arithmetic.
+
+</Section>

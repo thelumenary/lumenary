@@ -1,0 +1,683 @@
+---
+slug: recurrences-generating-functions
+topic: math.discrete.recurrences-generating-functions
+title: Recurrences and generating functions
+subtitle: Sequences defined by their own past — how to solve them exactly with characteristic roots, how to package a whole sequence into one power series, and how to say how fast it grows.
+level: ug1
+ages: Undergraduate (first or second year)
+minutes: 110
+order: 5013
+objectives:
+  - Solve linear recurrences with constant coefficients using the characteristic polynomial, including repeated roots and inhomogeneous terms, and prove that the solution is determined by its initial values
+  - Prove Binet's formula $F_n = (\varphi^n - \psi^n)/\sqrt5$ in two ways, by characteristic roots and by generating functions
+  - Work with ordinary generating functions as formal power series, and use them to solve recurrences and counting problems
+  - Prove that the Catalan numbers $\binom{2n}{n}/(n+1)$ count balanced bracket sequences, by a reflection argument and by a generating function
+  - Compare growth rates with $O$, $\Omega$, $\Theta$, $o$ and $\sim$, and solve the divide-and-conquer recurrence $T(n) = 2T(n/2) + n$ on powers of two
+narrators: []
+lean:
+  - Lumenary.RecurrencesGeneratingFunctions.IsSol
+  - Lumenary.RecurrencesGeneratingFunctions.isSol_geom
+  - Lumenary.RecurrencesGeneratingFunctions.isSol_add_smul
+  - Lumenary.RecurrencesGeneratingFunctions.isSol_unique
+  - Lumenary.RecurrencesGeneratingFunctions.distinct_roots
+  - Lumenary.RecurrencesGeneratingFunctions.isSol_repeated
+  - Lumenary.RecurrencesGeneratingFunctions.three_pow_isSol
+  - Lumenary.RecurrencesGeneratingFunctions.fib_isSol
+  - Lumenary.RecurrencesGeneratingFunctions.binet
+  - Lumenary.RecurrencesGeneratingFunctions.binet_library
+  - Lumenary.RecurrencesGeneratingFunctions.geom_sol_iff_root
+  - Lumenary.RecurrencesGeneratingFunctions.fib_le_gold_pow
+  - Lumenary.RecurrencesGeneratingFunctions.hanoi
+  - Lumenary.RecurrencesGeneratingFunctions.hanoi_eq
+  - Lumenary.RecurrencesGeneratingFunctions.splitCost
+  - Lumenary.RecurrencesGeneratingFunctions.splitCost_pow_two
+  - Lumenary.RecurrencesGeneratingFunctions.geometric_series
+  - Lumenary.RecurrencesGeneratingFunctions.fib_gf
+  - Lumenary.RecurrencesGeneratingFunctions.factorial_series_isUnit
+  - Lumenary.RecurrencesGeneratingFunctions.catalan_formula
+  - Lumenary.RecurrencesGeneratingFunctions.catalan_five
+  - Lumenary.RecurrencesGeneratingFunctions.quadratic_isBigO
+  - Lumenary.RecurrencesGeneratingFunctions.fib_isBigO
+  - Lumenary.RecurrencesGeneratingFunctions.poly_isLittleO_exp
+compute: [recurrences_generating_functions_binet, recurrences_generating_functions_catalan]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Counting by remembering">
+
+A drummer in a Carnatic ensemble, or a poet composing in Sanskrit or Prakrit, builds rhythms from **short** beats (one unit of time) and **long** beats (two units). How many different rhythms fill exactly $n$ units? For $n = 1, 2, 3, 4, 5$ there are $1, 2, 3, 5, 8$. Indian prosodists noticed — more than five centuries before Leonardo of Pisa wrote about rabbits — that each count is the sum of the previous two: a rhythm of length $n$ either ends with a short beat (after a rhythm of length $n - 1$) or with a long beat (after a rhythm of length $n - 2$).
+
+That one observation is a **recurrence**: it defines a sequence by its own past. Recurrences are everywhere. The number of moves needed to solve the Tower of Hanoi, the running time of mergesort, the balance of a loan in Nairobi or Lima with monthly interest and repayments, the population of a species with age classes, the number of ways to bracket a long product — each is described most naturally by saying how the next value depends on the earlier ones.
+
+This lesson answers three questions about such sequences:
+
+1. **Exact solution.** When can we replace "the next term is …" by a formula for the $n$-th term? For *linear recurrences with constant coefficients* the answer is always, and the method is the **characteristic polynomial**.
+2. **Packaging.** A **generating function** $\sum a_n x^n$ turns a whole sequence into a single algebraic object, so that recurrences become equations and counting problems become multiplication.
+3. **Growth.** When an exact formula is out of reach — or too detailed to be useful — how fast does the sequence grow? This is the language of $O$, $\Omega$ and $\Theta$ that every analysis of an algorithm uses.
+
+You will need <TopicLink id="math.discrete.combinatorics">combinatorics</TopicLink> (binomial coefficients, counting in two ways) and <TopicLink id="math.analysis.sequences-series">sequences and series</TopicLink> (summation, induction, geometric series).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Unroll, guess, verify — and the sequence as one object">
+
+Take the rhythms again, and write $t_n$ for the number of rhythms of length $n$. We have $t_1 = 1$, $t_2 = 2$ and $t_n = t_{n-1} + t_{n-2}$. These are the **Fibonacci numbers** shifted by one: with $F_0 = 0$, $F_1 = 1$, $F_{n+2} = F_{n+1} + F_n$ we have $t_n = F_{n+1}$. The same count answers "how many ways can a $1 \times n$ strip be tiled by squares and dominoes?":
+
+<Figure caption="The five tilings of a $1 \times 4$ strip by squares (short beats) and dominoes (long beats). Sorting them by the last tile — square or domino — shows $t_4 = t_3 + t_2 = 3 + 2$.">
+<svg viewBox="0 0 150 130" role="img" aria-label="Five rows, each a strip of length four tiled by squares and dominoes.">
+  <g stroke="var(--ink-2)" strokeWidth="1.2">
+    <rect x="10" y="8" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="40" y="8" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="70" y="8" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="100" y="8" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="10" y="32" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="40" y="32" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="70" y="32" width="60" height="18" fill="var(--gold)" fillOpacity="0.55" />
+    <rect x="10" y="56" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="40" y="56" width="60" height="18" fill="var(--gold)" fillOpacity="0.55" />
+    <rect x="100" y="56" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="10" y="80" width="60" height="18" fill="var(--gold)" fillOpacity="0.55" />
+    <rect x="70" y="80" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="100" y="80" width="30" height="18" fill="var(--sky-soft)" />
+    <rect x="10" y="104" width="60" height="18" fill="var(--gold)" fillOpacity="0.55" />
+    <rect x="70" y="104" width="60" height="18" fill="var(--gold)" fillOpacity="0.55" />
+  </g>
+</svg>
+</Figure>
+
+How would we ever find a *formula* for $F_n$? Two complementary ideas run through the lesson.
+
+**Guess an exponential.** The numbers $1, 1, 2, 3, 5, 8, 13, 21, \dots$ grow by a factor that settles near $1.618$. So try $a_n = r^n$. Substituting into $a_{n+2} = a_{n+1} + a_n$ and dividing by $r^n$ gives $r^2 = r + 1$ — a quadratic equation, with two roots $\varphi = (1 + \sqrt5)/2$ and $\psi = (1 - \sqrt5)/2$. The recurrence is *linear*, so any combination $A\varphi^n + B\psi^n$ is a solution too, and two free constants are exactly enough to match the two starting values.
+
+**Package the sequence.** Write all the terms into one expression $F(x) = F_0 + F_1 x + F_2 x^2 + \cdots$. The recurrence says that $F(x) - xF(x) - x^2F(x)$ has almost every coefficient zero, so $F(x) = x/(1 - x - x^2)$: the infinite sequence is captured by a fraction of two tiny polynomials. Algebra on that fraction — partial fractions — gives back the same formula.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="recurrence relation">
+
+A **recurrence relation** for a sequence $(a_n)_{n \ge 0}$ expresses $a_n$ in terms of earlier terms. It is **linear of order $k$ with constant coefficients** if there are constants $c_1, \dots, c_k$ (real or complex) with $c_k \ne 0$ such that
+
+$$
+a_{n+k} = c_1 a_{n+k-1} + c_2 a_{n+k-2} + \cdots + c_k a_n \qquad \text{for all } n \ge 0,
+$$
+
+and **homogeneous** because there is no extra term depending only on $n$. Adding a term $g(n)$ on the right gives an **inhomogeneous** recurrence. The values $a_0, \dots, a_{k-1}$ are the **initial values**.
+
+</Definition>
+
+<Definition term="characteristic polynomial">
+
+The **characteristic polynomial** of $a_{n+k} = c_1 a_{n+k-1} + \cdots + c_k a_n$ is
+
+$$
+\chi(x) = x^k - c_1 x^{k-1} - c_2 x^{k-2} - \cdots - c_k .
+$$
+
+Its roots (in $\C$) are the **characteristic roots**. For the Fibonacci recurrence, $\chi(x) = x^2 - x - 1$.
+
+</Definition>
+
+<Definition term="ordinary generating function">
+
+The **ordinary generating function** of a sequence $(a_n)_{n \ge 0}$ is the formal power series
+
+$$
+A(x) = \sum_{n \ge 0} a_n x^n = a_0 + a_1 x + a_2 x^2 + \cdots .
+$$
+
+We write $[x^n]A(x) = a_n$ for "the coefficient of $x^n$ in $A$".
+
+</Definition>
+
+<Definition term="formal power series">
+
+For a field $K$ (we use $\Q$, $\R$ or $\C$), the ring $K[[x]]$ of **formal power series** consists of all sequences $(a_n)_{n \ge 0}$ of elements of $K$, written $\sum a_n x^n$, with
+
+$$
+\sum a_n x^n + \sum b_n x^n = \sum (a_n + b_n) x^n, \qquad \Big(\sum a_n x^n\Big)\Big(\sum b_n x^n\Big) = \sum_n \Big(\sum_{i=0}^{n} a_i b_{n-i}\Big) x^n .
+$$
+
+Each coefficient of a sum or product is a **finite** computation, so no question of convergence ever arises: $x$ is a symbol, not a number. Polynomials are the series with finitely many non-zero coefficients.
+
+</Definition>
+
+<Definition term="asymptotic notation">
+
+Let $f, g$ be real-valued functions on $\N$ (or on $[1, \infty)$).
+
+- $f(n) = O(g(n))$ if there are constants $C > 0$ and $N$ with $|f(n)| \le C\,|g(n)|$ for all $n \ge N$ — "$f$ grows **at most** as fast as $g$, up to a constant".
+- $f(n) = \Omega(g(n))$ if $g(n) = O(f(n))$ — at least as fast, up to a constant (Knuth's convention).
+- $f(n) = \Theta(g(n))$ if both $f = O(g)$ and $f = \Omega(g)$.
+- $f(n) = o(g(n))$ if $f(n)/g(n) \to 0$; and $f(n) \sim g(n)$ if $f(n)/g(n) \to 1$ (for $g$ eventually non-zero).
+
+The "$=$" in $f = O(g)$ is a one-way abbreviation for "$f$ belongs to the class $O(g)$": $n = O(n^2)$ is true, but "$O(n^2) = n$" means nothing.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples and non-examples">
+
+<Example title="Distinct real roots">
+
+Solve $a_{n+2} = 5a_{n+1} - 6a_n$ with $a_0 = 0$, $a_1 = 1$. The characteristic polynomial is $x^2 - 5x + 6 = (x - 2)(x - 3)$, so $a_n = A\,2^n + B\,3^n$. The initial values give $A + B = 0$ and $2A + 3B = 1$, so $B = 1$, $A = -1$ and
+
+$$
+a_n = 3^n - 2^n: \qquad 0,\ 1,\ 5,\ 19,\ 65,\ 211,\ \dots
+$$
+
+Check: $5 \cdot 19 - 6 \cdot 5 = 65$. ✓
+
+</Example>
+
+<Example title="A repeated root">
+
+Solve $a_{n+2} = 4a_{n+1} - 4a_n$ with $a_0 = 1$, $a_1 = 4$. Now $\chi(x) = x^2 - 4x + 4 = (x - 2)^2$ has the single root $2$, and $A\,2^n + B\,2^n$ has only one free constant — not enough. The extra solution is $n\,2^n$ (proved below), so $a_n = (A + Bn)2^n$. From $a_0 = A = 1$ and $a_1 = 2(A + B) = 4$ we get $B = 1$: $a_n = (n + 1)2^n$, giving $1, 4, 12, 32, 80, \dots$
+
+</Example>
+
+<Example title="Complex roots give oscillation">
+
+The recurrence $a_{n+2} = -a_n$ has $\chi(x) = x^2 + 1$ with roots $\pm i$. The general solution $A\,i^n + B(-i)^n$ can be rewritten with real constants as $C\cos(n\pi/2) + D\sin(n\pi/2)$, since $i^n = \cos(n\pi/2) + i\sin(n\pi/2)$. With $a_0 = 1$, $a_1 = 0$ the solution is $1, 0, -1, 0, 1, 0, \dots$: complex characteristic roots of modulus $1$ produce oscillation (here periodic), just as $y'' = -y$ produces $\cos t$.
+
+</Example>
+
+<Example title="The Tower of Hanoi: an inhomogeneous recurrence">
+
+To move $n$ discs, move the top $n - 1$ to the spare peg, move the largest disc, then move the $n - 1$ back on top: $H_n = 2H_{n-1} + 1$, $H_0 = 0$. Adding $1$ to both sides gives $H_n + 1 = 2(H_{n-1} + 1)$, so $H_n + 1 = 2^n$ and $H_n = 2^n - 1$. (One can also show that no solution uses fewer moves: the largest disc must move at least once, and before its first move all other discs sit on one peg.)
+
+</Example>
+
+<Example title="Non-examples">
+
+- $x_{n+1} = r x_n (1 - x_n)$, the **logistic map**, is a recurrence but not linear; for $r = 4$ it is chaotic, and there is no characteristic polynomial to help.
+- $a_n = n\,a_{n-1}$ (so $a_n = n!\,a_0$) is linear but its coefficient depends on $n$; the characteristic method does not apply.
+- $a_{n+1} = a_n + a_{\lfloor n/2 \rfloor}$ refers back a *variable* distance; divide-and-conquer recurrences like this need other tools (see the section on growth).
+
+</Example>
+
+</Section>
+
+<Section id="linear" kind="proof" title="Linear recurrences: the characteristic-root theorem">
+
+We work with order $2$, $a_{n+2} = p\,a_{n+1} + q\,a_n$, where every idea is visible; the general statement follows the proofs.
+
+<Theorem name="Lemma 1 (linearity)">
+
+If $(a_n)$ and $(b_n)$ satisfy $a_{n+2} = p\,a_{n+1} + q\,a_n$, then so does $(A a_n + B b_n)$ for any constants $A, B$. So the solutions form a vector space.
+
+</Theorem>
+
+<Proof>
+
+$A a_{n+2} + B b_{n+2} = A(p a_{n+1} + q a_n) + B(p b_{n+1} + q b_n) = p(A a_{n+1} + B b_{n+1}) + q(A a_n + B b_n)$.
+
+</Proof>
+
+<Theorem name="Lemma 2 (initial values determine the solution)">
+
+If two solutions $(a_n)$ and $(b_n)$ of the same recurrence satisfy $a_0 = b_0$ and $a_1 = b_1$, then $a_n = b_n$ for all $n$.
+
+</Theorem>
+
+<Proof>
+
+We prove by induction on $n$ the statement $P(n)$: "$a_n = b_n$ and $a_{n+1} = b_{n+1}$". $P(0)$ is the hypothesis. If $P(n)$ holds, then $a_{n+1} = b_{n+1}$, and
+
+$$
+a_{n+2} = p\,a_{n+1} + q\,a_n = p\,b_{n+1} + q\,b_n = b_{n+2},
+$$
+
+so $P(n+1)$ holds. Hence $a_n = b_n$ for all $n$. (The induction must carry *two* consecutive terms because the recurrence looks back two steps.)
+
+</Proof>
+
+Together, the lemmas say: the map sending a solution to its initial values $(a_0, a_1)$ is a linear bijection onto $K^2$. The solution space has dimension exactly $2$ — and for a recurrence of order $k$, dimension $k$, by the same argument.
+
+<Theorem name="Lemma 3 (geometric solutions)">
+
+$a_n = r^n$ is a solution if and only if $r^2 = p\,r + q$, i.e. $r$ is a root of $\chi(x) = x^2 - px - q$ (for $r \ne 0$).
+
+</Theorem>
+
+<Proof>
+
+$r^{n+2} - p\,r^{n+1} - q\,r^n = r^n \chi(r)$. If $\chi(r) = 0$ this is $0$ for every $n$. Conversely, if it is $0$ for $n = 0$, then $\chi(r) = 0$.
+
+</Proof>
+
+<Theorem name="Theorem 1 (distinct roots)">
+
+If $\chi(x) = x^2 - px - q$ has two distinct roots $r \ne s$ (possibly complex), then the solutions of $a_{n+2} = p\,a_{n+1} + q\,a_n$ are exactly the sequences $a_n = A r^n + B s^n$, where
+
+$$
+A = \frac{a_1 - s\,a_0}{r - s}, \qquad B = \frac{r\,a_0 - a_1}{r - s}.
+$$
+
+</Theorem>
+
+<Proof>
+
+By Lemmas 1 and 3, $b_n = A r^n + B s^n$ is a solution for every $A, B$. With the given $A, B$ we have $b_0 = A + B = \frac{(r - s) a_0}{r - s} = a_0$ and $b_1 = A r + B s = \frac{r a_1 - rs\,a_0 + rs\,a_0 - s a_1}{r - s} = a_1$. By Lemma 2, $a_n = b_n$ for all $n$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (a repeated root)">
+
+If $\chi(x) = (x - r)^2$ with $r \ne 0$, i.e. $p = 2r$ and $q = -r^2$, then the solutions are exactly the sequences $a_n = (A + Bn)\,r^n$.
+
+</Theorem>
+
+<Proof>
+
+First, $n r^n$ is a solution: $(n+2)r^{n+2} - 2r(n+1)r^{n+1} + r^2 \cdot n r^n = r^{n+2}\big((n+2) - 2(n+1) + n\big) = 0$. So every $(A + Bn)r^n$ is a solution by Lemma 1. Its initial values are $A$ and $(A + B)r$; since $r \ne 0$, any prescribed $a_0, a_1$ are matched by $A = a_0$, $B = a_1/r - a_0$. Lemma 2 finishes the proof.
+
+</Proof>
+
+<Theorem name="Corollary (Binet's formula)">
+
+With $F_0 = 0$, $F_1 = 1$, $F_{n+2} = F_{n+1} + F_n$, and $\varphi = \frac{1 + \sqrt5}{2}$, $\psi = \frac{1 - \sqrt5}{2}$,
+
+$$
+F_n = \frac{\varphi^n - \psi^n}{\sqrt5} \qquad (n \ge 0).
+$$
+
+Moreover $F_n$ is the integer nearest to $\varphi^n/\sqrt5$.
+
+</Theorem>
+
+<Proof>
+
+The roots of $x^2 - x - 1$ are $\varphi \ne \psi$, with $\varphi - \psi = \sqrt5$. Theorem 1 with $a_0 = 0$, $a_1 = 1$ gives $A = \frac{1}{\sqrt5}$ and $B = -\frac{1}{\sqrt5}$. For the second claim, $|\psi| \approx 0.618 < 1$, so $|\psi^n/\sqrt5| \le 1/\sqrt5 < \tfrac12$.
+
+</Proof>
+
+The formula is remarkable: an integer sequence, expressed through irrational numbers whose irrational parts cancel exactly.
+
+**The general theorem.** For order $k$, factor $\chi(x) = \prod_{i}(x - r_i)^{m_i}$ over $\C$ with distinct roots $r_i \ne 0$. Then the solutions are exactly
+
+$$
+a_n = \sum_i P_i(n)\, r_i^n, \qquad P_i \text{ a polynomial of degree less than } m_i .
+$$
+
+Lemmas 1–3 generalise word for word; the remaining work is to check that $n^j r_i^n$ ($j < m_i$) are solutions and that these $k$ sequences are linearly independent. The generating-function proof in the next section does both at once.
+
+**Inhomogeneous recurrences.** If $(b_n)$ is *one* solution of $a_{n+k} = c_1 a_{n+k-1} + \cdots + c_k a_n + g(n)$, then every solution is $b_n + h_n$ with $(h_n)$ a solution of the homogeneous recurrence — the difference of two solutions solves the homogeneous one. A particular solution can often be guessed in the shape of $g$: for $a_{n+1} = 2a_n + 1$ try a constant, $b_n = -1$; for $a_{n+1} = 2a_n + n$ try $b_n = \alpha n + \beta$, giving $\alpha = -1$, $\beta = -1$. (When the guess shape is itself a homogeneous solution, multiply it by $n$, exactly as for differential equations.)
+
+</Section>
+
+<Section id="generating" kind="proof" title="Generating functions">
+
+<Theorem name="Proposition (inverses in K[[x]])">
+
+A formal power series $A(x) = \sum a_n x^n$ has a multiplicative inverse in $K[[x]]$ if and only if $a_0 \ne 0$.
+
+</Theorem>
+
+<Proof>
+
+If $A B = 1$ then comparing constant terms gives $a_0 b_0 = 1$, so $a_0 \ne 0$. Conversely, if $a_0 \ne 0$ we solve $AB = 1$ coefficient by coefficient: $b_0 = 1/a_0$, and for $n \ge 1$ the equation $\sum_{i=0}^{n} a_i b_{n-i} = 0$ determines $b_n = -\frac{1}{a_0}\sum_{i=1}^{n} a_i b_{n-i}$ from $b_0, \dots, b_{n-1}$.
+
+</Proof>
+
+For example $(1 - x)(1 + x + x^2 + \cdots) = 1$, so $\frac{1}{1 - x} = \sum_{n \ge 0} x^n$ **as an identity of formal power series** — true whatever "$x$" is, because it is a statement about coefficients. More generally, for a constant $r$, $\frac{1}{1 - rx} = \sum r^n x^n$, and differentiating formally (or expanding),
+
+$$
+\frac{1}{(1 - rx)^m} = \sum_{n \ge 0} \binom{n + m - 1}{m - 1} r^n x^n .
+$$
+
+The coefficient is a polynomial in $n$ of degree $m - 1$, times $r^n$.
+
+<Theorem name="Theorem 3 (rational generating functions)">
+
+Let $Q(x) = 1 - c_1 x - c_2 x^2 - \cdots - c_k x^k$. A sequence satisfies $a_{n+k} = c_1 a_{n+k-1} + \cdots + c_k a_n$ for all $n \ge 0$ if and only if its generating function is $A(x) = P(x)/Q(x)$ for a polynomial $P$ of degree less than $k$.
+
+</Theorem>
+
+<Proof>
+
+The coefficient of $x^{n+k}$ in $Q(x)A(x)$ is $a_{n+k} - c_1 a_{n+k-1} - \cdots - c_k a_n$. So the recurrence holds for all $n \ge 0$ if and only if $Q(x)A(x)$ has no terms of degree $\ge k$, i.e. $Q A = P$ is a polynomial of degree less than $k$. Since $Q$ has constant term $1$, it is invertible, and $QA = P \iff A = P/Q$.
+
+</Proof>
+
+Note that $Q(x) = x^k\chi(1/x)$: the characteristic polynomial written backwards. So if $\chi(x) = \prod (x - r_i)^{m_i}$ then $Q(x) = \prod (1 - r_i x)^{m_i}$, and partial fractions write $P/Q$ as a sum of terms $\frac{\beta}{(1 - r_i x)^j}$ with $j \le m_i$. By the expansion above, the coefficient of $x^n$ in each term is a polynomial in $n$ of degree less than $m_i$ times $r_i^n$ — which **proves the general characteristic-root theorem**. Every solution has this form; conversely every such sequence has a generating function $P/Q$, hence solves the recurrence.
+
+<Example title="Fibonacci, again">
+
+With $c_1 = c_2 = 1$ and $F_0 = 0$, $F_1 = 1$: $P(x) = F_0 + (F_1 - F_0)x = x$, so
+
+$$
+F(x) = \frac{x}{1 - x - x^2} = \frac{x}{(1 - \varphi x)(1 - \psi x)} = \frac{1}{\sqrt5}\left(\frac{1}{1 - \varphi x} - \frac{1}{1 - \psi x}\right),
+$$
+
+using $\varphi + \psi = 1$, $\varphi\psi = -1$ and $\varphi - \psi = \sqrt5$. Reading off the coefficient of $x^n$ gives Binet's formula a second time.
+
+</Example>
+
+**Counting with products.** Generating functions turn combinatorial constructions into algebra. If $A(x) = \sum a_n x^n$ counts objects of one kind by size and $B(x)$ another, then the coefficient of $x^n$ in $A(x)B(x)$ is $\sum_i a_i b_{n-i}$: the number of **pairs** of total size $n$. A choice repeated any number of times corresponds to $\frac{1}{1 - A(x)}$ (when $a_0 = 0$).
+
+<Example title="Paying with coins">
+
+In how many ways can a shopkeeper in Chennai make $10$ rupees from coins of $1$, $2$ and $5$ rupees? Choosing how many coins of each kind is choosing a pair, then a triple, so the answer is the coefficient of $x^{10}$ in
+
+$$
+\frac{1}{(1 - x)(1 - x^2)(1 - x^5)} = (1 + x + x^2 + \cdots)(1 + x^2 + x^4 + \cdots)(1 + x^5 + x^{10} + \cdots).
+$$
+
+Group by the number of five-rupee coins: with none, $10$ rupees from $1$s and $2$s ($6$ ways: zero to five $2$s); with one, $5$ rupees ($3$ ways); with two, $1$ way. Total $10$.
+
+</Example>
+
+<Example title="Compositions">
+
+A **composition** of $n$ into parts $1$ and $2$ is a sequence of $1$s and $2$s with sum $n$ — a rhythm, in the language of the motivation. One part has generating function $x + x^2$, so sequences of parts have $\frac{1}{1 - x - x^2} = \sum F_{n+1}x^n$. The rhythm count $t_n = F_{n+1}$ falls out without any recurrence.
+
+</Example>
+
+</Section>
+
+<Section id="catalan" kind="proof" title="Catalan numbers">
+
+A **Dyck path** of semilength $n$ is a sequence of $n$ up-steps $U = (1, 1)$ and $n$ down-steps $D = (1, -1)$, starting at height $0$ and never going below height $0$. Reading $U$ as "(" and $D$ as ")" identifies Dyck paths with **balanced bracket sequences** of $n$ pairs. Let $C_n$ be their number: $C_0 = 1$, $C_1 = 1$ (`()`), $C_2 = 2$ (`(())`, `()()`), $C_3 = 5$.
+
+<Theorem name="Proposition (Segner's recurrence)">
+
+$C_{n+1} = \sum_{i=0}^{n} C_i\,C_{n-i}$ for $n \ge 0$.
+
+</Theorem>
+
+<Proof>
+
+Every non-empty balanced sequence starts with "(", and that bracket is closed at a unique matching ")": the sequence is $(\,X\,)\,Y$ with $X$ and $Y$ balanced. If $X$ has $i$ pairs then $Y$ has $n - i$, and the decomposition is a bijection, so $C_{n+1} = \sum_i C_i C_{n-i}$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (the Catalan formula)">
+
+$$
+C_n = \binom{2n}{n} - \binom{2n}{n+1} = \frac{1}{n+1}\binom{2n}{n}.
+$$
+
+</Theorem>
+
+<Proof>
+
+(The reflection argument.) There are $\binom{2n}{n}$ paths from $(0, 0)$ to $(2n, 0)$ with $n$ up- and $n$ down-steps. Call such a path **bad** if it touches height $-1$. For a bad path, reflect the part *before its first visit to height $-1$* in the line $y = -1$. The result is a path from $(0, -2)$ to $(2n, 0)$. Conversely, every path from $(0, -2)$ to $(2n, 0)$ must cross height $-1$; reflecting its part before the first visit gives back a bad path. So bad paths are in bijection with paths from height $-2$ to height $0$ in $2n$ steps, which have $n + 1$ up-steps and $n - 1$ down-steps: there are $\binom{2n}{n+1}$ of them. Hence
+
+$$
+C_n = \binom{2n}{n} - \binom{2n}{n+1} = \binom{2n}{n}\left(1 - \frac{n}{n+1}\right) = \frac{1}{n+1}\binom{2n}{n},
+$$
+
+since $\binom{2n}{n+1} = \binom{2n}{n}\frac{n}{n+1}$.
+
+</Proof>
+
+**A second proof, by generating functions.** Let $C(x) = \sum C_n x^n$. Segner's recurrence says exactly that $C(x) = 1 + x\,C(x)^2$. Multiplying by $4x$ and completing the square, $(1 - 2x\,C(x))^2 = 1 - 4x$. In $\Q[[x]]$ the series $1 - 4x$ has exactly two square roots, $\pm S(x)$, where $S$ is the unique square root with constant term $1$ (its coefficients are found one at a time, as for inverses). Since $1 - 2xC(x)$ has constant term $1$, $1 - 2x\,C(x) = S(x) = \sqrt{1 - 4x}$. The binomial series $\sqrt{1 - 4x} = \sum_n \binom{1/2}{n}(-4)^n x^n = 1 - 2\sum_{n \ge 1} \frac{1}{n}\binom{2n-2}{n-1}x^n$ (it has constant term $1$, and its square is $1 - 4x$ by Vandermonde's identity $\sum_i \binom{a}{i}\binom{b}{n-i} = \binom{a+b}{n}$, a polynomial identity in $a$ and $b$) then gives
+
+$$
+C(x) = \frac{1 - \sqrt{1 - 4x}}{2x}, \qquad C_n = \frac{1}{n+1}\binom{2n}{n}.
+$$
+
+(The identity $\binom{1/2}{n}(-4)^n = -\frac{2}{n}\binom{2n-2}{n-1}$ for $n \ge 1$ is a direct computation with $\binom{1/2}{n} = \frac{\frac12(\frac12 - 1)\cdots(\frac12 - n + 1)}{n!}$.) Every step is algebra in $\Q[[x]]$; that the series also converges for $|x| < \tfrac14$ is a bonus, not a requirement.
+
+The Catalan numbers $1, 1, 2, 5, 14, 42, 132, 429, \dots$ count well over two hundred families of objects (Stanley's monograph lists 214), among them triangulations of a convex $(n+2)$-gon, binary trees with $n$ internal nodes, ways to bracket a product of $n + 1$ factors, and non-crossing handshakes among $2n$ people seated at a round table.
+
+</Section>
+
+<Section id="growth" kind="proof" title="How fast does it grow?">
+
+Exact formulas are not always available, and not always wanted: an engineer choosing between two algorithms needs to know that one takes about $n^2$ steps and the other about $n \log n$, not the exact counts. Asymptotic notation says this precisely.
+
+<Example title="Using the definitions">
+
+- $3n^2 + 5n = \Theta(n^2)$: for $n \ge 1$, $3n^2 \le 3n^2 + 5n \le 8n^2$. The constants $3$ and $8$ and the threshold $1$ are the witnesses.
+- $n^2 = O(n^3)$, but $n^3 \ne O(n^2)$: $n^3 / n^2 = n$ is unbounded.
+- $2^{n+1} = \Theta(2^n)$, but $4^n \ne O(2^n)$: constant factors are hidden, but a change of *base* is not.
+- $\log_2 n = \Theta(\ln n)$, since $\log_2 n = \ln n / \ln 2$. So the base of a logarithm inside $O$ does not matter.
+- $F_n = \Theta(\varphi^n)$ and in fact $F_n \sim \varphi^n/\sqrt5$, by Binet's formula.
+
+</Example>
+
+<Theorem name="Proposition (the scale of growth)">
+
+For every $k \ge 0$, $\varepsilon > 0$ and $r > 1$: $\ \ln n = o(n^\varepsilon)$, $\ n^k = o(r^n)$ and $r^n = o(n!)$.
+
+</Theorem>
+
+<Proof>
+
+For $n^k = o(r^n)$: the ratio $u_n = n^k/r^n$ satisfies $u_{n+1}/u_n = (1 + 1/n)^k / r \to 1/r < 1$, so from some point on $u_{n+1} \le \rho\, u_n$ with $\rho = (1 + 1/r)/2 < 1$, and $u_n \to 0$ geometrically. For $r^n = o(n!)$: $r^n/n! = \prod_{j=1}^{n} (r/j)$, and every factor with $j \ge 2r$ is at most $\tfrac12$. For $\ln n = o(n^\varepsilon)$: put $n = e^{t}$; then $\ln n / n^\varepsilon = t/e^{\varepsilon t}$, which tends to $0$ as $t \to \infty$ (for instance by L'Hôpital's rule).
+
+</Proof>
+
+Precise asymptotics often need analysis. Stirling's formula $n! \sim \sqrt{2\pi n}\,(n/e)^n$ gives
+
+$$
+C_n = \frac{(2n)!}{(n+1)!\,n!} \sim \frac{4^n}{\sqrt{\pi}\, n^{3/2}},
+$$
+
+which the second experiment below checks numerically.
+
+**Divide-and-conquer recurrences.** Mergesort sorts $n$ items by sorting two halves and merging them with at most $n - 1$ comparisons. Its cost satisfies $T(n) = 2T(n/2) + n$ (up to rounding and lower-order terms). These recurrences jump back by a *factor*, so the characteristic method does not apply directly — but on powers of two they become linear.
+
+<Theorem name="Proposition (unrolling)">
+
+If $T(1) = 0$ and $T(n) = 2T(n/2) + n$ for $n = 2, 4, 8, \dots$, then $T(2^k) = k\,2^k$, i.e. $T(n) = n\log_2 n$ for $n$ a power of two.
+
+</Theorem>
+
+<Proof>
+
+Put $u_k = T(2^k)/2^k$. Dividing $T(2^{k+1}) = 2T(2^k) + 2^{k+1}$ by $2^{k+1}$ gives $u_{k+1} = u_k + 1$, with $u_0 = 0$. So $u_k = k$.
+
+</Proof>
+
+Picture the recursion as a tree: level $j$ has $2^j$ subproblems of size $n/2^j$, costing $n$ in total, and there are $\log_2 n$ levels. The general pattern is the **master theorem** (Bentley, Haken and Saxe, 1980), stated here without proof (see Cormen et al., §4.5): for $T(n) = a\,T(n/b) + f(n)$ with $a \ge 1$, $b > 1$, put $c^* = \log_b a$; then
+
+- if $f(n) = O(n^{c})$ for some $c < c^*$, then $T(n) = \Theta(n^{c^*})$ — the leaves dominate;
+- if $f(n) = \Theta(n^{c^*})$, then $T(n) = \Theta(n^{c^*}\log n)$ — every level costs the same (mergesort: $a = b = 2$);
+- if $f(n) = \Omega(n^{c})$ for some $c > c^*$ and $a f(n/b) \le \delta f(n)$ for some $\delta < 1$ and all large $n$, then $T(n) = \Theta(f(n))$ — the root dominates.
+
+Karatsuba's multiplication, $T(n) = 3T(n/2) + O(n)$, lands in the first case: $\Theta(n^{\log_2 3}) \approx \Theta(n^{1.585})$, beating the schoolbook $n^2$. Recurrences of this kind are the bread and butter of <TopicLink id="math.comp.algorithm-design">algorithm design</TopicLink>.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Recurrences in Lean and Mathlib">
+
+The Lean module follows the lesson's proofs. First, what it means to solve the recurrence $a_{n+2} = p\,a_{n+1} + q\,a_n$, and Lemmas 1–3 — notice that Lemma 2's induction carries the pair of statements `a n = b n ∧ a (n + 1) = b (n + 1)`, exactly as in the human proof:
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.IsSol" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.isSol_geom" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.isSol_add_smul" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.isSol_unique" />
+
+Theorem 1 is assembled from the lemmas, and Theorem 2's extra solution $n r^n$ is a one-line computation:
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.distinct_roots" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.isSol_repeated" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.three_pow_isSol" />
+
+Binet's formula then follows from Theorem 1 exactly as in the corollary. Mathlib already has it, as `Real.coe_fib_eq`, and also a general theory of linear recurrences of any order (`LinearRecurrence`), including the dimension of the solution space and "guess an exponential":
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.fib_isSol" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.binet" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.binet_library" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.geom_sol_iff_root" />
+
+Two recurrences from algorithms. The divide-and-conquer recurrence is defined by well-founded recursion — Lean demands a proof that $\lfloor n/2 \rfloor < n$ before it accepts the definition, a small reminder that a recurrence only defines something if it terminates:
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.hanoi" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.hanoi_eq" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.splitCost" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.splitCost_pow_two" />
+
+**Formal power series.** Mathlib's `PowerSeries ℚ`, written `ℚ⟦X⟧`, is literally the ring of the definitions section: a power series is a function from exponents to coefficients, and `PowerSeries.coeff n` reads off a coefficient. The Fibonacci generating function is verified coefficient by coefficient — and the factorial series, which converges nowhere except at $0$, is nevertheless invertible:
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.geometric_series" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.fib_gf" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.factorial_series_isUnit" />
+
+**Catalan numbers.** Mathlib *defines* `catalan` by Segner's recurrence and proves the closed form:
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.catalan_formula" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.catalan_five" />
+
+**Asymptotics.** Mathlib's `f =O[atTop] g` is the definition of the lesson, phrased with filters: "eventually, $\|f(n)\| \le C\|g(n)\|$". The first proof supplies the witnesses $C = 8$ and $N = 1$; the second uses $F_n \le \varphi^n$, itself proved by a two-step induction:
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.quadratic_isBigO" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.fib_le_gold_pow" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.fib_isBigO" />
+
+<Lean decl="Lumenary.RecurrencesGeneratingFunctions.poly_isLittleO_exp" />
+
+**What is and is not formalised.** Proved here: Lemmas 1–3, Theorem 1, the extra solution in Theorem 2 (not the full "exactly these" statement), Binet's formula, $F_n \le \varphi^n$, the Hanoi formula, $T(2^k) = k\,2^k$, the Fibonacci generating function, and two big-O facts. Cited from Mathlib: the general-order theory of linear recurrences, the geometric series in $K[[x]]$, the invertibility criterion, the Catalan closed form and $n^k = o(r^n)$. Not formalised: partial fractions, the reflection proof, the generating-function proof of the Catalan formula, Stirling-type asymptotics and the master theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: four routes to Fibonacci, four routes to Catalan">
+
+The first experiment computes Fibonacci numbers from the recurrence, from the generating function $x/(1 - x - x^2)$ by exact power-series division, and by repeated squaring of the matrix $\begin{pmatrix} 1 & 1 \\ 1 & 0 \end{pmatrix}$, and checks that they agree. Then it evaluates Binet's formula in floating point and finds where the rounded answer first goes wrong. The formula is a theorem; its floating-point evaluation is not — a theme of <TopicLink id="math.comp.numerical-methods">numerical methods</TopicLink>.
+
+<Python id="recurrences_generating_functions_binet" />
+
+The second experiment counts balanced bracket strings by brute force and compares the counts with Segner's recurrence, the closed form, and the coefficients of $C(x)$ obtained by iterating $C \leftarrow 1 + x\,C^2$ on truncated series. Watch the iteration: each round fixes at least one more coefficient. This is convergence of formal power series in the "$x$-adic" sense — two series are close when they agree in many leading coefficients — with no analysis at all. Finally it measures $C_n$ against $4^n/(\sqrt\pi\, n^{3/2})$.
+
+<Python id="recurrences_generating_functions_catalan" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: ratios and growth rates">
+
+The ratio $r_n = F_{n+2}/F_{n+1}$ satisfies $r_{n+1} = 1 + 1/r_n$ — divide the recurrence by $F_{n+2}$. So the ratios are the orbit of the map $x \mapsto 1 + 1/x$ starting from $r_0 = 1$: $1, 2, 1.5, 1.667, 1.6, \dots$ The cobweb diagram shows them spiralling into the fixed point $\varphi$, where $x = 1 + 1/x$, i.e. $x^2 = x + 1$. The spiral alternates sides because the derivative there, $-1/\varphi^2 \approx -0.38$, is negative; its size is $|\psi/\varphi|$, which is exactly the factor by which the error $r_n - \varphi$ shrinks per step according to Binet's formula.
+
+<SequenceLab mode="cobweb" fn="1 + 1/x" x={[0.5, 2.5]} x0={1} N={20} title="Fibonacci ratios: iterating x ↦ 1 + 1/x" subtitle="Start at x₀ = 1. The fixed point is the golden ratio φ ≈ 1.618." />
+
+Big-O hides constants, but constants matter for small inputs. Below, $c\,n\log_2 n$ is compared with $n^2$ and $2^n$. With $c = 4$ the curves $4n\log_2 n$ and $n^2$ cross (for $n \ge 2$) at $n = 16$; increase $c$ and watch the crossover move right — yet $n^2$ always wins eventually, because $n\log n = o(n^2)$. The exponential leaves the picture almost at once.
+
+<FunctionPlot fns={["c*x*log2(x)", "x^2", "2^x"]} labels={["c · n log₂ n", "n²", "2ⁿ"]} params={[{ name: "c", min: 1, max: 8, step: 0.5, value: 4 }]} x={[1, 40]} y={[0, 1600]} xLabel="n" yLabel="cost" title="Constants versus growth rates" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A formal power series has to converge to mean anything."** In $K[[x]]$ a series is its sequence of coefficients, and sums and products are computed coefficient by coefficient with finite sums. $\sum n!\,x^n$ converges only at $x = 0$, yet it is a perfectly good element of $\Q[[x]]$ with an inverse (proved in Lean above). Convergence matters only when you want to *substitute a number* for $x$, or to use analysis to read off asymptotics.
+
+</Misconception>
+
+<Misconception>
+
+**"Big-O is the exact running time" or "big-O is a lower bound".** $f = O(g)$ is an *upper* bound up to a constant factor, valid for large $n$. Mergesort is $O(n^2)$ as well as $O(n\log n)$ — both are true, the second is sharper. For "exactly this order" use $\Theta$, for a lower bound $\Omega$. And because constants are hidden, an $O(n\log n)$ algorithm can be slower than an $O(n^2)$ one for all inputs you will ever meet.
+
+</Misconception>
+
+<Misconception>
+
+**"The first few terms reveal the formula."** Place $n$ points on a circle and join every pair by a chord; for points in general position the regions number $1, 2, 4, 8, 16$ for $n = 1, \dots, 5$ — and then $31$, not $32$. (The true count is $\binom{n}{4} + \binom{n}{2} + 1$.) A guessed formula must be *proved*, for instance by checking that it satisfies the recurrence and the initial values.
+
+</Misconception>
+
+<Misconception>
+
+**"Any recurrence can be solved by the characteristic polynomial."** The method needs a recurrence that is *linear* with *constant* coefficients and a *fixed* look-back. It does not apply to $x_{n+1} = r x_n(1 - x_n)$, to $a_n = n\,a_{n-1}$, or directly to $T(n) = 2T(n/2) + n$.
+
+</Misconception>
+
+<Misconception>
+
+**"One initial value is enough."** A recurrence of order $k$ needs $k$ initial values: $a_{n+2} = a_{n+1} + a_n$ with $a_0 = 2$, $a_1 = 1$ gives the Lucas numbers $2, 1, 3, 4, 7, 11, \dots$, not the Fibonacci numbers. The solution space has dimension $k$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="The shift operator, and recurrences as linear algebra">
+
+Let $E$ be the **shift** on sequences, $(Ea)_n = a_{n+1}$. The recurrence $a_{n+k} = c_1 a_{n+k-1} + \cdots + c_k a_n$ says $\chi(E)\,a = 0$: solutions are the kernel of the linear operator $\chi(E)$. Since $\chi(E)$ factors as $\prod (E - r_i)^{m_i}$ and the factors commute, the kernel splits into the kernels of $(E - r_i)^{m_i}$, each spanned by $n^j r_i^n$ for $j < m_i$. This is the same algebra as solving $p(D)y = 0$ for the differentiation operator $D$, where $e^{rt}$ replaces $r^n$ and $t^j e^{rt}$ replaces $n^j r^n$ — compare <TopicLink id="math.analysis.ordinary-differential-equations">ordinary differential equations</TopicLink>.
+
+In matrix form, $\begin{pmatrix} F_{n+1} \\ F_n \end{pmatrix} = M^n \begin{pmatrix} 1 \\ 0 \end{pmatrix}$ with the **companion matrix** $M = \begin{pmatrix} 1 & 1 \\ 1 & 0 \end{pmatrix}$, and indeed $M^n = \begin{pmatrix} F_{n+1} & F_n \\ F_n & F_{n-1} \end{pmatrix}$. The characteristic roots are the eigenvalues of $M$, and diagonalising $M$ is Binet's formula. Taking determinants, $\det M^n = (-1)^n$ gives **Cassini's identity** $F_{n+1}F_{n-1} - F_n^2 = (-1)^n$. A repeated root corresponds to a companion matrix that cannot be diagonalised, and $n r^n$ comes from its Jordan block. See <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Singularities decide growth">
+
+Substitute a complex number for $x$, and a generating function with positive radius of convergence $R$ becomes an analytic function. By the Cauchy–Hadamard formula, $\limsup |a_n|^{1/n} = 1/R$: the **exponential growth rate of the coefficients is the reciprocal of the distance to the nearest singularity**. For $F(x) = x/(1 - x - x^2)$ the singularities are the roots $1/\varphi \approx 0.618$ and $-\varphi$ of $1 - x - x^2$, so $F_n$ grows like $\varphi^n$. For the Catalan function $(1 - \sqrt{1 - 4x})/(2x)$ the singularity is at $x = \tfrac14$, so the growth rate is $4^n$; its *type* — a square root — produces the factor $n^{-3/2}$. Turning the shape of a singularity into precise asymptotics is the subject of **analytic combinatorics** (Flajolet and Sedgewick), whose transfer theorems (Flajolet and Odlyzko, 1990) make this rigorous. See <TopicLink id="math.analysis.complex-analysis">complex analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="The arithmetic of Fibonacci numbers">
+
+Fibonacci numbers have striking divisibility: $\gcd(F_m, F_n) = F_{\gcd(m, n)}$ (Lucas, 1876), so $F_m$ divides $F_n$ whenever $m$ divides $n$, and $F_n$ can be prime only if $n = 4$ or $n$ is prime ($F_{19} = 4181 = 37 \cdot 113$ shows the converse fails). Whether there are infinitely many Fibonacci primes is an **open problem**. Reduced modulo any $m$, the sequence is periodic (the **Pisano period**): there are only $m^2$ possible consecutive pairs, so some pair repeats, and since the recurrence can be run backwards ($F_n = F_{n+2} - F_{n+1}$) the sequence is purely periodic. Modulo $10$ the period is $60$, which is why last digits of Fibonacci numbers repeat every $60$ terms. A related recurrence powers the **Lucas–Lehmer test**: for an odd prime $p$, the Mersenne number $2^p - 1$ is prime if and only if $s_{p-2} \equiv 0 \pmod{2^p - 1}$, where $s_0 = 4$ and $s_{k+1} = s_k^2 - 2$. It is how the largest known primes are found.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="The symbolic method">
+
+Generating functions translate *constructions* into *operations*: disjoint union of classes ↦ sum, pairs ↦ product, sequences ↦ $1/(1 - A)$. So "a rhythm is a sequence of beats of size $1$ or $2$" translates at once into $1/(1 - x - x^2)$, and "a binary tree is empty or a root with a left and a right subtree" into $B = 1 + xB^2$ — the Catalan equation, which explains why binary trees are counted by $C_n$. The same dictionary, with $\sum a_n x^n/n!$ (exponential generating functions), handles labelled objects such as permutations and set partitions. A nice consequence in the other direction is **Zeckendorf's theorem**: every positive integer is uniquely a sum of non-consecutive Fibonacci numbers $F_k$ with $k \ge 2$ (for example $100 = 89 + 8 + 3$). See <TopicLink id="math.discrete.enumerative-combinatorics">enumerative combinatorics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Waiting for two heads">
+
+Toss a fair coin until two heads appear in a row. Let $E$ be the expected number of tosses from the start, and $E_H$ the expected number still needed just after a head. Conditioning on the next toss gives the linear system $E = 1 + \tfrac12 E_H + \tfrac12 E$ and $E_H = 1 + \tfrac12 \cdot 0 + \tfrac12 E$, so $E = 6$. The probability of *no* two consecutive heads in $n$ tosses is $F_{n+2}/2^n$, because such strings are counted by the rhythm recurrence — so it decays like $(\varphi/2)^n$. The **probability generating function** $G(s) = \mathbb{E}[s^T] = \sum P(T = n)s^n$ of the waiting time $T$ satisfies a recurrence-derived equation too, and $G'(1) = \mathbb{E}[T]$. Linear recurrences for probabilities are the backbone of <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Three algorithms for Fₙ">
+
+Computing $F_n$ by the naive recursion `fib(n) = fib(n-1) + fib(n-2)` makes $2F_{n+1} - 1$ calls — exponentially many, $\Theta(\varphi^n)$, because the same subproblems are solved again and again. Storing the values (**memoisation**, the idea behind dynamic programming) brings this down to $n$ additions. The matrix identity, with $M^{2m} = (M^m)^2$, needs only $O(\log n)$ multiplications. But $F_n$ has about $0.209\,n$ decimal digits, so for large $n$ the cost is dominated by multiplying huge integers, not by the number of operations. In the other direction, Gabriel Lamé (1844) proved that if Euclid's algorithm on $a > b$ takes $k$ division steps then $b \ge F_{k+1}$ — so the number of steps is at most about five times the number of decimal digits of $b$, with consecutive Fibonacci numbers as the worst case. It is one of the first analyses of an algorithm's running time. See <TopicLink id="math.comp.algorithm-design">algorithm design</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Indian prosody.** Pingala's *Chandaḥśāstra* (its date is uncertain, perhaps the last centuries BCE) studied the enumeration of poetic metres. The rule that the number of metres of total length $n$, built from short and long syllables, is the sum of the two previous counts is stated explicitly by **Virahāṅka** (between 600 and 800 CE), and again by **Gopāla** (before 1135) and **Hemacandra** (c. 1150).
+- **Leonardo of Pisa.** In *Liber Abaci* (1202) Leonardo — later called Fibonacci — posed the rabbit problem whose answers are $1, 2, 3, 5, 8, \dots$. Johannes Kepler remarked (1611) that the ratios of consecutive terms approach the golden ratio. The name "Fibonacci numbers" is due to Édouard Lucas in the 1870s, who also proved their divisibility properties.
+- **Generating functions.** Abraham de Moivre introduced generating functions to solve linear recurrences ("recurrent series") in *Miscellanea Analytica* (1730), obtaining the closed form for the Fibonacci numbers; Daniel Bernoulli found it independently (1728), and Jacques Binet rediscovered it in 1843, giving it his name. Leonhard Euler used generating functions for partitions (*Introductio in analysin infinitorum*, 1748), and Pierre-Simon Laplace made them a central tool of probability (*Théorie analytique des probabilités*, 1812).
+- **Catalan numbers.** The Mongolian astronomer and mathematician **Minggatu** (Ming Antu) found them in the 1730s in power-series expansions of trigonometric functions (published posthumously in 1839). Euler counted triangulations of polygons in a letter to Christian Goldbach (1751), Johann Andreas von Segner gave the recurrence (1758), and Eugène Catalan studied bracketings (1838). The reflection argument is traditionally credited to Désiré André (1887), whose own proof of the closely related ballot theorem was in fact a slightly different bijection.
+- **Asymptotic notation.** Paul Bachmann introduced $O$ (1894) and Edmund Landau popularised it and added $o$ (1909). Donald Knuth proposed the now-standard meanings of $\Omega$ and $\Theta$ for the analysis of algorithms (1976); G. H. Hardy and J. E. Littlewood had earlier used $\Omega$ in a different sense (1914). The master theorem is due to Jon Bentley, Dorothea Haken and James Saxe (1980).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Ronald L. Graham, Donald E. Knuth and Oren Patashnik, *Concrete Mathematics* (1989; 2nd edition 1994) — chapters 6–9 on special numbers, generating functions and asymptotics, with superb exercises.
+- Herbert S. Wilf, *generatingfunctionology* (1990; 3rd edition 2006) — a short, joyful introduction to generating functions as a working tool.
+- Philippe Flajolet and Robert Sedgewick, *Analytic Combinatorics* (2009) — the symbolic method and singularity analysis in full.
+- Richard P. Stanley, *Enumerative Combinatorics*, Volume 1 (1986; 2nd edition 2012), and *Catalan Numbers* (2015).
+- Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein, *Introduction to Algorithms* (1990; 4th edition 2022) — chapter 4 on divide-and-conquer recurrences and the master theorem.
+- Parmanand Singh, "The so-called Fibonacci numbers in ancient and medieval India", *Historia Mathematica* 12 (1985) — the Indian history of the sequence.
+
+Next in the Lumenary: <TopicLink id="math.comp.algorithm-design">algorithm design and analysis</TopicLink>, <TopicLink id="math.discrete.enumerative-combinatorics">enumerative combinatorics</TopicLink> and <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>.
+
+</Section>

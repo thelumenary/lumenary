@@ -1,0 +1,773 @@
+---
+slug: single-variable-calculus
+topic: math.analysis.single-variable-calculus
+title: Calculus of one variable
+subtitle: Limits made precise, the mean value theorem as the engine of calculus, and infinite series that tell you exactly how wrong your approximation is — and when to stop trusting it.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 120
+order: 5010
+objectives:
+  - Use the ε–δ definitions of limit and continuity, and prove continuity of simple functions directly from them
+  - Differentiate and integrate elementary functions with the chain rule, substitution and integration by parts, and justify these rules
+  - State and prove Rolle's theorem, the mean value theorem and L'Hôpital's rule, and use them to analyse functions and limits
+  - Prove the fundamental theorem of calculus from the mean value theorem, and evaluate proper and improper integrals
+  - Test series for convergence (comparison, ratio, integral and alternating series tests) and prove that absolute convergence implies convergence
+  - Compute Taylor polynomials with the Lagrange error bound, prove $e^x = \sum x^n/n!$, and explain why a smooth function need not equal its Taylor series
+narrators: []
+lean:
+  - Lumenary.SingleVariableCalculus.continuousAt_iff_eps_delta
+  - Lumenary.SingleVariableCalculus.sq_eps_delta
+  - Lumenary.SingleVariableCalculus.chain_rule
+  - Lumenary.SingleVariableCalculus.mvt_from_rolle
+  - Lumenary.SingleVariableCalculus.mvt
+  - Lumenary.SingleVariableCalculus.const_of_deriv_zero
+  - Lumenary.SingleVariableCalculus.strictMono_of_deriv_pos
+  - Lumenary.SingleVariableCalculus.lhopital
+  - Lumenary.SingleVariableCalculus.ftc
+  - Lumenary.SingleVariableCalculus.integral_sq
+  - Lumenary.SingleVariableCalculus.integral_x_exp
+  - Lumenary.SingleVariableCalculus.summable_of_abs
+  - Lumenary.SingleVariableCalculus.partial_sums_converge_of_abs
+  - Lumenary.SingleVariableCalculus.p_series
+  - Lumenary.SingleVariableCalculus.taylor_lagrange
+  - Lumenary.SingleVariableCalculus.exp_series
+  - Lumenary.SingleVariableCalculus.flat_iteratedDeriv_zero
+  - Lumenary.SingleVariableCalculus.flat_pos
+compute: [single_variable_calculus_taylor_remainder, single_variable_calculus_riemann_rates]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="How does a calculator know sin 0.3?">
+
+Press `sin 0.3` on a calculator and $0.29552020666\ldots$ appears instantly. The chip did not draw a triangle. It added up a handful of terms of
+
+$$
+\sin x = x - \frac{x^3}{3!} + \frac{x^5}{5!} - \frac{x^7}{7!} + \cdots
+$$
+
+(real libraries also use range reduction and carefully tuned polynomials, but the idea is the same). Two questions turn this trick into mathematics. **Why** does the infinite sum equal $\sin x$? And **how many terms** are enough for ten correct digits? The answer to both is Taylor's theorem with remainder, and its proof rests on a chain of results — limits, derivatives, the mean value theorem — that is the backbone of this lesson.
+
+The same chain answers questions an engineer in Lagos, a pharmacologist in São Paulo or a climate modeller in Pune meets daily: if a quantity changes at a known rate, how much has it changed in total? (Integrate.) If a function has derivative zero, must it be constant? (Yes — but only on an interval, and the proof needs the mean value theorem.) If an infinite sum's terms shrink to zero, does the sum settle down? (Not necessarily: $1 + \tfrac12 + \tfrac13 + \cdots$ grows without bound.)
+
+This lesson is a university-level treatment of calculus of one variable. It assumes the informal ideas of <TopicLink id="math.analysis.intro-calculus">introductory calculus</TopicLink>, <TopicLink id="math.analysis.exponential-logarithmic-functions">exponentials and logarithms</TopicLink>, <TopicLink id="math.analysis.sequences-series">sequences and geometric series</TopicLink> and <TopicLink id="math.geom.trigonometry">trigonometry</TopicLink>, and makes them precise.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Zooming in and adding up">
+
+Zoom in on the graph of a differentiable function and it looks more and more like a straight line. The slope of that line is the **derivative**: the derivative is the *best linear approximation*,
+
+$$
+f(a + h) \approx f(a) + f'(a)\,h, \qquad \text{with an error that is small compared with } h.
+$$
+
+Chop an interval into thin strips and add up "height × width": that is a **Riemann sum**, and as the strips get thinner the sums approach the **integral**. The fundamental theorem of calculus says these two processes undo each other.
+
+Both ideas rest on the word *approach*. Newton and Leibniz worked with "vanishing quantities" and "infinitesimals" that were sometimes zero and sometimes not, and Bishop Berkeley mocked them as "the ghosts of departed quantities" (1734). The repair, completed in the nineteenth century by Cauchy, Bolzano and Weierstrass, replaced motion and infinitesimals by a game with inequalities: **you** name a tolerance $\varepsilon$; **I** must find a closeness $\delta$ that guarantees it.
+
+<CalculusLab mode="epsilon-delta" fn="x^2" a={3} L={9} epsilon={0.5} title="The ε–δ game for x² at a = 3" />
+
+Try shrinking $\varepsilon$: you can always find a working $\delta$, but it must shrink too. Then move the claimed limit $L$ away from $9$ and watch every $\delta$ fail once $\varepsilon$ is small. (The widget samples thousands of points: that is evidence, not proof. The proof is in the worked examples below.)
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, functions are real-valued and defined on subsets of $\R$.
+
+<Definition term="limit">
+
+Let $f$ be defined on an open interval around $a$, except possibly at $a$ itself. We write $\lim_{x \to a} f(x) = L$ if for every $\varepsilon > 0$ there is $\delta > 0$ such that
+
+$$
+0 < |x - a| < \delta \implies |f(x) - L| < \varepsilon.
+$$
+
+One-sided limits $x \to a^+$ and $x \to a^-$ use only $a < x < a + \delta$ or $a - \delta < x < a$.
+
+</Definition>
+
+<Definition term="continuity">
+
+$f$ is **continuous at** $a$ (a point of its domain $D$) if for every $\varepsilon > 0$ there is $\delta > 0$ such that $|f(x) - f(a)| < \varepsilon$ for all $x \in D$ with $|x - a| < \delta$. It is continuous on $D$ if it is continuous at every point of $D$.
+
+</Definition>
+
+The order of the quantifiers matters: $\delta$ may depend on $\varepsilon$ and on $a$. If one $\delta$ works for all $a \in D$ at once, $f$ is **uniformly continuous** on $D$.
+
+<Definition term="derivative">
+
+Let $f$ be defined on an open interval containing $a$. Then $f$ is **differentiable at** $a$, with **derivative** $f'(a)$, if the limit
+
+$$
+f'(a) = \lim_{h \to 0} \frac{f(a + h) - f(a)}{h}
+$$
+
+exists (as a real number). Higher derivatives $f'', f''', \dots, f^{(n)}$ are defined by repeating. $f$ is **of class** $C^n$ on an interval if $f^{(n)}$ exists and is continuous there, and **smooth** ($C^\infty$) if it is $C^n$ for every $n$.
+
+</Definition>
+
+<Definition term="Riemann integral">
+
+Let $f$ be bounded on $[a, b]$. A **tagged partition** is a choice of points $a = x_0 < x_1 < \cdots < x_n = b$ together with tags $t_i \in [x_{i-1}, x_i]$; its **mesh** is $\max_i (x_i - x_{i-1})$. The **Riemann sum** is $S = \sum_{i=1}^n f(t_i)\,(x_i - x_{i-1})$. We say $f$ is **Riemann integrable** with integral $I = \int_a^b f(x)\,dx$ if for every $\varepsilon > 0$ there is $\delta > 0$ such that $|S - I| < \varepsilon$ for every tagged partition of mesh less than $\delta$.
+
+</Definition>
+
+Every continuous function on $[a, b]$ is Riemann integrable, and so is every monotone function; both facts are proved in <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink> (the first using uniform continuity). We use freely the elementary properties: linearity, additivity over adjacent intervals, and the estimate $\left|\int_a^b g\right| \le (b - a)\sup_{[a, b]} |g|$.
+
+<Definition term="improper integral">
+
+If $f$ is integrable on $[a, b]$ for every $b > a$, then $\int_a^\infty f(x)\,dx = \lim_{b \to \infty} \int_a^b f(x)\,dx$ when this limit exists (the integral **converges**). Integrals of functions that are unbounded near an endpoint are defined by the same kind of limit.
+
+</Definition>
+
+<Definition term="convergent series">
+
+The series $\sum_{n=0}^\infty a_n$ **converges** to $S$ if its partial sums $s_N = \sum_{n=0}^N a_n$ satisfy $s_N \to S$. It **converges absolutely** if $\sum |a_n|$ converges, and **conditionally** if it converges but not absolutely.
+
+</Definition>
+
+<Definition term="Taylor polynomial and Taylor series">
+
+If $f$ is $n$ times differentiable at $a$, its **Taylor polynomial** of degree $n$ at $a$ is
+
+$$
+T_n(x) = \sum_{k=0}^{n} \frac{f^{(k)}(a)}{k!}\,(x - a)^k,
+$$
+
+and $R_n(x) = f(x) - T_n(x)$ is the **remainder**. If $f$ is smooth, its **Taylor series** at $a$ is $\sum_{k=0}^\infty f^{(k)}(a)(x - a)^k/k!$ (a Maclaurin series when $a = 0$). $f$ is **(real) analytic** at $a$ if its Taylor series converges to $f$ on some interval around $a$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples and non-examples">
+
+<Example title="An ε–δ proof: x² is continuous">
+
+Fix $a$ and $\varepsilon > 0$. Since $|x^2 - a^2| = |x - a|\,|x + a|$, we must control $|x + a|$. If $|x - a| < 1$ then $|x + a| \le |x - a| + 2|a| < 2|a| + 1$. So choose
+
+$$
+\delta = \min\left(1, \frac{\varepsilon}{2|a| + 1}\right).
+$$
+
+Then $|x - a| < \delta$ gives $|x^2 - a^2| < \delta\,(2|a| + 1) \le \varepsilon$. Notice that $\delta$ depends on $a$: near $a = 1000$ you must stay much closer. In fact $x^2$ is **not** uniformly continuous on $\R$. (This exact argument is checked by Lean below.)
+
+</Example>
+
+<Example title="A derivative from the definition, and a corner">
+
+For $f(x) = x^n$ ($n \ge 1$), the binomial theorem gives $\frac{(a + h)^n - a^n}{h} = n a^{n-1} + \binom n2 a^{n-2}h + \cdots + h^{n-1} \to n a^{n-1}$.
+
+For $f(x) = |x|$ at $0$: the difference quotient $|h|/h$ is $1$ for $h > 0$ and $-1$ for $h < 0$, so the limit does not exist. $|x|$ is continuous but not differentiable at $0$. Continuity does not imply differentiability — Weierstrass (1872) even built a function continuous everywhere and differentiable nowhere.
+
+</Example>
+
+<Example title="Three integration techniques">
+
+- **Substitution** ($u = x^2$, $du = 2x\,dx$): $\displaystyle\int_0^{\sqrt\pi} x \sin(x^2)\,dx = \tfrac12\int_0^{\pi} \sin u\,du = 1.$
+- **Integration by parts** ($u = x$, $dv = e^x dx$): $\displaystyle\int_0^1 x e^x\,dx = \big[x e^x\big]_0^1 - \int_0^1 e^x\,dx = e - (e - 1) = 1.$
+- **Partial fractions**: $\dfrac{1}{x(x + 1)} = \dfrac1x - \dfrac1{x+1}$, so $\displaystyle\int_1^N \frac{dx}{x(x+1)} = \ln\frac{2N}{N + 1} \to \ln 2$ as $N \to \infty$: a convergent improper integral.
+
+</Example>
+
+<Example title="Series: convergent, divergent, and conditionally convergent">
+
+- $\sum 1/n^2$ converges (integral test, $p = 2 > 1$); Euler found its sum, $\pi^2/6$, in the 1730s.
+- $\sum 1/n$ diverges although $1/n \to 0$: group the terms as $1 + \tfrac12 + (\tfrac13 + \tfrac14) + (\tfrac15 + \cdots + \tfrac18) + \cdots$, each bracket at least $\tfrac12$.
+- $\sum (-1)^{n+1}/n = 1 - \tfrac12 + \tfrac13 - \cdots$ converges (to $\ln 2$) by the alternating series test, but not absolutely. By Riemann's rearrangement theorem its terms can be reordered to converge to *any* real number you like: conditional convergence depends on the order of the terms.
+
+</Example>
+
+</Section>
+
+<Section id="derivatives" kind="proof" title="Derivatives and the mean value theorem">
+
+<Theorem name="Proposition (differentiable implies continuous)">
+
+If $f$ is differentiable at $a$, then $f$ is continuous at $a$.
+
+</Theorem>
+
+<Proof>
+
+For $h \ne 0$, $f(a + h) - f(a) = h \cdot \dfrac{f(a + h) - f(a)}{h}$, and as $h \to 0$ this tends to $0 \cdot f'(a) = 0$.
+
+</Proof>
+
+To prove the chain rule cleanly we use a reformulation of the derivative due to Carathéodory, which avoids dividing by quantities that might be zero.
+
+<Theorem name="Lemma (Carathéodory's criterion)">
+
+$f$ is differentiable at $a$ if and only if there is a function $\varphi$, continuous at $a$, with $f(x) - f(a) = \varphi(x)(x - a)$ for all $x$ near $a$. In that case $f'(a) = \varphi(a)$.
+
+</Theorem>
+
+<Proof>
+
+If $f'(a)$ exists, put $\varphi(x) = \frac{f(x) - f(a)}{x - a}$ for $x \ne a$ and $\varphi(a) = f'(a)$; continuity of $\varphi$ at $a$ is exactly the definition of $f'(a)$. Conversely, given $\varphi$, the difference quotient equals $\varphi(x)$ for $x \ne a$, which tends to $\varphi(a)$.
+
+</Proof>
+
+<Theorem name="Theorem (chain rule)">
+
+If $f$ is differentiable at $a$ and $g$ is differentiable at $f(a)$, then $g \circ f$ is differentiable at $a$ and $(g \circ f)'(a) = g'(f(a))\,f'(a)$.
+
+</Theorem>
+
+<Proof>
+
+Write $f(x) - f(a) = \varphi(x)(x - a)$ and $g(y) - g(f(a)) = \psi(y)(y - f(a))$ with $\varphi$ continuous at $a$, $\psi$ continuous at $f(a)$, $\varphi(a) = f'(a)$, $\psi(f(a)) = g'(f(a))$. Then
+
+$$
+g(f(x)) - g(f(a)) = \psi(f(x))\,\big(f(x) - f(a)\big) = \psi(f(x))\,\varphi(x)\,(x - a).
+$$
+
+The function $x \mapsto \psi(f(x))\varphi(x)$ is continuous at $a$, because $f$ is continuous at $a$ (previous proposition) and $\psi$ at $f(a)$. By Carathéodory's criterion, $(g \circ f)'(a) = \psi(f(a))\varphi(a) = g'(f(a))f'(a)$.
+
+</Proof>
+
+The product, quotient and inverse-function rules are proved in the same spirit. The theorems that make derivatives *useful* rest on one deep fact about the real line, proved in real analysis from the completeness of $\R$ (see the topology viewpoint below):
+
+<Theorem name="Theorem (extreme value theorem)">
+
+A continuous function on a closed bounded interval $[a, b]$ attains a maximum and a minimum value.
+
+</Theorem>
+
+<Theorem name="Lemma (Fermat's interior extremum theorem)">
+
+If $f$ has a local maximum or minimum at an interior point $c$ and is differentiable at $c$, then $f'(c) = 0$.
+
+</Theorem>
+
+<Proof>
+
+Say $c$ is a local maximum: $f(c + h) \le f(c)$ for $|h|$ small. For small $h > 0$ the quotient $\frac{f(c + h) - f(c)}{h}$ is $\le 0$, so its limit $f'(c) \le 0$; for small $h < 0$ it is $\ge 0$, so $f'(c) \ge 0$. Hence $f'(c) = 0$. A minimum is a maximum of $-f$.
+
+</Proof>
+
+<Theorem name="Theorem (Rolle)">
+
+If $f$ is continuous on $[a, b]$, differentiable on $(a, b)$, and $f(a) = f(b)$, then $f'(c) = 0$ for some $c \in (a, b)$.
+
+</Theorem>
+
+<Proof>
+
+By the extreme value theorem $f$ attains a maximum $M$ and a minimum $m$ on $[a, b]$. If both are attained only at the endpoints, then $M = m = f(a)$, so $f$ is constant and every $c \in (a, b)$ works. Otherwise one of them is attained at some $c \in (a, b)$, and $f'(c) = 0$ by Fermat's lemma.
+
+</Proof>
+
+<Theorem name="Theorem (mean value theorem)">
+
+If $f$ is continuous on $[a, b]$ and differentiable on $(a, b)$, where $a < b$, then
+
+$$
+f'(c) = \frac{f(b) - f(a)}{b - a} \quad \text{for some } c \in (a, b).
+$$
+
+</Theorem>
+
+<Proof>
+
+Let $m = \frac{f(b) - f(a)}{b - a}$ and tilt the graph: $g(x) = f(x) - m(x - a)$. Then $g$ is continuous on $[a, b]$, differentiable on $(a, b)$, and $g(a) = f(a) = g(b)$ (check: $g(b) = f(b) - (f(b) - f(a)) = f(a)$). Rolle's theorem gives $c$ with $0 = g'(c) = f'(c) - m$.
+
+</Proof>
+
+<Theorem name="Corollary (what the sign of f′ tells you)">
+
+Let $f$ be differentiable on an interval $I$.
+
+1. If $f' = 0$ on $I$, then $f$ is constant on $I$.
+2. If $f' > 0$ on $I$, then $f$ is strictly increasing on $I$ (and if $f' \ge 0$, increasing).
+
+</Theorem>
+
+<Proof>
+
+For $x < y$ in $I$, the mean value theorem on $[x, y]$ gives $f(y) - f(x) = f'(c)(y - x)$ for some $c \in (x, y) \subseteq I$. If $f' = 0$ the right side is $0$; if $f' > 0$ it is positive.
+
+</Proof>
+
+The interval matters: $f(x) = x/|x|$ has derivative $0$ on $\R \setminus \{0\}$ but is not constant. This corollary is what makes antiderivatives unique up to a constant **on an interval**.
+
+<Theorem name="Theorem (Cauchy's mean value theorem)">
+
+If $f, g$ are continuous on $[a, b]$ and differentiable on $(a, b)$, then for some $c \in (a, b)$,
+
+$$
+\big(f(b) - f(a)\big)\,g'(c) = \big(g(b) - g(a)\big)\,f'(c).
+$$
+
+</Theorem>
+
+<Proof>
+
+Apply Rolle's theorem to $h(x) = \big(f(b) - f(a)\big)g(x) - \big(g(b) - g(a)\big)f(x)$; a short computation gives $h(a) = f(b)g(a) - f(a)g(b) = h(b)$.
+
+</Proof>
+
+<Theorem name="Theorem (L'Hôpital's rule, 0/0 form)">
+
+Let $f, g$ be differentiable on $(a, a + r)$ with $g' \ne 0$ there, and suppose $f(x) \to 0$ and $g(x) \to 0$ as $x \to a^+$. If $\dfrac{f'(x)}{g'(x)} \to L$ as $x \to a^+$, then $\dfrac{f(x)}{g(x)} \to L$ as $x \to a^+$. The same holds for left-hand and two-sided limits.
+
+</Theorem>
+
+<Proof>
+
+Set $f(a) = g(a) = 0$; then $f, g$ are continuous on $[a, x]$ for every $x \in (a, a + r)$. First, $g(x) \ne 0$: otherwise Rolle's theorem on $[a, x]$ would give a zero of $g'$. Cauchy's theorem on $[a, x]$ gives $c_x \in (a, x)$ with $f(x)\,g'(c_x) = g(x)\,f'(c_x)$, that is,
+
+$$
+\frac{f(x)}{g(x)} = \frac{f'(c_x)}{g'(c_x)}.
+$$
+
+Given $\varepsilon > 0$, choose $\delta \in (0, r)$ with $\left|\frac{f'(c)}{g'(c)} - L\right| < \varepsilon$ for $a < c < a + \delta$. For $a < x < a + \delta$ we have $a < c_x < x < a + \delta$, so $\left|\frac{f(x)}{g(x)} - L\right| < \varepsilon$.
+
+</Proof>
+
+<Example title="L'Hôpital twice, and the hypotheses that matter">
+
+$\displaystyle\lim_{x \to 0} \frac{e^{x} - 1 - x}{x^2} = \lim_{x \to 0} \frac{e^x - 1}{2x} = \lim_{x \to 0} \frac{e^x}{2} = \frac12.$ Each step is legitimate because the previous quotient was of the form $0/0$ and the next limit exists. By contrast, $\lim_{x \to 0} \frac{x + 1}{x + 2} = \frac12$ by continuity, while blindly differentiating gives $1$: the rule only applies to indeterminate forms.
+
+</Example>
+
+<CalculusLab mode="tangent" fn="sin(x)" x0="pi/4" x={["-pi", "pi"]} title="Secants become a tangent" />
+
+</Section>
+
+<Section id="integration" kind="proof" title="Integration and the fundamental theorem">
+
+<Theorem name="Theorem (fundamental theorem of calculus, part 1)">
+
+Let $f$ be integrable on $[a, b]$ and $F(x) = \int_a^x f(t)\,dt$. If $f$ is continuous at $x_0 \in (a, b)$, then $F$ is differentiable at $x_0$ and $F'(x_0) = f(x_0)$.
+
+</Theorem>
+
+<Proof>
+
+For $h \ne 0$ small, additivity gives
+
+$$
+\frac{F(x_0 + h) - F(x_0)}{h} - f(x_0) = \frac1h \int_{x_0}^{x_0 + h} \big(f(t) - f(x_0)\big)\,dt.
+$$
+
+Given $\varepsilon > 0$, continuity gives $\delta > 0$ with $|f(t) - f(x_0)| < \varepsilon$ when $|t - x_0| < \delta$. For $0 < |h| < \delta$ the integral above has absolute value at most $|h|\,\varepsilon$, so the left side is at most $\varepsilon$ in absolute value.
+
+</Proof>
+
+In particular every continuous function on an interval has an antiderivative.
+
+<Theorem name="Theorem (fundamental theorem of calculus, part 2)">
+
+Let $F$ be continuous on $[a, b]$ and differentiable on $(a, b)$ with $F' = f$ there, and suppose $f$ is integrable on $[a, b]$. Then
+
+$$
+\int_a^b f(x)\,dx = F(b) - F(a).
+$$
+
+</Theorem>
+
+<Proof>
+
+Take any partition $a = x_0 < \cdots < x_n = b$. By the mean value theorem on each $[x_{i-1}, x_i]$ there is $t_i \in (x_{i-1}, x_i)$ with $F(x_i) - F(x_{i-1}) = f(t_i)(x_i - x_{i-1})$. Summing, the left side telescopes:
+
+$$
+F(b) - F(a) = \sum_{i=1}^n f(t_i)\,(x_i - x_{i-1}).
+$$
+
+So $F(b) - F(a)$ **is** a Riemann sum, for partitions of every mesh. As the mesh tends to $0$ these sums tend to $\int_a^b f$; hence the two numbers are equal.
+
+</Proof>
+
+<Theorem name="Corollary (integration by parts and substitution)">
+
+If $u, v$ are $C^1$ on $[a, b]$, then $\int_a^b u\,v'\,dx = \big[u v\big]_a^b - \int_a^b u'\,v\,dx$. If $\varphi$ is $C^1$ on $[a, b]$ and $f$ is continuous on an interval containing $\varphi([a, b])$, then $\int_a^b f(\varphi(t))\,\varphi'(t)\,dt = \int_{\varphi(a)}^{\varphi(b)} f(x)\,dx$.
+
+</Theorem>
+
+<Proof>
+
+For parts, $(uv)' = u'v + uv'$ is continuous, so part 2 gives $\int_a^b (u'v + uv') = [uv]_a^b$; rearrange. For substitution, let $F$ be an antiderivative of $f$ (part 1). By the chain rule $(F \circ \varphi)' = f(\varphi)\,\varphi'$, so both sides equal $F(\varphi(b)) - F(\varphi(a))$ by part 2.
+
+</Proof>
+
+<Theorem name="Proposition (p-integrals)">
+
+$\displaystyle\int_1^\infty \frac{dx}{x^p}$ converges if and only if $p > 1$, and then equals $\dfrac{1}{p - 1}$.
+
+</Theorem>
+
+<Proof>
+
+For $p \ne 1$, $\int_1^b x^{-p}\,dx = \frac{b^{1-p} - 1}{1 - p}$, which tends to $\frac{1}{p - 1}$ if $p > 1$ and to $\infty$ if $p < 1$. For $p = 1$ the integral is $\ln b \to \infty$.
+
+</Proof>
+
+<CalculusLab mode="riemann" fn="exp(x)" interval={[0, 1]} exact="e - 1" n={8} method="midpoint" title="Riemann sums for ∫₀¹ eˣ dx = e − 1" />
+
+Compare the four rules as you double the number of strips: the left-rule error roughly halves, while the midpoint and trapezoid errors drop by a factor of about four. The experiment below measures these rates.
+
+</Section>
+
+<Section id="series" kind="proof" title="Series and convergence tests">
+
+All the tests rest on the **monotone convergence theorem** (a bounded increasing sequence of reals converges), which is one form of the completeness of $\R$. For a series with non-negative terms, the partial sums increase, so such a series converges exactly when its partial sums are bounded.
+
+<Theorem name="Theorem (comparison test)">
+
+If $0 \le a_n \le b_n$ for all $n$ and $\sum b_n$ converges, then $\sum a_n$ converges.
+
+</Theorem>
+
+<Proof>
+
+The partial sums of $\sum a_n$ increase and are bounded by $\sum_{n=0}^\infty b_n$.
+
+</Proof>
+
+<Theorem name="Theorem (absolute convergence implies convergence)">
+
+If $\sum |a_n|$ converges, then $\sum a_n$ converges.
+
+</Theorem>
+
+<Proof>
+
+Since $-|a_n| \le a_n \le |a_n|$, we have $0 \le a_n + |a_n| \le 2|a_n|$, so $\sum (a_n + |a_n|)$ converges by comparison. Then $\sum a_n = \sum (a_n + |a_n|) - \sum |a_n|$ is a difference of two convergent series.
+
+</Proof>
+
+<Theorem name="Theorem (ratio test)">
+
+Suppose $a_n \ne 0$ for large $n$ and $|a_{n+1}/a_n| \to \rho$. If $\rho < 1$, then $\sum a_n$ converges absolutely; if $\rho > 1$, it diverges. If $\rho = 1$ the test says nothing.
+
+</Theorem>
+
+<Proof>
+
+If $\rho < 1$, pick $r$ with $\rho < r < 1$. For $n \ge N$ we have $|a_{n+1}| \le r|a_n|$, so $|a_n| \le |a_N|\,r^{n - N}$, and $\sum |a_n|$ converges by comparison with a geometric series. If $\rho > 1$ then $|a_{n+1}| > |a_n|$ for large $n$, so $a_n \not\to 0$ and the series diverges (its partial sums cannot settle if the terms do not tend to $0$). For $\rho = 1$: $\sum 1/n$ diverges while $\sum 1/n^2$ converges, and both have $\rho = 1$.
+
+</Proof>
+
+<Theorem name="Theorem (integral test)">
+
+Let $f$ be positive, continuous and decreasing on $[1, \infty)$. Then $\sum_{n \ge 1} f(n)$ converges if and only if $\int_1^\infty f(x)\,dx$ converges.
+
+</Theorem>
+
+<Proof>
+
+Because $f$ decreases, $f(k + 1) \le \int_k^{k+1} f \le f(k)$ for each $k \ge 1$. Summing over $k = 1, \dots, N - 1$:
+
+$$
+\sum_{n=2}^{N} f(n) \;\le\; \int_1^N f(x)\,dx \;\le\; \sum_{n=1}^{N-1} f(n).
+$$
+
+All three quantities increase with $N$. If the integral converges, the left inequality bounds the partial sums; if the series converges, the right inequality bounds $\int_1^N f$, which then converges as $N \to \infty$ (and $\int_1^b f$ increases in $b$).
+
+</Proof>
+
+With $f(x) = x^{-p}$ and the $p$-integrals: **$\sum 1/n^p$ converges if and only if $p > 1$.**
+
+<Theorem name="Theorem (alternating series test)">
+
+If $b_n$ decreases to $0$, then $\sum_{n \ge 1} (-1)^{n+1} b_n$ converges to some $S$, and $|S - s_N| \le b_{N+1}$.
+
+</Theorem>
+
+<Proof>
+
+The even partial sums increase, since $s_{2k+2} = s_{2k} + (b_{2k+1} - b_{2k+2})$, and the odd ones decrease, since $s_{2k+1} = s_{2k-1} - (b_{2k} - b_{2k+1})$; also $s_{2k} \le s_{2k+1} \le s_1$. Both subsequences are monotone and bounded, so they converge, and to the same limit because $s_{2k+1} - s_{2k} = b_{2k+1} \to 0$. The limit $S$ lies between any two consecutive partial sums, so $|S - s_N| \le |s_{N+1} - s_N| = b_{N+1}$.
+
+</Proof>
+
+<SequenceLab mode="series" term="1/n^p" params={[{"name":"p","min":0.5,"max":3,"step":0.1,"value":2}]} N={300} title="The p-series: slide p across 1" />
+
+</Section>
+
+<Section id="taylor" kind="proof" title="Taylor's theorem">
+
+<Theorem name="Theorem (Taylor's theorem with Lagrange remainder)">
+
+Let $f^{(n)}$ be continuous on the closed interval between $a$ and $x \ne a$, and let $f^{(n+1)}$ exist on the open interval between them. Then for some $\xi$ strictly between $a$ and $x$,
+
+$$
+f(x) = \sum_{k=0}^{n} \frac{f^{(k)}(a)}{k!}(x - a)^k + \frac{f^{(n+1)}(\xi)}{(n + 1)!}(x - a)^{n+1}.
+$$
+
+</Theorem>
+
+<Proof>
+
+Keep $x$ fixed and let the base point vary: for $t$ between $a$ and $x$ put
+
+$$
+F(t) = f(x) - \sum_{k=0}^{n} \frac{f^{(k)}(t)}{k!}(x - t)^k, \qquad G(t) = (x - t)^{n+1}.
+$$
+
+Differentiating term by term, the sum telescopes (the derivative of the $k$-th term is $\frac{f^{(k+1)}(t)}{k!}(x - t)^k - \frac{f^{(k)}(t)}{(k-1)!}(x - t)^{k-1}$ for $k \ge 1$), leaving
+
+$$
+F'(t) = -\frac{f^{(n+1)}(t)}{n!}(x - t)^n, \qquad G'(t) = -(n + 1)(x - t)^n.
+$$
+
+Now $F(x) = 0$, $F(a) = R_n(x)$, $G(x) = 0$ and $G(a) = (x - a)^{n+1}$. Cauchy's mean value theorem on the interval between $a$ and $x$ gives $\xi$ strictly between them with $\big(F(x) - F(a)\big)G'(\xi) = \big(G(x) - G(a)\big)F'(\xi)$, that is, $R_n(x)\,(n + 1)(x - \xi)^n = (x - a)^{n+1}\,\frac{f^{(n+1)}(\xi)}{n!}(x - \xi)^n$. Since $\xi \ne x$ we may cancel $(x - \xi)^n$, which gives the formula.
+
+</Proof>
+
+For $n = 0$ this is the mean value theorem. The remainder formula is a **certificate of accuracy**: if $|f^{(n+1)}| \le M$ between $a$ and $x$, then $|R_n(x)| \le M|x - a|^{n+1}/(n+1)!$.
+
+<Theorem name="Corollary (the exponential series)">
+
+For every real $x$, $\displaystyle e^x = \sum_{n=0}^\infty \frac{x^n}{n!}$. Similarly $\sin x = \sum (-1)^n \frac{x^{2n+1}}{(2n+1)!}$ and $\cos x = \sum (-1)^n \frac{x^{2n}}{(2n)!}$ for all $x$.
+
+</Theorem>
+
+<Proof>
+
+Every derivative of $e^t$ is $e^t$, so Taylor's theorem at $0$ gives $|R_n(x)| = e^{\xi}|x|^{n+1}/(n+1)! \le e^{|x|}|x|^{n+1}/(n+1)!$. For fixed $x$, the numbers $c_n = |x|^n/n!$ satisfy $c_{n+1}/c_n = |x|/(n + 1) \to 0$, so $c_n \to 0$ (by the ratio argument above). Hence $R_n(x) \to 0$. For $\sin$ and $\cos$ use $|f^{(n+1)}| \le 1$.
+
+</Proof>
+
+<Example title="How many terms for sin 0.3?">
+
+The Maclaurin polynomial $x - x^3/6 + x^5/120$ of $\sin$ is also $T_6$, since the $x^6$ coefficient is $0$. With $|\sin^{(7)}| \le 1$ the error at $x = 0.3$ is at most $0.3^7/7! \approx 4.3 \times 10^{-8}$. Three terms already give seven correct decimals; the experiment below compares such bounds with the actual errors.
+
+</Example>
+
+Is every smooth function the sum of its Taylor series? Cauchy showed in 1823 that the answer is **no**.
+
+<Theorem name="Theorem (a smooth function that is not analytic)">
+
+Let $f(x) = e^{-1/x^2}$ for $x \ne 0$ and $f(0) = 0$. Then $f$ is smooth on $\R$ and $f^{(n)}(0) = 0$ for every $n$. So its Taylor series at $0$ is identically zero, yet $f(x) > 0$ for every $x \ne 0$.
+
+</Theorem>
+
+<Proof>
+
+*Step 1.* For each integer $m \ge 0$, $\lim_{x \to 0} |x|^{-m} e^{-1/x^2} = 0$. Indeed, with $y = 1/x^2 \to \infty$, this is $y^{m/2} e^{-y} \to 0$, because $e^y \ge y^{k}/k!$ for every $k$ (one term of its series) — take $k > m/2$.
+
+*Step 2.* For $x \ne 0$, $f^{(n)}(x) = P_n(1/x)\,e^{-1/x^2}$ for some polynomial $P_n$. This holds for $n = 0$ with $P_0 = 1$, and if it holds for $n$, then by the chain and product rules
+
+$$
+f^{(n+1)}(x) = \Big(-\frac{1}{x^2}P_n'(1/x) + \frac{2}{x^3}P_n(1/x)\Big)e^{-1/x^2} = P_{n+1}(1/x)\,e^{-1/x^2}
+$$
+
+with $P_{n+1}(u) = 2u^3 P_n(u) - u^2 P_n'(u)$.
+
+*Step 3.* By induction, $f^{(n)}(0)$ exists and equals $0$. For $n = 0$ this is the definition. If $f^{(n)}(0) = 0$, then
+
+$$
+f^{(n+1)}(0) = \lim_{h \to 0} \frac{f^{(n)}(h) - 0}{h} = \lim_{h \to 0} \frac1h P_n(1/h)\,e^{-1/h^2} = 0,
+$$
+
+because $\frac1h P_n(1/h)$ is a finite combination of powers $h^{-m}$, and each $h^{-m}e^{-1/h^2} \to 0$ by Step 1. Steps 2 and 3, together with Step 1 again, also show each $f^{(n)}$ is continuous at $0$, so $f$ is smooth.
+
+</Proof>
+
+<FunctionPlot fns={["exp(-1/x^2)", "0"]} labels={["f(x) = exp(−1/x²)", "its Taylor series at 0"]} x={[-3, 3]} y={[-0.2, 1]} title="Flat at 0, yet not zero" />
+
+Near $0$ the graph is so flat that no polynomial can see it: every Taylor polynomial at $0$ is the zero polynomial. The lesson? Taylor's theorem says $f = T_n + R_n$ — always true — but whether $R_n \to 0$ must be **proved**, function by function, usually with the Lagrange bound.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Calculus in Lean and Mathlib">
+
+Mathlib has a large, general library of calculus: `HasDerivAt f f' x` says $f$ has derivative $f'$ at $x$, `∫ x in a..b, f x` is the interval integral (defined via Lebesgue integration, which agrees with the Riemann integral for Riemann-integrable functions), `HasSum a s` says a series converges (unconditionally) to $s$, and `taylorWithinEval` gives Taylor polynomials. The lesson's module re-proves several results from more basic library facts — these are marked *independent* — and cites others directly.
+
+First, continuity. Mathlib defines it with neighbourhood filters; for real functions this unfolds to exactly our ε–δ definition, and the example $x^2$ is proved with the same $\delta = \min(1, \varepsilon/(2|a| + 1))$ as on paper, each `calc` line matching a step of the human proof:
+
+<Lean decl="Lumenary.SingleVariableCalculus.continuousAt_iff_eps_delta" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.sq_eps_delta" />
+
+The chain rule is a single application of Mathlib's `HasDerivAt.comp` (Mathlib's proof is the general one for maps between normed spaces — see the multivariable lesson):
+
+<Lean decl="Lumenary.SingleVariableCalculus.chain_rule" />
+
+The mean value theorem, derived from Rolle's theorem by tilting the graph exactly as in the human proof, next to Mathlib's own version:
+
+<Lean decl="Lumenary.SingleVariableCalculus.mvt_from_rolle" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.mvt" />
+
+Its two most-used consequences, each proved from `mvt_from_rolle`:
+
+<Lean decl="Lumenary.SingleVariableCalculus.const_of_deriv_zero" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.strictMono_of_deriv_pos" />
+
+L'Hôpital's rule appears in Mathlib in many variants (one-sided, at infinity, with `deriv`); here is the two-sided $0/0$ form. Note that the conclusion is about the punctured neighbourhood filter `𝓝[≠] a`, i.e. $x \to a$ with $x \ne a$:
+
+<Lean decl="Lumenary.SingleVariableCalculus.lhopital" />
+
+The fundamental theorem of calculus, and two integrals computed with it. Integration by parts *found* the antiderivative $(x - 1)e^x$; Lean only needs to *check* it, by differentiating:
+
+<Lean decl="Lumenary.SingleVariableCalculus.ftc" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.integral_sq" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.integral_x_exp" />
+
+Series need care with words. In Mathlib, `Summable a` means **unconditional** convergence (the sum does not depend on the order of the terms), which for real series is equivalent to absolute convergence. So the alternating harmonic series is *not* `Summable` in Mathlib, although its partial sums converge. The proof that absolute convergence implies convergence follows the lesson line by line ($0 \le a_n + |a_n| \le 2|a_n|$, then subtract), and the second version restates the conclusion in terms of partial sums, exactly as in the lesson. The $p$-series test is cited from Mathlib, which proves it by Cauchy condensation rather than the integral test:
+
+<Lean decl="Lumenary.SingleVariableCalculus.summable_of_abs" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.partial_sums_converge_of_abs" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.p_series" />
+
+Taylor's theorem with Lagrange remainder and the exponential series are cited from Mathlib:
+
+<Lean decl="Lumenary.SingleVariableCalculus.taylor_lagrange" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.exp_series" />
+
+Finally, the misconception "smooth implies analytic". Mathlib's `expNegInvGlue` is the one-sided cousin of Cauchy's function: $e^{-1/x}$ for $x > 0$ and $0$ for $x \le 0$. Mathlib proves it is smooth. We prove that **all** its derivatives vanish at $0$, by a different route from the human proof above: the function is identically zero to the left of $0$, so its derivatives vanish there, and continuity of the derivatives carries the zeros to $0$:
+
+<Lean decl="Lumenary.SingleVariableCalculus.flat_iteratedDeriv_zero" />
+
+<Lean decl="Lumenary.SingleVariableCalculus.flat_pos" />
+
+**What is and is not formalised here.** Formalised: everything displayed above. Independently proved: the ε–δ example, the mean value theorem from Rolle, its two corollaries, both integrals, absolute convergence (in both forms), and the flatness of `expNegInvGlue`. Cited from Mathlib: the ε–δ characterisation, the chain rule, L'Hôpital's rule, the fundamental theorem, the $p$-series test, Taylor's theorem and the exponential series. Not formalised here: the extreme value theorem and Rolle's theorem themselves (Mathlib has both, as `IsCompact.exists_isMaxOn` and `exists_hasDerivAt_eq_zero`, and our mean value theorem uses the latter), the Riemann-sum definition of the integral, and the two-sided function $e^{-1/x^2}$ (whose flatness needs the polynomial bookkeeping of the human proof).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Error bounds versus actual errors">
+
+Taylor's theorem promises an upper bound on the error. How good is the promise? The first experiment computes Taylor polynomials of $e^x$ and $\sin x$ exactly (with rational arithmetic), compares the actual error with the Lagrange bound, and then looks at Cauchy's flat function, where the Taylor polynomials stay at zero.
+
+<Python id="single_variable_calculus_taylor_remainder" />
+
+Numerical integration has error bounds too. For a function with continuous second derivative, the midpoint rule with $n$ strips on $[a, b]$ has error at most $\frac{(b - a)^3}{24 n^2}\max|f''|$, and the trapezoid rule at most $\frac{(b-a)^3}{12 n^2}\max|f''|$; Simpson's rule, for $C^4$ functions, at most $\frac{(b - a)^5}{180 n^4}\max|f^{(4)}|$. (These are theorems, proved with Taylor's theorem; see a numerical analysis text.) The second experiment measures the rates on $\int_0^1 e^x\,dx = e - 1$:
+
+<Python id="single_variable_calculus_riemann_rates" />
+
+Both experiments are **numerical evidence** about particular functions and particular $n$. The theorems in the lesson are what guarantee the behaviour for all $n$.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: Taylor polynomials and their limits">
+
+Raise the degree and watch the Taylor polynomials of $\sin x$ hug the graph on wider and wider intervals — the series converges for every $x$. Then switch to $\ln(1 + x)$ or $1/(1 - x)$, whose series converge only on a bounded interval, however high the degree.
+
+<CalculusLab mode="taylor" modes={["taylor"]} preset="sin" degree={5} />
+
+The function $1/(1 + x^2)$ is smooth on all of $\R$, yet its Maclaurin series $1 - x^2 + x^4 - \cdots$ converges only for $|x| < 1$. Below, the partial sum of degree $2N$ is written in closed form as $\frac{1 - (-x^2)^{N+1}}{1 + x^2}$. Slide $N$ up and watch the partial sums converge inside $(-1, 1)$ and blow up outside. Nothing on the real line explains the barrier at $\pm 1$; the analysis viewpoint below does.
+
+<FunctionPlot fns={["1/(1 + x^2)", "(1 - (-x^2)^(N + 1))/(1 + x^2)"]} labels={["1/(1 + x²)", "partial sum of degree 2N"]} params={[{ name: "N", min: 0, max: 20, step: 1, value: 3 }]} x={[-2, 2]} y={[-1, 2]} />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A smooth function equals its Taylor series."** Cauchy's function $e^{-1/x^2}$ (with value $0$ at $0$) is smooth, all its derivatives at $0$ vanish, and so its Taylor series at $0$ is $0$ — which equals the function only at $x = 0$. Taylor's theorem $f = T_n + R_n$ always holds; convergence of the series to $f$ requires $R_n(x) \to 0$, which must be proved.
+
+</Misconception>
+
+<Misconception>
+
+**"L'Hôpital's rule works for any quotient."** It applies only to indeterminate forms $0/0$ or $\infty/\infty$, and only when the limit of $f'/g'$ exists. $\lim_{x \to 0} \frac{x + 1}{x + 2} = \frac12$, but differentiating top and bottom gives $1$. And the rule is not always the honest route: computing $\lim_{x \to 0} \frac{\sin x}{x}$ with L'Hôpital uses $\sin'(0) = \cos 0 = 1$ — which *is* that limit, so the argument is circular.
+
+</Misconception>
+
+<Misconception>
+
+**"If $a_n \to 0$, then $\sum a_n$ converges."** The condition $a_n \to 0$ is necessary but not sufficient: the harmonic series diverges. (It grows like $\ln N$ — very slowly, which is why computer experiments can mislead.)
+
+</Misconception>
+
+<Misconception>
+
+**"$\int_{-1}^{1} \frac{dx}{x^2} = \Big[-\frac1x\Big]_{-1}^{1} = -2$."** A positive function cannot have negative integral. The fundamental theorem needs an antiderivative on the whole interval, and $1/x^2$ is unbounded at $0$. As an improper integral, $\int_0^1 dx/x^2$ diverges, so the integral does not exist.
+
+</Misconception>
+
+<Misconception>
+
+**"A derivative is always continuous."** $f(x) = x^2\sin(1/x)$ (with $f(0) = 0$) is differentiable everywhere, with $f'(0) = 0$, but $f'(x) = 2x\sin(1/x) - \cos(1/x)$ has no limit as $x \to 0$. Derivatives do, however, always have the intermediate value property (Darboux's theorem).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Why [a, b] is special: connectedness and compactness">
+
+The intermediate value theorem and the extreme value theorem look like facts about functions, but they are facts about the **interval**. A continuous image of a connected space is connected, and the connected subsets of $\R$ are exactly the intervals: that is the intermediate value theorem. A continuous image of a compact space is compact, and $[a, b]$ is compact by the Heine–Borel theorem; a compact subset of $\R$ is closed and bounded, so it contains its supremum and infimum: that is the extreme value theorem. Rolle's theorem, the mean value theorem, and through them all of calculus, therefore rest on two topological properties of $[a, b]$. Over $\Q$ both fail: $x^2 - 2$ changes sign on $[1, 2] \cap \Q$ without a rational zero. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Tangent lines, parallel secants and curvature">
+
+The mean value theorem has a picture: some tangent line is **parallel** to the chord from $(a, f(a))$ to $(b, f(b))$. The derivative is the slope of the best linear approximation; the second derivative measures how the graph bends away from its tangent. For the graph of $f$, the curvature is $\kappa = |f''|/(1 + f'^2)^{3/2}$, and the circle of radius $1/\kappa$ through the point with the same tangent — the osculating circle — matches the curve to second order, just as the tangent line matches it to first order. Taylor polynomials are the higher-order version of the same idea: $T_n$ is the unique polynomial of degree at most $n$ agreeing with $f$ to order $n$ at $a$. See <TopicLink id="math.geom.curves-surfaces">curves and surfaces</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Differentiation is a derivation; dual numbers compute it">
+
+Algebraically, $D = d/dx$ is a linear map satisfying the **Leibniz rule** $D(fg) = (Df)g + f(Dg)$ — a *derivation*. On polynomials, $D$ is determined by $D(x) = 1$ and these two rules, with no limits at all. A clean way to compute derivatives mechanically uses the **dual numbers** $\R[\varepsilon]/(\varepsilon^2)$: for a polynomial $p$, $p(a + \varepsilon) = p(a) + p'(a)\,\varepsilon$ exactly, because all higher powers of $\varepsilon$ vanish. Extending this to $\exp$, $\sin$ and the other elementary functions (via $\exp(a + \varepsilon) = e^a + e^a\varepsilon$, and so on) gives **forward-mode automatic differentiation**, which computes exact derivatives of programs; the chain rule is just composition of maps of dual numbers. The truncated Taylor polynomial is the analogous computation in $\R[\varepsilon]/(\varepsilon^{n+1})$.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="The series for e proves that e is irrational">
+
+Taylor's theorem with remainder gives arithmetic information. Suppose $e = p/q$ with integers $p, q \ge 1$. Multiply $e = \sum_{k \ge 0} 1/k!$ by $q!$:
+
+$$
+q!\,e - \sum_{k=0}^{q} \frac{q!}{k!} = \sum_{k > q} \frac{q!}{k!} = \frac{1}{q+1} + \frac{1}{(q+1)(q+2)} + \cdots < \frac1{q+1} + \frac1{(q+1)^2} + \cdots = \frac1q \le 1.
+$$
+
+The left side is an integer (both $q!\,e = (q-1)!\,p$ and every $q!/k!$ with $k \le q$ are integers), and the right side shows it lies strictly between $0$ and $1$. Contradiction: $e$ is irrational (Fourier's proof, published 1815). The same idea — a quantity that is a positive integer but smaller than $1$ — drives the proofs that $\pi$ is irrational and that $e$ is transcendental (Hermite, 1873). See <TopicLink id="math.number.real-numbers">real numbers</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Why 1/(1 + x²) stops at |x| = 1: look in the complex plane">
+
+The Maclaurin series of $1/(1 + x^2)$ is the geometric series $\sum (-x^2)^n$, which converges exactly for $|x| < 1$ — although the function is smooth and bounded on all of $\R$. The explanation is invisible on the real line. A power series $\sum c_n z^n$ converges on a disc $|z| < R$ in the complex plane (and diverges for $|z| > R$), and the function $1/(1 + z^2)$ has poles at $z = \pm i$, at distance $1$ from $0$. By a theorem of <TopicLink id="math.analysis.complex-analysis">complex analysis</TopicLink>, the Taylor series of a function holomorphic on a disc converges to it on the whole disc; and it cannot converge on any larger disc, because that disc would contain a pole: the sum of a power series is continuous (indeed holomorphic) on its disc of convergence and would agree with $1/(1 + z^2)$ near the pole, where that function is unbounded. So $R = 1$, and the real series is trapped in $(-1, 1)$. Complex differentiability is so rigid that it forces analyticity — the opposite of the real world, where Cauchy's $e^{-1/x^2}$ is smooth but not analytic. (Its complex version $e^{-1/z^2}$ has an essential singularity at $0$.)
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Velocity, acceleration and Newton's fluxions">
+
+Newton called derivatives **fluxions**: the rate at which a "flowing quantity" changes in time. If $x(t)$ is position, $x'(t)$ is velocity and $x''(t)$ acceleration, and the fundamental theorem says displacement is the integral of velocity. The mean value theorem has a famous reading: if you drive $120$ km in $1.5$ hours, at some instant your speedometer read exactly $80$ km/h — the reasoning behind the average-speed cameras used on highways in many countries. Taylor's theorem, cut off at second order, is the physicist's universal approximation: near a stable equilibrium every smooth potential looks like $V(x_0) + \tfrac12 V''(x_0)(x - x_0)^2$, which is why harmonic oscillators are everywhere (see <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>). That reasoning is a heuristic until one bounds the neglected remainder.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ancient methods of exhaustion.** Archimedes (3rd century BCE) found the area of a parabolic segment and the volume of a sphere by squeezing them between inscribed and circumscribed figures. In China, Liu Hui (3rd century CE) approximated $\pi$ with polygons of up to 3072 sides, and Zu Chongzhi and his son Zu Gengzhi (5th–6th centuries) used a principle equivalent to Cavalieri's to find the volume of a sphere.
+- **Sums of powers and volumes.** Ibn al-Haytham (Cairo, c. 1000) summed fourth powers of integers to find the volume of a solid obtained by rotating a parabola.
+- **The Kerala school.** Mādhava of Saṅgamagrāma (c. 1340–1425) and his successors in Kerala, India, found infinite series for $\arctan$, $\sin$ and $\cos$, including $\frac\pi4 = 1 - \frac13 + \frac15 - \cdots$, together with correction terms to accelerate convergence. The work is preserved in texts such as Jyeṣṭhadeva's *Yuktibhāṣā* (c. 1530), which gives justifications.
+- **The calculus of Newton and Leibniz.** Pierre de Fermat found tangents and maxima (1630s); Isaac Barrow saw the inverse relation between tangents and areas. Isaac Newton developed his method of fluxions in 1665–66 (published much later), and Gottfried Wilhelm Leibniz published his differential calculus in 1684, with the notation $dx$ and $\int$ we still use; the priority dispute that followed divided British and continental mathematics for a century. In Japan, Takebe Katahiro (1722) found a power series for the square of the arcsine.
+- **Series and functions.** Brook Taylor published his series in 1715 and Colin Maclaurin popularised the special case in 1742. Michel Rolle proved his theorem for polynomials (1691). Guillaume de l'Hôpital's textbook of 1696 contains the rule now named after him; it was taught to him by Johann Bernoulli. Leonhard Euler made functions and power series the centre of analysis (*Introductio*, 1748). Joseph-Louis Lagrange gave the remainder in the form above (1797).
+- **Rigour.** Bernard Bolzano proved the intermediate value theorem (1817). Augustin-Louis Cauchy's *Cours d'analyse* (1821) and *Résumé* (1823) defined limits, continuity, derivatives and integrals in essentially modern terms, proved the mean value theorem, and gave the function $e^{-1/x^2}$. Bernhard Riemann defined his integral in 1854. Karl Weierstrass made the ε–δ language standard in his Berlin lectures of the 1860s and constructed a continuous, nowhere-differentiable function (1872).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Michael Spivak, *Calculus* (1967; 4th edition 2008) — rigorous, beautiful and full of challenging problems; the model for this lesson's level.
+- Tom M. Apostol, *Calculus*, Volume 1 (2nd edition 1967) — integration before differentiation, with careful proofs.
+- Richard Courant and Fritz John, *Introduction to Calculus and Analysis*, Volume I (1965) — strong on applications and intuition.
+- Stephen Abbott, *Understanding Analysis* (2001; 2nd edition 2015) — the natural next step into real analysis.
+- Ernst Hairer and Gerhard Wanner, *Analysis by Its History* (1996) — the theorems of this lesson in their historical order, with original figures.
+- Otto Toeplitz, *The Calculus: A Genetic Approach* (1963).
+
+Next in the Lumenary: <TopicLink id="math.analysis.multivariable-calculus">multivariable calculus</TopicLink>, <TopicLink id="math.analysis.ordinary-differential-equations">ordinary differential equations</TopicLink>, <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink> and <TopicLink id="math.comp.numerical-methods">numerical methods</TopicLink>.
+
+</Section>

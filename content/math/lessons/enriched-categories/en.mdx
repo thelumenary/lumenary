@@ -1,0 +1,415 @@
+---
+slug: enriched-categories
+topic: math.cat.enriched-categories
+title: Enriched categories
+subtitle: When the arrows between two objects form not a set but a vector space, a space, a category — or a single number — and the triangle inequality turns out to be composition.
+level: grad
+ages: Graduate
+minutes: 110
+order: 7039
+objectives:
+  - Define categories, functors and natural transformations enriched in a monoidal category $\mathcal{V}$, and the underlying ordinary category
+  - Show that Lawvere metric spaces are exactly the categories enriched in $([0, \infty], \ge, +, 0)$, with the triangle inequality as composition, and that enriched functors are the non-expansive maps
+  - Show that locally small categories, preorders and rings are the categories enriched in sets, truth values and abelian groups (one object)
+  - Explain why additive categories are $\cat{Ab}$-enriched and strict 2-categories are $\cat{Cat}$-enriched, and derive the interchange law
+  - Use closedness of $\mathcal{V}$ to prove the enriched Yoneda embedding for Lawvere metric spaces
+narrators: []
+lean:
+  - Lumenary.EnrichedCategories.Dist
+  - Lumenary.EnrichedCategories.distMonoidal
+  - Lumenary.EnrichedCategories.LawvereMetric
+  - Lumenary.EnrichedCategories.lawvereEquivEnriched
+  - Lumenary.EnrichedCategories.ofPseudoEMetric
+  - Lumenary.EnrichedCategories.uphill
+  - Lumenary.EnrichedCategories.uphill_not_symmetric
+  - Lumenary.EnrichedCategories.underlying_preorder
+  - Lumenary.EnrichedCategories.yoneda_isometry
+  - Lumenary.EnrichedCategories.nonExpansiveEquiv
+  - Lumenary.EnrichedCategories.supMetric
+  - Lumenary.EnrichedCategories.dist_closed
+  - Lumenary.EnrichedCategories.truthMonoidal
+  - Lumenary.EnrichedCategories.preorderEquivEnriched
+  - Lumenary.EnrichedCategories.set_enriched
+  - Lumenary.EnrichedCategories.end_ring
+compute: [enriched_categories_shortest_paths]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Hom-sets with structure">
+
+In many categories the morphisms between two objects form more than a set. Linear maps $V \to W$ form a vector space, and composition is bilinear. Homomorphisms between abelian groups form an abelian group. Continuous maps between nice spaces form a space, and composition is continuous. Functors between two categories, with natural transformations between them, form a category. In each case the extra structure is not decoration: composition **respects** it.
+
+In 1973 F. William Lawvere pushed this idea to an extreme. Take as the "hom-object" from $x$ to $y$ a single number: the distance $d(x, y) \in [0, \infty]$. Composing a route from $x$ to $y$ with a route from $y$ to $z$ gives a route from $x$ to $z$, and the inequality $d(x, z) \le d(x, y) + d(y, z)$ is exactly what composition says. The identity on $x$ is the statement $d(x, x) = 0$. A metric space *is* a category — of a new kind, enriched in the numbers $[0, \infty]$ — and categorical ideas such as functors, the Yoneda lemma and completeness acquire metric meanings.
+
+This lesson develops **enriched category theory**: categories whose hom-objects live in a <TopicLink id="math.cat.monoidal-categories">monoidal category</TopicLink> $\mathcal{V}$.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Replace the set of arrows by an object of arrows">
+
+An ordinary category has, for objects $A, B, C$, a composition function $\mathcal{C}(B, C) \times \mathcal{C}(A, B) \to \mathcal{C}(A, C)$ and an identity element $\mathrm{id}_A \in \mathcal{C}(A, A)$, i.e. a function $1 \to \mathcal{C}(A, A)$ from a one-point set. Both are phrased using only the cartesian product $\times$ and the unit $1$ of $\cat{Set}$. Replace $(\cat{Set}, \times, 1)$ by any monoidal category $(\mathcal{V}, \otimes, I)$, and the definition still makes sense:
+
+| base $\mathcal{V}$ | a hom-object is | composition $\mathcal{C}(B, C) \otimes \mathcal{C}(A, B) \to \mathcal{C}(A, C)$ | a $\mathcal{V}$-category is |
+| --- | --- | --- | --- |
+| $(\cat{Set}, \times, 1)$ | a set | a function | a locally small category |
+| truth values $(\{0 \le 1\}, \wedge, 1)$ | true or false | $(x \le y) \wedge (y \le z) \Rightarrow (x \le z)$ | a preorder |
+| $([0, \infty], \ge, +, 0)$ | a number | $d(x, y) + d(y, z) \ge d(x, z)$ | a Lawvere metric space |
+| $(\cat{Ab}, \otimes, \Z)$ | an abelian group | a bilinear map | a preadditive category |
+| $(\cat{Vect}_k, \otimes, k)$ | a vector space | a bilinear map | a $k$-linear category |
+| $(\cat{Cat}, \times, 1)$ | a category | a functor | a strict 2-category |
+
+Two features are essential. Composition must be a **morphism of $\mathcal{V}$** — a bilinear map, a continuous map, a functor, an inequality — and there may be **no underlying elements**: a number has no "arrows in it", so a Lawvere metric space has no individual morphisms at all, only hom-objects.
+
+<CommutativeDiagram
+  objects={[
+    { id: "x", tex: "x", row: 0, col: 0 },
+    { id: "y", tex: "y", row: 0, col: 2 },
+    { id: "z", tex: "z", row: 1, col: 1 }
+  ]}
+  arrows={[
+    { from: "x", to: "y", tex: "d(x,y)" },
+    { from: "y", to: "z", tex: "d(y,z)" },
+    { from: "x", to: "z", tex: "d(x,z)", labelSide: "right" }
+  ]}
+  caption="In a Lawvere metric space the hom-objects are distances, and composition is the triangle inequality $d(x,z) \le d(x,y) + d(y,z)$."
+/>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Enriched categories, functors and transformations">
+
+Fix a monoidal category $(\mathcal{V}, \otimes, I, \alpha, \lambda, \rho)$.
+
+<Definition term="V-category">
+
+A **$\mathcal{V}$-category** $\mathcal{C}$ consists of a collection of objects; for objects $A, B$ a **hom-object** $\mathcal{C}(A, B) \in \mathcal{V}$; for $A, B, C$ a **composition** morphism $M_{A,B,C} : \mathcal{C}(B, C) \otimes \mathcal{C}(A, B) \to \mathcal{C}(A, C)$ in $\mathcal{V}$; and for each $A$ an **identity** morphism $j_A : I \to \mathcal{C}(A, A)$ in $\mathcal{V}$, such that composition is associative (the diagram below commutes) and unital: $M_{A,B,B} \circ (j_B \otimes 1) = \lambda$ and $M_{A,A,B} \circ (1 \otimes j_A) = \rho$ as maps $I \otimes \mathcal{C}(A, B) \to \mathcal{C}(A, B)$ and $\mathcal{C}(A, B) \otimes I \to \mathcal{C}(A, B)$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "a", tex: "(\\mathcal{C}(C,D) \\otimes \\mathcal{C}(B,C)) \\otimes \\mathcal{C}(A,B)", row: 0, col: 0 },
+    { id: "b", tex: "\\mathcal{C}(C,D) \\otimes (\\mathcal{C}(B,C) \\otimes \\mathcal{C}(A,B))", row: 0, col: 3.6 },
+    { id: "c", tex: "\\mathcal{C}(B,D) \\otimes \\mathcal{C}(A,B)", row: 1.2, col: 0 },
+    { id: "d", tex: "\\mathcal{C}(C,D) \\otimes \\mathcal{C}(A,C)", row: 1.2, col: 3.6 },
+    { id: "e", tex: "\\mathcal{C}(A,D)", row: 2.4, col: 1.8 }
+  ]}
+  arrows={[
+    { from: "a", to: "b", tex: "\\alpha" },
+    { from: "a", to: "c", tex: "M \\otimes 1", labelSide: "right" },
+    { from: "b", to: "d", tex: "1 \\otimes M" },
+    { from: "c", to: "e", tex: "M", labelSide: "right" },
+    { from: "d", to: "e", tex: "M" }
+  ]}
+  caption="Associativity of composition in a $\mathcal{V}$-category."
+/>
+
+<Definition term="V-functor and V-natural transformation">
+
+A **$\mathcal{V}$-functor** $F : \mathcal{C} \to \mathcal{D}$ assigns to each object $A$ an object $FA$, and to each pair $A, B$ a morphism $F_{A,B} : \mathcal{C}(A, B) \to \mathcal{D}(FA, FB)$ of $\mathcal{V}$, compatible with composition and identities. For $\mathcal{V}$-functors $F, G : \mathcal{C} \to \mathcal{D}$, a **$\mathcal{V}$-natural transformation** $\theta : F \Rightarrow G$ is a family of morphisms $\theta_A : I \to \mathcal{D}(FA, GA)$ in $\mathcal{V}$ such that, for all $A, B$, the two composites $\mathcal{C}(A, B) \to \mathcal{D}(FA, GB)$ — "apply $G$, then precompose with $\theta_A$" and "apply $F$, then postcompose with $\theta_B$" — are equal.
+
+</Definition>
+
+<Definition term="underlying category">
+
+The **underlying category** $\mathcal{C}_0$ of a $\mathcal{V}$-category has the same objects and $\mathcal{C}_0(A, B) = \mathcal{V}(I, \mathcal{C}(A, B))$, with composition $g \circ f = M \circ (g \otimes f) \circ \lambda_I^{-1}$. For $\mathcal{V} = \cat{Set}$, $\cat{Set}(1, X) \cong X$ recovers $\mathcal{C}$; for $\mathcal{V} = \cat{Ab}$ it forgets the group structure on hom-sets; for $\mathcal{V} = [0, \infty]$ there is one arrow $x \to y$ when $d(x, y) = 0$ and none otherwise.
+
+</Definition>
+
+<Definition term="Lawvere metric space">
+
+A **Lawvere metric space** is a set $X$ with distances $d(x, y) \in [0, \infty]$ such that $d(x, x) = 0$ and $d(x, z) \le d(x, y) + d(y, z)$. Unlike a metric, $d$ need not be symmetric, may take the value $\infty$, and may vanish for $x \neq y$.
+
+</Definition>
+
+**Closedness.** $\mathcal{V}$ is **closed** if each $- \otimes A$ has a right adjoint $[A, -]$. For symmetric closed $\mathcal{V}$, $\mathcal{V}$ itself is a $\mathcal{V}$-category with hom-objects $[A, B]$, and (if $\mathcal{V}$ is also complete) $\mathcal{V}$-functors $\mathcal{C} \to \mathcal{D}$ between small $\mathcal{V}$-categories form a $\mathcal{V}$-category $[\mathcal{C}, \mathcal{D}]$, whose hom-object is the **end** $\int_A \mathcal{D}(FA, GA)$. For $[0, \infty]$, $a + c \ge b \iff c \ge b \mathbin{\dot-} a$, where $b \mathbin{\dot-} a = \max(b - a, 0)$ (with $\infty \mathbin{\dot-} \infty = 0$), so $[a, b] = b \mathbin{\dot-} a$ and ends are suprema.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Metric spaces, and asymmetric ones">
+
+Every metric space, and every pseudo- or extended metric space, is a Lawvere metric space. Asymmetric examples arise whenever the cost of going depends on the direction:
+
+- **heights**: on $\R$, $d(x, y) = \max(y - x, 0)$ — climbing from height $x$ to $y$ costs $y - x$, descending is free;
+- **travel times** in a hilly town, along one-way streets, or against a river current; the experiment below computes one;
+- **the base itself**: $[0, \infty]$ with $d(a, b) = b \mathbin{\dot-} a$ (truncated subtraction) is a Lawvere metric space — $\mathcal{V}$ enriched over itself;
+- **subsets**: for subsets $S, T$ of a Lawvere metric space, $d(S, T) = \sup_{s \in S} \inf_{t \in T} d(s, t)$ (the one-sided Hausdorff distance) is a Lawvere metric; it is $0$ when $S \subseteq T$, and symmetrising with $\max$ gives the usual Hausdorff distance.
+
+A preorder becomes a Lawvere metric space with $d(x, y) = 0$ if $x \le y$ and $\infty$ otherwise.
+
+</Example>
+
+<Example title="Rings and linear categories">
+
+An $\cat{Ab}$-enriched category with one object $*$ is an abelian group $R = \mathcal{C}(*, *)$ with a bilinear associative composition and an identity: a **ring**. With several objects it is a "ring with several objects" (Mitchell): for instance the category of finitely generated free $R$-modules, with hom-groups of matrices. Additive categories (<TopicLink id="math.cat.abelian-categories">abelian categories</TopicLink> in particular) are $\cat{Ab}$-enriched by definition. Over a field $k$, one-object $\cat{Vect}_k$-categories are $k$-algebras, and the path category of a quiver, made $k$-linear, has the path algebra as its total algebra (see <TopicLink id="math.algebra.path-algebras">path algebras</TopicLink>).
+
+</Example>
+
+<Example title="Strict 2-categories">
+
+A $\cat{Cat}$-enriched category has, for objects $A, B$, a hom-*category* $\mathcal{C}(A, B)$ whose objects are **1-cells** $f : A \to B$ and whose morphisms are **2-cells** $\sigma : f \Rightarrow g$; composition is a functor $\mathcal{C}(B, C) \times \mathcal{C}(A, B) \to \mathcal{C}(A, C)$. The prime example is $\cat{Cat}$ itself (categories, functors, natural transformations). Weakening the associativity and unit *equations* to coherent *isomorphisms* gives bicategories (Bénabou 1967), the first step towards <TopicLink id="math.cat.higher-categories">higher categories</TopicLink>.
+
+</Example>
+
+<Example title="Spaces of maps and chain complexes">
+
+Categories enriched in topological spaces (or simplicial sets) have **mapping spaces** with continuous (simplicial) composition: compactly generated spaces with $\mathrm{Map}(X, Y)$, or simplicial sets with $\underline{\mathrm{Hom}}(X, Y)$. Categories enriched in chain complexes are **dg-categories**: chain complexes of modules with the Hom complex, whose differential is $d f = d_Y f - (-1)^{|f|} f d_X$.
+
+</Example>
+
+<Example title="A non-example: structure that composition ignores">
+
+Let $\mathcal{C}$ have abelian groups as objects and **all functions** as morphisms. Each hom-set $\mathcal{C}(A, B) = B^A$ is an abelian group under pointwise addition, and $(f + g) \circ h = f \circ h + g \circ h$. But $h \circ (f + g) \neq h \circ f + h \circ g$ when $h$ is not additive (take $h(x) = x^2$ on $\Z$, as a function $\Z \to \Z$). Composition is not bilinear, hence not a morphism $\mathcal{C}(B, C) \otimes \mathcal{C}(A, B) \to \mathcal{C}(A, C)$ of $\cat{Ab}$, so this is **not** an $\cat{Ab}$-enriched category, despite having an abelian group of arrows between any two objects.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems">
+
+<Theorem name="Proposition 1 (Set-enriched categories)">
+
+Categories enriched in $(\cat{Set}, \times, 1)$ are exactly locally small categories.
+
+</Theorem>
+
+<Proof>
+
+A morphism $1 \to \mathcal{C}(A, A)$ is an element $\mathrm{id}_A$; a function $\mathcal{C}(B, C) \times \mathcal{C}(A, B) \to \mathcal{C}(A, C)$ is a composition law. Evaluating the unit and associativity diagrams of $\cat{Set}$ on elements $(g, f)$, $(h, g, f)$ gives $\mathrm{id} \circ f = f = f \circ \mathrm{id}$ and $h \circ (g \circ f) = (h \circ g) \circ f$. Conversely these equations make the diagrams commute. (Mathlib: `enrichedCategoryTypeEquivCategory`.)
+
+</Proof>
+
+<Theorem name="Proposition 2 (preorders)">
+
+Categories enriched in truth values $(\{\bot \le \top\}, \wedge, \top)$ are exactly preordered sets.
+
+</Theorem>
+
+<Proof>
+
+Write $x \le y$ for "$\mathcal{C}(x, y) = \top$". A morphism $\top \to \mathcal{C}(x, x)$ exists iff $x \le x$; a morphism $\mathcal{C}(y, z) \wedge \mathcal{C}(x, y) \to \mathcal{C}(x, z)$ exists iff $(x \le y \text{ and } y \le z) \Rightarrow x \le z$. Since the truth-value category has at most one morphism between two objects, the associativity and unit diagrams commute automatically. So the data are a reflexive, transitive relation, and nothing else.
+
+</Proof>
+
+<Theorem name="Theorem 3 (Lawvere 1973)">
+
+Let $\mathcal{V} = ([0, \infty], \ge, +, 0)$, the poset $[0, \infty]$ ordered by $\ge$ (so there is an arrow $a \to b$ iff $a \ge b$), with $\otimes = +$ and unit $0$. Then:
+
+1. $\mathcal{V}$-categories are exactly Lawvere metric spaces;
+2. $\mathcal{V}$-functors $X \to Y$ are exactly the **non-expansive** maps, $d(fx, fx') \le d(x, x')$;
+3. a $\mathcal{V}$-natural transformation $f \Rightarrow g$ exists (and is unique) iff $d(fx, gx) = 0$ for all $x$;
+4. the $\mathcal{V}$-category of $\mathcal{V}$-functors $X \to Y$ has hom-objects $d(f, g) = \sup_x d(fx, gx)$, a Lawvere metric.
+
+</Theorem>
+
+<Proof>
+
+$\mathcal{V}$ is a monoidal category: $+$ is monotone, so it is a functor, and associativity and unit laws of $+$ give the (identity) associator and unitors; coherence is automatic because $\mathcal{V}$ is a preorder.
+
+(1) An identity $0 \to X(x, x)$ is the inequality $0 \ge d(x, x)$, i.e. $d(x, x) = 0$. A composition $X(y, z) + X(x, y) \to X(x, z)$ is the inequality $d(y, z) + d(x, y) \ge d(x, z)$. Since $\mathcal{V}$ is a preorder, the associativity and unit axioms hold automatically.
+
+(2) $F_{x,x'} : X(x, x') \to Y(fx, fx')$ is the inequality $d(x, x') \ge d(fx, fx')$; the functor axioms are equations between parallel morphisms of a preorder, so they hold.
+
+(3) A component $\theta_x : 0 \to Y(fx, gx)$ is the inequality $d(fx, gx) \le 0$; naturality is again automatic.
+
+(4) For each $x$, $d(fx, hx) \le d(fx, gx) + d(gx, hx) \le \sup d(f, g) + \sup d(g, h)$; take the supremum over $x$. And $d(f, f) = \sup_x 0 = 0$. This supremum is the end $\int_x Y(fx, gx)$, since limits in $\mathcal{V}$ (ordered by $\ge$) are suprema.
+
+</Proof>
+
+<Theorem name="Theorem 4 (enriched Yoneda embedding for Lawvere metric spaces)">
+
+For every Lawvere metric space $X$ and all $x, y \in X$,
+
+$$
+d(x, y) = \sup_{z \in X} \big( d(z, y) \mathbin{\dot-} d(z, x) \big).
+$$
+
+Hence $x \mapsto d(-, x)$ is an isometric embedding of $X$ into the Lawvere metric space of functions $X \to [0, \infty]$ with the distance $\sup_z \big(\psi(z) \mathbin{\dot-} \varphi(z)\big)$ from $\varphi$ to $\psi$.
+
+</Theorem>
+
+<Proof>
+
+For every $z$, the triangle inequality $d(z, y) \le d(z, x) + d(x, y)$ is equivalent, by the adjunction $a + c \ge b \iff c \ge b \mathbin{\dot-} a$, to $d(z, y) \mathbin{\dot-} d(z, x) \le d(x, y)$. So the supremum is at most $d(x, y)$, and $z = x$ attains it: $d(x, y) \mathbin{\dot-} d(x, x) = d(x, y) \mathbin{\dot-} 0 = d(x, y)$.
+
+</Proof>
+
+This is the Yoneda lemma in miniature: "an object is determined by the arrows into it", with "arrows into $x$" replaced by "distances to $x$". For symmetric metric spaces it is the classical Kuratowski–Fréchet embedding into a space of functions.
+
+<Theorem name="Proposition 5 (one-object Ab-categories are rings)">
+
+$\cat{Ab}$-enriched categories with one object correspond exactly to rings.
+
+</Theorem>
+
+<Proof>
+
+With one object $*$, the data are an abelian group $R = \mathcal{C}(*, *)$, a homomorphism $R \otimes R \to R$ — equivalently a biadditive map $R \times R \to R$, a multiplication satisfying both distributive laws — and a homomorphism $\Z \to R$, determined by the element $1$. Associativity and unit diagrams, evaluated on pure tensors, are associativity of multiplication and $1 \cdot r = r = r \cdot 1$. Conversely a ring gives this data.
+
+</Proof>
+
+<Theorem name="Proposition 6 (Cat-enriched categories and the interchange law)">
+
+In a $\cat{Cat}$-enriched category, horizontal and vertical composition of 2-cells satisfy the interchange law $(\tau' \cdot \tau) \ast (\sigma' \cdot \sigma) = (\tau' \ast \sigma') \cdot (\tau \ast \sigma)$.
+
+</Theorem>
+
+<Proof>
+
+Vertical composition $\cdot$ is composition inside the hom-categories, and horizontal composition $\ast$ is the action of the composition functor $M : \mathcal{C}(B, C) \times \mathcal{C}(A, B) \to \mathcal{C}(A, C)$ on morphisms: $\tau \ast \sigma = M(\tau, \sigma)$. In the product category, $(\tau', \sigma') \cdot (\tau, \sigma) = (\tau' \cdot \tau, \sigma' \cdot \sigma)$. Functoriality of $M$ gives $M(\tau' \cdot \tau, \sigma' \cdot \sigma) = M(\tau', \sigma') \cdot M(\tau, \sigma)$, which is the interchange law.
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Enriched categories in Lean">
+
+Mathlib has `EnrichedCategory V C` for any monoidal category `V`, with composition written in diagrammatic order, `Hom X Y ⊗ Hom Y Z ⟶ Hom X Z`. We construct Lawvere's base as a monoidal category. Mathlib makes every preorder a category with an arrow $a \to b$ iff $a \le b$; we take the order dual of $[0, \infty]$ so that arrows go "downhill" ($a \ge b$):
+
+<Lean decl="Lumenary.EnrichedCategories.Dist" />
+
+<Lean decl="Lumenary.EnrichedCategories.distMonoidal" />
+
+The central theorem: on any type, `Dist`-enriched categories in Mathlib's sense are the same as Lawvere metrics. The identity morphism is the statement $d(x, x) = 0$ and the composition morphism is the triangle inequality.
+
+<Lean decl="Lumenary.EnrichedCategories.LawvereMetric" />
+
+<Lean decl="Lumenary.EnrichedCategories.lawvereEquivEnriched" />
+
+Examples, the underlying preorder, and the Yoneda embedding (Theorem 4):
+
+<Lean decl="Lumenary.EnrichedCategories.ofPseudoEMetric" />
+
+<Lean decl="Lumenary.EnrichedCategories.uphill" />
+
+<Lean decl="Lumenary.EnrichedCategories.uphill_not_symmetric" />
+
+<Lean decl="Lumenary.EnrichedCategories.underlying_preorder" />
+
+<Lean decl="Lumenary.EnrichedCategories.yoneda_isometry" />
+
+Enriched functors are non-expansive maps, and maps into a Lawvere metric space carry the supremum metric; the closed structure is truncated subtraction:
+
+<Lean decl="Lumenary.EnrichedCategories.nonExpansiveEquiv" />
+
+<Lean decl="Lumenary.EnrichedCategories.supMetric" />
+
+<Lean decl="Lumenary.EnrichedCategories.dist_closed" />
+
+The same construction for truth values gives preorders, and Mathlib supplies the $\cat{Set}$- and $\cat{Ab}$-enriched cases:
+
+<Lean decl="Lumenary.EnrichedCategories.truthMonoidal" />
+
+<Lean decl="Lumenary.EnrichedCategories.preorderEquivEnriched" />
+
+<Lean decl="Lumenary.EnrichedCategories.set_enriched" />
+
+<Lean decl="Lumenary.EnrichedCategories.end_ring" />
+
+**What is and is not formalised.** Independently proved: the monoidal structures on $[0, \infty]$ and on truth values, the equivalences "Lawvere metrics = `Dist`-categories", "non-expansive maps = `Dist`-functors" and "preorders = `Prop`-categories", the supremum metric, the uphill example and the Yoneda isometry. From Mathlib: the definition of enriched categories and functors, the `Set` case, and rings of endomorphisms in preadditive categories. Not formalised: strict 2-categories as `Cat`-enriched categories, $\mathcal{V}$-natural transformations for general $\mathcal{V}$ (Mathlib defines them, but we do not use them), ends, and Cauchy completion.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Shortest paths: free enriched categories">
+
+A directed graph freely generates a category, whose morphisms are paths. A directed graph with **lengths** freely generates a Lawvere metric space, whose distance is the length of the **shortest** path: composition in $[0, \infty]$ is $+$, and "the best of all paths" is the infimum, so composing hom-matrices is **min-plus (tropical) matrix multiplication**, and a Lawvere metric is precisely a matrix $D$ with zero diagonal and $D \otimes D = D$. The experiment computes walking times in a small hill town, where uphill paths are slower, checks every axiom on every triple, runs the same algorithm with $(\vee, \wedge)$ to get the free preorder (reachability), and checks that the one-sided Hausdorff distance between sets of places is again a Lawvere metric.
+
+<Python id="enriched_categories_shortest_paths" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Enrichment means putting some extra structure on each hom-set."** Composition and identities must be morphisms *of $\mathcal{V}$*. Abelian groups with all functions between them have an abelian group of arrows between any two objects, but composition is not bilinear, so this is not an $\cat{Ab}$-category. Likewise a topology on hom-sets is not a $\cat{Top}$-enrichment unless composition is continuous.
+
+</Misconception>
+
+<Misconception>
+
+**"Lawvere metric spaces are symmetric."** Nothing in the definition of a $[0, \infty]$-category forces $d(x, y) = d(y, x)$: the hom-object from $x$ to $y$ and the one from $y$ to $x$ are unrelated, just as $\mathcal{C}(A, B)$ and $\mathcal{C}(B, A)$ are in an ordinary category. The uphill distance $d(0, 1) = 1$, $d(1, 0) = 0$ is an example. Lawvere also drops "$d(x, y) = 0 \Rightarrow x = y$" (like a preorder versus a partial order) and allows $d = \infty$ (like a category with empty hom-sets).
+
+</Misconception>
+
+<Misconception>
+
+**"The underlying category remembers the enriched category."** $\mathcal{C}_0(A, B) = \mathcal{V}(I, \mathcal{C}(A, B))$ can lose almost everything: for a Lawvere metric space it only records which distances are $0$. Different $\mathcal{V}$-categories can have the same underlying category, and enriched notions (limits, functor categories, Yoneda) must be formed in $\mathcal{V}$, not in $\mathcal{C}_0$.
+
+</Misconception>
+
+<Misconception>
+
+**"Enrichment needs a concrete $\mathcal{V}$ with underlying sets."** The definition only uses morphisms of $\mathcal{V}$ and its tensor product. In $[0, \infty]$ or truth values there are no elements of hom-objects to speak of — which is why Mathlib's `EnrichedCategory` makes no concreteness assumption.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="Asymmetric distances and Hausdorff distance">
+
+Asymmetric distances are natural in geometry: Finsler metrics in which the length of a velocity vector $v$ differs from that of $-v$ (Randers metrics, which model travel time with a wind or current — Zermelo's navigation problem), and directed path metrics on graphs. Lawvere's framework treats them uniformly, with symmetry as an optional extra property (a "symmetric" $\mathcal{V}$-category). Constructions on $\mathcal{V}$-categories give familiar geometric objects: the one-sided Hausdorff distance $\sup_{s \in S} \inf_{t \in T} d(s, t)$ between subsets is the hom-object of a power-set construction, and its symmetrisation is the Hausdorff distance used to compare shapes and compact sets (see <TopicLink id="math.geom.point-set-topology">metric spaces</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Completeness is a Yoneda-type property">
+
+Lawvere (1973) showed that **Cauchy completeness** of a metric space is an enriched-categorical property: a symmetric Lawvere metric space is Cauchy complete (every Cauchy sequence converges) if and only if every pair of adjoint $[0, \infty]$-bimodules (distributors) into it is representable by a point — and the Cauchy completion is obtained from the Yoneda embedding of Theorem 4 by adding the "limits" of such bimodules. The same notion of Cauchy completion, applied to $\cat{Ab}$-categories, gives the idempotent-split additive closure of a ring ("Karoubi envelope"): a single categorical idea with an analytic and an algebraic face. The Yoneda isometry itself is the categorical form of the embedding of a metric space into a space of bounded functions with the supremum norm (see <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink> and <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Mapping spaces and homotopy theory">
+
+A category enriched in topological spaces or simplicial sets has mapping spaces in place of hom-sets, so homotopies between morphisms are paths in mapping spaces. **Simplicially enriched categories** whose mapping spaces are Kan complexes are one of the standard models of $(\infty, 1)$-categories (Dwyer–Kan localisation; Bergner's model structure, 2007; the homotopy coherent nerve connects them to quasi-categories). Homotopy-coherent algebra — $A_\infty$- and $E_\infty$-structures — is phrased in categories enriched in spaces or chain complexes, and dg-categories (enriched in chain complexes) are the standard enhancement of derived categories (see <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink> and <TopicLink id="math.geom.homotopy-theory">homotopy theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Rings with several objects">
+
+Mitchell's slogan "rings with several objects" (1972) says that $\cat{Ab}$-categories are to rings what categories are to monoids. Many ring-theoretic constructions generalise: modules over an $\cat{Ab}$-category $\mathcal{R}$ are additive functors $\mathcal{R} \to \cat{Ab}$; Morita equivalence becomes equivalence of Cauchy completions; and a $k$-linear category with finitely many objects is the same as a $k$-algebra with a chosen complete set of orthogonal idempotents ($A = \bigoplus_{x,y} \mathcal{R}(x, y)$). Representations of quivers are $k$-linear functors out of the free $k$-linear category on the quiver (see <TopicLink id="math.algebra.modules">modules</TopicLink> and <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Generalised truth values">
+
+The title of Lawvere's paper — "Metric spaces, generalized logic, and closed categories" — is meant literally: $[0, \infty]$ is a generalised object of truth values in which "$\top$" is $0$, conjunction is $+$, implication is truncated subtraction ($b \mathbin{\dot-} a$ plays the role of $a \Rightarrow b$, by the same adjunction as $a \wedge c \le b \iff c \le (a \Rightarrow b)$), and a Lawvere metric is a "generalised preorder" in which $d(x, y)$ measures *how far* $x \le y$ is from being true. Replacing $[0, \infty]$ by any **quantale** (a complete lattice with an associative, join-preserving multiplication) gives quantale-enriched categories, used in fuzzy and many-valued logics and in the semantics of programs with quantitative information.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Tropical algebra and shortest paths">
+
+Over the "tropical" semiring $([0, \infty], \min, +)$, matrix multiplication computes best routes, and the shortest-path distance of a weighted graph is the closure $D = I \oplus W \oplus W^{2} \oplus \cdots$, computable by repeated squaring or by the Floyd–Warshall algorithm in $O(n^3)$ operations. In enriched language, this is the free $[0, \infty]$-category on a weighted graph, and the Boolean semiring $(\{0, 1\}, \vee, \wedge)$ gives transitive closure — the free preorder — by the same algorithm. Path problems over other semirings (widest paths with $(\max, \min)$, reliability with $(\max, \times)$) are free categories enriched in other bases.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Samuel Eilenberg** and **G. Max Kelly** set out the theory of closed categories and enriched ("relative") categories at the 1965 La Jolla conference (published 1966); **Jean Bénabou** introduced related ideas in Paris at the same time, and bicategories in 1967. Strict 2-categories go back to **Charles Ehresmann**'s work on double categories in the early 1960s.
+- **F. William Lawvere**'s "Metric spaces, generalized logic, and closed categories" (*Rendiconti del Seminario Matematico e Fisico di Milano*, 1973) recognised metric spaces as enriched categories.
+- **Barry Mitchell**'s "Rings with several objects" (1972) developed $\cat{Ab}$-categories as generalised rings. **Kelly**'s *Basic Concepts of Enriched Category Theory* (1982), written in Sydney, became the standard reference.
+- Enrichment in chain complexes (dg-categories) appears in Kelly's work of the mid-1960s and became central as an enhancement of triangulated categories through **Alexei Bondal** and **Mikhail Kapranov** (1990); enrichment in simplicial sets underlies **William Dwyer** and **Daniel Kan**'s homotopy theory of categories (1980) and **Julia Bergner**'s model structure (2007).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- G. M. Kelly, *Basic Concepts of Enriched Category Theory* (1982; reprinted in *Reprints in Theory and Applications of Categories*, 2005).
+- F. William Lawvere, "Metric spaces, generalized logic, and closed categories", *Rendiconti del Seminario Matematico e Fisico di Milano* 43 (1973); reprinted with commentary in *Reprints in TAC* 1 (2002).
+- Emily Riehl, *Categorical Homotopy Theory* (2014), Chapter 3 — enriched categories for homotopy theory.
+- Barry Mitchell, "Rings with several objects", *Advances in Mathematics* 8 (1972).
+- Brendan Fong and David I. Spivak, *An Invitation to Applied Category Theory: Seven Sketches in Compositionality* (2019), Chapter 2 — a gentle introduction to preorders and Lawvere metric spaces as enriched categories.
+
+</Section>

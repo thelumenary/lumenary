@@ -1,0 +1,138 @@
+{
+  "lesson": "monads",
+  "exercises": [
+    {
+      "id": "monads-maybe-algebras",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "The maybe monad on $\\mathbf{Set}$ has $TX = X \\sqcup \\{\\bot\\}$, $\\eta_X(x) = x$, and $\\mu_X$ collapsing the two copies of $\\bot$. What is a $T$-algebra $(A, a)$?",
+      "options": [
+        { "id": "pointed", "label": "A set $A$ with a chosen element $a(\\bot) \\in A$ (a pointed set)", "correct": true, "feedback": "Right. The unit law forces $a(x) = x$ for $x \\in A$, so the only freedom is where $\\bot$ goes — and every choice satisfies the associativity law." },
+        { "id": "monoid", "label": "A monoid", "correct": false, "feedback": "Monoids are the algebras of the *list* monad, where words of any length must be evaluated. Here the only extra element to evaluate is $\\bot$." },
+        { "id": "idempotent", "label": "A set with an idempotent map $e : A \\to A$", "correct": false, "feedback": "The structure map has type $A \\sqcup \\{\\bot\\} \\to A$, not $A \\to A$, and the unit law forces it to be the identity on $A$." },
+        { "id": "any", "label": "Any set, with no extra structure", "correct": false, "feedback": "Not quite: something must be chosen as $a(\\bot)$. In particular the empty set has no algebra structure at all." }
+      ],
+      "hints": ["Write down the unit law $a \\circ \\eta_A = \\mathrm{id}_A$. What does it say about $a$ on the elements of $A$?", "After the unit law, which values of $a$ are still undetermined?"],
+      "solution": "The unit law says $a(x) = x$ for every $x \\in A$, so $a$ is determined by the single value $a(\\bot) \\in A$. Checking the associativity law on the three kinds of element of $TTA$ ($\\bot$, the inner $\\bot$, and $x$) shows it always holds. So an algebra is exactly a **pointed set**, and algebra morphisms are base-point-preserving maps: $\\mathbf{Set}^T$ is the category of pointed sets."
+    },
+    {
+      "id": "monads-powerset-count",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "How many algebra structures $a : \\mathcal{P}A \\to A$ for the power-set monad are there on the three-element set $A = \\{p, q, r\\}$?",
+      "answer": 6,
+      "feedback": [
+        { "match": "1", "message": "There is more than one: the structure depends on a choice of ordering. Which partial orders on three points have all joins?" },
+        { "match": "3", "message": "Three would be the number of choices of a bottom (or a top) element. A complete lattice needs more than that to be specified." },
+        { "match": "19", "message": "19 is the number of all partial orders on a labelled 3-element set. Only those with all joins (including the empty join) give algebras." }
+      ],
+      "hints": ["Power-set algebras are complete join-semilattices: posets in which every subset (including $\\varnothing$) has a least upper bound.", "Such a poset has a bottom (the empty join) and a top (the join of everything). What can the third element be?"],
+      "solution": "A $\\mathcal{P}$-algebra is the same as a complete join-semilattice, via $x \\le y \\iff a\\{x, y\\} = y$ and $a(S) = \\bigvee S$. A three-element complete lattice has a bottom and a top, and the remaining element lies strictly between them: it is a **chain**. Chains on $\\{p, q, r\\}$ correspond to orderings of the three letters, so there are $3! = 6$ algebras. The experiment `monads_algebra_count` confirms this by searching all $3^5 = 243$ maps satisfying the unit law."
+    },
+    {
+      "id": "monads-kleisli-compute",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "In the Kleisli category of the list monad, let $f(n) = [n, n + 1]$ and $g(n) = [10n]$ (both from $\\mathbb{Z}$ to $\\mathrm{List}(\\mathbb{Z})$). What is $(g \\circ_T f)(1) = \\mu(Tg(f(1)))$?",
+      "options": [
+        { "id": "flat", "label": "$[10, 20]$", "correct": true, "feedback": "Yes: $f(1) = [1, 2]$, applying $g$ to each entry gives $[[10], [20]]$, and flattening gives $[10, 20]$." },
+        { "id": "nested", "label": "$[[10], [20]]$", "correct": false, "feedback": "That is $Tg(f(1))$, an element of $TTZ$. Kleisli composition finishes by flattening with $\\mu$." },
+        { "id": "wrong-order", "label": "$[10, 11]$", "correct": false, "feedback": "That would be $f$ applied after $g$: $f(10) = [10, 11]$. In $g \\circ_T f$, $f$ acts first." },
+        { "id": "single", "label": "$[10]$", "correct": false, "feedback": "Every output of $f$ is fed to $g$, not only the first one." }
+      ],
+      "hints": ["First compute $f(1)$.", "Apply $g$ to every entry of $f(1)$, then concatenate the resulting lists."],
+      "solution": "$f(1) = [1, 2]$; $Tg$ applies $g$ entrywise, giving $[[10], [20]]$; $\\mu$ concatenates, giving $[10, 20]$. In general the Kleisli composite of many-valued functions collects every output of $g$ over every output of $f$."
+    },
+    {
+      "id": "monads-adjunction-mu",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Let $F \\dashv G$ with $F : \\mathcal{C} \\to \\mathcal{D}$, unit $\\eta$ and counit $\\varepsilon$. The induced monad is $T = GF$ on $\\mathcal{C}$. What is its multiplication $\\mu_X : GFGFX \\to GFX$?",
+      "options": [
+        { "id": "geps", "label": "$G(\\varepsilon_{FX})$", "correct": true, "feedback": "Correct: $\\varepsilon_{FX} : FGFX \\to FX$, and applying $G$ gives a map $GFGFX \\to GFX$." },
+        { "id": "eta", "label": "$\\eta_{GFX}$", "correct": false, "feedback": "This goes the wrong way: $\\eta_{GFX} : GFX \\to GFGFX$. It is the unit at $TX$, not the multiplication." },
+        { "id": "feta", "label": "$F(\\eta_{GX})$", "correct": false, "feedback": "This doesn't even typecheck for an arbitrary $X$ in $\\mathcal{C}$: $GX$ only makes sense for objects of $\\mathcal{D}$." },
+        { "id": "epsf", "label": "$\\varepsilon_{FGFX}$", "correct": false, "feedback": "This is a morphism $FGFGFX \\to FGFX$ in $\\mathcal{D}$, not a morphism of $\\mathcal{C}$ from $GFGFX$." }
+      ],
+      "hints": ["$\\mu_X$ must remove one $FG$ from the middle of $G\\,FG\\,FX$.", "Which natural transformation has components $FG(-) \\to (-)$?"],
+      "solution": "The counit $\\varepsilon : FG \\Rightarrow \\mathrm{id}_{\\mathcal{D}}$ removes an adjacent $FG$. Whiskering, $G\\varepsilon F$ has components $G(\\varepsilon_{FX}) : G(FG)FX \\to GFX$. The triangle identities then give the unit laws and naturality of $\\varepsilon$ gives associativity (Theorem 1)."
+    },
+    {
+      "id": "monads-kleisli-identity-step",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In proving that $\\eta_A$ is a right identity in the Kleisli category, we write, for $f : A \\to TB$,\n\n$$f \\circ_T \\eta_A = \\mu_B \\circ Tf \\circ \\eta_A = \\mu_B \\circ \\eta_{TB} \\circ f = f.$$\n\nWhich two facts justify the second and third equalities, in order?",
+      "options": [
+        { "id": "nat-left", "label": "Naturality of $\\eta$; then the left unit law $\\mu \\circ \\eta T = \\mathrm{id}$", "correct": true, "feedback": "Exactly. Naturality of $\\eta$ at $f$ gives $Tf \\circ \\eta_A = \\eta_{TB} \\circ f$, and $\\mu_B \\circ \\eta_{TB} = \\mathrm{id}_{TB}$." },
+        { "id": "right", "label": "The right unit law $\\mu \\circ T\\eta = \\mathrm{id}$; then associativity", "correct": false, "feedback": "The right unit law is what makes $\\eta_B$ a *left* identity: $\\eta_B \\circ_T f = \\mu_B \\circ T\\eta_B \\circ f = f$. Associativity of $\\mu$ is not needed for identities." },
+        { "id": "nat-mu", "label": "Naturality of $\\mu$; then naturality of $\\eta$", "correct": false, "feedback": "No $\\mu$ is being moved past another map in the second step; the step moves $\\eta$ past $f$." },
+        { "id": "triangle", "label": "The two triangle identities of an adjunction", "correct": false, "feedback": "No adjunction is involved here — only the monad laws and naturality." }
+      ],
+      "hints": ["In the second step, $\\eta$ moves from one side of $f$ to the other.", "In the third step, which monad law has the shape $\\mu_B \\circ \\eta_{TB}$?"],
+      "solution": "Second equality: naturality of $\\eta$ applied to $f : A \\to TB$, namely $Tf \\circ \\eta_A = \\eta_{TB} \\circ f$. Third equality: the left unit law $\\mu_B \\circ \\eta_{TB} = \\mathrm{id}_{TB}$. (The other identity law, $\\eta_B \\circ_T f = f$, uses the right unit law instead.)"
+    },
+    {
+      "id": "monads-not-equivalent",
+      "type": "choice",
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "For the list monad $T$ on $\\mathbf{Set}$, $\\mathbf{Set}^T \\simeq \\mathbf{Mon}$. Which argument shows that the Kleisli category $\\mathbf{Set}_T$ is **not** equivalent to $\\mathbf{Mon}$?",
+      "options": [
+        { "id": "endo", "label": "$\\mathbb{Z}/2$ has exactly two monoid endomorphisms, but every object of $\\mathbf{Set}_T$ has either one or infinitely many endomorphisms.", "correct": true, "feedback": "Yes. Equivalences are fully faithful, so they preserve endomorphism monoids; $\\mathrm{End}_{\\mathbf{Set}_T}(A) = \\mathrm{List}(A)^A$ has size 1 or is infinite." },
+        { "id": "size", "label": "$\\mathbf{Mon}$ has more objects than $\\mathbf{Set}_T$.", "correct": false, "feedback": "Equivalences need not be bijective on objects (and both have a proper class of objects), so counting objects proves nothing." },
+        { "id": "zero", "label": "$\\mathbf{Mon}$ has a zero object and $\\mathbf{Set}_T$ does not.", "correct": false, "feedback": "In fact $\\varnothing$ is a zero object in $\\mathbf{Set}_T$: there is exactly one function $\\varnothing \\to \\mathrm{List}(B)$ and exactly one function $A \\to \\mathrm{List}(\\varnothing) = \\{[\\,]\\}$." },
+        { "id": "not-full", "label": "The comparison functor $\\mathbf{Set}_T \\to \\mathbf{Set}^T$ is not full.", "correct": false, "feedback": "It is fully faithful (its image is the free monoids). Failure of *this* functor to be essentially surjective would not, on its own, rule out some other equivalence." }
+      ],
+      "hints": ["An equivalence of categories is fully faithful, so it preserves the endomorphism monoid of each object.", "How many monoid homomorphisms $\\mathbb{Z}/2 \\to \\mathbb{Z}/2$ are there? How many functions $A \\to \\mathrm{List}(A)$?"],
+      "solution": "If $E : \\mathbf{Mon} \\to \\mathbf{Set}_T$ were an equivalence, then $\\mathrm{End}(\\mathbb{Z}/2) \\cong \\mathrm{End}(E(\\mathbb{Z}/2))$. The left side has exactly two elements ($1 \\mapsto 0$, $1 \\mapsto 1$). The right side is the set of functions $A \\to \\mathrm{List}(A)$ for some set $A$: one function if $A = \\varnothing$, infinitely many otherwise. Contradiction. (Contrast the maybe monad, where every algebra is free and the two categories are equivalent.)"
+    },
+    {
+      "id": "monads-monadic",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which forgetful functors to $\\mathbf{Set}$ are monadic? (Choose all that apply.)",
+      "options": [
+        { "id": "grp", "label": "$\\mathbf{Grp} \\to \\mathbf{Set}$", "correct": true, "feedback": "Yes — groups form a variety of algebras; Beck's theorem applies (see the sketch in the lesson)." },
+        { "id": "ring", "label": "$\\mathbf{Ring} \\to \\mathbf{Set}$", "correct": true, "feedback": "Yes — rings are also a variety, so the free-ring adjunction is monadic." },
+        { "id": "chaus", "label": "Compact Hausdorff spaces $\\to \\mathbf{Set}$", "correct": true, "feedback": "Yes — Manes' theorem: they are the algebras for the ultrafilter monad." },
+        { "id": "top", "label": "$\\mathbf{Top} \\to \\mathbf{Set}$", "correct": false, "feedback": "No. The induced monad is the identity, and the forgetful functor does not reflect isomorphisms (discrete vs indiscrete topologies)." },
+        { "id": "pos", "label": "Posets $\\to \\mathbf{Set}$", "correct": false, "feedback": "No, for the same reason as $\\mathbf{Top}$: the left adjoint gives the discrete order, the monad is the identity, and a bijective monotone map need not be an order isomorphism." }
+      ],
+      "hints": ["Varieties of algebras defined by operations and equations are monadic.", "For the remaining ones, compute the monad of the free–forgetful adjunction. If it is the identity monad, what are its algebras?"],
+      "solution": "Groups, rings and compact Hausdorff spaces are monadic over $\\mathbf{Set}$ (the first two are varieties; the third is Manes' theorem for the ultrafilter monad). For topological spaces and posets the left adjoint is the discrete structure, the induced monad is the identity, and its algebras are plain sets; the comparison functor is the forgetful functor itself, which is not an equivalence because it does not reflect isomorphisms."
+    },
+    {
+      "id": "monads-lean-assoc-law",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "In the Lean file, a list algebra on `X` has `act : List X → X`. Which field states the **associativity law** $a \\circ Ta = a \\circ \\mu_A$?",
+      "options": [
+        { "id": "right", "label": "`∀ xss : List (List X), act (xss.map act) = act xss.flatten`", "correct": true, "feedback": "Yes: `xss.map act` is $Ta$ applied to `xss`, and `xss.flatten` is $\\mu$." },
+        { "id": "unit", "label": "`∀ x : X, act [x] = x`", "correct": false, "feedback": "That is the unit law $a \\circ \\eta = \\mathrm{id}$." },
+        { "id": "comm", "label": "`∀ x y : X, act [x, y] = act [y, x]`", "correct": false, "feedback": "That would say the induced monoid is commutative — not part of the definition (the list monad describes all monoids, commutative or not)." },
+        { "id": "bad", "label": "`∀ xss : List (List X), act xss = act xss.flatten`", "correct": false, "feedback": "This does not typecheck: `act` expects a `List X`, but `xss` is a `List (List X)`." }
+      ],
+      "hints": ["$Ta$ applies `act` to each inner list.", "$\\mu$ is `List.flatten`."],
+      "solution": "The associativity law compares evaluating the inner lists first, `act (xss.map act)`, with flattening first, `act xss.flatten`. This is the field `ListAlgebra.assoc` in `Lumenary.Monads`."
+    },
+    {
+      "id": "monads-python-kleisli",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Write `kleisli(f, g)` returning the Kleisli composite (first `f`, then `g`) for the **list monad**: `f` and `g` are Python functions returning lists, and the composite applies `g` to every output of `f` and concatenates. Also write `unit(x)` returning `[x]`. The tests check the Kleisli category laws on examples.",
+      "starter": "def unit(x):\n    return x\n\n\ndef kleisli(f, g):\n    # Return a function a -> list: apply g to every element of f(a), concatenate.\n    return lambda a: g(f(a))\n",
+      "tests": "f = lambda n: [n, n + 1]\ng = lambda n: [10 * n]\nh = lambda n: [] if n % 20 == 0 else [n, -n]\nassert unit(5) == [5]\nassert kleisli(f, g)(1) == [10, 20]\nassert kleisli(unit, f)(3) == f(3)\nassert kleisli(f, unit)(3) == f(3)\nfor x in range(-3, 4):\n    assert kleisli(kleisli(f, g), h)(x) == kleisli(f, kleisli(g, h))(x)\nassert kleisli(h, f)(20) == []\nprint('All tests passed!')\n",
+      "hints": ["`f(a)` is a list; loop over it and call `g` on each element.", "Use `result.extend(g(b))` for each `b` in `f(a)`, or a nested comprehension `[c for b in f(a) for c in g(b)]`."],
+      "solution": "```python\ndef unit(x):\n    return [x]\n\n\ndef kleisli(f, g):\n    return lambda a: [c for b in f(a) for c in g(b)]\n```\n\nThe comprehension is $\\mu \\circ Tg \\circ f$: `for b in f(a)` runs over the outputs of $f$, `g(b)` is $Tg$ applied entrywise, and the nested loop flattens. The tests check the identity and associativity laws on examples; the lesson (and the Lean theorem `list_kleisli_laws`) proves them in general."
+    }
+  ]
+}

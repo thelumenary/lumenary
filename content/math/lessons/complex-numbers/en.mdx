@@ -1,0 +1,507 @@
+---
+slug: complex-numbers
+topic: math.number.complex-numbers
+title: Complex numbers
+subtitle: What if $x^2 = -1$ had a solution? One new number turns the plane into a number system in which multiplying means rotating — and in which every polynomial equation can be solved.
+level: g9-12
+ages: Ages 15–18
+minutes: 75
+order: 4012
+objectives:
+  - Add, multiply and divide complex numbers $a + bi$, and picture them as points and arrows in the complex plane
+  - Compute the modulus, argument and conjugate of a complex number, and convert between Cartesian and polar form
+  - Prove that multiplying complex numbers multiplies their moduli and adds their arguments, and prove De Moivre's theorem by induction
+  - Find the $n$-th roots of unity and of other complex numbers, and solve quadratic equations with negative discriminant
+  - Explain why $\C$ cannot be ordered compatibly with its arithmetic, and why $\sqrt{ab} = \sqrt a \, \sqrt b$ fails for negative $a$ and $b$
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.ComplexNumbers.i_sq
+  - Lumenary.ComplexNumbers.mul_rule
+  - Lumenary.ComplexNumbers.div_example
+  - Lumenary.ComplexNumbers.mul_conj
+  - Lumenary.ComplexNumbers.two_squares_identity
+  - Lumenary.ComplexNumbers.normSq_mul
+  - Lumenary.ComplexNumbers.norm_mul
+  - Lumenary.ComplexNumbers.cis
+  - Lumenary.ComplexNumbers.norm_cis
+  - Lumenary.ComplexNumbers.cis_add
+  - Lumenary.ComplexNumbers.polar_mul
+  - Lumenary.ComplexNumbers.de_moivre
+  - Lumenary.ComplexNumbers.cis_eq_exp
+  - Lumenary.ComplexNumbers.cis_root_of_unity
+  - Lumenary.ComplexNumbers.card_roots_of_unity
+  - Lumenary.ComplexNumbers.sum_roots_of_unity
+  - Lumenary.ComplexNumbers.quadratic_example
+  - Lumenary.ComplexNumbers.quadratic_formula_neg_disc
+  - Lumenary.ComplexNumbers.fundamental_theorem_of_algebra
+  - Lumenary.ComplexNumbers.no_positive_cone
+compute: [complex_numbers_roots_of_unity, complex_numbers_two_squares]
+trails: [loops-around-a-hole]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A square root that would not go away">
+
+In 1545 Gerolamo Cardano published a formula for solving cubic equations. For an equation $x^3 = px + q$ it reads
+
+$$
+x = \sqrt[3]{\frac q2 + \sqrt{\frac{q^2}{4} - \frac{p^3}{27}}} + \sqrt[3]{\frac q2 - \sqrt{\frac{q^2}{4} - \frac{p^3}{27}}}.
+$$
+
+Rafael Bombelli tried it on $x^3 = 15x + 4$, which obviously has the solution $x = 4$ (since $64 = 60 + 4$). The formula gives
+
+$$
+x = \sqrt[3]{2 + \sqrt{-121}} + \sqrt[3]{2 - \sqrt{-121}}.
+$$
+
+A square root of a negative number! Bombelli did not give up. In his *Algebra* (1572) he calculated boldly with a "number" $\sqrt{-1}$ obeying the usual rules plus $\big(\sqrt{-1}\big)^2 = -1$, and noticed that $\big(2 + \sqrt{-1}\big)^3 = 2 + 11\sqrt{-1} = 2 + \sqrt{-121}$. So the two cube roots are $2 + \sqrt{-1}$ and $2 - \sqrt{-1}$, and their sum is $4$. The "impossible" numbers were needed to reach a perfectly real answer.
+
+Today these numbers are indispensable: electrical engineers use them for alternating currents, physicists write quantum mechanics with them, and the images of the Mandelbrot set are pictures of complex arithmetic. In this lesson we build them carefully, see what they look like, and prove their main properties.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Numbers you can turn">
+
+Think of multiplication by $-1$ as a motion of the number line: it swaps $3$ and $-3$, $1$ and $-1$ — it is a **half turn** about $0$. Doing it twice is a full turn: $(-1)(-1) = 1$.
+
+Now ask for a number $i$ with $i^2 = -1$: "multiplying by $i$ twice is a half turn". On the line that is impossible. But in the **plane** there is an obvious candidate: a **quarter turn** about $0$. Two quarter turns make a half turn. So we let numbers live in a plane: the real numbers along the horizontal axis, and $i$ one unit up. Then $1 \xrightarrow{\times i} i \xrightarrow{\times i} -1 \xrightarrow{\times i} -i \xrightarrow{\times i} 1$ walks around a square.
+
+<Narrator who="chloe">
+
+Is it honest to just *declare* that a square root of $-1$ exists? That is the right worry. The answer is that we can build such numbers out of things we already trust — pairs of real numbers — and then *prove* that they behave. Lean's library does exactly that.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="complex number">
+
+A **complex number** is an expression $z = a + bi$ with $a, b \in \R$. The number $a = \operatorname{Re} z$ is its **real part** and $b = \operatorname{Im} z$ its **imaginary part**; two complex numbers are equal when their real parts are equal and their imaginary parts are equal. The set of complex numbers is $\C$. We identify the real number $a$ with $a + 0i$, so $\R \subseteq \C$.
+
+</Definition>
+
+Arithmetic follows the usual rules of algebra together with $i^2 = -1$:
+
+$$
+(a + bi) + (c + di) = (a + c) + (b + d)i, \qquad (a + bi)(c + di) = (ac - bd) + (ad + bc)i.
+$$
+
+(Expand the product and replace $bd\,i^2$ by $-bd$.) Formally one can *define* $\C$ as the set of pairs $(a, b)$ of reals with these two operations and check every law of arithmetic — commutativity, associativity, distributivity — directly. That is how Hamilton defined complex numbers in 1837, and how Mathlib defines them.
+
+<Definition term="complex plane">
+
+The complex number $a + bi$ is drawn as the point $(a, b)$ — or the arrow from $0$ to it — in the **complex plane** (also called an Argand diagram). The horizontal axis is the **real axis**, the vertical axis the **imaginary axis**.
+
+</Definition>
+
+<Definition term="conjugate, modulus and argument">
+
+For $z = a + bi$:
+
+- the **conjugate** is $\bar z = a - bi$, the mirror image of $z$ in the real axis;
+- the **modulus** is $|z| = \sqrt{a^2 + b^2}$, the distance from $0$ to $z$ (Pythagoras);
+- for $z \ne 0$, an **argument** $\arg z$ is an angle $\theta$ from the positive real axis to the arrow $0z$, measured anticlockwise in radians. It is defined only up to adding multiples of $2\pi$; the **principal argument** is the one in $(-\pi, \pi]$. The number $0$ has no argument.
+
+</Definition>
+
+<Definition term="polar form">
+
+If $|z| = r$ and $\theta$ is an argument of $z$, then $a = r\cos\theta$ and $b = r\sin\theta$, so
+
+$$
+z = r(\cos\theta + i \sin\theta) = r \operatorname{cis}\theta, \qquad \text{where } \operatorname{cis}\theta = \cos\theta + i\sin\theta.
+$$
+
+This is the **polar form** of $z$. The number $\operatorname{cis}\theta$ is the point at angle $\theta$ on the **unit circle** $|z| = 1$.
+
+</Definition>
+
+You need the trigonometry of the unit circle and the addition formulas from <TopicLink id="math.geom.trigonometry">Trigonometry</TopicLink>, and the quadratic formula from <TopicLink id="math.algebra.quadratics">Quadratic equations</TopicLink>.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Arithmetic">
+
+- $(3 + 2i) + (1 - 4i) = 4 - 2i$.
+- $(3 + 2i)(1 - 4i) = 3 - 12i + 2i - 8i^2 = 3 - 10i + 8 = 11 - 10i$.
+- Powers of $i$ repeat with period $4$: $i^1 = i$, $i^2 = -1$, $i^3 = -i$, $i^4 = 1$, $i^5 = i, \dots$ So $i^{2026} = i^{4 \cdot 506 + 2} = i^2 = -1$.
+
+</Example>
+
+<Example title="Division with the conjugate">
+
+To divide, multiply the top and bottom by the conjugate of the bottom, which makes the bottom real:
+
+$$
+\frac{3 + 4i}{1 + 2i} = \frac{(3 + 4i)(1 - 2i)}{(1 + 2i)(1 - 2i)} = \frac{3 - 6i + 4i - 8i^2}{1 - 4i^2} = \frac{11 - 2i}{5} = \frac{11}{5} - \frac25 i.
+$$
+
+In general $z \bar z = (a + bi)(a - bi) = a^2 + b^2 = |z|^2$, so $\dfrac1z = \dfrac{\bar z}{|z|^2}$ for every $z \ne 0$. Every non-zero complex number has an inverse: $\C$ is a **field**.
+
+</Example>
+
+<Example title="Polar forms">
+
+- $1 + i$: modulus $\sqrt{1 + 1} = \sqrt 2$, argument $\tfrac\pi4$, so $1 + i = \sqrt 2 \operatorname{cis}\tfrac\pi4$.
+- $-1 = \operatorname{cis}\pi$, and $i = \operatorname{cis}\tfrac\pi2$.
+- $-\sqrt 3 + i$: modulus $\sqrt{3 + 1} = 2$; the point is in the second quadrant with $\cos\theta = -\tfrac{\sqrt3}2$, $\sin\theta = \tfrac12$, so $\theta = \tfrac{5\pi}{6}$ and $-\sqrt 3 + i = 2\operatorname{cis}\tfrac{5\pi}6$.
+- Careful: $\tan\theta = \tfrac ba$ alone does not determine $\theta$. For $-1 - i$, $\tfrac ba = 1$, but the point is in the third quadrant: its principal argument is $-\tfrac{3\pi}{4}$, not $\tfrac\pi4$.
+
+</Example>
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: arithmetic as geometry">
+
+Drag $z$ and $w$. Addition is the parallelogram rule — complex numbers add like arrows (vectors). Then switch to the product: watch the lengths multiply and the angles add.
+
+<ComplexPlane mode="arithmetic" op="product" z={[1.5, 0.5]} w={[0.5, 1]} title="Multiplying complex numbers" subtitle="Compare |zw| with |z||w|, and arg(zw) with arg z + arg w. Then try the quotient and the conjugate." />
+
+Multiplication by a fixed number $w = a + bi$ moves the whole plane: it rotates by $\arg w$ and scales by $|w|$. As a map of the plane $(x, y) \mapsto (ax - by,\, bx + ay)$ it is the matrix $\begin{pmatrix} a & -b \\ b & a \end{pmatrix}$. Here is multiplication by $1 + i$: a rotation by $45^\circ$ and a stretch by $\sqrt 2$.
+
+<MatrixTransform matrix={[[1, -1], [1, 1]]} mode="single" presets={["rotation", "scale", "reflection"]} title="Multiplication by 1 + i" subtitle="The determinant is a² + b² = |w|². Which matrices of the form [[a, −b], [b, a]] are pure rotations?" />
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems and proofs">
+
+<Theorem name="Theorem 1 (moduli multiply)">
+
+For all complex numbers $z, w$: $\;|zw| = |z|\,|w|$.
+
+</Theorem>
+
+<Proof>
+
+Write $z = a + bi$, $w = c + di$, so $zw = (ac - bd) + (ad + bc)i$. Expanding both sides shows the **two-squares identity**
+
+$$
+(a^2 + b^2)(c^2 + d^2) = (ac - bd)^2 + (ad + bc)^2,
+$$
+
+since both sides equal $a^2c^2 + a^2d^2 + b^2c^2 + b^2d^2$ (the cross terms $\mp 2abcd$ cancel on the right). That says $|z|^2 |w|^2 = |zw|^2$. Taking non-negative square roots gives $|zw| = |z|\,|w|$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (multiplication in polar form)">
+
+For all real $\alpha, \beta$: $\;\operatorname{cis}\alpha \cdot \operatorname{cis}\beta = \operatorname{cis}(\alpha + \beta)$. Consequently
+
+$$
+r\operatorname{cis}\alpha \cdot s\operatorname{cis}\beta = rs\operatorname{cis}(\alpha + \beta):
+$$
+
+to multiply complex numbers, **multiply the moduli and add the arguments**.
+
+</Theorem>
+
+<Proof>
+
+By the multiplication rule,
+
+$$
+(\cos\alpha + i\sin\alpha)(\cos\beta + i\sin\beta) = (\cos\alpha\cos\beta - \sin\alpha\sin\beta) + i(\sin\alpha\cos\beta + \cos\alpha\sin\beta).
+$$
+
+By the addition formulas of trigonometry the real part is $\cos(\alpha + \beta)$ and the imaginary part is $\sin(\alpha + \beta)$. The second statement follows by multiplying by $rs$.
+
+</Proof>
+
+So the addition formulas for sine and cosine are "really" the statement that angles add when complex numbers multiply. In particular $\operatorname{cis}\theta \cdot \operatorname{cis}(-\theta) = \operatorname{cis} 0 = 1$, so $\operatorname{cis}(-\theta) = (\operatorname{cis}\theta)^{-1}$; it is also the conjugate $\overline{\operatorname{cis}\theta}$.
+
+<Theorem name="Theorem 3 (De Moivre)">
+
+For every real $\theta$ and every integer $n$:
+
+$$
+(\cos\theta + i\sin\theta)^n = \cos n\theta + i\sin n\theta.
+$$
+
+</Theorem>
+
+<Proof>
+
+First let $n \ge 0$; we use induction on $n$. For $n = 0$ both sides are $1$. If $\operatorname{cis}^k\theta = \operatorname{cis}(k\theta)$, then by Theorem 2
+
+$$
+\operatorname{cis}^{k+1}\theta = \operatorname{cis}^k\theta \cdot \operatorname{cis}\theta = \operatorname{cis}(k\theta)\operatorname{cis}\theta = \operatorname{cis}\big((k + 1)\theta\big).
+$$
+
+For negative $n = -m$ with $m > 0$: $\operatorname{cis}^{-m}\theta = \big(\operatorname{cis}^m\theta\big)^{-1} = \big(\operatorname{cis}(m\theta)\big)^{-1} = \operatorname{cis}(-m\theta)$, using the remark after Theorem 2.
+
+</Proof>
+
+De Moivre's theorem turns powers into multiplication of angles. Expanding $(\cos\theta + i\sin\theta)^3$ with the binomial theorem and comparing real parts gives $\cos 3\theta = 4\cos^3\theta - 3\cos\theta$ — a trigonometric identity obtained by pure algebra (the experiment below lets SymPy do it).
+
+<Theorem name="Theorem 4 (roots of unity)">
+
+Let $n \ge 1$. The equation $z^n = 1$ has exactly $n$ complex solutions,
+
+$$
+\omega_k = \operatorname{cis}\frac{2\pi k}{n}, \qquad k = 0, 1, \dots, n - 1,
+$$
+
+the **$n$-th roots of unity**. They are the vertices of a regular $n$-gon inscribed in the unit circle, with one vertex at $1$. For $n \ge 2$ they add up to $0$.
+
+</Theorem>
+
+<Proof>
+
+*Each $\omega_k$ is a solution:* by De Moivre, $\omega_k^n = \operatorname{cis}(2\pi k) = \cos 2\pi k + i \sin 2\pi k = 1$.
+
+*There are no others:* if $z^n = 1$ then $|z|^n = |z^n| = 1$ by Theorem 1, so $|z| = 1$ and $z = \operatorname{cis}\theta$ for some $\theta$. De Moivre gives $\cos n\theta + i\sin n\theta = 1$, so $\cos n\theta = 1$, which forces $n\theta = 2\pi k$ for an integer $k$, i.e. $\theta = \tfrac{2\pi k}{n}$. Since $\operatorname{cis}$ repeats with period $2\pi$, only $k = 0, \dots, n - 1$ give different numbers, and these $n$ angles all lie in $[0, 2\pi)$, so they give $n$ *distinct* points.
+
+*Regular polygon:* consecutive $\omega_k$ are at angles differing by $\tfrac{2\pi}{n}$ on the unit circle.
+
+*Sum:* let $\omega = \omega_1 \ne 1$ (as $n \ge 2$), so $\omega_k = \omega^k$. The geometric sum $S = 1 + \omega + \dots + \omega^{n-1}$ satisfies $(\omega - 1)S = \omega^n - 1 = 0$, and $\omega - 1 \ne 0$, so $S = 0$.
+
+</Proof>
+
+The same idea finds all $n$-th roots of any non-zero $w = R\operatorname{cis}\varphi$: they are $R^{1/n}\operatorname{cis}\dfrac{\varphi + 2\pi k}{n}$ for $k = 0, \dots, n - 1$, again a regular $n$-gon. For example the square roots of $i = \operatorname{cis}\tfrac\pi2$ are $\pm\operatorname{cis}\tfrac\pi4 = \pm\tfrac{1 + i}{\sqrt 2}$.
+
+<ComplexPlane mode="roots" z={[1, 0]} n={6} title="The sixth roots of unity" subtitle="Change n, then move c away from 1 to see the n-th roots of other numbers." />
+
+<Theorem name="Theorem 5 (quadratics with negative discriminant)">
+
+Let $a, b, c$ be real, $a \ne 0$, and $\Delta = b^2 - 4ac < 0$. Then $az^2 + bz + c = 0$ has the two complex solutions
+
+$$
+z = \frac{-b \pm i\sqrt{-\Delta}}{2a},
+$$
+
+which are conjugates of each other.
+
+</Theorem>
+
+<Proof>
+
+Let $s = \sqrt{-\Delta} = \sqrt{4ac - b^2}$, a positive real number, and $z = \tfrac{-b + is}{2a}$. Put $w = 2az = -b + is$. Multiplying the equation by $4a$,
+
+$$
+4a(az^2 + bz + c) = (2az)^2 + 2b(2az) + 4ac = w^2 + 2bw + 4ac.
+$$
+
+Now $w^2 = b^2 - 2bsi + s^2 i^2 = b^2 - 2bsi - s^2$ and $2bw = -2b^2 + 2bsi$, so $w^2 + 2bw + 4ac = -b^2 - s^2 + 4ac = 0$, because $s^2 = 4ac - b^2$. As $4a \ne 0$, $az^2 + bz + c = 0$. The other root is obtained by replacing $s$ with $-s$, which conjugates $z$.
+
+</Proof>
+
+For example $z^2 + 2z + 5 = 0$ has $\Delta = 4 - 20 = -16$, so $z = \tfrac{-2 \pm 4i}{2} = -1 \pm 2i$. Check: $(-1 + 2i)^2 + 2(-1 + 2i) + 5 = (1 - 4i - 4) + (-2 + 4i) + 5 = 0$.
+
+Quadratics are only the beginning:
+
+<Theorem name="Fundamental theorem of algebra (statement)">
+
+Every non-constant polynomial with complex coefficients has at least one complex root. Consequently a polynomial of degree $n \ge 1$ factors into $n$ linear factors over $\C$.
+
+</Theorem>
+
+We do not prove it here: every proof needs a substantial idea from analysis or topology (a sketch of one appears among the viewpoints below). It is why the complex numbers are the natural home of algebra: inventing $i$ to solve $x^2 + 1 = 0$ turns out to make *every* polynomial equation solvable.
+
+Finally, one thing is lost. The real numbers are ordered compatibly with arithmetic: positive times positive is positive, and every non-zero number is positive or negative, but not both. Not so for $\C$.
+
+<Theorem name="Theorem 6 (ℂ cannot be ordered)">
+
+There is no set $P \subseteq \C$ ("the positive numbers") such that products of elements of $P$ lie in $P$ and every $z \ne 0$ satisfies exactly one of $z \in P$, $-z \in P$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $P$ were such a set. Since $i \ne 0$, either $i \in P$ or $-i \in P$. In the first case $i \cdot i = -1 \in P$; in the second $(-i)(-i) = i^2 = -1 \in P$. Either way $-1 \in P$. Then $1 = (-1)(-1) \in P$ too. But then both $1$ and $-1 = -(1)$ are in $P$, which is forbidden.
+
+</Proof>
+
+So statements like "$i > 0$" or "$2 + i < 3$" have no meaning in $\C$. We can compare *moduli* — $|2 + i| = \sqrt5 < 3$ — because those are real numbers.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Complex numbers in Lean">
+
+Mathlib defines `ℂ` as pairs of real numbers ⟨re, im⟩, with `I = ⟨0, 1⟩`, and proves that it is a field. So $i^2 = -1$ is a theorem, not an assumption:
+
+<Lean decl="Lumenary.ComplexNumbers.i_sq" />
+
+The multiplication rule and our division example. The tactic `linear_combination` checks that two sides differ by a multiple of $i^2 + 1$, which is exactly "replace $i^2$ by $-1$":
+
+<Lean decl="Lumenary.ComplexNumbers.mul_rule" />
+
+<Lean decl="Lumenary.ComplexNumbers.div_example" />
+
+<Lean decl="Lumenary.ComplexNumbers.mul_conj" />
+
+Theorem 1, via the two-squares identity. Mathlib writes `normSq z` for $|z|^2 = a^2 + b^2$ and `‖z‖` for the modulus $|z|$:
+
+<Lean decl="Lumenary.ComplexNumbers.two_squares_identity" />
+
+<Lean decl="Lumenary.ComplexNumbers.normSq_mul" />
+
+<Lean decl="Lumenary.ComplexNumbers.norm_mul" />
+
+Mathlib has no `cis`, so we define it, prove that it lies on the unit circle and that it turns multiplication into addition of angles (Theorem 2), and prove De Moivre's theorem by induction for natural numbers $n$ (the extension to negative $n$ is not formalised here):
+
+<Lean decl="Lumenary.ComplexNumbers.cis" />
+
+<Lean decl="Lumenary.ComplexNumbers.norm_cis" />
+
+<Lean decl="Lumenary.ComplexNumbers.cis_add" />
+
+<Lean decl="Lumenary.ComplexNumbers.polar_mul" />
+
+<Lean decl="Lumenary.ComplexNumbers.de_moivre" />
+
+<Narrator who="gideon">
+
+The definition `cis` is ours, but it is not a private invention: the next declaration proves it equals `Complex.exp (θ * I)`, the form Mathlib uses everywhere. Connecting a teaching definition to the library's is what keeps a formalisation honest.
+
+</Narrator>
+
+<Lean decl="Lumenary.ComplexNumbers.cis_eq_exp" />
+
+Roots of unity. We prove that each $\operatorname{cis}\tfrac{2\pi k}{n}$ is an $n$-th root of unity and that roots of unity other than $1$ sum to $0$; that there are exactly $n$ of them we take from Mathlib, whose `rootsOfUnity n ℂ` is the group of all $\zeta$ with $\zeta^n = 1$:
+
+<Lean decl="Lumenary.ComplexNumbers.cis_root_of_unity" />
+
+<Lean decl="Lumenary.ComplexNumbers.sum_roots_of_unity" />
+
+<Lean decl="Lumenary.ComplexNumbers.card_roots_of_unity" />
+
+Quadratics with negative discriminant (Theorem 5), and the fundamental theorem of algebra, which Mathlib proves using complex analysis:
+
+<Lean decl="Lumenary.ComplexNumbers.quadratic_example" />
+
+<Lean decl="Lumenary.ComplexNumbers.quadratic_formula_neg_disc" />
+
+<Lean decl="Lumenary.ComplexNumbers.fundamental_theorem_of_algebra" />
+
+And Theorem 6. An ordering compatible with arithmetic is described by its set `P` of positive elements, so "no such `P`" is the formal content of "ℂ cannot be ordered":
+
+<Lean decl="Lumenary.ComplexNumbers.no_positive_cone" />
+
+(Mathlib does put a *partial* order on `ℂ`, available after `open scoped ComplexOrder`: $z \le w$ means $\operatorname{Re} z \le \operatorname{Re} w$ and $\operatorname{Im} z = \operatorname{Im} w$. It is useful, but most pairs, such as $1$ and $i$, are incomparable — consistent with Theorem 6.)
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing with complex numbers">
+
+<Narrator who="margaret">
+
+Python has complex numbers built in — it writes `1j` for $i$ — and SymPy can do exact complex algebra. Let me test the roots of unity, let SymPy derive a triple-angle formula from De Moivre, and fall into a famous trap on purpose.
+
+</Narrator>
+
+<Python id="complex_numbers_roots_of_unity" />
+
+The tiny errors in the table, around $10^{-15}$, come from rounding in floating-point arithmetic, not from the mathematics: Theorem 4 says the true errors are exactly $0$. The table is evidence for six values of $n$; the theorem covers all of them.
+
+Theorem 1 has a beautiful consequence for whole numbers. If $a, b, c, d$ are integers, the two-squares identity says that a product of two sums of two squares is again a sum of two squares — and complex multiplication tells you which squares:
+
+<Python id="complex_numbers_two_squares" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Imaginary numbers are fake."** The word "imaginary" (Descartes' term, meant dismissively) is a historical accident. Complex numbers are as legitimate as negative numbers or $\sqrt 2$: they can be constructed from real numbers (as pairs), they obey precise laws, and they describe real phenomena — alternating currents, waves, quantum amplitudes.
+
+</Misconception>
+
+<Misconception>
+
+**"$\sqrt{ab} = \sqrt a\,\sqrt b$ always."** It holds for $a, b \ge 0$, but not for negative numbers: with $\sqrt{-1} = i$, we get $\sqrt{-1}\cdot\sqrt{-1} = i^2 = -1$, while $\sqrt{(-1)(-1)} = \sqrt 1 = 1$. Every non-zero complex number has *two* square roots, and no choice of "the" square root can make the product rule work everywhere. Treat $\sqrt{-4}$ as $2i$, and simplify before multiplying.
+
+</Misconception>
+
+<Misconception>
+
+**"$\C$ can be ordered like $\R$."** Theorem 6 shows no ordering is compatible with multiplication. Inequalities between complex numbers are meaningless; inequalities between their moduli, real parts or imaginary parts (all real numbers) are fine.
+
+</Misconception>
+
+<Misconception>
+
+**"$|a + bi| = a + b$" or "$|a + bi| = \sqrt{a^2 - b^2}$".** The modulus is a distance in the plane: $|a + bi| = \sqrt{a^2 + b^2}$. For example $|3 - 4i| = 5$.
+
+</Misconception>
+
+<Misconception>
+
+**"The argument is $\arctan\tfrac ba$."** That gives an angle in $(-\tfrac\pi2, \tfrac\pi2)$ only, so it is wrong for points with $a < 0$, and undefined when $a = 0$. Always check the quadrant: $\arg(-1 - i) = -\tfrac{3\pi}{4}$, not $\tfrac\pi4$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="geometry" title="Similarities of the plane">
+
+Multiplication by $w \ne 0$ is a rotation by $\arg w$ combined with a scaling by $|w|$, and $z \mapsto wz + c$ is a **similarity** of the plane fixing orientation; $z \mapsto \bar z$ is a reflection. Every rigid motion of the plane is $z \mapsto wz + c$ or $z \mapsto w\bar z + c$ with $|w| = 1$. Geometry problems about rotations become algebra: for instance, $z_1, z_2, z_3$ form an equilateral triangle (or all coincide) exactly when $z_1 + \omega z_2 + \omega^2 z_3 = 0$ for $\omega = \operatorname{cis}\tfrac{2\pi}{3}$ or $\omega = \operatorname{cis}(-\tfrac{2\pi}{3})$, the two choices corresponding to the two orientations.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Adjoining a root">
+
+Algebraically, $\C$ is what you get by adjoining to $\R$ a root of $x^2 + 1$: the quotient ring $\R[x]/(x^2 + 1)$, where polynomials are computed modulo $x^2 + 1$, so $x$ plays the role of $i$. Conjugation $a + bi \mapsto a - bi$ respects addition and multiplication and fixes $\R$ — it is a **field automorphism**, and the two automorphisms of $\C$ fixing $\R$ form the first example of a Galois group. The matrices $\begin{pmatrix} a & -b \\ b & a\end{pmatrix}$ give yet another model of $\C$, inside $2 \times 2$ real matrices. See <TopicLink id="math.algebra.fields-galois">Fields and Galois theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Gaussian integers">
+
+The numbers $a + bi$ with $a, b \in \Z$ form the **Gaussian integers** $\Z[i]$, where factorisation behaves differently: $5 = (2 + i)(2 - i)$ and $13 = (3 + 2i)(3 - 2i)$, while $3$ cannot be split. Since $N(z) = |z|^2 = a^2 + b^2$ is multiplicative (Theorem 1), a prime $p$ factors in $\Z[i]$ exactly when $p = a^2 + b^2$ for some integers $a, b$. Fermat's theorem that odd primes of the form $4k + 1$ are sums of two squares (proved by Euler) is the starting point of algebraic number theory.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Why every polynomial has a root: a winding argument">
+
+Here is the idea of one proof of the fundamental theorem of algebra — a sketch, not a proof. Let $p(z) = z^n + a_{n-1}z^{n-1} + \dots + a_0$ with $n \ge 1$, and suppose $p$ had no root. For a huge circle $|z| = R$, the term $z^n$ dominates, so as $z$ goes once around the circle, $p(z)$ winds **$n$ times** around $0$. Now shrink the circle continuously to the point $0$: the image curve deforms continuously, never passing through $0$ (no roots!), so its winding number cannot jump — yet at the end the curve is the single point $p(0) \ne 0$, which winds $0$ times. Since $n \ne 0$, contradiction. Making "winding number" and "cannot jump" precise is a job for <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink> or <TopicLink id="math.analysis.complex-analysis">complex analysis</TopicLink>.
+
+<ComplexPlane mode="winding" curve="circle" title="Counting how often a curve winds around a point" />
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Rotating arrows for waves">
+
+An alternating voltage $V_0\cos(\omega t + \varphi)$ is the real part of the rotating complex number $V_0 \operatorname{cis}(\omega t + \varphi)$ (a "phasor"). Adding waves of the same frequency becomes adding complex numbers, and the effect of a capacitor or inductor becomes multiplication by a complex **impedance**. In quantum mechanics complex numbers are not a convenience but part of the theory: states are described by complex amplitudes whose squared moduli give probabilities.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Optional, and never graded: a question that leads somewhere further.
+
+<Trail slug="loops-around-a-hole" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Early encounters.** Heron of Alexandria (1st century CE) met the square root of a negative number in a calculation about a truncated pyramid and passed over it. The Indian mathematician Mahāvīra (9th century) stated that a negative number has no square root, since it is not a square.
+- **Renaissance Italy.** Gerolamo Cardano's *Ars Magna* (1545) contains the cubic formula and, in another problem, the "sophisticated" numbers $5 \pm \sqrt{-15}$, which have sum $10$ and product $40$. Rafael Bombelli's *Algebra* (1572) gave the first systematic rules for calculating with them, motivated by $x^3 = 15x + 4$.
+- **Names and symbols.** René Descartes called such roots "imaginary" in *La Géométrie* (1637). Abraham de Moivre found formulas equivalent to his theorem in the early 18th century; Leonhard Euler stated $e^{i\theta} = \cos\theta + i\sin\theta$ in his *Introductio* (1748) and introduced the symbol $i$ (1777).
+- **The plane.** The surveyor Caspar Wessel (1799, in Danish), Jean-Robert Argand (1806) and Carl Friedrich Gauss (1831) described complex numbers as points of a plane. Gauss's doctoral thesis (1799) was devoted to the fundamental theorem of algebra; its proof was later seen to leave a topological point unproved, and Gauss gave further proofs. William Rowan Hamilton defined complex numbers as pairs of reals (1837).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Tristan Needham, *Visual Complex Analysis* (1997) — complex numbers as geometry, beautifully illustrated; chapter 1 suits this lesson.
+- Paul J. Nahin, *An Imaginary Tale: The Story of √−1* (1998) — the history, from Cardano to modern physics.
+- Richard Courant and Herbert Robbins, *What Is Mathematics?* (1941), chapter II, §5 on complex numbers.
+- John Stillwell, *Mathematics and Its History* (1989), the chapters on complex numbers in algebra and geometry.
+- Lars Ahlfors, *Complex Analysis* (1953), chapter 1 — for the next step.
+
+</Section>

@@ -1,0 +1,456 @@
+---
+slug: derived-categories
+topic: math.cat.derived-categories
+title: Derived categories
+subtitle: Keep the whole complex instead of its homology, declare every resolution equal to what it resolves — and $\operatorname{Ext}$ becomes nothing more than $\operatorname{Hom}$ into a shift.
+level: research
+ages: Research orientation (graduate homological algebra assumed)
+minutes: 130
+order: 8015
+objectives:
+  - Construct the homotopy category $K(\mathcal{A})$ and the derived category $D(\mathcal{A})$, and explain why localising at quasi-isomorphisms needs care
+  - Prove that homotopic chain maps agree on cohomology, and show that a quasi-isomorphism need not have an inverse chain map
+  - Prove $\operatorname{Ext}^n_{\mathcal{A}}(M, N) \cong \operatorname{Hom}_{D(\mathcal{A})}(M, N[n])$ when $\mathcal{A}$ has enough projectives, and compute $R\operatorname{Hom}$ and $\otimes^{L}$ in examples
+  - Show that objects of $D(\mathcal{A})$ are not determined by their cohomology in general, and when they are
+  - Describe derived equivalences (tilting, Fourier–Mukai) and separate established results from open problems
+narrators: []
+lean:
+  - Lumenary.DerivedCategories.cycles_map_eq_of_homotopy
+  - Lumenary.DerivedCategories.boundary_of_homotopy
+  - Lumenary.DerivedCategories.homology_class_eq_of_homotopy
+  - Lumenary.DerivedCategories.homologyMap_eq_of_homotopy
+  - Lumenary.DerivedCategories.Q_map_eq_of_homotopy
+  - Lumenary.DerivedCategories.isIso_Q_map_iff_quasiIso
+  - Lumenary.DerivedCategories.single_map_bijective
+  - Lumenary.DerivedCategories.ext_zero_bijective
+  - Lumenary.DerivedCategories.two_mul_injective
+  - Lumenary.DerivedCategories.exact_at_middle
+  - Lumenary.DerivedCategories.hom_zmod_two_int_eq_zero
+compute: [derived_categories_ext]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Homology forgets; resolutions are not unique">
+
+Homological algebra, as usually first taught, runs on two moves. To compute $\operatorname{Ext}$ or $\operatorname{Tor}$ you *choose* a resolution, apply a functor, and take cohomology; then you prove that the answer does not depend on the choice. And at the end you keep only the cohomology groups, throwing the complex away.
+
+Both moves lose information.
+
+- **Choices.** The resolution $0 \to \Z \xrightarrow{2} \Z \to \Z/2 \to 0$ and the resolution $0 \to \Z^2 \xrightarrow{\left(\begin{smallmatrix} 2 & 0 \\ 0 & 1 \end{smallmatrix}\right)} \Z^2 \to \Z/2 \to 0$ are different complexes. They are homotopy equivalent to each other, but neither is isomorphic to $\Z/2$, not even up to homotopy — yet each "is" $\Z/2$ for every computational purpose. We would like a world in which both are literally isomorphic to $\Z/2$.
+- **Forgetting.** Cohomology groups do not remember how they are glued. Over $\Z/4$ the complex $\Z/4 \xrightarrow{2} \Z/4$ has the same cohomology as $\Z/2[1] \oplus \Z/2$, but we shall prove the two are genuinely different. Composing derived functors, Grothendieck needed spectral sequences precisely because the cohomology of the inner functor is not enough to compute the outer one.
+
+Grothendieck's remedy, worked out by his student Jean-Louis Verdier around 1960–63, was radical: **keep the complex, and formally invert every map of complexes that induces an isomorphism on cohomology.** The result, the *derived category* $D(\mathcal{A})$, is where Grothendieck duality, the six operations on sheaves, Fourier–Mukai transforms, tilting theory and much of modern algebraic geometry and representation theory now live.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Three steps: complexes, homotopy, inversion">
+
+Start from an <TopicLink id="math.cat.abelian-categories">abelian category</TopicLink> $\mathcal{A}$ (modules over a ring, sheaves of abelian groups on a space, representations of a quiver) and the toolkit of <TopicLink id="math.algebra.homological-algebra">homological algebra</TopicLink>. The derived category is reached in three steps.
+
+1. **Complexes.** Replace objects by cochain complexes $X = (\cdots \to X^{n-1} \xrightarrow{d} X^n \xrightarrow{d} X^{n+1} \to \cdots)$, and objects $M$ of $\mathcal{A}$ by complexes concentrated in degree $0$.
+2. **Homotopy.** Identify chain maps that are chain homotopic. This gives the *homotopy category* $K(\mathcal{A})$. Homotopic maps induce the same map on cohomology, so nothing cohomological is lost.
+3. **Inversion.** A *quasi-isomorphism* is a chain map inducing isomorphisms on all cohomology groups. Every resolution $P \to M$ is one. Invert them all.
+
+The picture to keep in mind comes from topology. A space is studied up to *weak homotopy equivalence*, and every space is weakly equivalent to a CW complex, which is the "good" model you compute with. In the derived category every object is (under mild hypotheses) isomorphic to a complex of projectives or of injectives — the good models — and derived functors are computed by applying ordinary functors to good models.
+
+<Analogy>
+
+Localising at quasi-isomorphisms is like passing from fractions $a/b$ written with a chosen denominator to rational numbers: $1/2 = 2/4$ is not a statement about pairs of integers, but about what they represent. A morphism in $D(\mathcal{A})$ is likewise a "fraction" $f \circ s^{-1}$, and different fractions can be equal. The analogy is only that: the calculus of fractions in $D(\mathcal{A})$ needs the homotopy category, not the category of complexes, to work.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $\mathcal{A}$ is an abelian category and complexes are cochain complexes indexed by $\Z$. A **chain map** $f : X \to Y$ is a family $f^n : X^n \to Y^n$ with $d f^n = f^{n+1} d$; it induces maps $H^n(f) : H^n(X) \to H^n(Y)$ on cohomology $H^n(X) = \ker d^n / \operatorname{im} d^{n-1}$.
+
+<Definition term="shift">
+
+For a complex $X$ and $k \in \Z$, the shifted complex $X[k]$ has $X[k]^n = X^{n+k}$ and differential $(-1)^k d_X$. If $M$ is an object of $\mathcal{A}$ placed in degree $0$, then $M[n]$ is $M$ placed in degree $-n$.
+
+</Definition>
+
+<Definition term="chain homotopy and the homotopy category">
+
+Chain maps $f, g : X \to Y$ are **homotopic**, $f \simeq g$, if there are maps $h^n : X^n \to Y^{n-1}$ with
+
+$$
+f^n - g^n = d_Y^{n-1} h^n + h^{n+1} d_X^n \quad \text{for all } n.
+$$
+
+The **homotopy category** $K(\mathcal{A})$ has complexes as objects and homotopy classes of chain maps as morphisms. It is additive, but in general not abelian.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "x0", tex: "X^{n-1}", row: 0, col: 0 },
+    { id: "x1", tex: "X^{n}", row: 0, col: 1 },
+    { id: "x2", tex: "X^{n+1}", row: 0, col: 2 },
+    { id: "y0", tex: "Y^{n-1}", row: 1, col: 0 },
+    { id: "y1", tex: "Y^{n}", row: 1, col: 1 },
+    { id: "y2", tex: "Y^{n+1}", row: 1, col: 2 }
+  ]}
+  arrows={[
+    { from: "x0", to: "x1", tex: "d" },
+    { from: "x1", to: "x2", tex: "d" },
+    { from: "y0", to: "y1", tex: "d", labelSide: "right" },
+    { from: "y1", to: "y2", tex: "d", labelSide: "right" },
+    { from: "x1", to: "y1", tex: "f - g" },
+    { from: "x1", to: "y0", tex: "h^n", style: "dashed", labelSide: "right" },
+    { from: "x2", to: "y1", tex: "h^{n+1}", style: "dashed", labelSide: "right" }
+  ]}
+  caption="A chain homotopy: the diagonal maps h go down one degree, and f − g = dh + hd."
+/>
+
+<Definition term="quasi-isomorphism">
+
+A chain map $s : X \to Y$ is a **quasi-isomorphism** if $H^n(s)$ is an isomorphism for every $n$. A complex is **acyclic** if all its cohomology vanishes.
+
+</Definition>
+
+<Definition term="derived category">
+
+The **derived category** $D(\mathcal{A})$ is a category with a functor $Q : C(\mathcal{A}) \to D(\mathcal{A})$ from complexes such that $Q(s)$ is an isomorphism for every quasi-isomorphism $s$, and which is universal with this property: every functor $F : C(\mathcal{A}) \to \mathcal{D}$ inverting quasi-isomorphisms factors as $F = \bar F \circ Q$ for a unique $\bar F$. Bounded variants $D^b, D^+, D^-$ use complexes with cohomology (equivalently, after replacement, terms) bounded on both sides, below, or above.
+
+</Definition>
+
+Since homotopic maps become equal in $D(\mathcal{A})$ (proved below), $Q$ factors through $K(\mathcal{A})$, and $D(\mathcal{A})$ is equally the localisation of $K(\mathcal{A})$ at the quasi-isomorphisms. That second description is the useful one, because of the following theorem.
+
+<Theorem name="Verdier's calculus of fractions (stated, not proved here)">
+
+In $K(\mathcal{A})$ the quasi-isomorphisms admit a calculus of left and right fractions. Consequently every morphism $X \to Y$ in $D(\mathcal{A})$ can be written as a **roof** $Q(f) \circ Q(s)^{-1}$, with $s : X' \to X$ a quasi-isomorphism and $f : X' \to Y$ a chain map; and $Q(f) = Q(g)$ for $f, g : X \to Y$ if and only if $f \circ s \simeq g \circ s$ for some quasi-isomorphism $s : X' \to X$.
+
+</Theorem>
+
+<CommutativeDiagram
+  objects={[
+    { id: "xp", tex: "X'", row: 0, col: 1 },
+    { id: "x", tex: "X", row: 1, col: 0 },
+    { id: "y", tex: "Y", row: 1, col: 2 }
+  ]}
+  arrows={[
+    { from: "xp", to: "x", tex: "s", labelSide: "right" },
+    { from: "xp", to: "y", tex: "f" }
+  ]}
+  caption="A roof: a morphism X → Y in D(A) is represented by f ∘ s⁻¹ with s a quasi-isomorphism."
+/>
+
+The proof (Verdier's thesis; see Weibel, *An Introduction to Homological Algebra*, §10.3, or Kashiwara–Schapira, *Categories and Sheaves*, Ch. 7 and 13) uses the mapping cone and the triangulated structure of $K(\mathcal{A})$, which is the subject of the next lesson, <TopicLink id="math.cat.triangulated-categories">triangulated categories</TopicLink>. Without it one runs into a real problem: the localisation of the category of complexes exists formally, but its morphisms are equivalence classes of zigzags of arbitrary length, which is useless for computation, and for some large abelian categories the Hom-"sets" need not even be sets. When $\mathcal{A}$ has enough injectives or enough projectives, Hom-sets in $D^+(\mathcal{A})$ or $D^-(\mathcal{A})$ are sets, as the theorems below show.
+
+<Definition term="total derived functors">
+
+Let $F : \mathcal{A} \to \mathcal{B}$ be an additive, left exact functor. Its **total right derived functor** is a functor $RF : D^+(\mathcal{A}) \to D^+(\mathcal{B})$ with a natural transformation $Q \circ K(F) \Rightarrow RF \circ Q$ that is universal (initial) among such. When $\mathcal{A}$ has enough injectives, $RF(X) = F(I)$ for any quasi-isomorphism $X \to I$ into a bounded-below complex of injectives, and the classical derived functors are its cohomology: $R^nF(M) = H^n(RF(M))$. Dually, right exact functors have total left derived functors $LF$, computed with projective resolutions. Two key examples are
+
+$$
+R\operatorname{Hom}(X, -) : D^+(\mathcal{A}) \to D^+(\mathrm{Ab}), \qquad X \otimes^{L}_R - : D^-(R\text{-Mod}) \to D^-(\mathrm{Ab}),
+$$
+
+with $H^n R\operatorname{Hom}(M, N) = \operatorname{Ext}^n(M, N)$ and $H^{-n}(M \otimes^{L}_R N) = \operatorname{Tor}_n^R(M, N)$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="A quasi-isomorphism with no inverse">
+
+Let $P = (\cdots \to 0 \to \Z \xrightarrow{2} \Z \to 0 \to \cdots)$ with the two copies of $\Z$ in degrees $-1$ and $0$, and let $p : P \to \Z/2$ be reduction mod $2$ in degree $0$. Since $\Z \xrightarrow{2} \Z \to \Z/2 \to 0$ is exact and multiplication by $2$ is injective, $H^{-1}(P) = 0$ and $H^0(P) = \Z/2$, and $p$ is a quasi-isomorphism.
+
+Is there a chain map $q : \Z/2 \to P$ with $p q = \mathrm{id}$? Its degree-$0$ component would be a homomorphism $\Z/2 \to \Z$, and every such homomorphism is zero: $2\varphi(x) = \varphi(2x) = \varphi(0) = 0$ and $\Z$ has no elements of order $2$. So $pq = 0$ for every chain map $q$. Since a homotopy between maps of complexes concentrated in degree $0$ is necessarily zero, $pq \simeq \mathrm{id}$ is impossible too: no inverse, not even up to homotopy, exists. In $D(\mathrm{Ab})$, $Q(p)$ is nevertheless an isomorphism: localisation *creates* its inverse.
+
+</Example>
+
+<Example title="Ext¹ as a morphism into a shift">
+
+Continue with $P \xrightarrow{p} \Z/2$. In $K(\mathrm{Ab})$ there is no non-zero map $\Z/2 \to \Z[1]$ at all (the target lives in degree $-1$, the source in degree $0$). But in $D(\mathrm{Ab})$ there is the roof
+
+$$
+\Z/2 \xleftarrow{\;p\;} P \xrightarrow{\;e\;} \Z[1],
+$$
+
+where $e$ is the identity $\Z \to \Z$ in degree $-1$ (check: $e$ commutes with the differentials because $\Z[1]$ is zero in degree $0$). This roof is non-zero, and it corresponds to the extension $0 \to \Z \xrightarrow{2} \Z \to \Z/2 \to 0$, the generator of $\operatorname{Ext}^1(\Z/2, \Z) \cong \Z/2$. Localisation has changed the Hom-sets: $\operatorname{Hom}_{K}(\Z/2, \Z[1]) = 0$ but $\operatorname{Hom}_{D}(\Z/2, \Z[1]) \cong \Z/2$.
+
+</Example>
+
+<Example title="R Hom and the derived tensor product over ℤ">
+
+Using $P$ as a resolution of $\Z/m$ (with $2$ replaced by $m$), $R\operatorname{Hom}(\Z/m, \Z/n)$ is the complex $\Z/n \xrightarrow{m} \Z/n$ in degrees $0, 1$, so
+
+$$
+\operatorname{Ext}^0(\Z/m, \Z/n) \cong \operatorname{Ext}^1(\Z/m, \Z/n) \cong \Z/\gcd(m, n), \qquad \operatorname{Ext}^{i}(\Z/m, \Z/n) = 0 \ (i \geq 2),
+$$
+
+and $\Z/m \otimes^{L} \Z/n$ is $\Z/n \xrightarrow{m} \Z/n$ in degrees $-1, 0$, with $H^0 = \Z/m \otimes \Z/n$ and $H^{-1} = \operatorname{Tor}_1(\Z/m, \Z/n)$, both $\cong \Z/\gcd(m, n)$. The derived tensor product is a single object of $D(\mathrm{Ab})$ carrying all the $\operatorname{Tor}$ groups at once.
+
+</Example>
+
+<Example title="Over a field, and over hereditary rings, complexes split">
+
+Over a field $k$, every complex $X$ is isomorphic in $D(k)$ to $\bigoplus_n H^n(X)[-n]$: choose complements to split each $X^n$ as boundaries, a complement of the boundaries in the cycles, and a complement of the cycles. So $D(k)$ is equivalent to the category of graded vector spaces. The same conclusion holds for objects of $D^b(\mathcal{A})$ whenever $\mathcal{A}$ is **hereditary** ($\operatorname{Ext}^2 = 0$), e.g. $\mathcal{A} = \mathrm{Ab}$ or representations of a quiver. But morphisms are richer than maps of cohomology: $\operatorname{Hom}_D(\Z/2, \Z[1]) \neq 0$, as we just saw.
+
+</Example>
+
+<Example title="Same cohomology, different objects">
+
+Let $R = \Z/4$, $X = (R \xrightarrow{2} R)$ in degrees $-1, 0$, and $Y = \Z/2[1] \oplus \Z/2$. Both have $H^{-1} \cong H^0 \cong \Z/2$ and all other cohomology zero. Suppose $X \cong Y$ in $D(R)$. Apply the derived tensor product $- \otimes^{L}_R \Z/2$, which sends isomorphisms to isomorphisms.
+
+- $X$ is a complex of free modules, so $X \otimes^{L} \Z/2 = X \otimes_R \Z/2 = (\Z/2 \xrightarrow{0} \Z/2)$, with cohomology in only two degrees.
+- $\Z/2$ has the periodic free resolution $\cdots \xrightarrow{2} R \xrightarrow{2} R \xrightarrow{2} R \to \Z/2$, and tensoring it with $\Z/2$ kills every differential, so $\operatorname{Tor}^R_n(\Z/2, \Z/2) \cong \Z/2$ for **every** $n \ge 0$. Thus $Y \otimes^{L} \Z/2$ has non-zero cohomology in infinitely many degrees.
+
+The two results cannot be isomorphic, so $X \not\cong Y$: an object of the derived category is **not** determined by its cohomology. ($\Z/4$ is not hereditary: $\operatorname{Ext}^2_R(\Z/2, \Z/2) \cong \Z/2$, and the obstruction to splitting $X$ lives exactly there.)
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central theorems">
+
+<Theorem name="Proposition 1 — homotopic maps agree on cohomology">
+
+If $f \simeq g : X \to Y$, then $H^n(f) = H^n(g)$ for all $n$. Consequently cohomology is a functor on $K(\mathcal{A})$, a homotopy equivalence is a quasi-isomorphism, and $Q(f) = Q(g)$ in $D(\mathcal{A})$.
+
+</Theorem>
+
+<Proof>
+
+Work with elements (by the Freyd–Mitchell embedding theorem this is harmless for a small abelian category; or rewrite the argument with kernels and cokernels). Let $z \in X^n$ with $dz = 0$. Then
+
+$$
+f^n(z) - g^n(z) = d h^n(z) + h^{n+1}(dz) = d\big(h^n(z)\big),
+$$
+
+which is a boundary in $Y$. So $f^n(z)$ and $g^n(z)$ have the same class in $H^n(Y)$. If $f g' \simeq \mathrm{id}$ and $g' f \simeq \mathrm{id}$, then $H^n(f) H^n(g') = \mathrm{id}$ and $H^n(g') H^n(f) = \mathrm{id}$, so $f$ is a quasi-isomorphism. Finally, $Q$ factors through $K(\mathcal{A})$: the functor $C(\mathcal{A}) \to K(\mathcal{A})$ is the localisation at homotopy equivalences (a standard cylinder argument), and homotopy equivalences are quasi-isomorphisms, which $Q$ inverts.
+
+</Proof>
+
+The converse of "homotopy equivalence ⟹ quasi-isomorphism" is false: the map $p : P \to \Z/2$ above is a quasi-isomorphism without a homotopy inverse.
+
+<Theorem name="Lemma 2 — projectives see no acyclic complexes">
+
+Let $P$ be a bounded-above complex of projective objects and $Z$ an acyclic complex. Then every chain map $f : P \to Z$ is null-homotopic: $\operatorname{Hom}_{K(\mathcal{A})}(P, Z) = 0$.
+
+</Theorem>
+
+<Proof>
+
+Say $P^n = 0$ for $n > N$. We construct $h^n : P^n \to Z^{n-1}$ with $f^n = d h^n + h^{n+1} d$ by downward induction on $n$, starting with $h^n = 0$ for $n > N$. Suppose $h^k$ has been built for all $k > n$, satisfying the identity for $k > n$. Put $g = f^n - h^{n+1} d_P : P^n \to Z^n$. Then
+
+$$
+d_Z g = d_Z f^n - d_Z h^{n+1} d_P = f^{n+1} d_P - \big(f^{n+1} - h^{n+2} d_P\big) d_P = h^{n+2} d_P d_P = 0.
+$$
+
+So $g$ lands in the cycles $\ker d_Z^n$, which equal the boundaries $\operatorname{im} d_Z^{n-1}$ because $Z$ is acyclic. Since $P^n$ is projective and $Z^{n-1} \to \operatorname{im} d_Z^{n-1}$ is an epimorphism, $g$ lifts: $g = d_Z h^n$ for some $h^n : P^n \to Z^{n-1}$. This is the required identity $f^n = d h^n + h^{n+1} d$.
+
+</Proof>
+
+<Theorem name="Theorem 3 — Ext is Hom in the derived category">
+
+Suppose $\mathcal{A}$ has enough projectives. For a bounded-above complex of projectives $P$ and any complex $Y$, the map $Q : \operatorname{Hom}_{K(\mathcal{A})}(P, Y) \to \operatorname{Hom}_{D(\mathcal{A})}(P, Y)$ is bijective. In particular, if $P \to M$ is a projective resolution, then for all $n$
+
+$$
+\operatorname{Ext}^n_{\mathcal{A}}(M, N) \;\cong\; \operatorname{Hom}_{D(\mathcal{A})}(M, N[n]).
+$$
+
+</Theorem>
+
+<Proof>
+
+*Step 1: $\operatorname{Hom}_K(P, -)$ inverts quasi-isomorphisms.* If $s : Y \to Y'$ is a quasi-isomorphism, its mapping cone $C(s)$ is acyclic (the long exact cohomology sequence of the cone, proved in the next lesson). In $K(\mathcal{A})$ there is a distinguished triangle $Y \to Y' \to C(s) \to Y[1]$, and $\operatorname{Hom}_K(P, -)$ turns it into a long exact sequence; the terms $\operatorname{Hom}_K(P, C(s)[i])$ vanish by Lemma 2 (each $C(s)[i]$ is acyclic), so $s_* : \operatorname{Hom}_K(P, Y) \to \operatorname{Hom}_K(P, Y')$ is bijective.
+
+*Step 2: surjectivity.* By the calculus of fractions a morphism $P \to Y$ in $D$ is $Q(f) Q(s)^{-1}$ with $s : X' \to P$ a quasi-isomorphism. By Step 1 applied to $s$, there is $t : P \to X'$ with $st \simeq \mathrm{id}_P$. Then $Q(t) = Q(s)^{-1}$, so $Q(f)Q(s)^{-1} = Q(ft)$ lies in the image.
+
+*Step 3: injectivity.* If $Q(f) = 0$ for $f : P \to Y$, the calculus of fractions gives a quasi-isomorphism $s : X' \to P$ with $fs \simeq 0$. With $t$ as in Step 2, $f \simeq f s t \simeq 0$.
+
+*Step 4: Ext.* $M \cong P$ in $D$, so $\operatorname{Hom}_D(M, N[n]) \cong \operatorname{Hom}_D(P, N[n]) \cong \operatorname{Hom}_K(P, N[n])$. A chain map $P \to N[n]$ is a map $P^{-n} \to N$ killing the image of $P^{-n-1}$, i.e. a cocycle of the complex $\operatorname{Hom}(P, N)$ in degree $n$, and null-homotopic maps are exactly the coboundaries. So $\operatorname{Hom}_K(P, N[n]) = H^n \operatorname{Hom}(P, N) = \operatorname{Ext}^n(M, N)$.
+
+</Proof>
+
+Dually, if $\mathcal{A}$ has enough injectives then $D^+(\mathcal{A})$ is equivalent to $K^+(\mathrm{Inj}\,\mathcal{A})$, the homotopy category of bounded-below complexes of injectives; this is how $D^+(\mathcal{A})$ is shown to have Hom-sets, and how $RF$ is constructed. The isomorphism $\operatorname{Ext}^n(M, N) \cong \operatorname{Hom}_D(M, N[n])$ in fact holds in every abelian category, with $\operatorname{Ext}$ defined by Yoneda's classes of $n$-fold extensions (Verdier; see Gelfand–Manin, Ch. III). Under it, the Yoneda product of extensions becomes **composition** $M \to N[n] \to L[n+m]$ in $D(\mathcal{A})$.
+
+<Theorem name="Theorem 4 — the embedding of A">
+
+The functor $\mathcal{A} \to D(\mathcal{A})$, $M \mapsto M[0]$, is fully faithful, and its essential image is the complexes with cohomology only in degree $0$.
+
+</Theorem>
+
+<Proof>
+
+Fullness and faithfulness is the case $n = 0$ of the isomorphism $\operatorname{Hom}_D(M, N[n]) \cong \operatorname{Ext}^n(M, N)$, since $\operatorname{Ext}^0 = \operatorname{Hom}$ (here proved when $\mathcal{A}$ has enough projectives; true in general). If $H^i(X) = 0$ for $i \neq 0$, the truncations give quasi-isomorphisms $X \leftarrow \tau_{\le 0} X \to H^0(X)[0]$, where $\tau_{\leq 0} X = (\cdots \to X^{-1} \to \ker d^0 \to 0)$.
+
+</Proof>
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: derived functors and derived equivalences">
+
+**Derived functors compose.** If $F$ sends injectives to $G$-acyclic objects, then $R(G \circ F) \cong RG \circ RF$. The Grothendieck spectral sequence $E_2^{p,q} = R^pG(R^qF(M)) \Rightarrow R^{p+q}(GF)(M)$ is the shadow of this single isomorphism on cohomology. This is the reason derived categories became the language of sheaf theory: the six operations $Rf_*, f^{-1}, Rf_!, f^!, \otimes^{L}, R\mathcal{H}om$, the adjunctions $f^{-1} \dashv Rf_*$ and $Rf_! \dashv f^!$, Verdier duality and base change are all statements in derived categories.
+
+**Derived equivalences** are equivalences $D^b(\mathcal{A}) \simeq D^b(\mathcal{B})$ (of triangulated categories) between abelian categories that need not be equivalent. Established landmarks:
+
+- **Beilinson (1978)**: $D^b(\mathrm{Coh}\,\mathbb{P}^n) \simeq D^b(\text{mod-}\operatorname{End}(\mathcal{O} \oplus \mathcal{O}(1) \oplus \dots \oplus \mathcal{O}(n)))$ — coherent sheaves on projective space are "the same as" representations of a finite quiver with relations.
+- **Mukai (1981)**: for an abelian variety $A$ with dual $\hat A$, the Fourier–Mukai transform with the Poincaré bundle as kernel gives $D^b(\mathrm{Coh}\,A) \simeq D^b(\mathrm{Coh}\,\hat A)$, although $A$ and $\hat A$ need not be isomorphic.
+- **Happel (1987)** and **Rickard (1989)**: tilting theory. Rickard's Morita theorem: for rings $A$, $B$, the derived categories of modules are equivalent if and only if $B \cong \operatorname{End}_{D(A)}(T)^{\mathrm{op}}$ for a *tilting complex* $T$. For example, the path algebras of two quivers with the same underlying tree are derived equivalent (the reflection functors of Bernstein–Gelfand–Ponomarev are derived equivalences); see <TopicLink id="math.algebra.quiver-representations">quiver representations</TopicLink>.
+- **Orlov (1997)**: every fully faithful exact functor $D^b(\mathrm{Coh}\,X) \to D^b(\mathrm{Coh}\,Y)$ between smooth projective varieties that admits adjoints is a Fourier–Mukai transform. **Bondal–Orlov (2001)**: a smooth projective variety with ample or anti-ample canonical bundle is determined by $D^b(\mathrm{Coh}\,X)$.
+- **Bridgeland (2002)**: smooth projective threefolds related by a flop are derived equivalent.
+
+**Open problems** (as of the references below; check recent surveys before relying on them):
+
+- The **DK conjecture** of Bondal–Orlov and Kawamata: $K$-equivalent smooth projective varieties are derived equivalent. Known in special cases (e.g. Bridgeland's theorem in dimension three), open in general.
+- **Broué's abelian defect group conjecture** in modular representation theory (a block with abelian defect group is derived equivalent to its Brauer correspondent). Proved for symmetric groups by Chuang–Rouquier (2008) and in many other cases; open in general. See <TopicLink id="math.cat.categorical-representation-theory">categorical representation theory</TopicLink>.
+- Kontsevich's **homological mirror symmetry** (1994), predicting an equivalence between $D^b(\mathrm{Coh}\,X)$ and a derived Fukaya category of a mirror $X^\vee$; proved in important cases (elliptic curves, Polishchuk–Zaslow; the quartic surface, Seidel) and open in general.
+
+**What derived categories cannot do.** Cones are not functorial (the next lesson), so many constructions — taking limits of diagrams, gluing — cannot be performed inside $D(\mathcal{A})$ alone. The modern response is to remember more: dg-categories (Bondal–Kapranov, Keller) and stable ∞-categories (Lurie), whose homotopy categories are the triangulated derived categories. See <TopicLink id="math.cat.stable-infinity-categories">stable ∞-categories</TopicLink>.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Derived categories in Lean and Mathlib">
+
+Mathlib contains a serious amount of this theory, largely due to Joël Riou: the homotopy category `HomotopyCategory C (ComplexShape.up ℤ)`, quasi-isomorphisms, the derived category `DerivedCategory C` constructed as a localisation, with its triangulated structure, the fully faithful embeddings of `C` in each degree, and `Ext` groups. Because existence of the localisation with small Hom-types is a real issue, Mathlib asks for an instance `[HasDerivedCategory C]` — an assumption that a model with morphisms in a chosen universe has been fixed.
+
+First, the two-term shadow of Proposition 1, proved by hand. For complexes $A_1 \xrightarrow{d} A_0$ and $B_1 \xrightarrow{d'} B_0$, a homotopy is a single map $h : A_0 \to B_1$:
+
+<Lean decl="Lumenary.DerivedCategories.cycles_map_eq_of_homotopy" />
+
+<Lean decl="Lumenary.DerivedCategories.boundary_of_homotopy" />
+
+<Lean decl="Lumenary.DerivedCategories.homology_class_eq_of_homotopy" />
+
+The general statement, for complexes in any abelian category, and its consequence in the derived category, are in Mathlib:
+
+<Lean decl="Lumenary.DerivedCategories.homologyMap_eq_of_homotopy" />
+
+<Lean decl="Lumenary.DerivedCategories.Q_map_eq_of_homotopy" />
+
+<Lean decl="Lumenary.DerivedCategories.isIso_Q_map_iff_quasiIso" />
+
+The last statement says that $Q$ inverts *exactly* the quasi-isomorphisms — slightly more than the universal property asks for. The embedding of Theorem 4 and the degree-zero case of Theorem 3:
+
+<Lean decl="Lumenary.DerivedCategories.single_map_bijective" />
+
+<Lean decl="Lumenary.DerivedCategories.ext_zero_bijective" />
+
+Note how Mathlib *defines* $\operatorname{Ext}^n(X, Y)$ as (a small model of) $\operatorname{Hom}_{D(\mathcal{A})}(X, Y[n])$: Theorem 3 is built into the definition, and what must then be proved are the comparison with resolutions and the long exact sequences (`Mathlib.Algebra.Homology.DerivedCategory.Ext`).
+
+Finally, the facts behind the first worked example, proved by hand: $\Z \xrightarrow{2} \Z \to \Z/2$ is exact, so the resolution is a quasi-isomorphism; but there is no non-zero map $\Z/2 \to \Z$, so it has no inverse chain map.
+
+<Lean decl="Lumenary.DerivedCategories.two_mul_injective" />
+
+<Lean decl="Lumenary.DerivedCategories.exact_at_middle" />
+
+<Lean decl="Lumenary.DerivedCategories.hom_zmod_two_int_eq_zero" />
+
+**What is not formalised here:** the calculus of fractions in detail (Mathlib has it, in `Mathlib.Algebra.Homology.DerivedCategory.Fractions`), Lemma 2 and Theorem 3 in full, total derived functors (Mathlib has right derived functors of functors between abelian categories with enough injectives), the non-formality of $\Z/4 \xrightarrow{2} \Z/4$, and derived equivalences.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing Ext by counting">
+
+The experiment computes $\operatorname{Ext}^n(M, N) = H^n \operatorname{Hom}(P, N)$ for small cyclic modules by writing down a projective resolution $P$ and counting kernels and images element by element. Over $\Z$ every Ext vanishes beyond degree $1$ (global dimension $1$, so every object of $D^b(\mathrm{Ab})$ splits). Over $\Z/4$ the module $\Z/2$ has non-zero $\operatorname{Ext}^n(\Z/2, \Z/2) = \operatorname{Hom}_D(\Z/2, \Z/2[n])$ in *every* degree — the same periodicity that made the "same cohomology, different objects" example work — while $\Z/4$ is injective over itself. Finally it counts extensions $0 \to \Z/p \to E \to \Z/p \to 0$ directly as $2$-cocycles modulo coboundaries, and finds $|\operatorname{Ext}^1(\Z/p, \Z/p)| = p$.
+
+<Python id="derived_categories_ext" />
+
+This is exact, exhaustive evidence for finitely many small cases. It illustrates the theorems; the proofs above (and in the references) establish them.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"$D(\mathcal{A})$ is an abelian category."** It is additive and triangulated, but almost never abelian. In a triangulated category every monomorphism and every epimorphism splits (proved in the next lesson), so if $D(\mathrm{Ab})$ were abelian, every morphism $f$ would satisfy $f g f = f$ for some $g$. But $\operatorname{End}_{D}(\Z) = \operatorname{End}(\Z) = \Z$ by Theorem 4, and $2 g 2 = 2$ has no integer solution. The correct replacement for short exact sequences is the distinguished triangle.
+
+</Misconception>
+
+<Misconception>
+
+**"An object of $D(\mathcal{A})$ is determined by its cohomology."** True over a field and, for bounded complexes, over any hereditary abelian category; false in general — see the example over $\Z/4$, distinguished by $- \otimes^{L} \Z/2$. Even when objects split, *morphisms* are not determined by maps on cohomology ($\operatorname{Hom}_D(\Z/2, \Z[1]) \neq 0$ although $\Z/2$ and $\Z[1]$ have cohomology in different degrees).
+
+</Misconception>
+
+<Misconception>
+
+**"A quasi-isomorphism has an inverse chain map, or at least a homotopy inverse."** No: $P = (\Z \xrightarrow{2} \Z) \to \Z/2$ has none. It does when the source and target are bounded-above complexes of projectives (or bounded-below complexes of injectives) — which is exactly why resolutions are the good models.
+
+</Misconception>
+
+<Misconception>
+
+**"Localising only identifies things, so Hom-sets can only shrink."** Localisation adds inverses, and with them new composites: $\operatorname{Hom}_K(\Z/2, \Z[1]) = 0$ but $\operatorname{Hom}_D(\Z/2, \Z[1]) \cong \Z/2$. Hom-sets can grow, and without hypotheses (enough injectives or projectives, or a Grothendieck abelian category) it is not even clear that they are sets.
+
+</Misconception>
+
+<Misconception>
+
+**"$R(G \circ F) = RG \circ RF$ always."** It needs a hypothesis, typically that $F$ sends injectives (or a class of $F$-adapted objects) to $G$-acyclic objects. Without it the comparison map need not be an isomorphism.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Spaces up to weak equivalence, chains up to quasi-isomorphism">
+
+The derived category is algebra's version of the homotopy category of spaces, and the analogy is precise in places. The singular chain functor sends weak homotopy equivalences to quasi-isomorphisms, so $C_*(-; \Z)$ descends to a functor from the homotopy category of spaces to $D(\Z)$, and singular cohomology is $H^n(X; A) = \operatorname{Hom}_{D(\Z)}(C_*(X), A[n])$. Quillen's model categories (1967) axiomatise the common pattern: chain complexes with quasi-isomorphisms and spaces with weak equivalences are both model categories, and $D(R)$ is the homotopy category of the former. Stable homotopy theory goes further: $D(\Z)$ embeds in the homotopy theory of spectra as the modules over the Eilenberg–MacLane spectrum $H\Z$ (see <TopicLink id="math.geom.stable-homotopy-theory">stable homotopy theory</TopicLink>). And for sheaves on a space $X$, Verdier duality in $D^b(\mathrm{Sh}(X))$ generalises Poincaré duality from manifolds to arbitrary locally compact spaces.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="The derived category as an invariant of a variety">
+
+For a smooth projective variety $X$ over a field, $D^b(\mathrm{Coh}\,X)$ is a remarkably strong invariant. It recovers the dimension, the canonical bundle's behaviour (via the Serre functor $- \otimes \omega_X[\dim X]$), the Hochschild homology, and — by Bondal–Orlov — $X$ itself when $\omega_X$ or $\omega_X^{-1}$ is ample. When $\omega_X$ is trivial (abelian varieties, K3 surfaces, Calabi–Yau manifolds) there can be non-isomorphic "Fourier–Mukai partners", and the group of autoequivalences of $D^b(\mathrm{Coh}\,X)$ becomes a rich geometric symmetry group, containing for instance the spherical twists of Seidel and Thomas. Semi-orthogonal decompositions of $D^b(\mathrm{Coh}\,X)$ (Beilinson's exceptional collection on $\mathbb{P}^n$ is the first example) are studied as a "categorical" form of birational geometry. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Morita theory, upgraded">
+
+Classical Morita theory says that $R$-Mod $\simeq S$-Mod iff $S \cong \operatorname{End}_R(P)^{\mathrm{op}}$ for a finitely generated projective generator $P$. Rickard's theorem replaces "projective generator" by "tilting complex" and "module categories" by "derived categories". Derived equivalent algebras share their centres, Hochschild cohomology, number of simple modules (for finite-dimensional algebras) and finiteness of global dimension, but not, in general, their module categories. In modular representation theory this is the setting of Broué's conjecture; in the representation theory of quivers, Happel showed that $D^b(kQ)$ for a Dynkin quiver $Q$ depends only on the underlying graph, and described it combinatorially through the repetitive quiver $\Z Q$.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="B-branes (heuristic origin)">
+
+In string theory, Douglas and others proposed (around 2000) that the "B-type D-branes" on a Calabi–Yau manifold $X$, with the open strings between them, should form the category $D^b(\mathrm{Coh}\,X)$: a brane is a coherent sheaf, or more generally a complex, and bound states are cones. This physical heuristic, together with Kontsevich's homological mirror symmetry, made derived categories a meeting point of geometry and physics, and motivated Bridgeland's stability conditions (next lesson). The physics is not a proof of anything; the mathematical statements it inspired are proved — or remain conjectures — on their own terms.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="A localisation, and the shadow of something richer">
+
+Categorically, $D(\mathcal{A})$ is the localisation $K(\mathcal{A})[\mathrm{qis}^{-1}]$, and also the Verdier quotient $K(\mathcal{A}) / K_{\mathrm{acyc}}(\mathcal{A})$ by the thick subcategory of acyclic complexes. Total derived functors are Kan extensions along the localisation (see <TopicLink id="math.cat.kan-extensions">Kan extensions</TopicLink>): $RF$ is the left Kan extension of $Q \circ K(F)$ along $Q$, when it exists. The defects of $D(\mathcal{A})$ — non-functorial cones, no homotopy limits — disappear when one remembers the dg-category of complexes or the stable ∞-category $\mathcal{D}(\mathcal{A})$, of which $D(\mathcal{A})$ is the homotopy category.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1940s–50s.** Homology groups of spaces (Noether, Hopf, Eilenberg–Steenrod) and derived functors $\operatorname{Ext}$, $\operatorname{Tor}$ (Cartan–Eilenberg, *Homological Algebra*, 1956) are defined via chosen resolutions. Grothendieck's Tôhoku paper (1957) introduces abelian categories and derived functors of sheaf cohomology.
+- **c. 1960–63.** For his duality theory, Grothendieck needs to work with complexes up to quasi-isomorphism. **Jean-Louis Verdier** develops derived and triangulated categories in his thesis (circulated in notes from 1963; the thesis was defended in 1967 and published in full in *Astérisque* in 1996). **Robin Hartshorne**'s *Residues and Duality* (1966) writes up Grothendieck's duality in this language.
+- **1970s.** In Kyoto, **Mikio Sato**, **Masaki Kashiwara** and **Takahiro Kawai** use derived categories of sheaves in algebraic analysis (microlocal analysis, $D$-modules); Kashiwara's Riemann–Hilbert correspondence (around 1980, independently Mebkhout) is an equivalence of derived categories. In Moscow, **Alexander Beilinson** describes $D^b(\mathrm{Coh}\,\mathbb{P}^n)$ (1978); Bernstein, Gelfand and Gelfand find a related equivalence the same year.
+- **1980s.** **Shigeru Mukai** introduces Fourier–Mukai transforms (1981). **Dieter Happel** and **Jeremy Rickard** develop tilting theory and derived Morita theory for algebras (1987–89). **Beilinson, Bernstein, Deligne** and **Gabber** introduce t-structures and perverse sheaves (1982).
+- **1990s–today.** **Kontsevich**'s homological mirror symmetry (1994); **Bondal**, **Kapranov** and **Orlov** develop the geometric theory; **Keller** develops dg-categories; **Bridgeland** introduces stability conditions (2007); **Lurie** places derived categories inside stable ∞-categories. Mathlib's derived category (2024 onwards) brings the theory into a proof assistant.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Charles A. Weibel, *An Introduction to Homological Algebra* (1994), Chapter 10 — the standard first account, including the calculus of fractions and $\operatorname{Ext}$ as Hom.
+- Sergei I. Gelfand and Yuri I. Manin, *Methods of Homological Algebra* (1996; 2nd ed. 2003), Chapters III–IV.
+- Richard P. Thomas, "Derived categories for the working mathematician", in *Winter School on Mirror Symmetry* (AMS/IP, 2001) — a short, geometric introduction.
+- Bernhard Keller, "Derived categories and their uses", in *Handbook of Algebra*, Vol. 1 (1996).
+- Daniel Huybrechts, *Fourier–Mukai Transforms in Algebraic Geometry* (2006) — derived categories of sheaves, Bondal–Orlov, Orlov's theorem.
+- Masaki Kashiwara and Pierre Schapira, *Categories and Sheaves* (2006) — the general theory, carefully done.
+- Amnon Yekutieli, *Derived Categories* (2019) — a modern, comprehensive treatment.
+
+A reading path: Weibel Ch. 10 → Thomas (or Căldăraru's notes "Derived categories of sheaves: a skimming", 2005) → Huybrechts Ch. 1–5 or Keller's survey, depending on whether your interests lie in geometry or algebra.
+
+</Section>

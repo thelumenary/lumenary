@@ -1,0 +1,547 @@
+---
+slug: markov-chains
+topic: math.prob.markov-chains
+title: Markov chains
+subtitle: Random processes whose future depends on the past only through the present — transition matrices, recurrence and transience, stationary distributions, and why a well-mixed chain forgets where it began.
+level: ug2
+ages: Undergraduate (second or third year)
+minutes: 120
+order: 6025
+objectives:
+  - Model processes with transition matrices and compute $n$-step transition probabilities and distributions $\lambda P^n$
+  - Compute hitting probabilities and expected hitting times by first-step analysis, including gambler's ruin
+  - Classify states into communicating classes, as recurrent or transient, and by period, and prove the recurrence criterion $\sum_n p_{ii}^{(n)} = \infty$
+  - Prove that an irreducible finite chain has a unique stationary distribution, and use detailed balance to find it
+  - Prove convergence to equilibrium for irreducible aperiodic finite chains, with a geometric rate
+  - State Pólya's theorem and prove recurrence of simple random walk in dimensions one and two
+narrators: []
+lean:
+  - Lumenary.MarkovChains.stochastic_mul
+  - Lumenary.MarkovChains.stochastic_pow
+  - Lumenary.MarkovChains.distribution_step
+  - Lumenary.MarkovChains.detailed_balance_stationary
+  - Lumenary.MarkovChains.twoState
+  - Lumenary.MarkovChains.two_state_stationary
+  - Lumenary.MarkovChains.two_state_pow
+  - Lumenary.MarkovChains.two_state_converges
+  - Lumenary.MarkovChains.gambler_fair_solves
+  - Lumenary.MarkovChains.gambler_fair_unique
+  - Lumenary.MarkovChains.gambler_biased_solves
+  - Lumenary.MarkovChains.duration_fair_solves
+  - Lumenary.MarkovChains.zero_sum_vecMul
+  - Lumenary.MarkovChains.doeblin_contraction
+  - Lumenary.MarkovChains.doeblin_iterate
+  - Lumenary.MarkovChains.central_binom_lower
+  - Lumenary.MarkovChains.walk_1d_returns_diverge
+  - Lumenary.MarkovChains.central_binom_sq_lower
+  - Lumenary.MarkovChains.walk_2d_returns_diverge
+compute: [markov_chains_convergence, markov_chains_gamblers_ruin, markov_chains_polya_walks]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Memory of one step">
+
+In 1913 Andrei Markov took the first $20\,000$ letters of Pushkin's *Eugene Onegin* and counted how often a vowel follows a vowel and a consonant follows a consonant. He was making a mathematical point: the law of large numbers does not need independence. Letters are far from independent, but if each letter depends on the past only through the letter before it, averages still settle down. Processes of this kind — **Markov chains** — are now everywhere:
+
+- **Board games.** In snakes and ladders (which originated in India as *Moksha Patam*), your next square depends only on your current square and the die. How long does a game last?
+- **The web.** Google's PageRank ranks pages by the long-run fraction of time a random surfer spends on each — the stationary distribution of a chain on billions of states.
+- **Genetics.** In the Wright–Fisher model of a population, the number of copies of a gene in the next generation depends only on the number in this one. Will a new variant spread or vanish?
+- **Computation.** Markov chain Monte Carlo methods sample from distributions too complicated to write down, by running a chain that has them as equilibrium.
+
+The questions are always the same: Where will the chain be after $n$ steps? Will it reach a given set of states, and how long will it take? Does it return to where it started? Does it settle into an equilibrium, and how fast? This lesson answers them for chains with countably many states, with complete proofs for finite chains. It uses <TopicLink id="math.prob.probability-theory">probability theory</TopicLink> (conditional probability, expectation) and <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink> (matrices, eigenvalues, rank).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A two-state chain">
+
+Each day in a highland town is dry or rainy. If today is dry, tomorrow is rainy with probability $a$; if today is rainy, tomorrow is dry with probability $b$. Let $x_n$ be the probability that day $n$ is rainy. Conditioning on day $n$,
+
+$$
+x_{n+1} = a(1 - x_n) + (1 - b)x_n = a + (1 - a - b)\,x_n .
+$$
+
+This is a straight-line map with slope $1 - a - b$ and fixed point $x^* = \frac{a}{a + b}$; when $|1 - a - b| < 1$ it is a contraction, and $x_n \to x^*$ from any start, at the geometric rate $|1 - a - b|^n$.
+
+<SequenceLab mode="cobweb" fn="a + (1 - a - b)*x" params={[{ name: "a", min: 0, max: 1, step: 0.05, value: 0.3, label: "a = P(dry → rain)" }, { name: "b", min: 0, max: 1, step: 0.05, value: 0.5, label: "b = P(rain → dry)" }]} x0={0} N={20} title="The probability of rain, day by day" subtitle="Start from a dry day (x₀ = 0). Every orbit is drawn to a/(a + b). Try a = b = 1: the slope is −1 and the orbit oscillates forever." />
+
+Three phenomena are already visible. The chain has an **equilibrium**, the stationary probability $\frac{a}{a+b}$ of rain. It **forgets its starting point** geometrically fast. And when $a = b = 1$ the weather alternates deterministically — a **periodic** chain, which never settles down. The rest of the lesson is about these three phenomena on general state spaces.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Let $I$ be a countable set, the **state space**. A **distribution** on $I$ is a row vector $\lambda = (\lambda_i)_{i \in I}$ with $\lambda_i \ge 0$ and $\sum_i \lambda_i = 1$.
+
+<Definition term="transition matrix and Markov chain">
+
+A **transition matrix** (or stochastic matrix) is $P = (p_{ij})_{i, j \in I}$ with $p_{ij} \ge 0$ and $\sum_j p_{ij} = 1$ for every $i$: each row is a distribution. A sequence of random variables $X_0, X_1, \dots$ with values in $I$ is a **Markov chain** with initial distribution $\lambda$ and transition matrix $P$ if $P(X_0 = i) = \lambda_i$ and, for all $n$ and all states,
+
+$$
+P(X_{n+1} = j \mid X_0 = i_0, \dots, X_{n-1} = i_{n-1}, X_n = i) = p_{ij}
+$$
+
+whenever the conditioning event has positive probability. Equivalently, $P(X_0 = i_0, X_1 = i_1, \dots, X_n = i_n) = \lambda_{i_0}p_{i_0i_1}\cdots p_{i_{n-1}i_n}$.
+
+</Definition>
+
+The **Markov property** says that, given the present state $X_n = i$, the future $(X_n, X_{n+1}, \dots)$ is independent of the past $(X_0, \dots, X_{n-1})$ and is itself a Markov chain started at $i$. The **strong Markov property** says the same at a random time $T$ that is a **stopping time** (whether $T = n$ is decided by $X_0, \dots, X_n$), such as the first time the chain hits a given state. We write $P_i$ and $E_i$ for probabilities and expectations when $X_0 = i$.
+
+<Definition term="hitting times, recurrence and transience">
+
+The **hitting time** of a set $A$ is $H^A = \inf\{n \ge 0 : X_n \in A\}$ and the **first return time** to $i$ is $T_i = \inf\{n \ge 1 : X_n = i\}$ (with $\inf \emptyset = \infty$). A state $i$ is **recurrent** if $P_i(T_i < \infty) = 1$ and **transient** otherwise. A recurrent state is **positive recurrent** if moreover $m_i = E_i[T_i] < \infty$, its **mean return time**.
+
+</Definition>
+
+<Definition term="communicating classes, irreducibility, period">
+
+State $j$ is **accessible** from $i$, written $i \to j$, if $p_{ij}^{(n)} > 0$ for some $n \ge 0$, where $p_{ij}^{(n)} = (P^n)_{ij}$. States **communicate**, $i \leftrightarrow j$, if $i \to j$ and $j \to i$; this is an equivalence relation, whose classes are the **communicating classes**. A class $C$ is **closed** if $i \in C$ and $i \to j$ imply $j \in C$. The chain is **irreducible** if there is a single class. The **period** of $i$ is $d(i) = \gcd\{n \ge 1 : p_{ii}^{(n)} > 0\}$, and $i$ is **aperiodic** if $d(i) = 1$.
+
+</Definition>
+
+<Definition term="stationary distribution and detailed balance">
+
+A distribution $\pi$ is **stationary** (or invariant) if $\pi P = \pi$, that is, $\pi_j = \sum_i \pi_i p_{ij}$ for all $j$: a chain started from $\pi$ has distribution $\pi$ at every time. A distribution $\pi$ satisfies **detailed balance** with $P$ if $\pi_i p_{ij} = \pi_j p_{ji}$ for all $i, j$; the chain is then **reversible**: started from $\pi$, it looks the same run forwards or backwards in time.
+
+</Definition>
+
+The **total-variation distance** between distributions is $\|\mu - \nu\|_{TV} = \frac12\sum_i |\mu_i - \nu_i| = \max_{A \subseteq I}|\mu(A) - \nu(A)|$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="The two-state chain in matrix form">
+
+With states $0 = $ dry and $1 = $ rainy, $P = \begin{pmatrix} 1 - a & a \\ b & 1 - b \end{pmatrix}$. Its eigenvalues are $1$ and $\lambda = 1 - a - b$, the stationary distribution is $\pi = \big(\frac{b}{a + b}, \frac{a}{a + b}\big)$, and (proved by induction in the Lean section)
+
+$$
+P^n = \frac{1}{a + b}\begin{pmatrix} b + a\lambda^n & a - a\lambda^n \\ b - b\lambda^n & a + b\lambda^n \end{pmatrix}.
+$$
+
+Each row is $\pi$ plus a correction of size $O(|\lambda|^n)$. If $0 < a + b < 2$, then $P^n \to \begin{pmatrix} \pi \\ \pi \end{pmatrix}$; if $a = b = 1$, then $\lambda = -1$ and $P^n$ alternates.
+
+</Example>
+
+<MatrixTransform matrix={[[0.7, 0.1], [0.3, 0.9]]} mode="single" presets={[]} title="A transposed transition matrix acting on distributions" subtitle="This is Pᵀ for a = 0.3, b = 0.1, so that column vectors (dry, rain) map to their next-day distributions. The invariant line for eigenvalue 1 is spanned by (b, a) = (0.1, 0.3) — the stationary distribution — and the other invariant line, with eigenvalue 1 − a − b = 0.6, is the direction (1, −1) that dies away." />
+
+<Example title="Random walk on a graph">
+
+On a finite connected graph, let the walker move from a vertex to a uniformly random neighbour: $p_{uv} = 1/\deg u$ for each edge $uv$. Then $\pi_v = \frac{\deg v}{2|E|}$ satisfies detailed balance, since $\pi_u p_{uv} = \frac{1}{2|E|} = \pi_v p_{vu}$ for every edge; so it is stationary. The walk is irreducible (the graph is connected) and aperiodic exactly when the graph is not bipartite. On the wheel below, the hub has degree $5$ and the rim vertices degree $3$, so in the long run the walker is at the hub a quarter of the time.
+
+</Example>
+
+<GraphExplorer preset="wheel" modes={["degrees", "matrix"]} title="Random walk on a wheel" subtitle="Stationary probability is proportional to degree: 5/20 at the hub, 3/20 at each rim vertex. In the matrix tab, entries of A^k count walks of length k." />
+
+<Example title="Gambler's ruin">
+
+A gambler with $i$ coins bets one coin at a time, winning with probability $p$ and losing with probability $q = 1 - p$, and stops at $0$ or $N$. This is a chain on $\{0, 1, \dots, N\}$ with $p_{i,i+1} = p$, $p_{i,i-1} = q$ for $0 < i < N$ and **absorbing** states $0$ and $N$ ($p_{00} = p_{NN} = 1$). The classes are $\{0\}$, $\{N\}$ (closed, recurrent) and $\{1, \dots, N-1\}$ (not closed, transient). Its hitting probabilities are computed below.
+
+</Example>
+
+<Example title="The Ehrenfest urn: periodic and reversible">
+
+Paul and Tatjana Ehrenfest (1907) modelled the diffusion of gas between two containers: $N$ balls are split between two urns, and at each step a uniformly random ball changes urn. With $X_n$ the number of balls in the first urn, $p_{k,k-1} = k/N$ and $p_{k,k+1} = 1 - k/N$. The binomial distribution $\pi_k = \binom Nk 2^{-N}$ satisfies detailed balance: $\binom Nk \frac{N - k}{N} = \binom N{k+1}\frac{k+1}{N}$. The chain is irreducible but has period $2$ ($X_n$ changes parity at each step), so $P(X_n = k)$ does not converge, although the long-run fraction of time spent at $k$ does tend to $\pi_k$.
+
+</Example>
+
+</Section>
+
+<Section id="nstep" kind="proof" title="n-step transitions and first-step analysis">
+
+<Theorem name="Theorem (Chapman–Kolmogorov)">
+
+For a Markov chain with initial distribution $\lambda$ and transition matrix $P$: $P(X_n = j) = (\lambda P^n)_j$ and $P_i(X_n = j) = p_{ij}^{(n)}$. In particular $p_{ij}^{(m+n)} = \sum_k p_{ik}^{(m)}p_{kj}^{(n)}$.
+
+</Theorem>
+
+<Proof>
+
+By the law of total probability and the Markov property, $P(X_{n+1} = j) = \sum_i P(X_n = i)\,p_{ij}$, i.e. the row vector of probabilities at time $n + 1$ is that at time $n$ times $P$; induct on $n$. The last identity is $P^{m+n} = P^mP^n$.
+
+</Proof>
+
+Products and powers of stochastic matrices are stochastic, so each $P^n$ is again a transition matrix — the matrix of the chain observed every $n$ steps.
+
+<Theorem name="Theorem (hitting probabilities)">
+
+Let $A \subseteq I$ and $h_i = P_i(H^A < \infty)$. Then $h$ is the **minimal non-negative solution** of the system
+
+$$
+h_i = 1 \quad (i \in A), \qquad h_i = \sum_{j \in I} p_{ij}h_j \quad (i \notin A),
+$$
+
+meaning that $h$ solves it, and any solution $x$ with $x_i \ge 0$ for all $i$ satisfies $x_i \ge h_i$ for all $i$.
+
+</Theorem>
+
+<Proof>
+
+*$h$ is a solution* ("first-step analysis"): if $i \in A$ then $H^A = 0$; if $i \notin A$, condition on $X_1$ and use the Markov property: $P_i(H^A < \infty) = \sum_j p_{ij}P_j(H^A < \infty)$.
+
+*Minimality.* Let $x \ge 0$ be a solution and $i \notin A$. Substituting the equation into itself,
+
+$$
+x_i = \sum_{j \in A} p_{ij} + \sum_{j \notin A} p_{ij}x_j = \sum_{j \in A}p_{ij} + \sum_{j \notin A}p_{ij}\sum_{k \in A}p_{jk} + \sum_{j, k \notin A}p_{ij}p_{jk}x_k = P_i(H^A \le 2) + \sum_{j,k \notin A}p_{ij}p_{jk}x_k .
+$$
+
+After $n$ substitutions, $x_i = P_i(H^A \le n) + (\text{a sum of non-negative terms}) \ge P_i(H^A \le n)$. Letting $n \to \infty$, $x_i \ge P_i(H^A < \infty) = h_i$.
+
+</Proof>
+
+Expected hitting times $k_i = E_i[H^A]$ are, in the same way, the minimal non-negative solution of $k_i = 0$ for $i \in A$ and $k_i = 1 + \sum_{j \notin A}p_{ij}k_j$ for $i \notin A$.
+
+<Example title="Solving gambler's ruin">
+
+With $A = \{N\}$, the probability $h(i)$ of reaching $N$ satisfies $h(i) = p\,h(i + 1) + q\,h(i - 1)$ for $0 < i < N$, with $h(0) = 0$ and $h(N) = 1$ (on a finite set the solution is unique, so minimality is automatic). The characteristic equation $p\rho^2 - \rho + q = 0$ has roots $1$ and $r = q/p$. Hence:
+
+- **Fair game** ($p = \frac12$, double root $1$): $h(i) = A + Bi$, so $h(i) = \frac iN$.
+- **Unfair game** ($p \ne \frac12$): $h(i) = A + Br^i$, so $h(i) = \dfrac{1 - r^i}{1 - r^N}$.
+
+The expected duration of the fair game solves $m(i) = 1 + \frac12 m(i-1) + \frac12 m(i+1)$, $m(0) = m(N) = 0$, so $m(i) = i(N - i)$: starting with $10$ coins and playing to $0$ or $20$ takes $100$ bets on average. Betting on red at roulette ($p = \frac{18}{38}$, $r = \frac{10}{9}$), the chance of turning $10$ coins into $20$ is $\frac{1}{1 + (10/9)^{10}} \approx 0.26$. Against an infinitely rich opponent ($N \to \infty$) the fair gambler is ruined with probability $\lim_N (1 - i/N) = 1$, while a gambler with $p > \frac12$ survives forever with probability $1 - (q/p)^i$ — here the minimality in the theorem is essential, since on an infinite state space the equations have many solutions.
+
+</Example>
+
+</Section>
+
+<Section id="recurrence" kind="proof" title="Recurrence and transience">
+
+<Theorem name="Theorem (recurrence criterion)">
+
+Let $f_i = P_i(T_i < \infty)$ and let $V_i = \sum_{n \ge 1}\mathbf 1_{\{X_n = i\}}$ be the number of returns to $i$. Then $P_i(V_i \ge k) = f_i^k$ for $k \ge 0$, and
+
+$$
+E_i[V_i] = \sum_{n \ge 1} p_{ii}^{(n)} = \begin{cases} \dfrac{f_i}{1 - f_i} < \infty & \text{if } i \text{ is transient}, \\[2mm] \infty & \text{if } i \text{ is recurrent.}\end{cases}
+$$
+
+So $i$ is recurrent if and only if $\sum_n p_{ii}^{(n)} = \infty$, and then the chain started at $i$ returns infinitely often with probability $1$.
+
+</Theorem>
+
+<Proof>
+
+Let $T^{(k)}$ be the time of the $k$-th return (a stopping time). On $\{T^{(k)} < \infty\}$ the chain is at $i$ at time $T^{(k)}$, so by the strong Markov property the future is a fresh chain started at $i$, and the probability of a further return is $f_i$, independently of the past. By induction $P_i(V_i \ge k) = P_i(T^{(k)} < \infty) = f_i^k$. Then $E_i[V_i] = \sum_{k \ge 1}P_i(V_i \ge k) = \sum_{k \ge 1}f_i^k$, which is $f_i/(1 - f_i)$ if $f_i < 1$ and infinite if $f_i = 1$. On the other hand, by linearity, $E_i[V_i] = \sum_{n \ge 1}P_i(X_n = i) = \sum_{n \ge 1}p_{ii}^{(n)}$. If $f_i = 1$, $P_i(V_i \ge k) = 1$ for every $k$, so $V_i = \infty$ almost surely.
+
+</Proof>
+
+<Theorem name="Corollary (recurrence is a class property; finite closed classes are recurrent)">
+
+If $i \leftrightarrow j$, then $i$ and $j$ are both recurrent or both transient. Every closed class with finitely many states is recurrent; in particular every state of an irreducible finite chain is recurrent.
+
+</Theorem>
+
+<Proof>
+
+Choose $m, r$ with $p_{ji}^{(m)} > 0$ and $p_{ij}^{(r)} > 0$. Then $p_{jj}^{(m+n+r)} \ge p_{ji}^{(m)}p_{ii}^{(n)}p_{ij}^{(r)}$ (one way of returning to $j$), so $\sum_n p_{ii}^{(n)} = \infty$ implies $\sum_n p_{jj}^{(n)} = \infty$; by symmetry the converse holds too. For a finite closed class $C$ and $i \in C$, the chain stays in $C$, so $\sum_{j \in C}\sum_{n \ge 1}p_{ij}^{(n)} = \sum_{n \ge 1}1 = \infty$, and some $j \in C$ has $\sum_n p_{ij}^{(n)} = \infty$. With $p_{ji}^{(m)} > 0$, $\sum_n p_{jj}^{(n+m)} \ge p_{ji}^{(m)}\sum_n p_{ij}^{(n)} = \infty$, so $j$ is recurrent, and hence so is the whole class.
+
+</Proof>
+
+On infinite state spaces recurrence becomes a deep question. **Simple random walk** on $\Z^d$ moves at each step to one of the $2d$ neighbours, each with probability $\frac{1}{2d}$.
+
+<Theorem name="Theorem (Pólya, 1921)">
+
+Simple random walk on $\Z^d$ is recurrent for $d = 1, 2$ and transient for $d \ge 3$.
+
+</Theorem>
+
+<Proof>
+
+A return to $0$ is only possible at even times. Write $a_n = \binom{2n}{n}4^{-n}$.
+
+*$d = 1$.* $P_0(S_{2n} = 0) = a_n$, the probability of exactly $n$ steps to the right among $2n$. The $2n + 1$ binomial coefficients $\binom{2n}k$ add up to $4^n$ and the middle one is the largest, so $a_n \ge \frac{1}{2n + 1}$, and $\sum_n a_n = \infty$ by comparison with the harmonic series.
+
+*$d = 2$.* Rotate by $45°$: if $(x, y)$ is the walker's position, $u = x + y$ and $v = x - y$ change by $(\pm1, \pm1)$ at each step, with all four sign patterns equally likely. So $u$ and $v$ are *independent* simple random walks on $\Z$, and $P_0(S_{2n} = 0) = P(u_{2n} = 0)P(v_{2n} = 0) = a_n^2$. From $a_{n+1} = a_n\frac{2n+1}{2n+2}$ and $(2n + 1)^2 \ge 4n(n + 1)$, induction gives $a_n^2 \ge \frac{1}{4n}$ for $n \ge 1$, so again $\sum_n a_n^2 = \infty$.
+
+*$d = 3$ (sketch).* Counting paths with $i, j, k$ steps out and back along the three axes,
+
+$$
+P_0(S_{2n} = 0) = \frac{1}{6^{2n}}\sum_{i+j+k=n}\frac{(2n)!}{(i!\,j!\,k!)^2} = a_n\sum_{i+j+k=n}\Big(\frac{n!}{3^n\,i!\,j!\,k!}\Big)^2 \le a_n \max_{i+j+k=n}\frac{n!}{3^n\,i!\,j!\,k!},
+$$
+
+because the trinomial probabilities $\frac{n!}{3^n i!j!k!}$ sum to $1$. Stirling's formula shows that $a_n \le n^{-1/2}$ and that the maximum (attained near $i = j = k = n/3$) is $O(1/n)$, so $P_0(S_{2n} = 0) = O(n^{-3/2})$, which is summable. In $d \ge 4$ the walk restricted to its first three coordinates, watched only when they move, is a three-dimensional walk, so it too is transient.
+
+</Proof>
+
+The cases $d = 1$ and $d = 2$ — the divergence of $\sum a_n$ and $\sum a_n^2$ — are formalised in Lean below. The precise asymptotics are $P_0(S_{2n} = 0) \sim 2\big(\frac{d}{4\pi n}\big)^{d/2}$, and in $d = 3$ the walk returns with probability about $0.34$ (Watson, 1939). "A drunk man will find his way home, but a drunk bird may get lost forever" (attributed to Shizuo Kakutani). Simple random walk on $\Z$ is recurrent but **null recurrent**: $E_0[T_0] = \infty$, and it has no stationary distribution.
+
+<ChanceLab experiment="random-walk" trials={300} n={400} title="Random walks on the integers" subtitle="Each walk returns to 0 again and again, but the typical distance grows like √n — so the returns get rarer, which is why their expected number, though infinite, grows only like √n." />
+
+</Section>
+
+<Section id="stationary" kind="proof" title="Stationary distributions">
+
+<Theorem name="Theorem (existence and uniqueness)">
+
+Every Markov chain on a finite state space has a stationary distribution. If the chain is irreducible, the stationary distribution $\pi$ is unique and $\pi_i > 0$ for every $i$.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* Fix a distribution $\lambda$ and consider the averages $\nu_n = \frac1n\sum_{k=0}^{n-1}\lambda P^k$. They are distributions, which form a compact subset (a simplex) of $\R^I$, so a subsequence $\nu_{n_m}$ converges to a distribution $\pi$. Now $\nu_nP - \nu_n = \frac1n(\lambda P^n - \lambda)$ has entries of absolute value at most $\frac1n$, so letting $n = n_m \to \infty$ gives $\pi P - \pi = 0$.
+
+*Positivity.* If $\pi$ is stationary, then $\pi = \pi P^n$ for all $n$. Some $\pi_i > 0$; for any $j$, irreducibility gives $n$ with $p_{ij}^{(n)} > 0$, and $\pi_j = \sum_k \pi_k p_{kj}^{(n)} \ge \pi_i p_{ij}^{(n)} > 0$.
+
+*Uniqueness.* First, every $h \in \R^I$ with $Ph = h$ (a **harmonic** function) is constant. Let $M = \max_i h_i$, attained at $i$. Since $h_i = \sum_j p_{ij}h_j$ is an average of values $\le M$ that equals $M$, every $j$ with $p_{ij} > 0$ has $h_j = M$. So the set $\{j : h_j = M\}$ contains every state reachable in one step from any of its members, hence (by irreducibility) every state. Thus $\ker(P - I)$ is spanned by the all-ones vector, and $\operatorname{rank}(P - I) = |I| - 1$. A matrix and its transpose have the same rank, so the space of row vectors $\pi$ with $\pi(P - I) = 0$ is also one-dimensional. Two stationary distributions are therefore proportional, and since both sum to $1$, they are equal.
+
+</Proof>
+
+The unique stationary distribution has a probabilistic meaning: $\pi_i = 1/m_i$, the reciprocal of the mean return time (Kac's formula), and the **ergodic theorem** for Markov chains says that, for an irreducible finite chain and any starting distribution, the fraction of time spent in $i$ up to time $n$ tends to $\pi_i$ with probability $1$ — and more generally $\frac1n\sum_{k<n}f(X_k) \to \sum_i \pi_i f(i)$. (We state these without proof; see Norris, §1.7–1.10.) On infinite state spaces, an irreducible chain has a stationary distribution if and only if it is positive recurrent.
+
+Solving $\pi P = \pi$ is a linear system, but **detailed balance** is often easier: if $\pi_ip_{ij} = \pi_jp_{ji}$ for all $i, j$, then $(\pi P)_j = \sum_i \pi_jp_{ji} = \pi_j$, so $\pi$ is stationary (proved in Lean below). The random walk on a graph and the Ehrenfest urn were solved this way. Not every stationary distribution satisfies detailed balance: a chain that cycles $1 \to 2 \to 3 \to 1$ with probability $0.9$ and goes backwards with probability $0.1$ has uniform $\pi$ but a net probability flow around the cycle.
+
+</Section>
+
+<Section id="convergence" kind="proof" title="Convergence to equilibrium">
+
+<Theorem name="Theorem (convergence theorem)">
+
+Let $P$ be irreducible and aperiodic on a finite state space $I$ with $k$ states, and let $\pi$ be its stationary distribution. Then there are $N \ge 1$ and $\delta > 0$ such that, for every initial distribution $\lambda$ and every $n$,
+
+$$
+\|\lambda P^n - \pi\|_{TV} \le (1 - k\delta)^{\lfloor n/N \rfloor}.
+$$
+
+In particular $P_\lambda(X_n = j) \to \pi_j$ for all $j$, exponentially fast.
+
+</Theorem>
+
+The proof has three steps: a lemma from number theory, a positivity lemma, and Doeblin's contraction.
+
+<Theorem name="Lemma 1 (numerical semigroups)">
+
+If $S \subseteq \{1, 2, \dots\}$ is closed under addition and $\gcd S = 1$, then $S$ contains every sufficiently large integer.
+
+</Theorem>
+
+<Proof>
+
+The gcd of $S$ is the gcd of finitely many of its elements, so by Bézout there are $s_1, \dots, s_r \in S$ and integers $c_1, \dots, c_r$ with $\sum c_ls_l = 1$. Let $a$ be the sum of the terms with $c_l > 0$ and $b$ minus the sum of those with $c_l < 0$; both are sums of elements of $S$, hence in $S$ (if $b = 0$ then $1 = a \in S$ and we are done), and $a = b + 1$. For $n \ge b^2$, write $n = qb + t$ with $0 \le t < b \le q$; then $n = (q - t)b + t(b + 1) = (q - t)b + ta$ with $q - t \ge 0$, so $n \in S$.
+
+</Proof>
+
+<Theorem name="Lemma 2 (some power is positive)">
+
+If $P$ is irreducible and aperiodic on a finite set, there is $N$ with $p_{ij}^{(n)} > 0$ for all $i, j$ and all $n \ge N$.
+
+</Theorem>
+
+<Proof>
+
+For each $i$, $S_i = \{n \ge 1 : p_{ii}^{(n)} > 0\}$ is closed under addition (Chapman–Kolmogorov: $p_{ii}^{(m+n)} \ge p_{ii}^{(m)}p_{ii}^{(n)}$) and has gcd $1$, so by Lemma 1 it contains all $n \ge N_i$. Given $i, j$, choose $m_{ij}$ with $p_{ij}^{(m_{ij})} > 0$; then $p_{ij}^{(n)} \ge p_{ii}^{(n - m_{ij})}p_{ij}^{(m_{ij})} > 0$ for $n \ge N_i + m_{ij}$. Take $N = \max_{i,j}(N_i + m_{ij})$.
+
+</Proof>
+
+<Theorem name="Lemma 3 (Doeblin's contraction)">
+
+Let $Q$ be a stochastic matrix on $k$ states whose entries are all at least $\delta$. Then for every row vector $x$ with $\sum_i x_i = 0$, $\;\sum_j |(xQ)_j| \le (1 - k\delta)\sum_i |x_i|$.
+
+</Theorem>
+
+<Proof>
+
+Since $\sum_i x_i = 0$, $(xQ)_j = \sum_i x_iq_{ij} = \sum_i x_i(q_{ij} - \delta)$, with $q_{ij} - \delta \ge 0$. Hence $\sum_j|(xQ)_j| \le \sum_j\sum_i |x_i|(q_{ij} - \delta) = \sum_i|x_i|\sum_j(q_{ij} - \delta) = (1 - k\delta)\sum_i|x_i|$.
+
+</Proof>
+
+*Proof of the theorem.* Let $Q = P^N$ with $N$ from Lemma 2 and $\delta = \min_{i,j}q_{ij} > 0$ (then $k\delta \le 1$, as rows sum to $1$). The vector $x = \lambda - \pi$ sums to $0$, and multiplying by a stochastic matrix keeps the sum at $0$ and never increases $\sum_i|x_i|$ (the same computation with $\delta = 0$). Writing $n = qN + s$ and using $\pi P^n = \pi$,
+
+$$
+\|\lambda P^n - \pi\|_{TV} = \tfrac12\textstyle\sum_j |(xQ^qP^s)_j| \le \tfrac12(1 - k\delta)^q\sum_i|x_i| \le (1 - k\delta)^q,
+$$
+
+since $\sum_i |\lambda_i - \pi_i| \le 2$. $\blacksquare$
+
+**Aperiodicity is necessary**: for $P = \begin{pmatrix}0 & 1 \\ 1 & 0\end{pmatrix}$, $\lambda P^n$ alternates between $(1, 0)$ and $(0, 1)$, although $\pi = (\frac12, \frac12)$ is stationary. For a periodic irreducible chain, the averages $\frac1n\sum_{k<n}\lambda P^k$ still converge to $\pi$, and the "lazy" chain $\frac12(I + P)$ is aperiodic with the same $\pi$.
+
+**The rate.** Doeblin's bound is crude but universal. The true rate is governed by the eigenvalues of $P$: $1$ is an eigenvalue (with right eigenvector $\mathbf 1$), all eigenvalues satisfy $|\mu| \le 1$, and for an irreducible aperiodic chain all others satisfy $|\mu| < 1$; $\|\lambda P^n - \pi\|_{TV}$ decays like $|\mu_2|^n$, where $\mu_2$ is the second-largest eigenvalue in modulus. For the two-state chain $\mu_2 = 1 - a - b$. The first experiment below compares the actual distance, $|\mu_2|^n$ and Doeblin's bound for a three-state weather chain.
+
+Doeblin (1938) also invented the other classical proof, by **coupling**: run two copies of the chain, one from $\lambda$ and one from $\pi$, independently until they meet, and together afterwards; then $\|\lambda P^n - \pi\|_{TV} \le P(\text{they have not met by time } n)$. Coupling extends to countable state spaces, where the theorem holds for irreducible, aperiodic, positive recurrent chains.
+
+</Section>
+
+<Section id="applications" kind="human" title="Three applications">
+
+**PageRank.** Let $P$ be the random-surfer matrix of the web (follow a uniformly random link from the current page), and $J$ the matrix with every entry $1/k$. Google's matrix $G = \alpha P + (1 - \alpha)J$, with damping $\alpha = 0.85$ in the original paper (Brin and Page, 1998), has every entry at least $(1 - \alpha)/k$. So Doeblin's lemma applies with $1 - k\delta = \alpha$: repeated multiplication converges to the unique stationary distribution — the PageRank vector — with error shrinking by a factor $0.85$ per iteration, however large $k$ is.
+
+**Markov chain Monte Carlo.** To sample from a distribution $\pi$ on a huge finite set known only up to a constant (a posterior distribution in <TopicLink id="math.prob.statistics">statistics</TopicLink>, a Gibbs distribution in physics), the **Metropolis algorithm** (Metropolis, Rosenbluth, Rosenbluth, Teller and Teller, 1953) proposes a move $i \to j$ from a symmetric proposal $q_{ij} = q_{ji}$ and accepts it with probability $\min(1, \pi_j/\pi_i)$. The resulting chain satisfies detailed balance with $\pi$ — only ratios $\pi_j/\pi_i$ are needed — so if it is irreducible and aperiodic, its distribution converges to $\pi$, and ergodic averages estimate expectations under $\pi$. How fast it mixes is the hard part.
+
+**Genetic drift.** In the Wright–Fisher model, a population carries $N$ copies of a gene, $X_n$ of them of type A. Each copy in the next generation picks its parent uniformly at random, so $X_{n+1}$ given $X_n = i$ is Binomial$(N, i/N)$. The states $0$ and $N$ are absorbing, all others transient, so one type is eventually lost. Since $E[X_{n+1} \mid X_n] = X_n$ (the chain is a **martingale**), the probability that type A takes over is $X_0/N$ — a neutral mutation present in one copy fixes with probability $1/N$. Selection and mutation modify the transition probabilities; see <TopicLink id="math.applied.mathematical-biology">mathematical biology</TopicLink>.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Markov chains in Lean and Mathlib">
+
+A finite chain is a matrix `P : Matrix S S ℝ` over a finite type `S`; a distribution is a row vector `μ : S → ℝ`, and one step is `μ ᵥ* P`. Mathlib provides the submonoid `Matrix.rowStochastic ℝ S` of stochastic matrices with its basic lemmas, and the general theory of Markov kernels on measurable spaces (`ProbabilityTheory.Kernel`, with irreducibility in `Kernel.IsIrreducible`). Classification of states, the strong Markov property and the ergodic theorem for chains are not yet in Mathlib.
+
+**Transition matrices.** Products and powers of stochastic matrices are stochastic, and one step maps distributions to distributions:
+
+<Lean decl="Lumenary.MarkovChains.stochastic_mul" />
+
+<Lean decl="Lumenary.MarkovChains.stochastic_pow" />
+
+<Lean decl="Lumenary.MarkovChains.distribution_step" />
+
+**Stationarity.** Detailed balance implies stationarity, on any finite state space:
+
+<Lean decl="Lumenary.MarkovChains.detailed_balance_stationary" />
+
+**The two-state chain**, its stationary distribution, the closed form of $P^n$ by induction, and convergence of $(P^n)_{00}$ to $\pi_0$:
+
+<Lean decl="Lumenary.MarkovChains.twoState" />
+
+<Lean decl="Lumenary.MarkovChains.two_state_stationary" />
+
+<Lean decl="Lumenary.MarkovChains.two_state_pow" />
+
+<Lean decl="Lumenary.MarkovChains.two_state_converges" />
+
+**Gambler's ruin.** The fair solution and its uniqueness, the biased solution, and the expected duration:
+
+<Lean decl="Lumenary.MarkovChains.gambler_fair_solves" />
+
+<Lean decl="Lumenary.MarkovChains.gambler_fair_unique" />
+
+<Lean decl="Lumenary.MarkovChains.gambler_biased_solves" />
+
+<Lean decl="Lumenary.MarkovChains.duration_fair_solves" />
+
+**Doeblin's contraction** — Lemma 3 of the convergence theorem — and its iteration, which gives the geometric rate once some power of $P$ is positive:
+
+<Lean decl="Lumenary.MarkovChains.zero_sum_vecMul" />
+
+<Lean decl="Lumenary.MarkovChains.doeblin_contraction" />
+
+<Lean decl="Lumenary.MarkovChains.doeblin_iterate" />
+
+**Pólya in dimensions one and two.** The bound $4^n \le (2n + 1)\binom{2n}{n}$ from Mathlib, the divergence of $\sum_n a_n$, the sharper bound $a_n^2 \ge \frac1{4n}$, and the divergence of $\sum_n a_n^2$:
+
+<Lean decl="Lumenary.MarkovChains.central_binom_lower" />
+
+<Lean decl="Lumenary.MarkovChains.walk_1d_returns_diverge" />
+
+<Lean decl="Lumenary.MarkovChains.central_binom_sq_lower" />
+
+<Lean decl="Lumenary.MarkovChains.walk_2d_returns_diverge" />
+
+**What is and is not formalised.** Proved here: stochasticity of products, detailed balance ⇒ stationarity, everything about the two-state chain, the gambler's-ruin formulas (and uniqueness in the fair case), Doeblin's contraction and its iteration, and the divergence of the expected number of returns in $d = 1, 2$ (as statements about the series $\sum a_n$ and $\sum a_n^2$). Cited from Mathlib: powers of stochastic matrices, one-step preservation of distributions, and the central binomial bound. Not formalised: the identification of $a_n$ and $a_n^2$ as return probabilities (including the $45°$ rotation), the recurrence criterion, transience in $d = 3$, existence and uniqueness of stationary distributions, Lemmas 1 and 2, and the ergodic theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Equilibrium, ruin and returns, computed">
+
+First, convergence to equilibrium: the exact stationary distribution of a three-state weather chain, the total-variation distance to it day by day, the eigenvalue rate and Doeblin's bound — and a periodic chain that never settles.
+
+<Python id="markov_chains_convergence" />
+
+Next, gambler's ruin: the first-step equations solved in exact arithmetic, checked against the closed forms and against simulated games, for a fair coin and for betting on red at roulette.
+
+<Python id="markov_chains_gamblers_ruin" />
+
+Finally, Pólya's theorem in numbers: partial sums of return probabilities in one, two and three dimensions, and the fraction of simulated walks that come home.
+
+<Python id="markov_chains_polya_walks" />
+
+The stationary distributions and first-step solutions are **exact**; the distances and return probabilities are **numerical** (floating point); the simulations are **statistical** evidence. A partial sum can never prove that a series diverges — that is what the Lean proofs above are for.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Memoryless means the chain forgets everything."** The Markov property says that the future depends on the past *only through the present*: given $X_n$, the earlier states carry no further information. The present state itself matters enormously — it is the whole of the chain's memory. And unconditionally, $X_{n+1}$ is usually strongly dependent on $X_0, \dots, X_{n-1}$.
+
+</Misconception>
+
+<Misconception>
+
+**"Every chain converges to its stationary distribution."** Convergence of $\lambda P^n$ needs irreducibility (otherwise the limit depends on the starting class) and aperiodicity (otherwise the chain can cycle, as in the Ehrenfest urn or the flip chain $\begin{pmatrix}0&1\\1&0\end{pmatrix}$). On infinite state spaces positive recurrence is needed too: simple random walk on $\Z$ has no stationary distribution at all.
+
+</Misconception>
+
+<Misconception>
+
+**"Recurrent means the chain comes back soon."** A recurrent state is revisited with probability $1$, but the expected return time can be infinite: for simple random walk on $\Z$ and $\Z^2$, $E_0[T_0] = \infty$ (null recurrence). Returns happen infinitely often, but ever more rarely.
+
+</Misconception>
+
+<Misconception>
+
+**"A stationary distribution means the chain stops moving."** At stationarity the *distribution* is constant in time; the chain itself keeps jumping. Stationarity is a balance of probability flows, $\sum_i \pi_ip_{ij} = \pi_j$, not a frozen state.
+
+</Misconception>
+
+<Misconception>
+
+**"The fair gambler breaks even, so playing longer is harmless."** In the fair game the expected fortune stays constant, yet against an opponent with unlimited resources ruin is certain, and the expected time to ruin is infinite. With any house edge, the probability of reaching a target falls exponentially with the target's distance.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="Perron–Frobenius: the eigenvalue 1">
+
+A stochastic matrix has the eigenvalue $1$ with right eigenvector $\mathbf 1$, and a stationary distribution is a left eigenvector for it with non-negative entries. The **Perron–Frobenius theorem** (Perron 1907, Frobenius 1912) describes non-negative matrices in general: an irreducible non-negative matrix has a positive eigenvalue $\rho$ equal to its spectral radius, with a one-dimensional eigenspace spanned by a positive vector; if it is moreover **primitive** (some power is positive — for stochastic matrices, irreducible and aperiodic), every other eigenvalue has modulus strictly less than $\rho$. For stochastic $P$, $\rho = 1$, and the theorem contains the existence, uniqueness and positivity of $\pi$ and the convergence theorem, with rate given by the **spectral gap** $1 - |\mu_2|$. A periodic irreducible chain of period $d$ has exactly the $d$-th roots of unity as eigenvalues of modulus $1$ — the algebraic shadow of its cycling.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="A fixed point in a simplex">
+
+The set $\Delta$ of distributions on $k$ states is a simplex of dimension $k - 1$ — a closed ball, topologically — and $\mu \mapsto \mu P$ maps it continuously into itself. **Brouwer's fixed-point theorem** therefore guarantees a fixed point: a stationary distribution, for every finite chain, with no algebra at all. (Our existence proof replaced Brouwer by the more elementary averaging argument, which works because the map is affine — the Markov–Kakutani idea.) Uniqueness is not topological: a reducible chain can have a whole segment of fixed points. Topology also organises the state space itself: the communicating classes are the strongly connected components of the directed graph with an edge $i \to j$ when $p_{ij} > 0$, and closed classes are its sink components. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Contractions and the speed of mixing">
+
+Doeblin's lemma says that $\mu \mapsto \mu P^N$ is a **contraction** of the simplex in the total-variation metric, so the convergence theorem is an instance of the **Banach fixed-point theorem**: a contraction of a complete metric space has a unique fixed point, and iterates converge to it geometrically. Quantitatively, the **mixing time** $t_{\text{mix}}(\varepsilon) = \min\{n : \max_\lambda\|\lambda P^n - \pi\|_{TV} \le \varepsilon\}$ is studied with analytic tools — spectral gaps, isoperimetric (Cheeger) inequalities, and the comparison of Dirichlet forms $\mathcal E(f) = \frac12\sum_{i,j}\pi_ip_{ij}(f_i - f_j)^2$. Some chains exhibit a sharp **cutoff**: riffle-shuffling a deck of $52$ cards stays far from random for a while and then becomes close to random within a few shuffles (Bayer and Diaconis, 1992, the source of the familiar "seven shuffles").
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Detailed balance, entropy and the arrow of time">
+
+Detailed balance is the probabilistic form of **microscopic reversibility** in statistical mechanics: at thermal equilibrium every transition is balanced by its reverse. The Ehrenfests introduced their urn to resolve a paradox: Boltzmann's H-theorem says entropy increases, yet reversible dynamics return arbitrarily close to their initial state (Poincaré recurrence). In the urn both are true — the chain is recurrent, so it returns to "all balls in one urn", but the expected return time to that state is $1/\pi_N = 2^N$, astronomically long for $N \sim 10^{23}$, while from a typical state it drifts quickly towards the binomial bulk. In general the relative entropy $D(\lambda P^n \,\|\, \pi)$ is non-increasing in $n$ for every chain with stationary $\pi$, a discrete second law of thermodynamics (see <TopicLink id="math.applied.information-theory">information theory</TopicLink>). Metropolis's algorithm was invented to compute equilibrium properties of physical systems.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Electrical networks and spanning trees">
+
+Random walks on graphs are combinatorial objects with a beautiful dictionary to **electrical networks** (Doyle and Snell, 1984): think of each edge as a unit resistor; the probability that a walk from $a$ hits $b$ before returning to $a$ is $1/(\deg a \cdot R_{\text{eff}}(a, b))$, and a walk on an infinite graph is recurrent exactly when the effective resistance to infinity is infinite. On $\Z^2$ that resistance grows like $\log n$ (recurrent); on $\Z^3$ it stays bounded (transient) — a second proof of Pólya's theorem. Stationary distributions of general chains also have a combinatorial formula, the **Markov chain tree theorem**: $\pi_j$ is proportional to the sum, over all spanning trees directed towards $j$, of the products of the transition probabilities on their edges — a relative of Kirchhoff's matrix-tree theorem. See <TopicLink id="math.prob.random-geometry">random geometry</TopicLink> for where these ideas lead.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Kernels compose">
+
+Transition matrices are morphisms in a category: sets with stochastic matrices $P : I \to J$ (rows indexed by $I$, distributions on $J$), composed by matrix multiplication — "first a step of $P$, then a step of $Q$" — with identity matrices as identities. This is the finite part of the Kleisli category of the probability (Giry) monad described in <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>, and a Markov chain is a functor from the monoid $(\N, +)$ into it, sending $n$ to $P^n$. Mathlib follows this pattern: `ProbabilityTheory.Kernel` composes like matrices, and `Kernel.IsIrreducible` defines irreducibility through the powers $\kappa^n$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Markov and his predecessors.** Andrei Andreyevich Markov introduced chains of dependent variables in 1906 to show that the law of large numbers (and later the central limit theorem) does not require independence — partly in response to Pavel Nekrasov's claim that it did — and in 1913 applied them to the sequence of vowels and consonants in Pushkin's *Eugene Onegin*. Earlier, the Ehrenfests' urn (1907) and Galton and Watson's study of the extinction of family names (1874) used Markovian ideas, and Bienaymé had analysed branching processes in 1845.
+- **Random walks.** Karl Pearson posed the "problem of the random walk" in *Nature* in 1905 (Lord Rayleigh answered from his work in acoustics). Louis Bachelier (1900, modelling prices on the Paris Bourse) and Albert Einstein (1905, Brownian motion) independently linked random walks to diffusion. George Pólya proved his recurrence theorem in 1921, reportedly after noticing how often he met the same couple on walks in a park near Zürich.
+- **The general theory.** Andrei Kolmogorov developed the theory of chains with countably many states (1936) and the analytic theory of continuous-time Markov processes (1931). Wolfgang Doeblin, working in Paris before his death in 1940, introduced coupling and the contraction condition that bears his name (1938); a sealed envelope he sent to the Académie des sciences, opened in 2000, showed he had anticipated parts of Itô's stochastic calculus. Oskar Perron and Georg Frobenius had meanwhile developed the theory of non-negative matrices (1907–12).
+- **Applications.** Sewall Wright (1931) and Ronald Fisher (1930) built population genetics on the Wright–Fisher chain, later extended by Motoo Kimura's diffusion theory of neutral evolution (1968). Nicholas Metropolis, Arianna and Marshall Rosenbluth, and Augusta and Edward Teller introduced the Metropolis algorithm at Los Alamos in 1953; W. K. Hastings generalised it in 1970. Sergey Brin and Larry Page's PageRank (1998) made the stationary distribution of a Markov chain one of the most computed objects in the world.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- J. R. Norris, *Markov Chains* (1997) — the standard rigorous introduction, in discrete and continuous time; the hitting-probability theorem and the treatment of recurrence follow it.
+- Geoffrey Grimmett and David Stirzaker, *Probability and Random Processes* (4th edition, 2020), Chapter 6.
+- David A. Levin and Yuval Peres (with Elizabeth Wilmer), *Markov Chains and Mixing Times* (2nd edition, 2017) — coupling, spectral methods and cutoff.
+- Peter G. Doyle and J. Laurie Snell, *Random Walks and Electric Networks* (1984) — Pólya's theorem through electrical networks.
+- Pierre Brémaud, *Markov Chains: Gibbs Fields, Monte Carlo Simulation and Queues* (2nd edition, 2020) — applications to physics, computation and queues.
+- Eugene Seneta, *Non-negative Matrices and Markov Chains* (2nd edition, 1981) — the Perron–Frobenius theory.
+
+</Section>

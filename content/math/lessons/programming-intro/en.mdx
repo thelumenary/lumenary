@@ -1,0 +1,493 @@
+---
+slug: programming-intro
+topic: math.comp.programming-intro
+title: Programming for mathematics
+subtitle: Variables, loops, conditions and functions in Python — for computing sums and sequences, testing conjectures on thousands of cases, and writing numbers in binary. And why a program that runs perfectly can still be wrong.
+level: g6-8
+ages: Ages 11–14
+minutes: 70
+order: 3020
+objectives:
+  - Write programs with variables, loops, conditionals and functions to compute sums, tables and sequences
+  - Explain the difference between assignment (`=` in a program) and equality in mathematics
+  - Use a program to test a conjecture on many cases, and explain why this is evidence but not proof, while one counterexample is a disproof
+  - Convert between decimal and binary by hand and in code, and explain why every whole number has exactly one binary representation without leading zeros
+  - Explain why `0.1 + 0.2 == 0.3` is `False` in Python, and use exact fractions instead
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.ProgrammingIntro.sumFor
+  - Lumenary.ProgrammingIntro.sum_for_examples
+  - Lumenary.ProgrammingIntro.assignment_example
+  - Lumenary.ProgrammingIntro.no_solution_x_eq_x_add_one
+  - Lumenary.ProgrammingIntro.sumTo
+  - Lumenary.ProgrammingIntro.loop_agrees_tested
+  - Lumenary.ProgrammingIntro.gauss_formula
+  - Lumenary.ProgrammingIntro.sumAcc
+  - Lumenary.ProgrammingIntro.sum_acc_correct
+  - Lumenary.ProgrammingIntro.sumOdds
+  - Lumenary.ProgrammingIntro.sum_odds_eq_square
+  - Lumenary.ProgrammingIntro.fromBinary
+  - Lumenary.ProgrammingIntro.bitsAux
+  - Lumenary.ProgrammingIntro.toBinary
+  - Lumenary.ProgrammingIntro.binary_examples
+  - Lumenary.ProgrammingIntro.from_bits_aux
+  - Lumenary.ProgrammingIntro.from_to_binary
+  - Lumenary.ProgrammingIntro.AllBits
+  - Lumenary.ProgrammingIntro.NoLeadingZero
+  - Lumenary.ProgrammingIntro.value_ne_zero
+  - Lumenary.ProgrammingIntro.binary_exists
+  - Lumenary.ProgrammingIntro.binary_unique
+  - Lumenary.ProgrammingIntro.exact_tenths
+compute: [programming_intro_conjectures, programming_intro_binary]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A thousand cases in the blink of an eye">
+
+There is a famous story — told about Carl Friedrich Gauss as a schoolboy, though its details are uncertain — of a teacher who asked the class to add up all the numbers from $1$ to $100$, hoping for a long quiet hour. Gauss answered almost at once: $5050$.
+
+Today a computer adds those hundred numbers in a millionth of a second. It could check the answer for every list from $1$ to $n$, for every $n$ up to a million, before you finish this sentence. So why do mathematicians still bother with proofs?
+
+Here is one reason. In 1752 Christian Goldbach suggested to Leonhard Euler that every odd number that is not prime can be written as a prime plus twice a square: $9 = 7 + 2 \cdot 1^2$, $15 = 7 + 2 \cdot 2^2$, $27 = 19 + 2 \cdot 2^2$, and so on. It works for $9$, $15$, $21$, and on through the hundreds and thousands. And then, at $5777$, it fails.
+
+And here is something stranger. Ask Python whether $0.1 + 0.2$ equals $0.3$, and it answers `False`.
+
+In this lesson you will learn to write short programs that do real mathematics — and learn exactly what a program's answer does, and does not, tell you.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Programs are precise recipes">
+
+A **program** is a list of instructions precise enough for a machine to follow. You have met the main ingredients already in <TopicLink id="math.comp.loops-and-conditions">repetition and decisions</TopicLink>; now we write them in a real programming language, **Python**.
+
+- A **variable** is a named box that holds a value. The value can change while the program runs.
+- A **loop** repeats some instructions, for example once for each number from $1$ to $100$.
+- A **conditional** (an `if`) makes a decision: do this only when a condition is true.
+- A **function** packages a calculation under a name, so that you can use it again with different inputs.
+
+<Narrator who="margaret">
+
+The most important line in many programs looks like nonsense to a mathematician: `total = total + i`. In algebra, $t = t + i$ would force $i = 0$. In Python it is an **instruction**: take the value now in the box `total`, add `i`, and put the result back in the box. The `=` sign means “store”, not “is equal to”. (Python writes equality as `==`.)
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="variable and assignment">
+
+A **program variable** is a name for a stored value that can change while the program runs. The **assignment** `x = expression` works out the value of the expression on the right, then stores it under the name on the left, replacing what was there before.
+
+</Definition>
+
+<Definition term="loop and conditional">
+
+The loop `for i in range(a, b):` runs its indented instructions once for each whole number `i` with $a \le i < b$ — notice that $b$ itself is **not** included. The conditional `if condition:` runs its indented instructions only when the condition is `True`.
+
+</Definition>
+
+<Definition term="program function">
+
+A **program function**, written with `def`, takes inputs (called **arguments**) and gives back an output with `return`. Unlike a mathematical function, it may also have other effects, such as printing.
+
+</Definition>
+
+<Definition term="binary representation">
+
+In **base 2** (binary) the only digits are $0$ and $1$, and the places count ones, twos, fours, eights, and so on, each place worth twice the one to its right:
+
+$$
+1101_2 = 1 \cdot 8 + 1 \cdot 4 + 0 \cdot 2 + 1 \cdot 1 = 13.
+$$
+
+A representation has **no leading zeros** if its first (leftmost) digit is $1$; the number $0$ is written $0$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked programs">
+
+<Example title="A loop with a running total">
+
+```python
+total = 0
+for i in range(1, 101):
+    total = total + i
+print(total)        # prints 5050
+```
+
+Here is a **trace** — the value of each variable after each step — for the shorter loop `range(1, 5)`:
+
+| step | `i` | `total` after the step |
+| --- | --- | --- |
+| start | — | $0$ |
+| 1 | $1$ | $1$ |
+| 2 | $2$ | $3$ |
+| 3 | $3$ | $6$ |
+| 4 | $4$ | $10$ |
+
+</Example>
+
+<Example title="A condition inside a loop">
+
+To add up only the multiples of $3$ below $20$:
+
+```python
+total = 0
+for n in range(1, 20):
+    if n % 3 == 0:          # % gives the remainder; == tests equality
+        total = total + n
+print(total)                # 3 + 6 + 9 + 12 + 15 + 18 = 63
+```
+
+</Example>
+
+<Example title="A function">
+
+```python
+def is_prime(n):
+    if n < 2:
+        return False
+    for d in range(2, n):
+        if n % d == 0:      # d divides n
+            return False
+    return True
+
+print([p for p in range(30) if is_prime(p)])
+# [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
+```
+
+The last line is a **list comprehension**: Python's version of set-builder notation $\{p : 0 \le p < 30,\ p \text{ is prime}\}$ (see <TopicLink id="math.found.quantifiers">set-builder notation</TopicLink>).
+
+</Example>
+
+<Example title="A sequence with two variables">
+
+The Fibonacci sequence starts $0, 1$, and each further term is the sum of the two before it.
+
+```python
+a, b = 0, 1
+for step in range(10):
+    print(a)
+    a, b = b, a + b     # both new values are computed first, then stored
+```
+
+This prints $0, 1, 1, 2, 3, 5, 8, 13, 21, 34$. The line `a, b = b, a + b` would be impossible as an equation (it would say $a = b$ and $b = a + b$ at once); as an assignment, it moves the pair one step along the sequence.
+
+</Example>
+
+</Section>
+
+<Section id="testing" kind="human" title="Testing is not proving">
+
+Programs are wonderful for **exploring**. Add up the first few odd numbers:
+
+$$
+1 = 1, \quad 1 + 3 = 4, \quad 1 + 3 + 5 = 9, \quad 1 + 3 + 5 + 7 = 16.
+$$
+
+The answers are squares. A loop can check $1 + 3 + \dots + (2n - 1) = n^2$ for every $n$ up to a million in a moment. That is strong **evidence**, but it is not a **proof**: there are infinitely many $n$, and a program can check only finitely many. Goldbach's conjecture above passed every test up to $5776$, and then failed.
+
+What a program *can* do decisively is find a **counterexample**. A single case where a “for all” statement fails refutes it for ever. And a program can suggest a pattern that we then prove. Here is a proof of the odd-number pattern, in two ways.
+
+<Theorem name="Theorem 1 (sum of odd numbers)">
+
+For every whole number $n \ge 0$: $\;1 + 3 + 5 + \dots + (2n - 1) = n^2$.
+
+</Theorem>
+
+<Proof>
+
+**By induction.** For $n = 0$ the sum is empty and equals $0 = 0^2$. Suppose the statement holds for some $n$. The sum of the first $n + 1$ odd numbers is the sum of the first $n$, plus the next odd number $2n + 1$:
+
+$$
+n^2 + (2n + 1) = (n + 1)^2.
+$$
+
+So the statement holds for $n + 1$ as well. Starting from $0$ and stepping up one at a time, it holds for every $n$.
+
+**By a picture.** An $n \times n$ square of dots grows into an $(n + 1) \times (n + 1)$ square by adding an L-shaped border of $n + n + 1 = 2n + 1$ dots — the next odd number.
+
+</Proof>
+
+The same kind of argument shows Gauss's formula $1 + 2 + \dots + n = \tfrac{n(n + 1)}{2}$: write the sum forwards and backwards, and add — each of the $n$ columns adds up to $n + 1$.
+
+<Note>
+
+A program that runs without an error message is not necessarily correct. If you write `range(1, n)` when you meant `range(1, n + 1)`, the loop quietly stops one step early: it computes $1 + 2 + \dots + 99 = 4950$ instead of $5050$, and nothing warns you. Checking a program against a case you can work out by hand, or against a proven formula, catches mistakes like this.
+
+</Note>
+
+</Section>
+
+<Section id="binary" kind="proof" title="Binary numbers">
+
+To write a number in binary, divide by $2$ again and again, writing down the remainders. Here is $45$:
+
+$$
+\begin{aligned}
+45 &= 2 \cdot 22 + 1\\
+22 &= 2 \cdot 11 + 0\\
+11 &= 2 \cdot 5 + 1\\
+5 &= 2 \cdot 2 + 1\\
+2 &= 2 \cdot 1 + 0\\
+1 &= 2 \cdot 0 + 1
+\end{aligned}
+$$
+
+Reading the remainders from the **bottom up** gives $45 = 101101_2$. Check: $32 + 8 + 4 + 1 = 45$. In Python:
+
+```python
+def to_binary(n):
+    if n == 0:
+        return "0"
+    digits = ""
+    while n > 0:
+        digits = str(n % 2) + digits    # the new remainder goes in front
+        n = n // 2                      # // divides and rounds down
+    return digits
+
+print(to_binary(45))    # 101101
+```
+
+Going the other way, read the digits from the left: start at $0$, and for each digit, double what you have and add the digit. For $101101_2$: $1, 2, 5, 11, 22, 45$.
+
+<Theorem name="Theorem 2 (binary representations exist and are unique)">
+
+Every whole number $n \ge 0$ has exactly one binary representation without leading zeros.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* For $n = 0$, the representation is $0$. For $n \ge 1$, divide by $2$: $n = 2q + r$ with $r \in \{0, 1\}$ and $q < n$. If $q = 0$, then $n = r = 1$, represented by $1$. Otherwise $q$, being smaller, already has a representation without leading zeros (this is the step that induction makes precise), and writing the digit $r$ after it gives a representation of $2q + r = n$, still starting with $1$.
+
+*Uniqueness.* Suppose $n \ge 1$ had two representations without leading zeros. In each, every digit except the last one stands for an even amount (a multiple of $2$), so the last digit must be the remainder of $n$ on division by $2$. So the last digits are equal. Removing them leaves two representations of the same smaller number $q = \tfrac{n - r}{2}$ — and by the same argument their last digits agree too. Repeating this, the two representations agree digit by digit, until both run out at the same moment, when the number reached is $0$. (A representation without leading zeros of a number $\ge 1$ is never empty, and an empty list of digits stands for $0$, so neither can run out before the other.)
+
+</Proof>
+
+The same proof works in any base $b \ge 2$, with the remainders $0, 1, \dots, b - 1$ as digits; base $10$ is the case you use every day.
+
+</Section>
+
+<Section id="floating" kind="human" title="Why 0.1 + 0.2 is not 0.3">
+
+In base $10$, the fraction $\tfrac{1}{3}$ never ends: $0.3333\ldots$. In base $2$, the same thing happens to $\tfrac{1}{10}$:
+
+$$
+\tfrac{1}{10} = 0.0001100110011\ldots_2,
+$$
+
+with the block $0011$ repeating for ever. A computer's usual decimal numbers, called **floating-point numbers**, keep only $53$ significant binary digits. So Python stores not $\tfrac{1}{10}$ but the nearest number it can represent, which is exactly
+
+$$
+\frac{3602879701896397}{36028797018963968} = 0.1000000000000000055511\ldots
+$$
+
+The tiny errors in $0.1$ and $0.2$ do not cancel, and the sum is stored as $0.30000000000000004$, which is not the stored version of $0.3$. Nothing is broken: floating-point numbers are **approximations**, designed to be fast and almost always close enough. When you need exact answers, use exact arithmetic:
+
+```python
+from fractions import Fraction
+print(Fraction(1, 10) + Fraction(2, 10) == Fraction(3, 10))    # True
+print(0.1 + 0.2 == 0.3)                                        # False
+```
+
+Whole numbers in Python are always exact, however large: `2 ** 100` is computed digit for digit.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Programs that come with proofs">
+
+Lean is a programming language too. Here is the summing loop, written almost exactly as in Python (`:=` is Lean's sign for assignment):
+
+<Lean decl="Lumenary.ProgrammingIntro.sumFor" />
+
+<Lean decl="Lumenary.ProgrammingIntro.sum_for_examples" />
+
+Assignment and equality really are different things:
+
+<Lean decl="Lumenary.ProgrammingIntro.assignment_example" />
+
+<Lean decl="Lumenary.ProgrammingIntro.no_solution_x_eq_x_add_one" />
+
+The same sum can be defined **recursively**: the sum up to $n + 1$ is the sum up to $n$, plus $n + 1$.
+
+<Lean decl="Lumenary.ProgrammingIntro.sumTo" />
+
+<Narrator who="gideon">
+
+Now compare two kinds of statement. The first is a **test**: Lean runs both programs for $40$ inputs and checks the answers match. The second is a **theorem** about every $n$, proved by induction — the same proof as Theorem 1's, in Lean's language. Both are machine-checked, but only the second tells you anything about $n = 1000$.
+
+</Narrator>
+
+<Lean decl="Lumenary.ProgrammingIntro.loop_agrees_tested" />
+
+<Lean decl="Lumenary.ProgrammingIntro.gauss_formula" />
+
+A loop that carries a running total can be written as a function with an extra argument, the **accumulator**, and then proved correct for every input:
+
+<Lean decl="Lumenary.ProgrammingIntro.sumAcc" />
+
+<Lean decl="Lumenary.ProgrammingIntro.sum_acc_correct" />
+
+<Lean decl="Lumenary.ProgrammingIntro.sumOdds" />
+
+<Lean decl="Lumenary.ProgrammingIntro.sum_odds_eq_square" />
+
+Binary numbers. Lean stores the digits as a list with the **least** significant digit first — the order in which repeated division produces them — so $13 = 1101_2$ is the list `[1, 0, 1, 1]`.
+
+<Lean decl="Lumenary.ProgrammingIntro.fromBinary" />
+
+<Lean decl="Lumenary.ProgrammingIntro.bitsAux" />
+
+<Lean decl="Lumenary.ProgrammingIntro.toBinary" />
+
+<Lean decl="Lumenary.ProgrammingIntro.binary_examples" />
+
+The conversion is correct for **every** number, not just the ones we tried:
+
+<Lean decl="Lumenary.ProgrammingIntro.from_bits_aux" />
+
+<Lean decl="Lumenary.ProgrammingIntro.from_to_binary" />
+
+And Theorem 2, existence and uniqueness, with “no leading zeros” stated precisely:
+
+<Lean decl="Lumenary.ProgrammingIntro.AllBits" />
+
+<Lean decl="Lumenary.ProgrammingIntro.NoLeadingZero" />
+
+<Lean decl="Lumenary.ProgrammingIntro.value_ne_zero" />
+
+<Lean decl="Lumenary.ProgrammingIntro.binary_exists" />
+
+<Lean decl="Lumenary.ProgrammingIntro.binary_unique" />
+
+Finally, exact fractions behave exactly:
+
+<Lean decl="Lumenary.ProgrammingIntro.exact_tenths" />
+
+What is formalised: Theorem 1, Gauss's formula, the correctness of the accumulator loop and of the binary conversion for every input, and Theorem 2 (with $0$ represented by the empty list of digits), using core Lean only. The `for` loop `sumFor` is only *tested* against `sumTo` (for $n < 40$); proving it equal for every $n$ needs facts about how Lean runs loops that are beyond this lesson. Lean's `Float` type behaves like Python's floats — `0.1 + 0.2 == 0.3` evaluates to `false` there too — but its arithmetic is done by the computer's hardware, outside the logic, so Lean cannot prove facts about it; that is one reason careful mathematics uses exact numbers.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments">
+
+<Narrator who="margaret">
+
+First, let me test two formulas a thousand times, hunt for the failure of Goldbach's conjecture, and show you a bug that runs perfectly happily.
+
+</Narrator>
+
+<Python id="programming_intro_conjectures" />
+
+The thousand successes in part 1 are evidence; Theorem 1 and the Lean proofs are what make the formulas certain. The two failures in part 2, $5777$ and $5993$, settle Goldbach's question for good — they were found by hand in 1856 by Moritz Stern and his students, and a laptop now finds them instantly.
+
+<Narrator who="margaret">
+
+Now binary: repeated division, a check of every number below $1024$, and a look at what a computer really stores when you type $0.1$.
+
+</Narrator>
+
+<Python id="programming_intro_binary" />
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: an algorithm you can watch">
+
+The Goldbach experiment needs to know which numbers are prime, and it finds out with one of the oldest algorithms in the world, the **Sieve of Eratosthenes**: cross out $1$, then the multiples of each prime in turn; the numbers that survive are the primes. Step through it here.
+
+<NumberGrid mode="sieve" size={120} title="The Sieve of Eratosthenes" subtitle="The same steps as the prime_sieve function in the experiment above." />
+
+Things to notice: why is it enough to sieve with the primes up to $10$ when the grid goes to $120$? (A composite number up to $120$ must have a factor at most $\sqrt{120} < 11$.) In the experiment's `prime_sieve`, the line `for multiple in range(p * p, limit + 1, p)` starts crossing out at $p^2$ for the same reason you will see in the widget: smaller multiples of $p$ have already been crossed out.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Reading `=` in a program as mathematical equality.** `x = x + 1` is not a false equation; it is an instruction that increases `x` by $1$. In Python, equality is tested with `==`, and `x == x + 1` is always `False`.
+
+</Misconception>
+
+<Misconception>
+
+**“The program ran without errors, so the answer is right.”** A program does exactly what you wrote, not what you meant. `range(1, n)` stops at $n - 1$; a wrong formula is computed just as happily as a right one. Test programs on cases you can check by hand, and compare with what you can prove.
+
+</Misconception>
+
+<Misconception>
+
+**“Computer arithmetic with decimals is exact.”** Floating-point numbers are binary approximations: `0.1 + 0.2` gives `0.30000000000000004`, and adding `0.1` ten times gives `0.9999999999999999`. Whole numbers and `Fraction`s are exact; floats are not.
+
+</Misconception>
+
+<Misconception>
+
+**“A conjecture that holds for a million cases is proved.”** Goldbach's conjecture about odd numbers held for every case below $5777$. A computer check is evidence, sometimes very strong evidence, but only a proof covers every case.
+
+</Misconception>
+
+<Misconception>
+
+**“Binary is a different kind of number.”** $101101_2$ and $45$ are the same number written in different bases, just as “forty-five” and “quarante-cinq” are the same number in different languages. Only the representation changes.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="number-theory" title="Counterexamples found by computer">
+
+In 1769 Euler conjectured that a fifth power cannot be the sum of only four fifth powers. In 1966, L. J. Lander and T. R. Parkin found by a computer search that
+
+$$
+27^5 + 84^5 + 110^5 + 133^5 = 144^5,
+$$
+
+refuting the conjecture in a two-sentence paper. Other famous questions have resisted every search. The Collatz problem — start with any whole number; halve it if it is even, otherwise triple it and add $1$; repeat — seems always to reach $1$, has been checked by computer for an astronomical number of starting values, and is still unproved. Programs are the telescopes of number theory: they show what is out there, and proofs explain it (see <TopicLink id="math.comp.experimental-mathematics">experimental mathematics</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Programs and proofs">
+
+When can a computer settle a question completely? If there are only finitely many cases, checking all of them **is** a proof — that is how Lean's `decide` works, and how the Four Colour Theorem was proved with computer help by Kenneth Appel and Wolfgang Haken in 1976 (by reducing the problem to a long but finite list of cases). For infinitely many cases, a program can only test; then we need a proof, and systems like Lean check the proof itself. In the 1930s Alan Turing showed that some questions about programs cannot be answered by any program at all (see <TopicLink id="math.comp.algorithms-and-efficiency">algorithms and efficiency</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Living with approximation">
+
+Floating-point errors are tiny — about one part in $10^{16}$ for each operation — but they can grow. Subtracting two nearly equal numbers loses most of the correct digits, and a long calculation can pile up error upon error. **Numerical analysis** studies how big the error of a computation can be, and how to arrange calculations to keep it small (see <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink>). Its basic idea is the analyst's: an answer that is not exact can still be trusted, if we can prove a bound on how far it is from the truth.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- The word *algorithm* comes from the name of **Muḥammad ibn Mūsā al-Khwārizmī**, who worked in Baghdad around 820 CE; his book on calculating with Hindu–Arabic numerals, translated into Latin, spread decimal place value to Europe.
+- **Piṅgala**'s ancient Indian treatise on Sanskrit poetic metre (its date is uncertain, often put in the last centuries BCE) lists the patterns of short and long syllables in a systematic order that amounts to counting in binary.
+- **Gottfried Wilhelm Leibniz** published his account of binary arithmetic in 1703, and connected it with the hexagrams of the Chinese *Yijing* (*I Ching*), which he learned about from the missionary Joachim Bouvet.
+- In 1843 **Ada Lovelace** published notes on Charles Babbage's planned Analytical Engine, including a step-by-step method for computing Bernoulli numbers — often called the first published computer program.
+- **Grace Hopper** led the development of some of the first compilers in the 1950s, programs that translate human-readable instructions into machine code. **Guido van Rossum** released the first version of Python in 1991.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Allen B. Downey, *Think Python: How to Think Like a Computer Scientist* (2nd edition, 2015) — free to read online.
+- Peter Farrell, *Math Adventures with Python* (2019) — projects that use Python to explore mathematics.
+- Richard Rusczyk, David Patrick and Ravi Boppana, *Prealgebra* (2011), for number bases and careful arithmetic.
+- David Goldberg, “What every computer scientist should know about floating-point arithmetic”, *ACM Computing Surveys* 23 (1991) — the classic explanation, for later.
+
+</Section>

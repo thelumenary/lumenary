@@ -1,0 +1,150 @@
+{
+  "lesson": "intro-lean",
+  "exercises": [
+    {
+      "id": "intro-lean-which-rfl",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "warm-up",
+      "mode": "F",
+      "prompt": "Let `n : ℕ` be a variable. Which of these goals can be closed by `rfl` alone? (Choose all that apply.)",
+      "options": [
+        { "id": "a", "label": "`n + 0 = n`", "correct": true, "feedback": "Yes: $n + 0 = n$ is the first defining rule of addition, so both sides compute to the same thing." },
+        { "id": "b", "label": "`2 + 3 = 5`", "correct": true, "feedback": "Yes: both sides are concrete numbers, and Lean computes $2 + 3$ to $5$." },
+        { "id": "c", "label": "`0 + n = n`", "correct": false, "feedback": "True, but not by computation: addition recurses on the second argument, which is the unknown $n$, so $0 + n$ is stuck. It needs induction." },
+        { "id": "d", "label": "`n + 1 = 1 + n`", "correct": false, "feedback": "True, but `1 + n` is stuck for the same reason as `0 + n`. You need a proof (e.g. `Nat.add_comm`)." }
+      ],
+      "hints": ["`rfl` works when both sides compute to literally the same term.", "Addition is defined by $n + 0 = n$ and $n + (k + 1) = (n + k) + 1$: which sides can be computed when $n$ is unknown?"],
+      "solution": "`n + 0 = n` (a defining rule) and `2 + 3 = 5` (a computation with numbers) are closed by `rfl`. `0 + n = n` and `n + 1 = 1 + n` are true but need proofs — by induction, or by applying `Nat.zero_add` and `Nat.add_comm`."
+    },
+    {
+      "id": "intro-lean-sorry",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "F",
+      "prompt": "A classmate's Lean file compiles with the warning \"declaration uses `sorry`\". What can you conclude?",
+      "options": [
+        { "id": "a", "label": "The theorem is not proved: `sorry` is a placeholder Lean accepts on trust, and `#print axioms` would list `sorryAx`.", "correct": true, "feedback": "Right. `sorry` lets you leave holes and keep working, but a proof with holes is not finished." },
+        { "id": "b", "label": "The theorem is proved, because the file compiles.", "correct": false, "feedback": "Compiling with `sorry` only means everything *else* is consistent. Even `1 + 1 = 3 := by sorry` compiles with this warning." },
+        { "id": "c", "label": "The theorem is false.", "correct": false, "feedback": "Not necessarily: the statement may be true and simply unproved so far." },
+        { "id": "d", "label": "Lean found a proof automatically and is warning that it is long.", "correct": false, "feedback": "`sorry` is never produced by success. It marks a gap you have to fill." }
+      ],
+      "hints": ["What does `sorry` stand in for?", "Would `theorem bad : 1 + 1 = 3 := by sorry` compile?"],
+      "solution": "`sorry` closes any goal without proof. The file compiles with a warning, and the declaration depends on the axiom `sorryAx`. So nothing has been proved about that statement — it might even be false."
+    },
+    {
+      "id": "intro-lean-nat-sub",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "F",
+      "prompt": "In Lean, what is the value of `(7 : ℕ) - 10`?",
+      "answer": 0,
+      "feedback": [
+        { "match": "-3", "message": "$-3$ is not a natural number. Subtraction on `ℕ` is defined for every input, so it has to give *some* natural number: it stops at the smallest one." },
+        { "match": "3", "message": "That is $10 - 7$. Lean does not reorder the subtraction; it truncates." }
+      ],
+      "hints": ["The answer must be a natural number.", "Natural-number subtraction in Lean \"stops at zero\"."],
+      "solution": "`(7 : ℕ) - 10 = 0`: truncated subtraction. So a formal statement such as `∀ n : ℕ, n - 1 + 1 = n` is false (at $n = 0$ the left side is $1$). To talk about $-3$ you would use the integers: `(7 : ℤ) - 10 = -3`."
+    },
+    {
+      "id": "intro-lean-nat-div",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "F",
+      "prompt": "In Lean, what is the value of `(17 : ℕ) / 5`?",
+      "answer": 3,
+      "feedback": [
+        { "match": "2", "message": "$2$ is the remainder, `17 % 5`. The quotient is what `/` gives." },
+        { "match": "4", "message": "Natural-number division rounds **down**, not to the nearest whole number." }
+      ],
+      "hints": ["$17 = 5 \\cdot 3 + 2$.", "Division of natural numbers rounds down."],
+      "solution": "`(17 : ℕ) / 5 = 3`, the quotient of $17 = 5 \\cdot 3 + 2$, and `17 % 5 = 2`. For the real number $3.4$ you would write `(17 : ℝ) / 5`."
+    },
+    {
+      "id": "intro-lean-goal-state",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "You are proving `theorem t (p q : Prop) : p → (q → p) := by` and you type `intro hp`. What does the goal state look like now?",
+      "options": [
+        { "id": "a", "label": "Hypotheses `p q : Prop` and `hp : p`; goal `⊢ q → p`", "correct": true, "feedback": "Yes. `intro` moves the first assumption $p$ into the hypotheses, named `hp`, leaving $q \\to p$ to prove. (Next: `intro hq`, then `exact hp`.)" },
+        { "id": "b", "label": "Hypotheses `p q : Prop` and `hp : p → q`; goal `⊢ p`", "correct": false, "feedback": "The statement is $p \\to (q \\to p)$, with the brackets on the right. `intro` takes the part before the first arrow, which is just $p$." },
+        { "id": "c", "label": "Hypotheses `p q : Prop`; goal `⊢ p`", "correct": false, "feedback": "Where did `hp` go? `intro hp` adds a hypothesis — it doesn't throw anything away." },
+        { "id": "d", "label": "No goals: the proof is complete.", "correct": false, "feedback": "`intro` only assumes the hypothesis; there is still `q → p` to prove." }
+      ],
+      "hints": ["`p → (q → p)` means: assuming $p$, prove $q \\to p$.", "`intro hp` names the assumption `hp`."],
+      "solution": "After `intro hp` the state is\n\n```\np q : Prop\nhp : p\n⊢ q → p\n```\n\nThen `intro hq` gives the goal `⊢ p`, and `exact hp` finishes. As a term, the whole proof is `fun hp hq => hp`."
+    },
+    {
+      "id": "intro-lean-term-proof",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "Which term is a proof of `p ∧ q → q ∧ p`?",
+      "options": [
+        { "id": "a", "label": "`fun ⟨hp, hq⟩ => ⟨hq, hp⟩`", "correct": true, "feedback": "Yes: a function taking the pair of proofs and returning them swapped." },
+        { "id": "b", "label": "`fun ⟨hp, hq⟩ => ⟨hp, hq⟩`", "correct": false, "feedback": "This returns a proof of `p ∧ q`, not `q ∧ p`: the order inside `⟨ ⟩` matters." },
+        { "id": "c", "label": "`fun h => h`", "correct": false, "feedback": "This is a proof of `p ∧ q → p ∧ q`. Lean would report a type mismatch." },
+        { "id": "d", "label": "`⟨hq, hp⟩`", "correct": false, "feedback": "`hq` and `hp` are not defined here: you first need a function that receives the proof of `p ∧ q` and unpacks it." }
+      ],
+      "hints": ["A proof of an implication is a function.", "The output must be a pair whose first part proves $q$."],
+      "solution": "`fun ⟨hp, hq⟩ => ⟨hq, hp⟩`: it receives a proof of `p ∧ q`, unpacks it into `hp : p` and `hq : q`, and builds the pair `⟨hq, hp⟩ : q ∧ p`. This is the lesson's `and_swap`."
+    },
+    {
+      "id": "intro-lean-misstated",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "The theorem `no_nat_sqrt_two : ¬ ∃ q : ℕ, q * q = 2` is proved in Lean without `sorry`. Does it show that $\\sqrt 2$ is irrational?",
+      "options": [
+        { "id": "a", "label": "No. It only says no natural number squares to $2$; irrationality is about fractions, which this statement never mentions.", "correct": true, "feedback": "Exactly. The proof is correct; the statement is weaker than the claim. That is why formal statements must be read as carefully as proofs." },
+        { "id": "b", "label": "Yes, because Lean checked it.", "correct": false, "feedback": "Lean checked the proof of *this* statement. Whether the statement means \"√2 is irrational\" is a separate question — and the answer is no." },
+        { "id": "c", "label": "Yes, because every rational number is a natural number.", "correct": false, "feedback": "$1/2$ is rational but not natural. Irrationality says no *fraction* $a/b$ squares to $2$." },
+        { "id": "d", "label": "No, because the proof must be wrong.", "correct": false, "feedback": "The proof is fine — the kernel checked it. The issue is what the statement says." }
+      ],
+      "hints": ["What does $\\sqrt 2$ irrational mean?", "Compare with Mathlib's `irrational_sqrt_two : Irrational (Real.sqrt 2)`."],
+      "solution": "\"$\\sqrt 2$ is irrational\" means there are no integers $a, b$ with $b \\ne 0$ and $(a/b)^2 = 2$. The Lean theorem only rules out natural numbers $q$ with $q^2 = 2$ — a much easier fact. A machine-checked proof is only as meaningful as its formal statement."
+    },
+    {
+      "id": "intro-lean-reading-mathlib",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "Mathlib contains `theorem Nat.exists_infinite_primes (n : ℕ) : ∃ p, n ≤ p ∧ Nat.Prime p`. Which reading is correct?",
+      "options": [
+        { "id": "a", "label": "For every natural number $n$ there is a prime $p$ with $p \\ge n$.", "correct": true, "feedback": "Yes: the argument `(n : ℕ)` means \"for every $n$\", and the statement asks for some prime at least as big. So there are infinitely many primes." },
+        { "id": "b", "label": "There is a prime $p$ that is at least as big as every natural number $n$.", "correct": false, "feedback": "That swaps the quantifiers (\"exists\" before \"for all\") and is false. Here $p$ may depend on $n$." },
+        { "id": "c", "label": "Every natural number $p \\ge n$ is prime.", "correct": false, "feedback": "`∃ p` means \"there exists\", not \"for all\"." },
+        { "id": "d", "label": "There are exactly $n$ primes.", "correct": false, "feedback": "The statement does not count primes; it says primes never run out." }
+      ],
+      "hints": ["Arguments before the colon are \"for all\".", "The order of \"for all\" and \"there exists\" matters."],
+      "solution": "For every $n$ there exists $p$ with $n \\le p$ and $p$ prime: primes exist beyond any bound, which is Euclid's theorem. Swapping the order of the quantifiers would give a false statement — a classic trap in reading formal statements, and in reading quantifiers generally."
+    },
+    {
+      "id": "intro-lean-induction-step",
+      "type": "choice",
+      "difficulty": "stretch",
+      "mode": "F",
+      "prompt": "In the induction proof of `0 + n = n`, the inductive step has hypothesis `ih : 0 + k = k` and goal `⊢ 0 + (k + 1) = k + 1`. Which tactic line closes the goal?",
+      "options": [
+        { "id": "a", "label": "`rw [Nat.add_succ, ih]`", "correct": true, "feedback": "Yes: `Nat.add_succ` turns `0 + (k + 1)` into `(0 + k) + 1` (the second rule of addition); then `ih` rewrites `0 + k` to `k`, leaving `k + 1 = k + 1`." },
+        { "id": "b", "label": "`rw [ih]`", "correct": false, "feedback": "`ih` rewrites `0 + k`, but the goal contains `0 + (k + 1)`, not `0 + k`. First unfold the addition." },
+        { "id": "c", "label": "`rfl`", "correct": false, "feedback": "This step needs the induction hypothesis; computation alone gets stuck at `0 + k`." },
+        { "id": "d", "label": "`exact ih`", "correct": false, "feedback": "`ih` proves `0 + k = k`, a different statement from the goal." }
+      ],
+      "hints": ["First make `0 + k` appear in the goal.", "Which rule of addition rewrites `a + (k + 1)`?"],
+      "solution": "`rw [Nat.add_succ, ih]`. This mirrors the human proof: $0 + (k + 1) = (0 + k) + 1$ by the definition of addition, $= k + 1$ by the induction hypothesis. Together with the base case `rfl`, this is `zero_add_induction`."
+    },
+    {
+      "id": "intro-lean-python-tautology",
+      "type": "python",
+      "difficulty": "core",
+      "mode": "C",
+      "prompt": "Truth tables decide propositional tautologies by brute force. Write `is_tautology(formula, n)`, where `formula` is a Python function of `n` Booleans, returning `True` exactly when it is true for all $2^n$ assignments. (In Python, `p <= q` on Booleans means $p \\to q$.)",
+      "starter": "from itertools import product\n\n\ndef is_tautology(formula, n):\n    # try every assignment of True/False to the n variables\n    return False\n",
+      "tests": "and_swap = lambda p, q: (p and q) <= (q and p)\ncontra = lambda p, q: (p <= q) == ((not q) <= (not p))\nconverse = lambda p, q: (p <= q) == (q <= p)\ndouble_neg = lambda p: (not (not p)) <= p\nassert is_tautology(and_swap, 2)\nassert is_tautology(contra, 2)\nassert not is_tautology(converse, 2)\nassert is_tautology(double_neg, 1)\nassert not is_tautology(lambda p, q, r: (p or q) <= r, 3)\nassert is_tautology(lambda p, q, r: ((p <= q) and (q <= r)) <= (p <= r), 3)\nprint('All tests passed!')\n",
+      "hints": ["`product([True, False], repeat=n)` lists all $2^n$ assignments as tuples.", "Return `all(formula(*values) for values in product([True, False], repeat=n))`."],
+      "solution": "```python\nfrom itertools import product\n\n\ndef is_tautology(formula, n):\n    return all(formula(*values) for values in product([True, False], repeat=n))\n```\n\nFor propositional logic this brute force is a complete decision method (with $2^n$ rows). It checks classical truth: it says `¬¬p → p` is a tautology, which Lean proves only with the classical axiom, as the lesson's `double_negation` shows. For statements about infinitely many numbers, such as $0 + n = n$, no table can be finished — that is where proofs, and proof assistants, come in."
+    }
+  ]
+}

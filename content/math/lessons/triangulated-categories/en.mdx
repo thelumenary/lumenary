@@ -1,0 +1,482 @@
+---
+slug: triangulated-categories
+topic: math.cat.triangulated-categories
+title: Triangulated categories
+subtitle: When short exact sequences are lost, triangles $X \to Y \to Z \to X[1]$ take their place — four axioms that turn every Hom functor into a long exact sequence.
+level: research
+ages: Research orientation (derived categories assumed)
+minutes: 120
+order: 8018
+objectives:
+  - State Verdier's axioms TR1–TR4 and derive their first consequences, including long exact Hom sequences and the triangulated five lemma
+  - Show that the homotopy category $K(\mathcal{A})$ and the derived category $D(\mathcal{A})$ are triangulated, with mapping cones as distinguished triangles
+  - Prove that every monomorphism in a triangulated category splits, and deduce that $D(\mathrm{Ab})$ is not abelian
+  - Define t-structures and their hearts, and identify $\mathcal{A}$ with the heart of the standard t-structure on $D(\mathcal{A})$
+  - Explain why cones are unique only up to non-unique isomorphism, and how enhancements respond, separating established results from open questions
+narrators: []
+lean:
+  - Lumenary.TriangulatedCategories.comp_zero_of_distinguished
+  - Lumenary.TriangulatedCategories.hom_exact_middle
+  - Lumenary.TriangulatedCategories.connecting_map_eq_zero_of_mono
+  - Lumenary.TriangulatedCategories.exists_retraction_of_mono
+  - Lumenary.TriangulatedCategories.isSplitMono_of_mono
+  - Lumenary.TriangulatedCategories.isSplitEpi_of_epi
+  - Lumenary.TriangulatedCategories.regular_of_epi_mono
+  - Lumenary.TriangulatedCategories.two_not_regular
+  - Lumenary.TriangulatedCategories.five_lemma
+  - Lumenary.TriangulatedCategories.cone_unique_up_to_iso
+  - Lumenary.TriangulatedCategories.heart_hom_neg_shift_eq_zero
+  - Lumenary.TriangulatedCategories.homotopy_category_triangulated
+  - Lumenary.TriangulatedCategories.derived_category_triangulated
+compute: [triangulated_categories_cones]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What replaces short exact sequences?">
+
+The <TopicLink id="math.cat.derived-categories">derived category</TopicLink> $D(\mathcal{A})$ of an abelian category is not abelian: kernels and cokernels do not exist in general, so there are no short exact sequences. Yet the most important structure survives. A short exact sequence of complexes $0 \to X \to Y \to Z \to 0$ still gives a long exact sequence in cohomology, and the connecting maps $H^n(Z) \to H^{n+1}(X)$ suggest that $Z$ "maps to $X$ shifted by one". In $D(\mathcal{A})$ that map really exists: it is a morphism $Z \to X[1]$, and we get a **triangle**
+
+$$
+X \longrightarrow Y \longrightarrow Z \longrightarrow X[1].
+$$
+
+Exactly the same shape appeared, at the same time and independently, in topology. For a map of spaces $f : X \to Y$ there is the cofibre sequence $X \to Y \to C_f \to \Sigma X \to \Sigma Y \to \cdots$ (Puppe, 1958), and in the stable homotopy category, where suspension $\Sigma$ is invertible, these sequences behave just like triangles in $D(\mathcal{A})$. Jean-Louis Verdier (for algebra) and Dieter Puppe (for topology) extracted the common axioms around 1962–63. They are the subject of this lesson.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Triangles that roll">
+
+Think of a distinguished triangle as a short exact sequence that has been allowed to wrap around: after $Z$ comes $X[1]$, then $Y[1]$, $Z[1]$, $X[2]$, … forever in both directions, and every three consecutive objects again form a triangle (the *rotation* axiom). Applying $\operatorname{Hom}(W, -)$ to this endless sequence gives an endless exact sequence of abelian groups. Every long exact sequence you know — in cohomology, in $\operatorname{Ext}$, in homotopy groups of a fibration — is an instance.
+
+Two warnings come with the picture. First, the third object $Z$ is determined by $X \to Y$ only up to isomorphism, and that isomorphism is not unique. Second, there are no kernels or cokernels to fall back on: everything must be done with triangles and Hom functors.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Verdier's axioms">
+
+<Definition term="triangle">
+
+Let $\mathcal{T}$ be an additive category with an additive automorphism (or autoequivalence) $[1] : \mathcal{T} \to \mathcal{T}$, the **shift**, with $X[n] = X[1]^n$. A **triangle** is a diagram $X \xrightarrow{u} Y \xrightarrow{v} Z \xrightarrow{w} X[1]$. A **morphism of triangles** is a triple $(a, b, c)$ of maps $X \to X'$, $Y \to Y'$, $Z \to Z'$ making all three squares commute; the third square reads $w' c = a[1]\, w$.
+
+</Definition>
+
+<Definition term="triangulated category">
+
+A **triangulated category** is such a $\mathcal{T}$ with a class of **distinguished triangles** satisfying:
+
+- **TR1.** (a) A triangle isomorphic to a distinguished one is distinguished. (b) For every $X$, the triangle $X \xrightarrow{\mathrm{id}} X \to 0 \to X[1]$ is distinguished. (c) Every morphism $u : X \to Y$ is part of a distinguished triangle $X \xrightarrow{u} Y \to Z \to X[1]$; its third vertex $Z$ is called a **cone** of $u$.
+- **TR2 (rotation).** $X \xrightarrow{u} Y \xrightarrow{v} Z \xrightarrow{w} X[1]$ is distinguished if and only if $Y \xrightarrow{v} Z \xrightarrow{w} X[1] \xrightarrow{-u[1]} Y[1]$ is.
+- **TR3 (completion).** Given distinguished triangles $(u, v, w)$ and $(u', v', w')$ and maps $a, b$ with $u' a = b u$, there exists $c : Z \to Z'$ such that $(a, b, c)$ is a morphism of triangles.
+- **TR4 (octahedral axiom).** Given $u_{12} : X_1 \to X_2$ and $u_{23} : X_2 \to X_3$ with composite $u_{13}$, and distinguished triangles on $u_{12}$, $u_{23}$, $u_{13}$ with cones $Z_{12}$, $Z_{23}$, $Z_{13}$, there are maps $m_1 : Z_{12} \to Z_{13}$ and $m_3 : Z_{13} \to Z_{23}$ such that $Z_{12} \to Z_{13} \to Z_{23} \to Z_{12}[1]$ is distinguished and the diagram below commutes.
+
+A category satisfying TR1–TR3 is called **pretriangulated**.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "a0", tex: "X_1", row: 0, col: 0 },
+    { id: "b0", tex: "X_2", row: 0, col: 1 },
+    { id: "c0", tex: "Z_{12}", row: 0, col: 2 },
+    { id: "d0", tex: "X_1[1]", row: 0, col: 3 },
+    { id: "a1", tex: "X_1", row: 1, col: 0 },
+    { id: "b1", tex: "X_3", row: 1, col: 1 },
+    { id: "c1", tex: "Z_{13}", row: 1, col: 2 },
+    { id: "d1", tex: "X_1[1]", row: 1, col: 3 },
+    { id: "b2", tex: "Z_{23}", row: 2, col: 1 },
+    { id: "c2", tex: "Z_{23}", row: 2, col: 2 },
+    { id: "b3", tex: "X_2[1]", row: 3, col: 1 },
+    { id: "c3", tex: "Z_{12}[1]", row: 3, col: 2 }
+  ]}
+  arrows={[
+    { from: "a0", to: "b0", tex: "u_{12}" },
+    { from: "b0", to: "c0", tex: "v_{12}" },
+    { from: "c0", to: "d0", tex: "w_{12}" },
+    { from: "a1", to: "b1", tex: "u_{13}", labelSide: "right" },
+    { from: "b1", to: "c1", tex: "v_{13}", labelSide: "right" },
+    { from: "c1", to: "d1", tex: "w_{13}", labelSide: "right" },
+    { from: "a0", to: "a1", tex: "\\mathrm{id}", labelSide: "right" },
+    { from: "d0", to: "d1", tex: "\\mathrm{id}" },
+    { from: "b0", to: "b1", tex: "u_{23}", labelSide: "right" },
+    { from: "b1", to: "b2", tex: "v_{23}", labelSide: "right" },
+    { from: "b2", to: "b3", tex: "w_{23}", labelSide: "right" },
+    { from: "c0", to: "c1", tex: "m_1", style: "dashed" },
+    { from: "c1", to: "c2", tex: "m_3", style: "dashed" },
+    { from: "c2", to: "c3", tex: "v_{12}[1]\\, w_{23}" },
+    { from: "b2", to: "c2", tex: "\\mathrm{id}" },
+    { from: "b3", to: "c3", tex: "v_{12}[1]", labelSide: "right" }
+  ]}
+  caption="The octahedral axiom TR4: the two rows and the column through X₂ are the given triangles; the dashed maps exist and make the column through Z₁₃ a distinguished triangle."
+/>
+
+The octahedral axiom is the triangulated form of the **third isomorphism theorem** $(X_3/X_1)/(X_2/X_1) \cong X_3/X_2$: "the cone of $X_2/X_1 \to X_3/X_1$ is $X_3/X_2$". It is the axiom needed for Verdier quotients, for gluing t-structures and for most constructions; its name comes from drawing the four triangles as the faces of an octahedron.
+
+<Definition term="homological functor">
+
+An additive functor $H : \mathcal{T} \to \mathcal{B}$ to an abelian category is **homological** if it sends every distinguished triangle to an exact sequence $H(X) \to H(Y) \to H(Z)$. By rotation it then gives a long exact sequence $\cdots \to H(Z[-1]) \to H(X) \to H(Y) \to H(Z) \to H(X[1]) \to \cdots$.
+
+</Definition>
+
+<Definition term="mapping cone">
+
+For a chain map $f : X \to Y$ of cochain complexes, the **mapping cone** is the complex $C(f)$ with $C(f)^n = X^{n+1} \oplus Y^n$ and
+
+$$
+d_{C(f)}(x, y) = \big(-d_X x,\; f(x) + d_Y y\big).
+$$
+
+It comes with chain maps $Y \to C(f)$, $y \mapsto (0, y)$, and $C(f) \to X[1]$, $(x, y) \mapsto x$, forming the **standard triangle** $X \xrightarrow{f} Y \to C(f) \to X[1]$. One checks $d^2 = 0$: $d(-dx, fx + dy) = (ddx,\, -f dx + d f x + ddy) = 0$ since $f$ is a chain map.
+
+</Definition>
+
+<Definition term="t-structure (Beilinson–Bernstein–Deligne)">
+
+A **t-structure** on a triangulated category $\mathcal{T}$ is a pair of strictly full subcategories $(\mathcal{T}^{\le 0}, \mathcal{T}^{\ge 0})$; writing $\mathcal{T}^{\le n} = \mathcal{T}^{\le 0}[-n]$ and $\mathcal{T}^{\ge n} = \mathcal{T}^{\ge 0}[-n]$, it must satisfy
+
+1. $\operatorname{Hom}(X, Y) = 0$ for $X \in \mathcal{T}^{\le 0}$ and $Y \in \mathcal{T}^{\ge 1}$;
+2. $\mathcal{T}^{\le 0} \subseteq \mathcal{T}^{\le 1}$ and $\mathcal{T}^{\ge 1} \subseteq \mathcal{T}^{\ge 0}$;
+3. every $X$ fits into a distinguished triangle $A \to X \to B \to A[1]$ with $A \in \mathcal{T}^{\le 0}$ and $B \in \mathcal{T}^{\ge 1}$.
+
+Its **heart** is $\mathcal{T}^{\heartsuit} = \mathcal{T}^{\le 0} \cap \mathcal{T}^{\ge 0}$. The **standard t-structure** on $D(\mathcal{A})$ has $D^{\le 0} = \{X : H^i(X) = 0 \text{ for } i > 0\}$ and $D^{\ge 0} = \{X : H^i(X) = 0 \text{ for } i < 0\}$; the triangle in (3) is $\tau_{\le 0} X \to X \to \tau_{\ge 1} X \to$, built from the truncations.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and a worked long exact sequence">
+
+<Example title="The homotopy and derived categories">
+
+In $K(\mathcal{A})$, for any additive category $\mathcal{A}$, the distinguished triangles are those isomorphic to standard triangles $X \to Y \to C(f) \to X[1]$. In $D(\mathcal{A})$ they are those isomorphic to images of standard triangles; equivalently, every short exact sequence of complexes $0 \to X \to Y \to Z \to 0$ gives a distinguished triangle $X \to Y \to Z \to X[1]$ in $D(\mathcal{A})$ — but not, in general, in $K(\mathcal{A})$.
+
+</Example>
+
+<Example title="Other sources of triangulated categories">
+
+- The **stable homotopy category** of spectra, with cofibre sequences; homotopy groups and generalised cohomology theories are homological functors. See <TopicLink id="math.geom.stable-homotopy-theory">stable homotopy theory</TopicLink>.
+- The **stable module category** $\underline{\mathrm{mod}}\, kG$ of a finite group in characteristic $p$, where maps factoring through projectives are set to zero and the shift is $\Omega^{-1}$ (Happel). Its Hom groups compute Tate cohomology.
+- Over a field, $D(k)$ is equivalent to graded vector spaces, and every distinguished triangle is a direct sum of rotations of trivial triangles $V \xrightarrow{\mathrm{id}} V \to 0 \to V[1]$.
+
+</Example>
+
+<Example title="The cone of 2 : ℤ → ℤ, and its long exact sequence">
+
+In $K(\mathrm{Ab})$ the cone of $2 : \Z \to \Z$ is the complex $\Z \xrightarrow{2} \Z$ in degrees $-1, 0$, which is quasi-isomorphic to $\Z/2$. So in $D(\mathrm{Ab})$ there is a distinguished triangle
+
+$$
+\Z \xrightarrow{\;2\;} \Z \longrightarrow \Z/2 \xrightarrow{\;\delta\;} \Z[1],
+$$
+
+whose connecting map $\delta$ is the non-zero element of $\operatorname{Hom}_D(\Z/2, \Z[1]) = \operatorname{Ext}^1(\Z/2, \Z) \cong \Z/2$. Apply the homological functor $\operatorname{Hom}(\Z/2, -)$, and use $\operatorname{Hom}(\Z/2, N[n]) = \operatorname{Ext}^n(\Z/2, N)$:
+
+$$
+\underbrace{\operatorname{Hom}(\Z/2, \Z)}_{0} \to \underbrace{\operatorname{Hom}(\Z/2, \Z/2)}_{\Z/2} \xrightarrow{\delta_*} \underbrace{\operatorname{Ext}^1(\Z/2, \Z)}_{\Z/2} \xrightarrow{2} \underbrace{\operatorname{Ext}^1(\Z/2, \Z)}_{\Z/2} \to \underbrace{\operatorname{Ext}^1(\Z/2, \Z/2)}_{\Z/2} \to \underbrace{\operatorname{Ext}^2(\Z/2, \Z)}_{0}.
+$$
+
+Exactness forces $\delta_*$ to be an isomorphism, multiplication by $2$ to be zero on $\Z/2$ (as it is), and $\operatorname{Ext}^1(\Z/2, \Z) \to \operatorname{Ext}^1(\Z/2, \Z/2)$ to be an isomorphism — every arrow is determined, and every group agrees with a direct computation.
+
+</Example>
+
+<Example title="Fill-ins are not unique">
+
+Over a field $k$, take $X = k$ and $Y = k[1]$, and the zero map $0 : X \to Y$. A cone is $Z = Y \oplus X[1] = k[1] \oplus k[1]$, with $Y \to Z$ the inclusion and $Z \to X[1]$ the projection. Complete the identity square $(a, b) = (\mathrm{id}_X, \mathrm{id}_Y)$ by TR3. A map $c : Z \to Z$ is a $2 \times 2$ matrix, and the two commutation conditions force
+
+$$
+c = \begin{pmatrix} 1 & t \\ 0 & 1 \end{pmatrix}, \qquad t \in \operatorname{Hom}(X[1], Y) = \operatorname{Hom}(k[1], k[1]) = k
+$$
+
+arbitrary. Every $t$ gives a morphism of triangles extending the identity, and all of them are isomorphisms. So the "$c$" of TR3 is not unique, even when $a$ and $b$ are identities — and the isomorphism between two cones of the same map is not canonical. The experiment below finds exactly $p$ fill-ins over $\mathbb{F}_p$.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="First consequences of the axioms">
+
+Throughout, $\mathcal{T}$ is pretriangulated (TR1–TR3); the octahedral axiom is not needed for any of these results.
+
+<Theorem name="Proposition 1 — consecutive maps compose to zero">
+
+In a distinguished triangle $X \xrightarrow{u} Y \xrightarrow{v} Z \xrightarrow{w} X[1]$ we have $vu = 0$, $wv = 0$ and $u[1]\,w = 0$.
+
+</Theorem>
+
+<Proof>
+
+The triangle $X \xrightarrow{\mathrm{id}} X \to 0 \to X[1]$ is distinguished (TR1b), and the square with vertical maps $\mathrm{id}_X$ and $u$ commutes ($u \circ \mathrm{id} = u \circ \mathrm{id}$). By TR3 there is $c : 0 \to Z$ completing a morphism of triangles; the middle square says $v \circ u = c \circ 0 = 0$. The other two identities follow by applying this to the rotated triangles (TR2).
+
+</Proof>
+
+<Theorem name="Proposition 2 — Hom functors are homological">
+
+For every object $W$, the functor $\operatorname{Hom}(W, -)$ is homological: for a distinguished triangle as above, $\operatorname{Hom}(W, X) \to \operatorname{Hom}(W, Y) \to \operatorname{Hom}(W, Z)$ is exact. Dually $\operatorname{Hom}(-, W)$ is cohomological. Hence every distinguished triangle gives long exact sequences
+
+$$
+\cdots \to \operatorname{Hom}(W, Z[-1]) \to \operatorname{Hom}(W, X) \to \operatorname{Hom}(W, Y) \to \operatorname{Hom}(W, Z) \to \operatorname{Hom}(W, X[1]) \to \cdots
+$$
+
+</Theorem>
+
+<Proof>
+
+Composites are zero by Proposition 1. Conversely let $\varphi : W \to Y$ with $v \varphi = 0$. Rotate both the trivial triangle $W \xrightarrow{\mathrm{id}} W \to 0 \to W[1]$ and our triangle once (TR2), giving distinguished triangles $W \to 0 \to W[1] \xrightarrow{-\mathrm{id}} W[1]$ and $Y \xrightarrow{v} Z \xrightarrow{w} X[1] \xrightarrow{-u[1]} Y[1]$. The maps $\varphi : W \to Y$ and $0 : 0 \to Z$ form a commutative square, since $v\varphi = 0$. TR3 gives $\psi' : W[1] \to X[1]$ with $-u[1]\,\psi' = \varphi[1] \circ (-\mathrm{id})$, i.e. $u[1]\, \psi' = \varphi[1]$. Since $[1]$ is an equivalence, $\psi' = \psi[1]$ for a unique $\psi : W \to X$, and $u \psi = \varphi$. Rotating the triangle gives exactness at every other place.
+
+</Proof>
+
+<Theorem name="Proposition 3 — triangulated five lemma">
+
+If $(a, b, c)$ is a morphism of distinguished triangles and two of $a, b, c$ are isomorphisms, so is the third. In particular, the cone of a morphism is unique up to isomorphism.
+
+</Theorem>
+
+<Proof>
+
+Say $a$ and $c$ are isomorphisms. For every $W$, apply $\operatorname{Hom}(W, -)$ to both triangles: Proposition 2 gives two long exact sequences and a map between them, in which the maps induced by $a$, $c$, $a[1]$, $c[-1]$ are bijective. By the five lemma for abelian groups, $b_* : \operatorname{Hom}(W, Y) \to \operatorname{Hom}(W, Y')$ is bijective for every $W$, so $b$ is an isomorphism by the Yoneda lemma. The other cases follow by rotation. If $Z$ and $Z'$ are both cones of $u$, complete $(\mathrm{id}, \mathrm{id})$ by TR3 to $(\mathrm{id}, \mathrm{id}, c)$; by what we just proved $c$ is an isomorphism.
+
+</Proof>
+
+The isomorphism $c$ between two cones is **not unique** — the example above exhibits a whole line of choices. This is what is meant by saying that cones are not functorial: the axioms provide no cone *functor* on morphisms, and the non-uniqueness of fill-ins means there is no canonical way to choose one.
+
+<Theorem name="Theorem 4 — monomorphisms and epimorphisms split">
+
+In a pretriangulated category every monomorphism is a split monomorphism and every epimorphism is a split epimorphism.
+
+</Theorem>
+
+<Proof>
+
+Let $u : X \to Y$ be a monomorphism, and complete it to a distinguished triangle $X \xrightarrow{u} Y \xrightarrow{v} Z \xrightarrow{w} X[1]$ (TR1c). By Proposition 1, $u[1]\, w = 0$; and $u[1]$ is a monomorphism because $[1]$ is an equivalence. Hence $w = 0$. Rotating backwards, $Z[-1] \xrightarrow{-w[-1]} X \xrightarrow{u} Y \xrightarrow{v} Z$ is distinguished with first map $0$. By the cohomological exactness of $\operatorname{Hom}(-, X)$, the map $\mathrm{id}_X$, which kills $-w[-1] = 0$, factors as $\mathrm{id}_X = r u$ for some $r : Y \to X$.
+
+If $u$ is an epimorphism instead, then $v u = 0 = 0 \circ u$ gives $v = 0$. By Proposition 2, $\mathrm{id}_Y$ (which satisfies $v \circ \mathrm{id}_Y = 0$) factors as $\mathrm{id}_Y = u s$.
+
+</Proof>
+
+<Theorem name="Corollary 5 — triangulated and abelian means semisimple; D(Ab) is not abelian">
+
+If a pretriangulated category $\mathcal{T}$ is abelian, then every morphism $f$ is von Neumann regular ($fgf = f$ for some $g$) and every short exact sequence splits. In particular $D(\mathrm{Ab})$, $K(\mathrm{Ab})$ and $D(R)$ for any ring $R$ that is not semisimple are not abelian.
+
+</Theorem>
+
+<Proof>
+
+In an abelian category $f = m e$ with $e$ an epimorphism onto the image and $m$ a monomorphism. By Theorem 4, $e s = \mathrm{id}$ and $r m = \mathrm{id}$ for some $s, r$; then $f (s r) f = m (e s)(r m) e = m e = f$. A short exact sequence $0 \to A \xrightarrow{i} B \to C \to 0$ splits because $i$ has a retraction.
+
+In $D(\mathrm{Ab})$, $\operatorname{End}(\Z) = \operatorname{End}_{\mathrm{Ab}}(\Z) = \Z$ because $\mathrm{Ab} \to D(\mathrm{Ab})$ is fully faithful, and $2 g 2 = 2$ has no solution $g \in \Z$. So $2 : \Z \to \Z$ is not regular, and $D(\mathrm{Ab})$ is not abelian; the same argument works in $K(\mathrm{Ab})$. More generally, if $R$ is not semisimple, some submodule $A \subseteq B$ is not a direct summand. Its inclusion $i$ is not regular in $R\text{-Mod}$: from $i g i = i$ and $i$ injective we would get $g i = \mathrm{id}_A$, splitting $A$ off $B$. By full faithfulness of $R\text{-Mod} \to D(R)$, $i$ is not regular in $D(R)$ either, so $D(R)$ is not abelian.
+
+</Proof>
+
+<Theorem name="Theorem 6 — K(A) and D(A) are triangulated (proof sketched)">
+
+For an additive category $\mathcal{A}$, $K(\mathcal{A})$ with the triangles isomorphic to standard cone triangles is triangulated. For an abelian category $\mathcal{A}$, $D(\mathcal{A})$ is triangulated, $Q : K(\mathcal{A}) \to D(\mathcal{A})$ is an exact functor, and a chain map $s$ is a quasi-isomorphism if and only if its cone is acyclic.
+
+</Theorem>
+
+<Proof>
+
+*Sketch.* TR1 is immediate: the cone of $\mathrm{id}_X$ is contractible (the map $(x, y) \mapsto (y, 0)$ is a contracting homotopy). For TR2 one writes down an explicit homotopy equivalence between $C(v)$ for $v : Y \to C(u)$ and $X[1]$; the sign $-u[1]$ is forced by the sign in $d_{C(f)}$. For TR3, a homotopy $h$ with $b u - u' a = dh + hd$ gives the chain map $C(u) \to C(u')$, $(x, y) \mapsto (a x, b y + h x)$ — note that it depends on the choice of $h$. TR4 is a direct but longer computation. Details: Weibel, *An Introduction to Homological Algebra*, §10.2; Kashiwara–Schapira, *Categories and Sheaves*, Ch. 11. The cone of $s$ sits in a short exact sequence of complexes $0 \to Y \to C(s) \to X[1] \to 0$, whose long exact cohomology sequence has connecting maps $H^n(s)$; hence $C(s)$ is acyclic iff all $H^n(s)$ are isomorphisms. Finally, the acyclic complexes form a thick triangulated subcategory of $K(\mathcal{A})$ and $D(\mathcal{A})$ is the Verdier quotient by it, which inherits a triangulated structure (Verdier).
+
+</Proof>
+
+<Theorem name="Theorem 7 — the heart of a t-structure (Beilinson–Bernstein–Deligne, 1982)">
+
+The heart of any t-structure is an abelian category, and its short exact sequences are exactly the distinguished triangles $A \to B \to C \to A[1]$ with $A, B, C$ in the heart. There is a homological functor $H^0_t : \mathcal{T} \to \mathcal{T}^{\heartsuit}$. For the standard t-structure on $D(\mathcal{A})$, the heart consists of the complexes with cohomology only in degree $0$ and is equivalent to $\mathcal{A}$, with $H^0_t = H^0$.
+
+</Theorem>
+
+<Proof>
+
+*The general theorem is proved in BBD, Théorème 1.3.6; see also Gelfand–Manin, Ch. IV.4.* For the standard t-structure: if $H^i(X) = 0$ for $i \neq 0$, the truncation maps $X \leftarrow \tau_{\le 0} X \to H^0(X)[0]$ are quasi-isomorphisms, so $X \cong H^0(X)[0]$, and $\mathcal{A} \to D(\mathcal{A})$ is fully faithful (previous lesson). A short exact sequence $0 \to A \to B \to C \to 0$ in $\mathcal{A}$ gives a distinguished triangle $A \to B \to C \to A[1]$, and conversely a triangle with vertices in the heart has a long exact cohomology sequence which, all objects being concentrated in degree $0$, is a short exact sequence.
+
+</Proof>
+
+<Theorem name="Proposition 8 — negative Ext vanishes in the heart">
+
+If $A, B$ lie in the heart of a t-structure, then $\operatorname{Hom}(A, B[-1]) = 0$.
+
+</Theorem>
+
+<Proof>
+
+$B \in \mathcal{T}^{\ge 0}$, so $B[-1] \in \mathcal{T}^{\ge 1}$, while $A \in \mathcal{T}^{\le 0}$. Axiom (1) gives $\operatorname{Hom}(A, B[-1]) = 0$.
+
+</Proof>
+
+In $D(\mathcal{A})$ this is the statement $\operatorname{Ext}^{-1}_{\mathcal{A}}(A, B) = 0$; in general, Hom-groups $\operatorname{Hom}(A, B[n])$ between objects of the heart behave like Ext groups, but for $n \ge 2$ they need not agree with the Ext groups computed inside the heart (they do for the standard t-structure on $D^b(\mathcal{A})$).
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: enhancements, stability, open questions">
+
+**Enhancements.** Cones in $K(\mathcal{A})$ depend on a choice of homotopy (Theorem 6), so the triangulated structure is the shadow of something richer. Bondal and Kapranov (1990) proposed remembering the dg-category of complexes; Lurie's *stable ∞-categories* (2006 onwards) do the same homotopy-coherently, and in them cones are functorial (they are cofibres). Every stable ∞-category has a triangulated homotopy category (Lurie, *Higher Algebra*, Thm. 1.1.2.14). The converse fails: **Muro, Schwede and Strickland (2007)** constructed triangulated categories (for instance a triangulation of finitely generated free $\Z/4$-modules with identity shift) that are not equivalent to a full triangulated subcategory of the homotopy category of any stable model category, hence not "algebraic" or "topological". See <TopicLink id="math.cat.stable-infinity-categories">stable ∞-categories</TopicLink>.
+
+**Uniqueness of enhancements.** Lunts and Orlov (2010) proved that $D^b(\mathrm{Coh}\,X)$ for a quasi-projective variety $X$ has a unique dg-enhancement. Rizzardo, Van den Bergh and Neeman (2019) constructed an exact functor between derived categories of smooth projective varieties that is not of Fourier–Mukai type, showing that the triangulated structure alone does not determine everything one might hope.
+
+**Brown representability and compact generation.** Neeman (1996) proved Brown representability for compactly generated triangulated categories — every cohomological functor sending coproducts to products is representable — and used it to give a short proof of Grothendieck duality.
+
+**Stability conditions.** Bridgeland (2007) defined a stability condition on $\mathcal{T}$ as the heart of a bounded t-structure together with a "central charge" $Z : K_0 \to \mathbb{C}$ satisfying a Harder–Narasimhan property, and proved that the stability conditions (satisfying a support condition) form a complex manifold. These spaces are now studied in algebraic geometry, representation theory and mirror symmetry. Their topology is largely unknown: Bridgeland conjectured that a distinguished component for a K3 surface is simply connected, and Bayer and Bridgeland (2017) proved it is even contractible when the Picard rank is one.
+
+**Tensor-triangular geometry.** Balmer (2005) attached to a tensor-triangulated category a topological space, its *spectrum*, recovering $X$ from $D^{\mathrm{perf}}(X)$ and organising the classification of thick subcategories (Hopkins–Smith in stable homotopy, Benson–Carlson–Rickard for $\underline{\mathrm{mod}}\,kG$).
+
+**Open questions.** Whether the octahedral axiom TR4 follows from TR1–TR3 is a long-standing open question. Freyd's **generating hypothesis** (1966) — is the stable homotopy groups functor faithful on finite spectra? — is open. Which triangulated categories admit enhancements, and when they are unique, is understood only for special classes. Many spaces of stability conditions remain uncomputed.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Triangulated categories in Lean and Mathlib">
+
+Mathlib has pretriangulated categories (`CategoryTheory.Pretriangulated`: a preadditive category with an additive shift by $\Z$ and the axioms TR1–TR3 with rotation), the octahedral axiom (`IsTriangulated`), triangulated functors, the triangulated structures on `HomotopyCategory` and `DerivedCategory`, and t-structures with their hearts. We prove from the axioms the results of the previous section. Proposition 1 and Proposition 2:
+
+<Lean decl="Lumenary.TriangulatedCategories.comp_zero_of_distinguished" />
+
+<Lean decl="Lumenary.TriangulatedCategories.hom_exact_middle" />
+
+Theorem 4, in four steps — the connecting map vanishes, a retraction exists, and every monomorphism and every epimorphism splits:
+
+<Lean decl="Lumenary.TriangulatedCategories.connecting_map_eq_zero_of_mono" />
+
+<Lean decl="Lumenary.TriangulatedCategories.exists_retraction_of_mono" />
+
+<Lean decl="Lumenary.TriangulatedCategories.isSplitMono_of_mono" />
+
+<Lean decl="Lumenary.TriangulatedCategories.isSplitEpi_of_epi" />
+
+Corollary 5, split into its abstract half and its arithmetic half:
+
+<Lean decl="Lumenary.TriangulatedCategories.regular_of_epi_mono" />
+
+<Lean decl="Lumenary.TriangulatedCategories.two_not_regular" />
+
+The five lemma and the uniqueness of cones are applied from Mathlib (their proofs there follow Proposition 3):
+
+<Lean decl="Lumenary.TriangulatedCategories.five_lemma" />
+
+<Lean decl="Lumenary.TriangulatedCategories.cone_unique_up_to_iso" />
+
+Proposition 8, from the t-structure axioms as Mathlib states them:
+
+<Lean decl="Lumenary.TriangulatedCategories.heart_hom_neg_shift_eq_zero" />
+
+And the triangulated structures of Theorem 6, which are substantial theorems in Mathlib (the octahedral axiom for $K(\mathcal{A})$ is verified with explicit homotopy equivalences of mapping cones):
+
+<Lean decl="Lumenary.TriangulatedCategories.homotopy_category_triangulated" />
+
+<Lean decl="Lumenary.TriangulatedCategories.derived_category_triangulated" />
+
+**Not formalised here:** the full long exact Hom sequence as a single statement (Mathlib has it via `Pretriangulated.Triangle.coyoneda_exact₁`, `₂`, `₃`), the octahedral axiom's consequences, and the theorem that the heart is abelian, which at this Mathlib version is listed as future work in `Mathlib/CategoryTheory/Triangulated/TStructure/Heart.lean`. The identification of the standard heart with $\mathcal{A}$ is likewise not yet in Mathlib.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Cones over a finite field">
+
+The experiment builds random cochain complexes and chain maps over $\mathbb{F}_{101}$, forms mapping cones with the formula above, and checks three things exactly: $d_C^2 = 0$; the dimension formula
+
+$$
+\dim H^n(C(f)) = \big(\dim H^n(Y) - \operatorname{rank} H^n(f)\big) + \big(\dim H^{n+1}(X) - \operatorname{rank} H^{n+1}(f)\big),
+$$
+
+which is equivalent to the exactness of the long exact cohomology sequence of the cone; and that $f$ is a quasi-isomorphism exactly when $C(f)$ is acyclic. Then it counts, by brute force over all $2 \times 2$ matrices, the fill-ins of the worked example: there are $p$ of them over $\mathbb{F}_p$.
+
+<Python id="triangulated_categories_cones" />
+
+The random checks are exact computations on finitely many examples over one field — evidence, not proof. The count of fill-ins is exhaustive for the primes shown.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The cone construction is functorial."** TR3 asserts that a fill-in *exists*; it is not unique (the worked example has a whole line of them), and the axioms give no cone functor on the category of morphisms. Even in $K(\mathcal{A})$, the map of cones induced by a square commuting up to homotopy depends on the chosen homotopy. Functorial cones are recovered only in enhancements (dg-categories, stable ∞-categories).
+
+</Misconception>
+
+<Misconception>
+
+**"Every triangulated category is the homotopy category of a stable ∞-category (or a stable model category, or a dg-category)."** Muro, Schwede and Strickland (2007) found triangulated categories without such models. The triangulated axioms are strictly weaker than having an enhancement.
+
+</Misconception>
+
+<Misconception>
+
+**"Distinguished triangles are just short exact sequences."** A short exact sequence $0 \to A \to B \to C \to 0$ in $\mathcal{A}$ gives a triangle in $D(\mathcal{A})$, but triangles are far more general: $X \xrightarrow{u} Y$ need not be a monomorphism (in fact non-split monomorphisms do not exist in $\mathcal{T}$), and the connecting map $C \to A[1]$ is part of the data — two triangles with the same three objects can be non-isomorphic.
+
+</Misconception>
+
+<Misconception>
+
+**"The octahedral axiom follows from the others."** No proof is known: whether TR4 follows from TR1–TR3 is a long-standing open question, so it is assumed as an axiom. (It holds in every triangulated category that comes from an enhancement.) Most structural results — Verdier quotients, gluing of t-structures — use it.
+
+</Misconception>
+
+<Misconception>
+
+**"A triangulated category is a special kind of abelian category."** The two notions are nearly disjoint: by Corollary 5 a triangulated category that is abelian is semisimple. Abelian categories sit *inside* triangulated ones as hearts of t-structures.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Cofibre sequences and stable homotopy">
+
+For a map of pointed spaces $f : X \to Y$, the mapping cone $C_f = Y \cup_f CX$ gives the Puppe sequence $X \to Y \to C_f \to \Sigma X \to \Sigma Y \to \cdots$, and for every space $W$ the sets $[W, -]$ form an exact sequence, as do $[-, W]$. In the stable homotopy category, where $\Sigma$ is inverted, these become distinguished triangles, and a cohomology theory $E^*$ is exactly a cohomological functor commuting with the shift. Brown representability — every such theory is represented by a spectrum — has a triangulated generalisation (Neeman). The octahedral axiom is the homotopical third isomorphism theorem $C_{gf} / C_f \simeq C_g$. Historically, the stable homotopy category is the second birthplace of triangulated categories.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Perverse sheaves and stability conditions">
+
+For a complex algebraic variety $X$, the derived category $D^b_c(X)$ of constructible sheaves carries, besides the standard t-structure, the **perverse** t-structure of Beilinson–Bernstein–Deligne–Gabber, whose heart is the abelian category of perverse sheaves. Its simple objects are the intersection cohomology complexes, which carry Poincaré duality on singular spaces; the decomposition theorem of BBD is formulated in this heart. Changing the t-structure changes which abelian category one sees inside the same triangulated category — a phenomenon geometers now study systematically through Bridgeland stability conditions, whose hearts vary continuously over a complex manifold. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink> and <TopicLink id="math.geom.sheaves">sheaves</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Stable module categories and tilting">
+
+For a self-injective algebra (for example a group algebra $kG$), the stable module category is triangulated, with $\Omega^{-1}$ as shift; Happel proved that $D^b(\mathrm{mod}\,A)$ for a finite-dimensional algebra of finite global dimension is equivalent to the stable module category of its repetitive algebra. A derived equivalence $D^b(\mathrm{mod}\,A) \simeq D^b(\mathrm{mod}\,B)$, such as one given by tilting, exhibits $\mathrm{mod}\,B$ as a second heart inside the triangulated category of $A$: the same triangulated category, seen through a different t-structure. For a Dynkin quiver $Q$, Happel described $D^b(kQ)$ completely by the mesh category of $\Z Q$ (see <TopicLink id="math.algebra.quiver-representations">quiver representations</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Branes and their bound states (heuristic)">
+
+In Douglas's proposal for D-branes on Calabi–Yau manifolds, branes are objects of a triangulated category and a distinguished triangle $A \to B \to C \to A[1]$ describes $C$ as a bound state of $B$ and an anti-brane of $A$, formed or decaying as moduli vary ("Π-stability"). Bridgeland's stability conditions are the mathematical formalisation of this idea. The physics is a heuristic guide, not a proof: the mathematical theory stands on its own axioms.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Localisation and the axioms' weak spot">
+
+Categorically, a triangulated category is an additive category with a suspension and a class of "exact triangles"; Verdier quotients $\mathcal{T}/\mathcal{S}$ by thick subcategories are localisations, and this is how $D(\mathcal{A}) = K(\mathcal{A})/K_{\mathrm{acyc}}$ is built. The axioms' weak spot — non-unique fill-ins, hence no functorial cones and no homotopy (co)limits — is the reason for enhancements: in a stable ∞-category, cones are colimits and are unique up to a contractible space of choices.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1950s.** Dieter Puppe (Germany) introduces cofibre sequences (1958). Grothendieck's programme in algebraic geometry needs a home for complexes of sheaves.
+- **1962–63.** Puppe, for stable homotopy theory, and **Jean-Louis Verdier**, in his thesis supervised by Grothendieck (notes 1963, defence 1967, publication 1996), independently axiomatise triangulated categories; Verdier adds the octahedral axiom and constructs quotients.
+- **1960s–70s.** J. Michael Boardman constructs the stable homotopy category; Freyd poses the generating hypothesis (1966).
+- **1982.** **Alexander Beilinson, Joseph Bernstein, Pierre Deligne** and **Ofer Gabber** introduce t-structures and perverse sheaves (*Faisceaux pervers*), connecting with the Riemann–Hilbert correspondence of **Kashiwara** and **Mebkhout** and the intersection cohomology of **Goresky** and **MacPherson**.
+- **1987–88.** **Dieter Happel** (Germany) develops triangulated categories in the representation theory of finite-dimensional algebras.
+- **1990s–2000s.** **Amnon Neeman** (Israel/Australia) proves Brown representability for compactly generated categories (1996) and writes the standard monograph (2001). **Tom Bridgeland** (UK) introduces stability conditions (2007); **Paul Balmer** (Switzerland/USA) introduces tensor-triangular geometry (2005); **Fernando Muro, Stefan Schwede, Neil Strickland** exhibit triangulated categories without models (2007).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Amnon Neeman, *Triangulated Categories* (Annals of Mathematics Studies 148, 2001) — the standard monograph, with Brown representability.
+- Sergei I. Gelfand and Yuri I. Manin, *Methods of Homological Algebra* (1996; 2nd ed. 2003), Chapters IV–V, including t-structures.
+- Charles A. Weibel, *An Introduction to Homological Algebra* (1994), §10.2–10.4.
+- Alexander Beilinson, Joseph Bernstein, Pierre Deligne, "Faisceaux pervers", *Astérisque* 100 (1982) — t-structures and the heart theorem.
+- Thorsten Holm, Peter Jørgensen and Raphaël Rouquier (eds.), *Triangulated Categories* (LMS Lecture Note Series 375, 2010) — surveys of current directions.
+- Tom Bridgeland, "Stability conditions on triangulated categories", *Annals of Mathematics* 166 (2007).
+- Fernando Muro, Stefan Schwede and Neil Strickland, "Triangulated categories without models", *Inventiones Mathematicae* 170 (2007).
+
+A reading path: Weibel §10.2 for the cone calculus → Gelfand–Manin IV for the axioms and t-structures → Neeman's book or the Holm–Jørgensen–Rouquier volume, depending on whether you want foundations or current research.
+
+</Section>

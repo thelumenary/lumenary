@@ -106,6 +106,17 @@ function findToolchain(toolchain) {
   return { binDir: null, source: "not found" };
 }
 
+/** "mathlib <inputRev> (<commit>)" from lake-manifest.json, or null when Mathlib is not a dependency. */
+function readMathlibVersion() {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(FORMAL, "lake-manifest.json"), "utf8"));
+    const m = (manifest.packages || []).find((p) => p.name === "mathlib");
+    return m ? `${m.inputRev ?? "?"} (${String(m.rev).slice(0, 12)})` : null;
+  } catch {
+    return null;
+  }
+}
+
 function run(cmd, args, env, opts = {}) {
   const res = spawnSync(cmd, args, {
     cwd: FORMAL,
@@ -449,6 +460,17 @@ function main() {
     return ok;
   };
 
+  // Does a file depend on Mathlib (directly or through a project import)?
+  const mathlibMemo = new Map();
+  const usesMathlib = (p, seen = new Set()) => {
+    if (mathlibMemo.has(p.module)) return mathlibMemo.get(p.module);
+    if (seen.has(p.module)) return false;
+    seen.add(p.module);
+    const result = p.imports.some((imp) => imp === "Mathlib" || imp.startsWith("Mathlib.") || (byModule.has(imp) && usesMathlib(byModule.get(imp), seen)));
+    mathlibMemo.set(p.module, result);
+    return result;
+  };
+
   const isMain = (p) => p.module === MAIN_LIB || p.module.startsWith(`${MAIN_LIB}.`);
   const isExercise = (p) => p.module === EXERCISE_LIB || p.module.startsWith(`${EXERCISE_LIB}.`);
 
@@ -499,6 +521,8 @@ function main() {
         axioms,
         // A missing @provenance is already reported as a problem; fall back to the weaker claim.
         provenance: d.region?.provenance ?? (d.kind === "theorem" ? "library" : "definition"),
+        // "core": core Lean only; "mathlib": the file builds on Mathlib.
+        foundation: usesMathlib(p) ? "mathlib" : "core",
       });
     }
   }
@@ -534,7 +558,7 @@ function main() {
     generatedAt: new Date().toISOString(),
     toolchain,
     leanVersion,
-    mathlib: null,
+    mathlib: readMathlibVersion(),
     build: { command: BUILD_COMMAND, success: buildSuccess, durationMs },
     files,
     declarations,

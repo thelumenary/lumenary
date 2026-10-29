@@ -1,0 +1,494 @@
+---
+slug: algorithms-and-efficiency
+topic: math.comp.algorithms-and-efficiency
+title: Algorithms, correctness and efficiency
+subtitle: Twenty yes-or-no questions find one number in a million. How to prove that an algorithm always works, count how long it takes, and show that no cleverness can sort faster than about $n \log_2 n$.
+level: g9-12
+ages: Ages 14–18
+minutes: 75
+order: 4025
+objectives:
+  - Implement linear search, binary search and insertion sort, and trace them on examples
+  - Prove an algorithm correct with a loop invariant and a decreasing measure, for binary search and for Euclid's algorithm
+  - Prove that binary search on $n$ items makes at most $\lfloor \log_2 n \rfloor + 1$ comparisons, and that insertion sort makes at most $n(n-1)/2$
+  - Prove that every comparison-based sorting method needs at least $\log_2(n!)$ comparisons in the worst case, which grows like $n \log_2 n$
+  - Compare growth rates such as $\log n$, $n$, $n \log n$, $n^2$ and $2^n$, and explain why faster computers do not make efficiency irrelevant
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.AlgorithmsAndEfficiency.linearSearch
+  - Lumenary.AlgorithmsAndEfficiency.linearSearch_correct
+  - Lumenary.AlgorithmsAndEfficiency.linearComparisons
+  - Lumenary.AlgorithmsAndEfficiency.linearComparisons_le
+  - Lumenary.AlgorithmsAndEfficiency.linearComparisons_absent
+  - Lumenary.AlgorithmsAndEfficiency.bsearch
+  - Lumenary.AlgorithmsAndEfficiency.bsearch_correct
+  - Lumenary.AlgorithmsAndEfficiency.bsearchSteps
+  - Lumenary.AlgorithmsAndEfficiency.bsearchSteps_le
+  - Lumenary.AlgorithmsAndEfficiency.bsearchSteps_le_log
+  - Lumenary.AlgorithmsAndEfficiency.euclid
+  - Lumenary.AlgorithmsAndEfficiency.euclid_eq_gcd
+  - Lumenary.AlgorithmsAndEfficiency.insertionSort_sorted
+  - Lumenary.AlgorithmsAndEfficiency.insertionSort_perm
+  - Lumenary.AlgorithmsAndEfficiency.DecisionTree
+  - Lumenary.AlgorithmsAndEfficiency.DecisionTree.leaves
+  - Lumenary.AlgorithmsAndEfficiency.DecisionTree.height
+  - Lumenary.AlgorithmsAndEfficiency.leaves_le_two_pow_height
+  - Lumenary.AlgorithmsAndEfficiency.sorting_lower_bound
+  - Lumenary.AlgorithmsAndEfficiency.five_items_need_seven
+compute: [algorithms_and_efficiency_search_race, algorithms_and_efficiency_sorting_counts]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Twenty questions">
+
+Think of a whole number between $1$ and $1\,000\,000$. I will find it by asking questions that you answer only "yes" or "no" — and I promise to need **at most twenty**.
+
+The trick: always ask about the middle. "Is it more than $500\,000$?" Whatever you answer, half of the possibilities are gone. After one question $500\,000$ remain, after two $250\,000$, and in general after $k$ questions at most $\lceil 10^6 / 2^k \rceil$. Since $2^{20} = 1\,048\,576$ is more than a million, after twenty questions only one possibility is left. Asking "Is it $1$? Is it $2$? Is it $3$?…" could take a million questions.
+
+Both are **algorithms** — precise recipes that a person or a machine can follow without thinking. Both are correct. One is fifty thousand times faster. The same contrast appears whenever a phone searches your contacts, a library catalogue finds a book, a teacher in Nairobi sorts six hundred exam scripts into alphabetical order, or a bank in São Paulo checks a payment against a list of millions of accounts.
+
+This lesson asks three questions about every algorithm: **Does it stop? Does it give the right answer? How long does it take?** — and answers them with proofs, not just tests.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Why testing is not enough">
+
+You could check an algorithm by running it on many examples. That is useful — and it is how bugs are often found — but it cannot show that the algorithm works on the inputs you did *not* try. Binary search is famous for this: it is short and simple, yet Jon Bentley, citing Donald Knuth, pointed out in *Programming Pearls* that although the first binary search was published in 1946, the first version that works correctly for *every* list length did not appear in print until 1962. And in 2006 Joshua Bloch reported that the binary search in Java's standard library, used for nearly a decade, failed on lists of more than about a billion entries.
+
+<Narrator who="chloe">
+
+So how do we know an algorithm works for *every* input — including ones bigger than any computer has ever seen? The same way we know $1 + 2 + \dots + n = n(n+1)/2$ for every $n$: by proof. The key tool is called a **loop invariant**, and it is induction in disguise.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="algorithm and specification">
+
+An **algorithm** is a finite list of precise instructions that transforms an **input** into an **output**. Its **specification** says which inputs are allowed and what the output must satisfy. For example: *input* a list $a_0 \le a_1 \le \dots \le a_{n-1}$ of numbers in increasing order and a number $t$; *output* an index $i$ with $a_i = t$, or "absent" if there is none.
+
+</Definition>
+
+<Definition term="correctness">
+
+An algorithm is **correct** if, for **every** allowed input, it **terminates** (stops after finitely many steps) and its output satisfies the specification.
+
+</Definition>
+
+<Definition term="loop invariant">
+
+A **loop invariant** is a statement about the variables of a loop that holds before the first pass through the loop and is preserved by every pass (if it holds before a pass, it holds after). It then holds whenever the loop stops — by induction on the number of passes.
+
+</Definition>
+
+<Definition term="termination measure">
+
+A **termination measure** (or variant) is a whole number, computed from the variables, that is never negative and strictly decreases with every pass. Since a decreasing sequence of natural numbers cannot go on forever, the loop must stop.
+
+</Definition>
+
+<Definition term="running time">
+
+The **running time** of an algorithm is the number of basic steps it takes (here: comparisons), as a function of the size $n$ of the input. The **worst-case** running time $T(n)$ is the largest number of steps over all inputs of size $n$.
+
+</Definition>
+
+We usually care about how $T(n)$ **grows**, not its exact value. We write $T(n) = O(g(n))$, "big-O of $g$", if there are constants $C$ and $N$ with $T(n) \le C\,g(n)$ for all $n \ge N$. So $3n^2 + 5n + 7 = O(n^2)$: for large $n$ the $n^2$ term dominates and constant factors are ignored.
+
+</Section>
+
+<Section id="algorithms" kind="examples" title="Four algorithms">
+
+<Example title="Linear search">
+
+Check the entries one by one.
+
+```python
+def linear_search(a, t):
+    for i in range(len(a)):
+        if a[i] == t:
+            return i
+    return None          # t is absent
+```
+
+On $a = [4, 9, 2, 7]$ and $t = 2$ it compares $t$ with $4$, $9$, $2$ and returns index $2$ after three comparisons. If $t$ is absent it makes $n$ comparisons. It works on **any** list, sorted or not.
+
+</Example>
+
+<Example title="Binary search">
+
+For a **sorted** list, compare $t$ with the middle entry and discard the half that cannot contain it.
+
+```python
+def binary_search(a, t):
+    lo, hi = 0, len(a) - 1
+    while lo <= hi:                 # the range a[lo..hi] is not empty
+        mid = (lo + hi) // 2        # the middle (rounded down)
+        if a[mid] == t:
+            return mid
+        elif a[mid] < t:
+            lo = mid + 1            # t can only be to the right of mid
+        else:
+            hi = mid - 1            # t can only be to the left of mid
+    return None
+```
+
+We count each probe of $a_{mid}$ as **one comparison** with three possible outcomes — equal, smaller or larger — even though the code tests two conditions.
+
+Trace on $a = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]$ (indices $0$–$9$) with $t = 23$: $\;mid = 4$, $a_4 = 11 < 23$, so $lo = 5$; $\;mid = 7$, $a_7 = 19 < 23$, so $lo = 8$; $\;mid = 8$, $a_8 = 23$: found, after **three** comparisons. With $t = 4$: $mid = 4$ ($11 > 4$, $hi = 3$), $mid = 1$ ($3 < 4$, $lo = 2$), $mid = 2$ ($5 > 4$, $hi = 1$); now $lo > hi$, so $4$ is absent — again three comparisons.
+
+</Example>
+
+<Example title="Insertion sort">
+
+Sort like a hand of cards: take each new entry and slide it left past the larger entries before it.
+
+```python
+def insertion_sort(a):
+    for i in range(1, len(a)):
+        x = a[i]
+        j = i - 1
+        while j >= 0 and a[j] > x:
+            a[j + 1] = a[j]         # shift the larger entry right
+            j -= 1
+        a[j + 1] = x                # drop x into the gap
+```
+
+On $[5, 2, 4, 1]$: insert $2$ → $[2, 5, 4, 1]$; insert $4$ → $[2, 4, 5, 1]$; insert $1$ → $[1, 2, 4, 5]$.
+
+</Example>
+
+<Example title="Euclid's algorithm">
+
+To find $\gcd(a, b)$: while $b \ne 0$, replace $(a, b)$ by $(b, \; a \bmod b)$; then the answer is $a$.
+
+$$
+(252, 198) \to (198, 54) \to (54, 36) \to (36, 18) \to (18, 0), \qquad \text{so } \gcd(252, 198) = 18.
+$$
+
+See <TopicLink id="math.number.divisibility-gcd">divisibility and Euclid's algorithm</TopicLink> for its background.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Correctness and running time, proved">
+
+<Theorem name="Theorem 1 (linear search)">
+
+Linear search is correct, and it makes at most $n$ comparisons on a list of length $n$, exactly $n$ when $t$ is absent.
+
+</Theorem>
+
+<Proof>
+
+*Invariant:* at the start of the pass with index $i$, $t$ is not among $a_0, \dots, a_{i-1}$. This holds for $i = 0$ (there is nothing to check), and a pass that does not return has found $a_i \ne t$, so the invariant holds for $i + 1$. If the loop returns $i$, then $a_i = t$, which is correct. Otherwise the loop runs to the end, and the invariant with $i = n$ says $t$ is absent — correct again. There is one comparison per pass and at most $n$ passes; if $t$ is absent, all $n$ passes happen.
+
+</Proof>
+
+<Theorem name="Theorem 2 (binary search is correct)">
+
+If $a_0 \le a_1 \le \dots \le a_{n-1}$, binary search terminates, and it returns an index $i$ with $a_i = t$ if $t$ occurs in the list, and "absent" otherwise.
+
+</Theorem>
+
+<Proof>
+
+*Invariant:* if $t$ occurs in the list, then it occurs at some index in the range $lo, \dots, hi$.
+
+- *Initially* $lo = 0$, $hi = n - 1$: the range is the whole list. ✓
+- *Each pass preserves it.* If $a_{mid} = t$ we return a correct answer. If $a_{mid} < t$, then for every $i \le mid$ we have $a_i \le a_{mid} < t$ because the list is sorted; so $t$ is not at any index up to $mid$, and if it occurs at all it occurs in $mid + 1, \dots, hi$ — the new range. The case $a_{mid} > t$ is symmetric.
+- *Termination.* The measure $hi - lo + 1$ (the size of the range) is a natural number while the loop runs, and each pass removes at least the index $mid$, so it strictly decreases.
+- *At the end*, if nothing was returned, $lo > hi$: the range is empty. By the invariant, $t$ does not occur, so "absent" is correct.
+
+</Proof>
+
+<Theorem name="Theorem 3 (binary search is fast)">
+
+Binary search on a sorted list of $n \ge 1$ entries makes at most $\lfloor \log_2 n \rfloor + 1$ comparisons. For $n = 1\,000\,000$ that is $20$.
+
+</Theorem>
+
+<Proof>
+
+Let $m = hi - lo + 1$ be the size of the range. The middle index $mid = \lfloor (lo + hi)/2 \rfloor$ splits off a left part of size $mid - lo = \lfloor (m-1)/2 \rfloor$ and a right part of size $hi - mid = \lceil (m-1)/2 \rceil = \lfloor m/2 \rfloor$. So after one comparison the new size is at most $\lfloor m/2 \rfloor$.
+
+*Claim:* if $m < 2^k$, at most $k$ comparisons remain. By induction on $k$. If $k = 0$ then $m = 0$: the range is empty and the loop stops. If $m < 2^{k+1}$, one comparison leaves a range of size at most $\lfloor m/2 \rfloor < 2^k$, after which at most $k$ comparisons remain: $k + 1$ in all.
+
+Finally, $n < 2^{\lfloor \log_2 n \rfloor + 1}$ by definition of $\lfloor \log_2 n \rfloor$ (the largest $j$ with $2^j \le n$), so the claim with $k = \lfloor \log_2 n \rfloor + 1$ gives the bound. Since $2^{19} = 524\,288 \le 1\,000\,000 < 2^{20}$, $\lfloor \log_2 10^6 \rfloor + 1 = 20$.
+
+</Proof>
+
+The bound is the best possible: if $t$ is larger than every entry, the search always goes right and the size goes $n \to \lfloor n/2 \rfloor \to \lfloor n/4 \rfloor \to \dots$, which takes exactly $\lfloor \log_2 n \rfloor + 1$ steps to reach $0$.
+
+<Theorem name="Theorem 4 (Euclid's algorithm)">
+
+For natural numbers $a, b$, Euclid's algorithm terminates and returns $\gcd(a, b)$.
+
+</Theorem>
+
+<Proof>
+
+*Invariant:* the gcd of the current pair equals $\gcd$ of the original pair. Write $a = qb + r$ with $r = a \bmod b$. Any common divisor of $a$ and $b$ divides $r = a - qb$; any common divisor of $b$ and $r$ divides $a = qb + r$. So the pairs $(a, b)$ and $(b, r)$ have the same common divisors, hence the same greatest one: $\gcd(a, b) = \gcd(b, a \bmod b)$. *Termination:* the measure is the second number, which strictly decreases since $0 \le a \bmod b < b$. *At the end* $b = 0$, and $\gcd(a, 0) = a$ is the answer.
+
+</Proof>
+
+<Theorem name="Theorem 5 (insertion sort)">
+
+Insertion sort rearranges any list of $n$ entries into increasing order, using at most $1 + 2 + \dots + (n-1) = \frac{n(n-1)}{2}$ comparisons.
+
+</Theorem>
+
+<Proof>
+
+*Invariant:* at the start of pass $i$, the first $i$ entries are the original first $i$ entries, in increasing order. Pass $i$ shifts the entries of that sorted block that are larger than $x = a_i$ one place right and puts $x$ into the gap, so afterwards the first $i + 1$ entries are sorted. At the end ($i = n$) the whole list is sorted, and since entries are only moved, never created or lost, it is a rearrangement of the input. Pass $i$ compares $x$ with at most the $i$ entries before it, so the total is at most $1 + 2 + \dots + (n - 1) = n(n-1)/2$ (Gauss's formula, proved in <TopicLink id="math.found.proof-techniques">proof techniques</TopicLink>). A list in decreasing order needs every one of these comparisons.
+
+</Proof>
+
+Insertion sort is $O(n^2)$. Can one do much better? **Merge sort** splits the list in half, sorts each half (by the same method), and merges the two sorted halves with at most $n - 1$ comparisons. For $n = 2^k$ its worst case $C(n)$ satisfies $C(1) = 0$ and $C(n) \le 2\,C(n/2) + n - 1$, and induction on $k$ gives $C(2^k) \le k\,2^k - 2^k + 1$, that is, $C(n) \le n \log_2 n - n + 1$. So merge sort is $O(n \log n)$. Could a cleverer method do better still? Here is the surprising answer.
+
+<Theorem name="Theorem 6 (a limit for every sorting method)">
+
+Any sorting method that learns about the input only by comparing two entries at a time needs, in the worst case, at least $\log_2(n!)$ comparisons to sort $n$ different entries. Moreover $\log_2(n!) \ge \frac{n}{2} \log_2 \frac{n}{2}$, so the number of comparisons grows at least like $n \log_2 n$.
+
+</Theorem>
+
+<Proof>
+
+Picture the method as a **decision tree**: the first comparison is the root; its two answers lead to two subtrees, the next comparisons; each leaf is a point where the method stops and announces the sorted order. The worst-case number of comparisons is the **height** $h$ of the tree, the length of its longest path.
+
+- *A tree of height $h$ has at most $2^h$ leaves.* By induction: a single leaf has height $0$ and $2^0 = 1$ leaf; a tree whose root has subtrees of heights at most $h - 1$ has at most $2^{h-1} + 2^{h-1} = 2^h$ leaves.
+- *A correct method needs at least $n!$ leaves.* The $n$ entries can arrive in $n!$ different orders, and each order requires a different rearrangement to sort it. Two different orders cannot end at the same leaf, because the leaf announces one rearrangement.
+
+So $n! \le 2^h$, that is, $h \ge \log_2(n!)$. For the estimate, at least $n/2$ of the factors of $n! = 1 \cdot 2 \cdots n$ (those from $\lceil n/2 \rceil$ to $n$) are each at least $n/2$, and the rest are at least $1$, so $n! \ge (n/2)^{n/2}$ and $\log_2(n!) \ge \frac{n}{2}\log_2 \frac{n}{2}$.
+
+</Proof>
+
+For $n = 5$: $5! = 120 > 64 = 2^6$, so every method needs **7** comparisons in the worst case on five items. Merge sort is therefore within a constant factor of the best possible. (The theorem says nothing about methods that do not work by comparisons, such as sorting exam scripts into 26 piles by first letter — those can beat $n \log n$ in special situations.)
+
+</Section>
+
+<Section id="growth" kind="human" title="Growth rates, and why faster computers do not save us">
+
+Suppose a computer performs a billion ($10^9$) basic steps per second. Here is how long algorithms with different running times take on inputs of size $n$:
+
+| $n$ | $\log_2 n$ | $n$ | $n \log_2 n$ | $n^2$ | $2^n$ |
+| --- | --- | --- | --- | --- | --- |
+| $10$ | instant | instant | instant | instant | $1$ microsecond |
+| $1000$ | instant | $1$ microsecond | $10$ microseconds | $1$ millisecond | longer than the age of the universe |
+| $10^6$ | instant | $1$ millisecond | $20$ milliseconds | $17$ minutes | — |
+| $10^9$ | instant | $1$ second | $30$ seconds | $32$ years | — |
+
+<FunctionPlot
+  fns={["log2(x)", "x", "x*log2(x)", "x^2"]}
+  labels={["log₂ n", "n", "n log₂ n", "n²"]}
+  x={[1, 40]}
+  y={[0, 300]}
+  xLabel="n"
+  yLabel="steps"
+  title="How running times grow"
+/>
+
+A faster computer helps far less than a better algorithm. If a new machine is $1000$ times faster, then in the same time:
+
+- a linear-time algorithm ($n$ steps) can handle $1000$ times as much data;
+- a quadratic algorithm ($n^2$ steps) only $\sqrt{1000} \approx 31.6$ times as much, because $(31.6\,n)^2 \approx 1000\,n^2$;
+- an exponential algorithm ($2^n$ steps) only about $10$ more items, because $2^{n + 10} = 1024 \cdot 2^n$.
+
+<Narrator who="margaret">
+
+Try it in the computation below: I ran binary search on a list with a **trillion** entries (described by a rule, so no memory is needed). Forty comparisons.
+
+</Narrator>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Correctness checked by Lean">
+
+In Lean, loops are written as **recursive functions**: each recursive call is one pass of the loop, and Lean only accepts the definition if it can see a termination measure that decreases. Here is linear search, its correctness, and its comparison count:
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.linearSearch" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.linearSearch_correct" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.linearComparisons" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.linearComparisons_le" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.linearComparisons_absent" />
+
+For binary search we formalise the closely related **"first yes"** form, which finds the first point where a monotone yes/no test becomes true — the form behind "twenty questions", and behind finding the first entry $\ge t$ in a sorted list. The invariant and the halving argument are those of Theorems 2 and 3; note the `termination_by hi - lo`, Lean's version of our termination measure.
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.bsearch" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.bsearch_correct" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.bsearchSteps" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.bsearchSteps_le" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.bsearchSteps_le_log" />
+
+Euclid's algorithm, with its invariant:
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.euclid" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.euclid_eq_gcd" />
+
+For sorting, Mathlib already proves that its insertion sort meets the specification, and we prove the decision-tree lower bound:
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.insertionSort_sorted" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.insertionSort_perm" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.DecisionTree" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.DecisionTree.leaves" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.DecisionTree.height" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.leaves_le_two_pow_height" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.sorting_lower_bound" />
+
+<Lean decl="Lumenary.AlgorithmsAndEfficiency.five_items_need_seven" />
+
+<Narrator who="gideon">
+
+Precisely what is checked: linear search (Theorem 1), binary search in the "first yes" form (Theorems 2 and 3), Euclid (Theorem 4) and the counting half of Theorem 6 ($n! \le 2^h$). Not formalised: that a correct sorting method *must* have $n!$ leaves — we take that as a hypothesis — and the comparison counts of insertion sort and merge sort. The Python `binary_search` above is **not** what Lean checked; it is a different program with the same idea. A proof is about the exact code it is about.
+
+</Narrator>
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting comparisons">
+
+<Narrator who="margaret">
+
+First the search race: binary search on every possible target for every list size up to $200$, and then on lists far too big to store.
+
+</Narrator>
+
+<Python id="algorithms_and_efficiency_search_race" />
+
+<Narrator who="margaret">
+
+Now sorting. For seven items I can sort all $5040$ orders and find each method's true worst case — and set it beside the floor from Theorem 6.
+
+</Narrator>
+
+<Python id="algorithms_and_efficiency_sorting_counts" />
+
+The small-$n$ table is **exhaustive**: every input was tried, so those worst cases are certain. Merge sort sits close to the lower bound; insertion sort pulls away quickly. The random lists are a **seeded experiment** — one input each — showing typical behaviour: insertion sort makes about $n^2/4$ comparisons on a random list, merge sort about $n \log_2 n$.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: Euclid's algorithm as cutting squares">
+
+Euclid's algorithm has a beautiful picture: from an $a \times b$ rectangle, cut the largest possible squares; then do the same to the leftover strip. Each round of cutting is one step $(a, b) \to (b, a \bmod b)$, and the side of the last square is the gcd. Try consecutive Fibonacci numbers such as $21$ and $13$, which make Euclid work hardest.
+
+<NumberGrid mode="gcd" a={21} b={13} subtitle="Each round of squares is one step of the algorithm." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"It passed all my tests, so it is correct."** Tests examine finitely many inputs; correctness is about all of them. Java's binary search passed its tests for years before failing on lists of a billion entries. Tests find bugs; proofs (with a loop invariant and a termination measure) show there are none — relative to the specification.
+
+</Misconception>
+
+<Misconception>
+
+**"Faster computers make efficiency irrelevant."** A thousandfold speed-up lets a quadratic algorithm handle only about $32$ times more data, and an exponential one only $10$ more items. Meanwhile data keeps growing. Algorithmic improvements — from $n^2$ to $n \log n$ — routinely matter more than decades of hardware progress.
+
+</Misconception>
+
+<Misconception>
+
+**"Binary search works on any list."** It relies on sortedness in the invariant step ("every entry left of $mid$ is at most $a_{mid}$"). On an unsorted list it can miss an entry that is present.
+
+</Misconception>
+
+<Misconception>
+
+**"$O(n \log n)$ is always faster than $O(n^2)$."** Big-O ignores constant factors and small inputs. For short lists insertion sort often beats merge sort in practice, which is why real sorting libraries switch to insertion sort for small pieces. Big-O describes growth, for large $n$.
+
+</Misconception>
+
+<Misconception>
+
+**"An algorithm that always gives the right answer when it stops is correct."** That is only *partial* correctness. A full proof also needs termination: a loop that never ends never gives a wrong answer — and never gives any answer.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="The same ideas, seen by others">
+
+<Viewpoint lens="number-theory" title="The worst case of Euclid">
+
+How many steps can Euclid's algorithm take? The slowest inputs are consecutive **Fibonacci numbers**: $(89, 55) \to (55, 34) \to (34, 21) \to \cdots \to (2, 1) \to (1, 0)$ uses nine divisions, and at each step the quotient is $1$, the smallest possible. Gabriel Lamé proved in 1844 that the number of division steps is never more than five times the number of decimal digits of the smaller number — the first analysis of an algorithm's running time. So Euclid is fast: $O(\log b)$ steps.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Counting orders and leaves">
+
+The lower bound of Theorem 6 is pure counting: $n!$ orders, at most $2^h$ leaves. The sharper estimate comes from **Stirling's formula**, $\log_2(n!) = n \log_2 n - n \log_2 e + O(\log n)$, so about $n \log_2 n - 1.44\,n$ comparisons are unavoidable. For small $n$ the exact minimum is known only for limited ranges, and finding it is a hard combinatorial search: for $n = 12$ the answer ($30$, one more than $\lceil \log_2 12! \rceil = 29$) was settled by computer only in the 1960s.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Asymptotics">
+
+Comparing $n \log n$ with $n^2$ is a question about **limits**: $\frac{n \log n}{n^2} = \frac{\log n}{n} \to 0$, so eventually $n \log n$ is tiny compared with $n^2$, whatever the constants. Estimating $\log(n!) = \sum_{k=1}^{n} \log k$ by the integral $\int_1^n \log x \, dx = n \log n - n + 1$ is the analyst's route to Stirling's formula, and the same comparison of sums with integrals measures many other algorithms. See <TopicLink id="math.analysis.sequences-series">sequences and series</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Fast powers from associativity">
+
+To compute $a^{1000}$ you need not multiply $999$ times. Square repeatedly — $a^2, a^4, a^8, \dots, a^{512}$ — and multiply the powers for the binary digits of $1000 = 512 + 256 + 128 + 64 + 32 + 8$: $9$ squarings and $5$ further multiplications, $14$ in all — $O(\log n)$ in general. The method works in any structure with an associative operation (numbers mod $m$, matrices, compositions of functions), because associativity guarantees that regrouping the factors does not change the answer — see <TopicLink id="math.cat.composition">Composition</TopicLink>. It is the reason modern cryptography can raise numbers to enormous powers in milliseconds.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="What can and cannot be decided">
+
+Could a program check, for every program, whether it terminates? Alan Turing proved in 1936 that no algorithm can do this (the **halting problem**). So there is no general machine for proving algorithms correct: each proof needs an idea, such as an invariant or a measure. Robert Floyd (1967) and Tony Hoare (1969) turned loop invariants into a logic of programs — **Hoare logic** — and proof assistants like Lean check such proofs mechanically. See <TopicLink id="math.comp.computability">computability</TopicLink> and <TopicLink id="math.comp.intro-lean">First steps in Lean</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="The average case">
+
+If the target is in the list and every position is equally likely, linear search makes on average $\frac{1 + 2 + \dots + n}{n} = \frac{n + 1}{2}$ comparisons — half the worst case, but still linear. On a random ordering, insertion sort's comparisons are close to the number of **inversions** (pairs in the wrong order), whose average is $\frac{n(n-1)}{4}$, since each of the $\binom{n}{2}$ pairs is out of order with probability $\frac12$. Randomness can also be a *tool*: quicksort with randomly chosen pivots makes about $2n \ln n \approx 1.39\, n \log_2 n$ comparisons on average, for every input.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Euclid's algorithm** appears in Euclid's *Elements* (Book VII, around 300 BCE), and is one of the oldest algorithms still in daily use. The Chinese *Nine Chapters on the Mathematical Art* reduces fractions by repeated subtraction, the same idea; Āryabhaṭa's *kuṭṭaka* (India, 499) extends it to solve equations $ax + by = c$.
+- The word **algorithm** comes from the name of **Muḥammad ibn Mūsā al-Khwārizmī**, who worked in Baghdad's House of Wisdom in the 9th century; Latin translations of his book on Hindu–Arabic numerals began "Dixit Algorizmi".
+- **Ada Lovelace**'s notes (1843) on Charles Babbage's Analytical Engine include a detailed method for computing Bernoulli numbers on the machine, often called the first published computer program.
+- In 1936 **Alan Turing** and **Alonzo Church** gave precise definitions of "algorithm" and showed that some problems have none. John von Neumann described **merge sort** in 1945; binary search was described by John Mauchly in 1946.
+- **Robert Floyd** (1967) and **Tony Hoare** (1969) introduced invariant-based proofs of programs; **Donald Knuth**'s *The Art of Computer Programming* (from 1968) made the analysis of algorithms a mathematical subject.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein, *Introduction to Algorithms* (3rd edition 2009; 4th edition 2022) — loop invariants in chapter 2, sorting lower bounds in chapter 8.
+- Jon Bentley, *Programming Pearls* (1986; 2nd edition 1999) — includes the famous story of how hard it is to write binary search correctly.
+- Donald E. Knuth, *The Art of Computer Programming*, Volume 3: *Sorting and Searching* (1973; 2nd edition 1998).
+- Sanjoy Dasgupta, Christos Papadimitriou and Umesh Vazirani, *Algorithms* (2006) — short and readable.
+
+</Section>

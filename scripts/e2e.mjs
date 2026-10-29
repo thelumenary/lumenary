@@ -41,7 +41,9 @@ async function withPage(fn, opts = {}) {
 }
 
 const locales = ["en", "es", "ar", "hi", "zh-Hans", "sw"];
-const pages = ["", "math/", "math/graph/", "math/lessons/collections/", "math/lessons/composition/", "math/trails/clock-arithmetic/", "lab/", "formal/", "practice/", "progress/", "educators/", "educators/overview/", "languages/", "verification/", "about/", "contribute/"];
+// Lesson pages exist in English and in each locale the lesson is translated into (collections is
+// translated into every demo locale); other locales link to the English lesson.
+const pages = ["", "math/", "math/graph/", "math/lessons/collections/", "math/trails/clock-arithmetic/", "lab/", "formal/", "practice/", "practice/collections/", "progress/", "educators/", "educators/overview/", "languages/", "verification/", "about/", "contribute/"];
 
 console.log("Pages render without errors:");
 for (const locale of locales) {
@@ -73,9 +75,9 @@ await check("set exercise gives targeted feedback, then accepts any order", () =
 );
 await check("integer exercise accepts Eastern Arabic numerals", () =>
   withPage(async (page) => {
-    await page.goto(`${BASE}/ar/math/lessons/integers/`, { waitUntil: "networkidle" });
-    const ex = page.locator("#ex-integers-add");
-    await ex.locator("input").fill("−٣");
+    await page.goto(`${BASE}/ar/math/lessons/collections/`, { waitUntil: "networkidle" });
+    const ex = page.locator("#ex-collections-empty");
+    await ex.locator("input").fill("٠");
     await ex.locator("button[type=submit]").click();
     await ex.locator("[aria-live=polite] .bg-good-soft").waitFor({ timeout: 5000 });
   }),

@@ -4,6 +4,7 @@ import { LOCALES } from "@/i18n/config";
 import { Messages } from "@/i18n/Messages";
 import { getT, resolveLocale } from "@/i18n/server";
 import { getLesson, lessonSlugs } from "@/lib/content";
+import { pageLocale } from "@/lib/href";
 import { renderExercises } from "@/lib/exercises";
 import { mdInline } from "@/lib/markdown";
 import { LogoMark } from "@/components/brand/Logo";
@@ -12,7 +13,7 @@ import { PrintButton } from "@/components/site/PrintButton";
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return LOCALES.flatMap((locale) => lessonSlugs().map((slug) => ({ locale, slug })));
+  return LOCALES.flatMap((locale) => lessonSlugs().filter((slug) => pageLocale(locale, `educators/worksheets/${slug}`) === locale).map((slug) => ({ locale, slug })));
 }
 
 type Params = { params: Promise<{ locale: string; slug: string }> };

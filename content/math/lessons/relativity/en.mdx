@@ -1,0 +1,559 @@
+---
+slug: relativity
+topic: math.applied.relativity
+title: "The geometry of spacetime: special and general relativity"
+subtitle: Time is one direction of a four-dimensional geometry whose Pythagoras has a minus sign — straight worldlines are the longest, gravity is curvature, and light and planets follow geodesics.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7044
+objectives:
+  - Use the Minkowski metric to compute proper time, explain time dilation and the twin paradox, and describe the Lorentz group
+  - Prove the reverse triangle inequality for timelike vectors and explain why timelike geodesics maximise proper time
+  - Formulate the equivalence principle and Einstein's field equations in the language of Lorentzian geometry, and recover Newtonian gravity in the weak-field limit
+  - Derive the motion of light and planets from geodesics of the Schwarzschild metric — light bending, perihelion precession and the innermost stable circular orbit — to leading order
+  - Distinguish coordinate singularities from curvature singularities using curvature invariants
+narrators: []
+lean:
+  - Lumenary.Relativity.eta
+  - Lumenary.Relativity.boost
+  - Lumenary.Relativity.boost_preserves_eta
+  - Lumenary.Relativity.boost_mul
+  - Lumenary.Relativity.velocity_addition
+  - Lumenary.Relativity.lorentz_factor_three_fifths
+  - Lumenary.Relativity.reverse_cauchy_schwarz
+  - Lumenary.Relativity.twin_paradox
+  - Lumenary.Relativity.effectivePotential
+  - Lumenary.Relativity.effective_potential_deriv
+  - Lumenary.Relativity.circular_orbit_bound
+  - Lumenary.Relativity.isco
+compute: [relativity_twin_paradox, relativity_geodesics, relativity_schwarzschild_curvature]
+trails: [why-ellipses, triangles-on-a-ball]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Light that cannot be outrun">
+
+James Clerk Maxwell's equations (1865) predict electromagnetic waves travelling at a speed $c$ fixed by two constants of electricity and magnetism — and that speed is the speed of light. But relative to what? A light wave seemed to need a medium, the "ether", and the Earth moves through it; yet Albert Michelson and Edward Morley (1887) found no trace of that motion. In 1905 Albert Einstein took two principles at face value: the laws of physics are the same for all inertial observers, and the speed of light is the same for all of them. The price is that time and space are not separate. In 1908 Hermann Minkowski recast the theory as **geometry**: "Henceforth space by itself, and time by itself, are doomed to fade away into mere shadows, and only a kind of union of the two will preserve an independent reality."
+
+Gravity did not fit. Newton's force acts instantaneously, and Newton's theory left a small anomaly: Mercury's perihelion advances by about $43''$ per century more than the pulls of the other planets explain (Le Verrier, 1859; Newcomb, 1882). Einstein's general relativity (1915) makes gravity the curvature of spacetime and explains the $43''$ exactly. Its predictions are now engineering: the clocks on GPS satellites run slow by about $7$ microseconds a day because of their speed and fast by about $45$ because they sit higher in the Earth's gravity; uncorrected, the net $38\,\mu\mathrm s$ a day would put positions off by kilometres within a day. Gravitational waves (detected in 2015) and the image of a black hole's shadow (2019) are geometric predictions too.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Pythagoras with a minus sign">
+
+Measure time in years and distance in light-years, so that $c = 1$. An **event** is a point $(t, x, y, z)$ of spacetime, and a particle's history is a curve, its **worldline**. Light from an event travels along a **light cone** at $45^\circ$ in a spacetime diagram; massive particles stay inside.
+
+The basic quantity that all inertial observers agree on is not the time between two events, nor their distance, but the **interval**
+
+$$
+\Delta s^2 = -\Delta t^2 + \Delta x^2 + \Delta y^2 + \Delta z^2,
+$$
+
+Pythagoras with a minus sign. When $\Delta s^2 \lt 0$, the events can be joined by a particle, and $\Delta\tau = \sqrt{-\Delta s^2}$ is the time shown by a clock that travels between them uniformly — its **proper time**. A clock moving at speed $v$ over coordinate time $\Delta t$ covers $\Delta x = v\Delta t$, so it records $\Delta\tau = \Delta t\sqrt{1 - v^2} = \Delta t/\gamma$: moving clocks run slow.
+
+Changes of inertial frame are **Lorentz transformations**, the linear maps preserving the interval. In one space dimension they are "hyperbolic rotations": they slide points along the hyperbolas $t^2 - x^2 = \text{const}$ just as rotations slide points along circles. The minus sign reverses the triangle inequality: a bent worldline between two events is *shorter* in proper time than the straight one. That is the twin paradox, and it is a theorem of geometry.
+
+Gravity enters through Einstein's "happiest thought" (1907): a person falling freely does not feel their own weight. In a small freely falling laboratory the laws of special relativity hold; gravity is not a force acting in spacetime but the **curvature** of spacetime, and freely falling bodies follow its straightest lines, the **geodesics**. What cannot be transformed away is the relative acceleration of nearby falling bodies — tidal forces — and that is curvature. (The sphere is a good analogy for curvature, as long as one remembers that spacetime's geometry is Lorentzian, not Riemannian: on a sphere, initially parallel geodesics converge, as do two apples falling towards the Earth's centre.)
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="Minkowski spacetime and causal character">
+
+**Minkowski spacetime** is $\R^4$ with the bilinear form $\eta(v, w) = -v^0 w^0 + v^1 w^1 + v^2 w^2 + v^3 w^3$, i.e. $ds^2 = -c^2 dt^2 + dx^2 + dy^2 + dz^2$ (we take $c = 1$). A vector $v \ne 0$ is **timelike** if $\eta(v, v) \lt 0$, **null** (lightlike) if $\eta(v, v) = 0$, **spacelike** if $\eta(v, v) > 0$; it is **causal** if timelike or null, and **future-pointing** if moreover $v^0 > 0$.
+
+</Definition>
+
+<Definition term="proper time">
+
+A **timelike curve** $\gamma : [a, b] \to \R^4$ has timelike tangent vectors everywhere. Its **proper time** is
+
+$$
+\tau[\gamma] = \int_a^b \sqrt{-\eta(\gamma'(\lambda), \gamma'(\lambda))} \, d\lambda,
+$$
+
+independent of the parametrisation. For a future-pointing causal vector $v = (t, \mathbf x)$ we write $\tau(v) = \sqrt{t^2 - |\mathbf x|^2}$. Parametrised by proper time, a worldline has **4-velocity** $u = d\gamma/d\tau$ with $\eta(u, u) = -1$.
+
+</Definition>
+
+<Definition term="Lorentz and Poincaré groups">
+
+The **Lorentz group** is $O(1, 3) = \{\Lambda \in GL_4(\R) : \Lambda^{\mathsf T} \eta \Lambda = \eta\}$, the linear maps preserving the interval; with translations it generates the **Poincaré group** of all isometries of Minkowski spacetime. The **boost** with rapidity $\varphi$ in the $x$-direction acts on $(t, x)$ by
+
+$$
+\begin{pmatrix} t' \\ x' \end{pmatrix} = \begin{pmatrix} \cosh\varphi & \sinh\varphi \\ \sinh\varphi & \cosh\varphi \end{pmatrix} \begin{pmatrix} t \\ x \end{pmatrix},
+$$
+
+with velocity $v = \tanh\varphi$ and **Lorentz factor** $\gamma = \cosh\varphi = 1/\sqrt{1 - v^2}$.
+
+</Definition>
+
+<Definition term="Lorentzian manifold">
+
+A **Lorentzian manifold** $(M, g)$ is a smooth four-manifold with a smooth symmetric tensor $g$ of signature $(-, +, +, +)$ at every point. Tangent vectors are timelike, null or spacelike as above; a **time orientation** is a continuous choice of future light cone. $g$ has a unique torsion-free compatible (Levi-Civita) connection $\nabla$, with Christoffel symbols $\Gamma^\mu_{\alpha\beta} = \frac12 g^{\mu\nu}(\partial_\alpha g_{\nu\beta} + \partial_\beta g_{\nu\alpha} - \partial_\nu g_{\alpha\beta})$, and a **geodesic** is a curve with $\nabla_{\gamma'}\gamma' = 0$:
+
+$$
+\frac{d^2 x^\mu}{d\lambda^2} + \Gamma^\mu_{\alpha\beta} \frac{dx^\alpha}{d\lambda} \frac{dx^\beta}{d\lambda} = 0.
+$$
+
+The **Riemann tensor** $R^\mu{}_{\nu\alpha\beta}$ measures the failure of covariant derivatives to commute; its contractions are the **Ricci tensor** $R_{\nu\beta} = R^\mu{}_{\nu\mu\beta}$ and the **scalar curvature** $R = g^{\nu\beta} R_{\nu\beta}$, and the **Einstein tensor** is $G_{\mu\nu} = R_{\mu\nu} - \frac12 R \, g_{\mu\nu}$.
+
+</Definition>
+
+<Definition term="Einstein's field equations">
+
+Matter is described by a symmetric **stress–energy tensor** $T_{\mu\nu}$ (for dust of density $\rho$ moving with 4-velocity $u$, $T = \rho \, u \otimes u$). **Einstein's field equations** are
+
+$$
+G_{\mu\nu} + \Lambda g_{\mu\nu} = \frac{8\pi G}{c^4} T_{\mu\nu},
+$$
+
+with the cosmological constant $\Lambda$. In **vacuum** with $\Lambda = 0$ they reduce to $R_{\mu\nu} = 0$. Freely falling test particles follow timelike geodesics and light follows null geodesics.
+
+</Definition>
+
+<Definition term="Schwarzschild metric">
+
+In units $G = c = 1$, with $M$ the mass (physically $GM/c^2$, a length), the **Schwarzschild metric** on $r > 2M$ is
+
+$$
+ds^2 = -\Big(1 - \frac{2M}{r}\Big) dt^2 + \frac{dr^2}{1 - 2M/r} + r^2 \big(d\theta^2 + \sin^2\theta \, d\phi^2\big).
+$$
+
+The radius $r_s = 2M$ is the **Schwarzschild radius**: about $3$ km for the Sun and $9$ mm for the Earth.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Muons reach the ground">
+
+Muons are created by cosmic rays about $15$ km up and live, at rest, about $2.2\,\mu$s; even at nearly the speed of light they would cover only about $660$ m in that time. They reach sea level in large numbers (Rossi and Hall, 1941) because at $v \approx 0.995$ their Lorentz factor is about $10$: in the Earth's frame their clocks run ten times slow. In the muon's frame the same fact appears as the contraction of the atmosphere's thickness by the factor $\gamma$.
+
+</Example>
+
+<Example title="The twins, in numbers">
+
+One twin stays on Earth; the other flies to a star $3$ light-years away at $v = \frac35$ and returns at the same speed. In Earth's frame the trip takes $5 + 5 = 10$ years. With $\gamma = 1/\sqrt{1 - 9/25} = \frac54$, the traveller's clock records $10/\gamma = 8$ years. Directly: each leg is the vector $(5, 3)$, of proper time $\sqrt{25 - 9} = 4$, while the Earth twin's straight worldline $(10, 0)$ has proper time $10 > 4 + 4$. The situation is not symmetric: only the traveller's worldline bends.
+
+</Example>
+
+<Example title="Simultaneity and velocity addition">
+
+In the frame of an observer moving with velocity $v$, events with $t' = 0$ are those with $t = vx$: a tilted line in the original diagram. Events simultaneous for one observer are not simultaneous for another. Composing two boosts adds rapidities, so velocities combine as $\tanh(\varphi + \psi)$:
+$$
+u \oplus v = \frac{u + v}{1 + uv}, \qquad \text{e.g.} \quad \tfrac35 \oplus \tfrac35 = \tfrac{15}{17} \lt 1.
+$$
+
+</Example>
+
+<Example title="Constant acceleration">
+
+The worldline $t(\tau) = \frac1a \sinh(a\tau)$, $x(\tau) = \frac1a \cosh(a\tau)$ has 4-velocity $(\cosh a\tau, \sinh a\tau)$, of length $-1$, and constant **proper acceleration** $a$ — what an accelerometer on board reads. It is a hyperbola asymptotic to the light cone $t = x$: light emitted from events with $t > x$ never catches up with the traveller, who has a horizon (the **Rindler horizon**), a first model of a black-hole horizon.
+
+</Example>
+
+</Section>
+
+<Section id="special" kind="proof" title="Special relativity: the Lorentz group and the twin paradox">
+
+<Theorem name="Boosts are Lorentz transformations, and rapidities add">
+
+Let $\Lambda(\varphi)$ be the boost matrix and $\eta = \operatorname{diag}(-1, 1)$. Then $\Lambda(\varphi)^{\mathsf T} \eta \Lambda(\varphi) = \eta$, $\det \Lambda(\varphi) = 1$ and $\Lambda(\varphi)\Lambda(\psi) = \Lambda(\varphi + \psi)$. So the boosts form a one-parameter group isomorphic to $(\R, +)$, and velocities satisfy $|u \oplus v| \lt 1$ whenever $|u|, |v| \lt 1$.
+
+</Theorem>
+
+<Proof>
+
+Write $c = \cosh\varphi$, $s = \sinh\varphi$. Then $\Lambda^{\mathsf T}\eta\Lambda = \begin{pmatrix} -c^2 + s^2 & -cs + sc \\ -sc + cs & -s^2 + c^2 \end{pmatrix} = \eta$, since $c^2 - s^2 = 1$, and $\det\Lambda = c^2 - s^2 = 1$. The product formula is the addition theorem $\cosh(\varphi + \psi) = \cosh\varphi\cosh\psi + \sinh\varphi\sinh\psi$, $\sinh(\varphi + \psi) = \sinh\varphi\cosh\psi + \cosh\varphi\sinh\psi$. For velocities: $1 + uv > 0$, and $(1 + uv) \mp (u + v) = (1 \mp u)(1 \mp v) > 0$, so $|u + v| \lt 1 + uv$.
+
+</Proof>
+
+<Theorem name="The four components of the Lorentz group">
+
+Every $\Lambda \in O(1, 3)$ satisfies $\det\Lambda = \pm 1$ and $|\Lambda^0{}_0| \ge 1$. Hence $O(1, 3)$ has at least four connected components, distinguished by the signs of $\det\Lambda$ and of $\Lambda^0{}_0$; in fact it has exactly four, and the identity component $SO^+(1, 3)$ consists of products $R_1 B R_2$ of spatial rotations and a boost.
+
+</Theorem>
+
+<Proof>
+
+Taking determinants in $\Lambda^{\mathsf T}\eta\Lambda = \eta$ gives $(\det\Lambda)^2 = 1$. Applying $\Lambda$ to $e_0 = (1, 0, 0, 0)$: $\Lambda e_0$ is again a unit timelike vector, so $-(\Lambda^0{}_0)^2 + \sum_{i=1}^3 (\Lambda^i{}_0)^2 = -1$ and $(\Lambda^0{}_0)^2 \ge 1$. The functions $\det\Lambda$ and $\operatorname{sign}\Lambda^0{}_0$ are continuous on $O(1, 3)$ with values in $\{\pm 1\}$, so they are constant on connected components, and all four combinations occur ($I$, the space reflection $\operatorname{diag}(1, -1, 1, 1)$, time reversal $\operatorname{diag}(-1, 1, 1, 1)$ and $-I$). For the decomposition and connectedness of $SO^+(1, 3)$, write $\Lambda e_0 = (\cosh\varphi, \sinh\varphi \, \mathbf n)$, rotate $\mathbf n$ to the $x$-axis, undo the boost, and observe that what is left fixes $e_0$ and is therefore a rotation (Naber, *The Geometry of Minkowski Spacetime*, Ch. 1); since rotations and boosts are connected to the identity, so is $SO^+(1, 3)$.
+
+</Proof>
+
+The orthochronous Lorentz transformations ($\Lambda^0{}_0 \ge 1$) are exactly those that preserve the future light cone: they never reverse the order of causally related events. The interval and the speed of light are the invariants; everything else is "relative".
+
+<Theorem name="Reversed Cauchy–Schwarz and reverse triangle inequality">
+
+Let $v = (t_1, \mathbf x)$ and $w = (t_2, \mathbf y)$ be future-pointing causal vectors, where $\mathbf x, \mathbf y$ lie in a real inner product space of any dimension and $|\mathbf x| \le t_1$, $|\mathbf y| \le t_2$. Then
+
+$$
+\tau(v)\,\tau(w) \le t_1 t_2 - \langle \mathbf x, \mathbf y \rangle = -\eta(v, w) \qquad\text{and}\qquad \tau(v) + \tau(w) \le \tau(v + w).
+$$
+
+</Theorem>
+
+<Proof>
+
+By Cauchy–Schwarz, $\langle \mathbf x, \mathbf y \rangle \le |\mathbf x||\mathbf y|$, so it suffices to show $\sqrt{(t_1^2 - |\mathbf x|^2)(t_2^2 - |\mathbf y|^2)} \le t_1 t_2 - |\mathbf x||\mathbf y|$. The right side is non-negative because $t_1 \ge |\mathbf x| \ge 0$ and $t_2 \ge |\mathbf y| \ge 0$, and
+
+$$
+(t_1 t_2 - |\mathbf x||\mathbf y|)^2 - (t_1^2 - |\mathbf x|^2)(t_2^2 - |\mathbf y|^2) = (t_1|\mathbf y| - t_2|\mathbf x|)^2 \ge 0.
+$$
+
+For the second inequality both sides are non-negative ($v + w$ is again future causal, as $|\mathbf x + \mathbf y| \le t_1 + t_2$), so we may square. With $|\mathbf x + \mathbf y|^2 = |\mathbf x|^2 + 2\langle \mathbf x, \mathbf y \rangle + |\mathbf y|^2$,
+
+$$
+\tau(v + w)^2 - \big(\tau(v) + \tau(w)\big)^2 = 2\big(t_1 t_2 - \langle \mathbf x, \mathbf y \rangle\big) - 2\,\tau(v)\tau(w) \ge 0
+$$
+
+by the first inequality.
+
+</Proof>
+
+<Theorem name="Straight worldlines are the longest">
+
+Let $q - p$ be future timelike. Every future-directed timelike curve from $p$ to $q$ has proper time at most $\tau(q - p)$, with equality only for the straight segment. On the other hand there are causal curves from $p$ to $q$ with arbitrarily small proper time.
+
+</Theorem>
+
+<Proof>
+
+For a broken line $p = p_0, p_1, \dots, p_n = q$ with future timelike steps, applying the reverse triangle inequality $n - 1$ times gives $\sum_k \tau(p_{k+1} - p_k) \le \tau(q - p)$. A smooth timelike curve's proper time is the limit of the proper times of inscribed broken lines as the subdivision is refined (by the definition of the integral, since the integrand is continuous). Hence $\tau[\gamma] \le \tau(q - p)$. If $\gamma$ is not straight, some inscribed triangle $p, r, q$ has $r$ off the segment, and equality in the reverse Cauchy–Schwarz inequality fails strictly; refinement only decreases the sums, so the inequality is strict. For the last claim, zigzag between $p$ and $q$ along steps that are nearly null: each step has tiny proper time, and the total tends to $0$.
+
+</Proof>
+
+So proper time has **no minimum** but a **maximum**, achieved by inertial motion: the opposite of the Euclidean situation, and the resolution of the twin paradox. The traveller's worldline is not straight; there is no symmetry between the twins, and no appeal to gravity or acceleration "forces" is needed — only geometry.
+
+</Section>
+
+<Section id="general" kind="proof" title="General relativity: curvature and the field equations">
+
+**Geodesics extremise proper time.** In local coordinates, consider curves $x^\mu(\lambda)$ and the energy functional $E[x] = \frac12 \int g_{\mu\nu}(x) \dot x^\mu \dot x^\nu \, d\lambda$. Its Euler–Lagrange equations are
+
+$$
+\frac{d}{d\lambda}\big(g_{\mu\nu}\dot x^\nu\big) - \frac12 \partial_\mu g_{\alpha\beta} \dot x^\alpha \dot x^\beta = 0 \iff \ddot x^\mu + \Gamma^\mu_{\alpha\beta}\dot x^\alpha \dot x^\beta = 0,
+$$
+
+the geodesic equation (expand the first term and raise the index with $g^{\mu\nu}$). Along a solution $g(\dot x, \dot x)$ is constant, and the critical points of $E$ among affinely parametrised curves are the critical points of proper time. Timelike geodesics **locally maximise** proper time: within a convex normal neighbourhood the geodesic between two timelike-related points is the longest causal curve, the Lorentzian analogue of the theorem above (O'Neill, Ch. 10; Hawking–Ellis, §4.5). Beyond a conjugate point they stop maximising.
+
+<Theorem name="The Newtonian limit">
+
+Let $g = -(1 + 2\Phi)\,dt^2 + (1 - 2\Phi)\,(dx^2 + dy^2 + dz^2)$ with $\Phi$ a time-independent function with $|\Phi| \ll 1$, and consider a slowly moving particle ($|dx^i/dt| \ll 1$). To first order in $\Phi$ and in the velocity, the geodesic equation is Newton's law $\dfrac{d^2 x^i}{dt^2} = -\partial_i \Phi$. For dust at rest with density $\rho$, the $00$ component of the field equations is, to the same order, Poisson's equation $\Delta \Phi = 4\pi\rho$.
+
+</Theorem>
+
+<Proof>
+
+For slow motion $dt/d\tau \approx 1$ and the terms with $\dot x^i \dot x^j$ or $\dot x^i \dot t$ are of higher order, so $\ddot x^i \approx -\Gamma^i_{00}$. With $g_{00} = -(1 + 2\Phi)$ time-independent, $\Gamma^i_{00} = -\frac12 g^{ii}\partial_i g_{00} = \partial_i\Phi + O(\Phi^2)$. Hence $d^2x^i/dt^2 = -\partial_i\Phi$. For the field equations, take the trace of $R_{\mu\nu} - \frac12 R g_{\mu\nu} = 8\pi T_{\mu\nu}$ to get $R = -8\pi T$ and rewrite them as $R_{\mu\nu} = 8\pi\big(T_{\mu\nu} - \frac12 T g_{\mu\nu}\big)$. For dust at rest, $T_{00} = \rho$ and $T = g^{00}T_{00} \approx -\rho$, so the right side of the $00$ equation is $8\pi(\rho - \frac12\rho) = 4\pi\rho$. On the left, to first order in a static field, $R_{00} = \partial_\mu\Gamma^\mu_{00} - \partial_0\Gamma^\mu_{0\mu} + O(\Gamma^2) = \partial_i\partial_i\Phi$.
+
+</Proof>
+
+This is how the constant $8\pi G/c^4$ is fixed: Einstein's theory must reproduce Newton's where Newton is accurate. The field equations are also forced by consistency. The **contracted Bianchi identity** $\nabla^\mu G_{\mu\nu} = 0$ holds for every metric, so the equations imply $\nabla^\mu T_{\mu\nu} = 0$: energy and momentum are conserved, and matter moves consistently with the geometry it creates. The vacuum equations are the Euler–Lagrange equations of the **Einstein–Hilbert action** $\int R \sqrt{-\det g} \, d^4x$ (Hilbert, 1915).
+
+<Theorem name="Birkhoff's theorem (Jebsen 1921, Birkhoff 1923)">
+
+Every spherically symmetric solution of the vacuum equations $R_{\mu\nu} = 0$ is locally isometric to a piece of the Schwarzschild solution (or of Minkowski space). In particular it is static.
+
+</Theorem>
+
+We do not prove Birkhoff's theorem here (Hawking–Ellis, Appendix B; Carroll, §5.2). That the Schwarzschild metric is Ricci-flat is a direct, if lengthy, computation of its Christoffel symbols and curvature; the third experiment below does it symbolically. A consequence: a spherical star that pulsates radially emits no gravitational waves, and the field outside it is the same as that of a static star of the same mass.
+
+**$r = 2M$ is not a singularity of spacetime.** The metric component $g_{rr} = (1 - 2M/r)^{-1}$ blows up at $r = 2M$, but the curvature does not: the **Kretschmann scalar** $R_{\alpha\beta\gamma\delta}R^{\alpha\beta\gamma\delta} = 48M^2/r^6$ is finite there and blows up only at $r = 0$. The trouble is with the coordinates. With the ingoing **Eddington–Finkelstein** coordinate $v = t + r + 2M\log|r/2M - 1|$ the metric becomes
+
+$$
+ds^2 = -\Big(1 - \frac{2M}{r}\Big)dv^2 + 2\,dv\,dr + r^2 \, d\Omega^2,
+$$
+
+which is smooth for all $r > 0$. At $r \lt 2M$ the vector $\partial_r$ is timelike and every future-directed causal curve has decreasing $r$: nothing, not even light, gets out. The sphere $r = 2M$ is the **event horizon** of a black hole; $r = 0$ is a genuine curvature singularity.
+
+</Section>
+
+<Section id="orbits" kind="proof" title="Light, planets and black holes: Schwarzschild geodesics">
+
+**Conserved quantities.** The Schwarzschild metric does not depend on $t$ or $\phi$, so along a geodesic with affine parameter $\lambda$ (proper time for massive particles) the quantities
+
+$$
+E = \Big(1 - \frac{2M}{r}\Big)\frac{dt}{d\lambda}, \qquad L = r^2 \frac{d\phi}{d\lambda}
+$$
+
+are conserved (the $t$- and $\phi$-components of the Euler–Lagrange equations above). By spherical symmetry we may take the orbit in the plane $\theta = \pi/2$. Normalising $g(\dot x, \dot x) = -\kappa$, with $\kappa = 1$ for particles and $\kappa = 0$ for light, gives
+
+$$
+\Big(\frac{dr}{d\lambda}\Big)^2 = E^2 - \Big(1 - \frac{2M}{r}\Big)\Big(\kappa + \frac{L^2}{r^2}\Big).
+$$
+
+For particles, the radial motion is that of a unit-mass particle with energy $E^2$ in the **effective potential** $V(r) = (1 - 2M/r)(1 + L^2/r^2)$.
+
+<Theorem name="The orbit equation">
+
+With $u = 1/r$ as a function of $\phi$, geodesics satisfy
+$$
+\frac{d^2u}{d\phi^2} + u = \frac{\kappa M}{L^2} + 3Mu^2.
+$$
+For $\kappa = 1$ the first term on the right is Newton's; the term $3Mu^2$ is the relativistic correction.
+
+</Theorem>
+
+<Proof>
+
+Since $dr/d\lambda = (dr/d\phi)(L/r^2) = -L \, du/d\phi$, the energy equation becomes $L^2 (u')^2 = E^2 - (1 - 2Mu)(\kappa + L^2u^2)$. Differentiating in $\phi$: $2L^2 u'u'' = 2M\kappa u' + 6ML^2u^2u' - 2L^2 u u'$. Divide by $2L^2u'$ (on stretches where $u' \ne 0$; circular orbits are treated separately).
+
+</Proof>
+
+<Theorem name="Light bending (to first order in M/b)">
+
+A light ray with impact parameter $b \gg M$ is deflected by the angle $\delta = 4M/b$, i.e. $4GM/(c^2 b)$ in physical units: $1.75''$ for starlight grazing the Sun, twice the value $2GM/(c^2b)$ obtained by treating light as a Newtonian particle.
+
+</Theorem>
+
+<Proof>
+
+With $\kappa = 0$, $u'' + u = 3Mu^2$. Without the mass, $u_0 = \frac{\sin\phi}{b}$ is a straight line with impact parameter $b$. Write $u = u_0 + u_1$ with $u_1 = O(M/b^2)$ and linearise: $u_1'' + u_1 = \frac{3M}{b^2}\sin^2\phi = \frac{3M}{2b^2}(1 - \cos 2\phi)$. A particular solution is $u_1 = \frac{3M}{2b^2}\big(1 + \frac13\cos 2\phi\big)$, so
+
+$$
+u = \frac{\sin\phi}{b} + \frac{M}{2b^2}(3 + \cos 2\phi).
+$$
+
+The ray comes from and goes to infinity where $u = 0$. Near $\phi = 0$, setting $\phi = -\varepsilon$ with $\varepsilon$ small gives $-\varepsilon/b + 4M/(2b^2) = 0$, so $\varepsilon = 2M/b$; by symmetry the same happens near $\phi = \pi$. The asymptotic directions differ from a straight line by $2\varepsilon = 4M/b$.
+
+</Proof>
+
+The Newtonian value is half as large because it captures only the bending of the time part of the metric; the spatial curvature contributes the other half. Measured during the 1919 eclipse by expeditions to Príncipe and to Sobral in Brazil, and since by radio interferometry to better than one part in $10^4$, the full value agrees with relativity.
+
+<Theorem name="Perihelion precession (to first order in M/p)">
+
+A bound orbit with semi-latus rectum $p = L^2/M$ and eccentricity $e$ precesses by $\Delta\phi = 6\pi M/p = \dfrac{6\pi GM}{c^2 a(1 - e^2)}$ per revolution, where $a$ is the semi-major axis.
+
+</Theorem>
+
+<Proof>
+
+With $\kappa = 1$, $u'' + u = \frac{1}{p} + 3Mu^2$. The Newtonian solution is the ellipse $u_0 = \frac{1 + e\cos\phi}{p}$. Linearising, $u_1'' + u_1 = 3Mu_0^2 = \frac{3M}{p^2}\big(1 + 2e\cos\phi + e^2\cos^2\phi\big)$. The constant and $\cos 2\phi$ parts produce small bounded corrections to the shape. The term $\frac{6Me}{p^2}\cos\phi$ resonates with the free oscillation and produces the secular solution $\frac{3Me}{p^2}\,\phi\sin\phi$. Keeping it,
+
+$$
+u \approx \frac1p\Big(1 + e\cos\phi + \frac{3M}{p}e\,\phi\sin\phi\Big) \approx \frac1p\Big(1 + e\cos\big((1 - \tfrac{3M}{p})\phi\big)\Big),
+$$
+
+using $\cos(\phi - \varepsilon\phi) \approx \cos\phi + \varepsilon\phi\sin\phi$. Perihelia occur where the argument is a multiple of $2\pi$, i.e. at $\phi = 2\pi n/(1 - 3M/p) \approx 2\pi n (1 + 3M/p)$: each revolution the perihelion advances by $6\pi M/p$. (The approximation is valid for $\phi \ll p/M$; the method of multiple scales, or Lindstedt–Poincaré, makes it uniform.)
+
+</Proof>
+
+For Mercury ($a = 5.79 \times 10^{10}$ m, $e = 0.2056$, about $415$ revolutions per century) this is $43''$ per century, the anomaly that Newtonian theory could not explain. Einstein computed it on 18 November 1915, a week before writing down the final field equations.
+
+<Theorem name="Circular orbits and the innermost stable circular orbit">
+
+For $M > 0$, circular orbits of radius $r > 0$ are critical points of $V$, i.e. roots of $Mr^2 - L^2 r + 3ML^2 = 0$. They exist only if $L^2 \ge 12M^2$; for $L^2 > 12M^2$ there are two, $r_\pm = \frac{L^2 \pm L\sqrt{L^2 - 12M^2}}{2M}$ (with $L > 0$), the outer stable (a minimum of $V$) and the inner unstable (a maximum). As $L^2 \downarrow 12M^2$ they merge at $r = 6M$, the **innermost stable circular orbit**. For light, the effective potential $(1 - 2M/r)/r^2$ has a single critical point, the unstable **photon sphere** $r = 3M$.
+
+</Theorem>
+
+<Proof>
+
+Differentiating, $V'(r) = \frac{2M}{r^2}\big(1 + \frac{L^2}{r^2}\big) - \big(1 - \frac{2M}{r}\big)\frac{2L^2}{r^3} = \frac{2(Mr^2 - L^2 r + 3ML^2)}{r^4}$. A real root requires the discriminant $L^4 - 12M^2L^2$ to be non-negative; equivalently, completing the square, $(2Mr - L^2)^2 = L^2(L^2 - 12M^2)$, and $L \ne 0$ since otherwise $Mr^2 = 0$. The quadratic $Mr^2 - L^2r + 3ML^2$ is negative between its roots and positive outside, so $V$ increases beyond $r_+$, decreases between $r_-$ and $r_+$: $r_+$ is a minimum, $r_-$ a maximum. At $L^2 = 12M^2$ the double root is $r = L^2/(2M) = 6M$. For light, $\frac{d}{dr}\frac{1 - 2M/r}{r^2} = \frac{6M - 2r}{r^4}$ vanishes only at $r = 3M$, a maximum.
+
+</Proof>
+
+Gas in an accretion disc spirals inwards through stable circular orbits until it reaches $r = 6M$ and then plunges; the ISCO sets how much energy a disc around a non-rotating black hole can radiate. Light rays with impact parameter below $3\sqrt3\,M$ fall in, which is why a black hole casts a **shadow** about $2.6$ times larger than its horizon — the dark disc imaged by the Event Horizon Telescope.
+
+**Beyond Schwarzschild.** Rotating black holes are described by Kerr's metric (1963). The homogeneous, isotropic cosmologies are the **Friedmann–Lemaître–Robertson–Walker** metrics $-dt^2 + a(t)^2 \big(\frac{dr^2}{1 - kr^2} + r^2 d\Omega^2\big)$, for which the field equations reduce to Friedmann's equation $\big(\frac{\dot a}{a}\big)^2 = \frac{8\pi\rho}{3} - \frac{k}{a^2} + \frac\Lambda3$ (Friedmann, 1922; Lemaître, 1927): the universe expands. Linearising the vacuum equations around Minkowski space gives a wave equation for the metric perturbation: **gravitational waves** travel at the speed of light.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Spacetime geometry in Lean">
+
+Mathlib has no Minkowski space or Lorentzian manifolds yet (the separate Physlib project builds them on top of Mathlib), so we formalise with Mathlib's real numbers, matrices, inner product spaces and derivatives, in units $c = G = 1$. The metric and boosts in one space dimension, and the facts that boosts are Lorentz transformations and compose by adding rapidities:
+
+<Lean decl="Lumenary.Relativity.eta" />
+
+<Lean decl="Lumenary.Relativity.boost" />
+
+<Lean decl="Lumenary.Relativity.boost_preserves_eta" />
+
+<Lean decl="Lumenary.Relativity.boost_mul" />
+
+Velocity addition and the Lorentz factor of the twin example:
+
+<Lean decl="Lumenary.Relativity.velocity_addition" />
+
+<Lean decl="Lumenary.Relativity.lorentz_factor_three_fifths" />
+
+The heart of special relativity, in **any number of space dimensions** (the spatial part lives in an arbitrary real inner product space `E`): the reversed Cauchy–Schwarz inequality, proved as in the lesson from Cauchy–Schwarz and the identity $(t_1 t_2 - |\mathbf x||\mathbf y|)^2 - (t_1^2 - |\mathbf x|^2)(t_2^2 - |\mathbf y|^2) = (t_1|\mathbf y| - t_2|\mathbf x|)^2$, and the reverse triangle inequality — the twin paradox:
+
+<Lean decl="Lumenary.Relativity.reverse_cauchy_schwarz" />
+
+<Lean decl="Lumenary.Relativity.twin_paradox" />
+
+For the Schwarzschild orbits: the effective potential, its derivative (a `HasDerivAt` statement assembled from the product, quotient and power rules), the bound $L^2 \ge 12M^2$ for circular orbits and the innermost stable circular orbit at $r = 6M$:
+
+<Lean decl="Lumenary.Relativity.effectivePotential" />
+
+<Lean decl="Lumenary.Relativity.effective_potential_deriv" />
+
+<Lean decl="Lumenary.Relativity.circular_orbit_bound" />
+
+<Lean decl="Lumenary.Relativity.isco" />
+
+**Not formalised here:** Lorentzian manifolds, connections and curvature (Mathlib has Riemannian metrics and connections on manifolds only in early form), the field equations, the Schwarzschild solution and its Ricci-flatness, the orbit equation and the perturbative derivations of light bending and precession, and the maximisation of proper time by curves (we prove the inequality for two segments; the curve version is a limit argument). What is formalised is the exact algebra of special relativity and the exact calculus of the effective potential.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: twins, geodesics and curvature">
+
+Speeds such as $\frac35$, $\frac{12}{13}$ and $\frac{20}{29}$ have rational Lorentz factors, so the twin paradox can be computed in exact arithmetic. The first experiment does so, checks the reverse triangle inequality on 2000 random rational timelike vectors in $1 + 3$ dimensions by comparing exact squares, and verifies $\gamma(u \oplus v) = \gamma(u)\gamma(v)(1 + uv)$.
+
+<Python id="relativity_twin_paradox" />
+
+The second integrates the orbit equations numerically. The deflection of light approaches $4M/b$ as $M/b \to 0$, and agrees with the second-order value $4M/b + \frac{15\pi}{4}\frac{M^2}{b^2}$ much better; the perihelion advance approaches $6\pi M/p$. It ends with the numbers for the Sun and Mercury.
+
+<Python id="relativity_geodesics" />
+
+The third computes the curvature of the Schwarzschild metric symbolically: the Ricci tensor vanishes, and the Kretschmann scalar is $48M^2/r^6$ — finite at $r = 2M$.
+
+<Python id="relativity_schwarzschild_curvature" />
+
+The exact computations confirm finitely many instances of theorems; the numerical integration is evidence for the perturbative formulas (whose derivations are above); the symbolic computation is as reliable as SymPy's simplifier.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Spacetime diagrams and effective potentials">
+
+A spacetime diagram ($x$ across, $t$ up, $c = 1$). The light cone is gold; the hyperbolas are the events at proper time $1$ and $2$ from the origin. Move $v$: the moving clock's worldline $t = x/v$ tilts towards the light cone, its ticks (the marked points) slide along the hyperbolas — so all observers agree on proper time — and its line of simultaneity $t = vx$ tilts the other way.
+
+<FunctionPlot
+  fns={["abs(x)", "sqrt(1 + x^2)", "sqrt(4 + x^2)", "x/v", "v*x"]}
+  labels={["light cone", "τ = 1", "τ = 2", "moving clock t = x/v", "its 'now' t = vx"]}
+  params={[{ name: "v", min: 0.05, max: 0.95, step: 0.05, value: 0.6 }]}
+  points={[["v/sqrt(1 - v^2)", "1/sqrt(1 - v^2)", "τ = 1"], ["2*v/sqrt(1 - v^2)", "2/sqrt(1 - v^2)", "τ = 2"]]}
+  x={[-1, 4]}
+  y={[0, 5]}
+  aspect="equal"
+  yLabel="t"
+  title="Minkowski diagram: boosts slide events along hyperbolas"
+/>
+
+The Schwarzschild effective potential $V(r) = (1 - 2M/r)(1 + L^2/r^2)$ with $M = 1$, beside its Newtonian counterpart $1 - 2M/r + L^2/r^2$. For large $L$ the relativistic potential has a well (a stable orbit) and a barrier (an unstable one) that Newton lacks; lower $L$ towards $\sqrt{12} \approx 3.46$ and watch them merge at the ISCO $r = 6$. Below that, every infalling particle plunges.
+
+<FunctionPlot
+  fns={["(1 - 2/x)*(1 + L^2/x^2)", "1 - 2/x + L^2/x^2"]}
+  labels={["Schwarzschild V(r)", "Newtonian"]}
+  params={[{ name: "L", min: 3, max: 5, step: 0.02, value: 4 }]}
+  points={[[6, "8/9", "ISCO when L² = 12"]]}
+  x={[2, 40]}
+  y={[0.8, 1.15]}
+  xLabel="r"
+  yLabel="V"
+  title="Effective potentials: where orbits can live"
+/>
+
+Curvature as the convergence of geodesics, on the sphere (an analogy: this is Riemannian, not Lorentzian, geometry): the angle sum of a geodesic triangle exceeds $\pi$ by curvature times area. In spacetime the same curvature appears as tidal acceleration between neighbouring free-fall paths.
+
+<CurvedTriangles mode="sphere" modes={["plane", "sphere"]} subtitle="Angle sum − π = curvature × area: a first glimpse of Gauss–Bonnet." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Relativity says that everything is relative."** The central objects are absolute: the spacetime interval between two events, the proper time along a worldline, the speed of light and the causal order of timelike-related events are the same for all inertial observers (indeed, for all observers, in general relativity). What depends on the observer is the split of spacetime into space and time — simultaneity, lengths and durations — just as the split of the plane into "across" and "up" depends on the axes.
+
+</Misconception>
+
+<Misconception>
+
+**"The Schwarzschild radius is a physical singularity."** At $r = 2M$ the coordinate expression of the metric breaks down, but curvature invariants such as $R_{\alpha\beta\gamma\delta}R^{\alpha\beta\gamma\delta} = 48M^2/r^6$ are finite, and in Eddington–Finkelstein coordinates the metric is smooth there. A freely falling observer crosses the horizon in finite proper time and, for a large black hole, notices nothing locally special. The genuine singularity is at $r = 0$.
+
+</Misconception>
+
+<Misconception>
+
+**"The twin paradox needs general relativity, or the acceleration explains it."** The ages are computed by integrating proper time along the two worldlines in flat spacetime; the straight one is longer by the reverse triangle inequality. Acceleration marks *which* worldline is bent, but the age difference grows with the length of the coasting legs, not with the brief turnaround.
+
+</Misconception>
+
+<Misconception>
+
+**"Free fall follows the shortest path."** Timelike geodesics are *longest* (locally maximal proper time), not shortest; there is no shortest timelike path at all, since nearly lightlike zigzags have arbitrarily small proper time. And in the curved spacetime around the Earth the geodesic of a thrown ball is a parabola in space — "straight" in spacetime, not in space.
+
+</Misconception>
+
+<Misconception>
+
+**"Gravity is just a force that general relativity describes more accurately."** In general relativity there is no gravitational force: freely falling bodies are unaccelerated (their accelerometers read zero), and what we call the force of gravity on the ground is the floor pushing us off our geodesic. The genuinely gravitational effect is tidal: curvature, felt as relative acceleration of neighbouring geodesics.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Klein's programme and the celestial sphere">
+
+In Klein's Erlangen programme a geometry is a space with a group of symmetries, and special relativity is the geometry of the **Poincaré group** acting on Minkowski space, just as Euclidean geometry is that of the Euclidean group. Its subgroup fixing a point, $SO^+(1, 3)$, acts on the set of light rays through that point — the **celestial sphere** an observer sees — and it acts there by conformal maps: $SO^+(1, 3) \cong PSL(2, \C)$, the Möbius group of the Riemann sphere. So the night sky seen by a moving observer is a Möbius transformation of the sky seen at rest: circles go to circles, and a relativistically moving sphere still looks circular (Penrose; Terrell, 1959). In general relativity, Riemann's idea that geometry is determined by a metric, and Levi-Civita's parallel transport, become physics; see <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink> and <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Causal structure and the singularity theorems">
+
+Much of relativity is topology of the causal relation. A spacetime is **globally hyperbolic** if it has no closed causal curves and the causal diamonds $J^+(p) \cap J^-(q)$ are compact; Geroch (1970) proved that it is then homeomorphic to $\R \times \Sigma$ for a Cauchy surface $\Sigma$ (diffeomorphic, by Bernal and Sánchez, 2003). **Penrose's singularity theorem** (1965) is a compactness argument: if a globally hyperbolic spacetime with a non-compact Cauchy surface satisfies the null energy condition $R_{\mu\nu}k^\mu k^\nu \ge 0$ and contains a trapped surface, then it is null geodesically incomplete — some light ray ends after finite affine parameter. Raychaudhuri's equation (1955), describing the focusing of geodesic congruences, supplies the geometric input. Hawking (1972) showed that the cross-sections of a stationary black-hole horizon in four dimensions are spheres. See <TopicLink id="math.geom.differential-topology">differential topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Einstein's equations as a hyperbolic PDE">
+
+In harmonic (wave) coordinates, where $\square_g x^\mu = 0$, the vacuum equations become a quasilinear system of wave equations $g^{\alpha\beta}\partial_\alpha\partial_\beta g_{\mu\nu} = Q_{\mu\nu}(g, \partial g)$. **Choquet-Bruhat** (1952) used this to prove that the Cauchy problem is locally well posed: initial data on a spacelike hypersurface (satisfying the constraint equations) determine a unique maximal globally hyperbolic development (Choquet-Bruhat and Geroch, 1969). **Christodoulou and Klainerman** (1993) proved the nonlinear stability of Minkowski space: small perturbations disperse. The **positive mass theorem** of Schoen and Yau (1979), reproved with spinors by Witten (1981), says that the total (ADM) mass of an asymptotically flat spacetime with non-negative energy density is non-negative, and zero only for Minkowski space — a theorem of geometric analysis with a direct physical meaning. See <TopicLink id="math.analysis.geometric-analysis">geometric analysis</TopicLink> and <TopicLink id="math.analysis.pde-theory">PDE theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Lie algebras, spinors and particles">
+
+The Lie algebra of the Lorentz group is $\mathfrak{so}(1, 3)$, spanned by three rotation generators $J_i$ and three boost generators $K_i$ with $[J_i, J_j] = \epsilon_{ijk}J_k$, $[J_i, K_j] = \epsilon_{ijk}K_k$, $[K_i, K_j] = -\epsilon_{ijk}J_k$ — boosts do not close among themselves, and two non-collinear boosts compose to a boost times a rotation (Thomas precession). As a real Lie algebra $\mathfrak{so}(1, 3) \cong \mathfrak{sl}(2, \C)$, and the double cover $SL(2, \C) \to SO^+(1, 3)$ is the source of **spinors**: Dirac's electron is a representation of $SL(2, \C)$ that is not one of the Lorentz group. **Wigner** (1939) classified elementary particles as irreducible unitary representations of the Poincaré group, labelled by mass and spin (or helicity, for massless particles). General relativity and the gauge theories of particle physics are both theories of connections and their curvature — on the tangent bundle, with structure group $SO^+(1, 3)$, and on principal bundles with groups such as $U(1)$ and $SU(3)$. See <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>, <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink> and <TopicLink id="math.applied.gauge-theory">gauge theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="The equivalence principle and its tests">
+
+The equivalence principle is an experimental fact turned into geometry: inertial and gravitational mass agree, so all bodies fall alike, so free fall can be the geometry rather than a force. Torsion balances (Eötvös, from about 1890) and the MICROSCOPE satellite (2016–2018) confirm universality of free fall to about one part in $10^{15}$. Its first new prediction, the gravitational redshift — clocks lower in a gravitational potential run slower by $\Delta\Phi/c^2$ — was measured with gamma rays in a 22.5-metre tower by Pound and Rebka (1959) and is built into GPS. The rest of general relativity is tested by light bending, the Shapiro time delay of radar echoes (1964 onwards), binary pulsars losing energy to gravitational waves (Hulse and Taylor, 1974 onwards) and direct detection by LIGO. These are confirmations, not proofs: the theory's mathematical content is the geometry, and its physical content is that nature appears to obey it.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="why-ellipses" />
+
+<Trail slug="triangles-on-a-ball" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Galileo Galilei** (*Dialogue*, 1632) stated the principle of relativity with a ship in uniform motion; **James Clerk Maxwell** (1865) found the speed of light in his equations; **Albert Michelson and Edward Morley** (1887) failed to detect the ether. **George FitzGerald** (1889) and **Hendrik Lorentz** (1892, 1904) introduced contraction and the transformations; **Henri Poincaré** (1905) showed they form a group and named it after Lorentz.
+- **Albert Einstein** (1905) derived the transformations from the relativity principle and the constancy of $c$; **Hermann Minkowski** (1908) gave the geometry of spacetime. **Gregorio Ricci-Curbastro** and **Tullio Levi-Civita** (1900) had developed the tensor calculus that general relativity needed, and **Marcel Grossmann** taught it to Einstein (1912–1913).
+- Einstein formulated the equivalence principle (1907) and, after years of work, the field equations (November 1915); **David Hilbert** found the action principle the same month. **Karl Schwarzschild** (1916) found the exact solution while serving on the Russian front. **Arthur Eddington** and **Frank Dyson** organised the 1919 eclipse expeditions to Príncipe and to Sobral, Brazil.
+- **Alexander Friedmann** (1922) and **Georges Lemaître** (1927) found expanding cosmologies, before **Edwin Hubble**'s observations (1929). **Subrahmanyan Chandrasekhar** (1930s) showed that white dwarfs have a maximum mass, pointing to gravitational collapse; **Amal Kumar Raychaudhuri** (1955) found the focusing equation; **Yvonne Choquet-Bruhat** (1952) proved well-posedness of the field equations; **Roy Kerr** (1963) found the rotating black hole; **Roger Penrose** (1965) and **Stephen Hawking** proved the singularity theorems (Nobel Prize 2020 to Penrose).
+- **LIGO** detected gravitational waves from merging black holes on 14 September 2015, and the **Event Horizon Telescope** imaged the shadow of the black hole in the galaxy M87 in 2019.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Bernard F. Schutz, *A First Course in General Relativity* (2nd ed., 2009) — the gentlest complete introduction, from special relativity to black holes and cosmology.
+- Sean M. Carroll, *Spacetime and Geometry: An Introduction to General Relativity* (2004) — the standard modern graduate course.
+- Robert M. Wald, *General Relativity* (1984) — rigorous and coordinate-free, with causal structure and the singularity theorems.
+- Barrett O'Neill, *Semi-Riemannian Geometry with Applications to Relativity* (1983) — the mathematician's account of Lorentzian geometry.
+- Stephen W. Hawking and George F. R. Ellis, *The Large Scale Structure of Space-Time* (1973) — causal structure and singularities.
+- Edwin F. Taylor and John Archibald Wheeler, *Spacetime Physics* (2nd ed., 1992) — special relativity as geometry, with many worked examples.
+
+</Section>

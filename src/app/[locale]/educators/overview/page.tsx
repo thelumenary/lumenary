@@ -6,7 +6,7 @@ import { Messages } from "@/i18n/Messages";
 import { getT, resolveLocale } from "@/i18n/server";
 import type { Locale } from "@/i18n/config";
 import type { TFunction } from "@/i18n/dictionary";
-import { getComputeReport, getGraph, getLeanReport, getLessonList, getPage, getTrailList, ROOT } from "@/lib/content";
+import { getComputeReport, getGraph, getLeanReport, getLessonsByLevel, getPage, getTrailList, ROOT } from "@/lib/content";
 import { href } from "@/lib/href";
 import { mdInline } from "@/lib/markdown";
 import { LEVEL_IDS } from "@/lib/schema";
@@ -64,25 +64,30 @@ function components(locale: Locale, t: TFunction) {
       );
     },
     LessonList: () => (
-      <ol className="not-prose space-y-2">
-        {getLessonList(locale).map(({ frontmatter: l }) => (
-          <li key={l.slug} className="rounded-xl border border-line bg-card px-4 py-3">
-            <Link href={href(locale, `math/lessons/${l.slug}`)} className="font-semibold text-ink hover:underline">
-              {l.title}
-            </Link>{" "}
-            <span className="text-xs text-muted">
-              · {t(`levels.${l.level}`)} · {l.lean.length} Lean · {l.compute.length} Python
-            </span>
-            <p className="mt-1 text-sm text-ink-2" dangerouslySetInnerHTML={{ __html: mdInline(l.subtitle) }} />
-          </li>
+      <div className="not-prose space-y-5">
+        {getLessonsByLevel(locale).map(({ level, lessons }) => (
+          <div key={level}>
+            <p className="text-sm font-bold text-ink">
+              {t(`levels.${level}`)} <span className="font-normal text-muted">· {lessons.length}</span>
+            </p>
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {lessons.map((l) => (
+                <li key={l.slug}>
+                  <Link prefetch={false} href={href(locale, `math/lessons/${l.slug}`)} className="chip hover:text-ink" title={`${l.lean.length} Lean · ${l.compute.length} Python`}>
+                    {l.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ol>
+      </div>
     ),
     TrailList: () => (
       <ul className="not-prose grid gap-2 sm:grid-cols-2">
         {getTrailList(locale).map(({ frontmatter: tr }) => (
           <li key={tr.slug} className="rounded-xl border border-gold/40 bg-gold-soft/40 px-4 py-3">
-            <Link href={href(locale, `math/trails/${tr.slug}`)} className="font-semibold text-ink hover:underline">
+            <Link prefetch={false} href={href(locale, `math/trails/${tr.slug}`)} className="font-semibold text-ink hover:underline">
               {tr.title}
             </Link>
             <p className="mt-1 text-xs text-ink-2">→ {tr.deeper.map((id) => graph.topics.find((x) => x.id === id)?.title ?? id).join(", ")}</p>

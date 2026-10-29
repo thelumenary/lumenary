@@ -1,0 +1,463 @@
+---
+slug: random-geometry
+topic: math.prob.random-geometry
+title: "Random structures: walks, percolation and random geometry"
+subtitle: A random walker is sure to come home on a street grid but may be lost forever in space; a random forest either burns locally or burns forever — and the boundary between the two regimes has a geometry of its own.
+level: research
+ages: Research orientation (stochastic processes and the probabilistic method assumed)
+minutes: 140
+order: 8014
+objectives:
+  - Prove Pólya's theorem that simple random walk is recurrent in dimensions 1 and 2 and transient in dimensions 3 and higher
+  - Use electrical networks — effective resistance, Rayleigh monotonicity and the Nash-Williams inequality — to decide recurrence and transience
+  - Describe the phase transition in bond percolation, prove $\frac13 \le p_c(\Z^2) \le \frac23$ by Peierls' argument, and state Kesten's theorem $p_c = \frac12$
+  - Describe the giant component of the Erdős–Rényi graph $G(n, c/n)$ and its branching-process explanation
+  - Describe Brownian motion and Schramm–Loewner evolution as scaling limits, separating theorems from conjectures and from numerical evidence
+narrators: []
+lean:
+  - Lumenary.RandomGeometry.four_pow_le_central_binom
+  - Lumenary.RandomGeometry.central_binom_sq_lower
+  - Lumenary.RandomGeometry.central_binom_sq_upper
+  - Lumenary.RandomGeometry.not_summable_one_div_two_mul_add_one
+  - Lumenary.RandomGeometry.return_1d_not_summable
+  - Lumenary.RandomGeometry.return_2d_not_summable
+  - Lumenary.RandomGeometry.return_prob_tendsto_zero
+  - Lumenary.RandomGeometry.rot
+  - Lumenary.RandomGeometry.rot_injective
+  - Lumenary.RandomGeometry.unitSteps
+  - Lumenary.RandomGeometry.diagSteps
+  - Lumenary.RandomGeometry.rot_unit_steps
+  - Lumenary.RandomGeometry.closed_iff_rot
+  - Lumenary.RandomGeometry.nash_williams_diverges
+  - Lumenary.RandomGeometry.summable_inv_sq
+  - Lumenary.RandomGeometry.peierls_tendsto
+  - Lumenary.RandomGeometry.dual_circuits_summable
+  - Lumenary.RandomGeometry.no_giant_subcritical
+compute: [random_geometry_polya, random_geometry_percolation]
+trails: [will-the-walker-return]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Will the walker come home?">
+
+In the early 1920s George Pólya, walking in the woods above Zürich, kept running into the same young couple, far more often than seemed polite. He wondered whether two random walkers on a grid of paths are bound to meet again and again — equivalently, whether a single random walker is bound to return to where it started. His answer (1921) is one of the most quoted theorems in probability: **on the line and in the plane a simple random walk returns home with probability one; in three or more dimensions it does not.** A remark often attributed to Shizuo Kakutani puts it memorably: a drunk man will find his way home, but a drunk bird may get lost forever.
+
+Pólya's theorem is the entrance to a large territory where **randomness creates shape**. Let each pipe in a porous rock be open or blocked at random (Broadbent and Hammersley's model of a gas-mask filter, 1957): does water seep through? Join $n$ people by random acquaintances (Erdős and Rényi, 1959–60): is there a giant connected community? Let a random walk take smaller and faster steps: what does the limiting curve look like, and what is the shape of its outer boundary? All these systems have **phase transitions** — sharp thresholds where global behaviour changes abruptly — and at the threshold, beautiful random fractals appear. This lesson is an orientation: the classical theorems with full proofs, the deep theorems stated precisely, and the open problems marked as open.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Counting returns, currents and clusters">
+
+**Returns.** A walk returns with probability one exactly when the *expected number of returns* is infinite. After $2n$ steps the chance of being at the origin of $\Z^d$ is about $c_d\, n^{-d/2}$ (by the central limit theorem, the walk has spread over a region of volume about $n^{d/2}$). The series $\sum n^{-d/2}$ diverges for $d \le 2$ and converges for $d \ge 3$. That is the whole story, once each step is made rigorous.
+
+**Currents.** Make every edge of the grid a $1\,\Omega$ resistor and pump current from the origin to "infinity". If the total resistance to infinity is infinite, no current escapes, and the random walk — whose hitting probabilities are exactly the voltages — keeps coming back. In the plane the number of resistors in parallel at distance $k$ grows only like $k$, so the resistances of successive shells add up like $\sum 1/k = \infty$; in space they grow like $k^2$ and $\sum 1/k^2 \lt \infty$.
+
+**Clusters.** In percolation, open edges form clusters. For small $p$ every cluster is finite: the number of possible long paths grows like $3^n$, but each is open with probability $p^n$. For $p$ close to $1$ the closed edges are rare and cannot surround the origin. In between lies a critical value $p_c$, which for the square lattice is exactly $\frac12$ — because the lattice is its own planar dual.
+
+<Analogy>
+
+The resistor picture is not just an analogy: the voltage at $x$ when the origin is held at $1$ volt and a far boundary at $0$ is exactly the probability that a random walk from $x$ hits the origin before the boundary. Both are the unique harmonic function with those boundary values. The analogy *is* a theorem; what is heuristic above is only the shell-counting estimate.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+We assume <TopicLink id="math.prob.stochastic-processes">stochastic processes</TopicLink> (Markov chains, the strong Markov property, Brownian motion) and <TopicLink id="math.discrete.probabilistic-method">the probabilistic method</TopicLink>; see also <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>.
+
+<Definition term="simple random walk, recurrence and the Green function">
+
+On a connected, locally finite graph $\Gamma$, **simple random walk** moves from $x$ to a uniformly chosen neighbour at each step. It is **recurrent** if, started at $a$, it returns to $a$ with probability $1$, and **transient** otherwise (this does not depend on $a$). The **Green function** is $G(a, a) = \sum_{n \ge 0} P_a(S_n = a)$, the expected number of visits to $a$. On $\Z^d$ we write $u_{2n} = P_0(S_{2n} = 0)$.
+
+</Definition>
+
+<Definition term="electrical network and effective resistance">
+
+Give each edge $e$ a conductance $c(e) \gt 0$ (resistance $r(e) = 1/c(e)$). For disjoint vertex sets $A$, $Z$ of a finite network, the voltage $v$ with $v = 1$ on $A$, $v = 0$ on $Z$ and $\sum_{y \sim x} c(xy)(v(y) - v(x)) = 0$ elsewhere (harmonic) drives a total current $I$ out of $A$; the **effective resistance** is $R_{\mathrm{eff}}(A \leftrightarrow Z) = 1/I$. For an infinite network and an exhaustion by finite sets $\Gamma_n$, $R_{\mathrm{eff}}(a \leftrightarrow \infty) = \lim_n R_{\mathrm{eff}}(a \leftrightarrow \Gamma \setminus \Gamma_n)$.
+
+</Definition>
+
+<Definition term="bond percolation and the critical probability">
+
+In **bond percolation** with parameter $p \in [0, 1]$ on a graph, each edge is **open** with probability $p$ and **closed** otherwise, independently. Open edges form **open clusters**. Let $\theta(p) = P_p(\text{the open cluster of the origin is infinite})$; it is non-decreasing in $p$. The **critical probability** is $p_c = \sup\{p : \theta(p) = 0\}$; by Kolmogorov's 0–1 law an infinite open cluster exists with probability $0$ for $p \lt p_c$ and $1$ for $p \gt p_c$.
+
+</Definition>
+
+<Definition term="Erdős–Rényi random graph">
+
+$G(n, p)$ has vertex set $\{1, \dots, n\}$, each of the $\binom n2$ possible edges present independently with probability $p$. A property holds **with high probability** (w.h.p.) if its probability tends to $1$ as $n \to \infty$. The **giant component** regime is $p = c/n$ with $c$ fixed.
+
+</Definition>
+
+<Definition term="Hausdorff dimension">
+
+For $A \subset \R^d$ and $s \ge 0$, $\mathcal{H}^s(A) = \lim_{\delta \to 0} \inf\{\sum_i (\operatorname{diam} U_i)^s : A \subset \bigcup U_i,\ \operatorname{diam} U_i \lt \delta\}$, and $\dim_H A = \inf\{s : \mathcal{H}^s(A) = 0\}$. A smooth curve has dimension $1$; random fractals such as Brownian paths have larger, often non-integer, dimensions.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="The line ℤ">
+
+The walk on $\Z$ is at $0$ at time $2n$ exactly when $n$ of its $2n$ steps go right: $u_{2n} = \binom{2n}{n}4^{-n}$. Since $\binom{2n}{n}$ is the largest of the $2n + 1$ binomial coefficients $\binom{2n}{k}$, which add up to $4^n$, we get $u_{2n} \ge \frac{1}{2n+1}$, and $\sum u_{2n} = \infty$. Electrically, $\Z$ is two half-lines of resistance $\infty$ each.
+
+</Example>
+
+<Example title="The binary tree is transient">
+
+In the rooted binary tree each vertex has two children. The $2^k$ edges between generations $k - 1$ and $k$ are in parallel and the generations are in series, so $R_{\mathrm{eff}}(\text{root} \leftrightarrow \infty) = \sum_{k \ge 1} 2^{-k} = 1 \lt \infty$: transient. Directly: from a non-root vertex the walk moves to its parent with probability $\frac13$, so the probability $h$ of ever reaching the parent solves $h = \frac13 + \frac23 h^2$, whose relevant root is $h = \frac12$. From the root the walk first steps to a child, so it never returns with probability $\frac12$ — matching the formula $1/(\deg(\text{root})\, R_{\mathrm{eff}}) = \frac12$ of Theorem 3 below.
+
+</Example>
+
+<Example title="Percolation on a tree is a branching process">
+
+On the rooted tree in which every vertex has $b$ children, the open cluster of the root is a Galton–Watson tree with $\operatorname{Bin}(b, p)$ offspring. It is infinite with positive probability exactly when the mean offspring $bp \gt 1$, so $p_c = 1/b$. The survival probability is the largest root of $1 - \theta = (1 - p\theta)^b$. The same mechanism — a branching process with mean $c$ — produces the giant component of $G(n, c/n)$.
+
+</Example>
+
+<Example title="The Wheatstone bridge is self-dual">
+
+Five resistors arranged as a Wheatstone bridge between two terminals have effective resistance $1$ (by symmetry no current flows through the bridge). As a percolation problem, the bridge with each edge open with probability $\frac12$ connects the terminals with probability exactly $\frac12$: its planar dual is again a bridge, and exactly one of "the terminals are joined by open edges" and "the dual terminals are joined by closed dual edges" occurs. This is the case $n = 1$ of the self-dual rectangles used in the second experiment, where the computer checks it by enumerating all $2^5$ configurations (and all $2^{13}$ for $n = 2$).
+
+</Example>
+
+</Section>
+
+<Section id="walks" kind="proof" title="Pólya's theorem">
+
+<Theorem name="Theorem 1 — recurrence and the Green function">
+
+Simple random walk on $\Gamma$ started at $a$ is recurrent if and only if $G(a, a) = \infty$. More precisely, if $F = P_a(\text{return to } a)$, then $G(a, a) = \frac{1}{1 - F}$ (read as $\infty$ when $F = 1$).
+
+</Theorem>
+
+<Proof>
+
+Let $N = \#\{n \ge 0 : S_n = a\}$ be the number of visits, including time $0$. By the strong Markov property at successive return times, $P(N \ge k + 1) = F\, P(N \ge k)$, so $P(N \ge k) = F^{k-1}$. Hence $E[N] = \sum_{k \ge 1} P(N \ge k) = \sum_{k \ge 1} F^{k-1} = \frac{1}{1 - F}$. On the other hand $E[N] = \sum_n P(S_n = a) = G(a, a)$ by linearity of expectation.
+
+</Proof>
+
+<Theorem name="Theorem 2 — Pólya (1921)">
+
+Simple random walk on $\Z^d$ is recurrent for $d = 1, 2$ and transient for $d \ge 3$.
+
+</Theorem>
+
+<Proof>
+
+*$d = 1$.* As in the example, $u_{2n} = \binom{2n}{n}4^{-n} \ge \frac{1}{2n+1}$, and $\sum \frac{1}{2n+1} = \infty$.
+
+*$d = 2$: the rotation trick.* Write $S_n = (X_n, Y_n)$ and set $U_n = X_n + Y_n$, $V_n = X_n - Y_n$. The four steps $(\pm1, 0), (0, \pm1)$ become the four steps $(\pm1, \pm1)$ of $(U, V)$, each with probability $\frac14$ — that is, $U$ and $V$ are **independent** simple random walks on $\Z$. Since $(x, y) \mapsto (x + y, x - y)$ is injective, $S_{2n} = 0$ iff $U_{2n} = V_{2n} = 0$, so
+
+$$
+u^{(2)}_{2n} = \Big(\binom{2n}{n} 4^{-n}\Big)^2 .
+$$
+
+Now $16^n \le 4n\binom{2n}{n}^2$ for $n \ge 1$, by induction: it holds for $n = 1$ ($16 \le 16$), and using $(n+1)\binom{2n+2}{n+1} = 2(2n+1)\binom{2n}{n}$ the inductive step reduces to $4n(n+1) \le (2n+1)^2$. Hence $u^{(2)}_{2n} \ge \frac{1}{4n}$ and $\sum u^{(2)}_{2n} = \infty$.
+
+*$d = 3$.* A closed walk of length $2n$ takes $i, j, k$ steps in each direction along the three axes and the same number back, with $i + j + k = n$, so
+
+$$
+u^{(3)}_{2n} = \frac{1}{6^{2n}}\sum_{i+j+k=n} \frac{(2n)!}{(i!\,j!\,k!)^2} = \binom{2n}{n}\frac{1}{4^n}\sum_{i+j+k=n}\Big(\frac{n!}{i!\,j!\,k!\,3^n}\Big)^2 \le \binom{2n}{n}\frac{1}{4^n}\, \max_{i+j+k=n}\frac{n!}{i!\,j!\,k!\,3^n},
+$$
+
+because the numbers $\frac{n!}{i!j!k!3^n}$ are the probabilities of a trinomial distribution and sum to $1$. The maximum is attained with $i, j, k$ as equal as possible, and Stirling's formula bounds it by $C/n$. Together with $\binom{2n}{n}4^{-n} \le 1/\sqrt{2n+1}$ (an induction like the one above) this gives $u^{(3)}_{2n} \le C' n^{-3/2}$, which is summable.
+
+*$d \ge 4$.* The first three coordinates of the walk on $\Z^d$ perform a lazy simple random walk on $\Z^3$ (they move with probability $3/d$ at each step), which is transient; if the walk on $\Z^d$ returned to $0$ infinitely often, so would they.
+
+</Proof>
+
+The proof for $d = 1, 2$ is formalised in Lean below, apart from the probabilistic modelling (the formula for $u_{2n}$ and Theorem 1). For $d = 3$ the Stirling step is cited, not proved. The first experiment computes $G(N) = \sum_{n \le N} u_{2n}$ for all three dimensions: it grows like $2\sqrt{N/\pi}$, like $\frac{1}{\pi}\log N$, and converges to Watson's constant $1.5164$, so the walk on $\Z^3$ returns with probability $1 - 1/1.5164 = 0.3405$.
+
+**Recurrent is not the same as "returns quickly".** For the walk on $\Z$, the first return time $T$ satisfies $P(T \gt 2n) = u_{2n}$ (a classical reflection-principle identity; see Feller, Vol. I, Ch. III). So $E[T] = 2\sum_n u_{2n} = \infty$: the walk returns with probability one, but the expected time it takes is infinite. In Lean, `return_prob_tendsto_zero` and `return_1d_not_summable` are exactly the two halves of this picture.
+
+</Section>
+
+<Section id="networks" kind="proof" title="Electrical networks">
+
+Let $\Gamma$ have unit conductances, so the walk is simple random walk.
+
+<Theorem name="Theorem 3 — the electrical criterion">
+
+For a vertex $a$ of degree $\deg(a)$, $P_a(\text{never return to } a) = \dfrac{1}{\deg(a)\, R_{\mathrm{eff}}(a \leftrightarrow \infty)}$. In particular the walk is recurrent if and only if $R_{\mathrm{eff}}(a \leftrightarrow \infty) = \infty$.
+
+</Theorem>
+
+<Proof>
+
+Fix a finite set $\Gamma_n \ni a$ and let $Z_n$ be its outer boundary. Let $v(x) = P_x(\text{hit } a \text{ before } Z_n)$. Then $v(a) = 1$, $v = 0$ on $Z_n$, and $v$ is harmonic elsewhere (condition on the first step), so it is the voltage of the definition. The current out of $a$ is $I = \sum_{y \sim a}(v(a) - v(y)) = \deg(a)\big(1 - \frac{1}{\deg(a)}\sum_{y \sim a} v(y)\big) = \deg(a)\, P_a(\text{hit } Z_n \text{ before returning to } a)$. Hence $P_a(\text{hit } Z_n \text{ before returning}) = \frac{1}{\deg(a) R_{\mathrm{eff}}(a \leftrightarrow Z_n)}$. As $n \to \infty$ these events decrease, and their intersection is "never return" up to a null set: almost surely, a walk that never returns to $a$ leaves every finite set, because staying in a finite set forever would mean visiting some vertex infinitely often, which forces a visit to $a$. Meanwhile the resistances increase to $R_{\mathrm{eff}}(a \leftrightarrow \infty)$.
+
+</Proof>
+
+Two tools make the criterion usable, both proved in Doyle–Snell and Lyons–Peres (Ch. 2):
+
+- **Rayleigh's monotonicity principle.** Increasing any edge resistance does not decrease any effective resistance. So a subgraph of a recurrent graph is recurrent, and a graph containing a transient subgraph is transient — another proof that $\Z^d$, $d \ge 4$, is transient once $\Z^3$ is.
+- **The Nash-Williams inequality (1959).** If $\Pi_1, \Pi_2, \dots$ are disjoint sets of edges, each separating $a$ from infinity, then $R_{\mathrm{eff}}(a \leftrightarrow \infty) \ge \sum_k |\Pi_k|^{-1}$.
+
+**$\Z^2$ again.** Let $\Pi_k$ be the edges joining $\partial[-k, k]^2$ to $\partial[-(k+1), k+1]^2$: there are $8k + 4$ of them, so $R_{\mathrm{eff}} \ge \sum_k \frac{1}{8k + 4} = \infty$ and the walk is recurrent. (The divergence is proved in Lean.)
+
+**$\Z^3$ again.** T. Lyons (1983) proved that a network is transient if and only if there is a unit flow from $a$ to infinity with finite energy $\sum_e r(e)\, i(e)^2$. Spreading a unit flow evenly over the roughly $k^2$ edges at distance $k$ gives energy about $\sum_k k^2 (k^{-2})^2 = \sum_k k^{-2} \lt \infty$. Making this precise requires some care with the cube's geometry (Lyons–Peres, Ch. 2); the convergence of $\sum k^{-2}$ is in Mathlib.
+
+</Section>
+
+<Section id="percolation" kind="proof" title="Percolation: the phase transition on ℤ²">
+
+<Theorem name="Lemma 4 — counting paths">
+
+The number $\sigma(n)$ of self-avoiding paths of length $n$ in $\Z^2$ starting at the origin satisfies $\sigma(n) \le 4 \cdot 3^{n-1}$.
+
+</Theorem>
+
+<Proof>
+
+There are $4$ choices for the first step, and at most $3$ for each later step, since a self-avoiding path cannot immediately reverse.
+
+</Proof>
+
+(In fact $\sigma(n)^{1/n} \to \mu \approx 2.638$, the **connective constant** of $\Z^2$, whose exact value is unknown.)
+
+<Theorem name="Theorem 5 — a genuine phase transition (Broadbent–Hammersley, 1957, by Peierls' argument)">
+
+For bond percolation on $\Z^2$, $\frac13 \le p_c \le \frac23$. In particular there is a genuine phase transition: $0 \lt p_c \lt 1$.
+
+</Theorem>
+
+<Proof>
+
+*Lower bound.* If the origin lies in an infinite open cluster, then for every $n$ there is an open self-avoiding path of length $n$ from the origin. Each such path is open with probability $p^n$, so by the union bound and Lemma 4, $\theta(p) \le 4 \cdot 3^{n-1} p^n$ for every $n$. If $p \lt \frac13$ the right side tends to $0$ (formalised as `peierls_tendsto`), so $\theta(p) = 0$ and $p_c \ge \frac13$.
+
+*Upper bound.* Place the **dual lattice** $\Z^2 + (\frac12, \frac12)$ so that each dual edge crosses exactly one primal edge, and declare a dual edge closed when the primal edge it crosses is closed. Planar topology gives the key fact: if a finite set $B$ of vertices lies in a single open cluster, that cluster is finite if and only if some **closed dual circuit surrounds $B$**. Let $q = 1 - p \lt \frac13$ and $B_m = [-m, m]^2$. A dual circuit of length $n$ surrounding $B_m$ has $n \ge 8m + 4$ and crosses the positive $x$-axis at one of fewer than $n$ points; through each point there are at most $4\cdot 3^{n-1}$ such circuits (Lemma 4 on the dual lattice). So
+
+$$
+P_p(\text{some closed dual circuit surrounds } B_m) \le \sum_{n \ge 8m+4} n \cdot 4 \cdot 3^{n-1} q^n \xrightarrow[m \to \infty]{} 0,
+$$
+
+as the tail of a convergent series (formalised as `dual_circuits_summable`). Fix $m$ with this probability less than $1$. The event $G_m$ that no closed dual circuit surrounds $B_m$ depends only on edges outside $B_m$ (a dual edge of a circuit surrounding $B_m$ crosses an edge with an endpoint outside $B_m$), and the event $F_m$ that all edges inside $B_m$ are open depends only on edges inside. They are independent, both have positive probability, and on $F_m \cap G_m$ the origin lies in an infinite open cluster. So $\theta(p) \ge P(F_m)P(G_m) \gt 0$, and $p_c \le \frac23$.
+
+</Proof>
+
+**Kesten's theorem (1980).** *For bond percolation on $\Z^2$, $p_c = \frac12$; moreover $\theta(\frac12) = 0$ (Harris, 1960).* The proof combines self-duality — at $p = \frac12$ the dual configuration has the same law as the primal one, so suitably chosen rectangles are crossed with probability exactly $\frac12$ (the experiment checks this by exhaustive enumeration for small rectangles) — with the Russo–Seymour–Welsh theory (1978), which turns crossings of squares into crossings of long rectangles with probability bounded below, and a sharp-threshold argument showing that the crossing probabilities jump from near $0$ to near $1$ in a window around $\frac12$ that shrinks with the size. Modern proofs use the Kahn–Kalai–Linial influence inequality (Bollobás–Riordan, 2006) or the randomised-algorithm method of Duminil-Copin, Raoufi and Tassion (2019). For site percolation on $\Z^2$ there is no self-duality and no known closed form: $p_c^{\mathrm{site}} \approx 0.5927$, an estimate from simulation and rigorous numerical bounds.
+
+**Random graphs (Erdős–Rényi, 1960).** For $G(n, c/n)$: if $c \lt 1$, w.h.p. every component has $O(\log n)$ vertices; if $c \gt 1$, w.h.p. there is a unique **giant component** with $(\beta + o(1))n$ vertices, where $\beta \in (0,1)$ solves $\beta = 1 - e^{-c\beta}$, and all other components have $O(\log n)$ vertices; at $c = 1$ the largest component has order $n^{2/3}$. The proof explores a component vertex by vertex; each newly found vertex has about $\operatorname{Bin}(n, c/n) \approx \operatorname{Poisson}(c)$ new neighbours, so the exploration is approximately a branching process with mean $c$, whose survival probability $\beta$ solves the equation above. For $c \le 1$ that equation has no positive root (proved in Lean), matching the absence of a giant. The giant appears at $p = 1/n$; the graph becomes connected only much later, at $p = (\log n)/n$.
+
+</Section>
+
+<Section id="scaling" kind="human" title="Scaling limits: Brownian motion, SLE and random planar geometry">
+
+**Brownian motion as a limit.** Donsker's invariance principle (1951): the rescaled walk $t \mapsto S_{\lfloor nt\rfloor}/\sqrt n$ converges in distribution to Brownian motion, whatever the step distribution (mean zero, finite variance). Pólya's theorem has a continuum twin: planar Brownian motion is **neighbourhood-recurrent** (it returns to every disc, though it hits a given point with probability zero), while Brownian motion in $\R^3$ is transient. Planar Brownian paths have Hausdorff dimension $2$ (a classical result; see Mörters–Peres). Their **outer boundary** — the frontier of the path — was conjectured by Mandelbrot (1982), from simulations, to have dimension $\frac43$; Lawler, Schramm and Werner proved it (2001).
+
+**Schramm–Loewner evolution.** Oded Schramm (2000) observed that a random curve in a planar domain which is conformally invariant and has a "domain Markov property" must be one of a one-parameter family $\mathrm{SLE}_\kappa$, obtained by running Loewner's differential equation with driving function $\sqrt\kappa\, B_t$. Established identifications of scaling limits:
+
+- loop-erased random walk → $\mathrm{SLE}_2$, uniform spanning tree Peano curve → $\mathrm{SLE}_8$ (Lawler–Schramm–Werner, 2004);
+- critical **site percolation on the triangular lattice**: Smirnov proved Cardy's formula and conformal invariance (2001), the exploration path converges to $\mathrm{SLE}_6$, and Smirnov and Werner derived critical exponents such as $\theta(p) = (p - \frac12)^{5/36 + o(1)}$ as $p \downarrow \frac12$ (2001);
+- interfaces of the critical Ising model → $\mathrm{SLE}_3$ (Smirnov and coauthors, around 2010).
+
+Werner (2006), Smirnov (2010) and Duminil-Copin (2022) received Fields Medals for work in this area.
+
+**Random planar geometry.** Uniformly random planar maps (graphs embedded in the sphere) with $n$ faces, with distances rescaled by $n^{-1/4}$, converge to a random metric space, the **Brownian map** (Le Gall; Miermont, 2013), homeomorphic to the sphere and of Hausdorff dimension $4$. Miller and Sheffield (2015–16) showed that the Brownian map is equivalent to **Liouville quantum gravity** with parameter $\sqrt{8/3}$, a random geometry built from the Gaussian free field.
+
+**Open problems** (as of the references; check recent surveys):
+
+- **Is $\theta(p_c) = 0$ for bond percolation on $\Z^3$?** Proved in dimension $2$ and in high dimensions (Hara–Slade, 1990, $d \ge 19$; Fitzner–van der Hofstad, 2017, $d \ge 11$), open in $3 \le d \le 10$.
+- **Conformal invariance of critical bond percolation on $\Z^2$.** Smirnov's proof uses the special symmetry of the triangular lattice; universality, though widely believed, is open for $\Z^2$.
+- **The self-avoiding walk.** Its scaling limit in the plane is conjectured to be $\mathrm{SLE}_{8/3}$ and its connective constant on $\Z^2$ is unknown; on the hexagonal lattice the connective constant is $\sqrt{2 + \sqrt 2}$ (Duminil-Copin and Smirnov, 2012).
+
+</Section>
+
+<Section id="formal" kind="formal" title="The exact mathematics in Lean">
+
+Mathlib has measure-theoretic probability but no random walks on lattices, percolation or random graphs; and the probabilistic modelling (formulas for $u_{2n}$, Theorem 1, duality) would be a substantial project. What is formalised is the exact mathematics that the proofs above reduce to — the parts where the actual estimates live.
+
+The bounds on central binomial coefficients, by induction, and the resulting divergence for $\Z$ and $\Z^2$:
+
+<Lean decl="Lumenary.RandomGeometry.four_pow_le_central_binom" />
+
+<Lean decl="Lumenary.RandomGeometry.central_binom_sq_lower" />
+
+<Lean decl="Lumenary.RandomGeometry.central_binom_sq_upper" />
+
+<Lean decl="Lumenary.RandomGeometry.not_summable_one_div_two_mul_add_one" />
+
+<Lean decl="Lumenary.RandomGeometry.return_1d_not_summable" />
+
+<Lean decl="Lumenary.RandomGeometry.return_2d_not_summable" />
+
+<Lean decl="Lumenary.RandomGeometry.return_prob_tendsto_zero" />
+
+The rotation trick: the map, the bijection of steps, and the characterisation of closed paths.
+
+<Lean decl="Lumenary.RandomGeometry.rot" />
+
+<Lean decl="Lumenary.RandomGeometry.rot_injective" />
+
+<Lean decl="Lumenary.RandomGeometry.unitSteps" />
+
+<Lean decl="Lumenary.RandomGeometry.diagSteps" />
+
+<Lean decl="Lumenary.RandomGeometry.rot_unit_steps" />
+
+<Lean decl="Lumenary.RandomGeometry.closed_iff_rot" />
+
+Electrical networks: Nash-Williams for $\Z^2$, and the series behind transience of $\Z^3$.
+
+<Lean decl="Lumenary.RandomGeometry.nash_williams_diverges" />
+
+<Lean decl="Lumenary.RandomGeometry.summable_inv_sq" />
+
+Peierls' argument, with the path count of Lemma 4 as a hypothesis:
+
+<Lean decl="Lumenary.RandomGeometry.peierls_tendsto" />
+
+<Lean decl="Lumenary.RandomGeometry.dual_circuits_summable" />
+
+And the subcritical random graph:
+
+<Lean decl="Lumenary.RandomGeometry.no_giant_subcritical" />
+
+**Not formalised:** the random walk as a stochastic process and Theorem 1; the identification of $P(S_{2n} = 0)$ with the counts used here; the $d = 3$ Stirling estimate; electrical networks and the Nash-Williams inequality itself; Lemma 4 and planar duality; Kesten's theorem; the Erdős–Rényi theorem; Brownian motion's path properties and SLE. Formalising planar duality for percolation would need a discrete Jordan curve theorem — a good project for an ambitious learner.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Return probabilities, crossings and giants, computed">
+
+The first experiment checks the rotation trick by brute force (all $4^{2n}$ walks of length $2n \le 8$) and then sums exact return probabilities. In $d = 3$ it uses the formula obtained by conditioning on the number of vertical steps, and compares the partial sums — and a tail correction based on $u_{2n} \sim 2\big(\frac{3}{4\pi n}\big)^{3/2}$ — with Watson's closed form $G = \frac{\sqrt6}{32\pi^3}\Gamma(\frac1{24})\Gamma(\frac5{24})\Gamma(\frac7{24})\Gamma(\frac{11}{24})$ (Watson, 1939, in the form given by Glasser and Zucker, 1977).
+
+<Python id="random_geometry_polya" />
+
+The second experiment estimates by simulation the probability of an open left–right crossing of the self-dual $(L + 1) \times L$ rectangle for several $p$, showing the curve sharpening around $\frac12$ as $L$ grows — and staying at $\frac12$ at $p = \frac12$, as self-duality requires. Then it measures the largest component of random graphs with $2000$ vertices and average degree $c$, against the branching-process prediction $\beta(c)$.
+
+<Python id="random_geometry_percolation" />
+
+The first experiment is exhaustive (exact) for short walks and numerical for the sums; the second is statistical, with a few hundred samples on small systems. A simulation near a critical point can suggest $p_c$ and estimate exponents; it cannot determine them exactly — Kesten's theorem and the SLE computations do that.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: walks and spanning trees">
+
+Many one-dimensional walks at once, with their root-mean-square distance against the exact $\sqrt n$. Notice how far a typical walk wanders while still being bound to come home: that tension is why the expected return time is infinite.
+
+<ChanceLab experiment="random-walk" trials={500} n={400} title="Simple random walks on ℤ" subtitle="Typical distance √n — and yet every walk returns, eventually." />
+
+Kirchhoff's theorem (1847) connects electrical networks to spanning trees: with unit resistors, the effective resistance between the endpoints of an edge $e$ equals the fraction of spanning trees that contain $e$. Build spanning trees of this $3 \times 3$ grid; the widget counts all of them ($192$) by the matrix-tree theorem. Uniform spanning trees, whose branches are loop-erased random walks (Wilson's algorithm), converge to $\mathrm{SLE}_2$ and $\mathrm{SLE}_8$.
+
+<GraphExplorer
+  nodes={["a", "b", "c", "d", "e", "f", "g", "h", "i"]}
+  edges={[["a", "b"], ["b", "c"], ["d", "e"], ["e", "f"], ["g", "h"], ["h", "i"], ["a", "d"], ["d", "g"], ["b", "e"], ["e", "h"], ["c", "f"], ["f", "i"]]}
+  positions={[[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]}
+  modes={["spanning", "degrees"]}
+  title="Spanning trees of a 3 × 3 grid"
+  subtitle="Kirchhoff: R_eff across an edge = (spanning trees through it) / (all spanning trees)."
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A recurrent walk must return quickly."** In dimensions $1$ and $2$ the return time is finite with probability one but has **infinite expectation**: for the walk on $\Z$, $P(T \gt 2n) = u_{2n} \approx 1/\sqrt{\pi n}$, whose sum diverges. In $\Z^2$ the tail is even heavier, $P(T \gt n) \approx \pi/\log n$.
+
+</Misconception>
+
+<Misconception>
+
+**"Simulations near a critical point determine the critical exponents."** Simulations give estimates with statistical and finite-size errors, which converge slowly near criticality. Exact values such as $\frac{5}{36}$ for triangular-lattice percolation or $\frac43$ for the Brownian frontier needed proofs (here via SLE); Mandelbrot's $\frac43$ was a conjecture from pictures for nearly twenty years. For bond percolation on $\Z^3$ even the qualitative statement $\theta(p_c) = 0$ is unproved.
+
+</Misconception>
+
+<Misconception>
+
+**"$p_c = \frac12$ is obvious by the symmetry $p \leftrightarrow 1 - p$."** Self-duality shows that crossings at $p = \frac12$ are balanced, which makes $\frac12$ the natural candidate, but turning this into $p_c = \frac12$ took twenty years (Harris 1960, Kesten 1980): one needs RSW estimates and a sharp-threshold argument. Without self-duality there is no reason for a nice value: site percolation on $\Z^2$ has $p_c \approx 0.5927$.
+
+</Misconception>
+
+<Misconception>
+
+**"A transient walker escapes in a straight line."** In $\Z^3$ the walk returns to the origin with probability about $0.34$, and it visits every finite set only finitely often — but its path is still a wildly wandering random fractal at large scales (Brownian, of dimension $2$), not a ray.
+
+</Misconception>
+
+<Misconception>
+
+**"The giant component appears when the graph becomes connected."** In $G(n, p)$ the giant component emerges at $p = 1/n$, while connectivity requires $p \approx (\log n)/n$; in between, the graph has a giant plus many small pieces, the last of which to join are isolated vertices.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="analysis" title="Fourier analysis and harmonic functions">
+
+The analyst proves Pólya's theorem in one line. With $\varphi(\theta) = \frac1d\sum_{i=1}^d \cos\theta_i$ the characteristic function of a step, $P(S_n = 0) = (2\pi)^{-d}\int_{[-\pi,\pi]^d}\varphi(\theta)^n\, d\theta$, so (with a little care at $\varphi = -1$) $G = (2\pi)^{-d}\int \frac{d\theta}{1 - \varphi(\theta)}$. Near $\theta = 0$, $1 - \varphi(\theta) \approx |\theta|^2/(2d)$, and $\int_{|\theta| \lt 1} |\theta|^{-2}\, d\theta$ is finite exactly when $d \ge 3$. Watson's 1939 evaluation of this integral for $d = 3$ gives the constant computed in the experiment. Harmonic functions are the bridge to <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink> and potential theory: voltages are discrete harmonic functions, and Kakutani (1944) showed that Brownian motion solves the Dirichlet problem.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Random walks see the geometry of groups">
+
+Run simple random walk on the Cayley graph of a finitely generated group. Varopoulos (1986), using Gromov's polynomial growth theorem, proved that the walk is recurrent if and only if the group is a finite extension of $\{0\}$, $\Z$ or $\Z^2$ — Pólya's theorem is the abelian case of a statement about growth: the volume of balls must grow at most quadratically. Kesten (1959) showed that the return probabilities decay exponentially exactly when the group is **non-amenable**, as for free groups, whose Cayley graphs are trees. Random walks have become a basic tool of <TopicLink id="math.geom.geometric-group-theory">geometric group theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Planar duality and crossing events">
+
+Percolation on $\Z^2$ is controlled by topology: the dual-circuit criterion in Peierls' argument and the self-duality behind Kesten's theorem are discrete forms of the Jordan curve theorem — in a rectangle, either there is an open left-right crossing or a closed dual top-bottom crossing, never both (the "Hex theorem", equivalent to the Brouwer fixed-point theorem in dimension $2$). In the scaling limit, critical interfaces become random fractal curves, and the question "how does a random curve wind around a point?" is answered by the SLE computations, which recover exponents from winding and crossing probabilities.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Counting paths and the probabilistic method">
+
+Every proof in this lesson begins with counting: binomial coefficients for returns, $4\cdot 3^{n-1}$ for self-avoiding paths, trees for spanning trees and branching processes. The Erdős–Rényi threshold is proved with first- and second-moment methods — the expected number of tree components of each size, and its variance — the same techniques that prove the existence of Ramsey graphs in <TopicLink id="math.discrete.probabilistic-method">the probabilistic method</TopicLink>. Kirchhoff's matrix-tree theorem turns effective resistances into ratios of spanning-tree counts, and Wilson's algorithm (1996) samples uniform spanning trees exactly using loop-erased random walks.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Critical phenomena and universality">
+
+Percolation is the simplest model of a **phase transition** in statistical mechanics. Physicists predicted, before any proof, that near $p_c$ quantities obey power laws whose exponents are **universal** — the same for bond and site percolation and for every two-dimensional lattice — and, using conformal field theory, computed them: Cardy's crossing formula (1992) and exponents such as $\frac{5}{36}$ and $\frac{4}{3}$. These derivations are heuristic. Smirnov's theorem and the SLE program turned several of them into theorems, but only for specific lattices; universality itself remains largely unproved. Brownian motion entered physics through Einstein (1905) and Smoluchowski (1906), and Perrin's experiments confirming their predictions (1908) helped establish the existence of atoms.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Pólya's question in its most elementary form, for younger explorers (and anyone who likes a good story):
+
+<Trail slug="will-the-walker-return" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1847–1900: networks and diffusion.** Gustav Kirchhoff's laws and the matrix-tree theorem (1847); Lord Rayleigh's monotonicity principle (1870s); Louis Bachelier's random walk model of the Paris stock exchange (1900).
+- **1905–1923: Brownian motion.** Albert Einstein (1905) and Marian Smoluchowski (1906) explained Brownian motion as the cumulative effect of molecular collisions; Jean Perrin confirmed it experimentally (1908); Norbert Wiener constructed Brownian motion rigorously (1923).
+- **1921–1960: walks, percolation, random graphs.** George Pólya's recurrence theorem (1921). Andrei Kolmogorov's axioms (1933) made probability part of measure theory. Shizuo Kakutani linked Brownian motion and harmonic functions (1944); Kiyosi Itô built stochastic calculus (1940s). Monroe Donsker's invariance principle (1951). Simon Broadbent and John Hammersley introduced percolation (1957). Crispin Nash-Williams proved his inequality (1959). Paul Erdős and Alfréd Rényi founded random graph theory (1959–60). Theodore Harris proved $\theta(\frac12) = 0$ (1960).
+- **1978–1990: the critical point.** Lucio Russo, Paul Seymour and Dominic Welsh developed crossing estimates (1978); Harry Kesten proved $p_c = \frac12$ (1980); Terry Lyons proved his flow criterion (1983); Peter Doyle and Laurie Snell popularised electrical networks (1984); Takashi Hara and Gordon Slade developed the lace expansion for high-dimensional percolation (1990).
+- **2000–today: conformal invariance.** Oded Schramm introduced SLE (2000). Gregory Lawler, Schramm and Wendelin Werner computed intersection exponents and proved Mandelbrot's conjecture (2001). Stanislav Smirnov proved conformal invariance of critical percolation on the triangular lattice (2001). Jean-François Le Gall and Grégory Miermont constructed the Brownian map (2013); Jason Miller and Scott Sheffield related it to Liouville quantum gravity (2015–16). Hugo Duminil-Copin's work on phase transitions earned the 2022 Fields Medal.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Peter G. Doyle and J. Laurie Snell, *Random Walks and Electric Networks* (1984) — the classic, short and delightful introduction to the electrical method and Pólya's theorem.
+- Russell Lyons and Yuval Peres, *Probability on Trees and Networks* (2016) — the standard modern reference for random walks on graphs, electrical networks, percolation on trees and groups.
+- Geoffrey Grimmett, *Percolation* (1989; 2nd ed. 1999) — the comprehensive text, including Kesten's theorem.
+- Béla Bollobás and Oliver Riordan, *Percolation* (2006) — a shorter route to $p_c = \frac12$ through sharp thresholds.
+- Geoffrey Grimmett, *Probability on Graphs* (2010; 2nd ed. 2018) — percolation, random walks, the Ising model and random graphs in one compact book.
+- Remco van der Hofstad, *Random Graphs and Complex Networks*, Vol. 1 (2017) — the Erdős–Rényi phase transition in detail.
+- Peter Mörters and Yuval Peres, *Brownian Motion* (2010) — path properties, Hausdorff dimension, and a first look at SLE.
+- Gregory F. Lawler, *Conformally Invariant Processes in the Plane* (2005) — the mathematics of SLE.
+- William Feller, *An Introduction to Probability Theory and Its Applications*, Vol. I (1950; 3rd ed. 1968) — Chapter III on the simple random walk, including return times.
+
+A reading path: Doyle–Snell → Lyons–Peres Ch. 1–2 and 5 → Grimmett (*Probability on Graphs*) → Lawler or Mörters–Peres for the continuum.
+
+</Section>

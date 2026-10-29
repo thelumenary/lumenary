@@ -1,0 +1,520 @@
+---
+slug: polynomials
+topic: math.algebra.polynomials
+title: Polynomials
+subtitle: Expressions built from one letter by adding and multiplying — and the theorem that ties their roots to their factors.
+level: g9-12
+ages: Ages 14–18
+minutes: 75
+order: 4007
+objectives:
+  - Add, multiply and factorise polynomials, using special products such as $a^2 - b^2 = (a - b)(a + b)$
+  - Divide polynomials by long and synthetic division, and prove the remainder theorem
+  - Prove the factor theorem and use it, with the rational root test, to find roots and factors
+  - Prove that a non-zero polynomial of degree $n$ has at most $n$ roots, and explain why it may have fewer
+  - Explain which hypothesis the root bound needs by finding a quadratic with four roots in clock arithmetic
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.Polynomials.diff_of_squares
+  - Lumenary.Polynomials.sum_and_diff_of_cubes
+  - Lumenary.Polynomials.sub_dvd_pow_sub_pow'
+  - Lumenary.Polynomials.remainder_theorem
+  - Lumenary.Polynomials.remainder_theorem_library
+  - Lumenary.Polynomials.factor_theorem
+  - Lumenary.Polynomials.division_exists
+  - Lumenary.Polynomials.division_unique
+  - Lumenary.Polynomials.rational_root_cubic
+  - Lumenary.Polynomials.card_roots_le_natDegree
+  - Lumenary.Polynomials.card_roots_library
+  - Lumenary.Polynomials.eq_of_agree
+  - Lumenary.Polynomials.four_roots_mod_eight
+  - Lumenary.Polynomials.two_roots_mod_seven
+compute: [polynomials_remainder_theorem, polynomials_roots_mod_n]
+trails: [clock-arithmetic]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A box from a sheet of card">
+
+A cooperative of packaging makers in Oaxaca folds open boxes from rectangular sheets of card, $30$ cm by $20$ cm. From each corner they cut a square of side $x$ cm and fold up the sides. The box is $x$ cm tall, with a base of $(30 - 2x)$ by $(20 - 2x)$ cm, so its volume is
+
+$$
+V(x) = x(30 - 2x)(20 - 2x) = 4x^3 - 100x^2 + 600x \quad \text{cubic centimetres}.
+$$
+
+A customer wants boxes holding exactly one litre, $1000\ \text{cm}^3$. Trying $x = 5$ gives $V(5) = 5 \cdot 20 \cdot 10 = 1000$. Success! But is $x = 5$ the *only* size that works? A shorter, wider box might use the card differently.
+
+We need to solve $4x^3 - 100x^2 + 600x - 1000 = 0$, an equation of degree three. Guessing found one solution. This lesson shows how one known solution splits the problem into a smaller one, and how many solutions there can possibly be. (We finish the box at the end of the worked examples.)
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Polynomials are like numbers in base x">
+
+The number $312$ means $3 \cdot 10^2 + 1 \cdot 10 + 2$. The expression $3x^2 + x + 2$ is the same pattern with the base $10$ replaced by a letter, and putting $x = 10$ gives back $312$.
+
+This is more than a coincidence of notation. You add polynomials by collecting like powers, as you add numbers column by column. You multiply them with the same grid as long multiplication, only *without carrying*: a coefficient may grow as large as it likes. And you divide them by a long-division process that works one leading term at a time. Polynomials are the integers of algebra, and the parallel runs deep — both have a division algorithm with remainders, both have "primes" (irreducible polynomials), and both factorise uniquely into them (up to signs or constant factors).
+
+<Narrator who="chloe">
+
+When we divide $17$ by $5$ we get quotient $3$ and remainder $2$, and the remainder is *smaller* than $5$. For polynomials, "smaller" will mean "of lower degree". Keep that in mind: it is the key to everything below.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="polynomial">
+
+A **polynomial** in $x$ with real coefficients is an expression
+
+$$
+p(x) = a_n x^n + a_{n-1} x^{n-1} + \cdots + a_1 x + a_0,
+$$
+
+where $n \ge 0$ is a whole number and $a_0, \dots, a_n$ are real numbers, the **coefficients**. Two polynomials are **equal** when their coefficients of each power of $x$ agree.
+
+</Definition>
+
+<Definition term="degree, leading coefficient">
+
+If $a_n \neq 0$, then $n$ is the **degree** of $p$, written $\deg p$, and $a_n$ is its **leading coefficient**. A polynomial whose leading coefficient is $1$ is called **monic**. The **zero polynomial** (all coefficients $0$) has no degree: by convention we leave $\deg 0$ undefined (some books write $-\infty$).
+
+</Definition>
+
+<Definition term="root">
+
+A number $a$ is a **root** (or **zero**) of $p$ if $p(a) = 0$. Here $p(a)$ means: substitute $a$ for $x$ and calculate.
+
+</Definition>
+
+Degree-$0$ polynomials are the non-zero constants; degrees $1, 2, 3, 4$ are called linear, quadratic, cubic and quartic. Expressions such as $1/x$, $\sqrt{x}$ or $2^x$ are **not** polynomials: only whole-number powers of $x$ are allowed.
+
+<Theorem name="Lemma (degree of a product)">
+
+If $p$ and $q$ are non-zero polynomials with real coefficients, then $pq \ne 0$ and $\deg(pq) = \deg p + \deg q$. Also $\deg(p + q) \le \max(\deg p, \deg q)$ when $p + q \neq 0$.
+
+</Theorem>
+
+<Proof>
+
+Let the leading terms be $a x^m$ and $b x^n$ with $a, b \ne 0$. When we multiply out $pq$, the only way to make $x^{m+n}$ is $a x^m \cdot b x^n$; every other product of terms has a smaller power. So the coefficient of $x^{m+n}$ in $pq$ is $ab$, which is non-zero because a product of two non-zero real numbers is non-zero. No higher power appears. For the sum, no power above $\max(m, n)$ occurs in either polynomial.
+
+</Proof>
+
+The sum can have a *smaller* degree than both summands: $(x^2 + x) + (-x^2 + 1) = x + 1$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Special products">
+
+These identities hold for all numbers $a, b$ (expand the right-hand sides to check):
+
+$$
+(a + b)^2 = a^2 + 2ab + b^2, \qquad a^2 - b^2 = (a - b)(a + b),
+$$
+
+$$
+a^3 + b^3 = (a + b)(a^2 - ab + b^2), \qquad a^3 - b^3 = (a - b)(a^2 + ab + b^2).
+$$
+
+Read from right to left they *multiply*; read from left to right they *factorise*. For example $x^4 - 16 = (x^2 - 4)(x^2 + 4) = (x - 2)(x + 2)(x^2 + 4)$, and $8x^3 + 27 = (2x)^3 + 3^3 = (2x + 3)(4x^2 - 6x + 9)$.
+
+</Example>
+
+<Example title="Factorising by grouping">
+
+$$
+x^3 + 2x^2 - 9x - 18 = x^2(x + 2) - 9(x + 2) = (x + 2)(x^2 - 9) = (x + 2)(x - 3)(x + 3).
+$$
+
+So the roots are $-2, 3, -3$: a product is zero exactly when one of its factors is.
+
+</Example>
+
+<Example title="Non-examples: what does not factorise">
+
+- $x^2 + 1$ has no real roots ($x^2 + 1 \ge 1$ for every real $x$), so it has no factor $x - a$ with $a$ real. It does factorise over the complex numbers: $x^2 + 1 = (x - i)(x + i)$.
+- $x^2 - 2 = (x - \sqrt 2)(x + \sqrt 2)$ factorises with real coefficients but not with rational ones, because $\sqrt 2$ is irrational (see <TopicLink id="math.number.real-numbers">real numbers</TopicLink>).
+
+Whether a polynomial factorises depends on which numbers you allow as coefficients.
+
+</Example>
+
+<Example title="Long division">
+
+Divide $p(x) = x^4 + 3x^3 - x + 5$ by $d(x) = x^2 + 1$. At each step, divide the leading term of what is left by the leading term $x^2$ of $d$:
+
+1. $x^4 \div x^2 = x^2$. Subtract $x^2(x^2 + 1) = x^4 + x^2$: left with $3x^3 - x^2 - x + 5$.
+2. $3x^3 \div x^2 = 3x$. Subtract $3x(x^2 + 1) = 3x^3 + 3x$: left with $-x^2 - 4x + 5$.
+3. $-x^2 \div x^2 = -1$. Subtract $-1 \cdot (x^2 + 1)$: left with $-4x + 6$.
+
+The leftover $-4x + 6$ has degree $1 < 2 = \deg d$, so we stop:
+
+$$
+x^4 + 3x^3 - x + 5 = (x^2 + 3x - 1)(x^2 + 1) + (-4x + 6).
+$$
+
+The **quotient** is $x^2 + 3x - 1$ and the **remainder** is $-4x + 6$.
+
+</Example>
+
+<Example title="Synthetic division by x − a">
+
+Dividing by $x - a$ is so common that it has a shortcut, **synthetic division** (Horner's or Ruffini's rule). Divide $2x^3 - 3x^2 - 11x + 6$ by $x - 3$: write the coefficients, bring down the first, then repeatedly *multiply by $3$ and add*:
+
+|  | $2$ | $-3$ | $-11$ | $6$ |
+| --- | --- | --- | --- | --- |
+| $\times 3$ |  | $6$ | $9$ | $-6$ |
+| sum | $2$ | $3$ | $-2$ | $\mathbf{0}$ |
+
+The bottom row gives the quotient $2x^2 + 3x - 2$ and the remainder $0$. So $2x^3 - 3x^2 - 11x + 6 = (x - 3)(2x^2 + 3x - 2) = (x - 3)(2x - 1)(x + 2)$.
+
+</Example>
+
+<Example title="Finishing the box">
+
+Back to the box: $V(x) - 1000 = 4(x^3 - 25x^2 + 150x - 250)$, and we know $x = 5$ is a root. Synthetic division by $x - 5$ gives
+
+$$
+x^3 - 25x^2 + 150x - 250 = (x - 5)(x^2 - 20x + 50).
+$$
+
+The quadratic factor has roots $x = 10 \pm \sqrt{50} = 10 \pm 5\sqrt 2$, about $2.93$ and $17.07$. A cut of $17.07$ cm is impossible on a $20$ cm side (we need $0 < x < 10$), but $x = 10 - 5\sqrt 2 \approx 2.93$ cm works: a shorter, wider one-litre box. The cooperative has **two** designs to choose from — and, as we will prove, a cubic can never have more than three roots, so there are no others hiding.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Division, remainders and roots">
+
+<Theorem name="Division algorithm">
+
+Let $p$ and $d$ be polynomials with real (or rational) coefficients, $d \ne 0$. Then there are **unique** polynomials $q$ (the quotient) and $r$ (the remainder) with
+
+$$
+p = q\,d + r \qquad \text{and} \qquad r = 0 \text{ or } \deg r < \deg d.
+$$
+
+</Theorem>
+
+<Proof>
+
+*Existence*, by strong induction on the degree of $p$. If $p = 0$ or $\deg p < \deg d$, take $q = 0$ and $r = p$. Otherwise let $p$ have leading term $a x^n$ and $d$ have leading term $b x^m$, with $n \ge m$. The polynomial
+
+$$
+p_1 = p - \tfrac{a}{b} x^{n-m} d
+$$
+
+has the $x^n$ terms cancelled, so $p_1 = 0$ or $\deg p_1 < n$. By the induction hypothesis $p_1 = q_1 d + r$ with $r = 0$ or $\deg r < \deg d$. Then $p = \big(q_1 + \tfrac{a}{b} x^{n-m}\big) d + r$. (This is exactly one step of long division.)
+
+*Uniqueness.* Suppose $q_1 d + r_1 = q_2 d + r_2$, both remainders being $0$ or of degree less than $\deg d$. Then $(q_1 - q_2)\,d = r_2 - r_1$. If $q_1 \ne q_2$, the lemma on products says the left side has degree $\deg(q_1 - q_2) + \deg d \ge \deg d$. But the right side is $0$ or has degree less than $\deg d$. That is impossible, so $q_1 = q_2$, and then $r_1 = r_2$.
+
+</Proof>
+
+We needed to divide by the leading coefficient $b$. That is why the theorem is stated for rational or real coefficients. With integer coefficients it still works when $d$ is monic, such as $d = x - a$.
+
+<Theorem name="Remainder theorem">
+
+The remainder when $p(x)$ is divided by $x - a$ is the number $p(a)$. That is, $p(x) = (x - a)\,q(x) + p(a)$ for some polynomial $q$.
+
+</Theorem>
+
+<Proof>
+
+*First proof.* By the division algorithm, $p(x) = (x - a)q(x) + r$ where $r$ is $0$ or has degree less than $1$, so $r$ is a constant. Substituting $x = a$ gives $p(a) = 0 \cdot q(a) + r = r$.
+
+*Second proof*, without the division algorithm. For each $k \ge 1$,
+
+$$
+x^k - a^k = (x - a)\left(x^{k-1} + x^{k-2}a + \cdots + x a^{k-2} + a^{k-1}\right),
+$$
+
+as you can check by expanding (the middle terms cancel in pairs). If $p(x) = \sum_k c_k x^k$ then
+
+$$
+p(x) - p(a) = \sum_{k} c_k \left(x^k - a^k\right),
+$$
+
+and $x - a$ divides every term, so it divides $p(x) - p(a)$.
+
+</Proof>
+
+<Theorem name="Factor theorem">
+
+$x - a$ is a factor of $p(x)$ if and only if $p(a) = 0$.
+
+</Theorem>
+
+<Proof>
+
+If $p(x) = (x - a)q(x)$, then $p(a) = (a - a)\,q(a) = 0$. Conversely, if $p(a) = 0$, the remainder theorem gives $p(x) = (x - a)q(x) + 0$.
+
+</Proof>
+
+<Theorem name="Root bound">
+
+A non-zero polynomial of degree $n$ with real (or complex) coefficients has **at most $n$ roots**.
+
+</Theorem>
+
+<Proof>
+
+Induction on $n$. A polynomial of degree $0$ is a non-zero constant and has no roots. Now let $\deg p = n \ge 1$ and assume the statement for degree $n - 1$. If $p$ has no roots, we are done. Otherwise pick a root $a$. By the factor theorem $p(x) = (x - a)q(x)$, and by the lemma $\deg q = n - 1$.
+
+Let $b$ be any root of $p$ other than $a$. Then $0 = p(b) = (b - a)\,q(b)$. Since $b - a \ne 0$ and a product of real (or complex) numbers is zero only if a factor is zero, $q(b) = 0$. So every root of $p$ is either $a$ or a root of $q$. By the induction hypothesis $q$ has at most $n - 1$ roots, so $p$ has at most $1 + (n - 1) = n$.
+
+</Proof>
+
+<Narrator who="gideon">
+
+Look closely at the step "a product is zero only if a factor is zero". It is a real hypothesis, not a formality. In clock arithmetic modulo $8$, $2 \cdot 4 = 0$, and the quadratic $x^2 - 1$ has **four** roots: $1, 3, 5, 7$. The theorem is true for real and complex numbers *because* they have the zero-product property.
+
+</Narrator>
+
+<Theorem name="Corollary (identity theorem)">
+
+If two polynomials $p$ and $q$, each zero or of degree at most $n$, take the same values at $n + 1$ different numbers, then $p = q$.
+
+</Theorem>
+
+<Proof>
+
+If $p \ne q$, then $p - q$ is a non-zero polynomial of degree at most $n$ with at least $n + 1$ roots, contradicting the root bound.
+
+</Proof>
+
+So a polynomial identity of degree $n$ *can* be proved by checking $n + 1$ values. That is unusual: in general, checking examples refutes but never proves. Here the root bound turns finitely many checks into a proof.
+
+<Theorem name="Rational root test">
+
+Let $p(x) = a_n x^n + \cdots + a_1 x + a_0$ have **integer** coefficients, with $a_n \ne 0$ and $a_0 \neq 0$. If a fraction $r/s$ in lowest terms is a root of $p$, then $r$ divides $a_0$ and $s$ divides $a_n$.
+
+</Theorem>
+
+<Proof>
+
+Substitute $x = r/s$ and multiply by $s^n$:
+
+$$
+a_n r^n + a_{n-1} r^{n-1} s + \cdots + a_1 r s^{n-1} + a_0 s^n = 0.
+$$
+
+Every term except the last contains the factor $r$, so $r$ divides $a_0 s^n$. Since $r$ and $s$ have no common prime factor, $r$ shares none with $s^n$, and so $r$ divides $a_0$ (by unique factorisation; see <TopicLink id="math.number.divisibility-gcd">divisibility</TopicLink>). Similarly every term except the first contains $s$, so $s$ divides $a_n r^n$ and hence $s$ divides $a_n$.
+
+</Proof>
+
+For $2x^3 - 3x^2 - 11x + 6$ the only candidates are $\pm 1, \pm 2, \pm 3, \pm 6, \pm \tfrac12, \pm \tfrac32$. Testing them finds $-2, \tfrac12, 3$. For $x^3 - 2$ the candidates $\pm 1, \pm 2$ all fail, which *proves* that $\sqrt[3]{2}$ is irrational.
+
+<Note>
+
+Over the complex numbers much more is true. The **fundamental theorem of algebra** (first proved in the late 18th and early 19th centuries; see <TopicLink id="math.number.complex-numbers">complex numbers</TopicLink>) says every non-constant polynomial has a complex root. Applying the factor theorem again and again, every polynomial of degree $n$ splits into $n$ linear factors over $\mathbb{C}$. So it has *exactly* $n$ complex roots when each is counted as often as its factor appears. We do not prove it here: every proof needs some analysis or topology — at the very least, the completeness of the real numbers.
+
+</Note>
+
+</Section>
+
+<Section id="formal" kind="formal" title="The theorems, checked by Lean">
+
+Lean's library Mathlib has a type of polynomials, written `R[X]` for coefficients in `R`. In it, `C a` is the constant polynomial $a$, `p.eval a` is $p(a)$ and `p.natDegree` is the degree. The special products are identities in any commutative ring, and the tactic `ring` checks them by expanding both sides:
+
+<Lean decl="Lumenary.Polynomials.diff_of_squares" />
+
+<Lean decl="Lumenary.Polynomials.sum_and_diff_of_cubes" />
+
+The second proof of the remainder theorem has two steps. First, $x - a$ divides $x^n - a^n$, proved by induction from $x^{n+1} - a^{n+1} = x(x^n - a^n) + a^n(x - a)$:
+
+<Lean decl="Lumenary.Polynomials.sub_dvd_pow_sub_pow'" />
+
+Then $p - p(a)$ is built from single terms $c\,x^k$ by adding, and each term is handled by the lemma:
+
+<Lean decl="Lumenary.Polynomials.remainder_theorem" />
+
+Mathlib states the same theorem as "the remainder on dividing by the monic polynomial $X - a$ is the constant $p(a)$". Our version above is proved here, from more basic facts; this one only *applies* a library theorem:
+
+<Lean decl="Lumenary.Polynomials.remainder_theorem_library" />
+
+<Lean decl="Lumenary.Polynomials.factor_theorem" />
+
+For the division algorithm we take existence from Mathlib (over any field, such as $\mathbb{Q}$ or $\mathbb{R}$) and prove uniqueness with the degree argument of the lesson:
+
+<Lean decl="Lumenary.Polynomials.division_exists" />
+
+<Lean decl="Lumenary.Polynomials.division_unique" />
+
+The rational root test is formalised for cubics, with the general statement in Mathlib named in the docstring. The hypothesis `h` is the equation after multiplying by $s^3$, just as in the proof:
+
+<Lean decl="Lumenary.Polynomials.rational_root_cubic" />
+
+The root bound is proved over any **integral domain**, a number system with the zero-product property, which covers $\mathbb{Z}$, $\mathbb{Q}$, $\mathbb{R}$ and $\mathbb{C}$ at once. The proof is the lesson's induction, organised by adding one root at a time:
+
+<Lean decl="Lumenary.Polynomials.card_roots_le_natDegree" />
+
+<Lean decl="Lumenary.Polynomials.card_roots_library" />
+
+<Lean decl="Lumenary.Polynomials.eq_of_agree" />
+
+Finally, the zero-product property really is needed. In `ZMod 8`, the integers modulo 8, the root bound fails, while modulo the prime $7$ it holds:
+
+<Lean decl="Lumenary.Polynomials.four_roots_mod_eight" />
+
+<Lean decl="Lumenary.Polynomials.two_roots_mod_seven" />
+
+<Narrator who="gideon">
+
+`IsDomain R` in the root bound is the zero-product property, written as a hypothesis Lean can check. `ZMod 8` is not a domain, so Lean would refuse to apply the theorem there — and `four_roots_mod_eight` shows it would be false.
+
+</Narrator>
+
+</Section>
+
+<Section id="computation" kind="computation" title="Dividing exactly, and counting roots in clock arithmetic">
+
+<Narrator who="margaret">
+
+Synthetic division is a tiny loop: multiply by $a$, add the next coefficient. With exact fractions instead of decimals, nothing is lost to rounding. Let me check the remainder theorem on two thousand random polynomials, and run the rational root test.
+
+</Narrator>
+
+<Python id="polynomials_remainder_theorem" />
+
+Two thousand agreements are **evidence**, not proof: they cover two thousand cases out of infinitely many. The theorem covers them all. Notice the last search, though. For $x^3 - 2$ the computer tries the only *possible* rational roots, and all four fail. Because the rational root test is a theorem, that finite search is a complete proof that $\sqrt[3]{2}$ is irrational.
+
+Next, the root bound in clock arithmetic. Where does it fail, and where does an exhaustive search find no failure at all?
+
+<Python id="polynomials_roots_mod_n" />
+
+Modulo a composite number such as $8$, $15$ or $24$, a quadratic can have more than two roots. Modulo a prime there are no zero divisors, and the exhaustive search finds no failure among all the polynomials of degree at most $3$, exactly as the proof predicts.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: roots and factors">
+
+Move the sliders $r$, $s$ and $t$. The cubic $y = a(x - r)(x - s)(x - t)$ crosses the $x$-axis exactly at its three roots. What happens when two roots meet? (The graph *touches* the axis instead of crossing: a repeated factor.) What does making $a$ negative do?
+
+<FunctionPlot
+  fns={["a*(x - r)*(x - s)*(x - t)"]}
+  labels={["y = a(x − r)(x − s)(x − t)"]}
+  params={[
+    { name: "a", min: -2, max: 2, step: 0.1, value: 0.5 },
+    { name: "r", min: -4, max: 4, step: 0.5, value: -2 },
+    { name: "s", min: -4, max: 4, step: 0.5, value: 0.5 },
+    { name: "t", min: -4, max: 4, step: 0.5, value: 3 },
+  ]}
+  points={[["r", 0, "r"], ["s", 0, "s"], ["t", 0, "t"]]}
+  x={[-5, 5]}
+  y={[-12, 12]}
+  title="A cubic with chosen roots"
+/>
+
+Now change $c$ in $y = x^3 + cx$. For $c < 0$ there are three real roots ($0$ and $\pm\sqrt{-c}$); for $c \ge 0$ only one. A cubic always has *at most* three real roots, but it may have fewer. The other roots have not vanished: they have become complex.
+
+<FunctionPlot
+  fns={["x^3 + c*x"]}
+  labels={["y = x³ + cx"]}
+  params={[{ name: "c", min: -4, max: 4, step: 0.25, value: -3 }]}
+  x={[-3, 3]}
+  y={[-8, 8]}
+  title="Three real roots, or one?"
+/>
+
+Every cubic graph you can draw crosses the axis at least once. That is true for every polynomial of odd degree. The proof needs the *intermediate value theorem* about continuous functions (see <TopicLink id="math.analysis.intro-calculus">introductory calculus</TopicLink>).
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Cancelling terms across a fraction.** $\dfrac{x^2 + 1}{x}$ is *not* $x + 1$. You may cancel common **factors** of the whole numerator and the whole denominator, never single terms: $\dfrac{x^2 + 1}{x} = x + \dfrac{1}{x}$ (for $x \ne 0$). Try $x = 2$: $\tfrac{5}{2} \ne 3$.
+
+</Misconception>
+
+<Misconception>
+
+**"Every polynomial factorises over the integers."** Most do not. $x^2 - 2$ needs $\sqrt 2$, $x^2 + 1$ needs $i$, and $x^3 - 2$ has no rational root at all (rational root test). Factorising with integer coefficients is a special event, which is why the rational root test is so useful for spotting it.
+
+</Misconception>
+
+<Misconception>
+
+**"A polynomial of degree $n$ has exactly $n$ real roots."** It has *at most* $n$. $x^2 + 1$ has none, $x^3 + x$ has one, and $(x - 1)^2$ has a single root counted twice. Over the complex numbers, counting repeated roots with their multiplicity, there are exactly $n$ — but that is the fundamental theorem of algebra, not the root bound.
+
+</Misconception>
+
+<Misconception>
+
+**"The remainder on dividing by $x + 2$ is $p(2)$."** Write $x + 2 = x - (-2)$: the remainder is $p(-2)$.
+
+</Misconception>
+
+<Misconception>
+
+**"$(a + b)^2 = a^2 + b^2$."** The square of a sum has a middle term: $(a + b)^2 = a^2 + 2ab + b^2$. With $a = b = 1$: $4 \ne 2$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="number-theory" title="Polynomials behave like integers">
+
+The integers and the polynomials over a field share a **division algorithm**: integers with remainders smaller in size, polynomials with remainders smaller in degree. Euclid's algorithm therefore works for polynomials too, computing greatest common divisors. Irreducible polynomials play the role of primes, and factorisation is unique up to constant factors. Both are examples of a *Euclidean domain*, an idea you will meet with <TopicLink id="math.algebra.rings">rings</TopicLink>. Number theorists also turn the analogy around: polynomials over the finite field with $p$ elements are a laboratory where many hard questions about integers become provable.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="A polynomial is not just a function">
+
+Over the integers modulo $2$, the polynomial $x^2 + x$ is not the zero polynomial. Yet it gives $0$ at both $x = 0$ and $x = 1$ (because $1 + 1 = 0$ there), so it is the zero *function*. Algebraists therefore treat a polynomial as its list of coefficients, a formal object. Over $\mathbb{R}$ the distinction disappears: by the identity theorem, two different real polynomials differ at all but finitely many points. Evaluation at $a$ respects both operations, $(p + q)(a) = p(a) + q(a)$ and $(pq)(a) = p(a)q(a)$. In modern language it is a *ring homomorphism*, and the remainder theorem says that $p$ and the constant $p(a)$ leave the same remainder on division by $x - a$.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Roots you can see">
+
+The real roots of $p$ are where the graph $y = p(x)$ meets the $x$-axis, and a repeated root is where the graph touches the axis without crossing. One equation in two variables, such as $y^2 = x^3 - x$ or $x^2 + y^2 = 1$, describes a curve. Studying the shapes cut out by polynomial equations, and the algebra that controls them, is **algebraic geometry** (see <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>). There, the root bound grows into Bézout's theorem: two plane curves of degrees $m$ and $n$ with no common component meet in at most $mn$ points.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Horner's rule is the fast way to evaluate">
+
+Computing $a_n x^n + \cdots + a_0$ term by term takes about $n^2/2$ multiplications if each power is computed afresh. Synthetic division computes $p(a)$ as $(\cdots((a_n a + a_{n-1})a + a_{n-2})a + \cdots)a + a_0$, which takes only $n$ multiplications and $n$ additions. This "Horner scheme" is how computers evaluate polynomials. Root-finding methods such as Newton's method approximate roots that have no exact formula (see <TopicLink id="math.comp.numerical-methods">numerical methods</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+The quadratic with four roots lives in clock arithmetic. This optional trail explores that world:
+
+<Trail slug="clock-arithmetic" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Mesopotamia.** Old Babylonian scribes (around 1800–1600 BCE) solved problems that we would write as quadratic equations. They also compiled tables of values of $n^3 + n^2$ that could be used for certain cubic problems.
+- **The Islamic world.** In the 9th century, al-Khwārizmī's book on *al-jabr* (from which "algebra" takes its name) treated quadratic equations systematically. Around 1070, **ʿUmar al-Khayyām** (Omar Khayyam) classified cubic equations and solved them geometrically by intersecting conic sections. In the 12th century **Sharaf al-Dīn al-Ṭūsī** studied when cubics have positive roots and how to approximate them numerically.
+- **China.** **Qin Jiushao**'s *Mathematical Treatise in Nine Sections* (1247) solved polynomial equations of high degree numerically, by a procedure essentially the same as the method published in Europe by Ruffini and Horner in the early 19th century. **Zhu Shijie**'s *Jade Mirror of the Four Unknowns* (1303) handled systems of polynomial equations in up to four unknowns.
+- **Renaissance Italy.** Scipione del Ferro and Niccolò Tartaglia found formulas for cubic equations, and Lodovico Ferrari for quartics; Gerolamo Cardano published them in *Ars Magna* (1545).
+- **The factor theorem and beyond.** René Descartes's *La Géométrie* (1637) stated that a polynomial with root $a$ is divisible by $x - a$. Paolo Ruffini (1799) and Niels Henrik Abel (1824) showed that there is no general formula using radicals for equations of degree five, and Évariste Galois explained exactly which equations can be solved that way (see <TopicLink id="math.algebra.fields-galois">Galois theory</TopicLink>). Carl Friedrich Gauss's dissertation (1799) gave a proof of the fundamental theorem of algebra. By modern standards it had a gap, later filled. Jean-Robert Argand gave a different proof in 1806.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- I. M. Gelfand and A. Shen, *Algebra* (1993) — polynomials, division and factorisation, written for strong school students.
+- E. J. Barbeau, *Polynomials* (1989) — a problem book that goes from school algebra to research-flavoured questions.
+- V. V. Prasolov, *Polynomials* (2004) — a wide-ranging survey for the ambitious reader.
+- Richard Courant and Herbert Robbins, *What Is Mathematics?* (1941) — includes a proof of the fundamental theorem of algebra.
+
+</Section>

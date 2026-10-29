@@ -1,0 +1,479 @@
+---
+slug: non-euclidean-geometry
+topic: math.geom.non-euclidean-geometry
+title: "Non-Euclidean geometry: spherical and hyperbolic"
+subtitle: What if Euclid's fifth postulate fails? Triangles whose angles add up to more — or less — than 180°, and the discovery that these worlds are exactly as consistent as the flat one.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 115
+order: 5007
+objectives:
+  - Work with great circles, spherical triangles and the spherical law of cosines, and prove Girard's theorem that a spherical triangle has area $R^2(\alpha + \beta + \gamma - \pi)$
+  - Describe lines, distances and angles in the upper half-plane and Poincaré disc models, and prove that Möbius transformations are hyperbolic isometries
+  - Prove that through a point not on a hyperbolic line there are infinitely many lines that do not meet it, and that a hyperbolic triangle has area $\pi - (\alpha + \beta + \gamma) < \pi$
+  - Explain what it means for the parallel postulate to be independent of Euclid's other axioms, and how models establish this
+narrators: []
+lean:
+  - Lumenary.NonEuclideanGeometry.lagrange_identity
+  - Lumenary.NonEuclideanGeometry.normals_dot
+  - Lumenary.NonEuclideanGeometry.normal_sq
+  - Lumenary.NonEuclideanGeometry.spherical_law_of_cosines
+  - Lumenary.NonEuclideanGeometry.great_circles_meet
+  - Lumenary.NonEuclideanGeometry.girard_bookkeeping
+  - Lumenary.NonEuclideanGeometry.im_mobius
+  - Lumenary.NonEuclideanGeometry.mobius_sub
+  - Lumenary.NonEuclideanGeometry.cross_term_invariant
+  - Lumenary.NonEuclideanGeometry.cosh_dist
+  - Lumenary.NonEuclideanGeometry.sl2_isometry
+  - Lumenary.NonEuclideanGeometry.dist_vertical
+  - Lumenary.NonEuclideanGeometry.many_parallels
+compute: [non_euclidean_geometry_girard, non_euclidean_geometry_hyperbolic]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="The postulate that would not be proved">
+
+Euclid's *Elements* (c. 300 BCE) builds plane geometry from five postulates. The first four are short and obvious: a line can be drawn between any two points, extended indefinitely, a circle drawn with any centre and radius, and all right angles are equal. The fifth is long and different. In the equivalent form popularised by John Playfair (1795):
+
+> **Parallel postulate.** Through a point not on a given line there is exactly one line that does not meet it.
+
+For two thousand years mathematicians tried to *prove* the fifth postulate from the other four — Ptolemy and Proclus in Alexandria, Ibn al-Haytham in Cairo, Omar Khayyam in Isfahan, Naṣīr al-Dīn al-Ṭūsī at Maragha, Giovanni Saccheri in Pavia, Johann Heinrich Lambert in Berlin. All of them failed, and many of their "proofs" quietly assumed something equivalent to what they were proving.
+
+Meanwhile, navigators had been living in a non-Euclidean world all along. Fly from the North Pole straight down to the equator, turn left through $90^\circ$, fly a quarter of the way around the Earth, turn left through $90^\circ$ again, and fly straight home: you have traced a triangle with **three right angles**. On a sphere the angles of a triangle add up to *more* than $180^\circ$ — and the excess measures its area.
+
+In the 1820s, Carl Friedrich Gauss, János Bolyai and Nikolai Lobachevsky independently took the bold step: *suppose the postulate is false, with many parallels through a point, and see what follows.* The result was not a contradiction but a new geometry, the **hyperbolic plane**, in which triangles have angle sums *less* than $180^\circ$. By the 1860s–1880s, Eugenio Beltrami, Felix Klein and Henri Poincaré had built concrete models of it — and with them proved that the parallel postulate can never be derived from the others. This lesson uses <TopicLink id="math.geom.euclidean-geometry">Euclidean geometry</TopicLink> and its axioms, <TopicLink id="math.geom.trigonometry">trigonometry</TopicLink>, and <TopicLink id="math.geom.vectors">vectors</TopicLink> with the dot product; the cross product is recalled below.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Three geometries, one picture">
+
+Drag the vertices of a triangle in each of the three geometries and watch its angle sum. In the plane it is always $180^\circ$. On the sphere it is larger, by an amount proportional to the area. In the hyperbolic plane (drawn in the Poincaré disc, where straight lines appear as circular arcs meeting the boundary at right angles) it is smaller, again by an amount proportional to the area.
+
+<CurvedTriangles mode="sphere" vertices={{ sphere: [[90, 0], [0, 0], [0, 90]], hyperbolic: [[-0.7, -0.4], [0.75, -0.35], [0, 0.8]] }} subtitle="Start with the triangle with three right angles: it covers exactly one eighth of the sphere." />
+
+The table under the widget records a single law for all three: **angle sum $-\, \pi = K \cdot \text{area}$**, where $K$ is the **curvature**: $+1/R^2$ on a sphere of radius $R$, $0$ in the plane and $-1$ in the standard hyperbolic plane. Small triangles have small area, so in all three geometries tiny triangles look Euclidean — which is why the Earth looks flat to someone standing on it.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="great circle, spherical distance">
+
+On the sphere $S_R = \{x \in \R^3 : |x| = R\}$, a **great circle** is the intersection of $S_R$ with a plane through the centre $O$. The **distance** between two points is the length of the shorter great-circle arc joining them: $R$ times the angle $\angle AOB$, so for unit vectors $\cos d(A, B) = A \cdot B$. Great circles are the "straight lines" (geodesics) of the sphere: the shortest paths between points. Two points are **antipodal** if they are opposite ends of a diameter.
+
+</Definition>
+
+<Definition term="cross product">
+
+For $u, v \in \R^3$, the **cross product** is $u \times v = (u_2 v_3 - u_3 v_2,\ u_3 v_1 - u_1 v_3,\ u_1 v_2 - u_2 v_1)$. It is perpendicular to both $u$ and $v$, and its length is $|u|\,|v| \sin\theta$, where $\theta$ is the angle between them. So for a great circle through $A$ and $C$, the vector $C \times A$ is a normal to its plane.
+
+</Definition>
+
+<Definition term="spherical triangle, angle, lune">
+
+A **spherical triangle** $ABC$ has as sides the great-circle arcs $BC$, $CA$, $AB$ (each shorter than a semicircle). Its **angle** at $C$ is the angle between the tangent lines of the two sides at $C$ — equivalently, the angle between the planes $OCA$ and $OCB$, or between their normals $C \times A$ and $C \times B$. A **lune** of angle $\alpha$ is the region between two half great circles from a point to its antipode, meeting at angle $\alpha$.
+
+</Definition>
+
+<Definition term="upper half-plane model">
+
+The **hyperbolic plane** in the upper half-plane model is $\mathbb H = \{z = x + iy \in \C : y > 0\}$ with lengths measured by $ds = |dz|/y$: a curve $z(t)$, $a \le t \le b$, has hyperbolic length $\int_a^b |z'(t)| / \operatorname{Im} z(t)\, dt$, and the **distance** $d(z, w)$ is the infimum of the lengths of curves from $z$ to $w$. Areas are measured by $dx\,dy/y^2$. Angles are the usual Euclidean angles (the model is *conformal*).
+
+</Definition>
+
+<Definition term="hyperbolic lines, parallels">
+
+The **lines** (geodesics) of $\mathbb H$ are the vertical half-lines $\{\operatorname{Re} z = c\}$ and the semicircles centred on the real axis. The real axis together with $\infty$ is the **boundary at infinity**: it is not part of $\mathbb H$. Two lines that do not meet are **parallel**; they are *limiting parallels* if they meet at a point of the boundary and *ultraparallel* otherwise.
+
+</Definition>
+
+<Definition term="Poincaré disc model">
+
+The **Poincaré disc** is the open unit disc $\mathbb D = \{|w| < 1\}$, with lines the diameters and the circular arcs meeting the unit circle at right angles. It is the image of $\mathbb H$ under the Cayley transform $w = (z - i)/(z + i)$, which carries the half-plane model onto the disc model, lines to lines, preserving angles; the boundary circle is the boundary at infinity.
+
+</Definition>
+
+<Definition term="Möbius transformation, excess, defect">
+
+A **Möbius transformation** of $\mathbb H$ is a map $z \mapsto \dfrac{az + b}{cz + d}$ with $a, b, c, d \in \R$ and $ad - bc = 1$. The **angle excess** of a spherical triangle with angles $\alpha, \beta, \gamma$ is $\alpha + \beta + \gamma - \pi$; the **defect** of a hyperbolic triangle is $\pi - (\alpha + \beta + \gamma)$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Three right angles">
+
+The North Pole $N$ and the points $(0^\circ, 0^\circ)$ and $(0^\circ, 90^\circ\mathrm{E})$ on the equator form a spherical triangle with three right angles: angle sum $\frac{3\pi}{2}$, excess $\frac{\pi}{2}$. It is one of the eight congruent triangles into which the three coordinate planes cut the sphere, so its area is $\frac18 \cdot 4\pi R^2 = \frac{\pi}{2} R^2 = R^2 \cdot \text{excess}$ — Girard's theorem in its simplest case.
+
+</Example>
+
+<Example title="Great circles versus parallels of latitude">
+
+Madrid and New York both lie at about $40^\circ$ N. The circle of latitude through them is *not* a great circle (its plane does not pass through the Earth's centre), so it is not the shortest route: the great-circle route bends north over the Atlantic, and long-distance flights follow such curving routes. The equator is the only circle of latitude that is a line of spherical geometry. Meridians are great circles, and any two of them meet at the poles: on the sphere there are **no parallel lines** at all.
+
+</Example>
+
+<Example title="Distances in the half-plane">
+
+Along the imaginary axis, the curve $z(t) = it$ from $i$ to $iy$ ($y > 1$) has length $\int_1^y dt/t = \ln y$. As $y \to \infty$ or $y \to 0$, the distance from $i$ grows without bound: the boundary is infinitely far away, even though it looks close in the picture. Horizontal distances shrink with height: the points $i$ and $1 + i$ are at hyperbolic distance $\operatorname{arcosh}\frac32 \approx 0.96$, but $100i$ and $1 + 100i$ are only about $0.01$ apart.
+
+</Example>
+
+<Figure caption="The Poincaré disc. Through the point P there are infinitely many hyperbolic lines (solid arcs) that never meet the horizontal line L. The two dashed arcs are the limiting parallels: they meet L only at the boundary circle, which is infinitely far away.">
+<svg viewBox="0 0 260 240" role="img" aria-label="A unit disc with a horizontal diameter L and a point P above it, through which several circular arcs pass without meeting L">
+  <circle cx="130" cy="120" r="100" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="30" y1="120" x2="230" y2="120" stroke="var(--gold)" strokeWidth="3" />
+  <path d="M 70.0 40.0 A 75.0 75.0 0 0 0 190.0 40.0" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M 95.4 26.2 A 90.1 90.1 0 0 0 219.8 75.9" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M 40.2 75.9 A 90.1 90.1 0 0 0 164.6 26.2" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M 108.0 22.4 A 125.0 125.0 0 0 0 230.0 120.0" fill="none" stroke="var(--formal)" strokeWidth="1.5" strokeDasharray="5 4" />
+  <path d="M 30.0 120.0 A 125.0 125.0 0 0 0 152.0 22.4" fill="none" stroke="var(--formal)" strokeWidth="1.5" strokeDasharray="5 4" />
+  <circle cx="130" cy="70" r="4" fill="var(--ink-2)" />
+  <text x="138" y="66" fontSize="13" fill="var(--ink-2)">P</text>
+  <text x="200" y="138" fontSize="13" fill="var(--ink-2)">L</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="sphere" kind="proof" title="Spherical geometry">
+
+Take $R = 1$ (for radius $R$, lengths scale by $R$ and areas by $R^2$). Let $A, B, C$ be unit vectors, with sides $a = d(B, C)$, $b = d(C, A)$, $c = d(A, B)$ and angles $\alpha, \beta, \gamma$ at $A, B, C$.
+
+<Theorem name="Theorem (spherical law of cosines)">
+
+$\cos c = \cos a \cos b + \sin a \sin b \cos \gamma$.
+
+</Theorem>
+
+<Proof>
+
+The normals to the planes $OCA$ and $OCB$ are $C \times A$ and $C \times B$, with lengths $|C \times A| = \sin b$ and $|C \times B| = \sin a$, and $\gamma$ is the angle between them, so $(C \times A) \cdot (C \times B) = \sin b \sin a \cos\gamma$. On the other hand, Lagrange's identity $(u \times v)\cdot(w \times x) = (u \cdot w)(v \cdot x) - (u \cdot x)(v \cdot w)$ with $C \cdot C = 1$ gives
+
+$$
+(C \times A) \cdot (C \times B) = A \cdot B - (A \cdot C)(B \cdot C) = \cos c - \cos b \cos a .
+$$
+
+Equating the two expressions gives the law.
+
+</Proof>
+
+For small triangles, $\cos x \approx 1 - x^2/2$ and $\sin x \approx x$; substituting and keeping terms of second order turns the spherical law into the Euclidean law of cosines $c^2 = a^2 + b^2 - 2ab\cos\gamma$.
+
+<Theorem name="Lemma (area of a lune)">
+
+A lune of angle $\alpha$ on the unit sphere has area $2\alpha$.
+
+</Theorem>
+
+<Proof>
+
+Rotations about the axis through the lune's two vertices preserve area and carry lunes to lunes of the same angle, so the area of a lune depends only on its angle, say $L(\alpha)$; it is additive ($L(\alpha + \beta) = L(\alpha) + L(\beta)$, placing lunes side by side) and increasing. Since $n$ lunes of angle $2\pi/n$ tile the sphere, $L(2\pi/n) = 4\pi/n$, and by additivity $L(2\pi m/n) = 4\pi m/n$. An increasing function that agrees with $\alpha \mapsto 2\alpha$ on all rational multiples of $2\pi$ equals it everywhere.
+
+</Proof>
+
+<Theorem name="Theorem (Girard, 1629)">
+
+A spherical triangle on a sphere of radius $R$ has area $R^2(\alpha + \beta + \gamma - \pi)$.
+
+</Theorem>
+
+<Proof>
+
+Take $R = 1$ and write $A', B', C'$ for the antipodes of $A, B, C$. The three great circles $BC$, $CA$, $AB$ cut the sphere into eight triangles: $\Delta = ABC$, its antipodal image $\Delta' = A'B'C'$ (of the same area, since $x \mapsto -x$ is an isometry), and six others. The two great circles through $A$ bound a lune of angle $\alpha$ containing $\Delta$; the great circle $BC$ cuts it into $\Delta$ and the triangle $A'BC$. So
+
+$$
+L_A = \Delta \cup A'BC, \quad L_B = \Delta \cup AB'C, \quad L_C = \Delta \cup ABC',
+$$
+
+and their antipodal lunes are $L_A' = \Delta' \cup AB'C'$, $L_B' = \Delta' \cup A'BC'$, $L_C' = \Delta' \cup A'B'C$. Each of the six other triangles appears in exactly one of these six lunes, while $\Delta$ appears in three and $\Delta'$ in three. Adding areas (boundaries have zero area), using the lemma:
+
+$$
+2(2\alpha + 2\beta + 2\gamma) = 4\pi + 2\operatorname{area}(\Delta) + 2\operatorname{area}(\Delta') = 4\pi + 4 \operatorname{area}(\Delta),
+$$
+
+so $\operatorname{area}(\Delta) = \alpha + \beta + \gamma - \pi$.
+
+</Proof>
+
+**Consequences.** Every spherical triangle has angle sum greater than $\pi$. Two triangles with the same angles have the same area — and in fact are congruent: on the sphere there are no similar triangles of different sizes, and so no scale models. There are no rectangles (a quadrilateral with four right angles would have angle sum $2\pi$, so zero area). And any two great circles meet — their planes through $O$ share a line, which meets the sphere in two antipodal points — so there are no parallels.
+
+Spherical geometry is *not*, however, Euclidean geometry with the fifth postulate replaced: two antipodal points lie on infinitely many great circles (every meridian joins the poles), so the first postulate's uniqueness fails too, and lines are closed curves of finite length. Identifying each point with its antipode gives **elliptic geometry** on the projective plane, in which two points determine exactly one line and any two lines meet in exactly one point.
+
+</Section>
+
+<Section id="hyperbolic" kind="proof" title="Hyperbolic geometry">
+
+<Theorem name="Proposition (vertical segments are shortest)">
+
+For $0 < a < b$, the hyperbolic distance from $ia$ to $ib$ is $\ln(b/a)$, and the vertical segment is the only shortest curve.
+
+</Theorem>
+
+<Proof>
+
+For any curve $z(t) = x(t) + iy(t)$ from $ia$ to $ib$,
+
+$$
+\int \frac{\sqrt{x'^2 + y'^2}}{y}\,dt \;\ge\; \int \frac{|y'|}{y}\,dt \;\ge\; \int \frac{y'}{y}\,dt = \ln b - \ln a,
+$$
+
+with equality only if $x' \equiv 0$ and $y' \ge 0$: the curve runs straight up the imaginary axis. The vertical segment has length exactly $\ln(b/a)$.
+
+</Proof>
+
+<Theorem name="Theorem (Möbius transformations are isometries)">
+
+If $g(z) = \frac{az + b}{cz + d}$ with $a, b, c, d$ real and $ad - bc = 1$, then $g$ maps $\mathbb H$ onto itself and preserves hyperbolic lengths, distances, angles and areas.
+
+</Theorem>
+
+<Proof>
+
+Multiplying numerator and denominator by $\overline{cz + d}$,
+
+$$
+\operatorname{Im} g(z) = \frac{\operatorname{Im}\big((az + b)(c\bar z + d)\big)}{|cz + d|^2} = \frac{(ad - bc)\operatorname{Im} z}{|cz + d|^2} = \frac{\operatorname{Im} z}{|cz + d|^2},
+$$
+
+so $g$ maps $\mathbb H$ to $\mathbb H$; its inverse $z \mapsto \frac{dz - b}{-cz + a}$ is of the same form, so it is a bijection. Its derivative is $g'(z) = \frac{1}{(cz + d)^2}$, so
+
+$$
+\frac{|g'(z)|\,|dz|}{\operatorname{Im} g(z)} = \frac{|dz|/|cz + d|^2}{\operatorname{Im} z/|cz + d|^2} = \frac{|dz|}{\operatorname{Im} z}:
+$$
+
+the length element is preserved, hence the length of every curve, hence distances. A holomorphic map with non-zero derivative preserves angles, and the area element $dx\,dy/y^2$ transforms by $|g'(z)|^2 / (\operatorname{Im} g / \operatorname{Im} z)^2 = 1$.
+
+</Proof>
+
+Möbius transformations map circles and lines of $\C$ to circles and lines and preserve angles, so they map hyperbolic lines to hyperbolic lines. They are plentiful: $z \mapsto z + t$ ($t \in \R$), $z \mapsto \lambda z$ ($\lambda > 0$) and $z \mapsto -1/z$ generate them all, and they can move any point to any point and any line to any line — in particular, any line to the imaginary axis. Together with the reflection $z \mapsto -\bar z$, they form the whole isometry group of $\mathbb H$. Combining this with the proposition: every hyperbolic line is the image of the imaginary axis, so the lines of $\mathbb H$ are exactly the vertical half-lines and semicircles centred on $\R$, and any two points are joined by exactly one line.
+
+<Theorem name="Theorem (distance formula)">
+
+For $z, w \in \mathbb H$: $\displaystyle \cosh d(z, w) = 1 + \frac{|z - w|^2}{2 \operatorname{Im} z \operatorname{Im} w}$.
+
+</Theorem>
+
+<Proof>
+
+Both sides are unchanged by Möbius transformations: the left because they are isometries, the right because, by the formulas above, $|g(z) - g(w)|^2 = \frac{|z - w|^2}{|cz + d|^2 |cw + d|^2}$ and $\operatorname{Im} g(z) \operatorname{Im} g(w) = \frac{\operatorname{Im} z \operatorname{Im} w}{|cz + d|^2 |cw + d|^2}$. So we may move $z$ and $w$ onto the imaginary axis: $z = ia$, $w = ib$ with $a < b$. Then the right side is $1 + \frac{(b - a)^2}{2ab} = \frac{a^2 + b^2}{2ab} = \frac12\left(\frac ba + \frac ab\right) = \cosh \ln\frac ba$, which is $\cosh d(ia, ib)$ by the proposition.
+
+</Proof>
+
+<Theorem name="Theorem (infinitely many parallels)">
+
+Through a point $p$ not on a hyperbolic line $L$ there pass infinitely many lines that do not meet $L$.
+
+</Theorem>
+
+<Proof>
+
+Move $L$ to the imaginary axis by an isometry; reflecting in it by $z \mapsto -\bar z$ if necessary and then scaling by $z \mapsto z/\operatorname{Re} p$, we may assume $p = 1 + it$ with $t > 0$. For $c \in \R$, the semicircle centred at $c$ through $p$ has radius $r$ with $r^2 = (1 - c)^2 + t^2$. It meets $L$ at a point $iy$ ($y > 0$) exactly when $c^2 + y^2 = (1 - c)^2 + t^2$, i.e. $y^2 = 1 + t^2 - 2c$. So for every $c \ge \frac{1 + t^2}{2}$ there is no such $y$: each of these infinitely many semicircles is a line through $p$ that misses $L$. (The vertical line $\operatorname{Re} z = 1$ is another.)
+
+</Proof>
+
+Exactly two of the lines through $p$ are *limiting* parallels (here $c = \frac{1+t^2}{2}$, meeting $L$ at the boundary point $0$, and the vertical line, meeting it at $\infty$); all lines between them are ultraparallel.
+
+<Theorem name="Theorem (area of a hyperbolic triangle)">
+
+A hyperbolic triangle with angles $\alpha, \beta, \gamma$ has area $\pi - (\alpha + \beta + \gamma)$. In particular every triangle has angle sum less than $\pi$ and area less than $\pi$.
+
+</Theorem>
+
+<Proof>
+
+*Step 1: one vertex at infinity.* Consider a "triangle" with one vertex at $\infty$ (where its two vertical sides meet, at angle $0$) and two vertices on the unit circle at $e^{i(\pi - \alpha)}$ and $e^{i\beta}$, where its angles are $\alpha$ and $\beta$ (the angle between a vertical line and the unit circle at $e^{i\theta}$ is $\theta$ or $\pi - \theta$). Its area is
+
+$$
+\int_{-\cos\alpha}^{\cos\beta} \int_{\sqrt{1 - x^2}}^{\infty} \frac{dy}{y^2}\,dx = \int_{-\cos\alpha}^{\cos\beta} \frac{dx}{\sqrt{1 - x^2}} = \arcsin(\cos\beta) + \arcsin(\cos\alpha) = \pi - \alpha - \beta .
+$$
+
+Any triangle with one vertex on the boundary can be moved to this position: send that vertex to $\infty$, then use $z \mapsto \lambda z + t$ to make the opposite side the unit circle.
+
+*Step 2: the general triangle.* Extend the side $AB$ beyond $B$ until it reaches the boundary at an ideal point $D$. Let $\delta$ be the angle $\angle BCD$. The triangle $ACD$ has angles $\alpha$, $\gamma + \delta$, $0$, and the triangle $BCD$ has angles $\pi - \beta$, $\delta$, $0$; and $ABC = ACD \setminus BCD$. By step 1,
+
+$$
+\operatorname{area}(ABC) = \big(\pi - \alpha - \gamma - \delta\big) - \big(\pi - (\pi - \beta) - \delta\big) = \pi - \alpha - \beta - \gamma .
+$$
+
+</Proof>
+
+Letting all three vertices run off to the boundary gives an **ideal triangle**, with all angles $0$ and area exactly $\pi$ — the largest possible. As on the sphere, two triangles with the same angles have the same area, and in fact are congruent: hyperbolic geometry has no similar triangles of different sizes. One also has the **hyperbolic law of cosines** $\cosh c = \cosh a \cosh b - \sinh a \sinh b \cos\gamma$ (proved, for example, in Anderson, ch. 5), which for small triangles again reduces to the Euclidean one.
+
+</Section>
+
+<Section id="independence" kind="human" title="Why the parallel postulate is independent">
+
+To show that a statement $P$ cannot be proved from axioms $\Sigma$, it is enough to find a **model**: a structure in which all of $\Sigma$ holds but $P$ fails. Any proof of $P$ from $\Sigma$ would be valid in every model, so it would prove something false in this one.
+
+Make "Euclid's other axioms" precise as Hilbert's axioms (1899) for incidence, betweenness, congruence and continuity, without the parallel axiom — so-called *neutral geometry*. Interpret "point" as a point of $\mathbb H$, "line" as a hyperbolic line, "between" and "congruent" via hyperbolic distance. One checks that every axiom of neutral geometry holds: two points lie on exactly one line (shown above); lines are infinitely long and separate the plane; there are enough isometries (the Möbius transformations and reflections) to move any segment or angle to any position, which gives the congruence axioms; and the continuity axioms hold because $\mathbb H$ is built from real numbers. (Full verifications are in Greenberg, ch. 7, and Hartshorne, ch. 7.) But the parallel postulate fails, by the theorem on infinitely many parallels.
+
+Hence **the parallel postulate is independent** of the other axioms. More precisely, the argument is one of *relative consistency*: the model is constructed inside the real numbers — inside Euclidean geometry — so if Euclidean geometry is consistent, so is hyperbolic geometry. Neither geometry is "the true one" as a matter of logic; which one describes a given situation is a question about that situation. (See <TopicLink id="math.found.model-theory">model theory</TopicLink> for the general method, and <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink> for what "proof" means here.)
+
+Spherical geometry is not a model of neutral geometry: some of the other axioms fail there too (lines are finite and two antipodal points lie on many lines). Indeed, neutral geometry *proves* that the angle sum of a triangle is at most $\pi$ (the Saccheri–Legendre theorem), so only the hyperbolic alternative is compatible with Euclid's first four postulates and the continuity axioms.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Spheres and half-planes in Lean">
+
+For spherical geometry we use vectors in $\R^3$ (in Mathlib, `Fin 3 → ℝ` with the dot product `⬝ᵥ` and the cross product `⨯₃`). Lagrange's identity is checked coordinate by coordinate; the spherical law of cosines then follows exactly as in the human proof, with the angle $\gamma$ at $C$ specified through the normals $C \times A$ and $C \times B$:
+
+<Lean decl="Lumenary.NonEuclideanGeometry.lagrange_identity" />
+
+<Lean decl="Lumenary.NonEuclideanGeometry.normals_dot" />
+
+<Lean decl="Lumenary.NonEuclideanGeometry.normal_sq" />
+
+<Lean decl="Lumenary.NonEuclideanGeometry.spherical_law_of_cosines" />
+
+That any two great circles meet is proved by linear algebra — rank–nullity gives a non-zero vector orthogonal to both normals — and then rescaling it onto the sphere:
+
+<Lean decl="Lumenary.NonEuclideanGeometry.great_circles_meet" />
+
+For Girard's theorem we formalise only the final arithmetic of the covering argument; the lune formula and the covering by six lunes are not formalised (they need area on the sphere, i.e. surface measure):
+
+<Lean decl="Lumenary.NonEuclideanGeometry.girard_bookkeeping" />
+
+For the hyperbolic plane, the two computations at the heart of the isometry theorem and the distance formula are proved here from scratch: the imaginary part of $g(z)$, the difference $g(z) - g(w)$, and hence the invariance of $|z - w|^2/(\operatorname{Im} z \operatorname{Im} w)$:
+
+<Lean decl="Lumenary.NonEuclideanGeometry.im_mobius" />
+
+<Lean decl="Lumenary.NonEuclideanGeometry.mobius_sub" />
+
+<Lean decl="Lumenary.NonEuclideanGeometry.cross_term_invariant" />
+
+Mathlib's `UpperHalfPlane` (written `ℍ`) is a genuine metric space with the hyperbolic distance. We cite its distance formula, its isometric action of $SL(2, \R)$, and the logarithmic distance along vertical lines:
+
+<Lean decl="Lumenary.NonEuclideanGeometry.cosh_dist" />
+
+<Lean decl="Lumenary.NonEuclideanGeometry.sl2_isometry" />
+
+<Lean decl="Lumenary.NonEuclideanGeometry.dist_vertical" />
+
+Finally, the failure of the parallel postulate, in the case $p = 1 + i$ of the human proof:
+
+<Lean decl="Lumenary.NonEuclideanGeometry.many_parallels" />
+
+**Not formalised here:** surface area on the sphere and in $\mathbb H$ (so neither area theorem is formalised beyond its bookkeeping), the classification of hyperbolic lines, and the independence of the parallel postulate — which would require formalising Hilbert's axioms and verifying them in the model.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Measuring curved triangles">
+
+The first experiment takes triangles on the unit sphere — the octant triangle and triangles joining cities on several continents — and computes their angle excess, their area by an exact closed formula, and their area by **Monte Carlo**: throw 200,000 random points onto the sphere and count the fraction that land inside. It also checks the spherical law of cosines.
+
+<Python id="non_euclidean_geometry_girard" />
+
+The second experiment does the same in the upper half-plane, where the angles are computed in two independent ways (from the side lengths by the hyperbolic law of cosines, and from the tangent directions of the arcs), and the area $\iint dx\,dy/y^2$ by Monte Carlo. It also applies random Möbius transformations and pushes a triangle towards an ideal one.
+
+<Python id="non_euclidean_geometry_hyperbolic" />
+
+Both are evidence of different kinds: floating-point computation, accurate to about $10^{-15}$, and statistical sampling, accurate only to its standard error. Neither proves anything about *all* triangles; the theorems above do.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: the hyperbolic plane">
+
+In the Poincaré disc, drag the vertices towards the boundary circle and watch the angle sum fall towards $0$ while the area climbs towards $\pi$. Then switch to the plane and the sphere and compare: the readout "angle sum $- \pi = K \cdot$ area" holds in all three, with $K = -1$, $0$ and $+1$.
+
+<CurvedTriangles mode="hyperbolic" vertices={{ hyperbolic: [[-0.7, -0.4], [0.75, -0.35], [0, 0.8]] }} title="A hyperbolic triangle in the Poincaré disc" subtitle="The sides are arcs meeting the boundary at right angles; the boundary is infinitely far away." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Non-Euclidean geometry contradicts Euclid."** It contradicts only the fifth postulate, which it replaces. Hyperbolic geometry is exactly as consistent as Euclidean geometry (each can be modelled inside the other), and every theorem Euclid proved without the fifth postulate — the first 28 propositions of Book I — remains true in it.
+
+</Misconception>
+
+<Misconception>
+
+**"The lines of the Poincaré disc are curved."** They look curved only in the Euclidean picture of the model. Measured with the hyperbolic metric they are perfectly straight: each is the unique shortest path between any two of its points. The model is a map, and like a flat map of the Earth it distorts — here, it shrinks distances near the boundary, so shortest paths bow towards the centre.
+
+</Misconception>
+
+<Misconception>
+
+**"Spherical geometry satisfies all of Euclid's axioms except the parallel postulate."** Other axioms fail too: two antipodal points lie on infinitely many great circles, so a line through two points need not be unique, and lines cannot be extended indefinitely — they close up. This is why spherical geometry is not a model of neutral geometry, and why neutral geometry can prove that angle sums never exceed $\pi$.
+
+</Misconception>
+
+<Misconception>
+
+**"Every hyperbolic triangle has the same angle sum."** The angle sum depends on the size of the triangle: it is $\pi$ minus the area. Tiny triangles have angle sums close to $\pi$; ideal triangles have angle sum $0$. The same holds on the sphere with excess in place of defect.
+
+</Misconception>
+
+<Misconception>
+
+**"The hyperbolic plane is just a saddle or a trumpet-shaped surface."** Saddle shapes and Beltrami's pseudosphere have curvature $-1$ only on part of themselves, or represent only a piece of the hyperbolic plane. By a theorem of Hilbert (1901), no complete smooth surface in $\R^3$ has constant negative curvature, so the whole hyperbolic plane cannot be built as a smooth surface in ordinary space; that is why we use models such as the disc and the half-plane. (Crocheted "hyperbolic" surfaces, popularised by Daina Taimiņa, approximate it locally.)
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Curvature and the three model geometries">
+
+Gauss's *Theorema Egregium* (1827) showed that the curvature $K$ of a surface can be measured from inside it, by measuring distances and angles alone. The sphere, the plane and the hyperbolic plane are the complete simply connected surfaces of constant curvature $+1$, $0$ and $-1$, and for a geodesic triangle on any surface the **local Gauss–Bonnet formula** says $\alpha + \beta + \gamma - \pi = \iint_\Delta K\,dA$, which contains both Girard's theorem and the hyperbolic area formula. One practical consequence: since the sphere has $K \ne 0$ and the plane $K = 0$, *no map of any region of the Earth preserves all distances* — every atlas distorts something. See <TopicLink id="math.geom.curves-surfaces">curves and surfaces</TopicLink> and <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Most surfaces are hyperbolic">
+
+Glue the opposite sides of a square and you get a flat torus; can other closed surfaces be given a geometry in which every point looks the same? A regular octagon in the hyperbolic plane can be made with all angles equal to $\pi/4$: a tiny regular octagon has angles close to the Euclidean $3\pi/4$, and as it is enlarged its angles decrease continuously towards $0$, so at some size they equal $\pi/4$. Gluing its sides in the pattern $a_1 b_1 a_1^{-1} b_1^{-1} a_2 b_2 a_2^{-1} b_2^{-1}$ brings all eight corners together with total angle $8 \cdot \pi/4 = 2\pi$, so the result is a smooth hyperbolic surface: the genus-2 surface. By the uniformisation theorem every closed surface carries a metric of constant curvature, whose sign is that of the Euler characteristic: the sphere and projective plane are spherical, the torus and Klein bottle flat, and all the others hyperbolic. Gauss–Bonnet then gives the area: $-\text{area} = 2\pi\chi$, so the genus-2 surface has area $4\pi$, exactly the area of the octagon ($6\pi - 8 \cdot \frac{\pi}{4} = 4\pi$, using the area formula for hyperbolic polygons). See <TopicLink id="math.geom.surfaces-euler-characteristic">surfaces and the Euler characteristic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Geometry as a group: SO(3), PSL(2, R) and the modular group">
+
+In Klein's spirit (<TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>), spherical geometry is the geometry of the rotation group $SO(3)$ acting on the sphere, and hyperbolic geometry the geometry of $PSL(2, \R) = SL(2, \R)/\{\pm I\}$ acting on $\mathbb H$ by Möbius transformations (plus reflections). These groups are as algebraically different as the geometries: $SO(3)$ is compact, $PSL(2, \R)$ is not. Discrete subgroups of $PSL(2, \R)$, the **Fuchsian groups**, tile the hyperbolic plane. The most famous is the **modular group** $PSL(2, \Z)$ of integer matrices, generated by $z \mapsto z + 1$ and $z \mapsto -1/z$; its tiling of $\mathbb H$ by copies of the region $|\operatorname{Re} z| \le \frac12$, $|z| \ge 1$ underlies the theory of modular forms, a central object of modern number theory. See <TopicLink id="math.algebra.groups">groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Independence, models and relative consistency">
+
+The parallel postulate was the first famous independence result, and its proof set the pattern for all later ones: to show that $\Sigma$ does not prove $P$, build a model of $\Sigma \cup \{\neg P\}$. The same method, in far more sophisticated forms, shows that the continuum hypothesis is independent of the axioms of set theory (Gödel 1938, Cohen 1963). Note what the models prove: not that hyperbolic geometry is consistent outright, but that it is consistent *if* Euclidean geometry (equivalently, the theory of the real numbers) is. Tarski showed (1940s) that elementary Euclidean geometry — first-order, with continuity as an axiom scheme — is complete and decidable. See <TopicLink id="math.found.model-theory">model theory</TopicLink> and <TopicLink id="math.found.forcing">forcing and independence</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Velocities in relativity add hyperbolically">
+
+The hyperbolic plane appears inside physics, not just as a mathematical possibility. In special relativity, the set of possible velocities of a particle is a hyperbolic space: writing $v = c \tanh \theta$, the **rapidity** $\theta$ is a hyperbolic distance from rest, and collinear velocities combine by adding rapidities, $\tanh(\theta_1 + \theta_2) = \frac{\tanh\theta_1 + \tanh\theta_2}{1 + \tanh\theta_1 \tanh\theta_2}$ — Einstein's velocity addition formula. The hyperboloid $t^2 - x^2 - y^2 = 1$, $t > 0$, in Minkowski spacetime, with the metric induced from it, is a model of the hyperbolic plane, and the Lorentz group acts on it by isometries. On cosmic scales, general relativity allows space to be curved; current measurements of the cosmic microwave background find the spatial curvature of the observable universe to be close to zero, within small error bars — a question that, thanks to Gauss, Bolyai and Lobachevsky, is a question of measurement and not of logic. See <TopicLink id="math.applied.relativity">relativity</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Spherical trigonometry** grew out of astronomy. **Menelaus of Alexandria**'s *Sphaerica* (c. 100 CE) studied spherical triangles. Astronomers in India and in the Islamic world developed spherical trigonometry extensively: **Abū al-Wafāʾ al-Būzjānī** and his contemporaries stated the spherical law of sines in the 10th century, and **al-Bīrūnī** (11th century) used spherical trigonometry for geography and to compute the *qibla*, the direction of Mecca, from any city. **Thomas Harriot** found the area of a spherical triangle in 1603, but did not publish; **Albert Girard** published it in 1629.
+- **The parallel postulate.** Commentators from **Ptolemy** and **Proclus** onward tried to prove it. **Ibn al-Haytham** (11th century) studied quadrilaterals with three right angles; **Omar Khayyam** (*Explanations of the Difficulties in the Postulates of Euclid*, 1077) and **Naṣīr al-Dīn al-Ṭūsī** (13th century) studied quadrilaterals with two right angles at the base and equal sides — the configuration later used by **Giovanni Saccheri** (*Euclides ab omni naevo vindicatus*, 1733), who derived many hyperbolic theorems while believing he was refuting them. **Johann Heinrich Lambert** (1766) noticed that the defect would be proportional to area and compared the hypothesis to a sphere of imaginary radius. **Adrien-Marie Legendre** published repeated attempts.
+- **Discovery.** **Carl Friedrich Gauss** developed the new geometry privately from the 1810s–1820s but did not publish. **Nikolai Lobachevsky** in Kazan presented it in 1826 and published from 1829; **János Bolyai** published it as an appendix to his father **Farkas Bolyai**'s textbook in 1832. **Bernhard Riemann**'s lecture *On the hypotheses which lie at the foundations of geometry* (1854) placed all of this inside a general theory of curved spaces.
+- **Models.** **Eugenio Beltrami** (1868) gave the first models, proving relative consistency; **Felix Klein** (1871) gave a projective model and the names *elliptic*, *parabolic* and *hyperbolic*; **Henri Poincaré** (1882) found the disc and half-plane models in his work on differential equations and automorphic functions. **David Hilbert**'s *Grundlagen der Geometrie* (1899) made the axioms, and thus the independence statement, fully precise.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Marvin Jay Greenberg, *Euclidean and Non-Euclidean Geometries: Development and History* (4th ed. 2008) — axioms, neutral geometry, models and independence, with much history.
+- Robin Hartshorne, *Geometry: Euclid and Beyond* (2000) — Hilbert's axioms and a careful construction of the hyperbolic plane.
+- James W. Anderson, *Hyperbolic Geometry* (2nd ed. 2005) — the upper half-plane and disc models, Möbius transformations, area and trigonometry.
+- John Stillwell, *Geometry of Surfaces* (1992) — spherical, Euclidean and hyperbolic geometry and the surfaces built from them.
+- William P. Thurston, *Three-Dimensional Geometry and Topology*, Vol. 1 (1997) — the modern view, beautifully illustrated.
+- H. S. M. Coxeter, *Non-Euclidean Geometry* (1942; 6th ed. 1998) — a classic, synthetic treatment.
+- B. A. Rosenfeld, *A History of Non-Euclidean Geometry* (1988) — including the work of mathematicians in the medieval Islamic world.
+
+</Section>

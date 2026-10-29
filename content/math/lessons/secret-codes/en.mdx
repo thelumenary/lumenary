@@ -1,0 +1,472 @@
+---
+slug: secret-codes
+topic: math.applied.secret-codes
+title: Secret codes
+subtitle: Hide a message with an alphabet wheel, find out why Z wraps round to A, and then break the code — by trying every key, or by counting letters.
+level: g3-5
+ages: Ages 8–11
+minutes: 35
+order: 2015
+objectives:
+  - Encode and decode messages with a Caesar shift using an alphabet wheel
+  - Explain why shifting past Z wraps round to A, and why a shift forward by $k$ is undone by a shift forward by $26 - k$
+  - Break a Caesar cipher by trying all 25 shifts that change the message
+  - Break a simple substitution cipher by counting letter frequencies
+  - Explain why a message is not safe just because it looks scrambled, and why the key must be secret
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.SecretCodes.shift
+  - Lumenary.SecretCodes.wrap_around
+  - Lumenary.SecretCodes.shift_lt
+  - Lumenary.SecretCodes.shift_undo
+  - Lumenary.SecretCodes.shift_shift
+  - Lumenary.SecretCodes.shift_add_twenty_six
+  - Lumenary.SecretCodes.shifts_differ
+  - Lumenary.SecretCodes.shift_injective
+  - Lumenary.SecretCodes.shiftChar
+  - Lumenary.SecretCodes.caesar
+  - Lumenary.SecretCodes.meet_at_noon
+  - Lumenary.SecretCodes.zebra
+  - Lumenary.SecretCodes.decode_by_23
+  - Lumenary.SecretCodes.try_every_shift
+  - Lumenary.SecretCodes.caesar_undo
+  - Lumenary.SecretCodes.substitution_keys
+compute: [secret_codes_caesar, secret_codes_frequency]
+trails: [clock-arithmetic]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A note across the classroom">
+
+Chidi and Ngozi sit at opposite ends of their classroom in Lagos. Chidi wants to pass Ngozi a note about the surprise party they are planning for their friend Tobi — but the note will pass through many hands, and Tobi might see it. So Chidi writes:
+
+> PHHW DW QRRQ
+
+Ngozi knows the secret: every letter has been moved **3 places** along the alphabet. She moves each letter 3 places **back** — P to M, H to E, W to T — and reads: **MEET AT NOON**.
+
+More than two thousand years ago, the Roman general Julius Caesar hid his letters in exactly this way. The Roman writer Suetonius tells us that Caesar replaced each letter by the one three places later: D for A, E for B, and so on. That is why this kind of code is called a **Caesar shift**.
+
+<Narrator who="chloe">
+
+Hello! I'm Chloe. What happens to X, Y and Z, when there are no letters three places after them? And if Tobi gets hold of the note, how hard would it be for him to crack it? Let's find out.
+
+</Narrator>
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The alphabet wheel">
+
+Write the alphabet round a circle, and a second copy on a smaller wheel inside it. Turn the inside wheel 3 places. Now every letter on the outside sits next to its code letter on the inside: A next to D, B next to E, …
+
+<Figure caption="An alphabet wheel for a shift of 3. Find a letter of your message on the outside; its code letter is just inside it. The gold sector shows A → D. Near the top, X, Y and Z sit next to A, B and C: the alphabet wraps round.">
+<svg viewBox="0 0 320 320" role="img" aria-label="Two rings of letters. The outer ring has the alphabet A to Z. The inner ring has the alphabet shifted by three places, so D is next to A, E next to B, and A, B and C are next to X, Y and Z.">
+  <path d="M 141.7 9.1 A 152 152 0 0 1 178.3 9.1 L 169.9 78.6 A 82 82 0 0 0 150.1 78.6 Z" fill="var(--gold)" fillOpacity="0.45" />
+  <circle cx="160" cy="160" r="152" fill="none" stroke="var(--ink-2)" strokeWidth="2" />
+  <circle cx="160" cy="160" r="118" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="160" cy="160" r="82" fill="none" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="169.9" y1="78.6" x2="178.3" y2="9.1" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="189.1" y1="83.3" x2="213.9" y2="17.9" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="206.6" y1="92.5" x2="246.3" y2="34.9" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="221.4" y1="105.6" x2="273.8" y2="59.2" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="232.6" y1="121.9" x2="294.6" y2="89.4" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="239.6" y1="140.4" x2="307.6" y2="123.6" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="242.0" y1="160.0" x2="312.0" y2="160.0" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="239.6" y1="179.6" x2="307.6" y2="196.4" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="232.6" y1="198.1" x2="294.6" y2="230.6" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="221.4" y1="214.4" x2="273.8" y2="260.8" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="206.6" y1="227.5" x2="246.3" y2="285.1" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="189.1" y1="236.7" x2="213.9" y2="302.1" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="169.9" y1="241.4" x2="178.3" y2="310.9" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="150.1" y1="241.4" x2="141.7" y2="310.9" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="130.9" y1="236.7" x2="106.1" y2="302.1" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="113.4" y1="227.5" x2="73.7" y2="285.1" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="98.6" y1="214.4" x2="46.2" y2="260.8" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="87.4" y1="198.1" x2="25.4" y2="230.6" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="80.4" y1="179.6" x2="12.4" y2="196.4" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="78.0" y1="160.0" x2="8.0" y2="160.0" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="80.4" y1="140.4" x2="12.4" y2="123.6" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="87.4" y1="121.9" x2="25.4" y2="89.4" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="98.6" y1="105.6" x2="46.2" y2="59.2" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="113.4" y1="92.5" x2="73.7" y2="34.9" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="130.9" y1="83.3" x2="106.1" y2="17.9" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <line x1="150.1" y1="78.6" x2="141.7" y2="9.1" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1" />
+  <text x="160.0" y="30.0" textAnchor="middle" fontSize="15" fill="var(--ink-2)">A</text>
+  <text x="160.0" y="65.0" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">D</text>
+  <text x="192.3" y="33.9" textAnchor="middle" fontSize="15" fill="var(--ink-2)">B</text>
+  <text x="183.9" y="67.9" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">E</text>
+  <text x="222.7" y="45.5" textAnchor="middle" fontSize="15" fill="var(--ink-2)">C</text>
+  <text x="206.5" y="76.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">F</text>
+  <text x="249.5" y="64.0" textAnchor="middle" fontSize="15" fill="var(--ink-2)">D</text>
+  <text x="226.3" y="90.1" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">G</text>
+  <text x="271.1" y="88.3" textAnchor="middle" fontSize="15" fill="var(--ink-2)">E</text>
+  <text x="242.3" y="108.2" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">H</text>
+  <text x="286.2" y="117.1" textAnchor="middle" fontSize="15" fill="var(--ink-2)">F</text>
+  <text x="253.5" y="129.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">I</text>
+  <text x="294.0" y="148.7" textAnchor="middle" fontSize="15" fill="var(--ink-2)">G</text>
+  <text x="259.3" y="152.9" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">J</text>
+  <text x="294.0" y="181.3" textAnchor="middle" fontSize="15" fill="var(--ink-2)">H</text>
+  <text x="259.3" y="177.1" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">K</text>
+  <text x="286.2" y="212.9" textAnchor="middle" fontSize="15" fill="var(--ink-2)">I</text>
+  <text x="253.5" y="200.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">L</text>
+  <text x="271.1" y="241.7" textAnchor="middle" fontSize="15" fill="var(--ink-2)">J</text>
+  <text x="242.3" y="221.8" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">M</text>
+  <text x="249.5" y="266.0" textAnchor="middle" fontSize="15" fill="var(--ink-2)">K</text>
+  <text x="226.3" y="239.9" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">N</text>
+  <text x="222.7" y="284.5" textAnchor="middle" fontSize="15" fill="var(--ink-2)">L</text>
+  <text x="206.5" y="253.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">O</text>
+  <text x="192.3" y="296.1" textAnchor="middle" fontSize="15" fill="var(--ink-2)">M</text>
+  <text x="183.9" y="262.1" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">P</text>
+  <text x="160.0" y="300.0" textAnchor="middle" fontSize="15" fill="var(--ink-2)">N</text>
+  <text x="160.0" y="265.0" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">Q</text>
+  <text x="127.7" y="296.1" textAnchor="middle" fontSize="15" fill="var(--ink-2)">O</text>
+  <text x="136.1" y="262.1" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">R</text>
+  <text x="97.3" y="284.5" textAnchor="middle" fontSize="15" fill="var(--ink-2)">P</text>
+  <text x="113.5" y="253.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">S</text>
+  <text x="70.5" y="266.0" textAnchor="middle" fontSize="15" fill="var(--ink-2)">Q</text>
+  <text x="93.7" y="239.9" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">T</text>
+  <text x="48.9" y="241.7" textAnchor="middle" fontSize="15" fill="var(--ink-2)">R</text>
+  <text x="77.7" y="221.8" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">U</text>
+  <text x="33.8" y="212.9" textAnchor="middle" fontSize="15" fill="var(--ink-2)">S</text>
+  <text x="66.5" y="200.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">V</text>
+  <text x="26.0" y="181.3" textAnchor="middle" fontSize="15" fill="var(--ink-2)">T</text>
+  <text x="60.7" y="177.1" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">W</text>
+  <text x="26.0" y="148.7" textAnchor="middle" fontSize="15" fill="var(--ink-2)">U</text>
+  <text x="60.7" y="152.9" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">X</text>
+  <text x="33.8" y="117.1" textAnchor="middle" fontSize="15" fill="var(--ink-2)">V</text>
+  <text x="66.5" y="129.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">Y</text>
+  <text x="48.9" y="88.3" textAnchor="middle" fontSize="15" fill="var(--ink-2)">W</text>
+  <text x="77.7" y="108.2" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">Z</text>
+  <text x="70.5" y="64.0" textAnchor="middle" fontSize="15" fill="var(--ink-2)">X</text>
+  <text x="93.7" y="90.1" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">A</text>
+  <text x="97.3" y="45.5" textAnchor="middle" fontSize="15" fill="var(--ink-2)">Y</text>
+  <text x="113.5" y="76.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">B</text>
+  <text x="127.7" y="33.9" textAnchor="middle" fontSize="15" fill="var(--ink-2)">Z</text>
+  <text x="136.1" y="67.9" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--formal)">C</text>
+  <text x="160" y="156" textAnchor="middle" fontSize="15" fill="var(--ink-2)">plain: outside</text>
+  <text x="160" y="176" textAnchor="middle" fontSize="15" fill="var(--formal)">code: inside</text>
+</svg>
+</Figure>
+
+On a wheel, the alphabet has **no end**. After Z comes A again, just as after 12 o'clock on a clock comes 1 o'clock. So with a shift of 3, X becomes A, Y becomes B and Z becomes C. That is what **wrapping round** means.
+
+<Narrator who="gideon">
+
+I'm Gideon. A wheel is a very precise idea. Number the letters A = 0, B = 1, …, Z = 25. To shift by 3, add 3. If you reach 26 or more, take away 26. Y is 24; $24 + 3 = 27$; $27 - 26 = 1$, which is B. No guessing needed!
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Big ideas">
+
+<Definition term="cipher">
+
+A **cipher** is a rule for turning a message into a disguised form and back again. The message is the **plain text**; the disguised form is the **coded text** (or *cipher text*). Turning plain text into coded text is **encoding**; turning it back is **decoding**.
+
+</Definition>
+
+<Definition term="key">
+
+The **key** is the secret information needed to decode a message — for a Caesar shift, the size of the shift.
+
+</Definition>
+
+<Definition term="Caesar shift">
+
+A **Caesar shift** with key $k$ replaces each letter by the letter $k$ places later in the alphabet, **wrapping round** from Z to A.
+
+</Definition>
+
+<Definition term="substitution cipher">
+
+A **substitution cipher** replaces each letter by another letter using any scrambled alphabet as the key, for example A → Q, B → W, C → E, … Every letter must get a different code letter, so that the message can be decoded. A Caesar shift is a very special substitution cipher.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Let's try together">
+
+<Example title="Encoding with a shift of 3">
+
+| plain | M | E | E | T | | A | T | | N | O | O | N |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| code | P | H | H | W | | D | W | | Q | R | R | Q |
+
+Spaces stay as spaces (real code-writers often remove them, to make the code harder to break).
+
+</Example>
+
+<Example title="Wrapping round">
+
+With a shift of 3, **ZEBRA** becomes **CHEUD**: Z wraps round to C, E → H, B → E, R → U, A → D. With numbers: Z is 25, $25 + 3 = 28$, $28 - 26 = 2$, which is C.
+
+</Example>
+
+<Example title="Decoding">
+
+To decode a shift of 3, shift each letter 3 places **back**: PHHW → MEET. Or — surprise! — shift **23 places forward**. Going 3 places and then 23 more is 26 places: once all the way round the wheel, back where you started.
+
+</Example>
+
+<Example title="Breaking a Caesar cipher by trying every key">
+
+Tobi finds a note: **WKLV LV IXQ**. He does not know the key. But there are only 26 ways to turn the inside wheel, and one of them does nothing at all. So he simply tries them all:
+
+| shift back by | 1 | 2 | 3 | … |
+| --- | --- | --- | --- | --- |
+| decoding | VJKU KU HWP | UIJT JT GVO | **THIS IS FUN** | … |
+
+At a shift of 3 the message makes sense. Trying every key like this is called a **brute-force attack**. A Caesar shift has only **25** keys that change the message, so it can be broken in a few minutes with a pencil.
+
+</Example>
+
+<Example title="A substitution cipher">
+
+Ngozi and Chidi decide to use a scrambled alphabet instead. The key is a list like this:
+
+| plain | A | B | C | D | E | F | … |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| code | Q | W | E | R | T | Y | … |
+
+How many keys are there? A can be given any of 26 code letters; then B any of the 25 letters left; then C any of the 24 left; and so on. That makes $26 \times 25 \times 24 \times \dots \times 2 \times 1$ keys — the number written $26!$:
+
+$$
+26! = 403\,291\,461\,126\,605\,635\,584\,000\,000.
+$$
+
+Far too many to try, even for a computer trying a billion keys a second: it would take more than ten billion years. But there is a cleverer way to break it…
+
+</Example>
+
+</Section>
+
+<Section id="why" kind="proof" title="Why the wheel works">
+
+<Theorem name="Undoing a shift">
+
+A shift forward by $k$ places is undone by a shift forward by $26 - k$ places.
+
+</Theorem>
+
+<Proof>
+
+Shifting by $k$ and then by $26 - k$ moves every letter $k + (26 - k) = 26$ places along the wheel. The wheel has 26 letters, so 26 places is exactly once round: every letter comes back to where it started.
+
+</Proof>
+
+<Theorem name="Only 26 shifts">
+
+There are exactly 26 different Caesar shifts, and only 25 of them change the message.
+
+</Theorem>
+
+<Proof>
+
+A shift by 26 goes once round the wheel and changes nothing, so a shift by 27 does the same as a shift by 1, a shift by 28 the same as a shift by 2, and so on. So every shift does the same as one of the shifts $0, 1, 2, \dots, 25$. These 26 shifts are all different, because they send A to 26 different letters (shift $k$ sends A to letter number $k$). The shift by 0 changes nothing, which leaves 25.
+
+</Proof>
+
+Two more facts follow from the wheel. Shifting by $a$ and then by $b$ is the same as one shift by $a + b$ (for example, 10 and then 20 is 30, which is once round and 4 more: a shift by 4). And a shift never sends two different letters to the same code letter — the inside wheel has each letter exactly once — which is why every coded message can be decoded.
+
+<Narrator who="chloe">
+
+That's also why you must wrap round! If X, Y and Z had no code letters, or if they were all sent to the same letter, some messages could not be decoded. On a wheel, every letter has exactly one partner.
+
+</Narrator>
+
+**Why letter-counting breaks substitution ciphers.** A substitution cipher changes *which* letters are used, but not *how often* they are used. In English, **E** is the most common letter: in a long text, roughly one letter in every eight is an E. Next come T, A, O, I and N. So if the most common letter of a long coded message is Q, then Q very probably stands for E. A few good guesses like this, plus short words like THE and A, and the whole message starts to appear. This is called **frequency analysis**.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: crack the code by counting">
+
+Here is a secret message, made with a Caesar shift:
+
+> WOOD WO XOKB DRO QBOOX QKDO LOCSNO DRO BSFOB KD COFOX DRSC OFOXSXQ. LBSXQ DRO WKZ, DRO BYZO KXN DRBOO ZOXMSVC. GO GSVV COXN DRO XOHD COMBOD WOCCKQO GROX DRO WYYX SC RSQR.
+
+The chart shows how many times each of its ten most common letters appears.
+
+<DataChart data={[{ label: "O", value: 32 }, { label: "D", value: 13 }, { label: "X", value: 12 }, { label: "R", value: 11 }, { label: "C", value: 9 }, { label: "S", value: 9 }, { label: "B", value: 8 }, { label: "K", value: 6 }, { label: "Q", value: 6 }, { label: "W", value: 5 }]} view="bar" views={["bar", "tally"]} editable={false} title="Letters in the secret message" subtitle="The tallest bar is probably E. How far round the wheel is it from E?" />
+
+What to try:
+
+- Which letter is most common? If it stands for E, how many places is it from E? That is probably the key.
+- Decode the first few words with your key. Do they make sense? If not, try the second most common letter as E.
+- Look for a short word that appears many times. In English, a common three-letter word is THE.
+
+<ForGrownUps title="the answer">
+
+The most common letter is O, which is 10 places after E, so the key is a shift of 10 (decode by shifting 10 back, or 16 forward). The message reads: MEET ME NEAR THE GREEN GATE BESIDE THE RIVER AT SEVEN THIS EVENING. BRING THE MAP, THE ROPE AND THREE PENCILS. WE WILL SEND THE NEXT SECRET MESSAGE WHEN THE MOON IS HIGH. The word DRO, which appears six times, is THE.
+
+</ForGrownUps>
+
+</Section>
+
+<Section id="gideon-game" kind="formal" title="Gideon's true-or-false game">
+
+Gideon only plays with statements that are exactly true or exactly false. Decide, and give a reason.
+
+1. "With a shift of 3, Y becomes B." — **True.** Y, Z, A, B: three places on, wrapping round.
+2. "A shift forward by 5 is undone by a shift forward by 21." — **True.** $5 + 21 = 26$, once round the wheel.
+3. "There are 26 Caesar shifts that change a message." — **False.** There are 26 shifts, but the shift by 0 changes nothing: 25 change the message.
+4. "A message that looks like nonsense is safe." — **False.** A Caesar message can be cracked by trying 25 keys.
+5. "A shift by 10 and then a shift by 20 is the same as a shift by 4." — **True.** 30 places is once round and 4 more.
+
+<ForGrownUps title="the same ideas in Lean, a proof checker">
+
+Letters are numbered A = 0, …, Z = 25, and the remainder on division by 26 (written `% 26`) does the wrapping round:
+
+<Lean decl="Lumenary.SecretCodes.shift" />
+
+<Lean decl="Lumenary.SecretCodes.wrap_around" />
+
+<Lean decl="Lumenary.SecretCodes.shift_lt" />
+
+The facts proved above, now checked for **every** letter and **every** key:
+
+<Lean decl="Lumenary.SecretCodes.shift_undo" />
+
+<Lean decl="Lumenary.SecretCodes.shift_shift" />
+
+<Lean decl="Lumenary.SecretCodes.shift_add_twenty_six" />
+
+<Lean decl="Lumenary.SecretCodes.shifts_differ" />
+
+<Lean decl="Lumenary.SecretCodes.shift_injective" />
+
+Real messages. A computer stores the letter A as the number 65 and Z as 90, so a character is shifted by turning it into a letter number, shifting, and turning it back. Lean checks the lesson's messages, breaks WKLV LV IXQ by trying all 26 keys, and proves that decoding undoes encoding for **every** message:
+
+<Lean decl="Lumenary.SecretCodes.shiftChar" />
+
+<Lean decl="Lumenary.SecretCodes.caesar" />
+
+<Lean decl="Lumenary.SecretCodes.meet_at_noon" />
+
+<Lean decl="Lumenary.SecretCodes.zebra" />
+
+<Lean decl="Lumenary.SecretCodes.decode_by_23" />
+
+<Lean decl="Lumenary.SecretCodes.try_every_shift" />
+
+<Lean decl="Lumenary.SecretCodes.caesar_undo" />
+
+And the number of substitution keys:
+
+<Lean decl="Lumenary.SecretCodes.substitution_keys" />
+
+What is *not* formalised: frequency analysis. It is not a theorem that E is the most common letter of a message — it is usually true of long English texts, and false for some short ones (try counting the letters of "ZIGZAG"). That is a fact about language, which is why the lesson treats it as evidence, not proof.
+
+</ForGrownUps>
+
+</Section>
+
+<Section id="margaret" kind="computation" title="Margaret breaks the codes">
+
+<Narrator who="margaret">
+
+I'm Margaret. Trying 26 keys is easy for a computer. My program also gives each attempt a score: how close are its letter counts to ordinary English? The most English-looking attempt is probably the message.
+
+</Narrator>
+
+<Python id="secret_codes_caesar" />
+
+Trying every key is **exhaustive**: the message cannot hide from it. The score is only a helpful guess, so a person still reads the answer to check it makes sense.
+
+<Narrator who="margaret">
+
+Now a substitution cipher, with a key picked at random from all $26!$ keys. My computer counts the letters of the coded text — and then tries the laziest possible attack: match the most common code letter with E, the next with T, and so on.
+
+</Narrator>
+
+<Python id="secret_codes_frequency" />
+
+The most common code letter really did stand for E. But matching letters by rank alone got well under half of the message right: the counts in one paragraph are not exactly the same as in English as a whole. Real code breakers use the counts to make a start, and then use short words, repeated letters and patterns to finish the job. This was one experiment, with one paragraph and one key — evidence, not a law.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Your turn">
+
+Make your own alphabet wheel from two paper circles and a split pin — it makes encoding and decoding quick. You can ask for a hint whenever you like.
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Things that trip people up">
+
+<Misconception>
+
+**"It looks scrambled, so it's safe."** A Caesar shift looks like nonsense, but it has only 25 keys that change anything, and anyone can try them all. A substitution cipher has a huge number of keys, but letter counting breaks it anyway. Looking scrambled and being safe are very different things.
+
+</Misconception>
+
+<Misconception>
+
+**Forgetting to wrap round.** With a shift of 3, Z does not become a mystery symbol — it becomes C. On the alphabet wheel, after Z comes A again.
+
+</Misconception>
+
+<Misconception>
+
+**Decoding in the wrong direction.** To decode a shift of 3 forward, go 3 places **back** (or 23 places forward). Going 3 more places forward just encodes the message twice.
+
+</Misconception>
+
+<Misconception>
+
+**"The method must be secret."** Everyone knows how Caesar shifts work, and that is fine: what must be secret is the **key**. Since the 19th century, code designers have aimed for systems that stay safe even when the enemy knows exactly how they work — as long as the key is secret. A Caesar shift fails that test because its keys are too few to hide.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="number-theory" title="The number theorist: arithmetic on a wheel">
+
+A Caesar shift is addition on a wheel of 26 numbers: you add the key and keep only the remainder after dividing by 26. Mathematicians call this **modular arithmetic**, and you can meet it in <TopicLink id="math.number.modular-arithmetic">clock arithmetic</TopicLink>. It leads to new ciphers. Try *multiplying* the letter numbers by 3 (and keeping the remainder): A stays A, B becomes D, C becomes G, … — and you can check that the 26 letters all get different code letters, so this cipher can be decoded. Multiplying by 2 does **not** work: N is 13, and $2 \times 13 = 26$, which is the same as 0, so A and N would both become A. The multipliers that work are exactly the numbers that share no factor with 26 except 1.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Counting keys">
+
+Counting the keys tells you how a cipher can be attacked. A Caesar shift has 26 keys, so you can try them all. A substitution cipher has $26 \times 25 \times \dots \times 1 = 26!$ keys — counted with the product rule from <TopicLink id="math.discrete.systematic-listing">systematic listing</TopicLink> — far too many to try. That is why its weakness had to be found somewhere else: in the letter counts. Modern ciphers have so many keys *and* hide the letter counts so well that the best known attacks are hopeless.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="sets" kind="sets" title="A cipher is a perfect pairing">
+
+A cipher's key pairs up the alphabet with itself, so that every letter has exactly one code letter, and every code letter comes from exactly one letter. In the language of <TopicLink id="math.found.sets">sets</TopicLink> and <TopicLink id="math.found.functions">functions</TopicLink>, it is a **one-to-one correspondence** (a *bijection*) from the set of 26 letters to itself. Decoding is the **inverse** pairing: follow every arrow backwards. And doing one shift and then another is a chain of actions, just like those in <TopicLink id="math.cat.chaining-actions">One thing after another</TopicLink>; undoing a shift by $k$ with a shift by $26 - k$ is like undoing a quarter turn with three more quarter turns.
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+The alphabet wheel is a clock with 26 hours. This optional trail explores what arithmetic on a clock can do:
+
+<Trail slug="clock-arithmetic" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Rome.** The writer Suetonius (about 121 CE) reports that Julius Caesar wrote secret letters with a shift of three, and that the emperor Augustus used a shift of one.
+- **Baghdad.** In the 9th century the scholar Abū Yūsuf Yaʿqūb al-Kindī wrote *A Manuscript on Deciphering Cryptographic Messages*, the earliest known description of breaking codes by counting how often letters appear — frequency analysis.
+- **Scotland and England.** In 1586 Mary, Queen of Scots, wrote coded letters from prison. Thomas Phelippes, a code breaker working for Queen Elizabeth I's government, used frequency analysis to read them. The letters were used as evidence against her, and she was executed in 1587.
+- **A secret that need not be secret.** In 1883 the Dutch-born cryptographer Auguste Kerckhoffs, working in France, wrote that a military cipher should stay safe even if the enemy captures the method: only the key should need to be secret.
+- **Codes that were never broken.** In the Second World War, Navajo Code Talkers in the United States Marine Corps sent messages in a code based on the Navajo language. It was never broken.
+- **Machines.** The German Enigma machine was first broken in 1932 by the Polish mathematicians Marian Rejewski, Jerzy Różycki and Henryk Zygalski. In 1939 they shared their methods with Britain and France, and at Bletchley Park in England a team including Alan Turing broke Enigma messages throughout the war.
+- **Codes for everyone.** In 1976 Whitfield Diffie and Martin Hellman, and in 1977 Ron Rivest, Adi Shamir and Leonard Adleman, published new kinds of ciphers whose safety comes from number theory — ideas found a few years earlier, in secret, by James Ellis, Clifford Cocks and Malcolm Williamson at Britain's GCHQ. These ideas protect messages and payments on the internet today; see <TopicLink id="math.applied.cryptography">Cryptography</TopicLink>.
+
+</Section>
+
+<Section id="reading" kind="reading" title="For grown-ups: further reading">
+
+- Simon Singh, *The Code Book* (1999), and its version for young readers, *The Code Book: How to Make It, Break It, Hack It, Crack It* (2001) — the history of codes from Caesar to the internet.
+- Janet Beissinger and Vera Pless, *The Cryptoclub: Using Mathematics to Make and Break Secret Codes* (2006) — a book written for children aged about 10–14, with activities.
+- David Kahn, *The Codebreakers* (1967) — the classic, detailed history of cryptography.
+
+</Section>

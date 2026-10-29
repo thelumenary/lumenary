@@ -1,0 +1,554 @@
+---
+slug: zfc
+topic: math.found.zfc
+title: "ZFC: axiomatic set theory"
+subtitle: Nine axioms about a single relation, $\in$ — enough to build the numbers, functions and spaces of ordinary mathematics, and to say exactly what we are assuming when we do.
+level: ug2
+ages: Undergraduate
+minutes: 110
+order: 6003
+objectives:
+  - State the ZFC axioms as first-order sentences in the language $\{\in\}$ and explain what each one contributes
+  - Derive first theorems from the axioms, including that there is no set of all sets and that no set is a member of itself
+  - Encode ordered pairs, relations, functions and the natural numbers as sets, and prove the characteristic property of Kuratowski pairs
+  - Describe the cumulative hierarchy $V_\alpha$ and the role of Foundation and Replacement in it
+  - Explain the difference between proving a theorem in ZFC and proving that ZFC is consistent
+narrators: []
+lean:
+  - Lumenary.Zfc.extensionality
+  - Lumenary.Zfc.pairing
+  - Lumenary.Zfc.union
+  - Lumenary.Zfc.power_set
+  - Lumenary.Zfc.separation
+  - Lumenary.Zfc.replacement
+  - Lumenary.Zfc.infinity
+  - Lumenary.Zfc.foundation
+  - Lumenary.Zfc.choice
+  - Lumenary.Zfc.no_universal_set
+  - Lumenary.Zfc.kpair
+  - Lumenary.Zfc.kpair_inj
+  - Lumenary.Zfc.kpair_eq_iff
+  - Lumenary.Zfc.pair_inj_library
+  - Lumenary.Zfc.not_mem_self
+  - Lumenary.Zfc.no_two_cycle
+  - Lumenary.Zfc.succ
+  - Lumenary.Zfc.mem_succ
+  - Lumenary.Zfc.succ_injective
+  - Lumenary.Zfc.ofNat
+  - Lumenary.Zfc.ofNat_mem_omega
+  - Lumenary.Zfc.mem_ofNat
+  - Lumenary.Zfc.ofNat_mem_iff
+  - Lumenary.Zfc.ofNat_injective
+  - Lumenary.Zfc.mem_prod
+compute: [zfc_hereditarily_finite]
+trails: [boxes-in-boxes]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why sets need axioms">
+
+In 1902 Gottlob Frege was finishing the second volume of his *Basic Laws of Arithmetic*, a book that derived arithmetic from logic. One of his basic laws said, in modern words, that **every property determines a set**: for any condition $\varphi(x)$ there is a set $\{x \mid \varphi(x)\}$ of exactly the things satisfying it. A letter from Bertrand Russell showed that this law is contradictory. Take $\varphi(x)$ to be $x \notin x$ and let $R = \{x \mid x \notin x\}$. Then
+
+$$
+R \in R \iff R \notin R .
+$$
+
+The lesson on <TopicLink id="math.found.russell-paradox">Russell's paradox</TopicLink> explored what went wrong. This lesson is about the repair that most mathematicians use today: **Zermelo–Fraenkel set theory with the axiom of Choice**, or **ZFC**. Instead of "every property determines a set", ZFC lists a handful of precise ways of building new sets from old ones. Each of them is safe enough that no paradox has been found in more than a century of intensive use, and together they are strong enough to build essentially all of the mathematics in the other lessons of this curriculum — numbers, functions, groups, spaces, measures.
+
+ZFC is written in the language of <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink>, with a single non-logical symbol: the membership relation $\in$. By the end of this lesson you will know each axiom, why it is there, how pairs, functions and numbers become sets, and what it does and does not mean to say that a theorem "follows from ZFC".
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Sets built in stages">
+
+A helpful picture, called the **iterative conception** of set, is that sets are formed in **stages**. At stage $0$ there is nothing to collect, so the only set we can form is the empty set. At each later stage we may form any collection of sets formed at earlier stages. Write $V_\alpha$ for the sets available before stage $\alpha$:
+
+$$
+V_0 = \varnothing, \qquad V_{\alpha + 1} = \mathcal P(V_\alpha), \qquad V_\lambda = \bigcup_{\beta < \lambda} V_\beta \ \text{ for limit stages } \lambda .
+$$
+
+So $V_1 = \{\varnothing\}$, $V_2 = \{\varnothing, \{\varnothing\}\}$, and $V_3$ has four elements. The finite stages grow as towers of powers of two: $|V_{n+1}| = 2^{|V_n|}$, so $|V_4| = 16$ and $|V_5| = 65536$. After all finite stages comes the stage $V_\omega$, the set of **hereditarily finite** sets, and the process continues through the transfinite <TopicLink id="math.found.cardinals">ordinals</TopicLink>.
+
+<Figure caption="The cumulative hierarchy, drawn as a V: each stage $V_{\alpha+1}$ is the power set of the stage below it, and every set appears at some stage. The finite stages $V_0 \subseteq V_1 \subseteq V_2 \subseteq \cdots$ have $0, 1, 2, 4, 16, 65536, \dots$ elements.">
+<svg viewBox="0 0 360 250" role="img" aria-label="A V-shaped diagram with horizontal levels labelled V0, V1, V2, V3, V omega and V omega plus one, widening upwards">
+  <line x1="180" y1="235" x2="40" y2="15" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="180" y1="235" x2="320" y2="15" stroke="var(--ink-2)" strokeWidth="2" />
+  <circle cx="180" cy="235" r="4" fill="var(--gold)" />
+  <line x1="167" y1="215" x2="193" y2="215" stroke="var(--human)" strokeWidth="2" />
+  <line x1="154" y1="195" x2="206" y2="195" stroke="var(--human)" strokeWidth="2" />
+  <line x1="141" y1="175" x2="219" y2="175" stroke="var(--human)" strokeWidth="2" />
+  <line x1="122" y1="145" x2="238" y2="145" stroke="var(--human)" strokeWidth="2" />
+  <line x1="91" y1="95" x2="269" y2="95" stroke="var(--formal)" strokeWidth="2.5" />
+  <line x1="72" y1="65" x2="288" y2="65" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="180" y1="235" x2="180" y2="20" stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="4 4" />
+  <text x="205" y="240" fontSize="12" fill="var(--ink-2)">V0 = ∅</text>
+  <text x="300" y="219" fontSize="12" fill="var(--ink-2)">V1</text>
+  <text x="300" y="199" fontSize="12" fill="var(--ink-2)">V2</text>
+  <text x="300" y="179" fontSize="12" fill="var(--ink-2)">V3</text>
+  <text x="300" y="149" fontSize="12" fill="var(--ink-2)">V4</text>
+  <text x="300" y="99" fontSize="12" fill="var(--ink-2)">Vω</text>
+  <text x="300" y="69" fontSize="12" fill="var(--ink-2)">Vω+1</text>
+  <text x="20" y="130" fontSize="11" fill="var(--ink-2)">stages</text>
+  <text x="20" y="144" fontSize="11" fill="var(--ink-2)">(ordinals)</text>
+</svg>
+</Figure>
+
+The axioms of ZFC can be read as describing what the stages make possible. **Pairing** and **Union** say that sets available by some stage can be combined; **Power set** says that all subsets of a set form a set; **Separation** says we may cut out a subset by a property; **Replacement** says that if we can index sets by the elements of a set, the stages they appear at are bounded; **Infinity** says there is a stage after all finite ones; **Foundation** says every set appears at some stage. The picture is a heuristic, not part of the theory — the theory is the list of axioms below — but it explains why the axioms look the way they do, and why Russell's $R$ is not a set: there is no stage at which "all sets that are not members of themselves" could be collected, because new such sets keep appearing.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="The axioms of ZFC">
+
+The **language** of set theory has variables (ranging over sets), the logical symbols $\neg, \land, \lor, \to, \leftrightarrow, \forall, \exists, =$, and one binary relation symbol $\in$. Everything else is an abbreviation: $x \subseteq y$ abbreviates $\forall z\,(z \in x \to z \in y)$, and $\forall z \in x\ \psi$ abbreviates $\forall z\,(z \in x \to \psi)$.
+
+<Definition term="ZFC">
+
+**ZFC** is the first-order theory in the language $\{\in\}$ with the following axioms.
+
+1. **Extensionality.** Sets with the same elements are equal: $\forall x\, \forall y\, \big(\forall z\,(z \in x \leftrightarrow z \in y) \to x = y\big)$.
+2. **Pairing.** $\forall a\, \forall b\, \exists p\, \forall z\, (z \in p \leftrightarrow z = a \lor z = b)$. The set $p$ is written $\{a, b\}$, and $\{a\} = \{a, a\}$.
+3. **Union.** $\forall x\, \exists u\, \forall z\, \big(z \in u \leftrightarrow \exists y\,(y \in x \land z \in y)\big)$. The set $u$ is written $\bigcup x$, and $a \cup b = \bigcup \{a, b\}$.
+4. **Power set.** $\forall x\, \exists p\, \forall z\, (z \in p \leftrightarrow z \subseteq x)$. The set $p$ is written $\mathcal P(x)$.
+5. **Separation** (a *schema*: one axiom for each formula $\varphi(z, w_1, \dots, w_n)$ in which $s$ does not occur free): $\forall w_1 \cdots \forall w_n\, \forall x\, \exists s\, \forall z\, \big(z \in s \leftrightarrow z \in x \land \varphi\big)$. The set $s$ is written $\{z \in x \mid \varphi\}$.
+6. **Replacement** (a schema, one axiom for each formula $\varphi(x, y, w_1, \dots, w_n)$): if $\varphi$ defines a function on the set $A$, then its values all lie in some set: $\forall \vec w\, \forall A\, \big(\forall x \in A\, \exists! y\, \varphi \to \exists B\, \forall x \in A\, \exists y \in B\, \varphi\big)$.
+7. **Infinity.** There is a set containing $\varnothing$ and closed under $y \mapsto y \cup \{y\}$: $\exists I\, \big(\varnothing \in I \land \forall y \in I\ (y \cup \{y\} \in I)\big)$.
+8. **Foundation** (or Regularity). Every non-empty set has an $\in$-minimal element: $\forall x\, \big(\exists y\, (y \in x) \to \exists y \in x\ \neg \exists z\, (z \in y \land z \in x)\big)$.
+9. **Choice.** For every set $X$ of non-empty sets there is a function $f$ with domain $X$ and $f(A) \in A$ for every $A \in X$.
+
+Axioms 1–8 form **ZF**. Dropping Replacement and Foundation from ZF gives **Zermelo set theory Z**; adding Choice to it gives **ZC**, essentially the system of Zermelo's 1908 paper.
+
+</Definition>
+
+Axioms 7 and 9 use abbreviations ($\varnothing$, $y \cup \{y\}$, "function") that are themselves defined from $\in$ using earlier axioms; each can be expanded into a formula of the bare language. Two remarks on the list:
+
+- **Schemas.** Separation and Replacement are infinite lists of axioms, one per formula. First-order logic cannot quantify over "all properties", so this is how a first-order theory says "for every property". Richard Montague proved in 1961 that this is unavoidable: if ZF is consistent, no finite list of its theorems implies all of ZF.
+- **Separation is not comprehension.** Separation only lets us form $\{z \in x \mid \varphi\}$, the members *of an existing set $x$* with property $\varphi$. Frege's contradictory law formed $\{z \mid \varphi\}$ out of nothing.
+
+<Note>
+
+ZFC does not say what sets *are*. It is a list of assumptions, and a "theorem of ZFC" is a sentence derivable from them by the rules of first-order logic. Any structure $(M, E)$ — a non-empty set with a binary relation — in which all the axioms are true is a **model** of ZFC, whatever its elements happen to be.
+
+</Note>
+
+</Section>
+
+<Section id="first-theorems" kind="proof" title="First theorems">
+
+<Theorem name="Proposition (the empty set)">
+
+There is exactly one set with no elements.
+
+</Theorem>
+
+<Proof>
+
+In first-order logic $\exists x\,(x = x)$ is a theorem, since structures are non-empty; so some set $a$ exists. By Separation with the formula $z \neq z$, the set $\{z \in a \mid z \neq z\}$ exists, and it has no elements. Two sets with no elements have the same elements, so by Extensionality they are equal.
+
+</Proof>
+
+The same pattern — Separation to show a set exists, Extensionality to show it is unique — gives the intersection $a \cap b = \{z \in a \mid z \in b\}$ and the difference $a \setminus b = \{z \in a \mid z \notin b\}$; the union $a \cup b = \bigcup\{a, b\}$ uses Pairing and Union.
+
+<Theorem name="Theorem (there is no set of all sets)">
+
+There is no set $U$ such that $x \in U$ for every set $x$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $U$ were such a set. By Separation, $R = \{x \in U \mid x \notin x\}$ is a set. Since $R \in U$, the defining property of $R$ gives $R \in R \iff R \notin R$. If $R \in R$, then $R \notin R$; so $R \notin R$; but then $R \in R$. This is a contradiction, so no such $U$ exists.
+
+</Proof>
+
+The proof uses only Separation, and it does not need the law of excluded middle (from $P \leftrightarrow \neg P$ one derives $\neg P$, and then $P$). It turns Russell's paradox into a theorem: collections such as "all sets", "all groups" or "all topological spaces" are not sets. One can still *talk* about them — "$x$ is a group" is a formula — and set theorists call such definable collections **classes**; a class that is not a set is a **proper class**.
+
+<Theorem name="Theorem (consequences of Foundation)">
+
+(a) No set is a member of itself. (b) There are no sets $x, y$ with $x \in y$ and $y \in x$.
+
+</Theorem>
+
+<Proof>
+
+(a) Suppose $x \in x$. Apply Foundation to the non-empty set $\{x\}$: some element of $\{x\}$ has no element in common with $\{x\}$. The only element is $x$, so $x \cap \{x\} = \varnothing$. But $x \in x$ and $x \in \{x\}$, so $x \in x \cap \{x\}$, a contradiction.
+
+(b) Suppose $x \in y$ and $y \in x$. Apply Foundation to $\{x, y\}$. If its $\in$-minimal element is $x$, then $y \in x \cap \{x, y\}$; if it is $y$, then $x \in y \cap \{x, y\}$. Either way the intersection is not empty, a contradiction.
+
+</Proof>
+
+The same argument rules out cycles $x_1 \in x_2 \in \cdots \in x_n \in x_1$ of any length (apply Foundation to $\{x_1, \dots, x_n\}$), and infinite descending chains $\cdots \in x_2 \in x_1 \in x_0$ given by a function on $\omega$ (apply Foundation to its set of values). The converse — that the absence of descending chains implies Foundation — needs the axiom of dependent choice.
+
+</Section>
+
+<Section id="encoding" kind="proof" title="Building mathematics out of sets">
+
+Ordinary mathematics talks about ordered pairs, relations, functions and numbers. In ZFC each of these must *be* a set. The point is not that a pair "really is" a set, but that some set-theoretic construction has exactly the properties we use.
+
+### Ordered pairs
+
+The only property of ordered pairs that mathematics ever uses is that $(a, b) = (c, d)$ exactly when $a = c$ and $b = d$.
+
+<Definition term="Kuratowski pair">
+
+$(a, b) = \{\{a\}, \{a, b\}\}$.
+
+</Definition>
+
+<Theorem name="Theorem (the characteristic property of pairs)">
+
+For all sets $a, b, c, d$: $\ (a, b) = (c, d) \iff a = c \text{ and } b = d$.
+
+</Theorem>
+
+<Proof>
+
+The direction $\Leftarrow$ is immediate. For $\Rightarrow$, suppose $\{\{a\}, \{a, b\}\} = \{\{c\}, \{c, d\}\}$.
+
+*Step 1: $a = c$.* The set $\{a\}$ is an element of the left side, hence of the right side, so $\{a\} = \{c\}$ or $\{a\} = \{c, d\}$. In either case $c \in \{a\}$, so $c = a$.
+
+*Step 2: $b = d$.* Now both sides are built from $a$.
+
+- If $b = a$, the left side is $\{\{a\}, \{a, a\}\} = \{\{a\}\}$. The element $\{a, d\}$ of the right side must equal $\{a\}$, so $d \in \{a\}$, i.e. $d = a = b$.
+- If $b \neq a$, then $\{a, b\}$ is an element of the right side: $\{a, b\} = \{a\}$ or $\{a, b\} = \{a, d\}$. The first is impossible, because $b \in \{a, b\}$ but $b \notin \{a\}$. So $\{a, b\} = \{a, d\}$; then $b \in \{a, d\}$ and $b \neq a$, so $b = d$.
+
+</Proof>
+
+Not every encoding works. With $\langle a, b \rangle = \{a, \{b\}\}$, the pairs $\langle \{d\}, b \rangle$ and $\langle \{b\}, d \rangle$ are both $\{\{b\}, \{d\}\}$, so for $b \neq d$ two different pairs collide; the computation section finds such collisions among the sets of $V_4$.
+
+### Products, relations and functions
+
+<Theorem name="Proposition (Cartesian products exist)">
+
+For all sets $A$ and $B$ there is a set $A \times B$ whose elements are exactly the pairs $(a, b)$ with $a \in A$ and $b \in B$.
+
+</Theorem>
+
+<Proof>
+
+If $a \in A$ and $b \in B$, then $\{a\} \subseteq A \cup B$ and $\{a, b\} \subseteq A \cup B$, so both are elements of $\mathcal P(A \cup B)$. Hence $(a, b) = \{\{a\}, \{a, b\}\} \subseteq \mathcal P(A \cup B)$, that is, $(a, b) \in \mathcal P(\mathcal P(A \cup B))$. Now Separation gives
+
+$$
+A \times B = \big\{\, p \in \mathcal P(\mathcal P(A \cup B)) \;\big|\; \exists a \in A\ \exists b \in B\ \ p = (a, b) \,\big\},
+$$
+
+and it is unique by Extensionality.
+
+</Proof>
+
+A **relation** from $A$ to $B$ is a subset $R \subseteq A \times B$. A **function** $f : A \to B$ is a relation such that for every $a \in A$ there is exactly one $b$ with $(a, b) \in f$; we write $f(a)$ for that $b$. The set of all functions from $A$ to $B$ is $B^A = \{f \in \mathcal P(A \times B) \mid f \text{ is a function from } A \text{ to } B\}$. Domains and ranges are cut out of $\bigcup\bigcup R$ by Separation, because $a \in \{a\} \in (a, b)$. An equivalence relation on $A$ is a subset of $A \times A$ with the usual properties, and the set of its equivalence classes is a subset of $\mathcal P(A)$.
+
+### The natural numbers
+
+<Definition term="von Neumann natural numbers">
+
+The **successor** of a set $x$ is $S(x) = x \cup \{x\}$. A set $I$ is **inductive** if $\varnothing \in I$ and $S(y) \in I$ whenever $y \in I$. Put $0 = \varnothing$, $1 = S(0) = \{0\}$, $2 = S(1) = \{0, 1\}$, $3 = \{0, 1, 2\}$, and so on.
+
+</Definition>
+
+Infinity provides an inductive set $I$. Define $\omega = \{n \in I \mid n \in J \text{ for every inductive set } J\}$ by Separation. Then $\omega$ is inductive and is contained in every inductive set; by Extensionality it does not depend on which $I$ we started from.
+
+<Theorem name="Theorem (induction)">
+
+If $X \subseteq \omega$, $0 \in X$, and $S(n) \in X$ for every $n \in X$, then $X = \omega$.
+
+</Theorem>
+
+<Proof>
+
+The hypotheses say that $X$ is inductive, so $\omega \subseteq X$ by the definition of $\omega$. Together with $X \subseteq \omega$ this gives $X = \omega$.
+
+</Proof>
+
+<Theorem name="Theorem (Peano's axioms hold in ω)">
+
+(a) $S(n) \neq 0$ for every $n$. (b) $S$ is injective: $S(m) = S(n)$ implies $m = n$. (c) For natural numbers, $m \in n$ if and only if $m$ is one of $0, 1, \dots, n - 1$; in particular $n = \{0, 1, \dots, n - 1\}$ has exactly $n$ elements.
+
+</Theorem>
+
+<Proof>
+
+(a) $n \in S(n)$, so $S(n)$ is not empty.
+
+(b) Suppose $m \cup \{m\} = n \cup \{n\}$. Then $m \in n \cup \{n\}$, so $m = n$ or $m \in n$; symmetrically $n = m$ or $n \in m$. If $m \neq n$ we would have $m \in n$ and $n \in m$, contradicting part (b) of the Foundation theorem. So $m = n$.
+
+(c) By induction on $n$: $0 = \varnothing$ has no elements, and the elements of $S(n) = n \cup \{n\}$ are the elements of $n$ — by the induction hypothesis $0, \dots, n - 1$ — together with $n$ itself. Finally, if $m$ is one of $0, \dots, n - 1$ then $m \in n$, so $m = n$ as sets would give $n \in n$, which Foundation forbids. Hence the numerals $0, 1, 2, \dots$ are pairwise distinct, and $n$ has exactly $n$ elements.
+
+</Proof>
+
+(Foundation is convenient here but not essential: by induction one proves that every $n \in \omega$ is **transitive** — every element of $n$ is a subset of $n$ — and that $n \notin n$, and these facts give (b) in ZF without Foundation.) So in ZFC the order of the natural numbers *is* membership: $m < n$ means $m \in n$. Addition and multiplication are then defined by recursion, $m + 0 = m$, $m + S(n) = S(m + n)$, using the **recursion theorem** on $\omega$, whose proof builds the graph of $+$ as a set by Separation from $\omega \times \omega \times \omega$.
+
+From here the familiar number systems follow one after another: $\Z$ as equivalence classes of pairs $(m, n) \in \omega \times \omega$ (thought of as $m - n$), $\Q$ as equivalence classes of pairs of integers, $\R$ as **Dedekind cuts** — certain subsets of $\Q$, so $\R \subseteq \mathcal P(\Q)$ needs Power set — and $\C = \R \times \R$. A topological space is a pair $(X, \tau)$ with $\tau \subseteq \mathcal P(X)$; a group is a set with a function $G \times G \to G$. All of these objects live at stages of the hierarchy below $V_{\omega + \omega}$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples and non-examples">
+
+<Example title="The first stages, explicitly">
+
+$V_1 = \mathcal P(\varnothing) = \{\varnothing\}$. $V_2 = \mathcal P(V_1) = \{\varnothing, \{\varnothing\}\} = \{0, 1\} = 2$. $V_3 = \mathcal P(V_2) = \{\varnothing, \{\varnothing\}, \{\{\varnothing\}\}, \{\varnothing, \{\varnothing\}\}\}$, which contains the numerals $0, 1, 2$ and one more set, $\{1\}$. Note that $\{1\} = \{\{\varnothing\}\}$ is not a natural number: the stages contain far more than numerals.
+
+</Example>
+
+<Example title="Which axioms build a set?">
+
+The set $3 = \{0, 1, 2\}$: Pairing gives $\{0, 1\}$ and $\{2\}$; Union gives $\{0, 1\} \cup \{2\}$. The set $\omega$: Infinity and Separation. The set $\R$: everything up to Power set (for $\mathcal P(\Q)$) and Separation (to cut out the Dedekind cuts). The set $\{\omega, \mathcal P(\omega), \mathcal P(\mathcal P(\omega)), \dots\}$ of all iterated power sets of $\omega$: this needs **Replacement**, applied to the function $n \mapsto \mathcal P^n(\omega)$ on $\omega$. In fact the stage $V_{\omega + \omega}$ satisfies every axiom of ZC — Zermelo's system, without Replacement — but does not contain this set; so ZC cannot prove that it exists (assuming, as usual, that ZFC is consistent).
+
+</Example>
+
+<Example title="Non-examples: collections that are too big">
+
+- *The set of all singletons* $\{x\}$ does not exist: if it did, its union would contain every set, contradicting the theorem that there is no universal set.
+- *The set of all groups* does not exist: for every set $x$ the trivial group on $\{x\}$ is a group, so from a set of all groups a few applications of Union would again produce a set containing every set. Category theorists handle "the category of all groups" with classes or with **Grothendieck universes** (see the algebraist's viewpoint below).
+- *The set of all ordinals* does not exist (the Burali-Forti paradox, proved in <TopicLink id="math.found.cardinals">Ordinals and cardinals</TopicLink>).
+
+</Example>
+
+<Example title="A non-well-founded structure">
+
+Consider the structure $M = \{a\}$ with $a \mathrel{E} a$, interpreting $\in$ as $E$. It satisfies Extensionality and fails Foundation, since $a \mathrel{E} a$. Peter Aczel's anti-foundation axiom (1988) develops a set theory in which such "sets" exist, e.g. $\Omega = \{\Omega\}$; ZFC with Foundation replaced by anti-foundation is consistent if ZFC is. This shows that Foundation is a genuine choice, not a logical necessity.
+
+</Example>
+
+</Section>
+
+<Section id="consistency" kind="human" title="Proving in ZFC versus proving ZFC consistent">
+
+There are two very different kinds of statement here.
+
+**A theorem of ZFC** is a sentence $\sigma$ with $\mathrm{ZFC} \vdash \sigma$: there is a formal derivation of $\sigma$ from finitely many axioms. "There is no universal set", "every vector space has a basis" and "every continuous function on $[0, 1]$ attains a maximum" are theorems of ZFC. Mathematicians rarely write formal derivations, but the theorems of the analysis, algebra and topology lessons could be — and, increasingly, are, in proof assistants built on related foundations.
+
+**The consistency of ZFC** is the statement $\mathrm{Con}(\mathrm{ZFC})$: *no* derivation from the axioms ends in a contradiction, such as $\exists x\,(x \neq x)$. Because derivations are finite strings of symbols, this can be written as a sentence about natural numbers, and so as a sentence of set theory. Can ZFC prove it?
+
+<Theorem name="Gödel's second incompleteness theorem (1931), applied to ZFC">
+
+If ZFC is consistent, then ZFC does not prove $\mathrm{Con}(\mathrm{ZFC})$.
+
+</Theorem>
+
+The proof is beyond this lesson (see <TopicLink id="math.found.incompleteness">Gödel's incompleteness theorems</TopicLink>); it applies to every consistent, effectively axiomatised theory that contains a modest amount of arithmetic. So the consistency of ZFC is not something ZFC can establish about itself. It is **assumed** — on the evidence of more than a century of intensive use without contradiction and of the intuitive picture of the hierarchy — not proved.
+
+What *can* be proved are **relative consistency** results, theorems of the form "if $T$ is consistent, then so is $T'$":
+
+- Kurt Gödel (1938) showed that if ZF is consistent, so is ZFC together with the generalised continuum hypothesis, by building inside any model of ZF the **constructible universe** $L$.
+- Paul Cohen (1963) invented **forcing** and showed that if ZF is consistent, so are ZF + $\neg$AC and ZFC + $\neg$CH. See <TopicLink id="math.found.axiom-of-choice">the axiom of choice</TopicLink> and <TopicLink id="math.found.forcing">forcing</TopicLink>.
+
+<Theorem name="Corollary (ZFC cannot prove there is an inaccessible cardinal)">
+
+If ZFC is consistent, it does not prove that a strongly inaccessible cardinal exists.
+
+</Theorem>
+
+<Proof>
+
+(Sketch; inaccessible cardinals are defined in <TopicLink id="math.found.large-cardinals">large cardinals</TopicLink>.) ZFC proves that if $\kappa$ is strongly inaccessible, then the stage $V_\kappa$, with the true membership relation, is a model of ZFC, and that a theory with a model is consistent. So if ZFC proved "an inaccessible exists", it would prove $\mathrm{Con}(\mathrm{ZFC})$, and by Gödel's theorem it would be inconsistent.
+
+</Proof>
+
+<Note>
+
+"Most of ordinary mathematics can be formalised in ZFC" is a well-supported empirical observation, not a theorem. There are also natural questions that ZFC does not settle: the continuum hypothesis, Suslin's problem about the real line and Whitehead's problem about abelian groups are each independent of ZFC (if it is consistent). The viewpoints below return to two of them.
+
+</Note>
+
+</Section>
+
+<Section id="formal" kind="formal" title="ZFC inside Lean">
+
+Lean is not built on ZFC. Its foundation is a dependent **type theory** (see <TopicLink id="math.found.type-theory">type theory</TopicLink>), in which every object has a type and "$2 \in 3$" is not even a well-formed question about natural numbers. Nevertheless Mathlib constructs a **model of ZFC** inside Lean. A pre-set is a well-founded tree — a type $\alpha$ together with a family of pre-sets indexed by $\alpha$ — and `ZFSet` is the type of pre-sets up to *extensional equivalence*. Mathlib then proves, about `ZFSet`, statements corresponding to each axiom. We restate them in the form a set theorist writes them:
+
+<Lean decl="Lumenary.Zfc.extensionality" />
+
+<Lean decl="Lumenary.Zfc.pairing" />
+
+<Lean decl="Lumenary.Zfc.union" />
+
+<Lean decl="Lumenary.Zfc.power_set" />
+
+<Lean decl="Lumenary.Zfc.separation" />
+
+<Lean decl="Lumenary.Zfc.replacement" />
+
+<Lean decl="Lumenary.Zfc.infinity" />
+
+<Lean decl="Lumenary.Zfc.foundation" />
+
+<Lean decl="Lumenary.Zfc.choice" />
+
+Notice how the schemas become single statements: Lean's higher-order logic quantifies over *all* predicates `φ : ZFSet → Prop`, including ones no first-order formula defines. That makes `ZFSet` satisfy every instance of the first-order schemas and more.
+
+From these facts, used exactly as axioms, we prove the theorems of this lesson. Russell's argument, using Separation only:
+
+<Lean decl="Lumenary.Zfc.no_universal_set" />
+
+Kuratowski pairs, with the two-step proof from the lesson:
+
+<Lean decl="Lumenary.Zfc.kpair" />
+
+<Lean decl="Lumenary.Zfc.kpair_inj" />
+
+<Lean decl="Lumenary.Zfc.kpair_eq_iff" />
+
+Mathlib's own `ZFSet.pair` is the same set, and Mathlib proves the same property:
+
+<Lean decl="Lumenary.Zfc.pair_inj_library" />
+
+The consequences of Foundation:
+
+<Lean decl="Lumenary.Zfc.not_mem_self" />
+
+<Lean decl="Lumenary.Zfc.no_two_cycle" />
+
+And the von Neumann natural numbers: the successor, its injectivity, and the facts that $n = \{0, \dots, n - 1\}$, that the numerals lie in $\omega$, and that their order is membership:
+
+<Lean decl="Lumenary.Zfc.succ" />
+
+<Lean decl="Lumenary.Zfc.mem_succ" />
+
+<Lean decl="Lumenary.Zfc.succ_injective" />
+
+<Lean decl="Lumenary.Zfc.ofNat" />
+
+<Lean decl="Lumenary.Zfc.ofNat_mem_omega" />
+
+<Lean decl="Lumenary.Zfc.mem_ofNat" />
+
+<Lean decl="Lumenary.Zfc.ofNat_mem_iff" />
+
+<Lean decl="Lumenary.Zfc.ofNat_injective" />
+
+Cartesian products, carved out of $\mathcal P(\mathcal P(x \cup y))$ by Separation:
+
+<Lean decl="Lumenary.Zfc.mem_prod" />
+
+**What is and is not formalised.** We formalise the axioms as facts about one particular model, `ZFSet`, and derive consequences from them. We do *not* formalise ZFC as a first-order theory — its formulas, derivations and arbitrary models — and nothing here bears on the consistency of ZFC. The relationship goes the other way: because Lean's logic has a hierarchy of type universes, it is strong enough to build a model of ZFC (`ZFSet.{0}` lives in `Type 1`). Mario Carneiro's analysis of Lean's type theory (2019) relates its consistency strength to that of ZFC with additional inaccessible cardinals — consistent with the corollary above, since a theory that proves "ZFC has a model" must be stronger than ZFC.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Hereditarily finite sets on a computer">
+
+Python's immutable `frozenset` behaves like a pure set: two frozensets are equal exactly when they have the same elements, which is Extensionality, and frozensets can contain frozensets. So the finite stages of the hierarchy can be built literally.
+
+<Python id="zfc_hereditarily_finite" />
+
+Three things to notice. The naive encoding $\{a, \{b\}\}$ fails already among the sixteen sets of $V_4$, while Kuratowski's encoding passes the exhaustive test. Every non-empty set examined has an $\in$-minimal element, as Foundation demands. And **Ackermann's coding** (1937), $\mathrm{code}(x) = \sum_{y \in x} 2^{\mathrm{code}(y)}$, is a bijection from $V_\omega$ to $\N$ under which "$x \in y$" becomes "the $\mathrm{code}(x)$-th binary digit of $\mathrm{code}(y)$ is $1$". So the hereditarily finite sets are, in disguise, just the natural numbers with an arithmetic relation. This is the first step towards a classical fact, made precise by Richard Kaye and Tin Lok Wong (2007): ZF with the axiom of Infinity replaced by its negation is bi-interpretable with Peano arithmetic.
+
+This is exact, exhaustive evidence about finitely many sets. It proves nothing about infinite sets, and it cannot test an axiom such as Foundation for *all* sets: Foundation is an assumption, not a fact that computation can confirm.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: boxes inside boxes">
+
+Sets made only of sets can be pictured as boxes nested inside boxes; a set is determined by which boxes it contains, not by how they are arranged.
+
+<BoxesNesting />
+
+Try to build $V_3$: its four elements are $\varnothing$, $\{\varnothing\}$, $\{\{\varnothing\}\}$ and $\{\varnothing, \{\varnothing\}\}$. Then build the numerals $0, 1, 2, 3$ by repeatedly forming $x \cup \{x\}$, and check that each numeral contains all the earlier ones. Can you find two different-looking ways of writing the same set? (Extensionality says they are the same box.)
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"ZFC says what sets really are."** ZFC is a list of assumptions from which theorems are derived. It has many different models, and it is silent on questions — such as the continuum hypothesis — that it does not decide. Whether there is one "true" universe of sets is a philosophical question on which set theorists disagree.
+
+</Misconception>
+
+<Misconception>
+
+**"The natural numbers *are* the von Neumann ordinals."** That is one convenient encoding. Zermelo used $0 = \varnothing$, $n + 1 = \{n\}$, under which $2 = \{\{\varnothing\}\}$ has one element instead of two. Both encodings satisfy the Peano axioms, and mathematics never uses facts like "$1 \in 2$" that distinguish them. (Paul Benacerraf's essay *What numbers could not be*, 1965, turns this observation into a philosophical argument.)
+
+</Misconception>
+
+<Misconception>
+
+**"ZFC has been proved consistent."** Its consistency is assumed. By Gödel's second incompleteness theorem, if ZFC is consistent it cannot prove its own consistency; proofs of $\mathrm{Con}(\mathrm{ZFC})$ exist only in stronger theories, whose consistency is then in question.
+
+</Misconception>
+
+<Misconception>
+
+**"Separation is just comprehension with a different name."** Separation needs an existing set to separate from: $\{z \in x \mid \varphi(z)\}$. Unrestricted comprehension $\{z \mid \varphi(z)\}$ is contradictory, by Russell's argument.
+
+</Misconception>
+
+<Misconception>
+
+**"Foundation is needed for ordinary mathematics."** Almost never. Numbers, functions and spaces are all built from $\varnothing$ in well-founded ways, so they live in the well-founded part of any universe of sets. Foundation simplifies the theory (every set has a rank) more than it adds theorems about everyday objects.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="logic" title="A first-order theory with many models">
+
+To a logician ZFC is a recursively axiomatised first-order theory, and its models are structures $(M, E)$. By the <TopicLink id="math.found.completeness-theorem">completeness theorem</TopicLink>, ZFC is consistent if and only if it has a model, and by the Löwenheim–Skolem theorem it then has a **countable** model — although ZFC proves that uncountable sets exist (Skolem's paradox, resolved in that lesson). Independence results are statements about models: Gödel's $L$ is a model of ZFC + GCH inside any model of ZF, and Cohen's forcing extends a model of ZFC to one in which the continuum hypothesis fails. The relation "$T$ proves the consistency of $T'$" orders theories by **consistency strength**, and ZFC sits in the middle of a long ladder of large-cardinal axioms.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Sets through functions: ETCS">
+
+ZFC is a *material* set theory: elements of sets are themselves sets, and "$2 \in 3$" is a meaningful (and, for von Neumann numerals, true) statement. F. William Lawvere's **Elementary Theory of the Category of Sets** (1964) instead axiomatises sets and functions directly: a well-pointed topos with a natural numbers object and choice (see <TopicLink id="math.cat.elementary-topoi">elementary topoi</TopicLink>). An element of $A$ is a map $1 \to A$, an ordered pair is an element of a product defined by its universal property, and the question "is $2 \in 3$?" cannot even be asked. Results of William Mitchell and Gerhard Osius in the 1970s show that ETCS has the strength of a weak fragment of ZFC (bounded Zermelo set theory with choice); adding a replacement axiom recovers the full strength of ZFC. Lean's type theory is structural in the same spirit.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Topology depends on the power set — and meets independence">
+
+A topology on $X$ is a subset $\tau \subseteq \mathcal P(X)$, so the space of all topologies on $X$ is a subset of $\mathcal P(\mathcal P(X))$: the Power Set axiom is what makes general topology possible at all. Topologists were also among the first mathematicians outside logic to meet questions that ZFC does not decide. **Suslin's problem** asks whether a complete, dense linear order without endpoints in which every family of pairwise disjoint open intervals is countable must be order-isomorphic — equivalently, in its order topology, homeomorphic — to $\R$. Thomas Jech (1967) and Stanley Tennenbaum (1968) showed that a counterexample (a **Suslin line**) is consistent with ZFC; Robert Solovay and Tennenbaum (1971) showed that "no Suslin line exists" is consistent too. So a natural characterisation of the real line is independent of ZFC.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Whitehead's problem and Grothendieck universes">
+
+An abelian group $A$ is a **Whitehead group** if $\mathrm{Ext}^1(A, \Z) = 0$: every surjective homomorphism onto $A$ with kernel $\Z$ splits. Free abelian groups are Whitehead groups, and Karl Stein (1951) showed that every *countable* Whitehead group is free. Saharon Shelah (1974) showed that the general question is independent of ZFC: under Gödel's axiom $V = L$ every Whitehead group is free, while under Martin's axiom with $\neg$CH there are non-free ones. Algebraists also use set theory at the other end of the scale: to speak of "the category of all abelian groups" Grothendieck's school worked inside **universes** — transitive sets closed under pairing, power set and unions of families indexed by their members. Apart from the small example $V_\omega$, universes are exactly the stages $V_\kappa$ with $\kappa$ strongly inaccessible, so assuming that every set lies in a universe goes beyond ZFC, as the corollary above shows.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="The random graph hidden in V_ω">
+
+Use Ackermann's coding to view $V_\omega$ as $\N$, and join two numbers by an edge when one, as a set, is a member of the other. The resulting graph has the **extension property**: for any disjoint finite sets $U, W$ of vertices there is a vertex joined to everything in $U$ and nothing in $W$ — take $z = U \cup \{x\}$ for a set $x$ of rank larger than everything in $U \cup W$; then each $u \in U$ is in $z$, while no $w \in W$ is in $z$, and $z$ is too high in the hierarchy to be in any $w$. A back-and-forth argument shows that any two countable graphs with the extension property are isomorphic; this is the **Rado graph** (Richard Rado, 1964; Ackermann's coding appears in his construction). Paul Erdős and Alfréd Rényi (1963) proved that a random graph on $\N$, each edge present independently with probability $\tfrac12$, has the extension property with probability $1$. So "the" countable random graph is the membership graph of the hereditarily finite sets.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+The trail below starts from boxes inside boxes and reaches the axioms of ZFC; it is written for young learners but makes a good warm-up.
+
+<Trail slug="boxes-in-boxes" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Georg Cantor** created set theory between 1874 and 1897, starting from questions about trigonometric series and the sizes of infinite sets. He worked with sets informally, though he was aware that some collections (such as "all ordinals") could not consistently be treated as sets.
+- **Gottlob Frege**'s *Grundgesetze der Arithmetik* (1893, 1903) contained the unrestricted comprehension law. **Bertrand Russell** found the contradiction in 1901 and wrote to Frege in 1902; **Ernst Zermelo** had noticed essentially the same contradiction slightly earlier without publishing it.
+- **Zermelo** published the first axiom system for set theory in 1908, partly to defend his 1904 proof that every set can be well-ordered, which used the axiom of choice. His axioms were Extensionality, elementary sets (empty set, singletons, pairs), Separation, Power set, Union, Choice and Infinity.
+- In 1922 **Abraham Fraenkel** and **Thoralf Skolem** independently proposed the Replacement axiom, and Skolem suggested making Zermelo's "definite properties" precise as first-order formulas. **Dmitry Mirimanoff** (1917) studied well-founded sets, and **John von Neumann** introduced his ordinals (1923) and the axiom of foundation (1925). Zermelo's 1930 paper described the cumulative hierarchy and its connection with inaccessible cardinals.
+- Ordered pairs as sets: **Norbert Wiener** (1914) gave the first definition, $\{\{\{a\}, \varnothing\}, \{\{b\}\}\}$; **Felix Hausdorff** (1914) another; **Kazimierz Kuratowski**'s simpler $\{\{a\}, \{a, b\}\}$ (1921) became standard. **Wilhelm Ackermann**'s coding of hereditarily finite sets by natural numbers dates from 1937.
+- **Kurt Gödel** (1931, incompleteness; 1938, the constructible universe) and **Paul Cohen** (1963, forcing; Fields Medal 1966) established the limits of what ZFC decides. **F. William Lawvere** proposed ETCS in 1964, and **Saharon Shelah** in Jerusalem settled Whitehead's problem in 1974.
+- Set theory grew in many places: the Polish school around the journal *Fundamenta Mathematicae* (founded in Warsaw in 1920; Wacław Sierpiński was one of its first editors) made set-theoretic topology a field of its own, and today set theory is an international research area, with active groups across Europe, the Americas, Israel, Japan, China and elsewhere.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Herbert B. Enderton, *Elements of Set Theory* (1977) — a careful first course: axioms, encodings, natural numbers, the reals, ordinals.
+- Paul R. Halmos, *Naive Set Theory* (1960) — a short, classic informal introduction to the axioms.
+- Kenneth Kunen, *Set Theory: An Introduction to Independence Proofs* (1980), and *Set Theory* (2011) — the standard graduate texts, through Gödel's $L$ and forcing.
+- Thomas Jech, *Set Theory* (third millennium edition, 2003) — the comprehensive reference.
+- Jean van Heijenoort (ed.), *From Frege to Gödel: A Source Book in Mathematical Logic, 1879–1931* (1967) — translations of Russell's letter to Frege and the founding papers of Zermelo, Fraenkel, Skolem and von Neumann.
+- George Boolos, "The iterative conception of set", *Journal of Philosophy* (1971).
+- Paul Benacerraf, "What numbers could not be", *Philosophical Review* (1965).
+- F. William Lawvere, "An elementary theory of the category of sets", *Proceedings of the National Academy of Sciences* (1964); and Tom Leinster, "Rethinking set theory", *American Mathematical Monthly* (2014), a friendly account of ETCS.
+
+</Section>

@@ -1,0 +1,518 @@
+---
+slug: projective-geometry
+topic: math.geom.projective-geometry
+title: Projective geometry
+subtitle: The geometry of perspective, where parallel lines meet at the horizon. Points at infinity, homogeneous coordinates, a perfect duality between points and lines, the theorems of Desargues and Pappus, the cross-ratio — and why every conic is a circle in disguise.
+level: ug2
+ages: Undergraduate
+minutes: 115
+order: 6014
+objectives:
+  - Use homogeneous coordinates to describe points and lines of the real projective plane, including points at infinity, and compute joins and meets with cross products
+  - Prove that two distinct points lie on exactly one line and two distinct lines meet in exactly one point, and explain the principle of duality
+  - State and prove the theorems of Desargues and Pappus
+  - Prove that projective transformations preserve the cross-ratio, and that any four points in general position can be mapped to any other four by a unique projective transformation
+  - Show that all non-degenerate real conics are projectively equivalent, and explain ellipse, parabola and hyperbola as one conic meeting the line at infinity in 0, 1 or 2 points
+narrators: []
+lean:
+  - Lumenary.ProjectiveGeometry.mk_eq_mk_iff
+  - Lumenary.ProjectiveGeometry.mk_neg
+  - Lumenary.ProjectiveGeometry.cross_on_both
+  - Lumenary.ProjectiveGeometry.cross_ne_zero_iff
+  - Lumenary.ProjectiveGeometry.incident_cross_zero
+  - Lumenary.ProjectiveGeometry.line_unique
+  - Lumenary.ProjectiveGeometry.triple_product_det
+  - Lumenary.ProjectiveGeometry.crossRatio
+  - Lumenary.ProjectiveGeometry.mobius_sub
+  - Lumenary.ProjectiveGeometry.cross_ratio_mobius
+  - Lumenary.ProjectiveGeometry.desargues
+  - Lumenary.ProjectiveGeometry.pappus
+  - Lumenary.ProjectiveGeometry.circle_to_parabola
+  - Lumenary.ProjectiveGeometry.real_quadratic_forms
+compute: [projective_geometry_cross_ratio, projective_geometry_finite_planes]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What a camera keeps">
+
+Stand between the rails of a straight railway line in the Karoo and look along it. The rails, which never meet, appear to converge to a point on the horizon. The sleepers, laid exactly one metre apart, appear closer and closer together. A broadcast camera above a football pitch in Buenos Aires does the same thing to the touchlines and the penalty box: lengths, angles and parallelism are all distorted.
+
+Yet some things survive every photograph. Straight lines stay straight. Points on a line stay on a line, and lines through a point still pass through a point. And a less obvious quantity survives too: from four points on a line one can compute a number, the **cross-ratio**, that is the same on the ground and in the picture. Sports-analytics software uses exactly these invariants to recover the true positions of players from television images, and photogrammetry uses them to measure buildings from photographs.
+
+**Projective geometry** is the geometry of what perspective preserves. To make it work, we must give parallel lines a place to meet: a **point at infinity** for each direction, all lying on a **line at infinity** — the horizon. The reward is a geometry of remarkable symmetry, in which every theorem comes with a free twin, and in which ellipses, parabolas and hyperbolas turn out to be the same curve seen from different places.
+
+<Figure caption="Perspective: parallel rails meet at a vanishing point on the horizon, and equally spaced sleepers appear ever closer together. Distances are not preserved, but the cross-ratio of any four sleepers is.">
+<svg viewBox="0 0 400 250" role="img" aria-label="Two rails converging to a vanishing point on a horizontal horizon line, with sleepers between them getting closer together towards the horizon">
+  <line x1="0" y1="40" x2="400" y2="40" stroke="var(--ink-2)" strokeWidth="1.5" strokeDasharray="6 4" />
+  <line x1="70" y1="240" x2="200" y2="40" stroke="var(--ink-2)" strokeWidth="2.5" />
+  <line x1="330" y1="240" x2="200" y2="40" stroke="var(--ink-2)" strokeWidth="2.5" />
+  <line x1="70" y1="240" x2="330" y2="240" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="113.3" y1="173.3" x2="286.7" y2="173.3" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="135" y1="140" x2="265" y2="140" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="148" y1="120" x2="252" y2="120" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="156.7" y1="106.7" x2="243.3" y2="106.7" stroke="var(--gold)" strokeWidth="2.5" />
+  <line x1="162.9" y1="97.1" x2="237.1" y2="97.1" stroke="var(--gold)" strokeWidth="2.5" />
+  <line x1="167.5" y1="90" x2="232.5" y2="90" stroke="var(--gold)" strokeWidth="2" />
+  <line x1="174" y1="80" x2="226" y2="80" stroke="var(--gold)" strokeWidth="2" />
+  <line x1="181.4" y1="68.6" x2="218.6" y2="68.6" stroke="var(--gold)" strokeWidth="1.5" />
+  <line x1="188.2" y1="58.2" x2="211.8" y2="58.2" stroke="var(--gold)" strokeWidth="1.5" />
+  <circle cx="200" cy="40" r="4.5" fill="var(--human)" />
+  <text x="208" y="32" fontSize="13" fill="var(--ink-2)">vanishing point</text>
+  <text x="8" y="32" fontSize="13" fill="var(--ink-2)">horizon</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Lines through the eye">
+
+Put your eye at the origin of $\R^3$ and hold a transparent picture plane at height $z = 1$. Each point $(x, y)$ of the picture is seen along a line through the eye, the line through $(x, y, 1)$. So **points of the picture are lines through the origin**. A line in the picture, together with the eye, spans a plane through the origin, so **lines of the picture are planes through the origin**.
+
+Now the lines through the eye that are *horizontal* — parallel to the picture plane — never meet it. They are perfectly good lines through the origin, so we add them as new points: the **points at infinity**, one for each horizontal direction, and together they form a new line, the horizontal plane through the eye, which is the **line at infinity**. Two parallel lines in the picture span two planes through the eye whose intersection is a horizontal line: they now meet, at a point at infinity, exactly as the rails meet on the horizon.
+
+This is the **real projective plane** $\R P^2$: the set of lines through the origin in $\R^3$. Linear algebra on $\R^3$ becomes geometry on $\R P^2$. Two distinct lines through the origin span a plane: *two points determine a line*. Two distinct planes through the origin meet in a line: *two lines determine a point*, with no exception for parallels. The two statements are twins, and that symmetry runs through the whole subject.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $K$ is a field, usually $\R$.
+
+<Definition term="projective space, homogeneous coordinates">
+
+The **projective space** $KP^n$ is the set of one-dimensional subspaces of $K^{n+1}$. The line through a non-zero vector $(x_0, \dots, x_n)$ is written $[x_0 : \dots : x_n]$; these are its **homogeneous coordinates**, determined up to a non-zero scalar: $[x_0 : \dots : x_n] = [\lambda x_0 : \dots : \lambda x_n]$ for $\lambda \ne 0$.
+
+</Definition>
+
+<Definition term="affine chart and line at infinity">
+
+In $\R P^2$ the points $[x : y : z]$ with $z \ne 0$ form the **affine chart** $\{[x : y : 1]\} \cong \R^2$. The remaining points $[x : y : 0]$ form the **line at infinity**; $[x : y : 0]$ is the point at infinity in the direction of $(x, y)$.
+
+</Definition>
+
+<Definition term="lines and incidence">
+
+A **line** of $\R P^2$ is the set of points of a two-dimensional subspace of $\R^3$, that is, $\{[x : y : z] : ax + by + cz = 0\}$ for some $(a, b, c) \ne 0$, itself defined up to scale. We write the line as $[a : b : c]$ too. The point $p$ lies on the line $\ell$ (they are **incident**) exactly when $\ell \cdot p = 0$. Points are **collinear** if they lie on a common line; lines are **concurrent** if they pass through a common point. Four points are **in general position** if no three are collinear.
+
+</Definition>
+
+<Definition term="projective transformation">
+
+An invertible matrix $A \in GL_3(\R)$ induces a bijection $[v] \mapsto [Av]$ of $\R P^2$, a **projective transformation**. Since $A$ and $\lambda A$ induce the same map, the group of projective transformations is $PGL_3(\R) = GL_3(\R)/\R^\times$. On the projective line $\R P^1 = \R \cup \{\infty\}$, the matrix $\begin{pmatrix} a & b \\ c & d \end{pmatrix}$ acts in the affine coordinate by the **Möbius transformation** $x \mapsto (ax + b)/(cx + d)$, with $-d/c \mapsto \infty$ and $\infty \mapsto a/c$.
+
+</Definition>
+
+<Definition term="cross-ratio">
+
+The **cross-ratio** of four distinct collinear points with affine coordinates $a, b, c, d$ on a line is
+
+$$
+(a, b; c, d) = \frac{(a - c)(b - d)}{(a - d)(b - c)}.
+$$
+
+In homogeneous coordinates $a = [a_1 : a_2]$ etc. on $\R P^1$, with the bracket $[p\,q] = p_1 q_2 - p_2 q_1$, it is $(a, b; c, d) = \dfrac{[a\,c][b\,d]}{[a\,d][b\,c]}$, which also makes sense when one point is $\infty = [1 : 0]$. (Several conventions are in use; they differ by reordering the points.)
+
+</Definition>
+
+<Definition term="conic">
+
+A **conic** in $\R P^2$ is the zero set of a quadratic form $Q(\mathbf x) = \mathbf x^{\mathsf T} M \mathbf x$, with $M$ a symmetric $3 \times 3$ matrix; it is **non-degenerate** if $\det M \ne 0$. In the chart $z = 1$, $Q = 0$ is a second-degree equation $Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Parallel lines meet at infinity">
+
+In the chart, $y = 2x + 1$ is $2x - y + z = 0$, the line $[2 : -1 : 1]$, and $y = 2x - 3$ is $[2 : -1 : -3]$. Their common point is the cross product (Theorem 1 below):
+
+$$
+(2, -1, 1) \times (2, -1, -3) = \big((-1)(-3) - 1 \cdot (-1),\; 1 \cdot 2 - 2 \cdot (-3),\; 2 \cdot (-1) - (-1) \cdot 2\big) = (4, 8, 0),
+$$
+
+so they meet at $[4 : 8 : 0] = [1 : 2 : 0]$, the point at infinity in the direction $(1, 2)$ of slope $2$. The opposite direction $(-1, -2)$ gives the *same* point $[-1 : -2 : 0] = [1 : 2 : 0]$: a line has one point at infinity, not two.
+
+</Example>
+
+<Example title="The line through a point and a direction">
+
+The line through $(1, 0) = [1 : 0 : 1]$ and the vertical point at infinity $[0 : 1 : 0]$ is $(1, 0, 1) \times (0, 1, 0) = (-1, 0, 1)$, the line $-x + z = 0$, i.e. $x = 1$ in the chart — the vertical line through $(1, 0)$, as it should be.
+
+</Example>
+
+<Example title="What the projective line and plane look like">
+
+$\R P^1$ is a circle: a line through the origin of $\R^2$ is determined by where it crosses the upper half of the unit circle, and the two ends of the half-circle (the horizontal line) are the same point. Equivalently, $\R P^1 = \R \cup \{\infty\}$ with the two "ends" of $\R$ joined at $\infty$. $\R P^2$ is the upper hemisphere with antipodal points of the equator identified, or a disc with opposite boundary points glued. It is a closed surface that cannot be embedded in $\R^3$ and is **non-orientable**: a neighbourhood of the line at infinity is a Möbius band.
+
+</Example>
+
+<Example title="A finite projective plane">
+
+Over the field $\mathbb F_2 = \{0, 1\}$, the plane $\mathbb F_2 P^2$ has $2^3 - 1 = 7$ points and $7$ lines, each line containing $3$ points and each point on $3$ lines: the **Fano plane**. Over $\mathbb F_p$ there are $p^2 + p + 1$ points, with $p + 1$ on each line; the second experiment checks the incidence axioms exhaustively for $p \le 7$.
+
+<Figure caption="The Fano plane $\mathbb F_2 P^2$: seven points and seven lines (six straight segments and the circle), any two points on exactly one line, any two lines meeting in exactly one point.">
+<svg viewBox="0 0 400 250" role="img" aria-label="An equilateral triangle with its three medians and inscribed circle; the three vertices, three midpoints and centre are the seven points">
+  <polygon points="200,22.2 80,230 320,230" fill="none" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="200" y1="22.2" x2="200" y2="230" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="80" y1="230" x2="260" y2="126.1" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="320" y1="230" x2="140" y2="126.1" stroke="var(--ink-2)" strokeWidth="2" />
+  <circle cx="200" cy="160.7" r="69.3" fill="none" stroke="var(--formal)" strokeWidth="2.5" />
+  <circle cx="200" cy="22.2" r="7" fill="var(--gold)" />
+  <circle cx="80" cy="230" r="7" fill="var(--gold)" />
+  <circle cx="320" cy="230" r="7" fill="var(--gold)" />
+  <circle cx="140" cy="126.1" r="7" fill="var(--gold)" />
+  <circle cx="260" cy="126.1" r="7" fill="var(--gold)" />
+  <circle cx="200" cy="230" r="7" fill="var(--gold)" />
+  <circle cx="200" cy="160.7" r="7" fill="var(--gold)" />
+</svg>
+</Figure>
+
+</Example>
+
+<Example title="Non-example: midpoints and distances are not projective">
+
+The perspective map $x \mapsto x/(x + 2)$ of the line (a photograph of a fence, used in the first experiment) sends $0, 1, 2$ to $0, \tfrac13, \tfrac12$. The point $1$ is the midpoint of $0$ and $2$, but $\tfrac13$ is not the midpoint of $0$ and $\tfrac12$. Midpoints, ratios of lengths, distances and angles are not projective notions; collinearity, incidence and cross-ratio are. Check: $(0, 2; 1, \infty) = \frac{(0 - 1)}{(2 - 1)} = -1$, and the images $0, \tfrac12, \tfrac13$ and $1$ (the image of $\infty$) have $\big(0, \tfrac12; \tfrac13, 1\big) = \frac{(0 - \frac13)(\frac12 - 1)}{(0 - 1)(\frac12 - \frac13)} = \frac{1/6}{-1/6} = -1$.
+
+</Example>
+
+</Section>
+
+<Section id="incidence" kind="proof" title="Incidence, duality and the fundamental theorem">
+
+<Theorem name="Theorem 1 (incidence)">
+
+In $KP^2$, two distinct points lie on exactly one line, and two distinct lines meet in exactly one point. In coordinates, the line through $p$ and $q$ is $p \times q$, and the point on the lines $\ell$ and $m$ is $\ell \times m$.
+
+</Theorem>
+
+<Proof>
+
+Distinct points $[p] \ne [q]$ are independent vectors, so they span a unique two-dimensional subspace: a unique line. Distinct lines are distinct two-dimensional subspaces of $K^3$; their sum is $K^3$, so by the dimension formula $\dim(U \cap W) = 2 + 2 - 3 = 1$: a unique point. For the coordinates: $p \cdot (p \times q) = q \cdot (p \times q) = 0$, so $p \times q$ is a line through both points, and $p \times q \ne 0$ when $p, q$ are independent. If $\ell$ is any line through $p$ and $q$, the expansion $\ell \times (p \times q) = (\ell \cdot q)p - (\ell \cdot p)q = 0$ shows $\ell$ is parallel to $p \times q$, i.e. the same line. The statement about lines is the same computation with the roles exchanged.
+
+</Proof>
+
+The last sentence of the proof is the **principle of duality**. Incidence, $\ell \cdot p = 0$, is symmetric in $\ell$ and $p$. So exchanging the words "point" and "line" (and "collinear" and "concurrent", "join" and "meet") turns every true statement about incidence in $KP^2$ into another true statement. Theorem 1 is self-dual; Desargues' theorem below is dual to its own converse, and Pascal's theorem on conics is dual to Brianchon's. We get every projective theorem twice for the price of one proof.
+
+<Theorem name="Theorem 2 (fundamental theorem: four points)">
+
+If $p_1, p_2, p_3, p_4$ and $q_1, q_2, q_3, q_4$ are two quadruples of points of $KP^2$ in general position, there is exactly one projective transformation $T$ with $T(p_i) = q_i$ for $i = 1, \dots, 4$.
+
+</Theorem>
+
+<Proof>
+
+It suffices to treat $q_1, \dots, q_4 = [e_1], [e_2], [e_3], [e_1 + e_2 + e_3]$ (the **standard frame**), because we can then compose one transformation with the inverse of another. Choose vectors $v_i$ representing $p_i$. Since $p_1, p_2, p_3$ are not collinear, $v_1, v_2, v_3$ form a basis, and $v_4 = \lambda_1 v_1 + \lambda_2 v_2 + \lambda_3 v_3$. Every $\lambda_i \neq 0$: if, say, $\lambda_3 = 0$, then $p_1, p_2, p_4$ would be collinear. Let $B$ be the matrix with columns $\lambda_1 v_1, \lambda_2 v_2, \lambda_3 v_3$. Then $B$ is invertible, $Be_i = \lambda_i v_i$ represents $p_i$, and $B(e_1 + e_2 + e_3) = v_4$; so $T = [B^{-1}]$ sends the $p_i$ to the standard frame. *Uniqueness:* if $[A]$ fixes the standard frame then $Ae_i = \mu_i e_i$ and $A(e_1 + e_2 + e_3) = \mu(e_1 + e_2 + e_3)$, so $\mu_1 = \mu_2 = \mu_3 = \mu$ and $A = \mu I$ induces the identity.
+
+</Proof>
+
+On the projective line the same argument shows that a projective transformation is determined by the images of **three** distinct points. On $\R P^2$ the four-point theorem says that any convex quadrilateral can be mapped onto a square by a perspective map — the homography used to rectify photographs.
+
+</Section>
+
+<Section id="cross-ratio" kind="proof" title="The cross-ratio">
+
+<Theorem name="Theorem 3 (invariance of the cross-ratio)">
+
+Projective transformations of a line preserve the cross-ratio of four distinct points. Consequently, if four collinear points of $\R P^2$ are projected from a point $O$ onto another line, their cross-ratio is unchanged.
+
+</Theorem>
+
+<Proof>
+
+In homogeneous coordinates, $[Ap\,Aq] = \det A \cdot [p\,q]$ for a $2 \times 2$ matrix $A$ (the bracket is a determinant). So replacing $a, b, c, d$ by $Aa, Ab, Ac, Ad$ multiplies the numerator $[a\,c][b\,d]$ and the denominator $[a\,d][b\,c]$ both by $(\det A)^2$; and rescaling any one point multiplies numerator and denominator by the same factor. So the cross-ratio is well defined on $\R P^1$ and invariant. In the affine coordinate the same proof reads: for $f(x) = \frac{ax + b}{cx + d}$,
+
+$$
+f(x) - f(y) = \frac{(ad - bc)(x - y)}{(cx + d)(cy + d)},
+$$
+
+and in $\frac{(f(a) - f(c))(f(b) - f(d))}{(f(a) - f(d))(f(b) - f(c))}$ the factors $(ad - bc)^2$ and all four denominators cancel. For the second statement, choose coordinates on the two lines; the projection from $O$ is the restriction of a linear map of the plane through $O$, hence a projective map between the two lines.
+
+</Proof>
+
+Three points and a cross-ratio determine the fourth point, which is how one locates the fourth fence post in a photograph from the first three (first experiment). Permuting the four points changes the cross-ratio in a controlled way: the $24$ orderings give at most six values,
+
+$$
+\lambda, \quad \frac1\lambda, \quad 1 - \lambda, \quad \frac{1}{1 - \lambda}, \quad \frac{\lambda - 1}{\lambda}, \quad \frac{\lambda}{\lambda - 1},
+$$
+
+which collapse to three when $\lambda = -1$. Four points with cross-ratio $-1$ form a **harmonic range**: for example $0$ and $\infty$ separate $1$ and $-1$ harmonically, and the midpoint $m$ of $a$ and $b$ satisfies $(a, b; m, \infty) = -1$. This is how projective geometry recovers midpoints once the line at infinity is known — exactly what a perspective artist does with the horizon.
+
+</Section>
+
+<Section id="desargues-pappus" kind="proof" title="The theorems of Desargues and Pappus">
+
+<Theorem name="Theorem 4 (Desargues)">
+
+Let $ABC$ and $A'B'C'$ be triangles in $KP^2$ such that the lines $AA'$, $BB'$, $CC'$ meet in a point $O$ (the triangles are **in perspective from a point**). Then the three points $P = AB \cap A'B'$, $Q = BC \cap B'C'$, $R = CA \cap C'A'$ are collinear (the triangles are **in perspective from a line**).
+
+</Theorem>
+
+<Proof>
+
+Use vectors $O, A, B, C$ representing the points (we use the same letters). The point $A'$ lies on the line $OA$ and differs from $A$, so we can scale its representative to $A' = O + aA$; similarly $B' = O + bB$ and $C' = O + cC$. Put
+
+$$
+P = aA - bB, \qquad Q = bB - cC, \qquad R = cC - aA.
+$$
+
+The vector $P$ is a combination of $A$ and $B$, so it lies on the line $AB$; and $P = A' - B'$, so it lies on $A'B'$ too. Hence $P$ represents $AB \cap A'B'$ (if $P = 0$, the lines $AB$ and $A'B'$ coincide and there is nothing to prove). Likewise $Q$ and $R$. Finally $P + Q + R = 0$, so the three vectors are linearly dependent: the points are collinear.
+
+</Proof>
+
+There is a classical synthetic proof too. If the two triangles lie in different planes of a three-dimensional projective space, the lines $AB$ and $A'B'$ lie in the plane $OAB$ and therefore meet, and all three meeting points lie on the line where the planes $ABC$ and $A'B'C'$ intersect. The planar case follows by projecting a three-dimensional configuration. So Desargues' theorem in the plane is a shadow of the third dimension.
+
+<Figure caption="Desargues' theorem: the triangles $ABC$ and $A'B'C'$ are in perspective from $O$ (dashed rays), so the meets $P$, $Q$, $R$ of corresponding sides lie on one line (gold).">
+<svg viewBox="0 0 400 260" role="img" aria-label="Two triangles in perspective from a point O, with three rays from O through corresponding vertices; corresponding sides extended meet in three points that lie on a straight line">
+  <line x1="60.4" y1="161.9" x2="127.7" y2="84.3" stroke="var(--ink-2)" strokeWidth="1.2" strokeDasharray="5 4" />
+  <line x1="60.4" y1="161.9" x2="239.4" y2="109.7" stroke="var(--ink-2)" strokeWidth="1.2" strokeDasharray="5 4" />
+  <line x1="60.4" y1="161.9" x2="256.7" y2="57.3" stroke="var(--ink-2)" strokeWidth="1.2" strokeDasharray="5 4" />
+  <line x1="196" y1="122.4" x2="275.8" y2="117.9" stroke="var(--human)" strokeWidth="1" strokeDasharray="2 3" />
+  <line x1="239.4" y1="109.7" x2="275.8" y2="117.9" stroke="var(--formal)" strokeWidth="1" strokeDasharray="2 3" />
+  <line x1="196" y1="122.4" x2="192.9" y2="250.7" stroke="var(--human)" strokeWidth="1" strokeDasharray="2 3" />
+  <line x1="239.4" y1="109.7" x2="192.9" y2="250.7" stroke="var(--formal)" strokeWidth="1" strokeDasharray="2 3" />
+  <line x1="196.8" y1="89.3" x2="322.1" y2="43.6" stroke="var(--human)" strokeWidth="1" strokeDasharray="2 3" />
+  <line x1="256.7" y1="57.3" x2="322.1" y2="43.6" stroke="var(--formal)" strokeWidth="1" strokeDasharray="2 3" />
+  <polygon points="89.6,128.3 196,122.4 196.8,89.3" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <polygon points="127.7,84.3 239.4,109.7 256.7,57.3" fill="none" stroke="var(--formal)" strokeWidth="2.5" />
+  <line x1="181" y1="259" x2="333" y2="26" stroke="var(--gold)" strokeWidth="2.5" />
+  <circle cx="60.4" cy="161.9" r="4" fill="var(--ink-2)" />
+  <circle cx="275.8" cy="117.9" r="4.5" fill="var(--gold)" />
+  <circle cx="192.9" cy="250.7" r="4.5" fill="var(--gold)" />
+  <circle cx="322.1" cy="43.6" r="4.5" fill="var(--gold)" />
+  <text x="44" y="178" fontSize="14" fill="var(--ink-2)">O</text>
+  <text x="76" y="124" fontSize="14" fill="var(--ink-2)">A</text>
+  <text x="182" y="140" fontSize="14" fill="var(--ink-2)">B</text>
+  <text x="190" y="82" fontSize="14" fill="var(--ink-2)">C</text>
+  <text x="112" y="78" fontSize="14" fill="var(--ink-2)">A′</text>
+  <text x="226" y="129" fontSize="14" fill="var(--ink-2)">B′</text>
+  <text x="258" y="50" fontSize="14" fill="var(--ink-2)">C′</text>
+  <text x="284" y="122" fontSize="14" fill="var(--ink-2)">P</text>
+  <text x="200" y="246" fontSize="14" fill="var(--ink-2)">Q</text>
+  <text x="330" y="48" fontSize="14" fill="var(--ink-2)">R</text>
+</svg>
+</Figure>
+
+<Theorem name="Theorem 5 (Pappus)">
+
+Let $A, B, C$ be distinct points on a line $\ell$ and $A', B', C'$ distinct points on another line $m$, none of them equal to $\ell \cap m$. Then the three points $AB' \cap A'B$, $AC' \cap A'C$ and $BC' \cap B'C$ are collinear.
+
+</Theorem>
+
+<Proof>
+
+By Theorem 2 we may choose coordinates in which $\ell$ and $m$ are the $x$- and $y$-axes, and (over an infinite field) the line at infinity misses all six points. Then $A = (a, 0)$, $B = (b, 0)$, $C = (c, 0)$ and $A' = (0, a')$, $B' = (0, b')$, $C' = (0, c')$ with all six numbers non-zero; write $\alpha = 1/a$, $\alpha' = 1/a'$ and so on. The line $AB'$ is $\alpha x + \beta' y = 1$, i.e. $[\alpha : \beta' : -1]$, and $A'B$ is $[\beta : \alpha' : -1]$. Their meet is the cross product
+
+$$
+P = (\alpha' - \beta',\; \alpha - \beta,\; \alpha\alpha' - \beta\beta').
+$$
+
+In the same way $Q = AC' \cap A'C = (\alpha' - \gamma', \alpha - \gamma, \alpha\alpha' - \gamma\gamma')$ and $R = BC' \cap B'C = (\beta' - \gamma', \beta - \gamma, \beta\beta' - \gamma\gamma')$. Now $P - Q + R = 0$, so $P, Q, R$ are linearly dependent: the three points are collinear.
+
+</Proof>
+
+The proof used that multiplication commutes (in forming $\alpha\alpha'$ and writing the cross product). That is no accident. Projective planes can be built over any **division ring** $D$, where multiplication need not commute, such as Hamilton's quaternions. Hilbert (1899) showed that Desargues' theorem holds in a projective plane exactly when it can be coordinatised by a division ring, and Pappus' theorem holds exactly when that division ring is commutative, a field. So Desargues holds and Pappus fails in the quaternionic plane. There are even planes satisfying the incidence axioms in which Desargues fails, such as Moulton's plane (1902) and finite planes of order $9$. Hessenberg (1905) proved synthetically that Pappus implies Desargues, and by Wedderburn's theorem (1905) every finite division ring is a field, so in a *finite* plane Desargues implies Pappus.
+
+</Section>
+
+<Section id="conics" kind="proof" title="Conics: one curve, three shadows">
+
+<Theorem name="Theorem 6 (projective classification of conics)">
+
+(a) Every non-degenerate real conic is either empty or projectively equivalent to the circle $x^2 + y^2 = z^2$. (b) In the affine chart $z = 1$, a non-degenerate conic $Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$ meets the line at infinity in $0$, $1$ or $2$ points according as $B^2 - 4AC < 0$, $= 0$ or $> 0$; correspondingly it is an ellipse, a parabola (tangent to the line at infinity) or a hyperbola (whose asymptote directions are the two points at infinity).
+
+</Theorem>
+
+<Proof>
+
+(a) By the spectral theorem the symmetric matrix $M$ is $Q\Lambda Q^{\mathsf T}$ with $Q$ orthogonal; rescaling the eigenvector coordinates by $1/\sqrt{|\lambda_i|}$ (all $\lambda_i \ne 0$ since $\det M \ne 0$) turns the form into $\pm u^2 \pm v^2 \pm w^2$. Multiplying the whole equation by $-1$ changes nothing, so up to sign there are two cases: $u^2 + v^2 + w^2$, with no real zeros, and $u^2 + v^2 - w^2$, the circle. (This is Sylvester's law of inertia in three variables.)
+
+(b) The points at infinity of the conic are the solutions of $Q(x, y, 0) = Ax^2 + Bxy + Cy^2 = 0$ with $(x, y) \neq 0$. This binary quadratic has no real root directions, one double root direction, or two root directions according as its discriminant $B^2 - 4AC$ is negative, zero or positive. A double root means the line at infinity is tangent to the conic.
+
+</Proof>
+
+For example $x^2 + y^2 - z^2$ becomes $y^2 - uw$ under $x = \frac{u - w}2$, $z = \frac{u + w}2$: in the chart $w = 1$ that is the parabola $y^2 = u$. So the circle and the parabola are the same projective curve, seen with different lines chosen as "at infinity". The visualisation below moves the line at infinity continuously. Two further classical facts, stated without proof: five points in general position determine exactly one conic (a symmetric $3 \times 3$ matrix up to scale has five degrees of freedom, and each point imposes one linear condition); and **Pascal's theorem** (1640) says that for a hexagon inscribed in a conic, the three meets of opposite sides are collinear. Pappus' theorem is the case of the degenerate conic $\ell \cup m$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Projective geometry in Lean and Mathlib">
+
+Mathlib's `Projectivization K V` (notation `ℙ K V`) is the type of lines through $0$ in $V$, with `Projectivization.mk K v hv` the point with homogeneous coordinates $v \ne 0$. Homogeneous coordinates are defined up to scale, and opposite vectors give the same point — one point at infinity per direction:
+
+<Lean decl="Lumenary.ProjectiveGeometry.mk_eq_mk_iff" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.mk_neg" />
+
+Theorem 1 with the cross product $u ⨯_3 v$ from `Mathlib.LinearAlgebra.CrossProduct`. The theorem `line_unique` is proved once, and read in two ways: for points $p, q$ it says the line is unique; for lines it says the meet is unique. That is the principle of duality inside a proof assistant.
+
+<Lean decl="Lumenary.ProjectiveGeometry.cross_on_both" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.cross_ne_zero_iff" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.incident_cross_zero" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.line_unique" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.triple_product_det" />
+
+The cross-ratio and Theorem 3, in the affine form of the proof (a Möbius map and the cancellation of $(ad - bc)^2$):
+
+<Lean decl="Lumenary.ProjectiveGeometry.crossRatio" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.mobius_sub" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.cross_ratio_mobius" />
+
+Desargues' theorem exactly as proved above, and Pappus' theorem in homogeneous coordinates adapted to the two lines. The Pappus statement covers points at infinity too (it allows any $[a_1 : 0 : a_2]$ on the first line), and its proof is a single polynomial identity checked by `ring`. Both hold in any commutative ring, and changing one point off its line makes the `ring` check fail.
+
+<Lean decl="Lumenary.ProjectiveGeometry.desargues" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.pappus" />
+
+Conics: the explicit change of coordinates taking the circle to a parabola, and Mathlib's version of Sylvester's law used in Theorem 6(a):
+
+<Lean decl="Lumenary.ProjectiveGeometry.circle_to_parabola" />
+
+<Lean decl="Lumenary.ProjectiveGeometry.real_quadratic_forms" />
+
+**What is and is not formalised.** Independent: $[v] = [-v]$, the uniqueness half of Theorem 1 (and its dual), the cross-ratio identity and Theorem 3 for Möbius maps, Desargues' theorem (Theorem 4) and Pappus' theorem (Theorem 5) as coordinate identities, and the circle-to-parabola transformation. From Mathlib: equality in `ℙ K V`, the cross-product incidence facts, the triple product as a determinant, and the classification of real quadratic forms. Not formalised: Theorem 2 (four points), the reduction "choose coordinates so that the lines are the axes" (we state Pappus directly in those coordinates), Theorem 6(b), Hilbert's coordinatisation theorems and Pascal's theorem. Mathlib does not yet have synthetic projective planes. The Lean exercises ask for $[v] = [-v]$ and the incidence lemma.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Cross-ratios exactly, and planes with finitely many points">
+
+The first program stores points of the projective line as homogeneous pairs of fractions, so that $\infty = [1 : 0]$ needs no special case. It applies $300$ random Möbius transformations and checks that every cross-ratio is preserved, while ordinary ratios of lengths almost never are. It lists the six values of the cross-ratio under reordering (three in the harmonic case), and locates the fourth fence post of a photograph from the first three.
+
+<Python id="projective_geometry_cross_ratio" />
+
+The second program builds the finite planes $\mathbb F_p P^2$ for $p = 2, 3, 5, 7$. It checks by exhaustion that each has $p^2 + p + 1$ points and lines, that two points determine one line and two lines one point, and that the conic $x^2 + y^2 = z^2$ has exactly $p + 1$ points for odd $p$, just as a real conic is a circle, the projective line in disguise. It then tests Desargues and Pappus on random configurations in $\mathbb F_7P^2$.
+
+<Python id="projective_geometry_finite_planes" />
+
+The incidence counts are exhaustive, hence proofs for those particular planes. The random Desargues and Pappus tests are evidence in one plane; the coordinate proofs (and the Lean theorems) cover every field at once.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: one conic, three shadows">
+
+The curve below is the image of the unit circle under the projective transformation $[x : y : z] \mapsto [x : y : z + ay]$, drawn in the chart $z = 1$. That is, the circle is fixed and the line sent to infinity moves: it is the line $y = -1/a$. For $0 \le a < 1$ that line misses the circle and the image is an **ellipse**. At $a = 1$ the line is tangent at $(0, -1)$, and the image is a **parabola**. For $a > 1$ it cuts the circle twice, and the image is a **hyperbola** whose two branches are joined through the two points at infinity. Slide $a$ slowly through $1$.
+
+<FunctionPlot
+  mode="parametric"
+  fns={[["cos(t)/(1 + a*sin(t))", "sin(t)/(1 + a*sin(t))"]]}
+  labels={["image of the circle"]}
+  params={[{ name: "a", min: 0, max: 2.5, step: 0.05, value: 0.5 }]}
+  t={[0, "2*pi"]}
+  x={[-4, 4]}
+  y={[-4, 4]}
+  title="The circle under a projective map: ellipse, parabola, hyperbola"
+/>
+
+Möbius transformations $z \mapsto \frac{az + b}{cz + d}$ are the projective transformations of the *complex* projective line $\C P^1 = \C \cup \{\infty\}$, the Riemann sphere. They preserve the complex cross-ratio, and they send circles and lines to circles and lines (a line is a circle through $\infty$). Watch the grid lines bend into circles.
+
+<ComplexPlane mode="map" map="mobius" title="A Möbius transformation of the Riemann sphere" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Each direction has two points at infinity, one at each end."** A line in the projective plane has exactly one point at infinity: $[x : y : 0] = [-x : -y : 0]$ (the Lean theorem `mk_neg`). Walking off to infinity along a line in one direction, you come back from the other side. That is why $\R P^1$ is a circle and why $\R P^2$ is non-orientable.
+
+</Misconception>
+
+<Misconception>
+
+**"Distances and angles are projective notions."** Projective transformations preserve incidence, collinearity and cross-ratio, but not distances, ratios of lengths, midpoints, angles or parallelism. A perspective photograph of a square is usually not a square, and a circle can become a parabola. Distances come back only when extra structure is fixed: in Klein's view, Euclidean geometry is projective geometry with a distinguished line at infinity and a pair of "circular points" on it.
+
+</Misconception>
+
+<Misconception>
+
+**"The cross-ratio doesn't depend on the order of the points."** It does. The $24$ orderings give up to six values $\lambda, 1/\lambda, 1 - \lambda, \dots$ (three for a harmonic range). What is invariant is the cross-ratio of four points *in a given order* under projective maps.
+
+</Misconception>
+
+<Misconception>
+
+**"Ellipses, parabolas and hyperbolas are fundamentally different curves."** Affinely they are, but projectively they are one curve: the difference is only how the conic meets the line at infinity (0, 1 or 2 points), as Theorem 6 and the visualisation show. Even the empty "conic" $x^2 + y^2 + z^2 = 0$ becomes a circle over $\C$.
+
+</Misconception>
+
+<Misconception>
+
+**"Desargues' theorem is a consequence of the incidence axioms."** It is not. There are projective planes satisfying "two points determine a line, two lines meet in a point" (plus a non-degeneracy axiom) in which Desargues fails. Desargues' theorem is exactly the condition for coordinates from a division ring, and the proof above needed coordinates, or a third dimension.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Klein's hierarchy: projective, affine, Euclidean, hyperbolic">
+
+In Klein's Erlangen programme (1872) a geometry is a space together with a group of transformations, and projective geometry, with $PGL_{n+1}$, sits at the top of a hierarchy. Fixing a line at infinity cuts the group down to the affine group, which also preserves parallelism and ratios along lines. Fixing also the two **circular points** $[1 : \pm i : 0]$ cuts it down to the similarities, the transformations of Euclidean geometry up to scale; every circle passes through the circular points, which is why two circles meet in at most two *finite* points. Fixing a non-degenerate conic instead gives the projective model of the hyperbolic plane (the Beltrami–Klein model), where the distance between two points is $\tfrac12|\log|$ of a cross-ratio — Cayley's projective metric (1859). See <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink> and <TopicLink id="math.geom.non-euclidean-geometry">non-Euclidean geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="RP² is a non-orientable surface; RPⁿ and its loops">
+
+$\R P^2$ is a disc with antipodal boundary points identified: a compact surface with Euler characteristic $1$ (one vertex, one edge, one face in the obvious cell structure). A neighbourhood of a line is a Möbius band, so it is **non-orientable**, and it cannot be embedded in $\R^3$, although it can be immersed (Boy's surface, 1901). Its fundamental group is $\Z/2$: a projective line, traversed once, is a loop that cannot be shrunk, and traversed twice it can. The same holds for $\R P^3$, which is the rotation group $SO(3)$ (see <TopicLink id="math.geom.matrix-groups">matrix groups</TopicLink>), while $\C P^1$ is the 2-sphere and $\C P^n$ is simply connected. See <TopicLink id="math.geom.surfaces-euler-characteristic">surfaces and Euler characteristic</TopicLink> and <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Coordinates from axioms, and the home of algebraic geometry">
+
+The theorems of Desargues and Pappus are algebra in disguise. Starting from the incidence axioms alone, Hilbert built coordinates for a plane satisfying Desargues by constructing addition and multiplication of points on a line geometrically; the associative law of multiplication *is* Desargues, and commutativity *is* Pappus. Projective space is also the natural home of **algebraic geometry**: a homogeneous polynomial equation defines a subset of $KP^n$, and counting works perfectly there. Bézout's theorem says that two plane curves of degrees $d$ and $e$ without common component meet in exactly $de$ points of $\C P^2$, counted with multiplicity. Two "parallel" lines meet at infinity, a line meets a conic in two points (possibly complex or coincident), and two circles meet in their two finite points plus the two circular points at infinity. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Finite planes, designs and codes">
+
+A finite projective plane of order $n$ has $n^2 + n + 1$ points and as many lines, $n + 1$ points on each line. Planes of every prime-power order exist, from finite fields. Whether any plane exists whose order is not a prime power is a famous open problem. The Bruck–Ryser theorem (1949) rules out orders $n \equiv 1, 2 \pmod 4$ that are not sums of two squares (so no plane of order $6$, $14$, $21$, …). Order $10$ was ruled out in 1989 by Lam, Thiel and Swiercz after an enormous computer search, and order $12$ is still undecided. Finite planes are symmetric block designs. The Fano plane gives the $[7, 4]$ Hamming code, whose codewords of weight $3$ are its seven lines, and finite projective geometries underlie much of coding theory and the design of experiments. See <TopicLink id="math.discrete.combinatorics">combinatorics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Homographies in computer vision">
+
+A camera is, to first order, a projective map $\R P^3 \to \R P^2$ given by a $3 \times 4$ matrix, and two photographs of a plane differ by a $3 \times 3$ **homography**. By Theorem 2, four point correspondences determine it. In practice one solves a least-squares problem with many noisy correspondences (the direct linear transformation algorithm), discarding outliers with random sampling (RANSAC, Fischler and Bolles, 1981). This is how panoramas are stitched, documents rectified, and players located on a pitch from a broadcast. Homogeneous coordinates are also the standard in computer graphics, where translations, rotations and perspective all become $4 \times 4$ matrix products.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Projectivisation as a functor; duality as an equivalence">
+
+Sending a vector space $V$ to its projective space $\mathbb P(V)$ and an *injective* linear map to the induced map is a functor, from vector spaces and injections to sets (or to spaces). The principle of duality is the identification $\mathbb P(V^*) \cong \{\text{hyperplanes of } \mathbb P(V)\}$: the lines of $\R P^2$ are the points of the dual plane $\mathbb P((\R^3)^*)$. Because $V \mapsto V^*$ is contravariant, duality reverses inclusions, turning "point on line" into "line through point" (see <TopicLink id="math.algebra.advanced-linear-algebra">advanced linear algebra</TopicLink>). In algebraic geometry, $\mathbb P^n$ is a scheme representing a functor: maps to $\mathbb P^n$ correspond to line bundles with $n + 1$ generating sections, a first glimpse of the functor of points (see <TopicLink id="math.cat.representable-functors">representable functors</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Optics and perspective.** Ibn al-Haytham's *Book of Optics* (Cairo, c. 1011–1021) established that vision works by light travelling in straight lines from objects to the eye, the geometric basis of perspective; it was widely read in Latin translation. In Florence, Filippo Brunelleschi demonstrated linear perspective around 1415–1420, and Leon Battista Alberti codified it in *De pictura* (1435). Piero della Francesca and Albrecht Dürer wrote treatises on perspective construction.
+- **Ancient roots.** Pappus of Alexandria (c. 320 CE) proved the theorem now named after him in his *Collection*, together with results equivalent to the invariance of the cross-ratio.
+- **Desargues and Pascal.** Girard Desargues, an architect and engineer in Lyon, introduced points at infinity and treated conics as perspective images of circles in his *Brouillon project* (1639); his theorem on triangles was published by Abraham Bosse in 1648. Blaise Pascal, aged sixteen, proved his hexagon theorem (1640).
+- **The nineteenth-century revival.** Jean-Victor Poncelet, a prisoner of war in Saratov in 1813–1814, developed projective methods in his *Traité des propriétés projectives des figures* (1822). August Möbius (1827) and Julius Plücker introduced homogeneous coordinates, Joseph Gergonne and Poncelet formulated duality, and Karl von Staudt (1847) made projective geometry independent of distance. Arthur Cayley (1859) and Felix Klein (1871–1872) showed that Euclidean and non-Euclidean metrics arise from projective geometry.
+- **Foundations.** David Hilbert's *Grundlagen der Geometrie* (1899) linked Desargues and Pappus to the algebra of coordinates, F. R. Moulton gave a non-Desarguesian plane (1902), Oswald Veblen and Joseph Wedderburn found non-Desarguesian finite planes (1907), and R. C. Bose's work in India in the 1930s and 1940s connected finite geometries to the design of statistical experiments and to coding theory.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- H. S. M. Coxeter, *Projective Geometry* (1964; 2nd ed. 1974) — the classic synthetic introduction, axioms to conics.
+- Jürgen Richter-Gebert, *Perspectives on Projective Geometry* (2011) — homogeneous coordinates, cross-ratios, conics and computation, beautifully illustrated.
+- Pierre Samuel, *Projective Geometry* (1986; English 1988) — a short, linear-algebra-first course including cross-ratios and conics.
+- Robin Hartshorne, *Foundations of Projective Geometry* (1967) — axioms, Desargues, Pappus and coordinatisation.
+- Marcel Berger, *Geometry I and II* (1977; English 1987) — projective geometry within the whole of classical geometry.
+- Richard Hartley and Andrew Zisserman, *Multiple View Geometry in Computer Vision* (2000; 2nd ed. 2004) — projective geometry at work in cameras and images.
+
+</Section>

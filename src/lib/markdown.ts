@@ -6,17 +6,9 @@ import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import rehypeKatex from "rehype-katex";
 import rehypeStringify from "rehype-stringify";
+import { KATEX_MACROS } from "./katex-macros";
 
-export const KATEX_MACROS = {
-  "\\N": "\\mathbb{N}",
-  "\\Z": "\\mathbb{Z}",
-  "\\Q": "\\mathbb{Q}",
-  "\\R": "\\mathbb{R}",
-  "\\C": "\\mathbb{C}",
-  "\\cat": "\\mathbf{#1}",
-  "\\id": "\\mathrm{id}",
-  "\\Hom": "\\mathrm{Hom}",
-};
+export { KATEX_MACROS };
 
 export const katexOptions = { macros: KATEX_MACROS, strict: "ignore" as const, output: "htmlAndMathml" as const, throwOnError: false };
 

@@ -1,0 +1,516 @@
+---
+slug: propositional-logic
+topic: math.found.propositional-logic
+title: Propositional logic and truth tables
+subtitle: The exact logic of "and", "or", "not" and "if … then" — where a promise with a false premise is never broken, and a true statement can have a false converse.
+level: g9-12
+ages: Ages 14–18
+minutes: 65
+order: 4001
+objectives:
+  - Build truth tables for compound statements and classify formulas as tautologies, contradictions or contingent
+  - Test logical equivalence with truth tables, and prove De Morgan's laws and $\neg(P \to Q) \equiv P \wedge \neg Q$
+  - Distinguish an implication from its converse, inverse and contrapositive, and explain why only the contrapositive is equivalent to it
+  - Negate compound and quantified statements, including implications
+  - Recognise valid argument forms such as modus ponens and modus tollens, and the fallacy of affirming the consequent
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.PropositionalLogic.Formula
+  - Lumenary.PropositionalLogic.Formula.eval
+  - Lumenary.PropositionalLogic.valuations
+  - Lumenary.PropositionalLogic.length_valuations
+  - Lumenary.PropositionalLogic.mem_valuations
+  - Lumenary.PropositionalLogic.isTautology
+  - Lumenary.PropositionalLogic.isTautology_iff
+  - Lumenary.PropositionalLogic.Equivalent
+  - Lumenary.PropositionalLogic.equivalent_iff_tautology
+  - Lumenary.PropositionalLogic.contrapositive_table
+  - Lumenary.PropositionalLogic.converse_table
+  - Lumenary.PropositionalLogic.de_morgan_table
+  - Lumenary.PropositionalLogic.not_imp_table
+  - Lumenary.PropositionalLogic.argument_forms
+  - Lumenary.PropositionalLogic.contrapositive
+  - Lumenary.PropositionalLogic.contrapositive_iff
+  - Lumenary.PropositionalLogic.contrapositive_iff_library
+  - Lumenary.PropositionalLogic.converse_fails
+  - Lumenary.PropositionalLogic.de_morgan_or
+  - Lumenary.PropositionalLogic.de_morgan_and
+  - Lumenary.PropositionalLogic.not_imp_iff
+  - Lumenary.PropositionalLogic.not_forall_imp
+  - Lumenary.PropositionalLogic.not_every_prime_odd
+  - Lumenary.PropositionalLogic.vacuous_truth
+compute: [propositional_logic_truth_tables]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Four cards">
+
+Four cards lie on a table. Each card has a letter on one side and a whole number on the other. You can see
+
+$$
+\boxed{\mathrm{A}} \qquad \boxed{\mathrm{K}} \qquad \boxed{4} \qquad \boxed{7}
+$$
+
+Someone claims: **"If a card has a vowel on one side, then it has an even number on the other side."** Which cards must you turn over to find out whether the claim is false?
+
+Take a moment and decide before reading on.
+
+This is the *selection task* devised by the psychologist Peter Wason in 1966. In experiment after experiment, only a small minority of people answer it correctly the first time — usually people turn over the A and the 4, or just the A. The difficulty is not cleverness; it is that the everyday word "if" is slippery. In this lesson we make "and", "or", "not" and "if … then" completely precise, and the puzzle will become easy.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A promise and when it is broken">
+
+Suppose your teacher says: *"If you hand in your project by Friday, then you will get a free afternoon next week."* Is the promise kept or broken? There are only four possibilities.
+
+| You hand it in by Friday | You get the free afternoon | Was the promise broken? |
+| --- | --- | --- |
+| yes | yes | no — kept |
+| yes | no | **yes — broken** |
+| no | yes | no |
+| no | no | no |
+
+The promise is broken in exactly one case: you did your part and the teacher did not. If you did *not* hand the project in, the promise says nothing about what happens — whatever the teacher does, the promise has not been broken.
+
+Mathematicians read every "if $P$ then $Q$" this way. It is a claim that rules out one situation only: $P$ true and $Q$ false.
+
+<Narrator who="chloe">
+
+Notice what we are doing. We decide whether a compound sentence is true just from the truth or falsity of its parts — never from what the parts are *about*. That simple decision is what makes logic calculable.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Connectives and truth tables">
+
+<Definition term="proposition">
+
+A **proposition** (or statement) is a sentence that is either true or false. **Propositional variables** $P, Q, R, \dots$ stand for propositions whose truth value we leave open.
+
+</Definition>
+
+"$7$ is prime" and "$2 + 2 = 5$" are propositions (true and false). "Close the door" and "$x > 3$" are not: the first is not true or false, and the second becomes true or false only once $x$ is known — or once we say "for every $x$" or "for some $x$".
+
+<Definition term="the connectives">
+
+From propositions $P$ and $Q$ we build new ones, whose truth values are given by the table ($\mathrm{T}$ = true, $\mathrm{F}$ = false):
+
+| $P$ | $Q$ | $\neg P$ | $P \wedge Q$ | $P \vee Q$ | $P \to Q$ | $P \leftrightarrow Q$ |
+| --- | --- | --- | --- | --- | --- | --- |
+| T | T | F | T | T | T | T |
+| T | F | F | F | T | **F** | F |
+| F | T | T | F | T | T | F |
+| F | F | T | F | F | T | T |
+
+- $\neg P$, "not $P$", is true exactly when $P$ is false.
+- $P \wedge Q$, "$P$ and $Q$", is true exactly when both are true.
+- $P \vee Q$, "$P$ or $Q$", is true when **at least one** is true (inclusive or).
+- $P \to Q$, "if $P$ then $Q$" (the **conditional**), is false only when $P$ is true and $Q$ is false. $P$ is its **hypothesis** and $Q$ its **conclusion**.
+- $P \leftrightarrow Q$, "$P$ if and only if $Q$", is true when $P$ and $Q$ have the same truth value.
+
+</Definition>
+
+The exclusive "or" — "one or the other but not both", written $P \oplus Q$ — is true in the middle two rows only. In mathematics a bare "or" always means the inclusive one.
+
+<Definition term="formula, truth table">
+
+A **formula** is built from propositional variables with the connectives (and brackets). An **assignment** gives each variable the value T or F; the **truth table** of a formula lists its value under every assignment. A formula in $n$ variables has $2^n$ rows, because each variable doubles the number of cases.
+
+</Definition>
+
+Brackets are removed by a convention: $\neg$ binds most tightly, then $\wedge$ and $\vee$, then $\to$ and $\leftrightarrow$. So $\neg P \vee Q \to R$ means $\big((\neg P) \vee Q\big) \to R$. When in doubt, write the brackets.
+
+<Definition term="tautology, contradiction, equivalence">
+
+A formula is a **tautology** if it is true in every row of its truth table, a **contradiction** if it is false in every row, and **contingent** otherwise. Two formulas $\varphi$ and $\psi$ are **logically equivalent**, written $\varphi \equiv \psi$, if they have the same truth value in every row — equivalently, if $\varphi \leftrightarrow \psi$ is a tautology.
+
+</Definition>
+
+Note that $\equiv$ is not a new connective: it is a statement *about* two formulas.
+
+<Definition term="converse, inverse, contrapositive">
+
+For the conditional $P \to Q$:
+
+- its **converse** is $Q \to P$;
+- its **inverse** is $\neg P \to \neg Q$;
+- its **contrapositive** is $\neg Q \to \neg P$.
+
+</Definition>
+
+English has many ways to say $P \to Q$, and it pays to learn them:
+
+| English | Formula |
+| --- | --- |
+| if $P$ then $Q$; $Q$ if $P$; $Q$ whenever $P$ | $P \to Q$ |
+| $P$ only if $Q$ | $P \to Q$ |
+| $P$ is sufficient for $Q$; $Q$ is necessary for $P$ | $P \to Q$ |
+| $P$ if and only if $Q$ ("iff") | $P \leftrightarrow Q$ |
+| $Q$ unless $P$ | $\neg P \to Q$, which is equivalent to $P \vee Q$ |
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="A truth table with sub-formulas">
+
+Let us show that $P \to Q$ is equivalent to $\neg P \vee Q$:
+
+| $P$ | $Q$ | $\neg P$ | $\neg P \vee Q$ | $P \to Q$ |
+| --- | --- | --- | --- | --- |
+| T | T | F | T | T |
+| T | F | F | F | F |
+| F | T | T | T | T |
+| F | F | T | T | T |
+
+The last two columns agree in all four rows, so $P \to Q \equiv \neg P \vee Q$. In words: "if $P$ then $Q$" says "either $P$ fails, or $Q$ holds".
+
+</Example>
+
+<Example title="The four cards, solved">
+
+Write $V$ for "this card has a vowel" and $E$ for "this card has an even number". The claim, for each card, is $V \to E$. It is broken only by a card with $V$ true and $E$ false — a vowel with an odd number.
+
+- **A**: $V$ is true. If the back is odd, the claim is broken. *Turn it over.*
+- **K**: $V$ is false, so $V \to E$ is true whatever is on the back. *Leave it.*
+- **4**: $E$ is true, so $V \to E$ is true whatever is on the back. *Leave it.* (Turning it is checking the converse $E \to V$, which nobody claimed.)
+- **7**: $E$ is false. If the back is a vowel, the claim is broken. *Turn it over.* This is the contrapositive at work: $V \to E$ is the same claim as $\neg E \to \neg V$.
+
+The answer is **A and 7**.
+
+</Example>
+
+<Example title="Necessary versus sufficient">
+
+"You may vote in the national election **only if** you are at least 18" is $V \to A$, with $V$ = "you may vote" and $A$ = "you are at least 18". Being 18 is *necessary*. Its converse "if you are at least 18, you may vote" is a different claim — in many countries you must also be a citizen and registered. So being 18 is not *sufficient*.
+
+</Example>
+
+<Example title="Negating a conditional">
+
+What is the negation of "If it is a public holiday, then the bakery is closed"? It is **not** "If it is a public holiday, then the bakery is open". The original claim is false exactly when there is a public holiday on which the bakery is open, so the negation is
+
+> "It is a public holiday **and** the bakery is open."
+
+In symbols, $\neg(P \to Q) \equiv P \wedge \neg Q$. The negation of an "if" statement is an "and" statement.
+
+</Example>
+
+<Example title="Negating a quantified statement">
+
+"Every prime number is odd" means: for every number $n$, if $n$ is prime then $n$ is odd — $\forall n\,\big(\mathrm{Prime}(n) \to \mathrm{Odd}(n)\big)$. Its negation is "**some** prime is **not** odd":
+
+$$
+\neg\, \forall n\,\big(\mathrm{Prime}(n) \to \mathrm{Odd}(n)\big) \;\equiv\; \exists n\,\big(\mathrm{Prime}(n) \wedge \neg\mathrm{Odd}(n)\big),
+$$
+
+and this negation is true: $2$ is an even prime. The original statement is false, refuted by one counterexample. Quantifiers were introduced in <TopicLink id="math.found.quantifiers">set-builder notation and quantifiers</TopicLink>.
+
+</Example>
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: truth tables that build themselves">
+
+Type any formula; the table, its sub-formula columns and its classification update as you type. The second box tests equivalence and marks the rows where two formulas differ.
+
+<TruthTable formula="p -> q" compare="~q -> ~p" title="A conditional and its contrapositive" subtitle="Now change the second formula to q -> p (the converse) and then to ~p -> ~q (the inverse)." />
+
+Things to try:
+
+- Replace the second formula by `q -> p`. Which rows differ? Is the converse equivalent to the inverse?
+- Check De Morgan's laws: compare `not (p and q)` with `not p or not q`, and `not (p or q)` with `not p and not q`. Then try the *wrong* version `not p and not q` against `not (p and q)`.
+- Is `(p -> q) -> (q -> p)` a tautology? What about `((p -> q) and p) -> q`?
+
+<TruthTable formula="(p → q) ∧ (q → r) → (p → r)" showSubformulas={false} title="A chain of implications" subtitle="Three variables give 2³ = 8 rows. Is this argument form always valid?" />
+
+</Section>
+
+<Section id="proof" kind="proof" title="The laws, and why they hold">
+
+For propositional formulas, a truth table *is* a proof: it checks every possible case, and there are only finitely many. But tables grow fast, and reasoning often explains more. We give both.
+
+<Theorem name="Theorem 1 (contrapositive and converse)">
+
+$P \to Q \equiv \neg Q \to \neg P$. But $P \to Q$ is **not** equivalent to its converse $Q \to P$, nor to its inverse $\neg P \to \neg Q$.
+
+</Theorem>
+
+<Proof>
+
+The truth table:
+
+| $P$ | $Q$ | $P \to Q$ | $\neg Q \to \neg P$ | $Q \to P$ | $\neg P \to \neg Q$ |
+| --- | --- | --- | --- | --- | --- |
+| T | T | T | T | T | T |
+| T | F | F | F | T | T |
+| F | T | T | T | F | F |
+| F | F | T | T | T | T |
+
+The third and fourth columns agree in every row, so the conditional and its contrapositive are equivalent. In the row $P = \mathrm{F}$, $Q = \mathrm{T}$ the conditional is true but the converse and inverse are false, so neither is equivalent to it. (The converse and inverse agree with each other: the inverse is the contrapositive of the converse.)
+
+In words: $P \to Q$ is false exactly when $P$ is true and $Q$ is false; $\neg Q \to \neg P$ is false exactly when $\neg Q$ is true and $\neg P$ is false — the same situation.
+
+</Proof>
+
+<Theorem name="Theorem 2 (De Morgan's laws)">
+
+$\neg(P \wedge Q) \equiv \neg P \vee \neg Q$ and $\neg(P \vee Q) \equiv \neg P \wedge \neg Q$.
+
+</Theorem>
+
+<Proof>
+
+$\neg(P \wedge Q)$ is true exactly when $P \wedge Q$ is false, that is, when at least one of $P, Q$ is false, that is, when at least one of $\neg P, \neg Q$ is true — which is exactly when $\neg P \vee \neg Q$ is true. Similarly, $\neg(P \vee Q)$ is true exactly when $P \vee Q$ is false, that is, when both $P$ and $Q$ are false, that is, when $\neg P \wedge \neg Q$ is true. (Each argument checks all four rows at once; you can also write out the tables.)
+
+</Proof>
+
+<Theorem name="Theorem 3 (negating a conditional)">
+
+$\neg(P \to Q) \equiv P \wedge \neg Q$. Also $P \to Q \equiv \neg P \vee Q$.
+
+</Theorem>
+
+<Proof>
+
+$P \to Q$ is false in exactly one row, $P = \mathrm{T}$, $Q = \mathrm{F}$. So $\neg(P \to Q)$ is true in exactly that row — and $P \wedge \neg Q$ is true in exactly that row too. For the second equivalence, see the first worked example; or apply De Morgan to the first: $P \to Q \equiv \neg\neg(P \to Q) \equiv \neg(P \wedge \neg Q) \equiv \neg P \vee \neg\neg Q \equiv \neg P \vee Q$.
+
+</Proof>
+
+Equivalences can be chained like equalities, which gives a second proof of Theorem 1 with no table at all:
+
+$$
+P \to Q \;\equiv\; \neg P \vee Q \;\equiv\; Q \vee \neg P \;\equiv\; \neg(\neg Q) \vee \neg P \;\equiv\; \neg Q \to \neg P .
+$$
+
+Here we used Theorem 3 (twice), that $\vee$ is commutative, and that $\neg\neg Q \equiv Q$.
+
+<Theorem name="Theorem 4 (negating quantifiers)">
+
+For any property $A(x)$: $\;\neg\,\forall x\, A(x) \equiv \exists x\, \neg A(x)\;$ and $\;\neg\,\exists x\, A(x) \equiv \forall x\, \neg A(x)$. Consequently
+
+$$
+\neg\, \forall x\, \big(P(x) \to Q(x)\big) \;\equiv\; \exists x\, \big(P(x) \wedge \neg Q(x)\big).
+$$
+
+</Theorem>
+
+<Proof>
+
+"Not every $x$ has $A$" says that at least one $x$ fails to have $A$, which is $\exists x\, \neg A(x)$; and "no $x$ has $A$" says that every $x$ fails to have $A$. For the last line, apply the first rule with $A(x) = P(x) \to Q(x)$ and then Theorem 3 inside: $\neg\big(P(x) \to Q(x)\big) \equiv P(x) \wedge \neg Q(x)$.
+
+</Proof>
+
+Quantified statements about infinitely many $x$ cannot be checked by a finite truth table — this is one reason mathematics needs proofs, which the next lesson, <TopicLink id="math.found.proof-techniques">proof techniques</TopicLink>, is all about.
+
+**Valid arguments.** An argument with premises $\varphi_1, \dots, \varphi_k$ and conclusion $\psi$ is **valid** when $(\varphi_1 \wedge \dots \wedge \varphi_k) \to \psi$ is a tautology: in every row where all the premises are true, so is the conclusion.
+
+| Argument form | Premises | Conclusion | Valid? |
+| --- | --- | --- | --- |
+| modus ponens | $P \to Q$, $P$ | $Q$ | yes |
+| modus tollens | $P \to Q$, $\neg Q$ | $\neg P$ | yes |
+| hypothetical syllogism | $P \to Q$, $Q \to R$ | $P \to R$ | yes |
+| affirming the consequent | $P \to Q$, $Q$ | $P$ | **no**: row $P = \mathrm{F}$, $Q = \mathrm{T}$ |
+| denying the antecedent | $P \to Q$, $\neg P$ | $\neg Q$ | **no**: row $P = \mathrm{F}$, $Q = \mathrm{T}$ |
+
+Modus tollens is the contrapositive in action — exactly why the 7 in the card puzzle must be turned over.
+
+<Theorem name="Theorem 5 (every truth table comes from a formula)">
+
+For every $n \ge 1$ and every way of filling in the final column of a truth table with $n$ variables, there is a formula using only $\neg$, $\wedge$ and $\vee$ with exactly that truth table. In particular there are exactly $2^{2^n}$ different truth tables in $n$ variables, and each is the table of some formula.
+
+</Theorem>
+
+<Proof>
+
+For each row in which the final column is T, write the conjunction of $n$ **literals** describing that row: $P_i$ if $P_i$ is true in the row, $\neg P_i$ if it is false. This conjunction is true in that row and in no other. Now join all these conjunctions with $\vee$. The result is true exactly in the rows marked T. If no row is marked T, use the contradiction $P_1 \wedge \neg P_1$. (Such a formula is in **disjunctive normal form**.) Finally, a table has $2^n$ rows and each can be marked T or F independently, giving $2^{2^n}$ possible final columns.
+
+</Proof>
+
+For example, the table of exclusive or (T only in the rows TF and FT) gives $(P \wedge \neg Q) \vee (\neg P \wedge Q)$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Truth tables and logic in Lean">
+
+We formalise propositional logic twice: once as **computation** (formulas whose truth values are calculated, exactly as in a table) and once **inside Lean's own logic**.
+
+**Formulas as data.** A `Formula n` is a formula in $n$ variables. Its truth value in a row `v` (an assignment of `true`/`false` to the variables) is computed by `Formula.eval`. Notice how the conditional is evaluated: `!a || b`, "not $P$, or $Q$" — Theorem 3.
+
+<Lean decl="Lumenary.PropositionalLogic.Formula" />
+
+<Lean decl="Lumenary.PropositionalLogic.Formula.eval" />
+
+The rows of a truth table are listed by `valuations n`. We prove two things about it: there are $2^n$ rows, and **no row is missing**. The second is what makes the truth-table method trustworthy.
+
+<Lean decl="Lumenary.PropositionalLogic.valuations" />
+
+<Lean decl="Lumenary.PropositionalLogic.length_valuations" />
+
+<Lean decl="Lumenary.PropositionalLogic.mem_valuations" />
+
+<Lean decl="Lumenary.PropositionalLogic.isTautology" />
+
+<Lean decl="Lumenary.PropositionalLogic.isTautology_iff" />
+
+<Lean decl="Lumenary.PropositionalLogic.Equivalent" />
+
+<Lean decl="Lumenary.PropositionalLogic.equivalent_iff_tautology" />
+
+With these in place, particular laws are proved by letting Lean evaluate their truth tables (`decide`). Here `p` and `q` are the two variables of `Formula 2`.
+
+<Lean decl="Lumenary.PropositionalLogic.contrapositive_table" />
+
+<Lean decl="Lumenary.PropositionalLogic.converse_table" />
+
+<Lean decl="Lumenary.PropositionalLogic.de_morgan_table" />
+
+<Lean decl="Lumenary.PropositionalLogic.not_imp_table" />
+
+<Lean decl="Lumenary.PropositionalLogic.argument_forms" />
+
+<Narrator who="gideon">
+
+Lean's own propositions are richer than `true`/`false` values. A proof of `p → q` *is* a function turning any proof of `p` into a proof of `q`. So the laws must be proved again, by reasoning — and something interesting appears.
+
+</Narrator>
+
+**Logic in `Prop`.** From $P \to Q$ we can always get $\neg Q \to \neg P$ — the proof is a one-line function. But the way back uses **proof by contradiction** (`by_contra`), which relies on the law of excluded middle, $P \vee \neg P$. Logicians who do not assume that law (constructive mathematics, many type theories) accept the first direction and not, in general, the second. Mathlib's one-line version applies its theorem `not_imp_not`.
+
+<Lean decl="Lumenary.PropositionalLogic.contrapositive" />
+
+<Lean decl="Lumenary.PropositionalLogic.contrapositive_iff" />
+
+<Lean decl="Lumenary.PropositionalLogic.contrapositive_iff_library" />
+
+<Lean decl="Lumenary.PropositionalLogic.converse_fails" />
+
+The same split happens for De Morgan: "neither $P$ nor $Q$" is constructive, but to pass from "not both" to "one of them fails" we must decide which one, and Mathlib's `not_and_or` uses classical logic.
+
+<Lean decl="Lumenary.PropositionalLogic.de_morgan_or" />
+
+<Lean decl="Lumenary.PropositionalLogic.de_morgan_and" />
+
+<Lean decl="Lumenary.PropositionalLogic.not_imp_iff" />
+
+Finally, negating quantified statements (Theorem 4), the prime-number example, and vacuous truth:
+
+<Lean decl="Lumenary.PropositionalLogic.not_forall_imp" />
+
+<Lean decl="Lumenary.PropositionalLogic.not_every_prime_odd" />
+
+<Lean decl="Lumenary.PropositionalLogic.vacuous_truth" />
+
+What is formalised: the syntax and truth-table semantics of propositional formulas, the correctness of the truth-table test, every law of this lesson as a truth-table computation, and the same laws for Lean propositions. What is not formalised here: Theorem 5 (disjunctive normal form) for general $n$ — it is checked for $n = 2$ by the Python experiment below.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Truth tables by machine">
+
+<Narrator who="margaret">
+
+A truth table is a perfect job for a computer: list the rows, evaluate, compare. Let me check the conditional's relatives, De Morgan's laws, and then rebuild all sixteen two-variable truth tables from "not", "and" and "or" — and from NAND alone.
+
+</Narrator>
+
+<Python id="propositional_logic_truth_tables" />
+
+This is a rare situation in which checking cases *is* a proof: a two-variable formula has only four rows, and the program checks all of them. The catch is size. A formula with $n$ variables has $2^n$ rows; with $300$ variables that is more than $10^{90}$ rows, far more than could ever be checked. Deciding whether some row makes a formula true — the **satisfiability problem**, SAT — was the first problem shown to be *NP-complete* (Stephen Cook, 1971, and independently Leonid Levin, 1973). Whether it can always be solved dramatically faster than by trying all rows is the famous open **P versus NP** problem; see <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"An implication with a false hypothesis is false."** It is *true*. "If $7$ is even, then $7$ is divisible by $4$" is a true statement, because its hypothesis is false and so it can never be broken. Such statements are called **vacuously true**. They matter: "every element of the empty set is even" is true for the same reason.
+
+</Misconception>
+
+<Misconception>
+
+**"An implication and its converse say the same thing."** "If a number is divisible by $4$, it is even" is true; its converse "if a number is even, it is divisible by $4$" is false ($6$). Only the **contrapositive** is equivalent. Mixing up a statement and its converse is the fallacy of *affirming the consequent*.
+
+</Misconception>
+
+<Misconception>
+
+**"If $P$ then $Q$ means $P$ causes $Q$."** The mathematical conditional is only about truth values. "If $2 + 2 = 4$, then the Nile flows through Africa" is true — both parts are true — although neither causes the other. Everyday "if" often carries extra meaning (cause, time, relevance); logicians study other kinds of conditional too, but in mathematics $P \to Q$ means exactly "not ($P$ and not $Q$)".
+
+</Misconception>
+
+<Misconception>
+
+**"The negation of 'P and Q' is 'not P and not Q'."** By De Morgan, $\neg(P \wedge Q) \equiv \neg P \vee \neg Q$. The negation of "Amara speaks Hausa and Yoruba" is "Amara does not speak Hausa *or* does not speak Yoruba" — she might speak one of them.
+
+</Misconception>
+
+<Misconception>
+
+**"The negation of 'if P then Q' is 'if P then not Q'."** The negation is $P \wedge \neg Q$. "If it rains, the match is cancelled" is refuted by a rainy day on which the match was played — not by another "if" statement.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="sets" title="truth sets and Venn diagrams">
+
+Fix a universe $U$ and properties $P(x)$, $Q(x)$ with truth sets $A = \{x \in U : P(x)\}$ and $B = \{x \in U : Q(x)\}$. Then $P \wedge Q$, $P \vee Q$ and $\neg P$ have truth sets $A \cap B$, $A \cup B$ and the complement $A^{c}$. De Morgan's laws become $(A \cap B)^{c} = A^{c} \cup B^{c}$ and $(A \cup B)^{c} = A^{c} \cap B^{c}$. And "for every $x$, $P(x) \to Q(x)$" says exactly that $A \subseteq B$: the conditional is the logical form of the subset relation, which is why it is false only on $A \setminus B$. See <TopicLink id="math.found.sets">sets</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="logic as arithmetic modulo 2">
+
+Write $1$ for true and $0$ for false, and compute modulo $2$ (so $1 + 1 = 0$). Then $P \wedge Q = PQ$, $\neg P = 1 + P$, $P \oplus Q = P + Q$, $P \vee Q = P + Q + PQ$ and $P \to Q = 1 + P + PQ$. Every truth table is the table of a polynomial in which no variable appears squared (because $P^2 = P$ for $P \in \{0, 1\}$) — its *algebraic normal form*, studied by Ivan Zhegalkin in 1927 — and a formula is a tautology exactly when its polynomial is the constant $1$. George Boole's original insight was that logic could be done by algebra; today $\{0, 1\}$ with these operations is the field $\mathbb{F}_2$, the arithmetic of computers.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="rows are the corners of a cube">
+
+The $2^n$ rows of a truth table are the corners of an $n$-dimensional cube $\{0, 1\}^n$: for $n = 3$, an ordinary cube with corners such as $(1, 0, 1)$. A formula is just a choice of which corners are "true". A literal such as $\neg P_2$ picks out a face (half the corners), a conjunction of literals picks out a smaller sub-cube, and a formula in disjunctive normal form covers the true corners by sub-cubes. Simplifying a formula means covering the same corners with fewer, larger sub-cubes — which is exactly what the *Karnaugh maps* used by circuit designers (Maurice Karnaugh, 1953) do, by unfolding the cube flat. Two rows differing in one variable are neighbouring corners joined by an edge.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="switches, circuits and NAND">
+
+In 1937 Claude Shannon showed in his master's thesis that circuits of electrical switches compute exactly these truth functions: switches in series behave like $\wedge$, in parallel like $\vee$. Every chip in a phone is a vast propositional formula. The computer experiment above checks that the single connective NAND, $\neg(P \wedge Q)$, can build every truth table — which is why chips can be made from millions of copies of one kind of gate. Henry Sheffer published this property of NAND in 1913; Charles Sanders Peirce had noticed the same for NOR decades earlier in unpublished work.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="truth versus proof">
+
+There are two ways to establish a law such as $P \to Q \equiv \neg Q \to \neg P$: compute its truth table, or *derive* it with rules of inference such as modus ponens. For propositional logic the two agree — every tautology can be derived, and only tautologies can (a completeness theorem, proved by Emil Post in 1921). For logics with quantifiers the story is subtler and deeper; see <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink>. And as the Lean section shows, if one does not assume excluded middle, some classical tautologies stop being derivable — the starting point of constructive logic and of <TopicLink id="math.found.type-theory">type theory</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ancient Greece.** Aristotle (4th century BCE) analysed arguments built from terms ("all A are B"). The **Stoic** logicians, above all Chrysippus of Soli (3rd century BCE), developed a logic of whole propositions joined by "if", "and" and "or", including the forms we call modus ponens and modus tollens. Philo of Megara proposed reading "if … then" as false only when the first part is true and the second false — our conditional. The debate with his teacher Diodorus Cronus over which conditionals are true was so famous that, as Sextus Empiricus reports, the poet Callimachus joked that even the crows on the rooftops cawed about it.
+- **India.** The Nyāya school and later Buddhist logicians such as Dignāga (5th–6th century) and Dharmakīrti (7th century) built detailed theories of valid inference (*anumāna*), in a framework quite different from the Greek one.
+- **The Islamic world.** Ibn Sīnā (Avicenna, c. 980–1037) developed a theory of conditional and disjunctive propositions and the arguments built from them, which was studied and extended by later logicians writing in Arabic and Persian.
+- **Algebra of logic.** In 1847 George Boole published *The Mathematical Analysis of Logic* and Augustus De Morgan his *Formal Logic*; the laws now named after De Morgan were known in some form to medieval logicians such as William of Ockham. Gottlob Frege's *Begriffsschrift* (1879) gave the first fully formal system of logic with quantifiers.
+- **Truth tables** in their modern form appear in the work of Ludwig Wittgenstein and Emil Post (both 1921), with earlier anticipations by Charles Sanders Peirce. Post also proved the completeness of propositional logic.
+- **Computation.** Claude Shannon (1937) connected logic to switching circuits; Stephen Cook (1971) and Leonid Levin (1973) showed that satisfiability is NP-complete.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Daniel J. Velleman, *How to Prove It: A Structured Approach* (1994), chapter 1 on sentential logic.
+- Herbert B. Enderton, *A Mathematical Introduction to Logic* (1972), chapter 1 on sentential logic, for a rigorous university treatment.
+- Raymond Smullyan, *What Is the Name of This Book?* (1978), puzzles of knights and knaves that train exactly the reasoning of this lesson.
+- George Boole, *An Investigation of the Laws of Thought* (1854), the classic that turned logic into algebra.
+
+</Section>

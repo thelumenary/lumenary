@@ -1,0 +1,483 @@
+---
+slug: langlands-programme
+topic: math.number.langlands-programme
+title: "The Langlands programme: an orientation"
+subtitle: How a polynomial factors modulo $p$ is secretly governed by the Fourier coefficients of a symmetric function on the upper half-plane. A map of one of the great unifying visions of mathematics — what is proved, and what is still a dream.
+level: research
+ages: Research orientation (algebraic and analytic number theory, representation theory assumed)
+minutes: 140
+order: 8005
+objectives:
+  - Trace reciprocity from quadratic reciprocity through cyclotomic fields to class field theory, prove quadratic reciprocity via Gauss sums and Frobenius elements, and state the Kronecker–Weber theorem
+  - Describe modular forms, Hecke eigenforms, automorphic representations and Galois representations, and explain what it means for them to correspond through matching L-functions
+  - Prove that the coefficients of Ramanujan's Δ are multiplicative, as an example of Hecke theory, and check numerically that an elliptic curve and a weight-one Artin representation are modular
+  - Explain functoriality, the modularity theorem and the geometric Langlands programme as parts of the programme, separating proved cases from conjectures
+narrators: []
+lean:
+  - Lumenary.LanglandsProgramme.quadratic_reciprocity
+  - Lumenary.LanglandsProgramme.neg_one_not_square
+  - Lumenary.LanglandsProgramme.neg_one_square_iff
+  - Lumenary.LanglandsProgramme.sum_two_squares_mod_four
+  - Lumenary.LanglandsProgramme.fermat_two_squares
+  - Lumenary.LanglandsProgramme.five_square_iff
+  - Lumenary.LanglandsProgramme.cyclotomicGalois
+  - Lumenary.LanglandsProgramme.cyclotomic_frobenius
+  - Lumenary.LanglandsProgramme.cyclotomic_residue_degree
+  - Lumenary.LanglandsProgramme.cyclotomic_unramified
+  - Lumenary.LanglandsProgramme.splits_completely_iff
+  - Lumenary.LanglandsProgramme.dirichlet_primes_in_ap
+  - Lumenary.LanglandsProgramme.modular_transformation
+  - Lumenary.LanglandsProgramme.discriminant_first_coefficient
+compute: [langlands_programme_reciprocity, langlands_programme_modularity]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Three polynomials modulo p">
+
+Fix a polynomial with integer coefficients and ask, for each prime $p$: how many roots does it have modulo $p$?
+
+1. **$x^2 + 1$.** For odd $p$, it has two roots modulo $p$ when $p \equiv 1 \pmod 4$ and none when $p \equiv 3 \pmod 4$. The answer depends only on $p \bmod 4$.
+
+2. **$x^3 - x - 1$.** It has no roots modulo $13$ and three modulo $59$, although $13 \equiv 59 \pmod{23}$ — and one can show that **no** congruence condition, to any modulus, decides the number of roots. Yet there is a rule. Expand
+
+   $$
+   \eta(z)\eta(23z) = q\prod_{n \ge 1}(1 - q^n)(1 - q^{23n}) = q - q^2 - q^3 + q^6 + q^8 - q^{13} - q^{16} + q^{23} - \cdots
+   $$
+
+   Then for every prime $p \neq 23$, the number of roots of $x^3 - x - 1$ modulo $p$ is the coefficient of $q^p$ **plus one**. (The coefficient of $q^{13}$ is $-1$: no roots. The coefficient of $q^{59}$ is $2$: three roots.)
+
+3. **$y^2 + y = x^3 - x^2 - 10x - 20$**, an elliptic curve. Let $a_p = p - \#\{(x, y) \bmod p\}$. Then $a_p$ is the coefficient of $q^p$ in $q\prod_{n\ge1}(1 - q^n)^2(1 - q^{11n})^2$, for every prime $p$.
+
+The infinite products are **modular forms**: holomorphic functions on the upper half-plane with an enormous group of symmetries. That arithmetic data — how polynomials factor mod $p$, how many points a curve has mod $p$ — should be encoded in the Fourier coefficients of such symmetric functions is the heart of the **Langlands programme**. In a 1967 letter to André Weil, Robert Langlands proposed that this is a universal phenomenon: arithmetic objects (Galois representations) correspond to analytic objects (automorphic representations), with matching $L$-functions, and that the analytic objects for different groups are related by a principle of **functoriality**.
+
+This lesson is a map. It builds on <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>, <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink> and <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>, and on the companion lesson on <TopicLink id="math.number.arithmetic-geometry">elliptic curves</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Two sides of one dictionary">
+
+On the **Galois side** live the symmetries of algebraic numbers. The absolute Galois group $G_\Q = \operatorname{Gal}(\overline{\Q}/\Q)$ is a huge profinite group; we study it through its representations $\rho: G_\Q \to GL_n$. For almost every prime $p$ there is a conjugacy class $\operatorname{Frob}_p$ in $G_\Q$, and its characteristic polynomial under $\rho$ records how $p$ behaves — how a polynomial factors mod $p$, or how many points a variety has mod $p$.
+
+On the **automorphic side** live functions with symmetry: modular forms, and more generally automorphic forms on $GL_n$ over the adèles. They are eigenfunctions of commuting **Hecke operators** $T_p$, one for each prime, and the eigenvalues are numbers attached to primes.
+
+**Reciprocity** says that every (suitable) $\rho$ matches an automorphic $\pi$ with "Frobenius eigenvalues = Hecke eigenvalues", and conversely. Both sides make $L$-functions, and matching means equal $L$-functions:
+
+<CommutativeDiagram
+  objects={[
+    { id: "G", tex: "\\rho : G_{\\mathbb{Q}} \\to GL_n", row: 0, col: 0 },
+    { id: "A", tex: "\\pi \\text{ on } GL_n(\\mathbb{A}_{\\mathbb{Q}})", row: 0, col: 2 },
+    { id: "L", tex: "L(s)", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "G", to: "A", tex: "\\text{reciprocity}" },
+    { from: "A", to: "G", tex: "" },
+    { from: "G", to: "L", tex: "L(\\rho, s)", labelSide: "right" },
+    { from: "A", to: "L", tex: "L(\\pi, s)" },
+  ]}
+  caption="The two sides of the Langlands correspondence meet in their L-functions: $\operatorname{tr}\rho(\operatorname{Frob}_p)$ matches the Hecke eigenvalue of $\pi$ at $p$."
+/>
+
+For $n = 1$ this dictionary is **class field theory**: one-dimensional Galois representations correspond to Dirichlet characters (and Hecke characters), and the first example above is its simplest case. For $n = 2$ over $\Q$, example 2 is an instance of Hecke's theory of theta series and example 3 of the work of Eichler and Shimura, now a special case of the modularity theorem. For $n \ge 3$ most of the dictionary is conjectural.
+
+<Analogy>
+
+Think of a prime $p$ as a "frequency". The Galois side tells you how an arithmetic object "vibrates" at frequency $p$ (through $\operatorname{Frob}_p$); the automorphic side is a single function whose Fourier coefficients list all these vibrations at once. Reciprocity says such a function always exists. The analogy is informal: the precise statements are about traces of Frobenius and Hecke eigenvalues.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="Frobenius element">
+
+Let $L/\Q$ be a finite Galois extension and $p$ a prime unramified in $L$. For a prime $\mathfrak{P}$ of $L$ above $p$, the **Frobenius element** $\operatorname{Frob}_{\mathfrak{P}} \in \operatorname{Gal}(L/\Q)$ is the unique $\sigma$ with $\sigma(x) \equiv x^p \pmod{\mathfrak{P}}$ for all algebraic integers $x$ of $L$; it generates the decomposition group of $\mathfrak{P}$. Changing $\mathfrak{P}$ conjugates it, so $p$ determines a conjugacy class $\operatorname{Frob}_p$. If $L$ is the splitting field of $f$ and $p \nmid \operatorname{disc} f$, the cycle type of $\operatorname{Frob}_p$ acting on the roots of $f$ is the list of degrees of the irreducible factors of $f \bmod p$.
+
+</Definition>
+
+<Definition term="Galois representation">
+
+A **Galois representation** of a number field $K$ is a continuous homomorphism $\rho: G_K = \operatorname{Gal}(\overline{K}/K) \to GL_n(E)$, where $E$ is a topological field — $\C$ (Artin representations, which have finite image), or a finite extension of $\Q_\ell$ ($\ell$-adic representations, such as the Tate module of an elliptic curve). Its **$L$-function** is $L(\rho, s) = \prod_{\mathfrak{p}} \det\big(1 - \rho(\operatorname{Frob}_{\mathfrak{p}}) N\mathfrak{p}^{-s} \mid V^{I_\mathfrak{p}}\big)^{-1}$.
+
+</Definition>
+
+<Definition term="class field theory">
+
+**Class field theory** describes the abelian extensions of a number field $K$ in terms of data intrinsic to $K$. In idelic form: there is a continuous surjective homomorphism, the **Artin map**, $K^\times \backslash \mathbb{A}_K^\times \to \operatorname{Gal}(K^{\mathrm{ab}}/K)$, sending a uniformiser at an unramified prime $\mathfrak{p}$ to $\operatorname{Frob}_\mathfrak{p}$, whose kernel is the connected component of the identity. Equivalently, finite abelian extensions of $K$ correspond to open subgroups of finite index of the idèle class group (classically: to subgroups of ray class groups).
+
+</Definition>
+
+<Definition term="modular forms and cusp forms">
+
+For $\Gamma_0(N) = \left\{\left(\begin{smallmatrix} a & b \\ c & d \end{smallmatrix}\right) \in SL_2(\Z) : N \mid c\right\}$, a **modular form** of weight $k$ and level $N$ is a holomorphic $f$ on the upper half-plane $\mathbb{H}$ with
+
+$$
+f\left(\frac{az + b}{cz + d}\right) = (cz + d)^k f(z) \quad \text{for all } \begin{pmatrix} a & b \\ c & d \end{pmatrix} \in \Gamma_0(N),
+$$
+
+that is holomorphic at the cusps. Since $z \mapsto z + 1$ lies in $\Gamma_0(N)$, $f$ has a **$q$-expansion** $f = \sum_{n \ge 0} a_n q^n$, $q = e^{2\pi i z}$; $f$ is a **cusp form** if it vanishes at every cusp ($a_0 = 0$ at $\infty$, and similarly at the other cusps). The spaces $M_k(\Gamma_0(N)) \supset S_k(\Gamma_0(N))$ are finite-dimensional. (Weight-one forms with a character, such as $\eta(z)\eta(23z)$, are defined in the same way with a factor $\chi(d)$.)
+
+</Definition>
+
+<Definition term="Hecke operators and eigenforms">
+
+For $p \nmid N$, the **Hecke operator** $T_p$ acts on $S_k(\Gamma_0(N))$ by
+
+$$
+a_m(T_p f) = a_{mp}(f) + p^{k-1} a_{m/p}(f) \qquad (a_{m/p} = 0 \text{ unless } p \mid m),
+$$
+
+and in general $a_m(T_n f) = \sum_{d \mid \gcd(m, n),\ \gcd(d, N) = 1} d^{k-1} a_{mn/d^2}(f)$. The $T_n$ commute, $T_mT_n = T_{mn}$ when $\gcd(m, n) = 1$, and $T_{p^{r+1}} = T_pT_{p^r} - p^{k-1}T_{p^{r-1}}$ for $p \nmid N$. A **normalised eigenform** is a simultaneous eigenvector with $a_1 = 1$; a **newform** is a normalised eigenform not coming from a lower level.
+
+</Definition>
+
+<Definition term="automorphic representation (rough)">
+
+Let $\mathbb{A}$ be the adèles of $\Q$ and $G = GL_n$. A **cuspidal automorphic representation** $\pi$ of $GL_n(\mathbb{A})$ is, roughly, an irreducible representation of $GL_n(\mathbb{A})$ occurring in the space of cusp forms on $GL_n(\Q) \backslash GL_n(\mathbb{A})$ (with a fixed central character). It factors as a restricted tensor product $\pi = \bigotimes'_v \pi_v$ of local representations; for almost all $p$, $\pi_p$ is unramified and determined by a conjugacy class (its **Satake parameter**) in $GL_n(\C)$, which defines $L(\pi, s) = \prod_p \det(1 - A_p p^{-s})^{-1}$ up to finitely many factors. A newform $f$ of weight $k$ gives a cuspidal automorphic representation of $GL_2(\mathbb{A})$; a Dirichlet character gives one of $GL_1(\mathbb{A}) = \mathbb{A}^\times$. For a general reductive group $G$ the Satake parameters live in the **Langlands dual group** $\widehat{G}(\C)$, whose root datum is dual to that of $G$ (roots and coroots exchanged): $\widehat{GL_n} = GL_n$, $\widehat{SO_{2n+1}} = Sp_{2n}$, $\widehat{SL_n} = PGL_n$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Quadratic fields: reciprocity with a conductor">
+
+An odd prime $p \nmid d$ splits in $\Q(\sqrt d)$ exactly when $d$ is a square mod $p$. For $d = -1$: when $p \equiv 1 \pmod 4$. For $d = 5$: when $p \equiv \pm 1 \pmod 5$ (formalised below). For $d = -23$: when $p$ is a square mod $23$. In each case the condition is a congruence modulo $|D|$, the discriminant of the field: this is the **conductor**, and it is quadratic reciprocity in action. The splitting is described by the Dirichlet character $\chi_D(p) = \left(\frac{D}{p}\right)$, a one-dimensional Galois representation that is also a $GL_1$-automorphic form.
+
+</Example>
+
+<Example title="Cyclotomic fields: Frobenius is p mod n">
+
+In $\Q(\zeta_n)$, the automorphism $\sigma_a: \zeta_n \mapsto \zeta_n^a$ gives $\operatorname{Gal}(\Q(\zeta_n)/\Q) \cong (\Z/n\Z)^\times$. For $p \nmid n$, $\sigma_p(x) \equiv x^p$ modulo any prime above $p$ (expand $(\sum c_i\zeta^i)^p$ in characteristic $p$), so $\operatorname{Frob}_p = \sigma_p$: **the Frobenius at $p$ is the residue class $p \bmod n$**. Consequently $p$ splits into $\varphi(n)/f$ primes of degree $f = \operatorname{ord}_n(p)$, and splits completely iff $p \equiv 1 \pmod n$. All of this is in Mathlib (see the formal section).
+
+</Example>
+
+<Example title="A weight-one form and a non-abelian cubic">
+
+The cubic $x^3 - x - 1$ has discriminant $-23$ and Galois group $S_3$; its splitting field $H$ is the Hilbert class field of $K = \Q(\sqrt{-23})$, whose class group has order $3$. The two-dimensional irreducible representation $\rho$ of $S_3$ is induced from a character of order $3$ of the class group of $K$, and Hecke's theory of theta series makes it modular: $L(\rho, s) = L(f, s)$ with
+
+$$
+f = \tfrac12\big(\theta_{x^2 + xy + 6y^2} - \theta_{2x^2 + xy + 3y^2}\big) = \eta(z)\eta(23z),
+$$
+
+a weight-one cusp form of level $23$ with character $\left(\frac{-23}{\cdot}\right)$. Since $\operatorname{tr}\rho(\operatorname{Frob}_p) = (\text{number of roots of } x^3 - x - 1 \bmod p) - 1$, this gives the rule of the motivation. Concretely, for $p \neq 23$: three roots if $p = x^2 + xy + 6y^2$ (e.g. $59 = 5^2 + 5\cdot 2 + 6 \cdot 2^2$), none if $p = 2x^2 \pm xy + 3y^2$ (e.g. $13 = 2 \cdot 2^2 + 2 + 3$), and one root if $\left(\frac{-23}{p}\right) = -1$. Because $H/\Q$ is not abelian, no congruence condition can separate the first two cases.
+
+</Example>
+
+<Example title="Ramanujan's Δ">
+
+$\Delta(z) = q\prod_{n \ge 1}(1 - q^n)^{24} = \sum_{n \ge 1} \tau(n) q^n = q - 24q^2 + 252q^3 - 1472q^4 + 4830q^5 - \cdots$ is a cusp form of weight $12$ for $SL_2(\Z)$. Ramanujan (1916) conjectured that $\tau$ is multiplicative, that $\tau(p^{r+1}) = \tau(p)\tau(p^r) - p^{11}\tau(p^{r-1})$, and that $|\tau(p)| \le 2p^{11/2}$. The first two were proved by Mordell (1917; Theorem 5 below), the third by Deligne (1974) as a consequence of his proof of the Weil conjectures. Deligne (1969) attached to $\Delta$ an $\ell$-adic Galois representation $\rho_{\Delta, \ell}: G_\Q \to GL_2(\Q_\ell)$ with $\operatorname{tr}\rho(\operatorname{Frob}_p) = \tau(p)$, which explains congruences such as Ramanujan's $\tau(n) \equiv \sigma_{11}(n) \pmod{691}$: modulo $691$ the representation becomes a sum of two characters.
+
+</Example>
+
+<Example title="An elliptic curve of conductor 11">
+
+$E = 11a1$ and $f = q\prod(1 - q^n)^2(1 - q^{11n})^2 \in S_2(\Gamma_0(11))$, the unique newform of that level: $a_p(E) = a_p(f)$ for all $p$ (Eichler 1954, Shimura). In representation-theoretic terms, the Galois representation on the Tate module of $E$ and the automorphic representation generated by $f$ correspond. The modularity theorem says this happens for every elliptic curve over $\Q$.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central results">
+
+<Theorem name="Lemma 1 (the quadratic Gauss sum)">
+
+Let $q$ be an odd prime, $\zeta = e^{2\pi i/q}$, and $g = \sum_{a=1}^{q-1} \left(\frac{a}{q}\right)\zeta^a$. Then $g^2 = q^* := (-1)^{(q-1)/2} q$. In particular $\sqrt{q^*} \in \Q(\zeta_q)$.
+
+</Theorem>
+
+<Proof>
+
+Write $\chi(a) = \left(\frac{a}{q}\right)$, a multiplicative character of $(\Z/q)^\times$ with $\sum_{a \ne 0}\chi(a) = 0$. Then $g^2 = \sum_{a, b \ne 0} \chi(ab)\zeta^{a+b}$. Substitute $b = ac$ (for fixed $a$, $c$ runs over the non-zero residues as $b$ does) and use $\chi(a^2c) = \chi(c)$:
+
+$$
+g^2 = \sum_{c \ne 0} \chi(c) \sum_{a \ne 0} \zeta^{a(1 + c)}.
+$$
+
+The inner sum is $q - 1$ if $c = -1$ and $-1$ otherwise (a sum of all non-trivial $q$-th roots of unity). Hence $g^2 = \chi(-1)(q - 1) - \sum_{c \ne 0, -1}\chi(c) = \chi(-1)(q-1) + \chi(-1) = \chi(-1)\,q$, and $\chi(-1) = (-1)^{(q-1)/2}$ by Euler's criterion.
+
+</Proof>
+
+<Theorem name="Theorem 2 (quadratic reciprocity, Gauss 1796)">
+
+For distinct odd primes $p, q$: $\left(\frac{p}{q}\right)\left(\frac{q}{p}\right) = (-1)^{\frac{p-1}{2}\frac{q-1}{2}}$.
+
+</Theorem>
+
+<Proof>
+
+We give the proof that explains *why*: via Frobenius elements in $\Q(\zeta_q)$. Let $G = \operatorname{Gal}(\Q(\zeta_q)/\Q) \cong (\Z/q)^\times$, a cyclic group of even order $q - 1$. It has a unique subgroup $H$ of index $2$, the squares, and so $\Q(\zeta_q)$ has a unique quadratic subfield; by Lemma 1 it is $\Q(\sqrt{q^*})$. Now compute, for the prime $p \ne q$ (unramified in $\Q(\zeta_q)$):
+
+- $p$ splits in $\Q(\sqrt{q^*})$ $\iff$ $q^*$ is a square mod $p$ $\iff$ $\left(\frac{q^*}{p}\right) = 1$ (Dedekind–Kummer: $x^2 - q^*$ factors mod $p$; $p$ is odd and does not divide $q^*$).
+- $p$ splits in $\Q(\sqrt{q^*})$ $\iff$ $\operatorname{Frob}_p$ acts trivially on $\Q(\sqrt{q^*})$ $\iff$ $\operatorname{Frob}_p \in H$ $\iff$ $p \bmod q$ is a square $\iff$ $\left(\frac{p}{q}\right) = 1$, because $\operatorname{Frob}_p = \sigma_p$ corresponds to $p \bmod q$ (the cyclotomic example).
+
+So $\left(\frac{p}{q}\right) = \left(\frac{q^*}{p}\right) = \left(\frac{-1}{p}\right)^{(q-1)/2}\left(\frac{q}{p}\right) = (-1)^{\frac{p-1}{2}\frac{q-1}{2}}\left(\frac{q}{p}\right)$, using Euler's criterion $\left(\frac{-1}{p}\right) = (-1)^{(p-1)/2}$. Multiply by $\left(\frac{q}{p}\right) = \pm 1$.
+
+</Proof>
+
+The structure of this proof is the structure of the subject: an arithmetic question about splitting of primes (Galois side) is answered by identifying the Frobenius with an "automorphic" invariant, the residue class $p \bmod q$, which is a character of the idèle class group of $\Q$. The proof also shows that $\Q(\sqrt{q^*})$ lies in a cyclotomic field — the quadratic case of the next theorem.
+
+<Theorem name="Theorem 3 (Kronecker–Weber; Kronecker 1853, Weber 1886, Hilbert 1896)">
+
+Every finite abelian extension of $\Q$ is contained in a cyclotomic field $\Q(\zeta_n)$.
+
+</Theorem>
+
+Kronecker stated it, Weber gave a proof with a gap, and Hilbert gave the first complete proof. Standard modern proofs reduce to local fields and analyse ramification (Washington, *Introduction to Cyclotomic Fields*, Ch. 14), or deduce it from class field theory. With the cyclotomic example it gives **class field theory over $\Q$**: abelian extensions of $\Q$ correspond to subgroups of the groups $(\Z/n)^\times$, and Frobenius elements to residue classes. Over a general number field, Takagi (1920) and Artin (1927) proved the corresponding theorem with ray class groups replacing $(\Z/n)^\times$; generating the abelian extensions *explicitly* (Hilbert's twelfth problem) is understood for $\Q$ and imaginary quadratic fields (complex multiplication), and Dasgupta and Kakde (2021–23) gave a $p$-adic answer for totally real fields.
+
+<Theorem name="Proposition 4 (eigenforms have multiplicative coefficients)">
+
+Let $f = \sum a_n q^n \in S_k(SL_2(\Z))$ be non-zero with $T_n f = \lambda_n f$ for every $n \ge 1$. Then $a_n = \lambda_n a_1$ for all $n$, so $a_1 \neq 0$. Normalising $a_1 = 1$: $a_{mn} = a_m a_n$ when $\gcd(m, n) = 1$, and $a_{p^{r+1}} = a_pa_{p^r} - p^{k-1}a_{p^{r-1}}$ for every prime $p$.
+
+</Theorem>
+
+<Proof>
+
+By the formula for $T_n$ with $m = 1$, the only divisor of $\gcd(1, n)$ is $d = 1$, so $a_1(T_nf) = a_n(f)$. But $a_1(T_nf) = a_1(\lambda_nf) = \lambda_na_1$. Hence $a_n = \lambda_na_1$ for every $n$; if $a_1$ were $0$, all coefficients would vanish and $f = 0$. With $a_1 = 1$ we have $a_n = \lambda_n$, and the relations $T_mT_n = T_{mn}$ and $T_{p^{r+1}} = T_pT_{p^r} - p^{k-1}T_{p^{r-1}}$ between the operators become the stated relations between their eigenvalues.
+
+</Proof>
+
+The same argument works at level $N$ for $n$ prime to $N$; to conclude $a_1 \neq 0$ one also needs the operators $U_p$ for $p \mid N$, or one restricts to newforms.
+
+<Theorem name="Theorem 5 (Mordell 1917)">
+
+$\tau(mn) = \tau(m)\tau(n)$ for coprime $m, n$, and $\tau(p^{r+1}) = \tau(p)\tau(p^r) - p^{11}\tau(p^{r-1})$.
+
+</Theorem>
+
+<Proof>
+
+The space $S_{12}(SL_2(\Z))$ is one-dimensional, spanned by $\Delta$ (by the dimension formula for level one: $\dim M_{12} = 2$, with $M_{12} = \C E_{12} \oplus \C\Delta$). Each $T_n$ preserves $S_{12}$, so $T_n\Delta = \lambda_n\Delta$ for every $n$. Since $\tau(1) = 1$, Proposition 4 applies.
+
+</Proof>
+
+The proof is a template: **one-dimensionality forces an eigenform, and eigenforms have Euler products**, $L(\Delta, s) = \prod_p (1 - \tau(p)p^{-s} + p^{11 - 2s})^{-1}$. In general $S_k(\Gamma_0(N))$ has a basis of newforms and oldforms, and multiplicity one (Atkin–Lehner) identifies newforms with their Hecke eigenvalues.
+
+<Theorem name="Theorem 6 (Galois representations from modular forms)">
+
+Let $f$ be a newform of weight $k \ge 1$, level $N$ and character $\varepsilon$, with coefficients in a number field $E_f$. For each prime $\lambda$ of $E_f$ above $\ell$ there is a continuous irreducible representation $\rho_{f,\lambda}: G_\Q \to GL_2(E_{f,\lambda})$, unramified outside $N\ell$, with $\operatorname{tr}\rho_{f,\lambda}(\operatorname{Frob}_p) = a_p(f)$ and $\det\rho_{f,\lambda}(\operatorname{Frob}_p) = \varepsilon(p)p^{k-1}$ for $p \nmid N\ell$. For $k = 2$ (Eichler–Shimura) it is cut out of the Tate module of the Jacobian of $X_0(N)$; for $k \ge 2$ (Deligne, 1969–71) from the étale cohomology of Kuga–Sato varieties; for $k = 1$ (Deligne–Serre, 1974) it comes from a representation into $GL_2(\C)$ with finite image.
+
+</Theorem>
+
+The converse direction is the hard one.
+
+<Theorem name="Theorem 7 (modularity; Wiles, Taylor–Wiles 1995; Breuil–Conrad–Diamond–Taylor 2001)">
+
+For every elliptic curve $E/\Q$ there is a newform $f$ of weight $2$ and level $N_E$ with $\rho_{E,\ell} \cong \rho_{f,\ell}$ for all $\ell$, equivalently $a_p(E) = a_p(f)$ for all $p$.
+
+</Theorem>
+
+Related reciprocity theorems for $GL_2$ over $\Q$: **Serre's modularity conjecture** — every odd irreducible $\bar\rho: G_\Q \to GL_2(\overline{\mathbb{F}}_\ell)$ comes from a newform — was proved by Khare and Wintenberger (2009, with Kisin), and implies **Artin's conjecture** for odd two-dimensional complex representations of $G_\Q$ (earlier, Langlands (1980) and Tunnell (1981) had done the tetrahedral and octahedral cases using base change). See the elliptic-curves lesson for the consequence for Fermat's Last Theorem.
+
+<Theorem name="Conjecture 8 (Langlands reciprocity, one form)">
+
+Irreducible $\ell$-adic Galois representations $\rho: G_\Q \to GL_n(\overline{\Q}_\ell)$ that are unramified almost everywhere and de Rham at $\ell$ (the Fontaine–Mazur "geometric" ones) correspond bijectively to cuspidal automorphic representations $\pi$ of $GL_n(\mathbb{A}_\Q)$ that are algebraic at infinity, with $L(\rho, s) = L(\pi, s)$ (suitably normalised) — that is, the characteristic polynomial of $\rho(\operatorname{Frob}_p)$ matches the Satake parameter of $\pi_p$ for almost all $p$.
+
+</Theorem>
+
+Known: $n = 1$ (class field theory, over any number field); much of $n = 2$ over $\Q$ and over totally real fields; the direction "automorphic $\Rightarrow$ Galois" for regular algebraic self-dual representations of $GL_n$ over CM and totally real fields (Clozel, Harris–Taylor, Shin, Chenevier–Harris and others) and, since Harris–Lan–Taylor–Thorne (2016) and Scholze (2015), without self-duality; and many "potential" cases (Taylor and collaborators), which give the Sato–Tate theorem. Open: the general case, notably the direction "Galois $\Rightarrow$ automorphic" in dimension $n \ge 3$.
+
+<Theorem name="Conjecture 9 (functoriality)">
+
+Let $G$ and $H$ be connected reductive groups over $\Q$ (say quasi-split) and $r: {}^LH \to {}^LG$ an $L$-homomorphism between their $L$-groups. For every automorphic representation $\pi$ of $H(\mathbb{A})$ there is an automorphic representation $\Pi$ of $G(\mathbb{A})$ whose local Satake parameters are the images under $r$ of those of $\pi$ at almost all places.
+
+</Theorem>
+
+Functoriality for $H = GL_2$, $G = GL_{n+1}$ and $r = \operatorname{Sym}^n$ would give the Ramanujan conjecture and, via analytic properties of the symmetric-power $L$-functions, the Sato–Tate law. Known cases include: Jacquet–Langlands (1970, inner forms of $GL_2$); $\operatorname{Sym}^2$ (Gelbart–Jacquet, 1978); cyclic base change for $GL_n$ (Arthur–Clozel, 1989); $\operatorname{Sym}^3$ (Kim–Shahidi, 2002) and $\operatorname{Sym}^4$ (Kim, 2003); **all** symmetric powers of holomorphic newforms (Newton–Thorne, 2021); and endoscopic transfer from classical groups to $GL_n$ (Arthur, 2013), which needed Ngô Bảo Châu's proof of the Fundamental Lemma (2008–10). Functoriality in general is an **open conjecture**.
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: known, open, and parallel programmes">
+
+**Local Langlands.** Over a $p$-adic field $F$, irreducible smooth representations of $GL_n(F)$ correspond to $n$-dimensional Weil–Deligne representations of the Weil group of $F$: proved by Harris–Taylor and by Henniart (1998–2000), with a third proof by Scholze (2013). For general groups the correspondence is expected to be finite-to-one ("$L$-packets"); Fargues and Scholze (2021) constructed the semisimplified parameters for every reductive group by "geometrising" the local correspondence on the Fargues–Fontaine curve.
+
+**Function fields.** Replace $\Q$ by the field of rational functions of a curve over $\mathbb{F}_q$. Drinfeld proved global Langlands for $GL_2$ (1974–), Laurent Lafforgue for $GL_n$ (2002), and Vincent Lafforgue constructed the automorphic-to-Galois direction for every reductive group (2018), using moduli of shtukas.
+
+**Geometric Langlands.** Replace the curve over $\mathbb{F}_q$ by a complex algebraic curve $X$. Galois representations become local systems (flat $\widehat G$-bundles) on $X$, and automorphic forms become sheaves (D-modules) on the moduli stack $\operatorname{Bun}_G$ of $G$-bundles. The conjecture, in the form of Beilinson–Drinfeld and Arinkin–Gaitsgory, is an equivalence of categories. A proof of the unramified global geometric Langlands conjecture in characteristic $0$ was announced in 2024 by Gaitsgory, Raskin and collaborators; it spans several long papers. This is analogous to, but logically independent of, the arithmetic conjectures: progress in one does not settle the other.
+
+**Open problems** (well documented; consult recent surveys for the current state): functoriality in general; reciprocity for $GL_n$, $n \ge 3$, over $\Q$ in general; Artin's conjecture that $L(\rho, s)$ is entire for every non-trivial irreducible Artin representation (open, for instance, for even icosahedral representations in dimension $2$, and in general in dimension $\ge 3$); the Ramanujan conjecture for Maass forms, whose archimedean part is Selberg's eigenvalue conjecture $\lambda_1 \ge \tfrac14$ for congruence subgroups (the best bound, $\lambda_1 \ge \tfrac{975}{4096}$, is due to Kim and Sarnak); the Birch and Swinnerton-Dyer conjecture and its generalisations (Beilinson–Bloch–Kato), which concern special values of the $L$-functions this programme produces.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Reciprocity in Lean and Mathlib">
+
+Mathlib has Legendre and Jacobi symbols with quadratic reciprocity, cyclotomic fields with their Galois groups and the splitting of primes in them, Dirichlet characters and $L$-series with Dirichlet's theorem, and modular forms for congruence subgroups including Ramanujan's $\Delta$. It does not have class field theory, the Kronecker–Weber theorem, automorphic representations, or the Galois representations attached to modular forms.
+
+Quadratic reciprocity and the splitting laws for $x^2 + 1$ — including a proof from Fermat's little theorem that $-1$ is not a square modulo $p \equiv 3 \pmod 4$, and the parity argument for sums of two squares:
+
+<Lean decl="Lumenary.LanglandsProgramme.quadratic_reciprocity" />
+
+<Lean decl="Lumenary.LanglandsProgramme.neg_one_not_square" />
+
+<Lean decl="Lumenary.LanglandsProgramme.neg_one_square_iff" />
+
+<Lean decl="Lumenary.LanglandsProgramme.sum_two_squares_mod_four" />
+
+<Lean decl="Lumenary.LanglandsProgramme.fermat_two_squares" />
+
+A reciprocity law with conductor $5$, derived from quadratic reciprocity — the splitting of $p$ in $\Q(\sqrt 5)$ is decided by $p \bmod 5$:
+
+<Lean decl="Lumenary.LanglandsProgramme.five_square_iff" />
+
+Class field theory for cyclotomic fields: Mathlib proves (X. Roblot, 2026) that the decomposition group of a prime above $p \nmid n$ corresponds to the subgroup generated by $p \bmod n$ — the statement "$\operatorname{Frob}_p = p \bmod n$" used in the proof of Theorem 2 — and computes residue degrees and ramification:
+
+<Lean decl="Lumenary.LanglandsProgramme.cyclotomicGalois" />
+
+<Lean decl="Lumenary.LanglandsProgramme.cyclotomic_frobenius" />
+
+<Lean decl="Lumenary.LanglandsProgramme.cyclotomic_residue_degree" />
+
+<Lean decl="Lumenary.LanglandsProgramme.cyclotomic_unramified" />
+
+<Lean decl="Lumenary.LanglandsProgramme.splits_completely_iff" />
+
+$GL(1)$ automorphic forms over $\Q$ are Dirichlet characters, and the non-vanishing of their $L$-functions at $s = 1$ gives Dirichlet's theorem, now in Mathlib:
+
+<Lean decl="Lumenary.LanglandsProgramme.dirichlet_primes_in_ap" />
+
+$GL(2)$: the transformation law of modular forms and the normalisation of $\Delta$:
+
+<Lean decl="Lumenary.LanglandsProgramme.modular_transformation" />
+
+<Lean decl="Lumenary.LanglandsProgramme.discriminant_first_coefficient" />
+
+**What is and is not formalised.** Formalised: quadratic reciprocity, the splitting laws of $\Q(i)$, $\Q(\sqrt5)$ and $\Q(\zeta_n)$, Frobenius in cyclotomic fields, Dirichlet's theorem, the definition of modular forms and of $\Delta$. Not formalised: Lemma 1 as stated here (Mathlib has Gauss sums, but we did not connect them), Theorem 2's Galois-theoretic proof as a whole, Kronecker–Weber, class field theory, Hecke operators on modular forms and Theorem 5, Theorems 6 and 7, and of course the conjectures. Reciprocity laws for $GL_1$ over $\Q$ are within reach of Mathlib; the rest of the programme is far beyond current formal libraries.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Checking reciprocity numerically">
+
+The first experiment checks quadratic reciprocity for all $990$ pairs of odd primes below $200$, the congruence splitting laws of $x^2 + 1$ and $x^2 - 5$, and then the non-abelian rule of the motivation: it finds two primes in the same class mod $23$ at which $x^3 - x - 1$ behaves differently, and confirms that $\eta(z)\eta(23z)$ predicts the number of roots at every prime below $2000$. Finally it compares the frequencies of $3$, $1$ and $0$ roots with Chebotarev's densities $\tfrac16, \tfrac12, \tfrac13$ — the proportions of the identity, transpositions and $3$-cycles in $S_3$.
+
+<Python id="langlands_programme_reciprocity" />
+
+The second experiment counts points of $11a1$ modulo every prime below $400$ and compares $a_p$ with the coefficients of $q\prod(1-q^n)^2(1-q^{11n})^2$; it checks the Hecke relations of Proposition 4 for these coefficients and for Ramanujan's $\tau$, Ramanujan's congruence modulo $691$, and Deligne's bound.
+
+<Python id="langlands_programme_modularity" />
+
+All the checks are exact, and all are finite. They illustrate theorems (reciprocity, Hecke's and Eichler–Shimura's modularity results, Mordell's and Deligne's theorems) and could have refuted a wrong formula — the history of the subject is full of conjectures first seen in such tables — but they prove nothing beyond the range tested.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Seeing Frobenius">
+
+**Primes in columns.** Run the sieve on a grid with $4$ columns: every number in a column has the same residue mod $4$. The primes (apart from $2$) fall into two columns: residue $1$ (the primes that split in $\Z[i]$, sums of two squares like $5 = 1 + 4$, $13 = 4 + 9$) and residue $3$ (the primes that stay prime in $\Z[i]$). The column of $p$ *is* its Frobenius in $\operatorname{Gal}(\Q(i)/\Q)$, and Dirichlet's theorem says both columns contain infinitely many primes. Try $5$ columns for $\Q(\zeta_5)$: the primes other than $5$ spread over the four columns $1, 2, 3, 4$ about equally — Chebotarev's density theorem in its abelian (Dirichlet) form.
+
+<NumberGrid mode="sieve" size={200} columns={4} title="Primes sorted by their Frobenius in Q(i)" subtitle="The column of a prime is p mod 4: column 1 splits in Z[i], column 3 stays prime." />
+
+**The Galois group of $\Q(\zeta_5)$.** The fifth roots of unity form a regular pentagon. The Galois automorphism $\sigma_a$ sends $\zeta \mapsto \zeta^a$ for $a \in (\Z/5)^\times = \{1, 2, 3, 4\}$: it permutes the vertices by multiplying angles by $a$. $\sigma_4$ is complex conjugation (reflection in the real axis), and $\sigma_2$ cycles $\zeta \to \zeta^2 \to \zeta^4 \to \zeta^3 \to \zeta$. The Frobenius at a prime $p$ is $\sigma_{p \bmod 5}$.
+
+<ComplexPlane mode="roots" z={[1, 0]} n={5} title="The fifth roots of unity" subtitle="Gal(Q(ζ₅)/Q) ≅ (Z/5)ˣ acts by ζ ↦ ζᵃ. Change n to see other cyclotomic fields." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The Langlands programme is a single conjecture."** It is a web of conjectures and theorems: reciprocity (Galois $\leftrightarrow$ automorphic), functoriality (automorphic for $H$ $\to$ automorphic for $G$), local versions at each prime, versions over function fields and geometric versions, and refinements (multiplicities, $L$-packets, special values). Many cases are proved; most are open. "Proving the Langlands conjectures" is not a well-defined single event.
+
+</Misconception>
+
+<Misconception>
+
+**"The proof of geometric Langlands settles the arithmetic Langlands conjectures."** Geometric and arithmetic Langlands are analogous but distinct statements about different objects (sheaves on $\operatorname{Bun}_G$ for a complex curve versus automorphic forms over number fields). Progress in one suggests methods and predictions for the other, but does not imply it.
+
+</Misconception>
+
+<Misconception>
+
+**"A modular form is a function invariant under $SL_2(\Z)$."** Only weight $0$ functions (modular functions, like the $j$-invariant) are invariant, and those cannot be holomorphic and bounded at the cusp unless constant. A modular form of weight $k$ transforms by the factor $(cz + d)^k$; that factor is what makes $\Delta$, of weight $12$, possible.
+
+</Misconception>
+
+<Misconception>
+
+**"Class field theory explicitly constructs all abelian extensions."** It *classifies* them (by subgroups of idèle class groups) and describes their Frobenius elements. Explicit generators — Kronecker's *Jugendtraum*, Hilbert's twelfth problem — are known over $\Q$ (roots of unity) and imaginary quadratic fields (special values of elliptic functions); beyond that the problem is largely open (with recent $p$-adic progress for totally real fields).
+
+</Misconception>
+
+<Misconception>
+
+**"Reciprocity means congruence conditions."** That is true exactly for **abelian** extensions. The cubic $x^3 - x - 1$ shows the non-abelian case: no congruence condition decides its splitting, but the coefficients of a modular form do. Langlands' insight is that the right generalisation of "a congruence condition" is "an automorphic representation".
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="number-theory" title="How primes split">
+
+For a number theorist, reciprocity is the answer to an ancient question: given a polynomial $f$, describe the primes modulo which it splits. The answer has three tiers. For abelian Galois groups, congruence conditions decide (class field theory). For any Galois group, Chebotarev's density theorem (1922) says each conjugacy class $C$ occurs as $\operatorname{Frob}_p$ for a proportion $|C|/|G|$ of primes — statistics, but no rule. For a rule one needs the automorphic side: the trace of $\rho(\operatorname{Frob}_p)$ is a Hecke eigenvalue, read off from the $q$-expansion of a modular form as in the motivation. See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Harmonic analysis on locally symmetric spaces">
+
+Automorphic forms are eigenfunctions of invariant differential operators — the Laplacian on $\Gamma\backslash\mathbb{H}$ for Maass forms, the Cauchy–Riemann operator for holomorphic modular forms — on locally symmetric spaces, and automorphic representations are the irreducible pieces of $L^2(G(\Q)\backslash G(\mathbb{A}))$. The main analytic tool is the **trace formula** (Selberg 1956 for $SL_2(\R)$; Arthur for general groups), which equates a spectral side (sums over automorphic representations) with a geometric side (orbital integrals over conjugacy classes); comparing trace formulas of two groups proves cases of functoriality, and stabilising it required the Fundamental Lemma. The $L$-functions themselves are studied by Rankin–Selberg integrals and the Langlands–Shahidi method. See <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Weil's Rosetta stone">
+
+In a 1940 letter to his sister Simone, André Weil described a three-column "Rosetta stone": number fields, function fields of curves over $\mathbb{F}_q$, and Riemann surfaces. The middle column is the bridge: there, the arithmetic Langlands conjectures are theorems (Drinfeld, L. Lafforgue, V. Lafforgue), proved with the geometry of moduli spaces of shtukas. In the third column the conjectures become geometric Langlands, where the Langlands dual group appears through the **geometric Satake equivalence** (Lusztig, Ginzburg, Mirković–Vilonen 2007): the category of perverse sheaves on the affine Grassmannian of $G$ is equivalent, as a tensor category, to $\operatorname{Rep}(\widehat G)$. The dual group, invisible in classical terms, is a geometric object. See <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink> and <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Galois groups as fundamental groups">
+
+Grothendieck's étale fundamental group unifies Galois theory and covering spaces: $\operatorname{Gal}(\overline K/K) = \pi_1^{\text{ét}}(\operatorname{Spec} K)$, and finite extensions are finite covers. A Galois representation is then a **local system**, the arithmetic analogue of a representation of $\pi_1$ of a manifold — and in geometric Langlands it literally is one: a flat $\widehat G$-bundle on a Riemann surface. The Frobenius at $p$ plays the role of a loop around a point. A more speculative dictionary, **arithmetic topology** (Mazur, Kapranov, Reznikov, Morishita), treats $\operatorname{Spec}\Z$ as a $3$-manifold and primes as knots, with the Legendre symbol behaving like a linking number — quadratic reciprocity as the symmetry of linking numbers. That dictionary is an analogy, a source of conjectures rather than a theorem. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Electric–magnetic duality">
+
+In 1977 Goddard, Nuyts and Olive, studying magnetic monopoles in gauge theory, found that the magnetic charges of a theory with gauge group $G$ are governed by a dual group — Langlands' $\widehat G$, discovered independently. The Montonen–Olive conjecture proposes that $\mathcal{N} = 4$ supersymmetric Yang–Mills theories with groups $G$ and $\widehat G$ are equivalent ("S-duality"), and Kapustin and Witten (2007) showed how, after compactification on a Riemann surface, S-duality predicts the geometric Langlands correspondence, with 't Hooft line operators acting as Hecke operators. This is a powerful heuristic and a source of new conjectures; the mathematical proofs proceed independently.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="An equivalence of categories">
+
+Geometric Langlands is formulated categorically: for a smooth projective complex curve $X$, an equivalence $\operatorname{D-mod}(\operatorname{Bun}_G) \simeq \operatorname{IndCoh}_{\mathcal{N}}(\operatorname{LocSys}_{\widehat G})$ between D-modules on the moduli stack of $G$-bundles and (a variant of) quasi-coherent sheaves on the stack of $\widehat G$-local systems, compatible with Hecke functors. It is a categorification of the "spectral decomposition" in the classical theory: Hecke eigensheaves correspond to skyscraper sheaves at points of $\operatorname{LocSys}$. The formulation needs derived algebraic geometry and stable $\infty$-categories. See <TopicLink id="math.cat.categorical-representation-theory">categorical representation theory</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1640–1801.** Fermat states the two-squares theorem (Euler proves it, 1749); Euler conjectures quadratic reciprocity (1783); Legendre introduces his symbol; Carl Friedrich Gauss proves reciprocity (1796; *Disquisitiones Arithmeticae*, 1801), later giving several more proofs, including one by Gauss sums.
+- **1837–1897.** Dirichlet proves his theorem on primes in progressions with $L$-functions; Kronecker states (1853) and Weber (1886) and Hilbert (1896) prove what is now the Kronecker–Weber theorem; Hilbert's *Zahlbericht* (1897) and his ninth and twelfth problems (1900) set the agenda for higher reciprocity laws.
+- **1916–1937.** Srinivasa Ramanujan's conjectures on $\tau(n)$ (1916); Mordell's proof of multiplicativity (1917); Teiji Takagi's class field theory (1920); Chebotarev's density theorem (1922); Emil Artin's reciprocity law (1927); Erich Hecke's operators and $L$-functions (1930s); Claude Chevalley's idèles (1936).
+- **1940–1967.** Weil's Rosetta-stone letter (1940); John Tate's thesis (1950) recasts Hecke's work on $GL_1$ as harmonic analysis on adèles; Martin Eichler (1954) and Goro Shimura relate elliptic curves and modular forms; Yutaka Taniyama's problems (1955); Atle Selberg's trace formula (1956); Harish-Chandra's representation theory of real reductive groups and his "philosophy of cusp forms".
+- **1967–1974.** Robert Langlands' letter to Weil (January 1967) and *Problems in the theory of automorphic forms* (1970); Jacquet–Langlands (1970); Deligne attaches Galois representations to modular forms (1969–71) and proves the Ramanujan conjecture (1974); Deligne–Serre (weight one, 1974); Vladimir Drinfeld begins the function-field theory.
+- **1977–2002.** Goddard–Nuyts–Olive's dual group in physics (1977); Langlands–Tunnell (1980–81); Arthur–Clozel base change (1989); Wiles and Taylor–Wiles (1995); local Langlands for $GL_n$ (Harris–Taylor, Henniart, 1998–2000); Laurent Lafforgue's $GL_n$ over function fields (2002).
+- **2008–present.** Ngô Bảo Châu's proof of the Fundamental Lemma (2008–10); Khare–Wintenberger's proof of Serre's conjecture (2009); the Sato–Tate theorem (2008–11); Vincent Lafforgue's automorphic-to-Galois correspondence over function fields (2018); Newton–Thorne's symmetric power functoriality and Fargues–Scholze's geometrisation of local Langlands (2021); the announced proof of geometric Langlands by Gaitsgory, Raskin and collaborators (2024).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Edward Frenkel, *Love and Math* (2013) — a personal, non-technical tour of the programme, especially its geometric side.
+- David A. Cox, *Primes of the Form $x^2 + ny^2$* (1989; 2nd ed. 2013) — reciprocity, class field theory and complex multiplication through one beautiful question; includes $p = x^2 + 27y^2$.
+- Stephen Gelbart, "An elementary introduction to the Langlands program", *Bulletin of the AMS* 10 (1984).
+- Jean-Pierre Serre, "On a theorem of Jordan", *Bulletin of the AMS* 40 (2003) — includes the example of $x^3 - x - 1$ and $\eta(z)\eta(23z)$.
+- Fred Diamond and Jerry Shurman, *A First Course in Modular Forms* (2005) — modular forms, Hecke operators, Galois representations and the statement of modularity.
+- Joseph Bernstein and Stephen Gelbart (eds.), *An Introduction to the Langlands Program* (2003) — lectures by leading experts on the parts of the programme, from classical modular forms to geometric Langlands.
+- Daniel Bump, *Automorphic Forms and Representations* (1997) — the adelic theory for $GL_2$.
+- Jürgen Neukirch, *Algebraic Number Theory* (1999) — class field theory.
+- James Arthur, "The principle of functoriality", *Bulletin of the AMS* 40 (2003).
+- Robert P. Langlands, "Problems in the theory of automorphic forms", in *Lectures in Modern Analysis and Applications III*, Lecture Notes in Mathematics 170 (1970).
+
+A reading path: Cox (Chapters 1–2, 5) and Gelbart's survey for the shape of reciprocity → Diamond–Shurman for $GL_2$ over $\Q$ → Neukirch or Cassels–Fröhlich for class field theory → Bump and the Bernstein–Gelbart volume for automorphic representations → Arthur's survey for functoriality, and Frenkel's survey articles for the geometric side.
+
+</Section>

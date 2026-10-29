@@ -1,0 +1,636 @@
+---
+slug: probability-theory
+topic: math.prob.probability-theory
+title: Probability theory
+subtitle: Single outcomes are unpredictable, yet averages settle down and their fluctuations take the shape of a bell — random variables, expectation and variance, and the two great limit theorems that explain why.
+level: ug1
+ages: Undergraduate (first or second year)
+minutes: 120
+order: 5014
+objectives:
+  - Define random variables, distributions and expectation, and compute means and variances of the binomial, geometric, Poisson, uniform, exponential and normal distributions
+  - Use linearity of expectation and indicator variables, including for dependent events
+  - Work with joint distributions, independence and covariance, and know exactly when $E[XY] = E[X]E[Y]$ and $\operatorname{Var}(X + Y) = \operatorname{Var} X + \operatorname{Var} Y$
+  - Prove Markov's and Chebyshev's inequalities and the weak law of large numbers
+  - State the central limit theorem precisely, use the normal approximation, and explain what the theorem does not say
+narrators: []
+lean:
+  - Lumenary.ProbabilityTheory.expectation_sum_indicators
+  - Lumenary.ProbabilityTheory.perm_fixed_points_average
+  - Lumenary.ProbabilityTheory.binomial_mean
+  - Lumenary.ProbabilityTheory.geometric_mean
+  - Lumenary.ProbabilityTheory.exponential_memoryless
+  - Lumenary.ProbabilityTheory.gaussian_mean
+  - Lumenary.ProbabilityTheory.gaussian_variance
+  - Lumenary.ProbabilityTheory.poisson_limit
+  - Lumenary.ProbabilityTheory.expectation_mul_indep
+  - Lumenary.ProbabilityTheory.variance_add_indep
+  - Lumenary.ProbabilityTheory.avg3
+  - Lumenary.ProbabilityTheory.uncorrelated_not_independent
+  - Lumenary.ProbabilityTheory.markov
+  - Lumenary.ProbabilityTheory.chebyshev
+  - Lumenary.ProbabilityTheory.chebyshev_library
+  - Lumenary.ProbabilityTheory.weak_law_bound
+  - Lumenary.ProbabilityTheory.weak_law
+  - Lumenary.ProbabilityTheory.strong_law
+  - Lumenary.ProbabilityTheory.clt
+compute: [probability_theory_fixed_points, probability_theory_chebyshev_vs_exact, probability_theory_clt_convergence]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Unpredictable outcomes, predictable averages">
+
+A seed cooperative in western Kenya tests a new maize variety: each seed germinates with probability about $0.9$, and nobody can say which seeds will fail. Yet of $10\,000$ seeds, the cooperative can promise that between roughly $8\,940$ and $9\,060$ will germinate, and be right about $95$ times in $100$. A call centre in Manila cannot predict when the next call will come, but it can staff its desks because the *number* of calls per minute follows a stable pattern. A detector in Chile's Atacama desert counts cosmic-ray muons arriving at random moments; the counts per hour cluster tightly around their average.
+
+Individual outcomes are unpredictable; **aggregates are predictable, within quantifiable limits**. Probability theory explains this. It answers four questions about a random quantity:
+
+- What is its long-run average? (*Expectation.*)
+- How far does it typically stray from that average? (*Variance.*)
+- Why do averages of many independent repetitions settle down, and how fast? (*The law of large numbers.*)
+- Why do their fluctuations so often take the shape of the same bell curve? (*The central limit theorem.*)
+
+This lesson assumes the rules of probability — conditional probability, independence of events, Bayes' theorem — from <TopicLink id="math.prob.probability-rules">probability rules</TopicLink>, and sums, integrals and series from <TopicLink id="math.analysis.single-variable-calculus">single-variable calculus</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The Galton board">
+
+Drop a ball through $n$ rows of pins. At each pin it bounces left or right with probability $\tfrac12$, independently. Its final slot is the number $S_n$ of rightward bounces, a sum of $n$ independent coin flips. One ball's path is unpredictable; but drop a thousand and a shape appears.
+
+<ChanceLab experiment="galton" n={12} trials={1000} title="Many small independent pushes" subtitle="Each ball's slot is a sum of 12 coin flips. Compare the histogram with the exact binomial counts and the normal curve, then change the number of rows." />
+
+Three things are visible already, and the rest of the lesson makes each precise:
+
+1. The balls pile up around the middle, $n/2$: the **expectation** of $S_n$ is $n/2$.
+2. The width of the pile grows, but only like $\sqrt n$: the **standard deviation** of $S_n$ is $\sqrt n/2$. So the *proportion* $S_n/n$ of right bounces has spread $1/(2\sqrt n)$, which shrinks: this is the **law of large numbers**.
+3. The pile has a characteristic bell shape, whatever the details: this is the **central limit theorem**.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Random variables and their distributions">
+
+<Definition term="probability space">
+
+A **probability space** $(\Omega, \mathcal F, P)$ consists of a set $\Omega$ of outcomes, a collection $\mathcal F$ of subsets of $\Omega$ called **events** (closed under complements and countable unions, and containing $\Omega$), and a function $P : \mathcal F \to [0, 1]$ with $P(\Omega) = 1$ that is **countably additive**: $P\big(\bigcup_i A_i\big) = \sum_i P(A_i)$ for pairwise disjoint events $A_1, A_2, \dots$ (Kolmogorov's axioms).
+
+</Definition>
+
+When $\Omega$ is countable we may take every subset to be an event. For continuous models (a uniformly random point of $[0, 1]$, say) this is impossible, and making the definitions fully rigorous requires <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink>; we use its results where needed and say so.
+
+<Definition term="random variable, distribution, distribution function">
+
+A **random variable** is a function $X : \Omega \to \R$ such that $\{X \le x\} = \{\omega : X(\omega) \le x\}$ is an event for every $x \in \R$. Its **distribution** (or **law**) is the probability measure $B \mapsto P(X \in B)$ on $\R$, and its **distribution function** is $F_X(x) = P(X \le x)$. Every distribution function is non-decreasing and right-continuous, with $F_X(x) \to 0$ as $x \to -\infty$ and $F_X(x) \to 1$ as $x \to \infty$, and it determines the distribution.
+
+</Definition>
+
+Two kinds of distribution cover most examples:
+
+- $X$ is **discrete** if it takes values in a countable set $\{x_1, x_2, \dots\}$; its **probability mass function** is $p(x) = P(X = x)$, with $\sum_i p(x_i) = 1$.
+- $X$ is **continuous with density $f$** if $f \ge 0$ and $P(a \le X \le b) = \int_a^b f(x)\,dx$ for all $a \le b$; then $\int_{-\infty}^\infty f = 1$, $F_X' = f$ wherever $f$ is continuous, and $P(X = x) = 0$ for every single $x$.
+
+<Definition term="expectation and variance">
+
+The **expectation** (mean) of $X$ is
+
+$$
+E[X] = \sum_i x_i\, p(x_i) \quad \text{(discrete)}, \qquad E[X] = \int_{-\infty}^{\infty} x f(x)\,dx \quad \text{(density)},
+$$
+
+defined only when the sum or integral **converges absolutely**: $\sum_i |x_i|\,p(x_i) < \infty$, resp. $\int |x| f(x)\,dx < \infty$. More generally, for a function $g$, $E[g(X)] = \sum_i g(x_i)\,p(x_i)$ or $\int g(x) f(x)\,dx$ (the "law of the unconscious statistician"), again when absolutely convergent. If $\mu = E[X]$ exists, the **variance** is $\operatorname{Var} X = E[(X - \mu)^2] \in [0, \infty]$ and the **standard deviation** is $\sigma = \sqrt{\operatorname{Var} X}$.
+
+</Definition>
+
+Expanding the square and using linearity (proved below) gives the **computing formula** $\operatorname{Var} X = E[X^2] - (E[X])^2$, and also $\operatorname{Var}(aX + b) = a^2 \operatorname{Var} X$: shifting does not change spread, and scaling by $a$ scales the standard deviation by $|a|$.
+
+<Definition term="joint distribution, independence, covariance">
+
+Random variables $X, Y$ on the same space have a **joint distribution**: a joint mass function $p(x, y) = P(X = x, Y = y)$ or a joint density $f(x, y)$; the **marginals** are recovered by summing or integrating out the other variable. $X$ and $Y$ are **independent** if $P(X \in A, Y \in B) = P(X \in A)\,P(Y \in B)$ for all intervals (equivalently, all Borel sets) $A, B$; for discrete variables this means $p(x, y) = p_X(x)\,p_Y(y)$, and for densities $f(x, y) = f_X(x) f_Y(y)$. A family $X_1, X_2, \dots$ is (mutually) independent if this product rule holds for every finite subfamily; **pairwise independent** asks it only for pairs, which is weaker. When the second moments are finite, the **covariance** is
+
+$$
+\operatorname{Cov}(X, Y) = E\big[(X - E X)(Y - E Y)\big] = E[XY] - E[X]\,E[Y],
+$$
+
+the **correlation** is $\rho(X, Y) = \operatorname{Cov}(X, Y)/(\sigma_X \sigma_Y)$, and $X, Y$ are **uncorrelated** if $\operatorname{Cov}(X, Y) = 0$.
+
+</Definition>
+
+<Note>
+
+$|\rho(X, Y)| \le 1$. Indeed, with $X' = X - EX$ and $Y' = Y - EY$, the quadratic $t \mapsto E[(tX' + Y')^2] = t^2 \operatorname{Var} X + 2t \operatorname{Cov}(X, Y) + \operatorname{Var} Y$ is never negative, so its discriminant is $\le 0$: $\operatorname{Cov}(X, Y)^2 \le \operatorname{Var} X \operatorname{Var} Y$. This is the Cauchy–Schwarz inequality, and the viewpoints section explains why it appears here.
+
+</Note>
+
+</Section>
+
+<Section id="distributions" kind="examples" title="A gallery of distributions">
+
+Seven distributions do most of the work in applications. Write $q = 1 - p$.
+
+| Distribution | Mass function or density | Mean | Variance | Models |
+| --- | --- | --- | --- | --- |
+| Bernoulli$(p)$ | $P(X = 1) = p$, $P(X = 0) = q$ | $p$ | $pq$ | one yes/no trial |
+| Binomial$(n, p)$ | $\binom nk p^k q^{n-k}$, $0 \le k \le n$ | $np$ | $npq$ | successes in $n$ independent trials |
+| Geometric$(p)$ | $q^{k-1}p$, $k = 1, 2, \dots$ | $1/p$ | $q/p^2$ | trials up to the first success |
+| Poisson$(\lambda)$ | $e^{-\lambda}\lambda^k/k!$, $k = 0, 1, \dots$ | $\lambda$ | $\lambda$ | counts of rare events |
+| Uniform$(a, b)$ | $\frac{1}{b - a}$ on $[a, b]$ | $\frac{a + b}{2}$ | $\frac{(b - a)^2}{12}$ | a point chosen "at random" |
+| Exponential$(\lambda)$ | $\lambda e^{-\lambda x}$, $x \ge 0$ | $1/\lambda$ | $1/\lambda^2$ | waiting times without memory |
+| Normal $N(\mu, \sigma^2)$ | $\frac{1}{\sigma\sqrt{2\pi}}e^{-(x - \mu)^2/(2\sigma^2)}$ | $\mu$ | $\sigma^2$ | sums of many small effects |
+
+The binomial row is derived with indicators in the next section. Here are the others.
+
+<Example title="Geometric: differentiate the geometric series">
+
+For $|q| < 1$, $\sum_{k \ge 0} q^k = \frac{1}{1 - q}$, and a power series may be differentiated term by term inside its radius of convergence: $\sum_{k \ge 1} k q^{k-1} = \frac{1}{(1-q)^2}$ and $\sum_{k \ge 2} k(k-1) q^{k-2} = \frac{2}{(1-q)^3}$. Hence, for $0 < p \le 1$,
+
+$$
+E[X] = \sum_{k \ge 1} k\, q^{k-1} p = \frac{p}{p^2} = \frac1p, \qquad E[X(X-1)] = pq \sum_{k \ge 2} k(k-1) q^{k-2} = \frac{2q}{p^2},
+$$
+
+so $\operatorname{Var} X = E[X(X-1)] + E[X] - (E X)^2 = \frac{2q + p - 1}{p^2} = \frac{q}{p^2}$. Rolling a fair die until the first six takes $6$ rolls on average.
+
+</Example>
+
+<Example title="Poisson: shift the index">
+
+$E[X] = \sum_{k \ge 1} k e^{-\lambda}\frac{\lambda^k}{k!} = \lambda e^{-\lambda} \sum_{k \ge 1} \frac{\lambda^{k-1}}{(k-1)!} = \lambda e^{-\lambda} e^{\lambda} = \lambda$, and in the same way $E[X(X-1)] = \lambda^2$, so $\operatorname{Var} X = \lambda^2 + \lambda - \lambda^2 = \lambda$. Mean equals variance — a quick test of whether count data could be Poisson.
+
+</Example>
+
+<Example title="Uniform and exponential: integrate">
+
+For $U$ uniform on $[0, 1]$: $E[U] = \int_0^1 x\,dx = \tfrac12$, $E[U^2] = \tfrac13$, so $\operatorname{Var} U = \tfrac13 - \tfrac14 = \tfrac1{12}$; the uniform on $[a, b]$ is $a + (b - a)U$, giving the table entries. For $T$ exponential with rate $\lambda$, integration by parts gives $E[T] = \int_0^\infty x \lambda e^{-\lambda x}\,dx = \frac1\lambda$ and $E[T^2] = \frac{2}{\lambda^2}$, so $\operatorname{Var} T = \frac1{\lambda^2}$. Its survival function is $P(T > t) = e^{-\lambda t}$, and therefore
+
+$$
+P(T > s + t \mid T > s) = \frac{e^{-\lambda(s + t)}}{e^{-\lambda s}} = e^{-\lambda t} = P(T > t) \qquad (s, t \ge 0).
+$$
+
+This **memoryless property** says that a component that has survived $s$ hours is "as good as new". Among distributions on $(0, \infty)$ with a density, only the exponential ones have it (the survival function $G$ must satisfy $G(s + t) = G(s)G(t)$, and the only monotone solutions are exponentials).
+
+</Example>
+
+<Example title="Normal: the Gaussian integral">
+
+Let $I = \int_{-\infty}^{\infty} e^{-x^2/2}\,dx$. In polar coordinates, $I^2 = \iint e^{-(x^2 + y^2)/2}\,dx\,dy = \int_0^{2\pi}\!\int_0^\infty e^{-r^2/2}\, r\,dr\,d\theta = 2\pi$, so $\varphi(x) = e^{-x^2/2}/\sqrt{2\pi}$ is a density: the **standard normal** $Z$. By symmetry $E[Z] = 0$, and integrating by parts, $E[Z^2] = \frac{1}{\sqrt{2\pi}}\int x \cdot x e^{-x^2/2}\,dx = \frac{1}{\sqrt{2\pi}}\int e^{-x^2/2}\,dx = 1$. Then $X = \mu + \sigma Z$ has density $\frac{1}{\sigma}\varphi\big(\frac{x - \mu}{\sigma}\big)$, mean $\mu$ and variance $\sigma^2$. We write $\Phi(x) = P(Z \le x)$; it has no elementary formula, and $P(|Z| \le 1) \approx 0.683$, $P(|Z| \le 1.96) \approx 0.95$, $P(|Z| \le 3) \approx 0.997$.
+
+</Example>
+
+<FunctionPlot
+  fns={["exp(-(x - m)^2/(2*s^2))/(s*sqrt(2*pi))", "exp(-x^2/2)/sqrt(2*pi)"]}
+  labels={["N(m, s²)", "N(0, 1)"]}
+  params={[{ name: "m", min: -3, max: 3, step: 0.1, value: 1 }, { name: "s", min: 0.3, max: 3, step: 0.1, value: 1.5 }]}
+  x={[-6, 6]}
+  y={[-0.05, 1.4]}
+  shade={1}
+  shadeRange={[-1, 1]}
+  title="Normal densities"
+  subtitle="The shaded area under the standard normal between −1 and 1 is about 0.683. Move m and s: the curve shifts and stretches, but the total area stays 1."
+/>
+
+<Example title="Non-examples: when the mean does not exist">
+
+The **Cauchy** density $f(x) = \frac{1}{\pi(1 + x^2)}$ is symmetric about $0$, yet $\int |x| f(x)\,dx = \infty$, so $E[X]$ is *undefined* — not $0$. (It is the tangent of a uniform random angle in $(-\tfrac\pi2, \tfrac\pi2)$.) In the **St Petersburg game** you win $2^k$ coins with probability $2^{-k}$, $k = 1, 2, \dots$; then $E[X] = \sum_k 2^k 2^{-k} = \infty$. Both examples will show that the limit theorems really need their hypotheses.
+
+</Example>
+
+<Theorem name="Theorem (Poisson limit of the binomial)">
+
+Fix $\lambda > 0$ and $k \in \{0, 1, 2, \dots\}$. Then $\displaystyle \binom nk \Big(\frac\lambda n\Big)^k \Big(1 - \frac\lambda n\Big)^{n-k} \longrightarrow e^{-\lambda}\frac{\lambda^k}{k!}$ as $n \to \infty$.
+
+</Theorem>
+
+<Proof>
+
+For $n \ge k$ and $n > \lambda$, rewrite the left side as
+
+$$
+\frac{\lambda^k}{k!} \cdot \frac{n(n-1)\cdots(n - k + 1)}{n^k} \cdot \Big(1 - \frac\lambda n\Big)^{n} \cdot \Big(1 - \frac\lambda n\Big)^{-k}.
+$$
+
+The second factor is a product of $k$ terms $\frac{n - j}{n} \to 1$; the third tends to $e^{-\lambda}$ (take logarithms: $n \ln(1 - \lambda/n) \to -\lambda$ by $\ln(1 + h)/h \to 1$); the fourth tends to $1$. Multiply the limits.
+
+</Proof>
+
+So when there are many independent opportunities, each with a small chance, the number of successes is approximately Poisson. Ladislaus Bortkiewicz's 1898 study of deaths from horse kicks in Prussian cavalry corps — rare, independent accidents — is the classic fit; typing errors per page, mutations per genome per generation and goals per football match are often modelled the same way.
+
+</Section>
+
+<Section id="linearity" kind="proof" title="Linearity of expectation and indicator variables">
+
+<Theorem name="Theorem (linearity of expectation)">
+
+If $X$ and $Y$ have finite expectations and $a, b \in \R$, then $aX + bY$ has finite expectation and $E[aX + bY] = a\,E[X] + b\,E[Y]$. No independence is needed.
+
+</Theorem>
+
+<Proof>
+
+We give the proof for discrete $X, Y$ with joint mass function $p(x, y)$; for general random variables it is the linearity of the integral in measure theory. By the law of the unconscious statistician for $g(x, y) = ax + by$, and since $|ax + by| \le |a||x| + |b||y|$ makes every sum below absolutely convergent (so it may be rearranged),
+
+$$
+E[aX + bY] = \sum_{x, y} (ax + by)\,p(x, y) = a\sum_x x \sum_y p(x, y) + b \sum_y y \sum_x p(x, y) = a\sum_x x\,p_X(x) + b\sum_y y\,p_Y(y).
+$$
+
+The inner sums are the marginals, so this is $aE[X] + bE[Y]$.
+
+</Proof>
+
+The **indicator** of an event $A$ is the random variable $\mathbf 1_A$ that equals $1$ on $A$ and $0$ off it. It is Bernoulli$(P(A))$, so $E[\mathbf 1_A] = P(A)$. Combining this with linearity gives one of the most useful tricks in probability: **to find the expected number of things that happen, add up their probabilities** — even when the events are dependent.
+
+<Example title="The binomial mean and the number of runs">
+
+If $S$ counts successes in $n$ trials, each succeeding with probability $p$, then $S = \mathbf 1_{A_1} + \cdots + \mathbf 1_{A_n}$, so $E[S] = np$ — no binomial coefficients needed, and the trials need not even be independent. Similarly, in $21$ flips of a fair coin the number of places where heads is immediately followed by heads is a sum of $20$ indicators, each with probability $\tfrac14$, so its expectation is $5$, although overlapping pairs such as HHH are far from independent.
+
+</Example>
+
+<Example title="Fixed points of a random permutation">
+
+Shuffle $n$ cards labelled $1, \dots, n$ (or return $n$ hats to their owners at random). Let $N$ be the number of cards that end up in their own position, and $A_i$ the event "card $i$ is in place". Then $P(A_i) = \frac{(n-1)!}{n!} = \frac1n$ and $N = \sum_i \mathbf 1_{A_i}$, so
+
+$$
+E[N] = n \cdot \frac1n = 1 \quad \text{for every } n.
+$$
+
+The events $A_i$ are dependent (if $n - 1$ cards are in place, so is the last), but linearity does not care. The variance needs the dependence: for $i \ne j$, $P(A_i \cap A_j) = \frac{1}{n(n-1)}$, so $\operatorname{Cov}(\mathbf 1_{A_i}, \mathbf 1_{A_j}) = \frac{1}{n(n-1)} - \frac1{n^2} = \frac{1}{n^2(n-1)}$, and by the variance-of-a-sum formula below,
+
+$$
+\operatorname{Var} N = n \cdot \frac1n\Big(1 - \frac1n\Big) + n(n-1)\cdot\frac{1}{n^2(n-1)} = 1 \qquad (n \ge 2).
+$$
+
+The Lean section proves $E[N] = 1$ in a completely different way, from Burnside's lemma in group theory, and the first experiment below checks all $n!$ permutations for $n \le 7$.
+
+</Example>
+
+<Example title="Collecting stickers">
+
+A school in Accra trades stickers: there are $50$ different ones, and each packet contains one, uniformly at random. How many packets until the album is complete? After $i - 1$ distinct stickers, each new packet brings a new one with probability $\frac{50 - i + 1}{50}$, so the waiting time $T_i$ for the $i$-th new sticker is geometric with mean $\frac{50}{50 - i + 1}$. By linearity,
+
+$$
+E[T] = \sum_{i=1}^{50} \frac{50}{51 - i} = 50\Big(1 + \frac12 + \cdots + \frac1{50}\Big) = 50 H_{50} \approx 225.
+$$
+
+In general the **coupon collector** needs $n H_n \approx n \ln n$ draws on average.
+
+</Example>
+
+</Section>
+
+<Section id="independence" kind="proof" title="Independence, covariance and the variance of a sum">
+
+<Theorem name="Theorem (product rule for independent variables)">
+
+If $X$ and $Y$ are independent with finite expectations, then $XY$ has finite expectation and $E[XY] = E[X]\,E[Y]$. Consequently independent variables with finite variances are uncorrelated.
+
+</Theorem>
+
+<Proof>
+
+Discrete case: independence gives $p(x, y) = p_X(x)\,p_Y(y)$, so $\sum_{x,y} |xy|\,p(x, y) = \big(\sum_x |x|p_X(x)\big)\big(\sum_y |y| p_Y(y)\big) < \infty$, and the same computation without absolute values gives $E[XY] = \sum_{x, y} xy\,p_X(x)p_Y(y) = E[X]\,E[Y]$. For densities the argument is identical with $f(x, y) = f_X(x) f_Y(y)$ and Fubini's theorem.
+
+</Proof>
+
+<Theorem name="Theorem (variance of a sum)">
+
+If $X_1, \dots, X_n$ have finite variances, then
+
+$$
+\operatorname{Var}\Big(\sum_{i=1}^n X_i\Big) = \sum_{i=1}^n \operatorname{Var} X_i + 2\sum_{i < j} \operatorname{Cov}(X_i, X_j).
+$$
+
+In particular, if the $X_i$ are pairwise uncorrelated — for instance pairwise independent — then the variance of the sum is the sum of the variances.
+
+</Theorem>
+
+<Proof>
+
+Let $X_i' = X_i - E X_i$. By linearity, $\sum X_i - E[\sum X_i] = \sum X_i'$, so the variance of the sum is $E\big[(\sum_i X_i')^2\big] = \sum_{i, j} E[X_i' X_j']$. The diagonal terms $i = j$ are the variances, and each unordered pair $i \ne j$ contributes $2E[X_i'X_j'] = 2\operatorname{Cov}(X_i, X_j)$.
+
+</Proof>
+
+Two consequences we use constantly. The **binomial variance**: the indicators of independent trials are independent, each with variance $pq$, so $\operatorname{Var} S = npq$. The **variance of a sample mean**: if $X_1, \dots, X_n$ are pairwise uncorrelated with common variance $\sigma^2$, then $\bar X_n = \frac1n\sum X_i$ has $\operatorname{Var} \bar X_n = \frac{1}{n^2} \cdot n\sigma^2 = \frac{\sigma^2}{n}$. Averaging $n$ measurements divides the standard deviation by $\sqrt n$ — the $1/\sqrt n$ law behind every margin of error.
+
+<Example title="The product rule needs a hypothesis">
+
+Let $X = Y = \mathbf 1_{\text{heads}}$ for one fair coin. Then $E[XY] = E[X^2] = \tfrac12$, but $E[X]E[Y] = \tfrac14$: here $\operatorname{Cov}(X, Y) = \operatorname{Var} X = \tfrac14 \ne 0$. And note that for independent $X, Y$, $\operatorname{Var}(X - Y) = \operatorname{Var} X + \operatorname{Var} Y$ — the variances still *add*, because $\operatorname{Var}(-Y) = \operatorname{Var} Y$.
+
+</Example>
+
+<Example title="Uncorrelated but not independent">
+
+Let $X$ be uniform on $\{-1, 0, 1\}$ and $Y = X^2$. Then $E[X] = 0$ and $E[XY] = E[X^3] = 0$, so $\operatorname{Cov}(X, Y) = 0$. But $Y$ is a function of $X$: $P(X = 1, Y = 0) = 0$, whereas $P(X = 1)\,P(Y = 0) = \tfrac13 \cdot \tfrac13$. Covariance measures only *linear* dependence. (This example is checked in Lean below.)
+
+</Example>
+
+</Section>
+
+<Section id="lln" kind="proof" title="Inequalities and the law of large numbers">
+
+<Theorem name="Theorem (Markov's inequality)">
+
+If $X \ge 0$ has finite expectation and $a > 0$, then $P(X \ge a) \le \dfrac{E[X]}{a}$.
+
+</Theorem>
+
+<Proof>
+
+Pointwise, $a\,\mathbf 1_{\{X \ge a\}} \le X$: where $X \ge a$ the left side is $a \le X$, and elsewhere it is $0 \le X$. Expectation is monotone (a consequence of linearity and $E[W] \ge 0$ for $W \ge 0$), so $a\,P(X \ge a) \le E[X]$.
+
+</Proof>
+
+<Theorem name="Theorem (Chebyshev's inequality)">
+
+If $X$ has mean $\mu$ and finite variance $\sigma^2$, then for every $c > 0$, $\;P(|X - \mu| \ge c) \le \dfrac{\sigma^2}{c^2}$. Equivalently, $P(|X - \mu| \ge k\sigma) \le \dfrac1{k^2}$ for $k > 0$ (when $\sigma > 0$).
+
+</Theorem>
+
+<Proof>
+
+The events $\{|X - \mu| \ge c\}$ and $\{(X - \mu)^2 \ge c^2\}$ are the same. Apply Markov's inequality to the non-negative variable $(X - \mu)^2$, whose expectation is $\sigma^2$, with $a = c^2$.
+
+</Proof>
+
+Chebyshev's inequality cannot be improved using the variance alone: for $k \ge 1$, the variable taking the values $\pm k$ with probability $\frac{1}{2k^2}$ each and $0$ otherwise has mean $0$, variance $1$ and $P(|X| \ge k) = \frac1{k^2}$ exactly.
+
+<Theorem name="Theorem (weak law of large numbers)">
+
+Let $X_1, X_2, \dots$ be pairwise uncorrelated (for instance, independent) random variables with common mean $\mu$ and common finite variance $\sigma^2$, and let $\bar X_n = \frac1n(X_1 + \cdots + X_n)$. Then for every $\varepsilon > 0$,
+
+$$
+P\big(|\bar X_n - \mu| \ge \varepsilon\big) \le \frac{\sigma^2}{n\varepsilon^2} \xrightarrow[n \to \infty]{} 0 .
+$$
+
+That is, $\bar X_n$ **converges in probability** to $\mu$.
+
+</Theorem>
+
+<Proof>
+
+By linearity, $E[\bar X_n] = \frac1n \cdot n\mu = \mu$. By the variance-of-a-sum theorem and $\operatorname{Var}(cW) = c^2\operatorname{Var}W$, $\operatorname{Var} \bar X_n = \frac{\sigma^2}{n}$. Chebyshev's inequality applied to $\bar X_n$ with $c = \varepsilon$ gives the bound, which tends to $0$ as $n \to \infty$ for fixed $\varepsilon$.
+
+</Proof>
+
+<ChanceLab experiment="coin" trials={2000} title="Does the coin remember?" subtitle="The running proportion of heads wanders into the band 1/2 ± 1/√n and stays near 1/2. Run it several times: early on, the paths differ a lot." />
+
+The law of large numbers works by **swamping, not compensation**. After ten heads in a row the coin is not "due" a tail; the next thousand flips simply dilute the early surplus. The *number* of excess heads $S_n - n/2$ typically grows like $\sqrt n$; only the *proportion* settles.
+
+How sharp is the bound? For $10\,000$ fair coin flips and $\varepsilon = 0.02$, Chebyshev gives $P(|\bar X_n - \tfrac12| \ge 0.02) \le \frac{1/4}{10\,000 \cdot 0.0004} = 0.0625$, while the true value is about $6 \times 10^{-5}$. Chebyshev uses only the variance, so it must cover the worst distribution with that variance; for bounded variables, **Hoeffding's inequality** (1963) gives the exponentially small bound $2e^{-2n\varepsilon^2}$. The second experiment below compares all of these with exact binomial tails.
+
+Two stronger theorems, stated without proof:
+
+- **Khinchin's weak law** (1929): for independent, identically distributed (i.i.d.) $X_i$, finite mean alone suffices.
+- **The strong law of large numbers** (Kolmogorov, 1933; Etemadi's 1981 proof needs only pairwise independence): if the $X_i$ are pairwise independent, identically distributed, with $E|X_1| < \infty$, then $P(\bar X_n \to \mu) = 1$. The strong law says almost every *individual sequence* of averages converges; the weak law only says that, at each large $n$, a deviation is unlikely. It is proved in Mathlib (see below).
+
+The hypothesis $E|X_1| < \infty$ matters: for i.i.d. Cauchy variables, $\bar X_n$ has exactly the same Cauchy distribution as $X_1$ for every $n$ — averaging does not help at all. The law of large numbers is also the principle behind **Monte Carlo integration**: to estimate $\int_0^1 g$, average $g(U_1), \dots, g(U_n)$ for independent uniform $U_i$; the error is of order $\sigma/\sqrt n$, whatever the dimension.
+
+</Section>
+
+<Section id="clt" kind="proof" title="The central limit theorem">
+
+The law of large numbers says $\bar X_n - \mu \to 0$. The fluctuations have size $\sigma/\sqrt n$, so we magnify them by $\sqrt n/\sigma$ and ask about the *shape* of what we see.
+
+<Definition term="convergence in distribution">
+
+Random variables $W_n$ **converge in distribution** to $W$ if $P(W_n \le x) \to P(W \le x)$ at every $x$ where $x \mapsto P(W \le x)$ is continuous. When the limit is normal (which has a continuous distribution function), this means convergence at every $x$.
+
+</Definition>
+
+<Theorem name="Theorem (central limit theorem, Lindeberg–Lévy)">
+
+Let $X_1, X_2, \dots$ be independent and identically distributed with mean $\mu$ and finite variance $\sigma^2 > 0$, and let $S_n = X_1 + \cdots + X_n$. Then for every $x \in \R$,
+
+$$
+P\left(\frac{S_n - n\mu}{\sigma\sqrt n} \le x\right) \longrightarrow \Phi(x) = \int_{-\infty}^x \frac{e^{-t^2/2}}{\sqrt{2\pi}}\,dt \qquad (n \to \infty).
+$$
+
+</Theorem>
+
+<Proof>
+
+*A proof sketch under an extra hypothesis.* Assume the moment generating function $M(t) = E[e^{tX_1}]$ is finite for $|t| < t_0$ (this is stronger than finite variance). Put $Y_i = (X_i - \mu)/\sigma$, so $E[Y_i] = 0$, $E[Y_i^2] = 1$, and $M_Y(t) = E[e^{tY_1}] = 1 + \frac{t^2}{2} + o(t^2)$ as $t \to 0$ (Taylor's theorem; the moment generating function can be differentiated under the expectation inside its interval of convergence). The standardised sum is $Z_n = \frac{1}{\sqrt n}\sum_i Y_i$, and by independence the expectation of a product of the independent factors $e^{tY_i/\sqrt n}$ is the product of expectations:
+
+$$
+E\big[e^{tZ_n}\big] = M_Y\Big(\frac{t}{\sqrt n}\Big)^n = \Big(1 + \frac{t^2}{2n} + o\Big(\frac1n\Big)\Big)^n \longrightarrow e^{t^2/2},
+$$
+
+which is the moment generating function of $N(0, 1)$ (complete the square in $\int e^{tx}\varphi(x)\,dx$). A **continuity theorem** (Curtiss, 1942) says that convergence of moment generating functions on a neighbourhood of $0$ implies convergence in distribution; we cite it without proof. The general theorem replaces $e^{tX}$ by the **characteristic function** $E[e^{itX}]$, which exists for every distribution, and uses **Lévy's continuity theorem**; that is the proof formalised in Mathlib.
+
+</Proof>
+
+<Example title="The normal approximation in practice">
+
+$100$ fair coin flips: $S$ has mean $50$ and standard deviation $5$. Since $S$ takes whole-number values, $P(S \ge 60) = P(S \ge 59.5)$, and the **continuity correction** approximates this by $P(Z \ge \frac{59.5 - 50}{5}) = P(Z \ge 1.9) \approx 0.0287$; the exact value is $0.0284$ (without the correction one gets $0.0228$). For the sum of $30$ dice (mean $105$, variance $30 \cdot \frac{35}{12} = 87.5$), $P(S \ge 120) \approx P\big(Z \ge \frac{119.5 - 105}{\sqrt{87.5}}\big) \approx 0.0606$, against an exact $0.0607$. And the germination promise in the motivation: $10\,000$ seeds with $p = 0.9$ give mean $9000$ and standard deviation $\sqrt{900} = 30$, so about $95\%$ of the time the count lies within $1.96 \times 30 \approx 59$ of $9000$.
+
+</Example>
+
+**How fast?** The **Berry–Esseen theorem** (1941–42) quantifies the convergence: if $\rho = E|X_1 - \mu|^3 < \infty$, then
+
+$$
+\sup_{x \in \R}\left| P\Big(\frac{S_n - n\mu}{\sigma\sqrt n} \le x\Big) - \Phi(x)\right| \le \frac{C\rho}{\sigma^3\sqrt n},
+$$
+
+where $C$ is a universal constant (known to satisfy $C \le 0.4748$, Shevtsova 2011). Skewed distributions, with large $\rho/\sigma^3$, need larger $n$; the third experiment measures this for a die and for a coin with $P(\text{heads}) = 0.1$.
+
+**What the theorem does not say.**
+
+1. It does not say that *data* become normal. A sample of $10\,000$ household incomes is as skewed as the population it came from; what is approximately normal is the distribution of the *average* (or sum) of many independent draws, across hypothetical repetitions.
+2. It needs finite variance. Averages of i.i.d. Cauchy variables are Cauchy for every $n$, and heavy-tailed sums converge (when they converge at all) to other "stable" laws, with a different scaling than $\sqrt n$.
+3. It needs independence, or at least weak dependence. Sums of strongly dependent variables — the same measurement error repeated, contagion in financial losses — need not look normal.
+4. It controls absolute, not relative, error. Far in the tails, where $\Phi$ is tiny, the normal approximation may be off by orders of magnitude; such "large deviation" probabilities need other tools (Cramér, 1938).
+
+The theorem also explains why the normal distribution is everywhere: a measurement influenced by many small, roughly independent effects (genes and environment on height, many small errors in an astronomical observation) is approximately normal — a heuristic, valid exactly to the extent that its hypotheses are.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Probability in Lean and Mathlib">
+
+Mathlib builds probability on measure theory: a probability space is a measure `μ` with `IsProbabilityMeasure μ`, a random variable is a function `X : Ω → ℝ`, its expectation is the integral `∫ ω, X ω ∂μ` (written `μ[X]`), its variance is `Var[X; μ]`, and `X ⟂ᵢ[μ] Y` says that `X` and `Y` are independent. "Has finite variance" is `MemLp X 2 μ`. Mathlib's library has grown to include the strong law of large numbers and, recently, the central limit theorem, so this lesson can connect its whole arc to formal proofs.
+
+**Linearity and indicators.** The expected number of events that occur is the sum of their probabilities, with no independence assumed; and the "fixed points of a shuffle" example, proved through Burnside's lemma (the total number of fixed points of a group action is the number of orbits times the size of the group — here there is one orbit):
+
+<Lean decl="Lumenary.ProbabilityTheory.expectation_sum_indicators" />
+
+<Lean decl="Lumenary.ProbabilityTheory.perm_fixed_points_average" />
+
+**Distributions.** Mathlib has the binomial, geometric, Poisson, exponential and Gaussian distributions. We cite the binomial mean and the Gaussian mean and variance, prove the geometric mean from the differentiated geometric series exactly as in the lesson, prove the memoryless property from Mathlib's distribution function of the exponential law, and cite the Poisson limit theorem:
+
+<Lean decl="Lumenary.ProbabilityTheory.binomial_mean" />
+
+<Lean decl="Lumenary.ProbabilityTheory.geometric_mean" />
+
+<Lean decl="Lumenary.ProbabilityTheory.exponential_memoryless" />
+
+<Lean decl="Lumenary.ProbabilityTheory.gaussian_mean" />
+
+<Lean decl="Lumenary.ProbabilityTheory.gaussian_variance" />
+
+<Lean decl="Lumenary.ProbabilityTheory.poisson_limit" />
+
+**Independence.** The product rule and the additivity of variance, from Mathlib, and the uncorrelated-but-dependent example, computed in exact rational arithmetic (a three-point distribution needs no measure theory, so we average over `Fin 3` directly):
+
+<Lean decl="Lumenary.ProbabilityTheory.expectation_mul_indep" />
+
+<Lean decl="Lumenary.ProbabilityTheory.variance_add_indep" />
+
+<Lean decl="Lumenary.ProbabilityTheory.avg3" />
+
+<Lean decl="Lumenary.ProbabilityTheory.uncorrelated_not_independent" />
+
+**Markov, Chebyshev and the weak law.** Markov's inequality is cited from Mathlib. Chebyshev's inequality is then proved from it, line by line as in the human proof, and compared with Mathlib's own version (which states the probability as an extended non-negative real, hence the `ENNReal.ofReal`):
+
+<Lean decl="Lumenary.ProbabilityTheory.markov" />
+
+<Lean decl="Lumenary.ProbabilityTheory.chebyshev" />
+
+<Lean decl="Lumenary.ProbabilityTheory.chebyshev_library" />
+
+The weak law of large numbers with its explicit rate $\sigma^2/(n\varepsilon^2)$, and the limit statement. The hypotheses are exactly those of the lesson's theorem with "pairwise uncorrelated" strengthened to "pairwise independent", which is what Mathlib's `IndepFun.variance_sum` uses:
+
+<Lean decl="Lumenary.ProbabilityTheory.weak_law_bound" />
+
+<Lean decl="Lumenary.ProbabilityTheory.weak_law" />
+
+**The great limit theorems.** The strong law (Mathlib follows Etemadi's proof, so it needs only pairwise independence and a finite mean) and the central limit theorem, in its standardised form:
+
+<Lean decl="Lumenary.ProbabilityTheory.strong_law" />
+
+<Lean decl="Lumenary.ProbabilityTheory.clt" />
+
+**What is and is not formalised.** Proved here (independent): linearity of expectation for indicators, the average number of fixed points, the geometric mean, the memoryless property, the uncorrelated-but-dependent example, Chebyshev's inequality from Markov's, and the weak law with rate. Cited from Mathlib: Markov's inequality, the product rule, additivity of variance, the binomial mean, the Gaussian moments, the Poisson limit theorem, the strong law and the central limit theorem. Not formalised here: the variance of the number of fixed points, the coupon-collector formula, the Berry–Esseen theorem (not in Mathlib at the time of writing) and the normal-approximation numbers, which are numerical.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Exhaustive checks, exact tails and the speed of the CLT">
+
+First, linearity of expectation in action: every permutation of up to seven objects, with the exact mean and variance of the number of fixed points, the chance of a derangement (which tends to $1/e$) and the whole distribution, which is close to Poisson$(1)$.
+
+<Python id="probability_theory_fixed_points" />
+
+Next, how good is Chebyshev's inequality? For fair coins we compute the exact tail probabilities of the weak law and compare them with Chebyshev's bound, Hoeffding's bound and the normal approximation — and then verify exactly that a three-point distribution attains Chebyshev's bound.
+
+<Python id="probability_theory_chebyshev_vs_exact" />
+
+Finally, how fast does the central limit theorem take hold? The exact distribution of a sum of $n$ dice or of $n$ lopsided coins is computed by repeated convolution, and its largest gap from the normal distribution function is compared with the Berry–Esseen bound.
+
+<Python id="probability_theory_clt_convergence" />
+
+The first experiment is **exhaustive** for finitely many $n$ and exact; the second computes **exact** probabilities and floating-point bounds; the third is **numerical** (exact distributions, floating-point arithmetic). None of them proves a theorem for all $n$ — that is the job of the proofs above and of the Lean module.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: sums and square roots">
+
+<ChanceLab experiments={["two-dice", "random-walk"]} trials={2000} title="Sums of independent pieces" subtitle="Two dice: the triangle is the first step towards the bell. Random walk: the root-mean-square distance after n steps is exactly √n." />
+
+Try this:
+
+- In **two dice**, the sum's distribution is the convolution of two uniform distributions: a triangle. Imagine adding a third die (a piecewise-quadratic shape), a fourth… the third experiment above shows how quickly the shape approaches the normal curve.
+- In **random walk**, a walker takes $n$ steps of $\pm1$. The position $S_n$ has mean $0$ and variance $n$ (variances of independent steps add), so its typical size is $\sqrt n$, not $n$: after $100$ steps, about $10$ from the start. Increase $n$ and check the $\sqrt n$ curve. Dividing by $n$ gives the law of large numbers; dividing by $\sqrt n$ gives the central limit theorem.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"$E[XY] = E[X]E[Y]$ always."** This holds exactly when $X$ and $Y$ are uncorrelated; independence is the usual sufficient condition. For $X = Y = \mathbf 1_{\text{heads}}$, $E[XY] = \tfrac12$ but $E[X]E[Y] = \tfrac14$. Contrast linearity, $E[X + Y] = E[X] + E[Y]$, which needs no hypothesis at all beyond finite expectations.
+
+</Misconception>
+
+<Misconception>
+
+**"The central limit theorem says the data become normally distributed."** It says that the distribution of a standardised *sum or average* of many independent observations is close to normal. The observations themselves keep their own distribution: a large sample of waiting times is still exponential-looking, and its histogram converges to the exponential density, not to a bell.
+
+</Misconception>
+
+<Misconception>
+
+**"Uncorrelated means independent."** Zero covariance rules out only linear dependence. With $X$ uniform on $\{-1, 0, 1\}$ and $Y = X^2$, $Y$ is completely determined by $X$, yet $\operatorname{Cov}(X, Y) = 0$. (For jointly normal variables, uncorrelated does imply independent — a special property of the normal family.)
+
+</Misconception>
+
+<Misconception>
+
+**"After a run of heads, tails is due."** Independent flips have no memory, and the law of large numbers does not work by compensation. The proportion of heads converges to $\tfrac12$ because later flips swamp the early ones, while the excess number of heads typically grows like $\sqrt n$.
+
+</Misconception>
+
+<Misconception>
+
+**"Every distribution has a mean; a symmetric one has mean at its centre."** The Cauchy distribution is symmetric about $0$ but has no expectation, and the average of $n$ Cauchy observations is no more concentrated than one observation. Expectations require absolute convergence, and the limit theorems require their moment hypotheses.
+
+</Misconception>
+
+<Misconception>
+
+**"Variances add, so $\operatorname{Var}(X - Y) = \operatorname{Var} X - \operatorname{Var} Y$."** For independent (or uncorrelated) $X$ and $Y$, $\operatorname{Var}(X - Y) = \operatorname{Var} X + \operatorname{Var} Y$: subtracting an independent noisy quantity adds noise. And without that hypothesis, the covariance term $\pm 2\operatorname{Cov}(X, Y)$ appears.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Random variables as vectors: covariance is an inner product">
+
+Random variables with finite variance form a vector space $L^2$, and $\langle X, Y \rangle = E[XY]$ is an inner product on it (after identifying variables that agree with probability $1$). On centred variables the geometry is statistical: $\operatorname{Var} X = \|X - EX\|^2$ is a squared length, $\operatorname{Cov}(X, Y)$ is an inner product, the correlation $\rho$ is the **cosine of the angle** between $X - EX$ and $Y - EY$, and $|\rho| \le 1$ is the Cauchy–Schwarz inequality. "Uncorrelated" means **orthogonal**, and $\operatorname{Var}(X + Y) = \operatorname{Var} X + \operatorname{Var} Y$ for uncorrelated variables is **Pythagoras' theorem**. The expectation $E[X]$ itself is the orthogonal projection of $X$ onto the line of constants — the constant $c$ minimising $E[(X - c)^2]$ — and conditional expectation is projection onto a larger subspace. This picture underlies least squares in <TopicLink id="math.prob.statistics">statistical inference</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Expectation is an integral; the CLT is Fourier analysis">
+
+Kolmogorov's insight was that $E[X]$ is the Lebesgue integral $\int_\Omega X\,dP$, so every theorem of <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink> — monotone and dominated convergence, Fubini — becomes a theorem of probability. The distribution of a sum of independent variables is the **convolution** of their distributions, and the characteristic function $\varphi_X(t) = E[e^{itX}]$ is the **Fourier transform** of the distribution, which turns convolution into multiplication: $\varphi_{X+Y} = \varphi_X\varphi_Y$. The central limit theorem then says that $\varphi_Y(t/\sqrt n)^n \to e^{-t^2/2}$ — and $e^{-x^2/2}$ is, up to scaling, its own Fourier transform. Seen this way, the normal law is a **fixed point** of "add two independent copies and rescale by $\sqrt 2$", and the CLT says this fixed point attracts every distribution with finite variance. Distributions with infinite variance can be attracted to other fixed points, the stable laws (Lévy, 1920s).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Generating functions and counting fixed points by symmetry">
+
+For a random variable with values in $\{0, 1, 2, \dots\}$, the **probability generating function** $G_X(s) = E[s^X] = \sum_k P(X = k)s^k$ packages the distribution as a power series; independence turns sums into products, $G_{X+Y} = G_X G_Y$, so the binomial is $(q + ps)^n$ and moments come from derivatives at $s = 1$ ($E[X] = G'(1)$). The average number of fixed points has a group-theoretic meaning too: for any finite group $G$ acting on a finite set, **Burnside's lemma** says that the average number of points fixed by a random element of $G$ equals the number of orbits. The symmetric group acting on $\{1, \dots, n\}$ has one orbit, so a random permutation fixes one point on average — the formal proof in this lesson goes exactly this way. See <TopicLink id="math.algebra.groups">groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Diffusion, Brownian motion and the bell curve in nature">
+
+A pollen grain in water is pushed by a huge number of independent molecular collisions. Einstein (1905) and Smoluchowski (1906) modelled its displacement as a sum of many small independent steps, so by the central limit theorem it is normally distributed with variance proportional to time — the $\sqrt t$ law of diffusion, the continuous version of the random walk's $\sqrt n$. Jean Perrin's measurements of this spread (1908) gave one of the first accurate values of Avogadro's number, persuading sceptics that atoms exist. The density of the displacement solves the **heat equation** $\partial_t u = D\,\partial_x^2 u$, whose fundamental solution is a Gaussian. In statistical mechanics, the law of large numbers is why macroscopic quantities such as pressure, an average over $\sim 10^{23}$ molecules, are effectively deterministic. (These are physical models: the mathematics proves what follows from the independence assumptions, not that nature satisfies them exactly.) See <TopicLink id="math.prob.stochastic-processes">stochastic processes</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="sets" title="Kolmogorov's axioms: a probability space is a measure space">
+
+In set-theoretic terms, events are subsets of $\Omega$, "and", "or" and "not" are intersection, union and complement, and a random variable is a function $X : \Omega \to \R$ with $X^{-1}((-\infty, x]) \in \mathcal F$ — a measurable function. Its distribution is the **pushforward** measure $P \circ X^{-1}$ on $\R$. The insistence on a σ-algebra $\mathcal F$ rather than all subsets is forced: by Vitali's construction (which uses the axiom of choice), there is no countably additive, translation-invariant probability defined on *every* subset of $[0, 1)$. Kolmogorov's 1933 axioms resolved a century of foundational unease by making probability a branch of measure theory, while leaving open what probability *means* (frequencies, degrees of belief, propensities) — a question for statistics and philosophy rather than for the axioms.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Probability as a monad">
+
+Measurable spaces with **Markov kernels** (measurable families of probability distributions $x \mapsto \kappa(x, \cdot)$) as morphisms form a category: kernels compose by "first sample from $\kappa$, then from $\lambda$", exactly as stochastic matrices multiply. Giry (1982) showed that the assignment $X \mapsto \mathcal P(X)$, the space of probability measures on $X$, is a **monad** whose Kleisli category is this category of kernels; the functor $\mathcal P$ sends a measurable map to pushforward, so the distribution of a random variable $X : \Omega \to \R$ is $\mathcal P(X)$ applied to $P$. Mathlib contains the Giry monad (`MeasureTheory.Measure.join` and `bind`, packaged categorically in `MeasCat.Giry`) and composes kernels (`ProbabilityTheory.Kernel`) in exactly this way; the <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink> lesson is its simplest instance.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Counting before probability.** The combinatorics underlying discrete probability is older than probability itself: rules for counting combinations appear in Indian mathematics (Piṅgala's prosody; Bhāskara II's *Līlāvatī*, 12th century), in the work of Ibn Munʿim in 13th-century Marrakesh, and in the triangle of binomial coefficients described by Yang Hui in 1261 (after Jia Xian). In 9th-century Baghdad, al-Kindī used the frequencies of letters to break ciphers, an early piece of statistical reasoning.
+- **Games of chance.** Gerolamo Cardano's *Liber de ludo aleae* (written in the 16th century, published 1663) computed odds for dice. The correspondence of Blaise Pascal and Pierre de Fermat in 1654 solved the "problem of points" (how to divide the stakes of an interrupted game), and Christiaan Huygens' *De ratiociniis in ludo aleae* (1657) made **expectation** the central notion.
+- **Limit theorems.** Jacob Bernoulli's *Ars Conjectandi* (1713, published after his death) proved the first law of large numbers for repeated trials. Abraham de Moivre (1733; *The Doctrine of Chances*, 1738) found the normal approximation to the binomial with $p = \tfrac12$, and Pierre-Simon Laplace (*Théorie analytique des probabilités*, 1812) generalised it; Carl Friedrich Gauss (1809) derived the normal law of errors for least squares. Siméon Denis Poisson (1837) introduced the distribution named after him.
+- **The Russian school.** Irénée-Jules Bienaymé (1853) and Pafnuty Chebyshev (1867) proved the inequality now called Chebyshev's, and Chebyshev used it for a general law of large numbers. His students Andrei Markov and Aleksandr Lyapunov continued the work: Lyapunov gave the first rigorous general proof of the central limit theorem (1900–01) using characteristic functions, and Markov extended the limit theorems to dependent sequences — the origin of <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>. Jarl Waldemar Lindeberg (1922) and Paul Lévy completed the classical picture; William Feller's two volumes (1950, 1966) made it a modern subject.
+- **Foundations.** Andrei Kolmogorov's *Grundbegriffe der Wahrscheinlichkeitsrechnung* (1933) set probability on measure-theoretic axioms; Aleksandr Khinchin, Kolmogorov and Lévy proved the strong limit theorems; Nasrollah Etemadi (1981) gave the elementary proof of the strong law used in Mathlib. Andrew Berry (1941) and Carl-Gustav Esseen (1942) independently found the rate of convergence in the central limit theorem.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Geoffrey Grimmett and David Stirzaker, *Probability and Random Processes* (4th edition, 2020) — a complete undergraduate course, from these foundations to Markov chains and martingales; with its companion *One Thousand Exercises in Probability*.
+- William Feller, *An Introduction to Probability Theory and Its Applications*, Volume I (1950; 3rd edition 1968) — the classic, rich in examples (coupon collecting, random walks, the Poisson approximation).
+- Joseph K. Blitzstein and Jessica Hwang, *Introduction to Probability* (2nd edition, 2019) — a friendly first course built around stories and indicator variables.
+- Sheldon Ross, *A First Course in Probability* (many editions since 1976) — a gentle, example-driven introduction.
+- David Williams, *Probability with Martingales* (1991) — the measure-theoretic sequel, including a proof of the strong law.
+- Rick Durrett, *Probability: Theory and Examples* (5th edition, 2019) — the graduate treatment of the limit theorems, including the characteristic-function proof of the central limit theorem.
+
+</Section>

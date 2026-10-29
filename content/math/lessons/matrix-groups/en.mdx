@@ -1,0 +1,501 @@
+---
+slug: matrix-groups
+topic: math.geom.matrix-groups
+title: Matrix groups and continuous symmetry
+subtitle: Rotations, reflections, boosts and spins form groups that are also spaces. Quaternions turn rotations of space into arithmetic, a rotation by $360°$ secretly differs from doing nothing, and the exponential map turns curves of symmetries into matrices you can add.
+level: ug2
+ages: Undergraduate
+minutes: 125
+order: 6013
+objectives:
+  - Define the classical matrix groups $GL_n$, $SL_n$, $O(n)$, $SO(n)$, $U(n)$, $SU(n)$ and the Euclidean group, and decide which are compact and which are connected
+  - Prove Euler's rotation theorem and that $SO(3)$, unlike $SO(2)$, is not commutative
+  - Use unit quaternions to describe rotations of $\R^3$ and construct the two-to-one homomorphism $SU(2) \to SO(3)$ with kernel $\{\pm I\}$
+  - Compute matrix exponentials, prove that $t \mapsto \exp(tX)$ is a one-parameter subgroup with tangent vector $X$, and prove $\det(\exp X) = e^{\operatorname{tr} X}$
+  - Identify the Lie algebra of a matrix group with its tangent space at the identity, show that the Lie algebra of $SO(n)$ is the skew-symmetric matrices, and compute brackets
+narrators: []
+lean:
+  - Lumenary.MatrixGroups.orthogonal_preserves_dot
+  - Lumenary.MatrixGroups.mem_orthogonal_group_iff
+  - Lumenary.MatrixGroups.det_orthogonal
+  - Lumenary.MatrixGroups.rotation_mem_so2
+  - Lumenary.MatrixGroups.so2_comm
+  - Lumenary.MatrixGroups.so3_not_comm
+  - Lumenary.MatrixGroups.euler_rotation_det
+  - Lumenary.MatrixGroups.euler_rotation_axis
+  - Lumenary.MatrixGroups.exp_skew_orthogonal
+  - Lumenary.MatrixGroups.one_parameter_subgroup
+  - Lumenary.MatrixGroups.exp_tangent
+  - Lumenary.MatrixGroups.tangent_skew
+  - Lumenary.MatrixGroups.su2_mem
+  - Lumenary.MatrixGroups.quat_norm_mul
+  - Lumenary.MatrixGroups.quat_conj_pure
+  - Lumenary.MatrixGroups.quat_conj_norm
+  - Lumenary.MatrixGroups.quat_neg_same
+compute: [matrix_groups_exponential, matrix_groups_quaternions]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Symmetries that come in families">
+
+Put a book flat on a table. Turn it a quarter turn about a vertical axis, then a quarter turn about the axis pointing towards you. Start again and do the same two turns in the opposite order. The book ends up in two different positions. Rotations of the plane can be done in any order — they are just angles, and angles add — but rotations of space cannot.
+
+Rotations are not isolated symmetries like the six symmetries of an equilateral triangle. They come in **continuous families**: you can turn a little, or a little more, and the rotations near the identity look like a small piece of three-dimensional space. A drone's flight controller, written perhaps by a robotics team in Bengaluru or Lagos, must store and combine such rotations hundreds of times a second without drifting, and almost all of them use **quaternions**, four numbers per rotation, rather than $3 \times 3$ matrices or three angles. A physicist adds a stranger fact: rotating an electron's state through $360°$ multiplies it by $-1$, and only a rotation through $720°$ brings it back.
+
+These are all statements about **matrix groups**: groups of invertible matrices that are at the same time geometric spaces, so that we can speak of paths, of tangent vectors and of size. This lesson studies the most important ones and the bridge between their algebra and their geometry, the **matrix exponential**.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Groups that are also spaces">
+
+The rotations of the plane are the matrices $R(\theta) = \begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix}$. As $\theta$ varies they trace out a **circle** inside the four-dimensional space of $2 \times 2$ matrices, and $R(\theta)R(\varphi) = R(\theta + \varphi)$: the group law is addition of angles. The velocity of the curve $\theta \mapsto R(\theta)$ at $\theta = 0$ is the matrix $J = \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix}$ — an "infinitesimal rotation" — and the whole circle can be recovered from it as $R(\theta) = \exp(\theta J)$, where $\exp$ is the familiar power series with matrices in it.
+
+The same idea works for every matrix group $G$. Curves in $G$ through the identity have velocity vectors, and these form a vector space, the **Lie algebra** $\mathfrak g$ — the linearisation of $G$. The exponential map goes back from $\mathfrak g$ to $G$. Linear algebra in $\mathfrak g$ then tells us about the group: the dimension of $\mathfrak g$ is the number of parameters of $G$, and the failure of $G$ to be commutative is measured by the **bracket** $[X, Y] = XY - YX$ in $\mathfrak g$.
+
+The rotations of space form a three-dimensional group $SO(3)$. It is covered twice by the group of unit quaternions, which is the three-dimensional sphere $S^3$. Shrinking a path of rotations from $720°$ down to nothing is possible; from $360°$ it is not. That topological fact is the electron's sign.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="matrix group">
+
+$GL_n(\R)$ and $GL_n(\C)$ are the groups of invertible $n \times n$ real or complex matrices, viewed as open subsets of $\R^{n^2}$ and $\C^{n^2}$. A **matrix group** (or linear Lie group) is a subgroup of $GL_n$ that is a closed subset of it. Topological words — continuous, compact, connected, path — refer to this topology.
+
+</Definition>
+
+<Definition term="the classical groups">
+
+- $SL_n(k) = \{ A : \det A = 1 \}$, the **special linear group** ($k = \R$ or $\C$).
+- $O(n) = \{ A \in GL_n(\R) : A^{\mathsf T}A = I \}$, the **orthogonal group**, and $SO(n) = \{ A \in O(n) : \det A = 1 \}$, the **rotation group**.
+- $U(n) = \{ A \in GL_n(\C) : A^*A = I \}$ with $A^* = \overline A^{\mathsf T}$, the **unitary group**, and $SU(n) = \{ A \in U(n) : \det A = 1 \}$.
+- The **Euclidean group** $E(n)$ of isometries $x \mapsto Ax + b$ of $\R^n$ ($A \in O(n)$, $b \in \R^n$), realised as the matrices $\begin{pmatrix} A & b \\ 0 & 1 \end{pmatrix}$ acting on vectors $\begin{pmatrix} x \\ 1 \end{pmatrix}$.
+
+</Definition>
+
+<Definition term="quaternions">
+
+The **quaternions** $\mathbb H$ are the real vector space with basis $1, i, j, k$ and the associative multiplication determined by Hamilton's rules $i^2 = j^2 = k^2 = ijk = -1$ (so $ij = k = -ji$, $jk = i = -kj$, $ki = j = -ik$). For $q = a + bi + cj + dk$, the **conjugate** is $\bar q = a - bi - cj - dk$ and $|q|^2 = q\bar q = a^2 + b^2 + c^2 + d^2$. A quaternion is **pure** if $a = 0$; we identify the pure quaternions with $\R^3$.
+
+</Definition>
+
+<Definition term="matrix exponential and one-parameter subgroup">
+
+For a square matrix $X$, $\exp X = \sum_{k \ge 0} X^k / k! = I + X + X^2/2 + \dots$. A **one-parameter subgroup** of $G$ is a continuous homomorphism $\varphi : (\R, +) \to G$, that is, $\varphi(s + t) = \varphi(s)\varphi(t)$.
+
+</Definition>
+
+<Definition term="Lie algebra">
+
+The **Lie algebra** of a matrix group $G$ is $\mathfrak g = \{ X : \exp(tX) \in G \text{ for all } t \in \R \}$, equipped with the **bracket** $[X, Y] = XY - YX$. We write $\mathfrak{so}(n)$, $\mathfrak{sl}_n$, $\mathfrak u(n)$, $\mathfrak{su}(n)$ for the Lie algebras of the classical groups.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="The circle group, three times">
+
+$SO(2) = \{ R(\theta) \}$ is a circle. So is $U(1) = \{ z \in \C : |z| = 1 \}$, and the map $e^{i\theta} \mapsto R(\theta)$ is an isomorphism of groups that is also a homeomorphism: multiplying by $e^{i\theta}$ *is* rotating by $\theta$. Both are commutative. $O(2)$ is $SO(2)$ together with the reflections $\begin{pmatrix} \cos\theta & \sin\theta \\ \sin\theta & -\cos\theta \end{pmatrix}$ (determinant $-1$): two disjoint circles.
+
+</Example>
+
+<Example title="Exponentials you can compute by hand">
+
+- $\exp(\theta J) = R(\theta)$: since $J^2 = -I$, the even terms give $\cos\theta \, I$ and the odd terms $\sin\theta \, J$.
+- $\exp\begin{pmatrix} 0 & t \\ 0 & 0 \end{pmatrix} = \begin{pmatrix} 1 & t \\ 0 & 1 \end{pmatrix}$, a shear: the series stops because the matrix squares to $0$.
+- $\exp\begin{pmatrix} 0 & t \\ t & 0 \end{pmatrix} = \begin{pmatrix} \cosh t & \sinh t \\ \sinh t & \cosh t \end{pmatrix}$, a "hyperbolic rotation" preserving $x^2 - y^2$ — a Lorentz boost in one space dimension.
+- $\exp(\operatorname{diag}(a, b)) = \operatorname{diag}(e^a, e^b)$, and $\exp(PXP^{-1}) = P\exp(X)P^{-1}$, so diagonalisable matrices are exponentiated by exponentiating eigenvalues.
+
+</Example>
+
+<Example title="A non-compact connected group, and an element that is not an exponential">
+
+$SL_2(\R)$ contains $\operatorname{diag}(t, 1/t)$ for every $t > 0$, so it is unbounded and **not compact**. It is **connected**: every $A \in SL_2(\R)$ factors (Gram–Schmidt on the columns) as $A = QR$ with $Q \in SO(2)$ and $R = \begin{pmatrix} a & b \\ 0 & 1/a \end{pmatrix}$, $a > 0$, and both factors can be slid continuously to $I$. Yet $\exp : \mathfrak{sl}_2(\R) \to SL_2(\R)$ is **not surjective**: $A = \begin{pmatrix} -1 & 1 \\ 0 & -1 \end{pmatrix}$ is not $\exp X$ for any real $X$. Indeed, $\det A = 1$ forces $\operatorname{tr} X = 0$ (Theorem 7(e) below), so $X$ has eigenvalues $\pm\mu$ with $\mu^2 = -\det X$. If $\mu$ is real and non-zero, $\exp X$ has positive eigenvalues $e^{\pm\mu}$; if $\mu = 0$, $X$ is nilpotent and $\exp X = I + X$ has eigenvalue $1$; if $\mu = i\nu$ is imaginary, $X$ is diagonalisable over $\C$, so $\exp X$ is too — but $A$ is a Jordan block, not diagonalisable. No case gives $A$.
+
+</Example>
+
+<Example title="Groups that are not matrix groups in the sense above">
+
+The subgroup $\{ \exp(tX) : t \in \R \}$ of the torus $U(1) \times U(1)$, with $X = \operatorname{diag}(i, i\sqrt2)$, is a line winding densely around the torus: it is a subgroup but not closed, so we do not call it a matrix group. (Its closure is the whole torus.) Closedness is what makes the Lie algebra well behaved; von Neumann proved in 1929 that closed subgroups of $GL_n$ are automatically smooth manifolds.
+
+</Example>
+
+</Section>
+
+<Section id="orthogonal" kind="proof" title="Orthogonal groups: compactness, components and Euler's theorem">
+
+<Theorem name="Proposition 1 (what orthogonal means)">
+
+For a real $n \times n$ matrix $A$, the following are equivalent: (a) $A^{\mathsf T}A = I$; (b) $(Av) \cdot (Aw) = v \cdot w$ for all $v, w$; (c) the columns of $A$ are orthonormal. Every $A \in O(n)$ has $\det A = \pm 1$, and $O(n)$ is a group.
+
+</Theorem>
+
+<Proof>
+
+(a) ⇒ (b): $(Av) \cdot (Aw) = v^{\mathsf T}A^{\mathsf T}Aw = v \cdot w$. (b) ⇒ (c): the columns are $Ae_i$, and $Ae_i \cdot Ae_j = e_i \cdot e_j$. (c) ⇒ (a): the $(i, j)$ entry of $A^{\mathsf T}A$ is (column $i$) $\cdot$ (column $j$). Taking determinants in (a), $(\det A)^2 = \det A^{\mathsf T} \det A = 1$. If $A, B \in O(n)$ then $(AB)^{\mathsf T}AB = B^{\mathsf T}A^{\mathsf T}AB = I$, and $A^{-1} = A^{\mathsf T}$ is orthogonal.
+
+</Proof>
+
+<Theorem name="Proposition 2 (compactness and components)">
+
+$O(n)$ and $SO(n)$ are compact. $O(n)$ is not connected: it is the disjoint union of the closed sets $SO(n)$ and $\{ \det = -1 \}$. $U(n)$ and $SU(n)$ are compact; $GL_n$ and $SL_n$ ($n \geq 2$) are not.
+
+</Theorem>
+
+<Proof>
+
+$O(n)$ is the preimage of $I$ under the continuous map $A \mapsto A^{\mathsf T}A$, hence closed, and its entries satisfy $|a_{ij}| \le 1$ because the columns are unit vectors, so it is bounded; by Heine–Borel it is compact. $SO(n)$ is a closed subset of it. The determinant is continuous on $O(n)$ with values in $\{1, -1\}$, so the two level sets are disjoint, closed and non-empty: $O(n)$ is disconnected, and no path of orthogonal matrices joins a reflection to $I$. The same argument with $A^*A$ shows $U(n)$ and $SU(n)$ are compact. Finally $\operatorname{diag}(t, 1/t, 1, \dots, 1) \in SL_n(\R)$ is unbounded.
+
+</Proof>
+
+<Theorem name="Proposition 3 (connectedness)">
+
+$SO(n)$, $U(n)$ and $SU(n)$ are path-connected.
+
+</Theorem>
+
+<Proof>
+
+*$U(n)$.* A unitary matrix is normal, so by the complex spectral theorem (see <TopicLink id="math.algebra.advanced-linear-algebra">advanced linear algebra</TopicLink>) $A = P \operatorname{diag}(e^{i\theta_1}, \dots, e^{i\theta_n}) P^*$ with $P$ unitary. The path $t \mapsto P \operatorname{diag}(e^{it\theta_1}, \dots, e^{it\theta_n})P^*$, $t \in [0, 1]$, runs inside $U(n)$ from $I$ to $A$. If $\det A = 1$ we may choose the $\theta_j$ with $\sum \theta_j = 0$, and then the path stays in $SU(n)$.
+
+*$SO(n)$.* An orthogonal $A$ is normal with eigenvalues on the unit circle, in conjugate pairs $e^{\pm i\theta}$. If $v = x + iy$ is an eigenvector for $e^{i\theta}$ with $\theta \notin \{0, \pi\}$, then $\operatorname{span}(x, y)$ is an $A$-invariant plane on which $A$ acts as a rotation by $\theta$; the real form of the spectral theorem gives an orthonormal basis (columns of $P \in O(n)$) in which $A$ is block diagonal with blocks $R(\theta_j)$, $1$ and $-1$. Since $\det A = 1$ the $-1$s come in pairs, and a pair $\operatorname{diag}(-1, -1) = R(\pi)$ is a rotation block too. Shrinking every angle $\theta_j$ to $0$ gives a path in $SO(n)$ from $A$ to $I$.
+
+</Proof>
+
+So **orientation is topological**: the two components of $O(n)$ (and of $GL_n(\R)$, by Gram–Schmidt) are told apart by the sign of the determinant. Here is the summary, including results stated without proof.
+
+| group | dimension | compact | connected |
+| --- | --- | --- | --- |
+| $GL_n(\R)$ | $n^2$ | no | no (two components) |
+| $SL_n(\R)$, $n \ge 2$ | $n^2 - 1$ | no | yes |
+| $O(n)$ | $n(n-1)/2$ | yes | no (two components) |
+| $SO(n)$ | $n(n-1)/2$ | yes | yes |
+| $U(n)$ | $n^2$ | yes | yes |
+| $SU(n)$ | $n^2 - 1$ | yes | yes |
+| $E(n)$ | $n(n+1)/2$ | no | no (two components) |
+
+<Theorem name="Theorem 4 (Euler's rotation theorem)">
+
+Every $A \in SO(3)$ is a rotation about some axis: there is a unit vector $u$ with $Au = u$, and $A$ rotates the plane $u^\perp$ by an angle $\theta$ with $1 + 2\cos\theta = \operatorname{tr} A$.
+
+</Theorem>
+
+<Proof>
+
+Since $AA^{\mathsf T} = I$ and $\det A = 1$,
+
+$$
+\det(A - I) = \det\big(A(I - A^{\mathsf T})\big) = \det(I - A^{\mathsf T}) = \det\big((I - A)^{\mathsf T}\big) = \det(I - A) = (-1)^3\det(A - I).
+$$
+
+So $\det(A - I) = 0$ and there is a unit vector $u$ with $Au = u$. As $A$ preserves dot products, it maps $u^\perp$ to itself; its restriction is an orthogonal map of a plane with determinant $1$ (the determinant of $A$ in a basis $u, v, w$ is $1 \cdot \det(A|_{u^\perp})$), hence a rotation $R(\theta)$. In that basis $A = \operatorname{diag}(1, R(\theta))$ and $\operatorname{tr} A = 1 + 2\cos\theta$.
+
+</Proof>
+
+Notice where the dimension entered: $(-1)^3 = -1$. In $SO(2)$ the rotation $R(\pi/2)$ fixes no non-zero vector, and in $SO(4)$ the matrix $\operatorname{diag}(R(\theta), R(\varphi))$ fixes none either. A surprising corollary: the composite of two rotations of space about *different* axes is again a rotation about a single axis. And the order matters: with $R_x$ and $R_z$ the quarter turns about the $x$- and $z$-axes, $R_xR_z \ne R_zR_x$, so $SO(3)$ is not commutative, while $SO(2)$ is.
+
+</Section>
+
+<Section id="quaternions" kind="proof" title="Quaternions, SU(2) and the double cover">
+
+<Theorem name="Proposition 5 (unit quaternions)">
+
+$|pq| = |p||q|$ for all quaternions, so the unit quaternions form a group, which as a space is the sphere $S^3 \subset \R^4$. The map
+
+$$
+a + bi + cj + dk \;\longmapsto\; \begin{pmatrix} a + bi & -c - di \\ c - di & a - bi \end{pmatrix}
+$$
+
+is an injective ring homomorphism $\mathbb H \to M_2(\C)$ with $\det = |q|^2$, and it identifies the unit quaternions with $SU(2)$.
+
+</Theorem>
+
+<Proof>
+
+A direct computation shows $\overline{pq} = \bar q\,\bar p$, so $|pq|^2 = pq\,\bar q\,\bar p = p|q|^2\bar p = |p|^2|q|^2$ (real numbers commute with everything). So products and inverses ($q^{-1} = \bar q$) of unit quaternions are unit quaternions. The images of $i, j, k$ are $\begin{pmatrix} i & 0 \\ 0 & -i \end{pmatrix}$, $\begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix}$ and $\begin{pmatrix} 0 & -i \\ -i & 0 \end{pmatrix}$; one checks that they satisfy Hamilton's rules, so the map is a ring homomorphism, and it is injective since the four matrices are independent. Writing $\alpha = a + bi$ and $\beta = c - di$, the image is $\begin{pmatrix} \alpha & -\bar\beta \\ \beta & \bar\alpha \end{pmatrix}$, with determinant $|\alpha|^2 + |\beta|^2 = |q|^2$; such a matrix with $|\alpha|^2 + |\beta|^2 = 1$ is unitary (its columns are orthonormal). Conversely, if $A = \begin{pmatrix} \alpha & \gamma \\ \beta & \delta \end{pmatrix} \in SU(2)$ then $A^{-1} = A^*$ reads $\begin{pmatrix} \delta & -\gamma \\ -\beta & \alpha \end{pmatrix} = \begin{pmatrix} \bar\alpha & \bar\beta \\ \bar\gamma & \bar\delta \end{pmatrix}$, so $\delta = \bar\alpha$ and $\gamma = -\bar\beta$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (the double cover SU(2) → SO(3))">
+
+For a unit quaternion $q$ define $\rho(q) : \R^3 \to \R^3$ by $\rho(q)v = qv\bar q$, on pure quaternions $v$. Then $\rho$ is a surjective homomorphism from the unit quaternions ($\cong SU(2)$) onto $SO(3)$, with kernel $\{\pm 1\}$. Explicitly, if $u$ is a unit pure quaternion, then $\rho\big(\cos\tfrac\theta2 + \sin\tfrac\theta2\,u\big)$ is the rotation by $\theta$ about the axis $u$.
+
+</Theorem>
+
+<Proof>
+
+*$\rho(q) \in O(3)$.* The real part of $qv\bar q$ is $|q|^2$ times the real part of $v$ (a polynomial identity), so pure quaternions go to pure quaternions; $\rho(q)$ is linear, and $|qv\bar q| = |q||v||\bar q| = |v|$, so it preserves lengths, hence (by polarisation) dot products.
+
+*Homomorphism.* $\rho(pq)v = pqv\bar q\bar p = \rho(p)\rho(q)v$, using $\overline{pq} = \bar q \bar p$.
+
+*The axis and angle.* For pure quaternions $u, w$ one has $uw = -u \cdot w + u \times w$. Let $u$ be a unit pure quaternion, $c = \cos\frac\theta2$, $s = \sin\frac\theta2$, and $q = c + su$. Then $q$ commutes with $u$, so $\rho(q)u = u$. If $w \perp u$ is a unit pure quaternion, put $w' = u \times w = uw$, so that $wu = -w'$ and $w'u = w$. Then
+
+$$
+qw\bar q = (c + su)\,w\,(c - su) = c^2 w + 2cs\,w' - s^2 w = \cos\theta\, w + \sin\theta\, (u \times w),
+$$
+
+which is the rotation by $\theta$ about $u$. In particular $\det \rho(q) = 1$, and since every unit quaternion has the form $c + su$, $\rho$ lands in $SO(3)$; by Euler's theorem every element of $SO(3)$ is such a rotation, so $\rho$ is **onto**.
+
+*Kernel.* $\rho(q) = I$ means $qv = vq$ for all pure $v$; commuting with $i$, $j$ and $k$ forces $q$ to be real, so $q = \pm 1$.
+
+</Proof>
+
+So $SO(3) \cong S^3/\{\pm 1\}$: a rotation is a pair of antipodal unit quaternions. As $\theta$ runs from $0$ to $2\pi$, the rotations $\rho(q_\theta)$ make a closed loop in $SO(3)$, but the quaternions $q_\theta = \cos\frac\theta2 + \sin\frac\theta2 u$ run from $1$ to $-1$: half a great circle of $S^3$. Only at $\theta = 4\pi$ does $q_\theta$ return to $1$. This is the $360°$ versus $720°$ of the motivation, and it shows that $SO(3)$ has a loop that cannot be shrunk while its double has none: $\pi_1(SO(3)) \cong \Z/2$ (see <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>).
+
+</Section>
+
+<Section id="exponential" kind="proof" title="The exponential map and one-parameter subgroups">
+
+Fix any submultiplicative matrix norm ($\|XY\| \le \|X\|\|Y\|$), for instance the operator norm. Then $\|X^k/k!\| \le \|X\|^k/k!$, so the series for $\exp X$ converges absolutely for every $X$.
+
+<Theorem name="Theorem 7 (properties of exp)">
+
+For square matrices $X$, $Y$ and invertible $P$:
+
+(a) if $XY = YX$ then $\exp(X + Y) = \exp X \exp Y$; (b) $\exp X$ is invertible with inverse $\exp(-X)$; (c) $\exp(PXP^{-1}) = P\exp(X)P^{-1}$ and $(\exp X)^{\mathsf T} = \exp(X^{\mathsf T})$; (d) $t \mapsto \exp(tX)$ is a one-parameter subgroup with $\frac{d}{dt}\exp(tX) = X\exp(tX)$, so its tangent vector at $t = 0$ is $X$; (e) $\det(\exp X) = e^{\operatorname{tr} X}$.
+
+</Theorem>
+
+<Proof>
+
+(a) For commuting $X, Y$ the binomial theorem holds, and multiplying absolutely convergent series term by term,
+
+$$
+\exp X \exp Y = \sum_{m} \sum_{j + l = m} \frac{X^j Y^l}{j!\,l!} = \sum_m \frac{(X + Y)^m}{m!} = \exp(X + Y).
+$$
+
+(b) $X$ and $-X$ commute, so $\exp X \exp(-X) = \exp 0 = I$. (c) $(PXP^{-1})^k = PX^kP^{-1}$ and $(X^{\mathsf T})^k = (X^k)^{\mathsf T}$, term by term. (d) $sX$ and $tX$ commute, so (a) gives the homomorphism property; differentiating the power series term by term (allowed for power series) gives $\sum_{k \ge 1} t^{k-1}X^k/(k-1)! = X\exp(tX)$. (e) Over $\C$ write $X = PTP^{-1}$ with $T$ upper triangular (Schur, or Jordan form). Powers of $T$ are upper triangular with diagonal entries $t_{ii}^k$, so $\exp T$ is upper triangular with diagonal $e^{t_{ii}}$, and $\det \exp X = \det \exp T = \prod e^{t_{ii}} = e^{\operatorname{tr} T} = e^{\operatorname{tr} X}$.
+
+</Proof>
+
+<Theorem name="Theorem 8 (every one-parameter subgroup is exponential)">
+
+If $\varphi : \R \to GL_n$ is a continuous homomorphism, then there is a unique matrix $X$ with $\varphi(t) = \exp(tX)$ for all $t$.
+
+</Theorem>
+
+<Proof>
+
+First we show $\varphi$ is differentiable. Since $\varphi(0) = I$ and $\varphi$ is continuous, $B = \frac1\varepsilon\int_0^\varepsilon \varphi(s)\,ds$ is close to $I$, hence invertible, for small $\varepsilon > 0$. Now $\varphi(t)\,\varepsilon B = \int_0^\varepsilon \varphi(t + s)\,ds = \int_t^{t + \varepsilon}\varphi(s)\,ds$, which is differentiable in $t$ by the fundamental theorem of calculus; multiplying by $(\varepsilon B)^{-1}$ shows $\varphi$ is differentiable. Differentiating $\varphi(t + s) = \varphi(t)\varphi(s)$ in $s$ at $s = 0$ gives $\varphi'(t) = \varphi(t)X$ with $X = \varphi'(0)$. Then $\psi(t) = \varphi(t)\exp(-tX)$ has $\psi' = \varphi X\exp(-tX) - \varphi X \exp(-tX) = 0$ (as $X$ commutes with $\exp(-tX)$), so $\psi \equiv \psi(0) = I$. Uniqueness: $X = \varphi'(0)$.
+
+</Proof>
+
+<VectorField mode="phase" f="-y" g="x" points={[[1, 0], [2, 0], [3, 0]]} x={[-4, 4]} y={[-4, 4]} title="The flow of x′ = Jx is exp(tJ): rotations" />
+
+</Section>
+
+<Section id="lie-algebras" kind="proof" title="Lie algebras: the tangent space at the identity">
+
+<Theorem name="Theorem 9 (classical Lie algebras)">
+
+(a) $\mathfrak{so}(n) = \mathfrak o(n) = \{ X : X^{\mathsf T} = -X \}$, of dimension $n(n-1)/2$. (b) $\mathfrak{sl}_n = \{ X : \operatorname{tr} X = 0 \}$. (c) $\mathfrak u(n) = \{ X : X^* = -X \}$ and $\mathfrak{su}(n) = \{ X \in \mathfrak u(n) : \operatorname{tr} X = 0 \}$. (d) In each case $\mathfrak g$ is exactly the set of velocity vectors $\gamma'(0)$ of differentiable curves $\gamma$ in $G$ with $\gamma(0) = I$.
+
+</Theorem>
+
+<Proof>
+
+(a) If $X^{\mathsf T} = -X$ then $(\exp tX)^{\mathsf T}\exp tX = \exp(-tX)\exp(tX) = I$ by Theorem 7(b, c), and $\det \exp(tX) = e^{t \operatorname{tr} X} = 1$ since a skew matrix has zero diagonal. Conversely, let $\gamma$ be a differentiable curve in $O(n)$ with $\gamma(0) = I$ and $\gamma'(0) = X$ — for example $\gamma(t) = \exp(tX)$ when $X \in \mathfrak o(n)$, by Theorem 7(d). Differentiating $\gamma(t)^{\mathsf T}\gamma(t) = I$ at $t = 0$ by the product rule gives $X^{\mathsf T} + X = 0$. A skew matrix is determined by its $n(n-1)/2$ entries above the diagonal. (b) By Theorem 7(e), $\det\exp(tX) = 1$ for all $t$ if and only if $t\operatorname{tr} X \in 2\pi i\Z$ for all $t$, i.e. $\operatorname{tr} X = 0$. (c) is (a) with $X^*$ in place of $X^{\mathsf T}$, combined with (b). (d) is the curve argument above for $O(n)$ and $U(n)$; for $SL_n$, differentiate $\det\gamma(t) = 1$ using $\frac{d}{dt}\det\gamma(t)\big|_{t=0} = \operatorname{tr}\gamma'(0)$ when $\gamma(0) = I$.
+
+</Proof>
+
+Two facts complete the picture; we state them with references. For any matrix group, $\mathfrak g$ is a real vector space closed under the bracket. Closure under addition follows from the **Lie product formula** $\exp(X + Y) = \lim_{m \to \infty}\big(\exp\frac Xm \exp\frac Ym\big)^m$; closure under the bracket follows by differentiating the curve $t \mapsto \exp(tX)\,Y\exp(-tX)$ in $\mathfrak g$ at $t = 0$, which gives $XY - YX$ (Hall, *Lie Groups, Lie Algebras, and Representations*, chapters 2–3). And the bracket measures non-commutativity to second order: $\exp(tX)\exp(tY) = \exp\big(t(X + Y) + \tfrac{t^2}{2}[X, Y] + O(t^3)\big)$, the start of the Baker–Campbell–Hausdorff formula, which the first experiment checks numerically.
+
+<Example title="Infinitesimal rotations and the cross product">
+
+A skew $3 \times 3$ matrix is $X_v = \begin{pmatrix} 0 & -v_3 & v_2 \\ v_3 & 0 & -v_1 \\ -v_2 & v_1 & 0 \end{pmatrix}$ for a unique $v \in \R^3$, and $X_v w = v \times w$. One checks $[X_u, X_v] = X_{u \times v}$: **the Lie algebra $\mathfrak{so}(3)$ is $\R^3$ with the cross product**. $\exp(\theta X_u)$, for a unit vector $u$, is the rotation by $\theta$ about $u$ (Rodrigues' formula $\exp(\theta X_u) = I + \sin\theta\,X_u + (1 - \cos\theta)X_u^2$, from $X_u^3 = -X_u$), so by Euler's theorem $\exp : \mathfrak{so}(3) \to SO(3)$ is surjective. A spinning top's angular velocity is a vector in $\mathfrak{so}(3)$. Similarly $\mathfrak{su}(2)$ has basis $\tfrac{i}{2}\sigma_1, \tfrac i2\sigma_2, \tfrac i2\sigma_3$ (Pauli matrices) with the same brackets up to sign, and the derivative of $\rho$ is an isomorphism $\mathfrak{su}(2) \cong \mathfrak{so}(3)$ — the double cover is a local isomorphism.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Matrix groups in Lean and Mathlib">
+
+Mathlib defines `Matrix.orthogonalGroup n R`, `Matrix.specialOrthogonalGroup`, `Matrix.unitaryGroup` and `Matrix.specialUnitaryGroup` as submonoids of matrices carrying a group structure, the exponential `NormedSpace.exp`, and the quaternions `ℍ[ℝ]`. Proposition 1, the determinant, and the commutativity of $SO(2)$:
+
+<Lean decl="Lumenary.MatrixGroups.orthogonal_preserves_dot" />
+
+<Lean decl="Lumenary.MatrixGroups.mem_orthogonal_group_iff" />
+
+<Lean decl="Lumenary.MatrixGroups.det_orthogonal" />
+
+<Lean decl="Lumenary.MatrixGroups.rotation_mem_so2" />
+
+<Lean decl="Lumenary.MatrixGroups.so2_comm" />
+
+The book experiment, and Euler's theorem with the lesson's determinant argument:
+
+<Lean decl="Lumenary.MatrixGroups.so3_not_comm" />
+
+<Lean decl="Lumenary.MatrixGroups.euler_rotation_det" />
+
+<Lean decl="Lumenary.MatrixGroups.euler_rotation_axis" />
+
+The exponential: skew-symmetric matrices exponentiate into $O(n)$, $t \mapsto \exp(tX)$ is a homomorphism with tangent vector $X$, and conversely every tangent vector to $O(n)$ at $I$ is skew. The last theorem is Theorem 9(a)'s curve argument, with Mathlib's product rule for derivatives; derivatives of matrix-valued functions need a norm, and the operator norm is used (all norms on a finite-dimensional space give the same derivatives).
+
+<Lean decl="Lumenary.MatrixGroups.exp_skew_orthogonal" />
+
+<Lean decl="Lumenary.MatrixGroups.one_parameter_subgroup" />
+
+<Lean decl="Lumenary.MatrixGroups.exp_tangent" />
+
+<Lean decl="Lumenary.MatrixGroups.tangent_skew" />
+
+Quaternions and $SU(2)$: points of $S^3$ give elements of $SU(2)$, the norm is multiplicative, and conjugation by a unit quaternion is an isometry of the pure quaternions with $\rho(-q) = \rho(q)$:
+
+<Lean decl="Lumenary.MatrixGroups.su2_mem" />
+
+<Lean decl="Lumenary.MatrixGroups.quat_norm_mul" />
+
+<Lean decl="Lumenary.MatrixGroups.quat_conj_pure" />
+
+<Lean decl="Lumenary.MatrixGroups.quat_conj_norm" />
+
+<Lean decl="Lumenary.MatrixGroups.quat_neg_same" />
+
+**What is and is not formalised.** Independent: Proposition 1 and the determinant, $SO(2)$ commutative and $SO(3)$ not, Euler's theorem (the axis), $\exp(\mathfrak{so}(n)) \subseteq O(n)$, the one-parameter subgroup law, tangent vectors to $O(n)$ are skew, $S^3 \to SU(2)$, and the isometry and sign properties of $\rho$. From Mathlib: the description of $O(n)$, the tangent vector of $\exp(tX)$, and $|pq| = |p||q|$. Not formalised: compactness and connectedness (Propositions 2 and 3), the trace formula for the angle, surjectivity and the kernel of $\rho$, Theorem 8, and $\det \exp X = e^{\operatorname{tr} X}$ — which Mathlib's matrix-exponential file lists as a result still to be added. The Lean exercises ask for $\det A = \pm1$ and $\rho(-q) = \rho(q)$.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Exponentials numerically, quaternions exactly">
+
+The first program sums the exponential series (scaling $X$ down by a power of $2$, summing, then squaring back up). It checks $\exp(\theta J) = R(\theta)$, that exponentials of skew matrices are rotations, and $\det\exp X = e^{\operatorname{tr} X}$, and then measures the Baker–Campbell–Hausdorff correction: $\exp(tX)\exp(tY)$ differs from $\exp(t(X + Y))$ by a term of order $t^2$ that the bracket $\tfrac{t^2}{2}[X, Y]$ removes.
+
+<Python id="matrix_groups_exponential" />
+
+These are floating-point checks, accurate to about $10^{-14}$, on finitely many matrices. The second program avoids rounding altogether by using quaternions with rational coordinates, such as $(1 + 2i + 2j + 4k)/5$. It verifies exactly that $\rho(q)$ is orthogonal with determinant $1$, that $\rho(-q) = \rho(q)$ and $\rho(pq) = \rho(p)\rho(q)$, and that rotations need not commute. It then checks exhaustively that the $24$ **Hurwitz units** $\pm1, \pm i, \pm j, \pm k, \frac12(\pm1 \pm i \pm j \pm k)$ form a group mapping two-to-one onto $12$ rotations: the rotation group of a regular tetrahedron, doubled into the "binary tetrahedral group".
+
+<Python id="matrix_groups_quaternions" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: one-parameter subgroups and the two components of O(2)">
+
+Each phase portrait below is the flow $\mathbf x(t) = \exp(tX)\mathbf x(0)$ of a one-parameter subgroup, for three different $X$ with trace $0$, so every flow lies in $SL_2(\R)$. The rotation generator above gave circles (a compact subgroup, $SO(2)$). The symmetric generator $\begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}$ gives the hyperbolic rotations, which preserve $x^2 - y^2$: orbits are hyperbolas, and the subgroup is a line, not a circle. Click to start new trajectories and compare.
+
+<VectorField mode="phase" f="y" g="x" points={[[1, 0.2], [-1, -0.2], [0.2, 1], [-0.2, -1]]} x={[-4, 4]} y={[-4, 4]} title="Hyperbolic rotations: X = [[0, 1], [1, 0]]" />
+
+Multiplication by a unit complex number $w$ is a rotation, so $U(1) \cong SO(2)$. Drag $w$ around the unit circle and watch $z \mapsto wz$ turn $z$ by the angle of $w$ without changing its length.
+
+<ComplexPlane mode="arithmetic" op="product" z={[1.5, 0.5]} w={["cos(pi/3)", "sin(pi/3)"]} title="U(1): multiplying by a unit complex number rotates" />
+
+Finally, $O(2)$ has two components. Pick the rotation preset and play the morph from $I$: the flag turns but never flips. Pick the reflection preset and play again: on the way from $I$ to a reflection the determinant must pass through $0$, leaving the group — there is no path inside $O(2)$.
+
+<MatrixTransform matrix={[["cos(pi/6)", "-sin(pi/6)"], ["sin(pi/6)", "cos(pi/6)"]]} mode="single" presets={["rotation", "reflection", "identity"]} title="Two components of O(2)" subtitle="Rotations (det 1) and reflections (det −1): watch the determinant during the morph from I." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"$\exp(X + Y) = \exp X \exp Y$ for all matrices."** This holds when $XY = YX$ (Theorem 7(a)), but not in general: for $X = \begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix}$ and $Y = \begin{pmatrix} 0 & 0 \\ 1 & 0 \end{pmatrix}$ the two sides differ by about $0.54$ in one entry (first experiment). The discrepancy is governed by the bracket $[X, Y]$ — non-commutativity of the group shows up as non-additivity of $\exp$.
+
+</Misconception>
+
+<Misconception>
+
+**"Rotations of space commute, like rotations of the plane."** $SO(2)$ is commutative because its elements are just angles, but $SO(3)$ is not: the book experiment, the Lean theorem `so3_not_comm`, and the bracket $[X_u, X_v] = X_{u \times v} \ne 0$ all show it. Two rotations about the same axis do commute.
+
+</Misconception>
+
+<Misconception>
+
+**"Every orthogonal $3 \times 3$ matrix is a rotation."** Only those with determinant $1$. The matrix $-I$ (the point reflection $v \mapsto -v$) is orthogonal with determinant $-1$; it is not a rotation about any axis and lies in the other component of $O(3)$. In fact $O(3) = SO(3) \times \{\pm I\}$.
+
+</Misconception>
+
+<Misconception>
+
+**"A rotation by $360°$ is the identity, so nothing can tell it from doing nothing."** In $SO(3)$ it is the identity. But the *path* of rotations from $0°$ to $360°$ is a loop that cannot be shrunk to a point in $SO(3)$, and in $SU(2)$ it lifts to a path from $1$ to $-1$. Spin-$\tfrac12$ particles are described by $SU(2)$, which is why their states change sign; the belt trick is the everyday version.
+
+</Misconception>
+
+<Misconception>
+
+**"For a connected matrix group, every element is an exponential."** True for compact connected groups such as $SO(n)$ and $U(n)$ (a theorem; for $SO(3)$ it is Euler's theorem with Rodrigues' formula), but false for $SL_2(\R)$, which is connected but contains $\begin{pmatrix} -1 & 1 \\ 0 & -1 \end{pmatrix}$, not an exponential (worked example). The images of $\exp$ always *generate* a connected group.
+
+</Misconception>
+
+<Misconception>
+
+**"The Lie algebra is a group of matrices too."** It is a vector space with the bracket, not a group under multiplication: the product of two skew-symmetric matrices is usually not skew, and $\mathfrak{so}(n)$ does not contain $I$. Its elements are velocities, not symmetries.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="SO(3) is real projective space; the Hopf fibration">
+
+Theorem 6 identifies $SO(3)$ with $S^3/\{\pm 1\}$, the **real projective space** $\R P^3$. Another picture: a rotation is an axis $u$ and an angle $\theta \in [0, \pi]$, i.e. the point $\theta u$ of the closed ball of radius $\pi$, with antipodal boundary points identified (a rotation by $\pi$ about $u$ equals one about $-u$). Since $S^3$ is simply connected and the covering $S^3 \to SO(3)$ has two sheets, $\pi_1(SO(3)) \cong \Z/2$: the $360°$ loop is non-trivial and its double is trivial. More generally $\pi_1(SO(n)) \cong \Z/2$ for $n \ge 3$, and the universal cover is the spin group $\mathrm{Spin}(n)$. The map $S^3 \to S^2$, $q \mapsto qi\bar q$, sends a unit quaternion to the image of $i$ under its rotation; each fibre is a circle, giving the **Hopf fibration** $S^1 \to S^3 \to S^2$, which showed (Hopf, 1931) that $\pi_3(S^2) \cong \Z$. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Klein's programme: geometries are group actions">
+
+In Felix Klein's Erlangen programme (1872) a geometry is a space with a group acting on it, and its theorems are the properties invariant under the group. Euclidean geometry is $\R^n$ with $E(n)$; spherical geometry is $S^2$ with $SO(3)$, and $S^2 = SO(3)/SO(2)$ because $SO(3)$ acts transitively with the rotations about the north pole as stabiliser; the hyperbolic plane is $SL_2(\R)/SO(2)$ (see <TopicLink id="math.geom.non-euclidean-geometry">non-Euclidean geometry</TopicLink>), and projective geometry is governed by $PGL_3$ (see <TopicLink id="math.geom.projective-geometry">projective geometry</TopicLink>). A compact matrix group carries a Riemannian metric invariant under left and right multiplication, and for it the one-parameter subgroups $t \mapsto \exp(tX)$ are precisely the geodesics through $I$. See <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink> and <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Linearisation and representations">
+
+The passage $G \rightsquigarrow \mathfrak g$ replaces a non-linear object by a linear one with a bilinear bracket satisfying antisymmetry and the Jacobi identity $[X, [Y, Z]] + [Y, [Z, X]] + [Z, [X, Y]] = 0$. Lie's theorems say that for simply connected groups nothing is lost: homomorphisms of such groups correspond exactly to homomorphisms of Lie algebras. That is why $SU(2)$ and $SO(3)$, with isomorphic Lie algebras, differ only through $\pi_1$. The compact simple Lie algebras were classified by Killing and Cartan into four infinite families ($\mathfrak{su}(n)$, $\mathfrak{so}(2n+1)$, $\mathfrak{sp}(n)$, $\mathfrak{so}(2n)$) and five exceptions ($\mathfrak g_2, \mathfrak f_4, \mathfrak e_6, \mathfrak e_7, \mathfrak e_8$). A **representation** is a homomorphism $G \to GL(V)$; $SU(2)$ has exactly one irreducible representation in each dimension $n + 1$ (on homogeneous polynomials of degree $n$ in two variables), while only the odd-dimensional ones factor through $SO(3)$. See <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Linear differential equations and averaging over a group">
+
+$\mathbf x(t) = \exp(tA)\mathbf x_0$ solves $\mathbf x' = A\mathbf x$ (Theorem 7(d)), and Theorem 8 is a uniqueness theorem for such flows. The flow preserves a quadratic form $Q$ exactly when $A$ lies in the Lie algebra of the orthogonal group of $Q$: skew-symmetric $A$ give rotations, $\begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}$ gives the hyperbolas of the visualisation (see <TopicLink id="math.analysis.ordinary-differential-equations">ordinary differential equations</TopicLink>). Compactness has a powerful analytic consequence: a compact group carries a unique invariant probability measure (**Haar measure**), so one can average over it. Averaging any inner product over $G$ gives a $G$-invariant one, which proves that every representation of a compact group is unitary and splits into irreducibles; the **Peter–Weyl theorem** extends Fourier series from the circle $U(1)$ to every compact group. See <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Spin, angular velocity and the groups of physical law">
+
+For a rigid body rotating as $A(t) \in SO(3)$, the matrix $A^{-1}A'$ lies in $\mathfrak{so}(3) \cong \R^3$: it is the angular velocity, and Euler's equations of rigid-body motion are an equation in this Lie algebra. Quantum states of a spin-$\tfrac12$ particle form $\C^2$ with $SU(2)$ acting; the $2\pi$ rotation acts as $-I$, observed directly in neutron interferometry experiments in 1975. Special relativity replaces $SO(3)$ by the Lorentz group $SO(1, 3)$, whose identity component is doubly covered by $SL_2(\C)$ (see <TopicLink id="math.applied.relativity">relativity</TopicLink>), and the Standard Model of particle physics is built on the gauge group $SU(3) \times SU(2) \times U(1)$ (see <TopicLink id="math.applied.gauge-theory">gauge theory</TopicLink> and <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>). Noether's theorem pairs one-parameter symmetry groups with conserved quantities — rotations with angular momentum. Physics motivated much of this mathematics, but the theorems stand on proofs, not on experiment.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Hurwitz quaternions and sums of four squares">
+
+The quaternions with all coordinates integers, or all in $\Z + \tfrac12$, form a ring — the **Hurwitz quaternions** — whose units are the $24$ elements of the second experiment. Multiplicativity of the norm, $|pq|^2 = |p|^2|q|^2$, is Euler's four-square identity: a product of two sums of four squares is a sum of four squares. Combined with a Euclidean-style division algorithm in the Hurwitz ring, it gives a proof of **Lagrange's four-square theorem** (1770): every positive integer is a sum of four squares. Counting rational points on $SO(3)$ and on spheres leads into the arithmetic of quadratic forms; the groups $SL_2(\Z)$ and $SO(n, \Z)$, matrix groups over the integers, are central in <TopicLink id="math.number.elementary-number-theory">number theory</TopicLink> and in the theory of modular forms.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="The Lie functor">
+
+A continuous homomorphism $f : G \to H$ of matrix groups induces a linear map $df : \mathfrak g \to \mathfrak h$, $df(X) = \frac{d}{dt}f(\exp tX)\big|_{t = 0}$, with $f(\exp X) = \exp(df(X))$ and $df([X, Y]) = [df X, df Y]$, and $d(f \circ g) = df \circ dg$ by the chain rule. So taking Lie algebras is a **functor** from matrix groups to Lie algebras (see <TopicLink id="math.cat.functors">functors</TopicLink>). It does not distinguish all groups — $SU(2)$ and $SO(3)$ have isomorphic Lie algebras — but on *simply connected* Lie groups (a class slightly larger than matrix groups: the universal cover of $SL_2(\R)$ is not a matrix group) it is an equivalence of categories onto finite-dimensional real Lie algebras. This combines Lie's theorems with Ado's theorem, which says every finite-dimensional Lie algebra is a Lie algebra of matrices.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Rotations.** Leonhard Euler proved in 1775–1776 that every motion of a rigid body about a fixed point is a rotation about an axis. **Olinde Rodrigues** (1840) gave the formula for composing rotations, in terms of the parameters now called Euler–Rodrigues parameters — essentially unit quaternions, three years before quaternions were invented.
+- **Quaternions.** **William Rowan Hamilton** discovered the quaternions on 16 October 1843, carving $i^2 = j^2 = k^2 = ijk = -1$ into Brougham Bridge in Dublin. **Arthur Cayley** published the description of rotations as $v \mapsto qvq^{-1}$ in 1845 (Hamilton found it independently). Quaternions are now standard in aerospace attitude control, robotics and computer graphics.
+- **Lie.** **Sophus Lie**, working in Norway and Leipzig from the 1870s, created the theory of continuous transformation groups to do for differential equations what Galois theory does for polynomial equations. **Wilhelm Killing** (1888–1890) and **Élie Cartan** (1894) classified the simple Lie algebras over $\C$. Cartan also discovered spinors (1913), before physicists needed them.
+- **Matrices and spin.** **John von Neumann** proved in 1929 that closed subgroups of $GL_n$ are Lie groups, founding the theory of matrix groups. Wolfgang Pauli (1927) and Paul Dirac (1928) introduced the matrices of electron spin, and Eugene Wigner and Hermann Weyl brought group theory to quantum mechanics; Weyl's book *The Classical Groups* (1939) named its subject.
+- **Representation theory worldwide.** **Harish-Chandra**, born in Kanpur, built the representation theory of non-compact semisimple Lie groups such as $SL_2(\R)$ in the 1950s and 1960s. **Hua Luogeng** in Beijing developed harmonic analysis on the classical domains (book, 1958), and **Claude Chevalley**'s *Theory of Lie Groups* (1946) made the subject's modern foundations.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- John Stillwell, *Naive Lie Theory* (2008) — matrix groups, quaternions and Lie algebras at exactly this level, with much history.
+- Andrew Baker, *Matrix Groups: An Introduction to Lie Group Theory* (2002).
+- Brian C. Hall, *Lie Groups, Lie Algebras, and Representations: An Elementary Introduction* (2003; 2nd ed. 2015) — the matrix-group approach, with full proofs of the Lie product formula and the bracket.
+- Kristopher Tapp, *Matrix Groups for Undergraduates* (2005; 2nd ed. 2016).
+- Roger Howe, "Very basic Lie theory", *American Mathematical Monthly* 90 (1983) — a celebrated short introduction.
+- V. I. Arnold, *Mathematical Methods of Classical Mechanics* (1974; English 1978) — rigid bodies and Lie algebras in mechanics.
+
+</Section>

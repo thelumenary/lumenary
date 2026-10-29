@@ -1,0 +1,414 @@
+---
+slug: forcing
+topic: math.found.forcing
+title: Forcing and independence
+subtitle: How Cohen adjoined a "generic" object to a model of set theory — and proved that the continuum hypothesis can be neither proved nor refuted from ZFC.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7003
+objectives:
+  - Explain what it means for a statement to be independent of ZFC, and why independence proofs are relative consistency proofs
+  - Define forcing posets, dense sets, generic filters and names, and describe the generic extension $M[G]$ of a countable transitive model $M$
+  - Prove that Cohen forcing adds a new real and is ccc, and outline why $M[G] \models \mathsf{ZFC} + \neg\mathsf{CH}$ for $\mathrm{Add}(\omega, \aleph_2)$
+  - State Easton's theorem and other independence results obtained by forcing, such as the consistency of Suslin's hypothesis
+  - Compare the countable-transitive-model, Boolean-valued and sheaf presentations of forcing
+narrators: []
+lean:
+  - Lumenary.Forcing.Cohen
+  - Lumenary.Forcing.Cohen.instPreorder
+  - Lumenary.Forcing.Cohen.bit
+  - Lumenary.Forcing.Cohen.bit_mono
+  - Lumenary.Forcing.Cohen.decides_dense
+  - Lumenary.Forcing.Cohen.avoids_dense
+  - Lumenary.Forcing.Cohen.decides
+  - Lumenary.Forcing.Cohen.avoids
+  - Lumenary.Forcing.rasiowa_sikorski
+  - Lumenary.Forcing.generic_real
+  - Lumenary.Forcing.cohen_real_not_in_list
+  - Lumenary.Forcing.no_filter_meets_every_dense
+compute: [forcing_cohen_generic]
+trails: [how-many-infinities]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="After Gödel, the other half">
+
+Gödel's constructible universe (see <TopicLink id="math.found.axiomatic-set-theory">axiomatic set theory</TopicLink>) showed that the continuum hypothesis cannot be *refuted* from ZFC, if ZF is consistent. For twenty-five years nobody could show that it cannot be *proved*. The difficulty is that $L$ is the smallest possible model; to make $2^{\aleph_0}$ large one must build models with *more* sets, and there was no method for adding sets to a model of ZFC while keeping all the axioms true.
+
+In 1963 Paul Cohen found one. Starting from a countable transitive model $M$, he adjoined a new set $G$ — a **generic** filter on a partial order of "conditions" — and showed that the resulting model $M[G]$ still satisfies ZFC, has the same ordinals as $M$, and can be arranged to satisfy $2^{\aleph_0} = \aleph_2$. The method, **forcing**, has since shown hundreds of natural statements to be independent of ZFC, in set theory, topology, algebra and analysis.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Adjoining a generic object">
+
+We want to add to $M$ a new real number $g : \omega \to 2$. We cannot describe $g$ inside $M$ — then it would already be in $M$. Instead we describe the *finite pieces of information* about $g$: the **conditions** are finite partial functions $p$ from $\omega$ to $2$, and $p$ is **stronger** than $q$ if it extends it. A set $D$ of conditions is **dense** if every condition can be strengthened into $D$: dense sets are *requirements* that a good $g$ should meet, such as "$g(17)$ is decided" or "$g$ differs from the real $x$ somewhere". A filter $G$ is **generic** if it meets every dense set that $M$ can see. Then $g = \bigcup G$ is total and different from every real in $M$.
+
+Statements about the new model are controlled by conditions: $p$ **forces** $\varphi$ if $\varphi$ holds in $M[G]$ for every generic $G$ containing $p$. The miracle of forcing is that this relation can be computed *inside $M$*, so $M$ "knows" what its extensions will look like without being able to name the generic object.
+
+<Analogy>
+
+Adjoining $\sqrt 2$ to $\Q$ produces the smallest field containing $\Q$ and $\sqrt 2$, and every element of $\Q(\sqrt 2)$ has a name $a + b\sqrt 2$ with $a, b \in \Q$. Similarly $M[G]$ is the smallest transitive model of ZFC containing $M$ and $G$, and every element of $M[G]$ has a *name* in $M$. The analogy is loose: $\sqrt 2$ satisfies an equation over $\Q$, whereas a generic $G$ is characterised by satisfying *no* special property describable in $M$ — it is "transcendental" over $M$ in the strongest sense.
+
+</Analogy>
+
+<Figure caption="Cohen conditions form the binary tree of finite strings; stronger conditions lie lower. A generic filter is a branch through the tree (gold) that meets every dense set of the ground model; its union is the Cohen real $g$.">
+<svg viewBox="0 0 320 225" role="img" aria-label="A binary tree of depth three with one branch highlighted in gold and a dashed continuation labelled g">
+  <g stroke="var(--ink-2)" strokeWidth="1.2">
+    <line x1="160" y1="20" x2="80" y2="70" />
+    <line x1="160" y1="20" x2="240" y2="70" />
+    <line x1="80" y1="70" x2="40" y2="120" />
+    <line x1="80" y1="70" x2="120" y2="120" />
+    <line x1="240" y1="70" x2="200" y2="120" />
+    <line x1="240" y1="70" x2="280" y2="120" />
+    <line x1="40" y1="120" x2="20" y2="170" />
+    <line x1="40" y1="120" x2="60" y2="170" />
+    <line x1="120" y1="120" x2="100" y2="170" />
+    <line x1="120" y1="120" x2="140" y2="170" />
+    <line x1="200" y1="120" x2="180" y2="170" />
+    <line x1="200" y1="120" x2="220" y2="170" />
+    <line x1="280" y1="120" x2="260" y2="170" />
+    <line x1="280" y1="120" x2="300" y2="170" />
+  </g>
+  <polyline points="160,20 240,70 200,120 220,170" fill="none" stroke="var(--gold)" strokeWidth="4" />
+  <line x1="220" y1="170" x2="228" y2="208" stroke="var(--gold)" strokeWidth="3" strokeDasharray="5 4" />
+  <g fill="var(--sky-soft)" stroke="var(--ink-2)">
+    <circle cx="160" cy="20" r="5" />
+    <circle cx="80" cy="70" r="5" />
+    <circle cx="240" cy="70" r="5" />
+    <circle cx="40" cy="120" r="5" />
+    <circle cx="120" cy="120" r="5" />
+    <circle cx="200" cy="120" r="5" />
+    <circle cx="280" cy="120" r="5" />
+  </g>
+  <text x="168" y="16" fontSize="11" fill="var(--ink-2)">∅</text>
+  <text x="250" y="66" fontSize="11" fill="var(--ink-2)">1</text>
+  <text x="178" y="124" fontSize="11" fill="var(--ink-2)">10</text>
+  <text x="228" y="168" fontSize="11" fill="var(--ink-2)">101</text>
+  <text x="236" y="212" fontSize="12" fill="var(--ink-2)">g</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="independence and relative consistency">
+
+A sentence $\varphi$ is **independent** of ZFC if $\mathsf{ZFC} \nvdash \varphi$ and $\mathsf{ZFC} \nvdash \neg\varphi$. Since an inconsistent theory proves everything, independence implies $\mathrm{Con}(\mathsf{ZFC})$, which ZFC cannot prove. So set theorists prove **relative consistency** statements such as $\mathrm{Con}(\mathsf{ZFC}) \to \mathrm{Con}(\mathsf{ZFC} + \neg\mathsf{CH})$, and "CH is independent" means: if ZFC is consistent, it neither proves nor refutes CH.
+
+</Definition>
+
+<Definition term="forcing notion, dense sets, generic filters">
+
+A **forcing notion** is a preorder $(P, \le, \mathbb 1)$ with a largest element $\mathbb 1$; $p \le q$ means "$p$ is stronger than $q$". Conditions $p, q$ are **compatible** if some $r$ satisfies $r \le p$ and $r \le q$; an **antichain** is a set of pairwise incompatible conditions. A set $D \subseteq P$ is **dense** if every $p \in P$ has some $q \le p$ in $D$. A **filter** is a non-empty $G \subseteq P$ that is upward closed and in which any two elements have a common extension in $G$. If $M$ is a model containing $P$, a filter $G$ is **$M$-generic** if it meets every dense set $D \subseteq P$ with $D \in M$.
+
+</Definition>
+
+<Definition term="countable transitive model">
+
+A **countable transitive model** (ctm) is a countable set $M$, transitive ($x \in M \Rightarrow x \subseteq M$), such that $(M, \in)$ satisfies the axioms in question (all of ZFC, or a large enough finite part — see the remark on metamathematics). Transitivity makes $\omega$, ordinals, functions and finite sets mean the same in $M$ as in $V$.
+
+</Definition>
+
+<Definition term="names and the generic extension">
+
+By recursion, a **$P$-name** is a set of pairs $(\sigma, p)$ where $\sigma$ is a $P$-name and $p \in P$; let $M^P$ be the set of $P$-names in $M$. For a filter $G$, the **interpretation** of a name is $\tau^G = \{\sigma^G : (\sigma, p) \in \tau \text{ for some } p \in G\}$, and the **generic extension** is $M[G] = \{\tau^G : \tau \in M^P\}$. Each $x \in M$ has the *check name* $\check x = \{(\check y, \mathbb 1) : y \in x\}$ with $\check x^G = x$, and $\dot G = \{(\check p, p) : p \in P\}$ satisfies $\dot G^G = G$.
+
+</Definition>
+
+<Definition term="the forcing relation">
+
+For $p \in P$, a formula $\varphi$ and names $\tau_1, \dots, \tau_n \in M^P$, $p \Vdash \varphi(\tau_1, \dots, \tau_n)$ means: for every $M$-generic $G$ with $p \in G$, $M[G] \models \varphi(\tau_1^G, \dots, \tau_n^G)$.
+
+</Definition>
+
+<Definition term="Cohen forcing and the ccc">
+
+For a set $I$, $\mathrm{Fn}(I, 2)$ is the set of finite partial functions from $I$ to $2$, ordered by reverse inclusion ($p \le q$ iff $p \supseteq q$), with $\mathbb 1 = \varnothing$. **Cohen forcing** adding $\kappa$ reals is $\mathrm{Add}(\omega, \kappa) = \mathrm{Fn}(\kappa \times \omega, 2)$. A forcing notion has the **countable chain condition** (ccc) if every antichain is countable.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Generic filters: existence, non-examples, Cohen reals">
+
+<Theorem name="Rasiowa–Sikorski lemma">
+
+If $P$ is a preorder, $p \in P$, and $\mathcal D$ is a countable family of dense subsets of $P$, there is a filter $G$ with $p \in G$ meeting every $D \in \mathcal D$. In particular, if $M$ is a ctm and $P \in M$, then $M$-generic filters exist.
+
+</Theorem>
+
+<Proof>
+
+Enumerate $\mathcal D = \{D_0, D_1, \dots\}$. Put $p_0 = p$ and, using density, choose $p_{n+1} \le p_n$ with $p_{n+1} \in D_n$. Then $G = \{q \in P : p_n \le q \text{ for some } n\}$ is a filter (two members lie above $p_n$ and $p_m$, hence both above $p_{\max(n, m)} \in G$) and meets each $D_n$ at $p_{n+1}$. If $M$ is countable, so is the family of dense sets belonging to $M$.
+
+</Proof>
+
+<Example title="Trivial forcing">
+
+If $P$ is finite, every filter $G$ contains a common extension $r$ of its finitely many members, and then $G = \{q : q \ge r\}$; so $G \in M$ and $M[G] = M$. Forcing does something only when conditions keep splitting, as the next lemma shows.
+
+</Example>
+
+<Theorem name="Lemma (generic filters are new)">
+
+Suppose every condition of $P$ has two incompatible extensions, and $G$ is $M$-generic. Then $G \notin M$.
+
+</Theorem>
+
+<Proof>
+
+If $G \in M$, then $D = P \setminus G$ is in $M$, and it is dense: any $p$ has incompatible extensions $q, r$, and a filter cannot contain both, so one of them is in $D$. But $G$ does not meet $D$, contradicting genericity.
+
+</Proof>
+
+The lemma also explains why we cannot simply force over the whole universe $V$: there is no filter meeting *every* dense set, because $P \setminus G$ is always dense. A ctm has only countably many dense sets, which Rasiowa–Sikorski can meet.
+
+<Theorem name="Theorem (Cohen reals)">
+
+Let $M$ be a ctm, $P = \mathrm{Fn}(\omega, 2)$ and $G$ an $M$-generic filter. Then $g = \bigcup G$ is a function from $\omega$ to $2$, and $g \notin M$.
+
+</Theorem>
+
+<Proof>
+
+Any two members of $G$ are compatible, so $\bigcup G$ is a function. For $n \in \omega$, $D_n = \{p : n \in \operatorname{dom} p\}$ is dense and in $M$, so $G$ meets it and $n \in \operatorname{dom} g$. For $x \in M \cap {}^\omega 2$, the set $E_x = \{p : p(n) \neq x(n) \text{ for some } n \in \operatorname{dom} p\}$ is dense (extend $p$ at a new point $n$ by $1 - x(n)$) and in $M$; a condition $p \in G \cap E_x$ shows $g \neq x$.
+
+</Proof>
+
+</Section>
+
+<Section id="theorems" kind="proof" title="The generic extension and the failure of CH">
+
+<Theorem name="Generic model theorem (Cohen 1963)">
+
+Let $M$ be a ctm of ZFC, $P \in M$ a forcing notion and $G$ an $M$-generic filter. Then $M[G]$ is a ctm of ZFC, $M \subseteq M[G]$, $G \in M[G]$, $M$ and $M[G]$ have the same ordinals, and every transitive model of ZF containing $M \cup \{G\}$ contains $M[G]$.
+
+</Theorem>
+
+<Theorem name="Forcing theorem">
+
+(Truth) $M[G] \models \varphi(\tau_1^G, \dots, \tau_n^G)$ if and only if $p \Vdash \varphi(\tau_1, \dots, \tau_n)$ for some $p \in G$. (Definability) For each $\varphi$, the relation $p \Vdash \varphi(\tau_1, \dots, \tau_n)$ — for $p \in P$ and $\tau_i \in M^P$ — is definable in $M$.
+
+</Theorem>
+
+Both are proved by defining, inside $M$, a relation $\Vdash^*$ by recursion on formulas and on the ranks of names — for atomic formulas by a simultaneous recursion, and then $p \Vdash^* \neg\varphi$ iff no $q \le p$ forces $\varphi$, $p \Vdash^* \forall x\, \varphi$ iff $p \Vdash^* \varphi(\tau)$ for every name $\tau$ — and showing by induction that $\Vdash^*$ agrees with $\Vdash$, using genericity at the negation step. The ZFC axioms in $M[G]$ then follow: pairing, union and infinity by explicit names; separation and power set from definability of forcing; replacement from reflection in $M$. Kunen (1980, chapter VII) gives every detail.
+
+To make CH fail we need two more ingredients: a combinatorial lemma, and the fact that ccc forcing does not collapse cardinals.
+
+<Theorem name="Δ-system lemma">
+
+Every uncountable family $\mathcal A$ of finite sets has an uncountable subfamily $\mathcal B$ that is a **Δ-system**: there is a finite set $R$ (the root) with $a \cap b = R$ for all distinct $a, b \in \mathcal B$.
+
+</Theorem>
+
+<Proof>
+
+Uncountably many members of $\mathcal A$ have the same size $n$, so assume all do, and induct on $n$. For $n = 1$, distinct singletons are pairwise disjoint (root $\varnothing$). For $n \gt 1$: if some point $x$ lies in uncountably many members, apply the induction hypothesis to $\{a \setminus \{x\} : x \in a \in \mathcal A\}$ and add $x$ back to the root. Otherwise every point lies in only countably many members; then choose $a_\xi$ for $\xi \lt \omega_1$ by recursion, each disjoint from $\bigcup_{\eta \lt \xi} a_\eta$ — possible because this union is countable and only countably many members meet it. The $a_\xi$ are pairwise disjoint.
+
+</Proof>
+
+<Theorem name="Lemma (Cohen forcing is ccc)">
+
+For every set $I$, $\mathrm{Fn}(I, 2)$ has the countable chain condition.
+
+</Theorem>
+
+<Proof>
+
+Let $\{p_\xi : \xi \lt \omega_1\}$ be uncountably many conditions. By the Δ-system lemma, uncountably many of the domains $\operatorname{dom} p_\xi$ form a Δ-system with root $R$. There are only $2^{|R|}$ functions $R \to 2$, so uncountably many of these $p_\xi$ agree on $R$. Any two of them agree where their domains overlap, so their union is a common extension: they are compatible. Hence there is no uncountable antichain.
+
+</Proof>
+
+A ccc forcing preserves cardinals (and cofinalities). In outline: if $f \in M[G]$ maps $A$ into $B$ (with $A, B \in M$), fix a name $\dot f$ and a condition $p_0 \in G$ forcing that $\dot f$ is such a function. In $M$ let $F(a)$ be the set of $b$ for which some $q \le p_0$ forces $\dot f(\check a) = \check b$. Conditions forcing different values are incompatible, so by the ccc each $F(a)$ is countable, and $f(a) \in F(a)$ by the truth lemma. If in $M[G]$ some $f$ mapped an infinite $\mu$ onto an $M$-cardinal $\lambda \gt \mu$, then in $M$ the countable sets $F(\alpha)$, $\alpha \lt \mu$, would cover $\lambda$, giving $\lambda \le |\mu| \cdot \aleph_0 \lt \lambda$.
+
+<Theorem name="Cohen (1963): Con(ZFC) implies Con(ZFC + ¬CH)">
+
+Let $M$ be a ctm of ZFC, let $\kappa = \aleph_2^M$, and let $G$ be $M$-generic for $P = \mathrm{Fn}(\kappa \times \omega, 2)^M$. Then $M[G] \models 2^{\aleph_0} \ge \aleph_2$.
+
+</Theorem>
+
+<Proof>
+
+Let $g = \bigcup G : \kappa \times \omega \to 2$ (a function, total by density) and $g_\alpha(n) = g(\alpha, n)$. For $\alpha \neq \beta$ in $\kappa$ the set of conditions $p$ with $p(\alpha, n) \neq p(\beta, n)$ for some $n$ is dense and in $M$, so $g_\alpha \neq g_\beta$. Hence $\alpha \mapsto g_\alpha$ is an injection, in $M[G]$, of $\kappa$ into ${}^\omega 2$. By the ccc, $P$ preserves cardinals, so $\kappa = \aleph_2^M = \aleph_2^{M[G]}$, and $M[G] \models 2^{\aleph_0} \ge \aleph_2$.
+
+</Proof>
+
+Counting "nice names" shows more precisely that $M[G] \models 2^{\aleph_0} = \kappa$ whenever $M \models \kappa^{\aleph_0} = \kappa$. Combined with Gödel's $L$: **if ZFC is consistent, it neither proves nor refutes CH.**
+
+<Note>
+
+**Metamathematics.** We do not know that a ctm of ZFC exists — its existence implies $\mathrm{Con}(\mathsf{ZFC})$. The relative consistency proof avoids it: if $\mathsf{ZFC} + \neg\mathsf{CH}$ proved a contradiction, the proof would use finitely many axioms $\Phi$. By reflection, Löwenheim–Skolem and the Mostowski collapse, ZFC proves that every finite fragment of ZFC has a ctm; choosing a fragment large enough that the argument above makes $M[G]$ satisfy $\Phi \cup \{\neg\mathsf{CH}\}$, ZFC would prove that $\Phi \cup \{\neg\mathsf{CH}\}$ has a model, hence is consistent — contradicting the assumed proof of a contradiction. Alternatively, Boolean-valued models (Scott, Solovay, Vopěnka) force over $V$ itself without any countable model.
+
+</Note>
+
+</Section>
+
+<Section id="landscape" kind="human" title="What forcing has shown">
+
+- **The continuum function.** Easton (1970): for regular cardinals, $\kappa \mapsto 2^\kappa$ can be any class function $F$ that is non-decreasing and satisfies $\operatorname{cf}(F(\kappa)) \gt \kappa$ (König's restriction) — forced by a class-sized product of Cohen-type forcings. At singular cardinals the picture is subtler (Silver, Shelah's pcf theory, and Magidor's and Gitik's large-cardinal forcing constructions).
+- **Suslin's hypothesis** (a complete dense linear order without endpoints in which every family of pairwise disjoint open intervals is countable is isomorphic to $\R$) is independent: Jech (1967) and Tennenbaum (1968) forced a Suslin line, and Solovay and Tennenbaum (1971) used iterated ccc forcing to make Suslin's hypothesis true.
+- **Martin's axiom** (Martin and Solovay, 1970) — "for every ccc forcing and fewer than $2^{\aleph_0}$ dense sets there is a filter meeting them all" — is consistent with $\neg$CH and settles many questions of topology and analysis.
+- **Choice and measurability.** Cohen also showed that AC is independent of ZF (using symmetric submodels). Solovay (1970), starting from an inaccessible cardinal, built a model of $\mathsf{ZF} + \mathsf{DC}$ in which every set of reals is Lebesgue measurable.
+- **Algebra and analysis.** Shelah's solution of Whitehead's problem (1974) and the Dales–Esterle / Solovay–Woodin results on automatic continuity show that questions of pure algebra and analysis can be independent.
+- **Forcing axioms.** Shelah's proper forcing and the forcing axioms PFA and MM (Baumgartner; Foreman, Magidor and Shelah) decide many such questions; PFA implies $2^{\aleph_0} = \aleph_2$ (Todorčević; Veličković).
+
+</Section>
+
+<Section id="formal" kind="formal" title="The combinatorics of genericity in Lean">
+
+Mathlib does not formalise forcing over models of ZFC. The Lean module formalises the combinatorial core of Cohen forcing, using conditions that are finite binary strings (equivalent, as a forcing, to $\mathrm{Fn}(\omega, 2)$). It uses the **extension order**, in which `p ≤ q` means "`q` extends `p`"; in that order Mathlib's `Order.Cofinal` sets are the dense sets and Mathlib's `Order.Ideal`s are the filters.
+
+<Lean decl="Lumenary.Forcing.Cohen" />
+
+<Lean decl="Lumenary.Forcing.Cohen.instPreorder" />
+
+<Lean decl="Lumenary.Forcing.Cohen.bit" />
+
+<Lean decl="Lumenary.Forcing.Cohen.bit_mono" />
+
+The two families of dense sets used in the proof of the Cohen-real theorem:
+
+<Lean decl="Lumenary.Forcing.Cohen.decides_dense" />
+
+<Lean decl="Lumenary.Forcing.Cohen.avoids_dense" />
+
+<Lean decl="Lumenary.Forcing.Cohen.decides" />
+
+<Lean decl="Lumenary.Forcing.Cohen.avoids" />
+
+Mathlib proves the Rasiowa–Sikorski lemma (`Order.idealOfCofinals`):
+
+<Lean decl="Lumenary.Forcing.rasiowa_sikorski" />
+
+A filter meeting every `decides n` determines a real, and meeting `avoids x` makes it different from `x`. With the countable list standing for the reals of a ctm $M$, this is the Cohen-real theorem:
+
+<Lean decl="Lumenary.Forcing.generic_real" />
+
+<Lean decl="Lumenary.Forcing.cohen_real_not_in_list" />
+
+And the reason forcing starts from a countable model — no filter meets every dense set:
+
+<Lean decl="Lumenary.Forcing.no_filter_meets_every_dense" />
+
+**Not formalised here:** names, the forcing relation and the forcing theorem, $M[G] \models \mathsf{ZFC}$, the Δ-system lemma, the ccc and preservation of cardinals. The full independence of CH has been formalised elsewhere: in Lean 3 by Jesse Michael Han and Floris van Doorn (the Flypitch project, 2019–2020, with Boolean-valued models) and in Isabelle/ZF by Emmanuel Gunther, Miguel Pagano, Pedro Sánchez Terraf and Matías Steinberg (with countable transitive models).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Building a generic real">
+
+The experiment runs the Rasiowa–Sikorski construction against a finite stand-in for a ground model: a list of reals given by rules (primes, squares, the Thue–Morse sequence, the binary digits of $\sqrt 2$, and every eventually periodic sequence with short preperiod and period). It meets the dense sets "decide bit $n$" and "disagree with $x$" in turn, and checks that the resulting condition disagrees with every listed real. Then it checks the other half: the filter of initial segments of a real $g$ misses the dense set "disagree with $g$".
+
+<Python id="forcing_cohen_generic" />
+
+This is exact evidence about one finite construction; the theorems — existence of generics over a ctm, $G \notin M$, $M[G] \models \mathsf{ZFC}$ — are proved above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: genericity is diagonalisation">
+
+Meeting the dense set "disagree with $x_k$" is one step of a diagonal argument. In the widget, the flipped diagonal escapes every listed sequence; a Cohen generic does the same against *all* the reals of $M$, one dense set at a time, and also meets every other requirement that $M$ can formulate.
+
+<DiagonalBuilder />
+
+Notice the difference from Cantor's argument: Cantor builds one particular sequence from the list, whereas a generic real is not built from anything in $M$; any real that meets the countably many dense sets of $M$ will do.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"If CH is independent, the question is meaningless."** Independence means that ZFC does not settle it. Some set theorists regard CH as having a definite truth value to be found by new, justified axioms (Gödel's view; Woodin's programme), others as having no single answer (Hamkins's multiverse view). Mathematically, independence is a precise theorem about provability.
+
+</Misconception>
+
+<Misconception>
+
+**"Forcing needs a countable transitive model of ZFC to exist."** Formal relative consistency proofs use ctms of finite fragments, which ZFC proves to exist, or Boolean-valued models, which need no countable model at all. The ctm presentation is a convenient fiction that can always be eliminated.
+
+</Misconception>
+
+<Misconception>
+
+**"$M[G]$ is $M$ with one new element."** $M[G]$ contains $G$ and everything definable from it and parameters in $M$ — the interpretations of all names — for instance $\aleph_2$ many new reals in Cohen's model. It is the least transitive model of ZF containing $M \cup \{G\}$.
+
+</Misconception>
+
+<Misconception>
+
+**"Forcing shows that CH is false."** Forcing produces models of $\neg$CH; $L$ is a model of CH. Neither shows what is true "in $V$"; together they show that ZFC proves neither.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Generic means comeagre">
+
+Give $2^\omega$ the product topology. A dense set $D$ of Cohen conditions determines the open set $U_D = \bigcup_{p \in D} [p]$, where $[p]$ is the basic clopen set of reals extending $p$, and $U_D$ is dense in $2^\omega$. Meeting $D$ means $g \in U_D$. So a Cohen real over $M$ lies in the intersection of countably many dense open sets, and the Rasiowa–Sikorski lemma is the Baire category theorem in disguise. Precisely, $g$ is Cohen-generic over $M$ if and only if $g$ belongs to no meagre Borel set coded in $M$ (Solovay). In general a forcing notion $P$ carries a topology whose regular open sets form the complete Boolean algebra $\mathrm{RO}(P)$, and forcing with $P$ is forcing with $\mathrm{RO}(P)$.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random reals">
+
+Replace "meagre" by "measure zero": **random forcing** (Solovay, 1970) has as conditions the Borel subsets of $[0, 1]$ of positive Lebesgue measure, ordered by inclusion. A random real over $M$ lies in no null Borel set coded in $M$ — it is "typical" in the sense of probability, passing every statistical test that $M$ can describe. Adding $\aleph_2$ random reals also makes CH fail, but the resulting model differs from Cohen's: for instance, random forcing adds no Cohen real. The duality between category and measure (Oxtoby) becomes a duality between forcings.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Independence in analysis">
+
+Is every algebra homomorphism from $C(X)$ (continuous functions on a compact Hausdorff space) into a Banach algebra continuous? Kaplansky asked this. Dales and Esterle (independently, around 1976–78) showed that under CH there is a discontinuous one; Solovay and Woodin showed that it is consistent with ZFC that every such homomorphism is continuous. Forcing thus settled a question of functional analysis by showing it undecidable. Solovay's model, in which every set of reals is Lebesgue measurable (in $\mathsf{ZF} + \mathsf{DC}$), shows that the use of choice in constructing non-measurable sets is unavoidable (see <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Sheaves on the poset of conditions">
+
+Lawvere and Tierney recast Cohen's proof in topos theory (Tierney, 1972): take the category of sheaves on the poset $\mathrm{Fn}(\aleph_2 \times \omega, 2)$ for the double-negation (dense) topology. This is a Boolean topos with a natural number object $N$ and a monomorphism from the constant object on $\aleph_2$ into the power object of $N$, in which the internal continuum hypothesis fails. Mac Lane and Moerdijk (1992, chapter VI) present the independence of CH in this way. The topos has no points, the categorical form of "no filter meets every dense set": a generic filter is a point that exists only from the outside. See <TopicLink id="math.cat.elementary-topoi">elementary topoi</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Boolean-valued models">
+
+Scott, Solovay and Vopěnka (1965–67) replaced the generic filter by truth values: for a complete Boolean algebra $B$, the universe $V^B$ of $B$-valued sets assigns to each sentence $\varphi$ a value $[\![\varphi]\!] \in B$, with every axiom of ZFC receiving value $1$. For $B = \mathrm{RO}(\mathrm{Fn}(\aleph_2 \times \omega, 2))$, $[\![\neg\mathsf{CH}]\!] = 1$. Forcing becomes order: $p \Vdash \varphi$ corresponds to $p \le [\![\varphi]\!]$. Quotienting $V^B$ by any ultrafilter gives a two-valued (possibly ill-founded) model; over a ctm with a generic ultrafilter one recovers $M[G]$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trail">
+
+Cantor's diagonal argument — the first step of every genericity argument — is explored for younger learners here.
+
+<Trail slug="how-many-infinities" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Paul Cohen** announced the independence of CH and AC in 1963 (published in the *Proceedings of the National Academy of Sciences*, 1963–64) and received the Fields Medal in 1966; his book *Set Theory and the Continuum Hypothesis* appeared in 1966.
+- **Robert Solovay**, **Dana Scott** and, independently in Prague, **Petr Vopěnka** developed Boolean-valued models (1965–67). Solovay's random reals and his measurable model followed in 1970.
+- **William Easton** (1970) determined the possible values of $2^\kappa$ at regular cardinals. **Donald A. Martin** and Solovay (1970) introduced Martin's axiom, and Solovay and **Stanley Tennenbaum** (1971) proved the consistency of Suslin's hypothesis; **Thomas Jech** and Tennenbaum had forced Suslin lines in 1967–68.
+- **Saharon Shelah** developed proper forcing and solved Whitehead's problem (1974); **Myles Tierney** and **F. William Lawvere** reformulated the independence of CH in topos theory (1972); **Stevo Todorčević**, **Boban Veličković** and others analysed forcing axioms.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Kenneth Kunen, *Set Theory: An Introduction to Independence Proofs* (1980; revised edition *Set Theory*, 2011) — chapters VII–VIII, the standard first course.
+- Thomas Jech, *Set Theory* (Third Millennium Edition, 2003) — chapters 14–15 and the later chapters on iterated forcing.
+- Paul J. Cohen, *Set Theory and the Continuum Hypothesis* (1966).
+- Nik Weaver, *Forcing for Mathematicians* (2014) — a short route for non-specialists.
+- Timothy Y. Chow, "A beginner's guide to forcing" (2009) — the ideas without the technicalities.
+- John L. Bell, *Set Theory: Boolean-Valued Models and Independence Proofs* (3rd edition, 2005).
+- Saunders Mac Lane and Ieke Moerdijk, *Sheaves in Geometry and Logic* (1992), chapter VI.
+
+</Section>

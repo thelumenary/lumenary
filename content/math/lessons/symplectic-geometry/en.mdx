@@ -1,0 +1,563 @@
+---
+slug: symplectic-geometry
+topic: math.geom.symplectic-geometry
+title: Symplectic geometry and topology
+subtitle: Phase space carries a geometry with no curvature and no local invariants — and yet a ball cannot be squeezed through a hole smaller than itself.
+level: research
+ages: Research orientation (smooth manifolds, differential forms and Hamiltonian mechanics assumed)
+minutes: 140
+order: 8011
+objectives:
+  - Define symplectic manifolds, Hamiltonian vector fields and symplectomorphisms, and derive Hamilton's equations from $\iota_{X_H}\omega = dH$
+  - Prove that Hamiltonian flows preserve $H$ and $\omega$, hence volume (Liouville), and that closed symplectic manifolds have non-zero even cohomology
+  - Prove Darboux's theorem using Moser's trick, and explain why symplectic manifolds have no local invariants
+  - Prove linear non-squeezing, state Gromov's non-squeezing theorem and the Arnold conjecture, and explain the idea of Floer homology, separating proved cases from open ones
+narrators: []
+lean:
+  - Lumenary.SymplecticGeometry.hamiltonian_energy_conserved
+  - Lumenary.SymplecticGeometry.J2
+  - Lumenary.SymplecticGeometry.transpose_mul_J2_mul
+  - Lumenary.SymplecticGeometry.symplectic_iff_det_eq_one
+  - Lumenary.SymplecticGeometry.shear_symplectic
+  - Lumenary.SymplecticGeometry.det_eq_zero_of_skew_odd
+  - Lumenary.SymplecticGeometry.trace_skew_mul_symm
+  - Lumenary.SymplecticGeometry.symplectic_det_eq_one
+  - Lumenary.SymplecticGeometry.symplectic_transpose_mem
+  - Lumenary.SymplecticGeometry.J4
+  - Lumenary.SymplecticGeometry.omega4
+  - Lumenary.SymplecticGeometry.mul_J4_mul_transpose_apply
+  - Lumenary.SymplecticGeometry.wirtinger4
+  - Lumenary.SymplecticGeometry.exists_long_shadow
+  - Lumenary.SymplecticGeometry.linear_nonsqueezing
+  - Lumenary.SymplecticGeometry.squeeze
+  - Lumenary.SymplecticGeometry.squeeze_det
+  - Lumenary.SymplecticGeometry.squeeze_not_symplectic
+  - Lumenary.SymplecticGeometry.squeeze_ball
+compute: [symplectic_geometry_integrators, symplectic_geometry_shadows]
+trails: [why-ellipses]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What does a Hamiltonian flow remember?">
+
+The state of a mechanical system with $n$ degrees of freedom is a point $(q, p)$ of *phase space*: $n$ positions and $n$ momenta. Its motion is the flow of Hamilton's equations
+
+$$
+\dot q_i = \frac{\partial H}{\partial p_i}, \qquad \dot p_i = -\frac{\partial H}{\partial q_i},
+$$
+
+where $H$ is the energy. In 1838 Liouville observed that this flow preserves volume: a blob of initial conditions may be stretched into a long filament, but its $2n$-dimensional volume never changes. Statistical mechanics is built on that fact.
+
+Is volume *all* that a Hamiltonian flow remembers? In 1985 Mikhail Gromov showed that it is not. Take the round ball $B^{2n}(r)$ of radius $r$ and the cylinder $Z(R) = \{x_1^2 + y_1^2 \le R^2\} \subset \R^{2n}$, built on one pair of conjugate coordinates. If $n \ge 2$ the cylinder has infinite volume, so there is plenty of room, and indeed a volume-preserving linear map — $(x_1, y_1, x_2, y_2) \mapsto (\varepsilon x_1, \varepsilon y_1, x_2/\varepsilon, y_2/\varepsilon)$ — puts the ball inside an arbitrarily thin cylinder. But **no Hamiltonian flow, and no symplectic map at all, can put $B^{2n}(r)$ inside $Z(R)$ unless $r \le R$.** A Hamiltonian system cannot squeeze a cloud of states through a hole in a conjugate plane smaller than the cloud's own cross-section. (The result is often called "the symplectic camel", after the camel and the eye of the needle.)
+
+This lesson is an orientation to the geometry behind that rigidity. Its paradox is the subject in miniature: symplectic manifolds have **no local invariants whatsoever** (Darboux's theorem), yet they carry deep **global** invariants, detected by holomorphic curves and Floer homology, that see far more than volume.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Area, not volume">
+
+The symplectic form of $\R^{2n}$ is
+
+$$
+\omega_0 = \sum_{i=1}^{n} dx_i \wedge dy_i, \qquad x_i = q_i,\ y_i = p_i .
+$$
+
+Evaluated on two vectors $u, v$ it gives $\omega_0(u, v) = \sum_i (u_{x_i} v_{y_i} - u_{y_i} v_{x_i})$: the **sum of the signed areas** of the shadows of the parallelogram spanned by $u$ and $v$ on the $n$ conjugate planes $(x_i, y_i)$. A map that preserves $\omega_0$ preserves the total oriented area of every small piece of surface, measured plane by plane.
+
+- In dimension $2$ this is just area (and orientation). There symplectic and area-preserving mean the same thing.
+- In dimension $2n \ge 4$ preserving $\omega_0$ is far stronger than preserving volume, which is $\omega_0^n / n!$. The squeeze above preserves volume but multiplies the area of the $(x_1, y_1)$-shadow by $\varepsilon^2$.
+
+Hamilton's equations say $\dot z = J \nabla H$ with $J = \left(\begin{smallmatrix} 0 & I \\ -I & 0 \end{smallmatrix}\right)$ in the coordinates $(q, p)$: the flow moves **perpendicular to the gradient** of $H$, rotated by a quarter turn in each conjugate plane. Moving perpendicular to $\nabla H$ keeps $H$ constant; rotating by $J$ is what preserves area.
+
+<Figure caption="Left: the ball B(r). Middle: a volume-preserving map can flatten it into a thin pancake that fits a narrow cylinder Z(R) built on the (x₁, y₁)-plane. Right: a symplectic image of the ball may be wildly distorted, but its shadow on the (x₁, y₁)-plane always contains a disc of radius r.">
+<svg viewBox="0 0 420 150" role="img" aria-label="A ball, a squeezed ball inside a thin cylinder, and a distorted symplectic image of the ball whose shadow is at least as large as the original disc">
+  <circle cx="60" cy="75" r="45" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <text x="60" y="140" textAnchor="middle" fontSize="12" fill="var(--ink-2)">B(r)</text>
+  <rect x="185" y="20" width="30" height="110" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" strokeDasharray="5 3" />
+  <ellipse cx="200" cy="75" rx="12" ry="50" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="2" />
+  <text x="200" y="145" textAnchor="middle" fontSize="12" fill="var(--ink-2)">volume-preserving</text>
+  <path d="M 300 40 C 360 10, 400 60, 370 90 C 345 115, 300 130, 290 100 C 280 75, 330 70, 300 40 Z" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="2" />
+  <circle cx="335" cy="75" r="45" fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="4 3" />
+  <text x="340" y="145" textAnchor="middle" fontSize="12" fill="var(--ink-2)">symplectic</text>
+</svg>
+</Figure>
+
+<Analogy>
+
+A symplectic map is like a perfectly incompressible fluid that must also respect a hidden "grain": you may stir it as much as you like, but you cannot thin the grain in one direction and thicken it in another to sneak it through a narrow pipe. The analogy is only suggestive — the grain is the form $\omega$, and the obstruction is a theorem, not a fluid property.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Prerequisites are <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink>, <TopicLink id="math.geom.differential-forms">differential forms</TopicLink> (Cartan's formula $\mathcal{L}_X = d\iota_X + \iota_X d$ in particular) and the Hamiltonian side of <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>.
+
+<Definition term="symplectic vector space and symplectic group">
+
+A **symplectic vector space** is a finite-dimensional real vector space $V$ with a bilinear form $\omega$ that is **alternating** ($\omega(v, v) = 0$ for all $v$) and **non-degenerate** ($\omega(v, w) = 0$ for all $w$ implies $v = 0$). A linear map $A$ is **symplectic** if $\omega(Au, Av) = \omega(u, v)$. On $(\R^{2n}, \omega_0)$, with $\omega_0(u, v) = u^{\mathsf T} J v$, this means $A^{\mathsf T} J A = J$; these matrices form the **symplectic group** $\operatorname{Sp}(2n, \R)$, a Lie group of dimension $n(2n+1)$.
+
+</Definition>
+
+<Definition term="symplectic manifold">
+
+A **symplectic form** on a smooth manifold $M$ is a $2$-form $\omega$ that is **closed** ($d\omega = 0$) and **non-degenerate** at every point. The pair $(M, \omega)$ is a **symplectic manifold**. A diffeomorphism $\varphi : (M, \omega) \to (M', \omega')$ with $\varphi^* \omega' = \omega$ is a **symplectomorphism**. A submanifold $L$ with $\omega|_L = 0$ and $\dim L = \frac12 \dim M$ is **Lagrangian**.
+
+</Definition>
+
+<Definition term="Hamiltonian vector field, flow and Poisson bracket">
+
+For $H \in C^\infty(M)$ the **Hamiltonian vector field** $X_H$ is the unique vector field with
+
+$$
+\iota_{X_H} \omega = dH, \qquad\text{that is}\qquad \omega(X_H, Y) = dH(Y) \text{ for all } Y .
+$$
+
+Its flow $\varphi^t_H$ is the **Hamiltonian flow**; time-one maps of flows of time-dependent Hamiltonians $H_t$ are **Hamiltonian diffeomorphisms**, and they form a group $\operatorname{Ham}(M, \omega)$. The **Poisson bracket** is $\{F, G\} = \omega(X_F, X_G)$; along the flow of $X_H$, $\dot F = dF(X_H) = \{F, H\}$.
+
+</Definition>
+
+<Note>
+
+**Conventions differ by signs.** Some authors write $\iota_{X_H}\omega = -dH$, or $\omega_0 = \sum dy_i \wedge dx_i$, or $\{F, G\} = \omega(X_G, X_F)$. With the choices above, $\omega_0 = \sum dq_i \wedge dp_i$ gives exactly Hamilton's equations: if $X_H = \sum a_i \partial_{q_i} + b_i \partial_{p_i}$, then $\iota_{X_H}\omega_0 = \sum (a_i\, dp_i - b_i\, dq_i)$, and comparing with $dH = \sum (\partial_{q_i}H\, dq_i + \partial_{p_i}H\, dp_i)$ gives $a_i = \partial H / \partial p_i$ and $b_i = -\partial H / \partial q_i$.
+
+</Note>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Phase space and cotangent bundles">
+
+$(\R^{2n}, \omega_0)$ is the model. More generally, for any manifold $Q$ (a configuration space) the cotangent bundle $T^*Q$ carries the **tautological $1$-form** $\lambda = \sum p_i\, dq_i$ in canonical coordinates, defined invariantly by $\lambda_{(q,p)}(v) = p(d\pi\, v)$, and $\omega = -d\lambda = \sum dq_i \wedge dp_i$ is symplectic. Phase spaces of mechanical systems are of this kind; the zero section and the fibres are Lagrangian.
+
+</Example>
+
+<Example title="Surfaces, and Archimedes' hat-box theorem">
+
+On an orientable surface every area form is symplectic: closedness is automatic for a top-degree form. On the unit sphere $S^2 \subset \R^3$ with its area form $\omega$, the height $H = z$ generates the rotation about the $z$-axis at unit angular speed (with a suitable orientation). The flow preserves the slices $z = \text{const}$, and Archimedes' theorem — the area of the zone $a \le z \le b$ is $2\pi(b - a)$ — says that $H$ pushes the area measure forward to the uniform measure on $[-1, 1]$. This is the simplest case of the Duistermaat–Heckman theorem about moment maps (see "the wider landscape" below).
+
+</Example>
+
+<Example title="Kähler manifolds and coadjoint orbits">
+
+Every Kähler manifold is symplectic: its Kähler form is closed and non-degenerate. So complex projective space $\mathbb{CP}^n$ with the Fubini–Study form, and every smooth complex projective variety, are symplectic manifolds (see <TopicLink id="math.geom.complex-kahler-geometry">complex and Kähler geometry</TopicLink>). Another source is Lie theory: every coadjoint orbit $\mathcal{O} \subset \mathfrak{g}^*$ of a Lie group carries the Kirillov–Kostant–Souriau form $\omega_\xi(\operatorname{ad}^*_X \xi, \operatorname{ad}^*_Y \xi) = \xi([X, Y])$ (up to a sign convention). The orbits of $SO(3)$ on $\mathfrak{so}(3)^* \cong \R^3$ are the spheres about the origin, and on the sphere of radius $\rho$ the KKS form is the area form divided by $\rho$.
+
+</Example>
+
+<Example title="The harmonic oscillator and the pendulum">
+
+For $H = \frac12(q^2 + p^2)$ on $\R^2$, $X_H = p\, \partial_q - q\, \partial_p$ and the flow is the rotation $(q, p) \mapsto (q \cos t + p \sin t,\ -q \sin t + p \cos t)$: a symplectic linear map with determinant $1$. For the pendulum $H = \frac12 p^2 - \cos q$ the flow is non-linear, but each time-$t$ map is still area-preserving. Explore its phase portrait in the visualisation below.
+
+</Example>
+
+<Example title="A symplectic flow that is not Hamiltonian">
+
+On the torus $T^2 = \R^2 / \Z^2$ with $\omega = dx \wedge dy$, the translation field $X = \partial_x$ satisfies $\mathcal{L}_X \omega = d(\iota_X \omega) = d(dy) = 0$, so its flow consists of symplectomorphisms. But $\iota_X \omega = dy$ is closed and **not exact** on $T^2$, so $X$ is not Hamiltonian. Its time-$t$ maps (for $t \notin \Z$) have **no fixed points** — compare the Arnold conjecture below, which concerns Hamiltonian diffeomorphisms only.
+
+</Example>
+
+<Example title="Non-examples">
+
+- **Odd-dimensional manifolds.** A non-degenerate alternating form needs an even-dimensional space (Theorem 1).
+- **The spheres $S^{2n}$ for $n \ge 2$, and $S^1 \times S^3$.** By Proposition 2 below a closed symplectic $2n$-manifold has $H^2_{dR}(M) \neq 0$; these manifolds have $H^2 = 0$. (Whether $S^6$ admits a *complex* structure is a famous open problem; it has no symplectic one.)
+- **A closed form that degenerates somewhere**, such as $x_1\, dx_1 \wedge dy_1 + dx_2 \wedge dy_2$ on $\R^4$, which is closed but fails to be non-degenerate along $x_1 = 0$.
+
+</Example>
+
+</Section>
+
+<Section id="linear" kind="proof" title="Linear symplectic algebra">
+
+<Theorem name="Theorem 1 — linear Darboux theorem">
+
+Let $(V, \omega)$ be a symplectic vector space. Then $\dim V = 2n$ is even, and $V$ has a basis $e_1, f_1, \dots, e_n, f_n$ with $\omega(e_i, f_j) = \delta_{ij}$ and $\omega(e_i, e_j) = \omega(f_i, f_j) = 0$. In this basis $\omega = \sum_i e_i^* \wedge f_i^*$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $\dim V$; there is nothing to prove if $V = 0$. Otherwise pick $e_1 \neq 0$. By non-degeneracy there is $f$ with $\omega(e_1, f) \neq 0$; rescale it to $f_1$ with $\omega(e_1, f_1) = 1$. The vectors $e_1, f_1$ are independent (if $f_1 = c e_1$ then $\omega(e_1, f_1) = c\,\omega(e_1, e_1) = 0$), so $W = \operatorname{span}(e_1, f_1)$ is a plane on which $\omega$ is non-degenerate. Let $W^\omega = \{v : \omega(v, w) = 0 \text{ for all } w \in W\}$. For any $v$, the vector
+
+$$
+v' = v - \omega(v, f_1)\, e_1 + \omega(v, e_1)\, f_1
+$$
+
+satisfies $\omega(v', e_1) = \omega(v, e_1) - \omega(v, e_1) = 0$ and $\omega(v', f_1) = \omega(v, f_1) - \omega(v, f_1) = 0$, so $v' \in W^\omega$ and $V = W + W^\omega$; and $W \cap W^\omega = 0$ because $\omega|_W$ is non-degenerate. Finally $\omega|_{W^\omega}$ is non-degenerate: a vector of $W^\omega$ that pairs to zero with $W^\omega$ also pairs to zero with $W$, hence with all of $V$, so it is $0$. By induction $W^\omega$ has a basis of the required form, and adding $e_1, f_1$ finishes the proof.
+
+</Proof>
+
+Evenness also has a one-line matrix proof, which is the one formalised below: the Gram matrix $\Omega$ of $\omega$ is skew-symmetric, so $\det \Omega = \det \Omega^{\mathsf T} = \det(-\Omega) = (-1)^{\dim V} \det \Omega$, and if $\dim V$ is odd then $\det \Omega = 0$.
+
+In a Darboux basis $\omega^n = n!\, e_1^* \wedge f_1^* \wedge \dots \wedge e_n^* \wedge f_n^* \neq 0$, and conversely $\omega^n \neq 0$ forces non-degeneracy. So on a symplectic manifold $\omega^n / n!$ is a volume form, the **Liouville volume**, and every symplectic manifold is orientable.
+
+<Theorem name="Proposition 2 — cohomology of closed symplectic manifolds">
+
+If $(M^{2n}, \omega)$ is a closed symplectic manifold, then $[\omega]^k \neq 0$ in $H^{2k}_{dR}(M)$ for $0 \le k \le n$. In particular $b_{2k}(M) \ge 1$.
+
+</Theorem>
+
+<Proof>
+
+$\int_M \omega^n > 0$ because $\omega^n$ is a volume form for the induced orientation. If $\omega^k = d\beta$ for some $k \le n$, then, since $d\omega = 0$, $\omega^n = d(\beta \wedge \omega^{n-k})$, and Stokes' theorem on the closed manifold $M$ gives $\int_M \omega^n = 0$, a contradiction.
+
+</Proof>
+
+For $n = 1$, $\operatorname{Sp}(2, \R) = SL(2, \R)$: a $2 \times 2$ matrix satisfies $A^{\mathsf T} J A = (\det A)\, J$, so it is symplectic exactly when $\det A = 1$. In general every symplectic matrix has determinant $1$ (linear Liouville; this needs an argument, since $A^{\mathsf T} J A = J$ only gives $(\det A)^2 = 1$), and $\operatorname{Sp}(2n, \R) \cap O(2n) = U(n)$.
+
+<Theorem name="Theorem 3 — linear non-squeezing">
+
+Let $A \in \operatorname{Sp}(2n, \R)$. If $A(B^{2n}(r)) \subseteq Z(R) = \{x_1^2 + y_1^2 \le R^2\}$, then $r \le R$. More precisely, the shadow of $A(B^{2n}(r))$ on the $(x_1, y_1)$-plane is an ellipse of area at least $\pi r^2$.
+
+</Theorem>
+
+<Proof>
+
+Let $a = A^{\mathsf T} e_{x_1}$ and $b = A^{\mathsf T} e_{y_1}$, so that $x_1(Au) = \langle a, u\rangle$ and $y_1(Au) = \langle b, u \rangle$; these are the first two rows of $A$. The transpose of a symplectic matrix is symplectic, so
+
+$$
+\omega_0(a, b) = \omega_0(A^{\mathsf T} e_{x_1}, A^{\mathsf T} e_{y_1}) = \omega_0(e_{x_1}, e_{y_1}) = 1 .
+$$
+
+By Cauchy–Schwarz and orthogonality of $J$, $1 = \omega_0(a, b) = \langle a, Jb\rangle \le |a|\,|b|$, so $|a| \ge 1$ or $|b| \ge 1$; say $|a| \ge 1$. The point $u = r a / |a|$ lies in $B^{2n}(r)$ and $x_1(Au) = r|a| \ge r$, so $A(B^{2n}(r)) \subseteq Z(R)$ forces $R \ge r$.
+
+For the area statement, the shadow is the ellipse $\{(\langle a, u\rangle, \langle b, u\rangle) : |u| \le r\}$, of area $\pi r^2 \sqrt{|a|^2 |b|^2 - \langle a, b\rangle^2}$. Write $b = \alpha \frac{a}{|a|} + \beta \frac{Ja}{|a|} + c$ with $c \perp a, Ja$. Then $\langle a, b\rangle = \alpha |a|$ and $\omega_0(a, b) = \langle a, Jb \rangle = -\langle Ja, b\rangle = -\beta |a|$, so
+
+$$
+|a|^2 |b|^2 - \langle a, b\rangle^2 = |a|^2 (\beta^2 + |c|^2) \ge \omega_0(a, b)^2 = 1.
+$$
+
+</Proof>
+
+The volume-preserving squeeze of the motivation fails the hypothesis: it multiplies $\omega_0(e_{x_1}, e_{y_1})$ by $\varepsilon^2$. Gromov's theorem below says that Theorem 3 survives for **non-linear** symplectic embeddings — which is astonishing, because Darboux's theorem says there is no local obstruction of any kind.
+
+</Section>
+
+<Section id="hamiltonian" kind="proof" title="Hamiltonian flows: conservation and Liouville">
+
+<Theorem name="Theorem 4 — Hamiltonian flows preserve H, ω and volume">
+
+Let $\varphi^t$ be the flow of $X_H$ on $(M, \omega)$. Then for all $t$: (i) $H \circ \varphi^t = H$; (ii) $(\varphi^t)^* \omega = \omega$; (iii) $(\varphi^t)^* \omega^n = \omega^n$, so $\varphi^t$ preserves the Liouville volume.
+
+</Theorem>
+
+<Proof>
+
+(i) $\frac{d}{dt} H(\varphi^t(x)) = dH(X_H) = \omega(X_H, X_H) = 0$, since $\omega$ is alternating.
+
+(ii) $\frac{d}{dt} (\varphi^t)^* \omega = (\varphi^t)^* \mathcal{L}_{X_H} \omega$, and by Cartan's formula
+
+$$
+\mathcal{L}_{X_H} \omega = d\, \iota_{X_H} \omega + \iota_{X_H}\, d\omega = d(dH) + 0 = 0 .
+$$
+
+(iii) $(\varphi^t)^*(\omega^n) = ((\varphi^t)^* \omega)^n = \omega^n$.
+
+</Proof>
+
+Note what each part uses: (i) only that $\omega$ is alternating, (ii) that $\omega$ is closed, and the existence of $X_H$ that $\omega$ is non-degenerate. Part (i) is formalised below in exactly this generality.
+
+Two consequences are worth stating. **Noether's theorem**: $\{F, H\} = 0$ means both that $F$ is conserved by the flow of $H$ and that $H$ is conserved by the flow of $F$ — a symmetry and a conserved quantity are the same thing. **Symplectic versus Hamiltonian**: a vector field $X$ with $\mathcal{L}_X \omega = 0$ has $\iota_X \omega$ closed; it is Hamiltonian exactly when $\iota_X \omega$ is exact. So $H^1_{dR}(M)$ measures the difference, as the translation of $T^2$ showed.
+
+At the linear level, a quadratic Hamiltonian $H(z) = \frac12 z^{\mathsf T} S z$ ($S$ symmetric) has $X_H(z) = JSz$, and Liouville's theorem becomes $\operatorname{tr}(JS) = 0$: indeed $\operatorname{tr}(JS) = \operatorname{tr}((JS)^{\mathsf T}) = \operatorname{tr}(S^{\mathsf T} J^{\mathsf T}) = -\operatorname{tr}(SJ) = -\operatorname{tr}(JS)$, so $\det e^{tJS} = e^{t \operatorname{tr}(JS)} = 1$.
+
+</Section>
+
+<Section id="darboux" kind="proof" title="Moser's trick and Darboux's theorem">
+
+Moser's trick (1965) turns "find a diffeomorphism pulling one form back to another" into "solve a linear equation for a vector field", which non-degeneracy makes trivial.
+
+<Theorem name="Theorem 5 — Moser stability">
+
+Let $M$ be closed and $(\omega_t)_{t \in [0,1]}$ a smooth family of symplectic forms whose cohomology class $[\omega_t]$ does not depend on $t$. Then there is an isotopy $\varphi_t$ with $\varphi_0 = \mathrm{id}$ and $\varphi_t^* \omega_t = \omega_0$ for all $t$.
+
+</Theorem>
+
+<Proof>
+
+Since $[\frac{d}{dt}\omega_t] = 0$, we can write $\frac{d}{dt} \omega_t = d\sigma_t$ with $\sigma_t$ depending smoothly on $t$ (for instance $\sigma_t = d^* G\, \frac{d}{dt}\omega_t$ using the Green operator of the Hodge Laplacian of a fixed metric). Because $\omega_t$ is non-degenerate, there is a unique time-dependent vector field $X_t$ with
+
+$$
+\iota_{X_t} \omega_t = -\sigma_t .
+$$
+
+On a closed manifold $X_t$ integrates to an isotopy $\varphi_t$, and
+
+$$
+\frac{d}{dt}\, \varphi_t^* \omega_t = \varphi_t^* \Big( \mathcal{L}_{X_t} \omega_t + \frac{d\omega_t}{dt} \Big) = \varphi_t^* \big( d\,\iota_{X_t}\omega_t + \iota_{X_t} d\omega_t + d\sigma_t \big) = \varphi_t^*( -d\sigma_t + 0 + d\sigma_t ) = 0 .
+$$
+
+So $\varphi_t^* \omega_t = \varphi_0^* \omega_0 = \omega_0$.
+
+</Proof>
+
+<Theorem name="Theorem 6 — Darboux (1882)">
+
+Every point of a symplectic manifold $(M^{2n}, \omega)$ has a coordinate neighbourhood with coordinates $(x_1, y_1, \dots, x_n, y_n)$ in which $\omega = \sum_i dx_i \wedge dy_i$.
+
+</Theorem>
+
+<Proof>
+
+Take a chart centred at $p$ and transport $\omega$ to a form $\omega_1$ on a ball $B \subset \R^{2n}$ around $0$. By Theorem 1, after a linear change of coordinates $\omega_1(0)$ equals the constant form $\omega_0 = \sum dx_i \wedge dy_i$. Put $\omega_t = \omega_0 + t(\omega_1 - \omega_0)$ for $t \in [0, 1]$. Each $\omega_t$ is closed and equals $\omega_0$ at the origin; non-degeneracy is an open condition and $[0, 1]$ is compact, so after shrinking $B$ every $\omega_t$ is non-degenerate on $B$.
+
+The closed form $\omega_1 - \omega_0$ is exact on the ball (Poincaré lemma): $\omega_1 - \omega_0 = d\sigma$, where the radial homotopy formula $\sigma_x(v) = \int_0^1 s\,(\omega_1 - \omega_0)_{sx}(x, v)\, ds$ shows $\sigma(0) = 0$. Define $X_t$ by $\iota_{X_t} \omega_t = -\sigma$. Then $X_t(0) = 0$ for all $t$, so the origin is fixed by the flow, and by continuous dependence on initial conditions the flow $\varphi_t$ of $X_t$ is defined for all $t \in [0, 1]$ on a smaller ball $B'$. Exactly the computation of Theorem 5 gives $\frac{d}{dt} \varphi_t^* \omega_t = \varphi_t^*(-d\sigma + d\sigma) = 0$, so $\varphi_1^* \omega_1 = \omega_0$ on $B'$. Composing the chart with $\varphi_1$ gives the required coordinates.
+
+</Proof>
+
+**No local invariants.** In Riemannian geometry the curvature tensor is a local invariant: by Gauss's *Theorema Egregium* no piece of a round sphere is isometric to a piece of the plane (see <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>). Darboux's theorem says every symplectic manifold of dimension $2n$ looks locally exactly like $(\R^{2n}, \omega_0)$: symplectic geometry is, locally, as flexible as topology. Moser's method gives global versions too: two area forms on a closed connected surface with the same total area differ by a diffeomorphism, and (Weinstein, 1971) a neighbourhood of a Lagrangian submanifold $L$ is symplectomorphic to a neighbourhood of the zero section in $T^*L$.
+
+</Section>
+
+<Section id="rigidity" kind="human" title="Rigidity: non-squeezing, capacities and the Arnold conjecture">
+
+**Gromov's non-squeezing theorem (1985).** *If $B^{2n}(r)$ embeds symplectically into $Z(R) = B^2(R) \times \R^{2n-2}$, then $r \le R$.* This is a theorem, proved with **pseudo-holomorphic curves**, which Gromov introduced in the same paper. Sketch: choose an almost complex structure $J$ on $M = S^2 \times T^{2n-2}$ (with $S^2$ of area slightly more than $\pi R^2$, containing $B^2(R)$, and a large torus) that is tamed by the symplectic form and equals the push-forward of the standard complex structure on the image of the ball. Gromov proves that for **every** tamed $J$, through every point passes a $J$-holomorphic sphere in the class $[S^2 \times \mathrm{pt}]$ — the count of such spheres is a deformation invariant equal to $1$. The sphere through the image of the centre has symplectic area $\pi R^2 + \varepsilon$. Pulled back to the ball it becomes a genuine holomorphic curve through the centre, hence a minimal surface, and the monotonicity formula for minimal surfaces gives it area at least $\pi r^2$ inside the ball. So $\pi r^2 \le \pi R^2 + \varepsilon$ for every $\varepsilon > 0$. What is proved in this lesson is the linear case (Theorem 3), which needs none of this machinery.
+
+**Capacities and $C^0$-rigidity.** Ekeland–Hofer (1989) and Hofer–Zehnder (1990) axiomatised the invariant behind non-squeezing: a **symplectic capacity** assigns to each symplectic manifold of dimension $2n$ a number $c(M) \in [0, \infty]$, monotone under symplectic embeddings, scaling like $c(M, \lambda\omega) = \lambda\, c(M, \omega)$ and normalised by $c(B^{2n}(1)) = c(Z(1)) = \pi$. Gromov's width $\sup\{\pi r^2 : B(r) \hookrightarrow M\}$ is the smallest one. Capacities are $C^0$-robust, and they give the **Eliashberg–Gromov theorem**: a diffeomorphism that is a $C^0$-limit of symplectomorphisms is itself symplectic. Volume preservation would not have predicted this.
+
+**The Arnold conjecture.** Let $(M, \omega)$ be closed and $\varphi \in \operatorname{Ham}(M, \omega)$ have only non-degenerate fixed points ($\det(d\varphi_x - I) \neq 0$). Arnold conjectured in the 1960s that
+
+$$
+\#\operatorname{Fix}(\varphi) \ \ge\ \sum_k \dim H_k(M; \mathbb{F}),
+$$
+
+the number of critical points that a Morse function on $M$ is forced to have by Morse theory. Compare the Lefschetz fixed-point theorem, which only bounds the *signed* count, by $\chi(M)$; for the torus $T^{2n}$, $\chi = 0$ gives nothing, while the Arnold bound is $2^{2n}$. And the Hamiltonian hypothesis is essential: translations of $T^2$ are symplectic and have no fixed points at all.
+
+What is proved, and what is open:
+
+- **Proved.** Conley–Zehnder (1983) for the torus $T^{2n}$; Floer (1987–89) for monotone and symplectically aspherical manifolds, with $\mathbb{F} = \Z/2$; for all closed symplectic manifolds with $\mathbb{F} = \Q$ by Fukaya–Ono and by Liu–Tian (both 1998–99), using "virtual" counts of holomorphic curves; Abouzaid and Blumberg (2021) extended the bound to coefficients in every finite field.
+- **Open in general.** Arnold's original, stronger form, with the minimal number of critical points of *any* smooth function on $M$ in place of the sum of Betti numbers; and the version for degenerate fixed points (a lower bound by the cup-length plus one), which is known only in special cases such as symplectically aspherical manifolds.
+
+**Floer homology: Morse theory on the loop space.** Floer's idea was to do Morse theory for the **action functional** on the space of contractible loops $\gamma : S^1 \to M$,
+
+$$
+\mathcal{A}_H(\gamma) = -\int_{D} u^* \omega + \int_0^1 H_t(\gamma(t))\, dt, \qquad u|_{\partial D} = \gamma
+$$
+
+(signs vary with conventions). Its critical points are the $1$-periodic orbits of $X_{H_t}$, which correspond to fixed points of $\varphi = \varphi^1_H$. With a compatible almost complex structure $J$, its "gradient flow lines" are maps $u : \R \times S^1 \to M$ solving **Floer's equation**
+
+$$
+\partial_s u + J(u)\big( \partial_t u - X_{H_t}(u) \big) = 0,
+$$
+
+a perturbed Cauchy–Riemann equation. The functional is not bounded and its Hessian has infinite index in both directions, so classical Morse theory fails; but solutions of finite energy behave like holomorphic curves. Counting the rigid solutions defines a differential on the vector space generated by the periodic orbits. Its homology $HF_*(H)$ does not depend on $H$ or $J$, and for a small time-independent Morse function it equals the Morse homology of $M$, which is $H_*(M)$. Since a chain complex has at least as many generators as the rank of its homology, $\#\operatorname{Fix}(\varphi) \ge \operatorname{rank} H_*(M)$. The analytic difficulties — transversality, and the bubbling-off of holomorphic spheres in the compactness theorem — are exactly why the monotone case came first and the general case needed virtual techniques.
+
+</Section>
+
+<Section id="landscape" kind="human" title="Moment maps and the wider landscape">
+
+**Moment maps.** If a torus $T$ acts on $(M, \omega)$ by symplectomorphisms generated by Hamiltonians, these assemble into a **moment map** $\mu : M \to \mathfrak{t}^*$ with $d\langle \mu, \xi \rangle = \iota_{\xi_M} \omega$ for every $\xi \in \mathfrak{t}$. For the rotation of $S^2$ the moment map is the height. Established landmarks:
+
+- **Convexity** (Atiyah; Guillemin–Sternberg, 1982): for a compact connected $M$, $\mu(M)$ is the convex hull of the images of the fixed points — a convex polytope.
+- **Delzant (1988)**: compact symplectic $2n$-manifolds with an effective Hamiltonian $T^n$-action (toric manifolds) are classified by their moment polytopes. $\mathbb{CP}^n$ corresponds to a simplex.
+- **Symplectic reduction** (Meyer, 1973; Marsden–Weinstein, 1974): $\mu^{-1}(0)/T$ is again symplectic when the action on $\mu^{-1}(0)$ is free. For instance $\mathbb{CP}^{n-1}$ is the reduction of $\C^n$ by the diagonal circle action at a regular level of $\frac12 |z|^2$.
+- **Duistermaat–Heckman (1982)**: the push-forward of the Liouville measure by $\mu$ is piecewise polynomial — Archimedes' hat-box theorem is the case of $S^2$.
+
+**Contact geometry**, the odd-dimensional sibling, studies hyperplane fields $\ker \alpha$ on a $(2n-1)$-manifold with $\alpha \wedge (d\alpha)^{n-1} \neq 0$ everywhere; energy hypersurfaces of Hamiltonian systems are often contact. The Weinstein conjecture (1979) asks whether every Reeb vector field on a closed contact manifold has a periodic orbit. Taubes proved it in dimension $3$ (2007), using Seiberg–Witten Floer theory; in higher dimensions it is known in many cases and open in general.
+
+**Mirror symmetry.** Kontsevich's homological mirror symmetry conjecture (1994) predicts that the **Fukaya category** of a Calabi–Yau manifold $X$ — Lagrangian submanifolds, with morphisms given by Lagrangian Floer cohomology and compositions by counts of holomorphic polygons — is equivalent to the derived category of coherent sheaves on a mirror $X^\vee$ (see <TopicLink id="math.cat.derived-categories">derived categories</TopicLink>). It is proved in important cases: elliptic curves (Polishchuk–Zaslow, 1998), the quartic K3 surface (Seidel), and Calabi–Yau hypersurfaces in projective space (Sheridan, 2015). It is open in general.
+
+**A recent resolution.** Viterbo conjectured (2000) that among convex domains in $\R^{2n}$ of a given volume the ball maximises every normalised capacity. In 2024 Haim-Kislev and Ostrover found a counterexample in $\R^4$, built from two pentagons. A single conjecture falling is a reminder that the subject is far from finished: questions as basic as "which symplectic manifolds of dimension $4$ exist, and which ellipsoids embed into which?" have rich, partly unexpected answers (McDuff and Schlenk found an infinite staircase governed by Fibonacci numbers for embedding ellipsoids into balls, 2012).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Symplectic linear algebra in Lean and Mathlib">
+
+Mathlib has the symplectic group `Matrix.symplecticGroup l R` of matrices $A$ with $A J A^{\mathsf T} = J$, where $J$ is indexed by `l ⊕ l`, and two non-trivial facts about it. There are no symplectic manifolds in Mathlib yet, so Darboux's theorem, Moser's trick and Gromov's theorem are **not** formalised here. What is formalised is the linear algebra of the lesson and the conservation law, in full.
+
+First, Theorem 4 (i), for any alternating form on any real normed space. Note that the proof never uses non-degeneracy:
+
+<Lean decl="Lumenary.SymplecticGeometry.hamiltonian_energy_conserved" />
+
+In the plane, symplectic means determinant one (proved entry by entry), with the shear — the flow of a free particle — as the exercise:
+
+<Lean decl="Lumenary.SymplecticGeometry.J2" />
+
+<Lean decl="Lumenary.SymplecticGeometry.transpose_mul_J2_mul" />
+
+<Lean decl="Lumenary.SymplecticGeometry.symplectic_iff_det_eq_one" />
+
+<Lean decl="Lumenary.SymplecticGeometry.shear_symplectic" />
+
+Evenness of dimension and the infinitesimal Liouville theorem:
+
+<Lean decl="Lumenary.SymplecticGeometry.det_eq_zero_of_skew_odd" />
+
+<Lean decl="Lumenary.SymplecticGeometry.trace_skew_mul_symm" />
+
+The linear Liouville theorem — symplectic matrices have determinant $1$ — is in Mathlib, with a surprisingly intricate proof (reduction to local rings). So is the fact that transposes of symplectic matrices are symplectic, used in Theorem 3:
+
+<Lean decl="Lumenary.SymplecticGeometry.symplectic_det_eq_one" />
+
+<Lean decl="Lumenary.SymplecticGeometry.symplectic_transpose_mem" />
+
+Now Theorem 3 in $\R^4$, in coordinates $(x_1, y_1, x_2, y_2)$, with Mathlib's convention $A J A^{\mathsf T} = J$ so that the rows of $A$ pair under $\omega_0$ directly. The Wirtinger inequality is proved as a sum-of-squares identity in Plücker coordinates, and is slightly stronger than the Cauchy–Schwarz step the human proof needs:
+
+<Lean decl="Lumenary.SymplecticGeometry.J4" />
+
+<Lean decl="Lumenary.SymplecticGeometry.omega4" />
+
+<Lean decl="Lumenary.SymplecticGeometry.mul_J4_mul_transpose_apply" />
+
+<Lean decl="Lumenary.SymplecticGeometry.wirtinger4" />
+
+<Lean decl="Lumenary.SymplecticGeometry.exists_long_shadow" />
+
+<Lean decl="Lumenary.SymplecticGeometry.linear_nonsqueezing" />
+
+Finally the contrast: a volume-preserving matrix that is not symplectic and does squeeze the unit ball into the cylinder of radius $\frac12$ — impossible for a symplectic matrix by the previous theorem.
+
+<Lean decl="Lumenary.SymplecticGeometry.squeeze" />
+
+<Lean decl="Lumenary.SymplecticGeometry.squeeze_det" />
+
+<Lean decl="Lumenary.SymplecticGeometry.squeeze_not_symplectic" />
+
+<Lean decl="Lumenary.SymplecticGeometry.squeeze_ball" />
+
+**Not formalised:** symplectic manifolds and Hamiltonian vector fields on them; Theorem 1 as a basis statement (only evenness is proved); Theorem 3 in dimensions other than four; Moser's trick and Darboux's theorem; pseudo-holomorphic curves, Gromov's theorem, the Arnold conjecture and Floer homology. Formalising Floer theory is far beyond any current proof assistant library.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Symplectic integrators and the shadows of a ball">
+
+Numerical analysts met symplectic geometry from the other side. A one-step method for Hamilton's equations is **symplectic** if each step is a symplectic map. Symplectic methods do not conserve energy exactly, but backward error analysis shows that (for analytic Hamiltonians and small steps) a symplectic method agrees, up to exponentially small errors, with the exact flow of a nearby modified Hamiltonian, so the energy error stays bounded over exponentially long times instead of drifting. The first experiment integrates the pendulum with two non-symplectic methods (explicit Euler, RK4) and two symplectic ones (symplectic Euler, leapfrog), and computes exactly how one step of each changes phase-space area for the harmonic oscillator.
+
+<Python id="symplectic_geometry_integrators" />
+
+Notice that RK4 is far *more accurate* than leapfrog over short times, yet its energy error grows steadily, while the symplectic methods' errors stay level. The exact determinants explain why: explicit Euler expands area by the factor $1 + h^2$ per step, RK4 contracts it by $1 - h^6/72 + h^8/576$, and the symplectic steps preserve it exactly.
+
+The second experiment tests Theorem 3 on random matrices. It builds random symplectic matrices of $\R^4$ as products of elementary symplectic maps, and random volume-preserving matrices, and measures the area of the shadow of the unit ball on two planes: the symplectic plane $(x_1, y_1)$ and the Lagrangian plane $(x_1, x_2)$.
+
+<Python id="symplectic_geometry_shadows" />
+
+Symplectic shadows on $(x_1, y_1)$ never fall below $\pi$; on the Lagrangian plane even symplectic maps shrink the shadow, because $\omega_0$ vanishes there and imposes no constraint. Both runs are numerical evidence; Theorems 3 and 4 are the proofs.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: Hamiltonian flows in the plane">
+
+The pendulum's phase plane, $x = q$ and $y = p$, with $\dot q = p$ and $\dot p = -\sin q$. Start trajectories from several points. Each closed orbit is a level curve of $H = \frac12 p^2 - \cos q$; the separatrices through $(\pm\pi, 0)$ divide oscillation from rotation. The centres are surrounded by closed orbits, never by spirals: a spiral sink would shrink area, which a Hamiltonian flow cannot do.
+
+<VectorField mode="phase" preset="pendulum" title="The pendulum: a Hamiltonian flow" subtitle="Trajectories are level curves of H = p²/2 − cos q." />
+
+In the plane, symplectic linear maps are exactly the matrices of determinant $1$. Try the shear and the rotation presets: the unit square becomes a parallelogram of the same area and orientation. A reflection has determinant $-1$ — area-preserving but orientation-reversing, hence *anti*-symplectic.
+
+<MatrixTransform matrix={[[1, 1], [0, 1]]} presets={["shear", "rotation", "scale", "reflection"]} title="Sp(2, ℝ) = SL(2, ℝ)" subtitle="In dimension two, symplectic means det = 1." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Symplectic maps are just volume-preserving maps."** Only in dimension $2$. In dimension $2n \ge 4$ the group of symplectomorphisms is a much smaller, rigid subgroup of the volume-preserving diffeomorphisms: the squeeze $(x_1, y_1, x_2, y_2) \mapsto (\varepsilon x_1, \varepsilon y_1, x_2/\varepsilon, y_2/\varepsilon)$ preserves volume and puts the unit ball inside a cylinder of radius $\varepsilon$, which Gromov's theorem forbids for every symplectic map.
+
+</Misconception>
+
+<Misconception>
+
+**"Symplectic geometry has curvature invariants like Riemannian geometry."** It has none: by Darboux's theorem every symplectic manifold is locally isomorphic to $(\R^{2n}, \omega_0)$. All symplectic invariants — capacities, Gromov–Witten invariants, Floer homology — are global.
+
+</Misconception>
+
+<Misconception>
+
+**"Any non-degenerate $2$-form will do."** Closedness is essential: it is what makes Hamiltonian flows preserve $\omega$ (Theorem 4 (ii)) and what makes Moser's trick and Darboux's theorem work. A non-degenerate $2$-form that is not closed is an *almost symplectic* structure; $S^6$ has one but no symplectic form.
+
+</Misconception>
+
+<Misconception>
+
+**"Every symplectomorphism isotopic to the identity is Hamiltonian, so it has fixed points."** Translations of the torus are symplectic, isotopic to the identity and fixed-point-free. The obstruction is the flux, a class in $H^1(M; \R)$; the Arnold conjecture concerns Hamiltonian diffeomorphisms only.
+
+</Misconception>
+
+<Misconception>
+
+**"Symplectic integrators conserve energy."** They do not conserve $H$ exactly; they conserve a modified Hamiltonian $\tilde H = H + O(h^p)$ up to exponentially small errors (for analytic $H$), so the energy error oscillates without drifting over very long times. And they are not automatically more accurate than non-symplectic methods over short times — compare RK4 and leapfrog in the experiment.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Fixed points, Morse theory and the loop space">
+
+The Arnold conjecture is a statement about topology forcing dynamics: the Betti numbers of $M$ bound the number of periodic orbits of every non-degenerate Hamiltonian system on it. Floer homology realises Arnold's insight that a Hamiltonian diffeomorphism behaves like the time-one map of the gradient flow of a function: it is the Morse homology of the action functional on the free loop space $\mathcal{L}M$, computed with holomorphic cylinders. Variants — Lagrangian Floer homology, symplectic homology, embedded contact homology — became tools far beyond symplectic geometry, for instance in Kronheimer–Mrowka's and Ozsváth–Szabó's work on 3-manifolds and knots (see <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Compatible complex structures and the Erlangen programme">
+
+In Klein's sense, symplectic geometry on $\R^{2n}$ is the geometry of $\operatorname{Sp}(2n, \R)$, just as Euclidean geometry is that of $O(2n)$ and complex geometry that of $GL(n, \C)$; the intersection of any two of these three groups is the unitary group $U(n)$ (the "two out of three" property). On a symplectic manifold the space of almost complex structures $J$ compatible with $\omega$ (meaning $g = \omega(\cdot, J\cdot)$ is a Riemannian metric) is non-empty and **contractible**, so every symplectic manifold has a canonical homotopy class of almost complex structures, hence Chern classes. Choosing $J$ is the geometer's entry point: it gives a metric, and $J$-holomorphic curves, whose $\omega$-area equals their Riemannian area, are minimal surfaces. When $J$ is integrable and $\omega$ compatible, $M$ is Kähler.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Elliptic PDE and compactness">
+
+Gromov's and Floer's theories are analysis. The Cauchy–Riemann operator $\bar\partial_J u = \frac12(du + J\, du\, j)$ is a non-linear elliptic operator; its linearisation is Fredholm, with index given by the Riemann–Roch theorem, so moduli spaces of holomorphic curves are finite-dimensional manifolds when transversality holds. Gromov's compactness theorem says sequences of curves with bounded energy converge after **bubbling** — energy can concentrate at points and split off spheres — which is the analogue of Uhlenbeck's compactness for Yang–Mills instantons (see <TopicLink id="math.applied.gauge-theory">gauge theory</TopicLink>) and of the concentration-compactness phenomena of geometric analysis.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Poisson algebras and quantisation">
+
+The Poisson bracket makes $C^\infty(M)$ a **Poisson algebra**: a commutative algebra with a Lie bracket that is a derivation in each argument. Quantisation asks to deform it into a non-commutative algebra with $f \star g = fg + \frac{i\hbar}{2}\{f, g\} + O(\hbar^2)$. On $\R^{2n}$ the Moyal product does this; De Wilde–Lecomte and Fedosov constructed such star products on every symplectic manifold, and Kontsevich (1997) on every Poisson manifold, via his formality theorem. Groenewold's theorem (1946) shows the limits: no linear map from polynomials on $\R^2$ to operators turns all Poisson brackets into commutators $\frac{1}{i\hbar}[\cdot, \cdot]$ exactly, so quantisation is genuinely a deformation, not a representation (see <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Phase space, uncertainty and the camel">
+
+Symplectic geometry is the geometry of classical phase space: Hamilton's equations, Noether's theorem, Liouville's theorem and canonical transformations are its first theorems. There is a suggestive parallel between non-squeezing and the uncertainty principle: you cannot squeeze a cloud of classical states into a cylinder over a conjugate plane $(q_1, p_1)$ of area smaller than its own cross-section, just as $\Delta q_1\, \Delta p_1 \ge \hbar / 2$ forbids squeezing a quantum state's spread in one conjugate pair. This is an **analogy** — non-squeezing is a theorem about classical maps, not a derivation of quantum mechanics. It has been made precise only in a limited setting: for Gaussian states, Maurice de Gosson (2009) rephrased the Robertson–Schrödinger uncertainty relations as a lower bound on the symplectic capacity of the covariance ellipsoid.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="The symplectic creed and the Fukaya category">
+
+Weinstein's "symplectic creed" is that **everything is a Lagrangian submanifold**: the graph of a symplectomorphism $\varphi : M \to N$ is a Lagrangian in $\bar M \times N$, and composition of maps becomes composition of Lagrangian correspondences. This suggests a "symplectic category" with Lagrangian correspondences as morphisms, but composition is only well behaved for transverse correspondences — a problem Wehrheim and Woodward addressed by passing to sequences of correspondences and Floer theory. The Fukaya category, an $A_\infty$-category of Lagrangians, is the categorical heart of homological mirror symmetry.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+The Kepler problem is a Hamiltonian system with more conserved quantities than degrees of freedom; its hidden symmetry is the reason all bound orbits close. This optional trail starts there.
+
+<Trail slug="why-ellipses" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1808–1838: the mechanics.** Lagrange (1808–1810) and Poisson (1809) introduced the brackets that now bear their names while studying perturbations of planetary orbits. William Rowan Hamilton (Dublin, 1834–35) recast mechanics in the form of his canonical equations, and Joseph Liouville proved the conservation of phase-space volume (1838). Carl Gustav Jacobi developed the theory of canonical transformations.
+- **1882–1912: geometry and topology appear.** Gaston Darboux proved his normal form for closed non-degenerate $2$-forms (1882). Henri Poincaré, studying the three-body problem, stated his "last geometric theorem" (1912): an area-preserving twist map of an annulus has at least two fixed points. George Birkhoff proved it in 1913. It is the ancestor of the Arnold conjecture.
+- **1939: the name.** Hermann Weyl coined *symplectic* in *The Classical Groups* (1939), replacing the earlier "complex group" by a Greek calque of the Latin *complex* ("braided together").
+- **1960s–70s: the modern subject.** Jürgen Moser's stability theorem (1965); Vladimir Arnold's conjecture (Moscow, 1960s) and his *Mathematical Methods of Classical Mechanics* (1974); Jean-Marie Souriau's moment map and geometric mechanics (Marseille, 1970); Alexandre Kirillov's orbit method (1962) and the Kirillov–Kostant–Souriau forms; Alan Weinstein's Lagrangian neighbourhood theorem (1971) and creed; reduction by Kenneth Meyer and by Jerrold Marsden and Weinstein (1973–74).
+- **1980s: rigidity.** Charles Conley and Eduard Zehnder proved the Arnold conjecture for tori (1983). Mikhail Gromov introduced pseudo-holomorphic curves and proved non-squeezing (1985). Andreas Floer created Floer homology (1987–89) before his death in 1991. Yakov Eliashberg, Dusa McDuff, Helmut Hofer and Claude Viterbo shaped symplectic topology. In Beijing, **Feng Kang** pioneered symplectic difference schemes for Hamiltonian systems (1984–85), independently of Ronald Ruth's work in accelerator physics (1983) — the origin of the integrators in the computation section.
+- **1990s–today.** Kontsevich's homological mirror symmetry (1994); Kenji Fukaya and Kaoru Ono in Japan and Gang Liu and Gang Tian proved the rational Arnold conjecture (1998–99); Fukaya, Oh, Ohta and Ono built Lagrangian Floer theory; Paul Seidel developed Fukaya categories; Clifford Taubes proved the Weinstein conjecture in dimension three (2007). Ana Cannas da Silva's lectures and McDuff–Salamon's books made the subject teachable worldwide.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Ana Cannas da Silva, *Lectures on Symplectic Geometry* (2001) — the gentlest complete introduction: Darboux, Moser, moment maps, toric manifolds.
+- Dusa McDuff and Dietmar Salamon, *Introduction to Symplectic Topology* (1995; 3rd ed. 2017) — the standard graduate text, including capacities and non-squeezing.
+- V. I. Arnold, *Mathematical Methods of Classical Mechanics* (1974; English 1978) — the mechanics and the geometry together, with the conjecture in an appendix.
+- Helmut Hofer and Eduard Zehnder, *Symplectic Invariants and Hamiltonian Dynamics* (1994) — capacities and periodic orbits.
+- Dusa McDuff and Dietmar Salamon, *J-holomorphic Curves and Symplectic Topology* (2004; 2nd ed. 2012) — the analysis behind Gromov's theorem.
+- Michèle Audin and Mihai Damian, *Morse Theory and Floer Homology* (2014) — a complete proof of the Arnold conjecture for aspherical manifolds.
+- Leonid Polterovich, *The Geometry of the Group of Symplectic Diffeomorphisms* (2001).
+- Ernst Hairer, Christian Lubich and Gerhard Wanner, *Geometric Numerical Integration* (2002) — symplectic integrators and backward error analysis.
+
+A reading path: Cannas da Silva Parts I–IV → McDuff–Salamon (*Introduction*) Ch. 1–3 and 12 → Audin–Damian for Floer theory, or Hofer–Zehnder for capacities and dynamics.
+
+</Section>

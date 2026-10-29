@@ -1,0 +1,398 @@
+---
+slug: cryptography
+topic: math.applied.cryptography
+title: Cryptography
+subtitle: How two strangers can agree on a secret while the whole world listens — the number theory behind RSA and Diffie–Hellman, what is proved about them, and what is only believed.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 110
+order: 5023
+objectives:
+  - Implement RSA key generation, encryption and decryption, and prove that decryption works for every message using Fermat's little theorem and the Chinese remainder theorem
+  - Compute modular powers by repeated squaring and prove that it uses $O(\log e)$ multiplications
+  - Carry out a Diffie–Hellman key exchange and explain its reliance on the difficulty of discrete logarithms
+  - Prove that the one-time pad has perfect secrecy, and explain why practical systems rely instead on unproved hardness assumptions
+  - Explain why textbook RSA is unsafe in practice and why encryption alone does not guarantee authenticity
+narrators: []
+lean:
+  - Lumenary.Cryptography.powMod
+  - Lumenary.Cryptography.powMod_eq
+  - Lumenary.Cryptography.pow_mul_sub_one_succ
+  - Lumenary.Cryptography.rsa_correct
+  - Lumenary.Cryptography.totient_pq
+  - Lumenary.Cryptography.rsa_toy
+  - Lumenary.Cryptography.rsa_malleable
+  - Lumenary.Cryptography.dh_agree
+  - Lumenary.Cryptography.dh_toy
+  - Lumenary.Cryptography.otp_decrypt
+  - Lumenary.Cryptography.otp_unique_key
+compute: [cryptography_rsa_toy, cryptography_discrete_log]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Secrets in public">
+
+When a student in Nairobi pays for lunch by phone, a doctor in Chennai opens a patient record, or a family in São Paulo video-calls relatives in Lisbon, their messages cross networks that anyone might be watching. The messages are encrypted. But encryption needs a key, and the two ends must share it. How did they agree on a key, if every message they ever exchanged could have been overheard?
+
+For most of history this **key-distribution problem** was solved by couriers, codebooks and trusted meetings, and it seemed obvious that there was no other way: to share a secret, you must first share a secret. In 1976 Whitfield Diffie and Martin Hellman showed otherwise, and in 1977 Ron Rivest, Adi Shamir and Leonard Adleman found a way to let anyone encrypt a message that only one person can read. (It later emerged that James Ellis, Clifford Cocks and Malcolm Williamson had found the same ideas at the British signals agency GCHQ a few years earlier, in secret.) Both inventions are applications of <TopicLink id="math.number.congruences">congruences</TopicLink>, and both rest on a striking asymmetry: some arithmetic is easy to do and, as far as anyone knows, very hard to undo.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Easy one way, hard the other">
+
+Multiplying two 300-digit primes takes a computer a fraction of a millisecond. Recovering the two primes from their product is, with the best known methods, far beyond the reach of every computer on Earth. Raising a number to a 600-digit power modulo a prime is quick; recovering the exponent from the result — the **discrete logarithm** — appears to be just as hopeless. Functions like these, easy to compute and (apparently) hard to invert, are the raw material of public-key cryptography.
+
+<Analogy>
+
+Diffie–Hellman is often explained with paint. Ama and Bolat agree publicly on a common colour, yellow. Each secretly picks a colour — Ama red, Bolat blue — mixes it with yellow and sends the mixture. Each then adds their own secret colour to the mixture they received. Both end up with yellow + red + blue, while an eavesdropper who saw yellow, yellow + red and yellow + blue cannot easily "unmix" paint to find red or blue. The analogy captures the shape of the protocol, not its mathematics: paint mixing is not a group operation, and nobody has proved that unmixing — or computing discrete logarithms — is hard.
+
+</Analogy>
+
+The mathematics replaces paint by a commutative operation: exponentiation. Since $(g^a)^b = g^{ab} = (g^b)^a$, the square below commutes, and the two parties travel round it in opposite directions.
+
+<CommutativeDiagram
+  objects={[
+    { id: "g", tex: "g", row: 0, col: 0 },
+    { id: "ga", tex: "g^a", row: 0, col: 1 },
+    { id: "gb", tex: "g^b", row: 1, col: 0 },
+    { id: "gab", tex: "g^{ab}", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "g", to: "ga", tex: "(\\,\\cdot\\,)^a" },
+    { from: "g", to: "gb", tex: "(\\,\\cdot\\,)^b", labelSide: "right" },
+    { from: "ga", to: "gab", tex: "(\\,\\cdot\\,)^b" },
+    { from: "gb", to: "gab", tex: "(\\,\\cdot\\,)^a", labelSide: "right" },
+  ]}
+  caption="Diffie–Hellman: Ama knows $a$ and receives $g^b$; Bolat knows $b$ and receives $g^a$. Both reach $g^{ab}$. The eavesdropper sees only the top-right and bottom-left corners."
+/>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="cryptosystem">
+
+A **cryptosystem** consists of a set of messages $M$, of ciphertexts $C$ and of keys, with an encryption function $E_k : M \to C$ and a decryption function $D_{k'} : C \to M$ for each key pair, satisfying **correctness**: $D_{k'}(E_k(m)) = m$ for every message $m$. In a **symmetric** system $k' = k$ is a shared secret. In a **public-key** system the encryption key $k$ is published and only the decryption key $k'$ is kept private.
+
+</Definition>
+
+<Definition term="one-time pad">
+
+Messages, keys and ciphertexts are strings of $n$ bits. The key $k$ is chosen uniformly at random and used once; $E_k(m) = m \oplus k$ and $D_k(c) = c \oplus k$, where $\oplus$ is bitwise exclusive or (addition in $(\Z/2\Z)^n$).
+
+</Definition>
+
+<Definition term="RSA">
+
+Choose distinct large primes $p$ and $q$, put $n = pq$, and choose $e$ coprime to $(p - 1)(q - 1)$. Compute $d$ with $ed \equiv 1 \pmod{(p - 1)(q - 1)}$. The **public key** is $(n, e)$, the **private key** is $d$. A message is an integer $m$ with $0 \le m < n$; it is encrypted as $c = m^e \bmod n$ and decrypted as $c^d \bmod n$.
+
+</Definition>
+
+<Definition term="discrete logarithm, Diffie–Hellman">
+
+Let $G$ be a group and $g \in G$. Given $h = g^x$, the **discrete logarithm problem** asks for $x$. In the **Diffie–Hellman key exchange**, $G$ and $g$ are public (classically $G = (\Z/p\Z)^\times$ with $g$ a generator); Ama picks a secret $a$ and sends $A = g^a$, Bolat picks a secret $b$ and sends $B = g^b$, and both compute the shared key $g^{ab} = B^a = A^b$.
+
+</Definition>
+
+<Definition term="one-way function (informal)">
+
+A **one-way function** is a function that can be computed efficiently but that, for a random input, no efficient algorithm can invert except with negligible probability. Whether one-way functions exist at all is unknown; their existence would imply $\mathrm{P} \neq \mathrm{NP}$.
+
+</Definition>
+
+</Section>
+
+<Section id="symmetric" kind="proof" title="Symmetric ciphers and perfect secrecy">
+
+The oldest ciphers are symmetric. Caesar's cipher shifts each letter: with letters numbered $0$ to $25$, $E_k(x) = x + k \bmod 26$. The **affine cipher** $E(x) = ax + b \bmod 26$ is decryptable exactly when $a$ is invertible modulo $26$, i.e. $\gcd(a, 26) = 1$, and then $D(y) = a^{-1}(y - b)$. Both are broken by **frequency analysis** — in any language some letters are much more common than others, and a substitution cipher preserves those frequencies — a method described by the Arab scholar al-Kindī in the ninth century.
+
+Is there an unbreakable cipher? Yes, provided the key is as long as the message.
+
+<Theorem name="Theorem 1 (perfect secrecy of the one-time pad; Shannon, 1949)">
+
+Suppose the key $K$ is uniformly distributed on $\{0, 1\}^n$ and independent of the message $M$. Then for every message $m$ and ciphertext $c$ (with $\Pr(C = c) > 0$),
+
+$$
+\Pr(M = m \mid C = c) = \Pr(M = m).
+$$
+
+Seeing the ciphertext tells an eavesdropper nothing about the message.
+
+</Theorem>
+
+<Proof>
+
+For fixed $m$ and $c$ there is exactly one key with $m \oplus k = c$, namely $k = m \oplus c$ (XOR both sides with $m$, using $m \oplus m = 0$). By independence,
+
+$$
+\Pr(C = c \mid M = m) = \Pr(K = m \oplus c) = 2^{-n},
+$$
+
+the same for every $m$. Hence $\Pr(C = c) = \sum_{m'} \Pr(C = c \mid M = m')\Pr(M = m') = 2^{-n}$, and Bayes's theorem gives $\Pr(M = m \mid C = c) = \Pr(C = c \mid M = m)\Pr(M = m)/\Pr(C = c) = \Pr(M = m)$.
+
+</Proof>
+
+Shannon also proved the converse: perfect secrecy requires at least as many possible keys as messages. The one-time pad is therefore perfect but impractical — the key-distribution problem returns in full — and if a pad is used twice, $c_1 \oplus c_2 = m_1 \oplus m_2$ leaks the combination of the two messages. Modern symmetric ciphers (such as AES) use short keys and are not perfectly secret; their security is a well-tested conjecture, not a theorem.
+
+</Section>
+
+<Section id="fast-powering" kind="proof" title="Fast modular exponentiation">
+
+RSA and Diffie–Hellman compute $b^e \bmod n$ with $e$ hundreds of digits long. Multiplying $b$ by itself $e - 1$ times would take longer than the age of the universe. Instead we use the binary expansion of $e$.
+
+<Theorem name="Theorem 2 (repeated squaring)">
+
+Define $\mathrm{pow}(b, 0) = 1$ and, for $e \geq 1$,
+
+$$
+\mathrm{pow}(b, e) = \begin{cases} h^2 \bmod n & \text{if } e \text{ is even}, \\ h^2 b \bmod n & \text{if } e \text{ is odd}, \end{cases} \qquad \text{where } h = \mathrm{pow}(b, \lfloor e/2 \rfloor).
+$$
+
+Then $\mathrm{pow}(b, e) \equiv b^e \pmod n$, and the computation uses at most $2\lfloor \log_2 e \rfloor + 2$ multiplications modulo $n$ for $e \geq 1$.
+
+</Theorem>
+
+<Proof>
+
+*Correctness*, by strong induction on $e$. For $e = 0$ it is the definition. If $e = 2k$, then $b^e = (b^k)^2$, and $h \equiv b^k$ by induction, so $h^2 \equiv b^e$. If $e = 2k + 1$, then $b^e = (b^k)^2 b \equiv h^2 b$. Reducing modulo $n$ after each product does not change the class modulo $n$ (Theorem 2 of the congruences lesson).
+
+*Cost.* Each call on $e \geq 1$ performs at most two multiplications and passes to $\lfloor e/2 \rfloor$. Starting from $e$, after $j$ halvings we reach $\lfloor e/2^j \rfloor$, which is $0$ once $2^j > e$, i.e. after $\lfloor \log_2 e \rfloor + 1$ calls on positive exponents. So there are at most $2(\lfloor \log_2 e \rfloor + 1)$ multiplications.
+
+</Proof>
+
+For a 2048-bit exponent that is at most about $4\,100$ multiplications of numbers below $n$, and every intermediate number is below $n^2$ — never the astronomically large $b^e$. For $e = 65537 = 2^{16} + 1$, a popular choice of public exponent, it takes $16$ squarings and a couple of multiplications.
+
+</Section>
+
+<Section id="rsa" kind="proof" title="RSA">
+
+<Theorem name="Theorem 3 (RSA decryption works)">
+
+Let $p \neq q$ be primes, $n = pq$, and $ed \equiv 1 \pmod{(p - 1)(q - 1)}$. Then for **every** integer $m$,
+
+$$
+(m^e)^d \equiv m \pmod n.
+$$
+
+</Theorem>
+
+<Proof>
+
+Write $ed = 1 + t(p - 1)(q - 1)$ with $t \geq 0$.
+
+*Modulo $p$.* If $p \mid m$, both sides are $\equiv 0 \pmod p$. Otherwise Fermat's little theorem gives $m^{p-1} \equiv 1 \pmod p$, so
+
+$$
+m^{ed} = m \cdot \big(m^{p-1}\big)^{t(q-1)} \equiv m \cdot 1 = m \pmod p.
+$$
+
+*Modulo $q$*, the same argument with the roles of $p$ and $q$ exchanged gives $m^{ed} \equiv m \pmod q$.
+
+*Modulo $n$.* So $p$ and $q$ both divide $m^{ed} - m$. Since they are distinct primes they are coprime, and by the Chinese remainder theorem (uniqueness part) $pq \mid m^{ed} - m$.
+
+</Proof>
+
+Notice that the proof handles messages $m$ that share a factor with $n$ as well — a case that a proof using Euler's theorem alone ($m^{\varphi(n)} \equiv 1$ for $\gcd(m, n) = 1$) would miss. Since $\varphi(pq) = (p - 1)(q - 1)$, the condition is the textbook $ed \equiv 1 \pmod{\varphi(n)}$.
+
+<Example title="The small example from the original RSA paper">
+
+Take $p = 47$, $q = 59$, so $n = 2773$ and $(p - 1)(q - 1) = 46 \cdot 58 = 2668$. With $e = 17$, Euclid's algorithm gives $d = 157$, since $17 \cdot 157 = 2669 = 2668 + 1$. The message $m = 1234$ is encrypted as $1234^{17} \bmod 2773 = 1793$, and $1793^{157} \bmod 2773 = 1234$ recovers it.
+
+</Example>
+
+**Why is RSA believed to be secure?** To decrypt, an eavesdropper who knows $(n, e)$ wants $d$, and $d$ is easy to compute from $(p - 1)(q - 1)$. But knowing $\varphi(n) = (p - 1)(q - 1)$ is as good as knowing the factors: $p + q = n - \varphi(n) + 1$ and $pq = n$, so $p$ and $q$ are the roots of $x^2 - (n - \varphi(n) + 1)x + n$. Computing $d$ from $(n, e)$ is likewise known to be as hard as factoring $n$. Whether decrypting RSA *without* finding $d$ is as hard as factoring is an open question, and whether factoring is hard at all is unproved.
+
+**Signatures.** Running RSA backwards gives a **digital signature**: the owner of $d$ signs $m$ by $s = m^d \bmod n$, and anyone can check $s^e \equiv m \pmod n$ with the public key. Theorem 3, with the roles of $e$ and $d$ exchanged, shows that genuine signatures verify. In practice one signs a cryptographic hash of $m$, not $m$ itself — otherwise anyone can pick a random $s$ and claim it is the signature of $m = s^e \bmod n$.
+
+**Textbook RSA is not safe as it stands.** It is *deterministic*: an eavesdropper who suspects that $c$ encrypts "yes" or "no" simply encrypts both and compares. It is *malleable*: $E(m_1)E(m_2) \equiv E(m_1 m_2) \pmod n$, so ciphertexts can be manipulated without being read. Real systems first **pad** the message with random bits in a carefully designed way (for example OAEP) before applying $m \mapsto m^e$.
+
+</Section>
+
+<Section id="diffie-hellman" kind="proof" title="Diffie–Hellman and discrete logarithms">
+
+<Theorem name="Theorem 4 (Diffie–Hellman agreement)">
+
+For all integers $g, a, b$ and every modulus $p$, $(g^b \bmod p)^a \equiv (g^a \bmod p)^b \pmod p$. Hence both parties compute the same key $g^{ab} \bmod p$.
+
+</Theorem>
+
+<Proof>
+
+Reducing the base modulo $p$ does not change a power modulo $p$, so both sides are congruent to $(g^b)^a = g^{ab} = (g^a)^b$.
+
+</Proof>
+
+<Example title="A toy exchange">
+
+Take $p = 101$ and $g = 2$, which generates all $100$ non-zero residues modulo $101$. Ama picks $a = 37$ and sends $2^{37} \bmod 101 = 55$; Bolat picks $b = 58$ and sends $2^{58} \bmod 101 = 47$. Ama computes $47^{37} \bmod 101 = 82$, Bolat computes $55^{58} \bmod 101 = 82$. An eavesdropper who knows $2$, $101$, $55$ and $47$ must solve $2^x \equiv 55 \pmod{101}$ — easy for $p = 101$ by trying all $x$, hopeless (as far as anyone knows) for a prime of 600 digits.
+
+</Example>
+
+Why a generator? If $g$ has small order $r$ — that is, $g^r = 1$ for a small $r$ — then $g^a$ takes only $r$ values and the secret can be found by trying them. By Lagrange's theorem the order of any element divides the order $p - 1$ of the group, and $g$ is a generator exactly when $g^{(p-1)/\ell} \neq 1$ for every prime $\ell \mid p - 1$.
+
+**Attacks.** Trying every exponent takes up to $p - 1$ steps. Daniel Shanks's **baby-step giant-step** algorithm writes the unknown $x = im + j$ with $m = \lceil \sqrt{p - 1}\, \rceil$, stores the "baby steps" $g^j$ for $0 \le j < m$, and then walks through the "giant steps" $h g^{-im}$ until one of them matches a stored value — at most about $2\sqrt p$ group operations. For $(\Z/p\Z)^\times$ there are faster, subexponential methods (index calculus), which is one reason why classical Diffie–Hellman needs primes of 2048 bits or more.
+
+**Authentication.** Diffie–Hellman alone is vulnerable to a **man in the middle**: an attacker who can intercept and replace messages runs one exchange with Ama and another with Bolat, and relays (and reads) everything. The exchange must be authenticated — for example with digital signatures — which is how it is used in practice.
+
+</Section>
+
+<Section id="hardness" kind="human" title="What is proved, and what is only believed">
+
+It is worth being exact about the status of each claim in this lesson.
+
+- **Proved:** the correctness of RSA (Theorem 3) and Diffie–Hellman (Theorem 4); the efficiency of repeated squaring (Theorem 2); the perfect secrecy of the one-time pad (Theorem 1).
+- **Believed, on extensive evidence:** that factoring products of two large random primes, and computing discrete logarithms in well-chosen groups, are infeasible for classical computers. The best known factoring algorithm, the general number field sieve, takes time roughly $\exp\big(c\,(\ln n)^{1/3}(\ln\ln n)^{2/3}\big)$ — faster than any power of $n$ but slower than any power of $\ln n$. The largest RSA challenge number factored so far, RSA-250 (829 bits), was factored in 2020 with thousands of computer-years of effort.
+- **Unknown:** whether one-way functions exist at all. If they do, then $\mathrm{P} \neq \mathrm{NP}$; so a proof that RSA is secure in this sense would settle one of the great open problems of mathematics (see <TopicLink id="math.comp.complexity-theory">complexity theory</TopicLink>).
+- **Known to change everything:** Peter Shor proved in 1994 that a sufficiently large, fault-tolerant **quantum computer** could factor integers and compute discrete logarithms in polynomial time. No existing quantum computer is anywhere near large enough, but because of this threat, standards bodies have begun replacing RSA and Diffie–Hellman with **post-quantum** systems based on other problems, such as hard problems about lattices; the US National Institute of Standards and Technology published its first such standards in 2024.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Correctness, checked in Lean">
+
+Lean can prove that cryptographic algorithms are *correct*; it cannot prove them *secure*, because their security is an unproved conjecture. Everything below is about correctness.
+
+**Fast powering (Theorem 2).** The recursive algorithm, and the theorem that it computes $b^e \bmod n$, by strong induction on $e$ exactly as in the human proof. Lean accepts the recursion only after checking that $\lfloor e/2 \rfloor < e$ for $e > 0$, so termination is part of the proof. (The multiplication count is not formalised.)
+
+<Lean decl="Lumenary.Cryptography.powMod" />
+
+<Lean decl="Lumenary.Cryptography.powMod_eq" />
+
+**RSA (Theorem 3).** The key lemma handles one prime at a time, splitting on whether $p \mid m$ and using Mathlib's Fermat (`ZMod.pow_card_sub_one_eq_one`); the main theorem writes $ed = t(p - 1)(q - 1) + 1$ and combines the two primes with the Chinese remainder theorem (`Nat.modEq_and_modEq_iff_modEq_mul`). Note that the theorem holds for *every* natural number $m$, with no coprimality hypothesis. Then $\varphi(pq) = (p - 1)(q - 1)$ from the library, the toy example from the RSA paper checked by the kernel, and malleability.
+
+<Lean decl="Lumenary.Cryptography.pow_mul_sub_one_succ" />
+
+<Lean decl="Lumenary.Cryptography.rsa_correct" />
+
+<Lean decl="Lumenary.Cryptography.totient_pq" />
+
+<Lean decl="Lumenary.Cryptography.rsa_toy" />
+
+<Lean decl="Lumenary.Cryptography.rsa_malleable" />
+
+**Diffie–Hellman (Theorem 4)** and the toy exchange modulo $101$:
+
+<Lean decl="Lumenary.Cryptography.dh_agree" />
+
+<Lean decl="Lumenary.Cryptography.dh_toy" />
+
+**The one-time pad.** Decryption undoes encryption, and the combinatorial heart of Theorem 1: for each message and ciphertext there is exactly one key. The probabilistic statement itself is not formalised here (Mathlib has the probability theory to do so).
+
+<Lean decl="Lumenary.Cryptography.otp_decrypt" />
+
+<Lean decl="Lumenary.Cryptography.otp_unique_key" />
+
+</Section>
+
+<Section id="computation" kind="computation" title="A toy RSA key, and the price of a discrete logarithm">
+
+The first experiment builds an RSA key from scratch: it finds random primes with the Miller–Rabin test, computes $d$ as an inverse modulo $(p - 1)(q - 1)$, encrypts and decrypts with repeated squaring (counting the multiplications — compare with the naive count), demonstrates the two weaknesses of textbook RSA, and finally breaks its own key, because a 36-bit modulus is factored instantly by trial division. Real moduli have 2048 bits or more.
+
+<Python id="cryptography_rsa_toy" />
+
+The second experiment runs a Diffie–Hellman exchange modulo the prime $2^{31} - 1$ and then attacks discrete logarithms for primes of increasing size. Exhaustive search grows like $p$; baby-step giant-step like $\sqrt p$. Neither comes close to threatening a 2048-bit prime — but the experiment measures two particular algorithms, and says nothing about algorithms nobody has found yet.
+
+<Python id="cryptography_discrete_log" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: the birthday bound">
+
+Square roots appear throughout cryptography for the same reason they appear in the baby-step giant-step attack: among $k$ random values from $N$ possibilities, a repeat becomes likely once $k$ is around $\sqrt N$. With $N = 365$ birthdays, $23$ people suffice for a better-than-even chance of a shared birthday. For a hash function with $N = 2^{256}$ outputs, a collision is expected after about $2^{128}$ tries — so hash outputs must be twice as long as the security level one wants. Try group sizes around $\sqrt{365} \approx 19$.
+
+<ChanceLab experiment="birthday" k={23} trials={1000} title="The birthday bound" subtitle="How large must a group be before two members are likely to share a birthday?" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"RSA has been proved secure."** What is proved is *correctness*: decryption undoes encryption. Security rests on the unproved assumption that factoring (and the related "RSA problem") is infeasible. No one has proved that factoring is hard, and Shor's algorithm shows it would be easy on a large quantum computer.
+
+</Misconception>
+
+<Misconception>
+
+**"Encryption guarantees that the message came from the right person."** Encryption provides confidentiality, not authenticity. Anyone can encrypt with a public key, and a man in the middle can run Diffie–Hellman with both parties. Authenticity needs digital signatures or message authentication codes, and integrity needs them too: textbook RSA ciphertexts can be altered (malleability) without being decrypted.
+
+</Misconception>
+
+<Misconception>
+
+**Using "textbook" RSA, $c = m^e \bmod n$, in practice.** It is deterministic, so guesses can be confirmed; it is malleable, so ciphertexts can be manipulated; and small messages with small $e$ may not even wrap around $n$ ($m^3 < n$ can be undone by an ordinary cube root). Real systems use randomised padding schemes, carefully implemented.
+
+</Misconception>
+
+<Misconception>
+
+**"A one-time pad can be reused if the key is long and random."** A pad used twice gives $c_1 \oplus c_2 = m_1 \oplus m_2$, which leaks a great deal about both messages: this is how Soviet messages were partly decrypted in the Venona project, after pads were reused. Perfect secrecy (Theorem 1) assumes each key is used once.
+
+</Misconception>
+
+<Misconception>
+
+**"A bigger key always means a stronger system."** Key sizes are only comparable within one system. A 256-bit elliptic-curve key and a roughly 3072-bit RSA key are believed to give similar security, because the best known attacks differ. And no key length rescues a flawed protocol or a leaky implementation.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="number-theory" title="Finding primes, and testing them">
+
+RSA needs random primes of about 1024 bits each. They are plentiful: by the **prime number theorem**, the proportion of primes near $x$ is about $1/\ln x$, so roughly one in $710$ numbers near $2^{1024}$ is prime (one in $355$ odd numbers), and a random search succeeds quickly. Telling whether a number is prime is much easier than factoring it. The **Miller–Rabin test** strengthens Fermat's test: for odd composite $n$, at most a quarter of the bases fail to expose it, so $40$ random bases leave an error probability below $4^{-40}$. In 2002 Agrawal, Kayal and Saxena proved that primality can even be decided *deterministically* in polynomial time (the AKS test). Factoring has no such algorithm known (see <TopicLink id="math.number.elementary-number-theory">elementary number theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Elliptic curves and lattices">
+
+Diffie–Hellman works in any group where discrete logarithms are hard. The most widely used today is the group of points on an **elliptic curve** $y^2 = x^3 + ax + b$ over a finite field. Its group law is geometric: to add two points, draw the line through them; it meets the curve in a third point, whose reflection in the $x$-axis is the sum. (Over the real numbers this is a picture; over $\mathbb{F}_p$ the same formulas define the group.) No index-calculus attack is known for well-chosen curves, so keys can be much shorter. Post-quantum cryptography turns to a different geometry: a **lattice** is a grid of points $\{a_1 v_1 + \cdots + a_k v_k : a_i \in \Z\}$ in $\R^k$, and finding a shortest non-zero lattice vector, or a lattice point closest to a given point, appears to be hard in high dimensions even for quantum computers. Regev's **learning with errors** problem (2005) builds on this and underlies the new standards (see <TopicLink id="math.geom.euclidean-geometry">Euclidean geometry</TopicLink> and <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Security as a statement about probabilities">
+
+Modern definitions of security are probabilistic. An encryption scheme is **semantically secure** if no efficient adversary, given a ciphertext, can learn any property of the message with probability noticeably better than guessing — "noticeably" meaning by more than a negligible function of the key length, one that shrinks faster than $1/k^c$ for every $c$. Deterministic encryption such as textbook RSA cannot meet this definition (the adversary encrypts a guess and compares), which is the mathematical reason for randomised padding. Probability also sets limits: the **birthday bound** means that a function with $N$ possible outputs has collisions that can be found in about $\sqrt N$ evaluations, and Theorem 1 shows that perfect secrecy is a statement about conditional probabilities (see <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Security reductions and P versus NP">
+
+Cryptographers prove theorems of the form "if an efficient algorithm breaks this scheme, then an efficient algorithm solves problem X" — a **reduction**. It shifts the burden to the hardness of X, which remains a conjecture. Inverting a one-way function is a problem whose solutions can be *checked* quickly (in NP), so if $\mathrm{P} = \mathrm{NP}$, no one-way functions exist and essentially all of public-key cryptography would collapse. The converse fails: $\mathrm{P} \neq \mathrm{NP}$ would not by itself give one-way functions, because cryptography needs problems that are hard for *typical* (random) instances, not merely for the worst ones (see <TopicLink id="math.comp.complexity-theory">complexity theory</TopicLink> and <TopicLink id="math.comp.algorithms-and-efficiency">algorithms and efficiency</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Quantum computers break, and quantum physics protects">
+
+Shor's algorithm (1994) uses a quantum computer to find the period of $x \mapsto a^x \bmod n$ with the quantum Fourier transform; from the period, the factors of $n$ follow by elementary number theory, and discrete logarithms fall to the same idea. Running it on cryptographic sizes would need millions of high-quality qubits, far beyond present machines; the engineering question of when (or whether) this becomes possible is open. Physics can also *provide* security: in quantum key distribution (Bennett and Brassard's BB84 protocol, 1984), two parties exchange polarised photons, and the laws of quantum mechanics — measurement disturbs a state, and an unknown quantum state cannot be copied — make eavesdropping detectable. Its security rests on physical law and on the faithfulness of the hardware, rather than on a conjecture about computation (see <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Classical ciphers.** Substitution and transposition ciphers are ancient. The Arab polymath al-Kindī (ninth century, Baghdad) wrote the earliest known description of frequency analysis, which breaks substitution ciphers. Ibn al-Durayhim and al-Qalqashandī later compiled extensive treatments of ciphers and their solution.
+- **The twentieth century.** Polish mathematicians Marian Rejewski, Jerzy Różycki and Henryk Zygalski broke the German Enigma machine in the 1930s using permutation group theory, and passed their methods to Britain in 1939, where Alan Turing and others at Bletchley Park extended them. Claude Shannon's "Communication Theory of Secrecy Systems" (1949) put cryptography on a mathematical footing and proved the perfect secrecy of the one-time pad.
+- **Public key.** Whitfield Diffie and Martin Hellman published "New Directions in Cryptography" in 1976, building on ideas of Ralph Merkle. Ron Rivest, Adi Shamir and Leonard Adleman found RSA in 1977 (published 1978). At GCHQ, James Ellis had proposed "non-secret encryption" in 1970, Clifford Cocks devised an RSA-like scheme in 1973 and Malcolm Williamson a Diffie–Hellman-like one in 1974; this was declassified in 1997. Taher ElGamal (1985) built encryption and signatures on discrete logarithms, and Neal Koblitz and Victor Miller independently proposed elliptic-curve cryptography in 1985.
+- **The quantum era.** Peter Shor's algorithm (1994) showed that quantum computers would break RSA and Diffie–Hellman; Charles Bennett and Gilles Brassard had proposed quantum key distribution in 1984. In 2024 NIST published standards for post-quantum key establishment and signatures, chosen through an open international competition.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Jeffrey Hoffstein, Jill Pipher and Joseph H. Silverman, *An Introduction to Mathematical Cryptography* (2008; 2nd ed. 2014) — the mathematics of RSA, discrete logarithms, elliptic curves and lattices, at exactly this level.
+- Jonathan Katz and Yehuda Lindell, *Introduction to Modern Cryptography* (2007; 3rd ed. 2020) — precise definitions of security and proofs by reduction.
+- Neal Koblitz, *A Course in Number Theory and Cryptography* (1987; 2nd ed. 1994) — number theory developed with cryptography in view.
+- Simon Singh, *The Code Book* (1999) — a readable history from ancient ciphers to public-key cryptography.
+- Claude E. Shannon, "Communication Theory of Secrecy Systems", *Bell System Technical Journal* (1949) — the founding paper of mathematical cryptography.
+
+</Section>

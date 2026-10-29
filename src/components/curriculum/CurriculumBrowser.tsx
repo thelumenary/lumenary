@@ -130,7 +130,7 @@ export function CurriculumBrowser({ topics, levels, subjects, pathways }: Props)
 function TopicRow({ x, subject, locale, t, index }: { x: BrowserTopic; subject: string; locale: string; t: (k: string) => string; index?: number }) {
   const impl = x.status === "implemented";
   return (
-    <Link
+    <Link prefetch={false}
       href={x.lesson ? href(locale, `math/lessons/${x.lesson}`) : href(locale, `math/topics/${x.id}`)}
       className={`group flex h-full gap-3 rounded-xl border p-4 transition-shadow hover:shadow-[var(--shadow-lg)] ${impl ? "border-gold/50 bg-gradient-to-br from-gold-soft/70 to-card" : "border-line bg-card"}`}
     >

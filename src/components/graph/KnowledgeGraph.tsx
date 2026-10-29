@@ -393,7 +393,7 @@ function TopicPanel({ topic, byId, children, closure, onSelect, onClose, locale 
               <li key={d.to} className="text-sm">
                 <Chip id={d.to} />
                 {d.trail && (
-                  <Link href={href(locale, `math/trails/${d.trail}`)} className="link ms-2 text-xs">
+                  <Link prefetch={false} href={href(locale, `math/trails/${d.trail}`)} className="link ms-2 text-xs">
                     {t("trail.badge")} →
                   </Link>
                 )}
@@ -403,7 +403,7 @@ function TopicPanel({ topic, byId, children, closure, onSelect, onClose, locale 
           </ul>
         </div>
       )}
-      <Link href={topic.lesson ? href(locale, `math/lessons/${topic.lesson}`) : href(locale, `math/topics/${topic.id}`)} className="btn btn-primary btn-sm mt-5">
+      <Link prefetch={false} href={topic.lesson ? href(locale, `math/lessons/${topic.lesson}`) : href(locale, `math/topics/${topic.id}`)} className="btn btn-primary btn-sm mt-5">
         {topic.lesson ? t("curriculum.openLesson") : t("curriculum.viewTopic")} <ArrowRight size={14} className="rtl:rotate-180" />
       </Link>
     </aside>
@@ -423,7 +423,7 @@ function ListView({ topics, levels, subjects, byId, locale }: { topics: GraphTop
             <ul className="mt-3 grid gap-2 md:grid-cols-2">
               {here.map((x) => (
                 <li key={x.id} className="rounded-xl border border-line bg-card px-4 py-3">
-                  <Link href={x.lesson ? href(locale, `math/lessons/${x.lesson}`) : href(locale, `math/topics/${x.id}`)} className="flex items-center gap-2 font-semibold text-ink hover:underline">
+                  <Link prefetch={false} href={x.lesson ? href(locale, `math/lessons/${x.lesson}`) : href(locale, `math/topics/${x.id}`)} className="flex items-center gap-2 font-semibold text-ink hover:underline">
                     {x.status === "implemented" ? <BadgeCheck size={15} className="text-gold-ink" /> : <CircleDashed size={15} className="text-muted" />}
                     {x.title}
                   </Link>

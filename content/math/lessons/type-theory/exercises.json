@@ -1,0 +1,166 @@
+{
+  "lesson": "type-theory",
+  "exercises": [
+    {
+      "id": "type-theory-conjunction",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Under the propositions-as-types correspondence, what is a proof of $A \\wedge B$?",
+      "options": [
+        { "id": "a", "label": "A pair $(a, b)$ of a proof $a$ of $A$ and a proof $b$ of $B$", "correct": true, "feedback": "Yes: conjunction is the product type $A \\times B$, and the projections are the elimination rules." },
+        { "id": "b", "label": "A proof of $A$ or a proof of $B$", "correct": false, "feedback": "That describes $A \\vee B$, the sum type — with a label saying which." },
+        { "id": "c", "label": "A function from proofs of $A$ to proofs of $B$", "correct": false, "feedback": "That is a proof of $A \\to B$." },
+        { "id": "d", "label": "The truth value 'true' for both $A$ and $B$", "correct": false, "feedback": "Truth values are the classical, semantic view. Curry–Howard is about *proofs*: what you must have in hand." }
+      ],
+      "hints": [
+        "Look at the BHK table.",
+        "What do you need to have in order to use $A \\wedge B$ to get both $A$ and $B$?"
+      ],
+      "solution": "A proof of $A \\wedge B$ is a pair $(a, b)$ with $a : A$ and $b : B$; the type is $A \\times B$. Using it means projecting: $\\pi_1 : A \\times B \\to A$ and $\\pi_2 : A \\times B \\to B$. In Lean, `fun ⟨a, b⟩ => ⟨b, a⟩` proves $A \\wedge B \\to B \\wedge A$."
+    },
+    {
+      "id": "type-theory-compose-type",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "What is the most general simple type of $\\lambda f.\\, \\lambda g.\\, \\lambda x.\\, f\\,(g\\, x)$, and hence which tautology does it prove?",
+      "options": [
+        { "id": "a", "label": "$(B \\to C) \\to (A \\to B) \\to A \\to C$", "correct": true, "feedback": "Yes: $x : A$, $g : A \\to B$ so $g\\, x : B$, $f : B \\to C$ so $f\\,(g\\, x) : C$. It proves that implication is transitive." },
+        { "id": "b", "label": "$(A \\to B) \\to (B \\to C) \\to A \\to C$", "correct": false, "feedback": "Close, but the arguments are in the wrong order: the first argument $f$ is applied last, to the output of $g$." },
+        { "id": "c", "label": "$(A \\to B) \\to A \\to B$", "correct": false, "feedback": "That is the type of $\\lambda f\\, x.\\, f\\, x$, which takes only two arguments." },
+        { "id": "d", "label": "$A \\to B \\to C$", "correct": false, "feedback": "The term takes three arguments, two of which are applied as functions, so their types must be function types." }
+      ],
+      "hints": [
+        "Give $x$ the type $A$. What must the type of $g$ be for $g\\, x$ to make sense?",
+        "Then $f$ must accept the type of $g\\, x$."
+      ],
+      "solution": "With $x : A$ and $g : A \\to B$ we get $g\\, x : B$; with $f : B \\to C$, $f\\,(g\\, x) : C$. Abstracting gives $(B \\to C) \\to (A \\to B) \\to A \\to C$: if $B$ implies $C$ and $A$ implies $B$, then $A$ implies $C$. The unification algorithm in the experiment finds exactly this (with letters renamed)."
+    },
+    {
+      "id": "type-theory-inhabited",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which of these types are **inhabited** by a closed term (equivalently, are theorems of intuitionistic propositional logic)? Here $p, q$ are base types and $\\neg A = A \\to 0$. Choose all that apply.",
+      "options": [
+        { "id": "a", "label": "$p \\to \\neg\\neg p$", "correct": true, "feedback": "Yes: $\\lambda a.\\, \\lambda k.\\, k\\, a$." },
+        { "id": "b", "label": "$\\neg\\neg p \\to p$", "correct": false, "feedback": "Not inhabited: the two-state Kripke model forces $\\neg\\neg p$ but not $p$ at the first state." },
+        { "id": "c", "label": "$(p \\to q) \\to (\\neg q \\to \\neg p)$", "correct": true, "feedback": "Yes: $\\lambda f\\, k\\, a.\\, k\\,(f\\, a)$ — contraposition is constructive." },
+        { "id": "d", "label": "$p + \\neg p$", "correct": false, "feedback": "Not inhabited: a closed normal term of a sum type would have to be $\\mathsf{inl}$ or $\\mathsf{inr}$ of a closed term of $p$ or of $\\neg p$, and neither exists." },
+        { "id": "e", "label": "$\\neg\\neg\\neg p \\to \\neg p$", "correct": true, "feedback": "Yes: $\\lambda h\\, a.\\, h\\,(\\lambda k.\\, k\\, a)$. Triple negation collapses to single negation intuitionistically." }
+      ],
+      "hints": [
+        "Try to write a λ-term; if you find yourself needing to decide whether $p$ holds, the type is probably uninhabited.",
+        "Compare with the table printed by the inhabitation experiment."
+      ],
+      "solution": "Inhabited: $p \\to \\neg\\neg p$ (by $\\lambda a\\, k.\\, k\\, a$), contraposition (by $\\lambda f\\, k\\, a.\\, k\\,(f\\, a)$) and $\\neg\\neg\\neg p \\to \\neg p$ (by $\\lambda h\\, a.\\, h\\,(\\lambda k.\\, k\\, a)$). Not inhabited: $\\neg\\neg p \\to p$ and $p + \\neg p$, both classical tautologies refuted by the two-state Kripke model."
+    },
+    {
+      "id": "type-theory-kripke",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In the two-state Kripke model $w_0 \\le w_1$ with $p$ known only at $w_1$, which formulas are forced at $w_0$? (Rules: $w \\Vdash A \\to B$ iff every $v \\ge w$ forcing $A$ forces $B$; $\\bot$ is forced nowhere, $\\neg A = A \\to \\bot$; $w \\Vdash A \\vee B$ iff $w \\Vdash A$ or $w \\Vdash B$.) Choose all that apply.",
+      "options": [
+        { "id": "a", "label": "$\\neg\\neg p$", "correct": true, "feedback": "Yes. $\\neg p$ is forced at no state ($p$ holds at $w_1 \\ge$ both), so $\\neg\\neg p$ holds at $w_0$ vacuously." },
+        { "id": "b", "label": "$p$", "correct": false, "feedback": "$p$ is known only at $w_1$." },
+        { "id": "c", "label": "$\\neg p$", "correct": false, "feedback": "$w_0 \\Vdash \\neg p$ would need $p$ to fail at every later state, but $p$ holds at $w_1$." },
+        { "id": "d", "label": "$p \\vee \\neg p$", "correct": false, "feedback": "Neither disjunct is forced at $w_0$, so the disjunction is not: excluded middle fails here." }
+      ],
+      "hints": [
+        "First work out where $\\neg p$ is forced.",
+        "A negation $\\neg A$ is forced at $w$ only if $A$ is forced at no state $v \\ge w$."
+      ],
+      "solution": "$p$: only at $w_1$. $\\neg p$: nowhere, since $p$ holds at $w_1$, which lies above both states. Hence $\\neg\\neg p$ holds everywhere (vacuously), in particular at $w_0$, while $p$ does not: the model refutes $\\neg\\neg p \\to p$. And $p \\vee \\neg p$ fails at $w_0$. By soundness, neither $\\neg\\neg p \\to p$ nor $p \\vee \\neg p$ has a proof term."
+    },
+    {
+      "id": "type-theory-two-terms",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Let $A$ be a base type. How many closed β-normal terms of type $A \\to A \\to A$ are there (counting α-equivalent terms once)?",
+      "answer": 2,
+      "feedback": [
+        { "match": "1", "message": "You have found one, say $\\lambda x\\, y.\\, x$. Is there another way to produce an element of $A$ from $x : A$ and $y : A$?" },
+        { "match": "4", "message": "Inside $\\lambda x\\, y.\\,\\dots$ the body must be a normal term of base type $A$ built from $x$ and $y$ alone. Since $x$ and $y$ are not functions, the body cannot be an application." },
+        { "match": "0", "message": "There is at least one: $\\lambda x{:}A.\\, \\lambda y{:}A.\\, x$." }
+      ],
+      "hints": [
+        "A closed normal term of a function type must be a λ-abstraction (there is no variable to apply).",
+        "The body has base type $A$ in the context $x : A, y : A$, and is normal. What can it be?"
+      ],
+      "solution": "A closed normal term of type $A \\to A \\to A$ must be $\\lambda x{:}A.\\, \\lambda y{:}A.\\, M$ with $M$ normal of type $A$ in context $x, y : A$. A normal term of base type is a variable applied to arguments, and $x, y$ are not functions, so $M$ is $x$ or $y$. Exactly $2$ terms: $\\lambda x\\, y.\\, x$ and $\\lambda x\\, y.\\, y$ — the Church booleans $\\mathsf{TRUE}$ and $\\mathsf{FALSE}$. Proof-theoretically: the formula $A \\to A \\to A$ has exactly two normal proofs."
+    },
+    {
+      "id": "type-theory-soundness-step",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In the proof of soundness for Kripke models (Theorem 3), the $\\to$-introduction case goes: assume $w$ forces all of $\\Gamma$, let $v \\ge w$ force $A$; then $v$ forces all of $\\Gamma, A$, so $v \\Vdash B$ by induction. Which fact justifies '$v$ forces all of $\\Gamma$'?",
+      "options": [
+        { "id": "a", "label": "Persistence: what is forced at $w$ stays forced at every $v \\ge w$", "correct": true, "feedback": "Yes, part (a) of Theorem 3, proved by induction on formulas using transitivity of $\\le$." },
+        { "id": "b", "label": "Reflexivity of $\\le$", "correct": false, "feedback": "Reflexivity is used in the $\\to$-elimination case (take $v = w$). Here we must move from $w$ to a later state." },
+        { "id": "c", "label": "The induction hypothesis for $\\Gamma, A \\vdash B$", "correct": false, "feedback": "The induction hypothesis needs, as input, that $v$ forces all of $\\Gamma, A$ — which is what we are establishing." },
+        { "id": "d", "label": "Excluded middle at $v$", "correct": false, "feedback": "Kripke semantics is designed so that excluded middle can fail; it is never used in the soundness proof." }
+      ],
+      "hints": [
+        "We know facts at $w$ and need them at a later state $v$.",
+        "Which property of forcing is about moving along $\\le$?"
+      ],
+      "solution": "Persistence (monotonicity): if $w \\le v$ and $w \\Vdash C$ then $v \\Vdash C$. For atoms this is the condition on Kripke models; for implications it follows from transitivity. In Lean it is `forces_mono`, used in the `impI` case of `Derivable.sound`."
+    },
+    {
+      "id": "type-theory-zero-add",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "With addition on $\\N$ defined by $m + \\mathsf{zero} = m$ and $m + \\mathsf{succ}\\, n = \\mathsf{succ}(m + n)$, why is $n + 0 = n$ true by computation while $0 + n = n$ needs induction?",
+      "options": [
+        { "id": "a", "label": "The recursion is on the second argument, so $n + \\mathsf{zero}$ unfolds by the first equation for any $n$, but $\\mathsf{zero} + n$ cannot unfold until $n$ is known to be $\\mathsf{zero}$ or a successor.", "correct": true, "feedback": "Exactly. For a variable $n$ the term $\\mathsf{zero} + n$ is stuck, and induction (the recursor applied to a predicate) is needed." },
+        { "id": "b", "label": "Because addition is not commutative in type theory.", "correct": false, "feedback": "It is commutative — but that is a theorem proved by induction, not a computation." },
+        { "id": "c", "label": "Because $0 + n = n$ is false for some $n$.", "correct": false, "feedback": "It is true for every $n$; Lean's `N.zero_add` proves it." },
+        { "id": "d", "label": "Because proofs by computation are not allowed for statements with variables.", "correct": false, "feedback": "They are allowed: $n + 0 = n$ holds by `rfl` for a variable $n$, because the definition unfolds." }
+      ],
+      "hints": [
+        "Which argument does the definition pattern-match on?",
+        "Can $\\mathsf{zero} + n$ be simplified without knowing the shape of $n$?"
+      ],
+      "solution": "The definition recurses on the second argument, so $n + \\mathsf{zero}$ reduces to $n$ by the first equation whatever $n$ is. But $\\mathsf{zero} + n$ with $n$ a variable matches neither equation: it is stuck. Induction supplies the missing step: $0 + \\mathsf{zero} = \\mathsf{zero}$ by computation, and $0 + \\mathsf{succ}\\, n = \\mathsf{succ}(0 + n) = \\mathsf{succ}\\, n$ by computation and the induction hypothesis."
+    },
+    {
+      "id": "type-theory-lean-peirce",
+      "type": "choice",
+      "difficulty": "stretch",
+      "mode": "F",
+      "prompt": "The lesson's Lean file proves both `peirce_classical (A B : Prop) : ((A → B) → A) → A` and `peirce_uninhabited : ¬ ∃ t, HasType [] t (((Ty.base 0 ⇒ Ty.base 1) ⇒ Ty.base 0) ⇒ Ty.base 0)`. Why is this not a contradiction?",
+      "options": [
+        { "id": "a", "label": "The first is about Lean's own propositions and uses the axiom `Classical.choice`; the second is about a different formal system (the simply typed λ-calculus defined in the file), studied as a mathematical object.", "correct": true, "feedback": "Yes. Lean's logic with its classical axioms is stronger than the object calculus. The axiom list of `peirce_classical` shows `Classical.choice`." },
+        { "id": "b", "label": "One of the two proofs must contain `sorry`.", "correct": false, "feedback": "Neither does: the lesson's checks verify both are sorry-free with `#print axioms`." },
+        { "id": "c", "label": "Lean is inconsistent.", "correct": false, "feedback": "There is no contradiction to explain: the two statements are about different systems." },
+        { "id": "d", "label": "`Ty.base 0` and `A` are the same, so the statements contradict each other only when `A` is false.", "correct": false, "feedback": "`Ty.base 0` is a piece of syntax (an element of the inductive type `Ty`), not a Lean proposition." }
+      ],
+      "hints": [
+        "What is `HasType` — Lean's own typing, or something defined in the file?",
+        "Which axioms does each proof depend on?"
+      ],
+      "solution": "`peirce_classical` is a statement in Lean's logic, proved with excluded middle (from `Classical.choice`). `peirce_uninhabited` is a theorem *about* the simply typed λ-calculus, an inductive datatype defined in the file: no term of that calculus has Peirce's type, as the Kripke model shows. A stronger system can prove that a weaker one cannot prove something — this is routine in logic."
+    },
+    {
+      "id": "type-theory-python-kripke",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Write `forces(w, f, le, val)` for implicational formulas in a finite Kripke model. A formula is either an atom (a string such as `'p'`) or a tuple `('imp', A, B)`. `le` is a set of pairs `(u, v)` meaning $u \\le v$ (reflexive and transitive), and `val[w]` is the set of atoms known at `w`. Use: atoms are forced when known; `('imp', A, B)` is forced at `w` iff every `v` with `(w, v) in le` that forces `A` also forces `B`.",
+      "starter": "def forces(w, f, le, val):\n    # Return True if world w forces formula f.\n    return True\n",
+      "tests": "le = {(0, 0), (1, 1), (0, 1)}\nval = {0: set(), 1: {'p'}}\np, q = 'p', 'q'\npeirce = ('imp', ('imp', ('imp', p, q), p), p)\nassert forces(1, p, le, val) and not forces(0, p, le, val)\nassert not forces(0, ('imp', p, q), le, val)\nassert forces(0, ('imp', ('imp', p, q), p), le, val)\nassert not forces(0, peirce, le, val)\nassert forces(0, ('imp', p, ('imp', q, p)), le, val)\nassert forces(0, ('imp', ('imp', p, ('imp', q, 'r')), ('imp', ('imp', p, q), ('imp', p, 'r'))), le, val)\nprint('All tests passed!')\n",
+      "hints": [
+        "If `f` is a string, return `f in val[w]`.",
+        "For `('imp', A, B)`, loop over all `v` with `(w, v) in le` and check `not forces(v, A, ...) or forces(v, B, ...)`."
+      ],
+      "solution": "```python\ndef forces(w, f, le, val):\n    if isinstance(f, str):\n        return f in val[w]\n    _, a, b = f\n    return all(not forces(v, a, le, val) or forces(v, b, le, val)\n               for (u, v) in le if u == w)\n```\n\nThe tests rebuild the proof of Theorem 4: in the two-state model, $(p \\to q) \\to p$ is forced at state $0$ but $p$ is not, so Peirce's law fails there, while the K and S axioms are forced (as soundness predicts for every theorem)."
+    }
+  ]
+}

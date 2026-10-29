@@ -1,0 +1,538 @@
+---
+slug: combinatorics
+topic: math.discrete.combinatorics
+title: Combinatorics
+subtitle: Choosing, arranging and guaranteeing — binomial coefficients, Pascal's triangle, the binomial theorem, the pigeonhole principle and inclusion–exclusion, proved by counting the same thing in two ways.
+level: g9-12
+ages: Ages 14–18
+minutes: 75
+order: 4018
+objectives:
+  - Distinguish ordered from unordered selections and compute $\binom{n}{k}$ by the factorial formula and by Pascal's triangle
+  - Prove identities such as $\binom{n}{k} = \binom{n-1}{k-1} + \binom{n-1}{k}$ and $\sum_k \binom{n}{k} = 2^n$ by counting in two ways
+  - Prove the binomial theorem and use it to expand powers and to count
+  - Apply the pigeonhole principle to prove that something exists without finding it
+  - Count unions with inclusion–exclusion, including the derangements of $n$ objects
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.Combinatorics.pascal_subsets
+  - Lumenary.Combinatorics.card_subsets_eq_choose
+  - Lumenary.Combinatorics.choose_factorial
+  - Lumenary.Combinatorics.choose_symm
+  - Lumenary.Combinatorics.five_card_hands
+  - Lumenary.Combinatorics.binomial_one_add
+  - Lumenary.Combinatorics.binomial_theorem
+  - Lumenary.Combinatorics.row_sum
+  - Lumenary.Combinatorics.alternating_row_sum
+  - Lumenary.Combinatorics.pigeonhole
+  - Lumenary.Combinatorics.pigeonhole_library
+  - Lumenary.Combinatorics.same_remainder
+  - Lumenary.Combinatorics.incl_excl_two
+  - Lumenary.Combinatorics.incl_excl_three
+  - Lumenary.Combinatorics.divisible_by_2_3_or_5
+compute: [combinatorics_pascal_identities, combinatorics_inclusion_exclusion]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Three questions">
+
+**Choosing.** A cricket coach in Lahore has a squad of $15$ and must name a team of $11$. How many different teams are possible? Listing them is hopeless — but, as we will see, the answer is exactly $1365$, and it can be found in a few seconds.
+
+**Expanding.** Multiply out $(x + y)^5$. You could grind through five brackets — or notice that the coefficients $1, 5, 10, 10, 5, 1$ are already written in a triangle of numbers that was known in India, Persia, North Africa and China centuries before Blaise Pascal wrote about it — though in English it carries his name, *Pascal's triangle*.
+
+**Guaranteeing.** In any group of $13$ people, two were born in the same month. Not "probably" — *certainly*. Yet the argument does not tell us which two.
+
+These are the three faces of **combinatorics**, the mathematics of finite arrangements: counting exactly, recognising the same count in different disguises, and proving that something must exist. Its favourite method is to **count the same set in two different ways** — and then the two answers must agree.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="When does order matter?">
+
+From five friends — Amina, Bao, Carlos, Divya and Emeka — we choose two.
+
+If we are choosing a **captain and a vice-captain**, order matters: (Amina, Bao) is different from (Bao, Amina). There are $5$ choices for the captain and then $4$ for the vice-captain, so $5 \times 4 = 20$ ordered pairs, by the multiplication principle from <TopicLink id="math.discrete.counting-principles">counting principles</TopicLink>.
+
+If we are choosing **two people to carry the drinks**, order does not matter: $\{\text{Amina}, \text{Bao}\}$ is one pair, however we list it. Each unordered pair appears **twice** among the $20$ ordered pairs, so there are $20 / 2 = 10$ unordered pairs:
+
+$$
+\begin{aligned}
+&\{A, B\}, \{A, C\}, \{A, D\}, \{A, E\}, \{B, C\},\\
+&\{B, D\}, \{B, E\}, \{C, D\}, \{C, E\}, \{D, E\}.
+\end{aligned}
+$$
+
+This is the **division principle**: if a list counts every object of interest exactly $m$ times, divide by $m$. Choosing $3$ of the $5$, there are $5 \times 4 \times 3 = 60$ ordered lists, and each set of three appears in $3! = 6$ orders, so there are $60 / 6 = 10$ sets of three.
+
+<Narrator who="chloe">
+
+Ten pairs and ten triples — the same number! Is that a coincidence? Choosing which **two** people carry the drinks is the same as choosing which **three** people don't. Every time I pick a pair, I've secretly picked a triple too.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Recall $n! = n \times (n - 1) \times \cdots \times 2 \times 1$, with $0! = 1$, and that the number of **ordered** selections of $k$ different objects from $n$ is $n(n - 1)\cdots(n - k + 1) = \dfrac{n!}{(n - k)!}$.
+
+<Definition term="binomial coefficient">
+
+For whole numbers $n$ and $k$, the **binomial coefficient** $\binom{n}{k}$, read "$n$ choose $k$", is the number of $k$-element subsets of an $n$-element set. In particular $\binom{n}{k} = 0$ when $k > n$ (there are no such subsets), and $\binom{n}{0} = \binom{n}{n} = 1$.
+
+</Definition>
+
+So $\binom{5}{2} = 10$ by the list above. Notice that the definition is a *counting* definition; the formula comes next, as a theorem.
+
+<Definition term="pigeonhole principle">
+
+If more than $n$ objects are placed in $n$ boxes, then some box contains at least two objects.
+
+</Definition>
+
+<Definition term="inclusion–exclusion (two sets)">
+
+For finite sets $A$ and $B$: $\;|A \cup B| = |A| + |B| - |A \cap B|$.
+
+</Definition>
+
+Here $|A|$ is the number of elements of $A$, as in the lesson on <TopicLink id="math.found.sets">sets</TopicLink>. The pigeonhole principle and inclusion–exclusion are both proved below.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="The cricket team">
+
+Choosing the $11$ players who play is the same as choosing the $4$ who sit out, so the number of teams is $\binom{15}{11} = \binom{15}{4} = \dfrac{15 \times 14 \times 13 \times 12}{4 \times 3 \times 2 \times 1} = 1365$.
+
+</Example>
+
+<Example title="Routes through a grid">
+
+In a city laid out in blocks, a courier cycles from a corner to the corner $4$ blocks east and $3$ blocks north, always heading east or north. Every route is a word of $7$ letters with $4$ E's and $3$ N's, such as ENNEENE. A route is decided by **which** $3$ of the $7$ steps are north, so there are $\binom{7}{3} = 35$ routes.
+
+</Example>
+
+<Example title="Card hands">
+
+- A five-card hand from a pack of $52$ is a $5$-element subset: there are $\binom{52}{5} = 2\,598\,960$ hands.
+- A **full house** (three cards of one rank, two of another): choose the rank of the three ($13$ ways), which three suits ($\binom{4}{3} = 4$), the rank of the pair ($12$ ways), and which two suits ($\binom{4}{2} = 6$). Multiplication principle: $13 \times 4 \times 12 \times 6 = 3744$ hands.
+- Hands with **at least one ace**: count the complement. Hands with no ace choose all $5$ cards from the $48$ others, so the answer is $\binom{52}{5} - \binom{48}{5} = 2\,598\,960 - 1\,712\,304 = 886\,656$.
+
+</Example>
+
+<Example title="A word with repeated letters">
+
+How many different arrangements are there of the letters of BANANA? If the six letters were all different there would be $6! = 720$. But swapping the three A's among themselves ($3! = 6$ ways) or the two N's ($2! = 2$ ways) gives the same word. Each word is counted $6 \times 2 = 12$ times, so there are $720 / 12 = 60$ words.
+
+</Example>
+
+<Example title="A non-example: overcounting">
+
+"Hands with at least one ace: choose an ace ($4$ ways), then any $4$ of the other $51$ cards: $4 \times \binom{51}{4} = 999\,600$." This is **wrong** — it is larger than the correct $886\,656$. A hand with two aces, say the ace of hearts and the ace of spades, is counted twice: once when the hearts ace is "the chosen ace" and once when the spades ace is. Every counting argument must produce each object **exactly once** (or exactly $m$ times, and then we divide).
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems, proved by counting">
+
+<Theorem name="Theorem 1 (the factorial formula)">
+
+For $0 \le k \le n$: $\displaystyle \binom{n}{k} = \frac{n!}{k!\,(n - k)!}$.
+
+</Theorem>
+
+<Proof>
+
+Count the **ordered** selections of $k$ different objects from $n$ in two ways. Directly, there are $\dfrac{n!}{(n - k)!}$ of them. Alternatively, first choose the set of $k$ objects ($\binom{n}{k}$ ways) and then put it in order ($k!$ ways): so there are $\binom{n}{k} \cdot k!$ of them. Hence $\binom{n}{k} \cdot k! = \dfrac{n!}{(n - k)!}$; divide by $k!$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (symmetry)">
+
+For $0 \le k \le n$: $\displaystyle \binom{n}{k} = \binom{n}{n - k}$.
+
+</Theorem>
+
+<Proof>
+
+Sending each $k$-element subset $S$ of an $n$-element set $X$ to its complement $X \setminus S$, which has $n - k$ elements, is a one-to-one correspondence: it is its own inverse, since the complement of the complement is $S$ again. So the two collections have the same size.
+
+</Proof>
+
+<Theorem name="Theorem 3 (Pascal's rule)">
+
+For $n \ge 1$ and $k \ge 1$: $\displaystyle \binom{n}{k} = \binom{n - 1}{k - 1} + \binom{n - 1}{k}$.
+
+</Theorem>
+
+<Proof>
+
+Count the $k$-person committees chosen from $n$ people, one of whom is Amina. Every committee either contains Amina or it does not, and not both.
+
+- Committees **containing** Amina: removing her leaves $k - 1$ members chosen from the other $n - 1$ people, and putting her back undoes this. So there are $\binom{n - 1}{k - 1}$ of them.
+- Committees **not containing** Amina: all $k$ members come from the other $n - 1$ people. There are $\binom{n - 1}{k}$ of them.
+
+Adding the two disjoint kinds counts every committee exactly once.
+
+</Proof>
+
+Pascal's rule says that each entry of the triangle is the sum of the two entries above it. Starting from the $1$s down the edges, it generates all the binomial coefficients without a single multiplication.
+
+<Figure caption="Rows $0$ to $6$ of Pascal's triangle. Row $n$ lists $\binom{n}{0}, \binom{n}{1}, \dots, \binom{n}{n}$. Highlighted: Pascal's rule $\binom{5}{2} = \binom{4}{1} + \binom{4}{2}$, that is $10 = 4 + 6$.">
+
+<svg viewBox="0 0 420 250" role="img" aria-label="Pascal's triangle, rows 0 to 6, with the entries 4 and 6 of row 4 highlighted and joined to the entry 10 below them in row 5">
+  <circle cx="160" cy="158" r="15" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="2" />
+  <circle cx="210" cy="158" r="15" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="2" />
+  <circle cx="185" cy="192" r="17" fill="var(--sky-soft)" stroke="var(--gold)" strokeWidth="2.5" />
+  <line x1="168" y1="171" x2="177" y2="178" stroke="var(--gold)" strokeWidth="2" />
+  <line x1="202" y1="171" x2="193" y2="178" stroke="var(--gold)" strokeWidth="2" />
+  <g fontSize="17" textAnchor="middle" fill="var(--ink-2)">
+    <text x="210" y="28">1</text>
+    <text x="185" y="62">1</text><text x="235" y="62">1</text>
+    <text x="160" y="96">1</text><text x="210" y="96">2</text><text x="260" y="96">1</text>
+    <text x="135" y="130">1</text><text x="185" y="130">3</text><text x="235" y="130">3</text><text x="285" y="130">1</text>
+    <text x="110" y="164">1</text><text x="260" y="164">4</text><text x="310" y="164">1</text>
+    <text x="85" y="198">1</text><text x="135" y="198">5</text><text x="235" y="198">10</text><text x="285" y="198">5</text><text x="335" y="198">1</text>
+    <text x="60" y="232">1</text><text x="110" y="232">6</text><text x="160" y="232">15</text><text x="210" y="232">20</text><text x="260" y="232">15</text><text x="310" y="232">6</text><text x="360" y="232">1</text>
+  </g>
+  <g fontSize="17" textAnchor="middle" fontWeight="bold">
+    <text x="160" y="164" fill="var(--human)">4</text>
+    <text x="210" y="164" fill="var(--human)">6</text>
+    <text x="185" y="198" fill="var(--gold)">10</text>
+  </g>
+</svg>
+
+</Figure>
+
+<Theorem name="Theorem 4 (the binomial theorem)">
+
+For every whole number $n$ and all numbers $x, y$:
+
+$$
+(x + y)^n = \sum_{k=0}^{n} \binom{n}{k} x^k y^{n-k} = y^n + \binom{n}{1} x y^{n-1} + \binom{n}{2} x^2 y^{n-2} + \cdots + x^n.
+$$
+
+</Theorem>
+
+<Proof>
+
+Write $(x + y)^n = (x + y)(x + y)\cdots(x + y)$ with $n$ brackets. Multiplying out, we get one term for each way of choosing either $x$ or $y$ from every bracket, and the term is the product of the choices. A choice that takes $x$ from exactly $k$ brackets (and $y$ from the other $n - k$) gives $x^k y^{n-k}$. The number of such choices is the number of ways to pick **which** $k$ of the $n$ brackets supply an $x$: that is $\binom{n}{k}$. Collecting equal terms (multiplication of numbers is commutative) gives the formula.
+
+</Proof>
+
+There is also a proof **by induction** on $n$, which is the one Lean checks below for $(1 + x)^n$: multiply $(1 + x)^n = \sum_k \binom{n}{k} x^k$ by $1 + x$, and the coefficient of $x^{k+1}$ in the product is $\binom{n}{k+1} + \binom{n}{k}$ — which is $\binom{n+1}{k+1}$ by Pascal's rule. The induction proof and the counting proof are two views of the same fact, which links this lesson to <TopicLink id="math.found.proof-techniques">proof by induction</TopicLink> and to <TopicLink id="math.algebra.polynomials">polynomials</TopicLink>.
+
+<Example title="Using the theorem">
+
+$(2x - 1)^4 = \sum_k \binom{4}{k} (2x)^k (-1)^{4-k} = 16x^4 - 32x^3 + 24x^2 - 8x + 1$. Check: putting $x = 1$ gives $1 = 16 - 32 + 24 - 8 + 1$.
+
+</Example>
+
+<Theorem name="Corollary 5 (row sums)">
+
+For every $n$: $\displaystyle \sum_{k=0}^{n} \binom{n}{k} = 2^n$, and for $n \ge 1$: $\displaystyle \sum_{k=0}^{n} (-1)^k \binom{n}{k} = 0$.
+
+</Theorem>
+
+<Proof>
+
+Put $x = y = 1$ in the binomial theorem for the first identity, and $x = -1$, $y = 1$ for the second: $(1 + 1)^n = 2^n$ and $(-1 + 1)^n = 0^n = 0$ when $n \ge 1$.
+
+A counting proof of the first: both sides count all subsets of an $n$-element set. On the left, they are sorted by size; on the right, each of the $n$ elements is either in or out — $2^n$ possibilities. The second identity says that a non-empty set has **as many subsets of even size as of odd size**.
+
+</Proof>
+
+### The pigeonhole principle
+
+<Theorem name="Theorem 6 (pigeonhole principle)">
+
+If more than $n$ objects are placed in $n$ boxes, some box contains at least two objects. More generally, if $m$ objects are placed in $n$ boxes, some box contains at least $\lceil m/n \rceil$ objects.
+
+</Theorem>
+
+<Proof>
+
+Suppose instead that every box contained at most $\lceil m/n \rceil - 1$ objects. Since $\lceil m/n \rceil - 1 < m/n$, the total number of objects would be less than $n \cdot \dfrac{m}{n} = m$ — a contradiction. With $m > n$ we have $\lceil m/n \rceil \ge 2$, which is the first statement.
+
+</Proof>
+
+The principle is almost too obvious to state — its power lies in choosing the objects and the boxes cleverly.
+
+<Example title="Birth months">
+
+$13$ people, $12$ months as boxes: two people share a birth month.
+
+</Example>
+
+<Example title="Remainders">
+
+Among any $n + 1$ integers, two differ by a multiple of $n$. **Boxes:** the $n$ possible remainders $0, 1, \dots, n - 1$ on division by $n$. Two of the $n + 1$ integers land in the same box, and two numbers with the same remainder differ by a multiple of $n$.
+
+</Example>
+
+<Example title="Points in a square">
+
+Place $5$ points anywhere in a square of side $2$. Then some two are at distance at most $\sqrt{2}$. **Boxes:** cut the square into four unit squares (a point on a dividing line goes into either neighbouring square). Two points share a unit square, and no two points of a unit square are further apart than its diagonal, $\sqrt{2}$.
+
+</Example>
+
+<Example title="Acquaintances at a party">
+
+At any gathering of $n \ge 2$ people, two of them have the same number of acquaintances present (acquaintance being mutual). Each person knows between $0$ and $n - 1$ others: $n$ possible numbers. But $0$ and $n - 1$ cannot both occur — if someone knows everybody, nobody knows nobody. So the $n$ people have at most $n - 1$ possible numbers between them, and two share a number. (In the language of <TopicLink id="math.discrete.graph-basics">graphs</TopicLink>: every finite simple graph with at least two vertices has two vertices of the same degree.)
+
+</Example>
+
+<Narrator who="chloe">
+
+Not one of these proofs tells you *which* two! That's what makes pigeonhole proofs so strange and so strong: they prove that something exists without ever finding it.
+
+</Narrator>
+
+### Inclusion–exclusion
+
+<Theorem name="Theorem 7 (inclusion–exclusion for two and three sets)">
+
+For finite sets $A$, $B$, $C$:
+
+$$
+|A \cup B| = |A| + |B| - |A \cap B|,
+$$
+
+$$
+|A \cup B \cup C| = |A| + |B| + |C| - |A \cap B| - |A \cap C| - |B \cap C| + |A \cap B \cap C|.
+$$
+
+</Theorem>
+
+<Proof>
+
+**Two sets.** $|A| + |B|$ counts every element of $A \cup B$ once, except the elements of $A \cap B$, which are counted twice; subtracting $|A \cap B|$ corrects this.
+
+**Three sets.** Apply the two-set rule to $A \cup B$ and $C$:
+$|A \cup B \cup C| = |A \cup B| + |C| - |(A \cup B) \cap C|$. Now $|A \cup B| = |A| + |B| - |A \cap B|$, and $(A \cup B) \cap C = (A \cap C) \cup (B \cap C)$, whose size by the two-set rule is $|A \cap C| + |B \cap C| - |A \cap B \cap C|$, because $(A \cap C) \cap (B \cap C) = A \cap B \cap C$. Substituting gives the formula.
+
+</Proof>
+
+<Example title="Divisible by 2, 3 or 5">
+
+How many of $1, 2, \dots, 100$ are divisible by $2$, $3$ or $5$? Let $A_d$ be the multiples of $d$; then $|A_d| = \lfloor 100/d \rfloor$ and, for instance, $A_2 \cap A_3 = A_6$. So the answer is
+
+$$
+50 + 33 + 20 - 16 - 10 - 6 + 3 = 74.
+$$
+
+</Example>
+
+The same pattern works for any number of sets: **add** the sizes of the sets, **subtract** the sizes of all pairwise intersections, **add** all triple intersections, and so on, with alternating signs. Here is why — and the binomial theorem returns to help.
+
+<Theorem name="Theorem 8 (inclusion–exclusion, general)">
+
+For finite sets $A_1, \dots, A_n$,
+$$
+|A_1 \cup \cdots \cup A_n| = \sum_{\varnothing \ne S \subseteq \{1, \dots, n\}} (-1)^{|S|+1} \Big| \bigcap_{i \in S} A_i \Big|.
+$$
+
+</Theorem>
+
+<Proof>
+
+Take an element $x$ that lies in exactly $m \ge 1$ of the sets. It is counted in $\big|\bigcap_{i \in S} A_i\big|$ exactly when $S$ is a non-empty set of indices of sets containing $x$, and there are $\binom{m}{k}$ such $S$ of size $k$. So the right-hand side counts $x$ exactly
+$$
+\sum_{k=1}^{m} (-1)^{k+1} \binom{m}{k} = 1 - \sum_{k=0}^{m} (-1)^{k} \binom{m}{k} = 1 - 0 = 1
+$$
+time, by the alternating row sum (Corollary 5). An element in none of the sets is counted $0$ times on both sides.
+
+</Proof>
+
+<Example title="Derangements: the hat-check problem">
+
+Guests at a wedding in Addis Ababa leave $n$ hats at the door, and the hats are handed back at random. In how many of the $n!$ ways does **nobody** get their own hat? Such an arrangement is a **derangement**; call their number $D_n$.
+
+Let $A_i$ be the arrangements in which guest $i$ gets the right hat. If the guests in a set $S$ of size $k$ all get their own hats, the other $n - k$ hats can be arranged in $(n - k)!$ ways, and there are $\binom{n}{k}$ sets $S$ of size $k$. By inclusion–exclusion,
+$$
+|A_1 \cup \cdots \cup A_n| = \sum_{k=1}^{n} (-1)^{k+1} \binom{n}{k} (n - k)! = \sum_{k=1}^{n} (-1)^{k+1} \frac{n!}{k!},
+$$
+and $D_n = n! - |A_1 \cup \cdots \cup A_n|$, so
+$$
+D_n = n! \left( 1 - \frac{1}{1!} + \frac{1}{2!} - \frac{1}{3!} + \cdots + \frac{(-1)^n}{n!} \right).
+$$
+For example $D_4 = 24 \left(1 - 1 + \tfrac12 - \tfrac16 + \tfrac{1}{24}\right) = 9$. The bracket is a partial sum of the series $\sum_k (-1)^k / k!$, which (as you may learn with <TopicLink id="math.analysis.sequences-series">sequences and series</TopicLink>) converges to $1/e \approx 0.3679$, and very quickly: with eight or more guests, the fraction of arrangements that are derangements is $0.3679$ to four decimal places.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="The proofs, checked by Lean">
+
+In Mathlib, `Finset.powersetCard k s` is the finite set of $k$-element subsets of `s`, `#s` is the number of elements of `s`, and `Nat.choose n k` is $\binom{n}{k}$. Interestingly, Mathlib *defines* `Nat.choose` by Pascal's rule — $\binom{n}{0} = 1$, $\binom{0}{k+1} = 0$, $\binom{n+1}{k+1} = \binom{n}{k} + \binom{n}{k+1}$ — so our counting definition becomes a theorem. First, Pascal's rule for subsets, proved exactly like the committee argument (avoid $a$, or contain $a$):
+
+<Lean decl="Lumenary.Combinatorics.pascal_subsets" />
+
+Since counting subsets obeys the same rules that define `Nat.choose`, induction shows that the two agree:
+
+<Lean decl="Lumenary.Combinatorics.card_subsets_eq_choose" />
+
+The factorial formula and symmetry come from Mathlib, and Lean can evaluate the formula exactly:
+
+<Lean decl="Lumenary.Combinatorics.choose_factorial" />
+
+<Lean decl="Lumenary.Combinatorics.choose_symm" />
+
+<Lean decl="Lumenary.Combinatorics.five_card_hands" />
+
+The binomial theorem for $(1 + x)^n$ is proved by induction, as described after Theorem 4. It holds in any **commutative semiring** — any number system where addition and multiplication obey the usual laws, such as $\N$, $\Z$, $\Q$ or $\R$. Mathlib's general version follows it.
+
+<Lean decl="Lumenary.Combinatorics.binomial_one_add" />
+
+<Lean decl="Lumenary.Combinatorics.binomial_theorem" />
+
+<Lean decl="Lumenary.Combinatorics.row_sum" />
+
+<Lean decl="Lumenary.Combinatorics.alternating_row_sum" />
+
+The pigeonhole principle, proved by counting the objects box by box: if no box held two objects, the number of objects would be at most the number of boxes. Then Mathlib's version, and the remainders example.
+
+<Lean decl="Lumenary.Combinatorics.pigeonhole" />
+
+<Lean decl="Lumenary.Combinatorics.pigeonhole_library" />
+
+<Lean decl="Lumenary.Combinatorics.same_remainder" />
+
+<Narrator who="gideon">
+
+Look closely at `same_remainder`. Its statement says `∃ i j, i ≠ j ∧ …` — "there exist two different positions" — and nothing more. Lean accepts the proof without ever learning which two. A pigeonhole proof is an existence proof, and the formal statement is honest about that.
+
+</Narrator>
+
+Inclusion–exclusion. Subtraction of natural numbers is awkward (in Lean, $3 - 5 = 0$ in $\N$), so the formulas are written with every term on the side where it is added:
+
+<Lean decl="Lumenary.Combinatorics.incl_excl_two" />
+
+<Lean decl="Lumenary.Combinatorics.incl_excl_three" />
+
+<Lean decl="Lumenary.Combinatorics.divisible_by_2_3_or_5" />
+
+What is **not** formalised here: the general inclusion–exclusion formula (Mathlib has it, as `Finset.inclusion_exclusion_card_biUnion`, but its statement takes some unpacking), the derangement formula, and the geometric pigeonhole examples.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting by computer">
+
+<Narrator who="margaret">
+
+A computer can actually list subsets — all $\binom{12}{6} = 924$ of the $6$-element subsets of a $12$-element set, say. So I can compare three ways of computing $\binom{n}{k}$: listing, Pascal's rule and the factorial formula. Then I'll ask a computer-algebra system to expand $(x + y)^n$.
+
+</Narrator>
+
+<Python id="combinatorics_pascal_identities" />
+
+<Narrator who="margaret">
+
+Now inclusion–exclusion: I'll count directly and compare with the formula. For derangements I list all $8! = 40\,320$ arrangements of eight hats. And the birthday problem shows the difference between "likely" and "certain".
+
+</Narrator>
+
+<Python id="combinatorics_inclusion_exclusion" />
+
+Look at the last table. With $23$ people a shared birthday is already more likely than not (assuming $365$ equally likely birthdays) — but no number of people below $366$ makes it **certain**: even with $365$ people the probability that all birthdays differ is tiny but not zero. Only the pigeonhole principle, at $366$ people, turns "very likely" into "guaranteed". Probability and pigeonhole answer different questions.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: Pascal's triangle in a Galton board">
+
+<ChanceLab experiments={["galton", "birthday"]} n={10} trials={1000} title="Binomial coefficients and birthdays" />
+
+On the Galton board, each ball bounces left or right at each of $10$ rows. A ball lands in bin $j$ when exactly $j$ of its $10$ bounces go right, and there are $\binom{10}{j}$ such paths — row $10$ of Pascal's triangle — out of $2^{10} = 1024$ equally likely paths. Compare the bars with the exact shape, then increase the number of balls. On the birthday tab, change the group size: find where the probability first passes one half, and notice that it creeps towards $1$ without reaching it.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Using permutations when order does not matter.** Choosing a committee of $3$ from $7$ is $\binom{7}{3} = 35$, not $7 \times 6 \times 5 = 210$. The ordered count lists each committee $3! = 6$ times. Ask: "if I swap two of my choices, do I get a different outcome?" If not, order does not matter.
+
+</Misconception>
+
+<Misconception>
+
+**"A pigeonhole argument must say which box has two objects."** It need not, and usually cannot. "Two of these $13$ people share a birth month" is proved without knowing any birthdays at all.
+
+</Misconception>
+
+<Misconception>
+
+**"$(x + y)^n = x^n + y^n$."** Already $(x + y)^2 = x^2 + 2xy + y^2$. The binomial theorem shows exactly which cross terms appear and how often.
+
+</Misconception>
+
+<Misconception>
+
+**Counting "at least one" by fixing one.** Choosing "the" ace first and then the rest counts hands with several aces several times. Count the complement ("no aces") instead, or use inclusion–exclusion.
+
+</Misconception>
+
+<Misconception>
+
+**Stopping inclusion–exclusion too early.** For three sets, after subtracting the pairwise intersections the elements of $A \cap B \cap C$ have been added three times and subtracted three times — so they must be **added back** once.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="algebra" title="Counting with polynomials">
+
+The binomial theorem says that the polynomial $(1 + x)^n$ *stores* the numbers $\binom{n}{k}$ as its coefficients. Identities between counts become identities between polynomials: comparing the coefficient of $x^k$ on both sides of $(1 + x)^{m+n} = (1 + x)^m (1 + x)^n$ gives **Vandermonde's identity** $\binom{m+n}{k} = \sum_j \binom{m}{j}\binom{n}{k-j}$ — which also has a counting proof (choose $k$ people from $m$ women and $n$ men). Turning counting problems into algebra in this way is the method of **generating functions**, the subject of <TopicLink id="math.discrete.recurrences-generating-functions">recurrences and generating functions</TopicLink> and <TopicLink id="math.discrete.enumerative-combinatorics">enumerative combinatorics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Counting is probability in disguise">
+
+If a fair coin is tossed $n$ times, the $2^n$ sequences are equally likely, and $\binom{n}{k}$ of them have exactly $k$ heads. So $P(k \text{ heads}) = \binom{n}{k} / 2^n$ — the **binomial distribution**, the shape of the Galton board. Many probability questions are two counting questions, divided; see <TopicLink id="math.prob.probability-rules">conditional probability and independence</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Primes in Pascal's triangle">
+
+If $p$ is prime and $0 < k < p$, then $p$ divides $\binom{p}{k} = \dfrac{p!}{k!\,(p-k)!}$: the prime $p$ divides the numerator but not the denominator. (Look at row $7$: $1, 7, 21, 35, 35, 21, 7, 1$.) So $(a + b)^p$ and $a^p + b^p$ leave the same remainder on division by $p$, and an induction on $a$ then proves **Fermat's little theorem**: $p$ divides $a^p - a$ for every whole number $a$. Colouring the odd entries of Pascal's triangle reveals a pattern like the **Sierpiński triangle**, explained by Lucas's theorem on binomial coefficients modulo a prime; see <TopicLink id="math.number.congruences">congruences</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="sets" kind="sets" title="Set-theoretic connection">
+
+Combinatorics is the theory of the sizes of finite sets. The multiplication principle is $|A \times B| = |A| \cdot |B|$; the binomial coefficient counts the subsets of size $k$ inside the power set $\mathcal{P}(X)$, which has $2^{|X|}$ elements; a "counting in two ways" proof is the statement that two finite sets in one-to-one correspondence have the same size; and inclusion–exclusion computes the size of a union from the sizes of intersections. The pigeonhole principle says exactly that **there is no one-to-one function from a finite set to a smaller one** — a fact that fails for infinite sets, as <TopicLink id="math.found.countability">countability</TopicLink> shows.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **India.** Piṅgala's *Chandaḥśāstra* (roughly the 3rd–2nd century BCE) counts the patterns of short and long syllables in Sanskrit verse; its 10th-century commentator Halāyudha describes the *meru-prastāra*, the "staircase of Mount Meru" — the triangle we call Pascal's. Varāhamihira (6th century) counted the perfumes that can be blended by choosing $4$ of $16$ ingredients ($\binom{16}{4} = 1820$), and Mahāvīra's *Gaṇitasārasaṅgraha* (around 850) gives the general rule for $\binom{n}{k}$.
+- **Persia and North Africa.** Al-Karajī (around 1000) used the triangle to expand powers of a binomial; his work is known through al-Samawʾal (12th century). In Iran the triangle is often named after Omar Khayyam. In Marrakesh, Ibn Munʿim (died 1228) used a table of the same numbers to count the possible words of a language.
+- **China.** Jia Xian (11th century) used the triangle to extract roots; it is preserved in Yang Hui's book of 1261 — in China it is called *Yang Hui's triangle* — and drawn in Zhu Shijie's *Jade Mirror of the Four Unknowns* (1303).
+- **Europe.** Levi ben Gershon's *Maaseh Hoshev* (1321) gave formulas for arrangements and selections with careful proofs. Blaise Pascal's *Traité du triangle arithmétique* (written 1654, published 1665) proved many of its properties systematically and applied them to probability; Isaac Newton extended the binomial theorem to fractional exponents (1665).
+- **Pigeons and hats.** The pigeonhole principle is named after P. G. L. Dirichlet, who used it in 1834 (as the *Schubfachprinzip*, "drawer principle"); it appears earlier, in a 1622 book by the French Jesuit Jean Leurechon. The hat-check problem goes back to Pierre Rémond de Montmort's *problème des rencontres* (1708), and Abraham de Moivre used inclusion–exclusion in *The Doctrine of Chances* (1718).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Arthur Engel, *Problem-Solving Strategies* (1998) — chapters on the pigeonhole principle and on enumerative combinatorics, with hundreds of competition problems.
+- Arthur T. Benjamin and Jennifer J. Quinn, *Proofs That Really Count* (2003) — identities proved by counting in two ways.
+- Richard A. Brualdi, *Introductory Combinatorics* (5th edition, 2010).
+- Ronald L. Graham, Donald E. Knuth and Oren Patashnik, *Concrete Mathematics* (2nd edition, 1994), chapter 5 on binomial coefficients.
+- A. W. F. Edwards, *Pascal's Arithmetical Triangle* (1987), for the history of the triangle.
+
+</Section>

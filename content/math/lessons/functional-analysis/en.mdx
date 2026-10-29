@@ -1,0 +1,474 @@
+---
+slug: functional-analysis
+topic: math.analysis.functional-analysis
+title: Functional analysis
+subtitle: Linear algebra in infinite dimensions — where continuity is no longer free, unit balls stop being compact, and completeness plus the Baire category theorem give back an astonishing amount.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7028
+objectives:
+  - Work with Banach and Hilbert spaces and bounded operators, and recognise that linear maps between normed spaces need not be continuous
+  - Prove the projection theorem and the Riesz representation theorem for Hilbert spaces, and use orthonormal bases
+  - State and apply the Hahn–Banach, uniform boundedness, open mapping and closed graph theorems, and prove uniform boundedness from the Baire category theorem
+  - Prove that the closed unit ball of an infinite-dimensional Hilbert space is not norm-compact, and describe the weak topologies that replace compactness
+  - Prove the spectral theorem for compact self-adjoint operators
+narrators: []
+lean:
+  - Lumenary.FunctionalAnalysis.continuous_of_bound
+  - Lumenary.FunctionalAnalysis.riesz_representation
+  - Lumenary.FunctionalAnalysis.riesz_unique
+  - Lumenary.FunctionalAnalysis.uniform_boundedness
+  - Lumenary.FunctionalAnalysis.open_mapping
+  - Lumenary.FunctionalAnalysis.closed_graph
+  - Lumenary.FunctionalAnalysis.hahn_banach
+  - Lumenary.FunctionalAnalysis.orthonormal_dist_sq
+  - Lumenary.FunctionalAnalysis.closedBall_not_compact
+  - Lumenary.FunctionalAnalysis.riesz_compact_ball
+  - Lumenary.FunctionalAnalysis.spectral_compact_symmetric
+  - Lumenary.FunctionalAnalysis.eigenspace_finite_dimensional
+compute: [functional_analysis_compact_spectrum]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Solving equations whose unknowns are functions">
+
+Around 1900 Ivar Fredholm in Stockholm studied integral equations $u(x) - \lambda \int_0^1 K(x, y) u(y) \, dy = f(x)$, which arise from boundary value problems and potential theory. He noticed that they behave like systems of linear equations: either the homogeneous equation has a non-zero solution, or the inhomogeneous equation has exactly one solution for every $f$. David Hilbert and his students in Göttingen then built a theory of "infinitely many unknowns", expanding functions in orthogonal series and diagonalising symmetric kernels — the infinite-dimensional version of diagonalising a symmetric matrix. Stefan Banach and the Lwów school in the 1920s abstracted the setting into complete normed spaces.
+
+The same structures run through modern mathematics: the state space of quantum mechanics is a Hilbert space, the natural home of a weak solution of a PDE is a Sobolev space, the space $L^1$ of probability densities is a Banach space, and optimisation in infinite dimensions needs duality. **Functional analysis** is linear algebra plus topology, and its lesson is double: much of finite-dimensional linear algebra survives, provided one insists on **completeness** and **continuity**, and some of it fails in instructive ways.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="What survives and what breaks">
+
+In $\R^n$ every linear map is continuous, all norms are equivalent, the closed unit ball is compact, and a symmetric matrix has an orthonormal basis of eigenvectors. In infinite dimensions:
+
+- **Continuity is no longer automatic.** Differentiation $f \mapsto f'$ is linear, but $\sin(nx)$ has sup norm $1$ while its derivative has sup norm $n$. So we must restrict attention to **bounded** operators, those satisfying $\|Tx\| \le C\|x\|$.
+- **Norms can be inequivalent.** On $C[0, 1]$, $\|x^n\|_\infty = 1$ but $\|x^n\|_1 = 1/(n+1)$; the two norms give different notions of convergence, and only the first makes $C[0, 1]$ complete.
+- **The unit ball is not compact.** In $\ell^2$ the unit vectors $e_n$ satisfy $\|e_n - e_m\| = \sqrt 2$ for $n \ne m$, so no subsequence converges. Compactness arguments must use weaker topologies.
+- **Eigenvalues can vanish.** The right shift $S(x_1, x_2, \ldots) = (0, x_1, x_2, \ldots)$ on $\ell^2$ has no eigenvalues at all.
+
+What survives is carried by **completeness**. Through the Baire category theorem, completeness yields three "automatic" theorems: pointwise bounded families of operators are uniformly bounded, bijective bounded operators have bounded inverses, and operators with closed graphs are bounded. Through the axiom of choice, the Hahn–Banach theorem supplies enough continuous linear functionals to separate points. In a **Hilbert** space, the inner product adds geometry — orthogonal projection, Pythagoras — and the Riesz representation theorem identifies the space with its dual. And for **compact** self-adjoint operators the finite-dimensional spectral theorem survives almost unchanged.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Banach spaces, Hilbert spaces and operators">
+
+<Definition term="Banach and Hilbert spaces">
+
+A **normed space** is a vector space $X$ over $\mathbb K = \R$ or $\C$ with a norm $\|\cdot\|$; it is a **Banach space** if it is complete for the metric $\|x - y\|$. An **inner product space** has an inner product $\langle x, y \rangle$, linear in $x$ and conjugate-symmetric, with $\langle x, x \rangle > 0$ for $x \ne 0$; it is a normed space with $\|x\| = \langle x, x \rangle^{1/2}$, by the **Cauchy–Schwarz inequality** $|\langle x, y \rangle| \le \|x\| \|y\|$. A complete inner product space is a **Hilbert space**.
+
+</Definition>
+
+<Definition term="bounded operator, dual space, adjoint">
+
+A linear map $T : X \to Y$ between normed spaces is **bounded** if there is a constant $C$ with $\|Tx\| \le C \|x\|$ for all $x$; the least such $C$ is the **operator norm** $\|T\| = \sup_{\|x\| \le 1} \|Tx\|$. The bounded operators form a normed space $\mathcal B(X, Y)$, which is a Banach space when $Y$ is. The **dual space** $X^* = \mathcal B(X, \mathbb K)$ consists of the bounded linear functionals. On a Hilbert space $H$, the **adjoint** $T^*$ of $T \in \mathcal B(H)$ is defined by $\langle Tx, y \rangle = \langle x, T^* y \rangle$, and $T$ is **self-adjoint** if $T = T^*$.
+
+</Definition>
+
+<Definition term="compact operator">
+
+A bounded operator $T : X \to Y$ is **compact** if it maps bounded sets to sets with compact closure; equivalently (for Banach spaces), every bounded sequence $(x_n)$ has a subsequence along which $(Tx_n)$ converges.
+
+</Definition>
+
+<Definition term="orthonormal basis">
+
+An **orthonormal set** $(e_i)_{i \in I}$ in a Hilbert space satisfies $\langle e_i, e_j \rangle = \delta_{ij}$. It is an **orthonormal basis** (Hilbert basis) if its closed linear span is the whole space. This is not a basis in the algebraic sense: elements are infinite sums $x = \sum_i \langle x, e_i \rangle e_i$ converging in norm.
+
+</Definition>
+
+<Definition term="weak and weak-* topologies">
+
+The **weak topology** on $X$ is the coarsest topology making every $\ell \in X^*$ continuous: $x_n \rightharpoonup x$ means $\ell(x_n) \to \ell(x)$ for every $\ell \in X^*$. The **weak-\* topology** on $X^*$ is the coarsest making every evaluation $\ell \mapsto \ell(x)$ continuous.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples, non-examples and pathologies">
+
+<Example title="The basic spaces">
+
+- $\ell^p$ ($1 \le p \le \infty$), $L^p(\mu)$ (Riesz–Fischer, from <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink>), and $C(K)$ with the sup norm for compact $K$ are Banach spaces. $\ell^2$ and $L^2(\mu)$ are Hilbert spaces with $\langle f, g \rangle = \int f \bar g \, d\mu$; for $p \ne 2$, $\ell^p$ is not, because its norm fails the parallelogram law $\|x + y\|^2 + \|x - y\|^2 = 2\|x\|^2 + 2\|y\|^2$ (try $x = e_1$, $y = e_2$).
+- $C[0, 1]$ with the norm $\|f\|_1 = \int_0^1 |f|$ is **not** complete: continuous functions rising ever more steeply from $0$ to $1$ near $x = \frac12$ form a Cauchy sequence whose $L^1$-limit is a step function. Its completion is $L^1[0, 1]$. Likewise the polynomials are a dense, incomplete subspace of $C[0, 1]$ (Weierstrass).
+- The trigonometric system $e_n(x) = e^{inx}/\sqrt{2\pi}$, $n \in \Z$, is an orthonormal basis of $L^2(-\pi, \pi)$; the coefficients $\langle f, e_n \rangle$ are, up to normalisation, the Fourier coefficients of <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink>.
+
+</Example>
+
+<Example title="Unbounded and discontinuous linear maps">
+
+$D f = f'$ from $C^1[0, 1]$ to $C[0, 1]$, both with the sup norm, is linear and unbounded: $\|D \sin(n \cdot)\|_\infty = n$. (With the norm $\|f\|_\infty + \|f'\|_\infty$ on $C^1[0, 1]$ it becomes bounded: the choice of norm matters.) Worse, on every infinite-dimensional normed space there is a linear functional that is discontinuous everywhere: extend a linearly independent sequence $(x_n)$ of unit vectors to a Hamel basis (this uses the axiom of choice), set $\ell(x_n) = n$ and $\ell = 0$ on the remaining basis vectors.
+
+</Example>
+
+<Example title="Compact and non-compact operators">
+
+- A **diagonal operator** $T(x_n) = (\lambda_n x_n)$ on $\ell^2$ is bounded with $\|T\| = \sup |\lambda_n|$, and compact exactly when $\lambda_n \to 0$: then $T$ is a norm limit of the finite-rank truncations, and norm limits of finite-rank operators are compact.
+- An **integral operator** $(Kf)(x) = \int K(x, y) f(y) \, dy$ with $K \in L^2([0, 1]^2)$ is compact (a Hilbert–Schmidt operator), and self-adjoint when $K(x, y) = \overline{K(y, x)}$. Example: $G(x, y) = \min(x, y)\big(1 - \max(x, y)\big)$, for which $u = Gf$ solves $-u'' = f$, $u(0) = u(1) = 0$. Its eigenfunctions are $\sqrt 2 \sin(k\pi x)$ with eigenvalues $1/(k\pi)^2$.
+- The identity of an infinite-dimensional space is not compact (the unit ball is not compact), and neither is the shift $S$: $(S e_n) = (e_{n+1})$ has no convergent subsequence. The left shift $S^*(x_1, x_2, \ldots) = (x_2, x_3, \ldots)$ has every $\lambda$ with $|\lambda| < 1$ as an eigenvalue, with eigenvector $(1, \lambda, \lambda^2, \ldots)$.
+
+</Example>
+
+</Section>
+
+<Section id="hilbert" kind="proof" title="Hilbert spaces: projection and representation">
+
+<Theorem name="Proposition (bounded = continuous)">
+
+For a linear map $T : X \to Y$ between normed spaces, the following are equivalent: (i) $T$ is bounded; (ii) $T$ is continuous; (iii) $T$ is continuous at $0$.
+
+</Theorem>
+
+<Proof>
+
+(i) ⇒ (ii): $\|Tx - Ty\| = \|T(x - y)\| \le C \|x - y\|$, so $T$ is Lipschitz. (ii) ⇒ (iii) is trivial. (iii) ⇒ (i): there is $\delta > 0$ with $\|Tz\| \le 1$ whenever $\|z\| \le \delta$. For $x \ne 0$ put $z = \delta x / \|x\|$; then $\|Tx\| = \frac{\|x\|}{\delta} \|Tz\| \le \frac1\delta \|x\|$.
+
+</Proof>
+
+<Theorem name="Projection theorem">
+
+Let $K$ be a non-empty closed convex subset of a Hilbert space $H$ and $x \in H$. There is a unique $y \in K$ with $\|x - y\| = \operatorname{dist}(x, K)$. If $K = M$ is a closed subspace, $y$ is characterised by $x - y \perp M$, and $H = M \oplus M^\perp$.
+
+</Theorem>
+
+<Proof>
+
+Let $d = \operatorname{dist}(x, K)$ and choose $y_n \in K$ with $\|x - y_n\| \to d$. The parallelogram law applied to $x - y_n$ and $x - y_m$ gives
+
+$$
+\|y_n - y_m\|^2 = 2\|x - y_n\|^2 + 2\|x - y_m\|^2 - 4\Big\|x - \tfrac{y_n + y_m}{2}\Big\|^2 \le 2\|x - y_n\|^2 + 2\|x - y_m\|^2 - 4d^2,
+$$
+
+since $\frac{y_n + y_m}2 \in K$ by convexity. The right side tends to $0$, so $(y_n)$ is Cauchy; by completeness it converges to some $y$, which lies in $K$ because $K$ is closed, and $\|x - y\| = d$. Applying the same inequality to two minimisers shows that they coincide.
+
+If $K = M$ is a subspace and $z \in M$, then $t \mapsto \|x - (y + tz)\|^2 = \|x - y\|^2 - 2t \operatorname{Re}\langle x - y, z \rangle + t^2 \|z\|^2$ is minimal at $t = 0$ (also for complex multiples), forcing $\langle x - y, z \rangle = 0$. Conversely, if $x - y \perp M$, Pythagoras gives $\|x - z\|^2 = \|x - y\|^2 + \|y - z\|^2$ for $z \in M$, so $y$ is the minimiser. Writing $x = y + (x - y)$ gives $H = M + M^\perp$, and $M \cap M^\perp = \{0\}$.
+
+</Proof>
+
+<Theorem name="Riesz representation theorem (Fréchet, Riesz 1907)">
+
+Let $H$ be a Hilbert space. For every $\ell \in H^*$ there is a unique $y \in H$ with $\ell(x) = \langle x, y \rangle$ for all $x \in H$, and $\|\ell\| = \|y\|$. The map $\ell \mapsto y$ is a conjugate-linear isometric bijection $H^* \to H$.
+
+</Theorem>
+
+<Proof>
+
+*Uniqueness:* if $\langle x, y_1 \rangle = \langle x, y_2 \rangle$ for all $x$, take $x = y_1 - y_2$ to get $\|y_1 - y_2\|^2 = 0$.
+
+*Existence:* if $\ell = 0$ take $y = 0$. Otherwise $M = \ker \ell$ is a closed subspace (as $\ell$ is continuous) and $M \ne H$, so by the projection theorem there is a unit vector $z \perp M$. For any $x$, the vector $\ell(x) z - \ell(z) x$ lies in $M$, hence is orthogonal to $z$:
+
+$$
+0 = \langle \ell(x) z - \ell(z) x, z \rangle = \ell(x) - \ell(z) \langle x, z \rangle,
+$$
+
+so $\ell(x) = \langle x, \overline{\ell(z)} z \rangle$ and $y = \overline{\ell(z)} z$ works. Finally Cauchy–Schwarz gives $|\ell(x)| \le \|x\| \|y\|$, with equality at $x = y$, so $\|\ell\| = \|y\|$.
+
+</Proof>
+
+<Theorem name="Theorem (orthonormal bases)">
+
+Let $(e_n)_{n \ge 1}$ be an orthonormal sequence in a Hilbert space $H$. Then **Bessel's inequality** $\sum_n |\langle x, e_n \rangle|^2 \le \|x\|^2$ holds, the series $\sum_n \langle x, e_n \rangle e_n$ converges for every $x$, and the following are equivalent: (a) $(e_n)$ is an orthonormal basis; (b) $\langle x, e_n \rangle = 0$ for all $n$ implies $x = 0$; (c) $x = \sum_n \langle x, e_n \rangle e_n$ for all $x$; (d) **Parseval:** $\|x\|^2 = \sum_n |\langle x, e_n \rangle|^2$ for all $x$.
+
+</Theorem>
+
+<Proof>
+
+With $s_N = \sum_{n \le N} \langle x, e_n \rangle e_n$, the vector $x - s_N$ is orthogonal to $e_1, \ldots, e_N$, so Pythagoras gives $\|x\|^2 = \|x - s_N\|^2 + \sum_{n \le N} |\langle x, e_n \rangle|^2$, which is Bessel's inequality. Hence $\|s_M - s_N\|^2 = \sum_{N < n \le M} |\langle x, e_n \rangle|^2 \to 0$, and by completeness $s_N \to s$ for some $s$, with $x - s \perp e_n$ for all $n$.
+(a) ⇒ (b): if $x \perp e_n$ for all $n$, then $x$ is orthogonal to their closed span $H$, so $x \perp x$. (b) ⇒ (c): apply (b) to $x - s$. (c) ⇒ (d): let $N \to \infty$ in the Pythagoras identity. (d) ⇒ (a): (d) says $\|x - s_N\| \to 0$, so $x$ lies in the closed span.
+
+</Proof>
+
+Every separable Hilbert space has a countable orthonormal basis (Gram–Schmidt applied to a dense sequence), so every infinite-dimensional separable Hilbert space is isometrically isomorphic to $\ell^2$ by $x \mapsto (\langle x, e_n \rangle)_n$. In particular $L^2(-\pi, \pi) \cong \ell^2(\Z)$ by Fourier coefficients: Parseval's identity for Fourier series is (d).
+
+</Section>
+
+<Section id="banach" kind="proof" title="Banach spaces: Baire, uniform boundedness, open mapping, Hahn–Banach">
+
+The engine of the next three theorems is the **Baire category theorem**: in a complete metric space, a countable intersection of dense open sets is dense; equivalently, a complete metric space is not a countable union of nowhere dense closed sets. (Proof: given a ball $B_0$ and dense open $U_1, U_2, \ldots$, choose closed balls $\overline{B_n} \subseteq B_{n-1} \cap U_n$ with radii $\to 0$; their centres form a Cauchy sequence whose limit lies in $B_0 \cap \bigcap U_n$. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.)
+
+<Theorem name="Uniform boundedness principle (Banach–Steinhaus 1927)">
+
+Let $X$ be a Banach space, $Y$ a normed space, and $\mathcal F \subseteq \mathcal B(X, Y)$ a family with $\sup_{T \in \mathcal F} \|Tx\| < \infty$ for every $x \in X$. Then $\sup_{T \in \mathcal F} \|T\| < \infty$.
+
+</Theorem>
+
+<Proof>
+
+The sets $F_n = \{x : \|Tx\| \le n \text{ for all } T \in \mathcal F\}$ are closed (intersections of closed sets, by continuity of each $T$), and by hypothesis $X = \bigcup_n F_n$. By the Baire category theorem some $F_N$ contains a closed ball $\overline B(x_0, r)$ with $r > 0$. For $\|z\| \le r$, both $x_0$ and $x_0 + z$ lie in $F_N$, so $\|Tz\| \le \|T(x_0 + z)\| + \|T x_0\| \le 2N$ for every $T \in \mathcal F$. Scaling, $\|T\| \le 2N/r$ for all $T \in \mathcal F$.
+
+</Proof>
+
+Completeness is essential. On the space $c_{00}$ of finitely supported sequences with the sup norm, $T_n(x) = n x_n$ satisfies $\sup_n |T_n x| < \infty$ for each $x$ (only finitely many $x_n \ne 0$), but $\|T_n\| = n$. A famous application: there is a continuous $2\pi$-periodic function whose Fourier series diverges at $0$, because the partial-sum functionals $f \mapsto S_N f(0)$ on $C(\mathbb T)$ have norms equal to the Lebesgue constants $\|D_N\|_{L^1} \sim \frac{4}{\pi^2} \log N \to \infty$.
+
+<Theorem name="Open mapping and closed graph theorems (Banach 1929–1932, Schauder 1930)">
+
+Let $X, Y$ be Banach spaces and $T \in \mathcal B(X, Y)$.
+
+1. (Open mapping) If $T$ is surjective, then $T$ maps open sets to open sets. In particular a bijective bounded operator has a bounded inverse.
+2. (Closed graph) A linear map $T : X \to Y$ whose graph $\{(x, Tx)\}$ is closed in $X \times Y$ is bounded.
+
+</Theorem>
+
+*About the proof.* For (1), $Y = \bigcup_n \overline{T(B(0, n))}$, so by Baire some $\overline{T(B(0, n))}$ has interior, and by linearity $\overline{T(B(0, 1))} \supseteq B(0, \delta)$ for some $\delta > 0$. A successive approximation argument, summing a series that converges by completeness of $X$, removes the closure: $T(B(0, 2)) \supseteq B(0, \delta)$. See Brezis, Theorem 2.6. (2) follows from (1): the graph $\Gamma$ is a closed subspace of $X \times Y$, hence Banach, and the projection $\Gamma \to X$, $(x, Tx) \mapsto x$, is a bounded bijection; its inverse $x \mapsto (x, Tx)$ is therefore bounded, and so is $T$.
+
+In practice the closed graph theorem says: to prove that $T$ is bounded, it suffices to show that $x_n \to x$ and $Tx_n \to y$ imply $y = Tx$. For example, a symmetric operator defined on all of a Hilbert space ($\langle Tx, y \rangle = \langle x, Ty \rangle$) is automatically bounded (Hellinger–Toeplitz). This is why the unbounded operators of quantum mechanics, such as momentum $-i \, d/dx$, are only defined on dense subspaces.
+
+<Theorem name="Hahn–Banach theorem (Hahn 1927, Banach 1929)">
+
+Let $X$ be a real vector space, $p : X \to \R$ sublinear ($p(x + y) \le p(x) + p(y)$ and $p(tx) = t p(x)$ for $t \ge 0$), $M \subseteq X$ a subspace and $f : M \to \R$ linear with $f \le p$ on $M$. Then $f$ extends to a linear $F : X \to \R$ with $F \le p$ on $X$. In particular, every bounded linear functional on a subspace of a normed space (real or complex) extends to the whole space with the same norm.
+
+</Theorem>
+
+*About the proof.* One extends $f$ by one dimension at a time — the inequality $f \le p$ leaves an interval of admissible values for $F(x_0)$ — and Zorn's lemma, applied to the partially ordered set of dominated extensions, produces a maximal one, which must be defined everywhere. The complex case follows by applying the real case to $\operatorname{Re} f$. Consequences: $X^*$ separates points; $\|x\| = \max_{\|\ell\| \le 1} |\ell(x)|$, so $X$ embeds isometrically in its bidual $X^{**}$; and (in its geometric form) disjoint convex sets, one open, can be separated by a closed hyperplane — the foundation of convex optimisation and duality.
+
+</Section>
+
+<Section id="compactness" kind="proof" title="Compactness lost and regained">
+
+<Theorem name="Theorem (the unit ball is not compact)">
+
+The closed unit ball of an infinite-dimensional Hilbert space is not compact in the norm topology. More generally (F. Riesz, 1918), a normed space has a compact closed unit ball if and only if it is finite-dimensional.
+
+</Theorem>
+
+<Proof>
+
+An infinite-dimensional Hilbert space contains an orthonormal sequence $(e_n)$: apply Gram–Schmidt to any linearly independent sequence. For $n \ne m$, $\|e_n - e_m\|^2 = \|e_n\|^2 - 2 \operatorname{Re}\langle e_n, e_m \rangle + \|e_m\|^2 = 2$. So no subsequence of $(e_n)$ is Cauchy, let alone convergent, although every $e_n$ lies in the closed unit ball. In a compact metric space every sequence has a convergent subsequence; hence the ball is not compact. For a general normed space, Riesz's lemma replaces orthonormality: if $M \subsetneq X$ is a closed subspace, there are unit vectors $x$ with $\operatorname{dist}(x, M) > \frac12$, which yields a sequence of unit vectors at mutual distance $> \frac12$.
+
+</Proof>
+
+Compactness returns in a weaker topology. **Banach–Alaoglu:** the closed unit ball of $X^*$ is weak-\* compact. In a Hilbert space (indeed in any reflexive space) every bounded sequence has a **weakly** convergent subsequence. The orthonormal sequence above converges weakly to $0$: $\langle e_n, y \rangle \to 0$ for every $y$, by Bessel's inequality. Weak compactness is the standard tool for producing solutions of variational problems and PDEs: minimise, extract a weakly convergent minimising sequence, and use lower semicontinuity of the norm, $\|x\| \le \liminf \|x_n\|$ when $x_n \rightharpoonup x$.
+
+</Section>
+
+<Section id="spectral" kind="proof" title="The spectral theorem for compact self-adjoint operators">
+
+Let $H$ be a Hilbert space and $T \in \mathcal B(H)$ self-adjoint. Then $\langle Tx, x \rangle = \langle x, Tx \rangle = \overline{\langle Tx, x \rangle}$ is real, eigenvalues are real, and eigenvectors for different eigenvalues are orthogonal: $\lambda \langle x, y \rangle = \langle Tx, y \rangle = \langle x, Ty \rangle = \mu \langle x, y \rangle$. If $T$ leaves a subspace $M$ invariant, it also leaves $M^\perp$ invariant: for $y \in M^\perp$ and $x \in M$, $\langle Ty, x \rangle = \langle y, Tx \rangle = 0$.
+
+<Theorem name="Lemma (norm of a self-adjoint operator)">
+
+If $T$ is self-adjoint, then $\|T\| = \sup_{\|x\| = 1} |\langle Tx, x \rangle|$.
+
+</Theorem>
+
+<Proof>
+
+Let $m$ be the supremum; Cauchy–Schwarz gives $m \le \|T\|$. For unit vectors $x, y$, expanding and using self-adjointness,
+
+$$
+4 \operatorname{Re}\langle Tx, y \rangle = \langle T(x + y), x + y \rangle - \langle T(x - y), x - y \rangle \le m\big(\|x + y\|^2 + \|x - y\|^2\big) = 4m
+$$
+
+by the parallelogram law. If $Tx \ne 0$, take $y = Tx / \|Tx\|$ to get $\|Tx\| \le m$.
+
+</Proof>
+
+<Theorem name="Lemma (an extremal eigenvalue)">
+
+If $T \ne 0$ is compact and self-adjoint, then $\|T\|$ or $-\|T\|$ is an eigenvalue of $T$.
+
+</Theorem>
+
+<Proof>
+
+By the previous lemma there are unit vectors $x_n$ with $\langle Tx_n, x_n \rangle \to \lambda$, where $\lambda = \pm\|T\| \ne 0$. Then
+
+$$
+\|Tx_n - \lambda x_n\|^2 = \|Tx_n\|^2 - 2\lambda \langle Tx_n, x_n \rangle + \lambda^2 \le 2\lambda^2 - 2\lambda \langle Tx_n, x_n \rangle \to 0.
+$$
+
+By compactness, a subsequence satisfies $Tx_{n_k} \to y$. Then $\lambda x_{n_k} = Tx_{n_k} - (Tx_{n_k} - \lambda x_{n_k}) \to y$, so $x_{n_k} \to x := y/\lambda$, a unit vector, and by continuity $Tx = \lim Tx_{n_k} = y = \lambda x$.
+
+</Proof>
+
+<Theorem name="Spectral theorem for compact self-adjoint operators (Hilbert, Schmidt)">
+
+Let $T$ be a compact self-adjoint operator on a Hilbert space $H$. There is a finite or countably infinite orthonormal sequence $(e_k)$ of eigenvectors, $T e_k = \lambda_k e_k$, with real $\lambda_k \ne 0$, $|\lambda_1| \ge |\lambda_2| \ge \cdots$ and $\lambda_k \to 0$ if the sequence is infinite, such that
+
+$$
+Tx = \sum_k \lambda_k \langle x, e_k \rangle e_k \quad \text{for all } x \in H.
+$$
+
+The $(e_k)$ form an orthonormal basis of $\overline{\operatorname{ran} T}$, and $H = \ker T \oplus \overline{\operatorname{ran} T}$. Each non-zero eigenvalue has finite multiplicity, and the non-zero eigenvalues can accumulate only at $0$.
+
+</Theorem>
+
+<Proof>
+
+Put $H_1 = H$. If $T|_{H_1} \ne 0$, the lemma gives a unit eigenvector $e_1$ with $|\lambda_1| = \|T\|$. Let $H_2 = \{e_1\}^\perp$; it is invariant under $T$, and $T|_{H_2}$ is compact and self-adjoint. If $T|_{H_2} \ne 0$ we find $e_2 \in H_2$ with $|\lambda_2| = \|T|_{H_2}\| \le |\lambda_1|$, and so on, with $H_{n+1} = \{e_1, \ldots, e_n\}^\perp$. Either $T|_{H_{n+1}} = 0$ for some $n$, or we obtain an infinite orthonormal sequence.
+
+In the infinite case $\lambda_k \to 0$: otherwise $|\lambda_k| \ge \delta > 0$ for all $k$, and $\|Te_j - Te_k\|^2 = \lambda_j^2 + \lambda_k^2 \ge 2\delta^2$ for $j \ne k$, so the bounded sequence $(e_k)$ has no subsequence along which $(Te_k)$ converges, contradicting compactness.
+
+For $x \in H$, the vector $y_n = x - \sum_{k \le n} \langle x, e_k \rangle e_k$ lies in $H_{n+1}$ and $\|y_n\| \le \|x\|$ (Bessel), so
+
+$$
+\Big\| Tx - \sum_{k \le n} \lambda_k \langle x, e_k \rangle e_k \Big\| = \|T y_n\| \le \|T|_{H_{n+1}}\| \, \|x\| = |\lambda_{n+1}| \, \|x\| \to 0
+$$
+
+(or $= 0$ in the finite case once $T|_{H_{n+1}} = 0$). This proves the expansion. It shows $\operatorname{ran} T \subseteq \overline{\operatorname{span}}\{e_k\}$, while $e_k = T(e_k / \lambda_k) \in \operatorname{ran} T$; so $(e_k)$ is an orthonormal basis of $\overline{\operatorname{ran} T}$. By the expansion, $Tx = 0$ iff $\langle x, e_k \rangle = 0$ for all $k$, so $\ker T = \{e_k\}^\perp = (\overline{\operatorname{ran} T})^\perp$. If $\mu \ne 0$ is an eigenvalue with eigenvector $x$, then $\mu x = Tx$ forces $x$ into the closed span of the $e_k$ with $\lambda_k = \mu$; as $\lambda_k \to 0$ there are finitely many such $k$, so the eigenspace is finite-dimensional, and every non-zero eigenvalue is some $\lambda_k$.
+
+</Proof>
+
+Applied to the Green's operator $G$ of $-u'' = f$ on $(0, 1)$, the theorem produces the sine basis $\sqrt 2 \sin(k\pi x)$ of $L^2(0, 1)$ — Fourier series as a spectral theorem. Applied to $I - \lambda K$ with $K$ compact and self-adjoint, it gives the **Fredholm alternative**: for $\lambda \ne 0$, either $\lambda^{-1}$ is an eigenvalue of $K$ or $I - \lambda K$ is invertible (the Riesz–Schauder theory extends this to every compact $K$). For bounded self-adjoint operators that are not compact (multiplication by $x$ on $L^2(0, 1)$, which has no eigenvalues at all), the spectral theorem needs projection-valued measures: von Neumann (1929) and Stone (1932), extending it to unbounded operators for quantum mechanics.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Functional analysis in Lean and Mathlib">
+
+Mathlib distinguishes `E →ₗ[ℝ] F` (linear maps) from `E →L[ℝ] F` (continuous linear maps) — a type-level reminder that continuity is extra structure in infinite dimensions. The first half of "bounded ⇔ continuous", proved directly:
+
+<Lean decl="Lumenary.FunctionalAnalysis.continuous_of_bound" />
+
+The Riesz representation theorem is Mathlib's isometric conjugate-linear equivalence `InnerProductSpace.toDual : E ≃ₗᵢ⋆[𝕜] StrongDual 𝕜 E`. Note that Mathlib's inner product is conjugate-linear in the *first* argument (the physicists' convention), so the representing vector goes on the left. Uniqueness, proved as in the lesson:
+
+<Lean decl="Lumenary.FunctionalAnalysis.riesz_representation" />
+
+<Lean decl="Lumenary.FunctionalAnalysis.riesz_unique" />
+
+The three Baire-category theorems and Hahn–Banach, all library theorems:
+
+<Lean decl="Lumenary.FunctionalAnalysis.uniform_boundedness" />
+
+<Lean decl="Lumenary.FunctionalAnalysis.open_mapping" />
+
+<Lean decl="Lumenary.FunctionalAnalysis.closed_graph" />
+
+<Lean decl="Lumenary.FunctionalAnalysis.hahn_banach" />
+
+The non-compactness of the unit ball, proved from scratch from an orthonormal sequence (the lesson's proof), next to Mathlib's converse in arbitrary normed spaces:
+
+<Lean decl="Lumenary.FunctionalAnalysis.orthonormal_dist_sq" />
+
+<Lean decl="Lumenary.FunctionalAnalysis.closedBall_not_compact" />
+
+<Lean decl="Lumenary.FunctionalAnalysis.riesz_compact_ball" />
+
+Mathlib's spectral theorem for compact self-adjoint operators is stated as: the orthogonal complement of the span of all eigenspaces is zero, and eigenspaces for non-zero eigenvalues are finite-dimensional. Together with the orthogonality of eigenspaces this is the theorem proved above.
+
+<Lean decl="Lumenary.FunctionalAnalysis.spectral_compact_symmetric" />
+
+<Lean decl="Lumenary.FunctionalAnalysis.eigenspace_finite_dimensional" />
+
+**Not formalised here:** the projection theorem (Mathlib: `exists_norm_eq_iInf_of_complete_convex`), Bessel and Parseval (Mathlib: `Orthonormal.tsum_inner_products_le` and `HilbertBasis`), our proof of the spectral theorem (we cite Mathlib's, which goes through the spectral radius), weak topologies and Banach–Alaoglu (Mathlib: `WeakDual.isCompact_polar`), and the spectral theorem for non-compact operators.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Watching eigenvalues accumulate at zero">
+
+The experiment discretises the Green's operator $G$ of $-u''$ on $(0, 1)$ by a $200 \times 200$ symmetric matrix (the midpoint rule) and compares its eigenvalues with the exact values $1/(k\pi)^2$. The matrix eigenvectors are orthonormal, the first matches $\sqrt 2 \sin(\pi x)$, and the count of eigenvalues above each threshold matches the count for the operator: they pile up only at $0$, as the spectral theorem requires. Two exact computations then show the warnings of the intuition section: differentiation multiplies the sup norm of $\sin(nx)$ by $n$, and $\|x^n\|_\infty / \|x^n\|_1 = n + 1$.
+
+<Python id="functional_analysis_compact_spectrum" />
+
+This is numerical evidence about one operator. Why the matrix eigenvalues approximate the operator's is itself a theorem (convergence of the Nyström method for compact operators); the spectral theorem is what guarantees there is a discrete spectrum to approximate.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Finite and infinite dimensions">
+
+In two dimensions the spectral theorem is visible: a symmetric matrix stretches the plane along two perpendicular invariant lines, its eigenvectors. Try other symmetric matrices, then a non-symmetric shear, whose single invariant line is not accompanied by a perpendicular one.
+
+<MatrixTransform matrix={[[2, 1], [1, 2]]} mode="single" presets={["shear", "rotation", "scale", "projection"]} title="A symmetric matrix: perpendicular eigenvectors" />
+
+In infinite dimensions, boundedness can fail. Move the slider: $\sin(nx)$ stays between $-1$ and $1$, but its derivative $n\cos(nx)$ grows without bound. No constant $C$ gives $\|f'\|_\infty \le C\|f\|_\infty$ on all of $C^1$.
+
+<FunctionPlot
+  fns={["sin(n*x)", "n*cos(n*x)"]}
+  labels={["f = sin(nx)", "f′ = n cos(nx)"]}
+  params={[{ name: "n", min: 1, max: 12, step: 1, value: 3 }]}
+  x={[0, "2*pi"]}
+  y={[-13, 13]}
+  title="Differentiation is an unbounded operator"
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every linear map between normed spaces is continuous."** True in finite dimensions only. Differentiation on $C^1[0, 1]$ with the sup norm is unbounded, and with the axiom of choice every infinite-dimensional normed space carries discontinuous linear functionals. What *is* true: on Banach spaces, linear maps with closed graphs are continuous, and in practice (without choice) one never writes down a discontinuous linear map defined on a whole Banach space.
+
+</Misconception>
+
+<Misconception>
+
+**"All norms on a vector space are equivalent."** Only in finite dimensions, where it follows from compactness of the unit sphere. On $C[0, 1]$ the sup norm and the $L^1$ norm are inequivalent ($\|x^n\|_\infty / \|x^n\|_1 = n + 1$), and only one of them is complete. In fact if two norms are both complete and one dominates the other, they are equivalent (open mapping theorem) — so this kind of example always involves an incomplete norm.
+
+</Misconception>
+
+<Misconception>
+
+**"Closed and bounded implies compact."** That is the Heine–Borel theorem of $\R^n$. In infinite dimensions the closed unit ball is closed and bounded but not compact; one must use weak compactness or prove compactness of specific sets (Arzelà–Ascoli, Rellich–Kondrachov).
+
+</Misconception>
+
+<Misconception>
+
+**"Every operator has an eigenvalue."** Over $\C$ in finite dimensions, yes. The shift on $\ell^2$ has none, and neither does multiplication by $x$ on $L^2(0, 1)$, although both have non-empty **spectrum** $\{\lambda : T - \lambda I \text{ not invertible}\}$. Compactness is what makes the spectrum (apart from $0$) consist of eigenvalues.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="The geometry of the unit ball">
+
+A Banach space is determined, up to isometry, by the shape of its unit ball, a closed convex symmetric set, and much of Banach space theory is convex geometry. Hilbert spaces are exactly the spaces whose ball is "round": by the Jordan–von Neumann theorem (1935), a norm comes from an inner product iff it satisfies the parallelogram law. Smoothness and rotundity of the ball control the existence and uniqueness of best approximations; uniformly convex spaces such as $L^p$, $1 < p < \infty$, are reflexive (Milman–Pettis). Dvoretzky's theorem (1961) says that every infinite-dimensional Banach space contains, for each $n$ and $\varepsilon > 0$, an $n$-dimensional subspace whose ball is within $1 + \varepsilon$ of a Euclidean ball: roundness is unavoidable in high dimensions, the starting point of asymptotic geometric analysis.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Baire, weak topologies and contractible spheres">
+
+The three pillar theorems are theorems of topology: they use only completeness through the Baire property. The weak and weak-\* topologies show that "the" topology of an infinite-dimensional space is a choice: the weak topology is never metrisable on an infinite-dimensional space, yet Banach–Alaoglu makes its balls compact, which is how one recovers fixed-point theorems (Schauder, Markov–Kakutani) and existence of minimisers. Infinite-dimensional topology also overturns finite-dimensional intuition: the unit sphere of $\ell^2$ is **contractible** and homeomorphic to $\ell^2$ itself, so there is no infinite-dimensional Brouwer fixed-point theorem for the closed ball (Kakutani gave a fixed-point-free continuous self-map of the ball of $\ell^2$), and Kuiper (1965) proved that the unitary group of an infinite-dimensional Hilbert space is contractible — a fact used in K-theory and index theory.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Operator algebras">
+
+$\mathcal B(H)$ is an algebra with an involution $T \mapsto T^*$ satisfying $\|T^* T\| = \|T\|^2$, a **C\*-algebra**. Gelfand and Naimark (1943) showed that every commutative C\*-algebra with unit is isomorphic to $C(K)$ for a compact Hausdorff space $K$, its space of characters — a dictionary between commutative algebra and topology, and the template for "noncommutative geometry", where a noncommutative C\*-algebra is treated as functions on a virtual space. The spectral theorem in this language is the continuous functional calculus: a self-adjoint $T$ generates a commutative C\*-algebra isomorphic to $C(\sigma(T))$. Von Neumann algebras (weakly closed \*-algebras) classify, through Murray and von Neumann's factors, the possible "dimensions" of infinite quantum systems.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Hilbert space as the stage of quantum mechanics">
+
+In von Neumann's *Mathematical Foundations of Quantum Mechanics* (1932), states are unit vectors (up to phase) in a Hilbert space, observables are self-adjoint operators, and the possible measured values of an observable are the points of its spectrum. The discrete energy levels of an atom are eigenvalues; the continuous spectrum of a free particle is why the spectral theorem had to go beyond eigenvectors; and the canonical commutation relation $[Q, P] = i\hbar I$ cannot hold for bounded operators (in finite dimensions take traces; for bounded operators a norm argument of Wintner and Wielandt rules it out), which is why position and momentum are unbounded operators on dense domains. Heisenberg's matrix mechanics and Schrödinger's wave mechanics were shown to be equivalent because $\ell^2$ and $L^2(\R)$ are isomorphic Hilbert spaces. See <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Duality and its limits">
+
+$X \mapsto X^*$ is a contravariant functor on Banach spaces with bounded operators ($T \mapsto T^*$), and Hahn–Banach makes the canonical map $X \to X^{**}$ an isometric embedding, natural in $X$ — the infinite-dimensional analogue of $V \cong V^{**}$, which now fails to be onto in general ($c_0^{**} = \ell^\infty$). Spaces for which it is onto are **reflexive**. For Hilbert spaces, Riesz gives the stronger, but conjugate-linear, identification $H \cong H^*$. A categorical subtlety: with bounded operators the category of Banach spaces has few limits; with contractions ($\|T\| \le 1$) it is complete and cocomplete, with $\ell^1$-sums as coproducts and $\ell^\infty$-sums as products.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Vito Volterra** (from 1887) treated "functions of lines" and integral equations; **Ivar Fredholm** (1900–1903) proved his alternative for integral equations; **David Hilbert** (1904–1910) developed the theory of quadratic forms in infinitely many variables and the spectral theory of symmetric kernels, with **Erhard Schmidt** (1907–1908) introducing the geometric language of $\ell^2$ and orthogonal projection.
+- **Maurice Fréchet** (1906) introduced metric spaces and, with **Frigyes Riesz** (1907), proved the representation theorem for $L^2$; Riesz introduced $L^p$ spaces (1910), compact operators (1918) and the non-compactness lemma.
+- **Hans Hahn** (1927) and **Stefan Banach** (1929) proved the extension theorem; Banach and **Hugo Steinhaus** proved uniform boundedness (1927); **Juliusz Schauder** and Banach proved the open mapping theorem. Banach's *Théorie des opérations linéaires* (1932), from the Lwów school whose problems were famously recorded in the Scottish Book, fixed the subject's shape.
+- **John von Neumann** (1929–1932) axiomatised Hilbert space and proved the spectral theorem for unbounded self-adjoint operators, independently of **Marshall Stone**; **Israel Gelfand** (1941) created the theory of normed rings (Banach algebras), and with **Mark Naimark** (1943) characterised C\*-algebras.
+- Later landmarks include **Alexander Grothendieck**'s work on topological tensor products (1950s) and **Per Enflo**'s counterexample to the approximation problem (1973), which showed that compact operators on a Banach space need not be norm limits of finite-rank ones.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations* (2011) — functional analysis aimed at PDE; the proofs of the big theorems in Chapters 1–6.
+- Michael Reed and Barry Simon, *Methods of Modern Mathematical Physics I: Functional Analysis* (1972; revised 1980) — with an eye on quantum mechanics.
+- Walter Rudin, *Functional Analysis* (2nd ed., 1991) — topological vector spaces, distributions and Banach algebras.
+- John B. Conway, *A Course in Functional Analysis* (2nd ed., 1990) — a clear standard text with Hilbert spaces first.
+- Peter D. Lax, *Functional Analysis* (2002) — rich in applications and history.
+- Erwin Kreyszig, *Introductory Functional Analysis with Applications* (1978) — a gentle first course.
+
+</Section>

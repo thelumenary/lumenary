@@ -1,0 +1,463 @@
+---
+slug: probabilistic-method
+topic: math.discrete.probabilistic-method
+title: The probabilistic method
+subtitle: To prove that an object exists, choose one at random and show that it works with positive probability — Ramsey colourings, large cuts, graphs of high girth, satisfiable formulas and balanced colourings, all from coin flips.
+level: grad
+ages: Graduate
+minutes: 135
+order: 7030
+objectives:
+  - Prove Erdős's bound $R(k, k) > 2^{k/2}$ for $k \geq 3$ with a random colouring, and improve it by the deletion method
+  - Use linearity of expectation and alteration arguments to prove existence results, including graphs of large girth and large chromatic number
+  - Use the second-moment method to find a threshold in random graphs
+  - Prove the Lovász local lemma and the Chernoff bound, and apply them to satisfiability, colourings and discrepancy
+  - Distinguish existence proofs from explicit constructions, and derandomise where possible (conditional expectations, Moser–Tardos)
+narrators: []
+lean:
+  - Lumenary.ProbabilisticMethod.exists_avoiding
+  - Lumenary.ProbabilisticMethod.exists_ge_average
+  - Lumenary.ProbabilisticMethod.markov_count
+  - Lumenary.ProbabilisticMethod.Edge
+  - Lumenary.ProbabilisticMethod.Colouring
+  - Lumenary.ProbabilisticMethod.Monochromatic
+  - Lumenary.ProbabilisticMethod.card_edge
+  - Lumenary.ProbabilisticMethod.card_edges_inside
+  - Lumenary.ProbabilisticMethod.card_constant_on_le
+  - Lumenary.ProbabilisticMethod.card_monochromatic_le
+  - Lumenary.ProbabilisticMethod.factorial_sq_gt
+  - Lumenary.ProbabilisticMethod.erdos_arithmetic
+  - Lumenary.ProbabilisticMethod.erdos_ramsey_lower_bound
+  - Lumenary.ProbabilisticMethod.pentagon_colouring
+  - Lumenary.ProbabilisticMethod.cosh_le_exp_half_sq
+compute: [probabilistic_method_ramsey, probabilistic_method_chernoff, probabilistic_method_moser_tardos]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A colouring nobody can write down">
+
+Colour every edge of the complete graph $K_n$ red or blue. **Ramsey's theorem** says that if $n$ is large enough there is always a **monochromatic** $K_k$ — $k$ vertices all of whose connecting edges have the same colour. The least such $n$ is the **Ramsey number** $R(k, k)$. Among any six people there are three mutual acquaintances or three mutual strangers ($R(3, 3) = 6$); $R(4, 4) = 18$ (Greenwood and Gleason, 1955); and already $R(5, 5)$ is unknown — it lies between $43$ (Exoo, 1989) and $46$ (Angeltveit and McKay, 2024). Erdős and Szekeres (1935) showed $R(k, k) \leq \binom{2k-2}{k-1} < 4^k$, and after decades of small improvements Campos, Griffiths, Morris and Sahasrabudhe (2023) proved $R(k, k) \leq (4 - \varepsilon)^k$ for some $\varepsilon > 0$.
+
+For a **lower** bound we need, for large $n$, a colouring of $K_n$ with no monochromatic $K_k$. Nobody knows how to construct one with $n$ exponential in $k$: Erdős offered a prize for an explicit colouring with $n \geq (1 + \varepsilon)^k$, and the best explicit constructions are still far from exponential. Yet in 1947 Erdős proved in a few lines that such colourings exist with $n = 2^{k/2}$: **colour at random**. The expected number of monochromatic $K_k$ is less than $1$, so some colouring has none. This lower bound has not been improved exponentially since; only the constant factor has moved (Spencer, 1975, by the local lemma).
+
+That is the **probabilistic method**: to show an object with a property exists, define a probability distribution on objects and show that a random object has the property with positive probability. On a finite space it is a counting argument in disguise — the Lean proof below is pure counting — but the language of probability (independence, expectation, concentration) is what makes the counts tractable. This lesson assumes <TopicLink id="math.discrete.graph-theory">graph theory</TopicLink> (including $R(3, 3) = 6$) and <TopicLink id="math.prob.probability-theory">probability theory</TopicLink> (expectation, variance, Chebyshev's inequality).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Averages, deletions, and rare bad events">
+
+Five ideas organise the subject.
+
+1. **The first moment.** If $X \geq 0$ is integer-valued and $\mathbb{E}[X] < 1$, then $\mathbb{P}(X = 0) > 0$. If $\mathbb{E}[X] \geq c$, then $X \geq c$ for some outcome. Expectation is easy to compute because it is **linear**, with no independence needed: the expected number of bad configurations is the sum of their probabilities.
+2. **Alteration.** If a random object has a few defects, delete or repair them: a random colouring of $K_n$ with on average $E$ monochromatic $K_k$'s yields, after deleting a vertex from each, a good colouring on $n - E$ vertices.
+3. **The second moment.** To show that $X > 0$ *with high probability* it is not enough that $\mathbb{E}[X] \to \infty$; we also need $X$ to be concentrated: $\operatorname{Var}X = o(\mathbb{E}[X]^2)$.
+4. **The local lemma.** If bad events are individually unlikely and each depends on only a few others, then with positive (possibly tiny) probability none occurs — even when there are far too many for the union bound.
+5. **Concentration.** Sums of many independent small contributions are exponentially unlikely to deviate far from their mean (Chernoff), much better than Chebyshev's polynomial bound.
+
+The method proves existence, but its proofs often say little about *how* to find the object. Sometimes they do: if good objects are common, sampling finds one fast; the method of conditional expectations and the Moser–Tardos algorithm turn some proofs into deterministic or efficient algorithms.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="Ramsey numbers">
+
+$R(k, \ell)$ is the least $n$ such that every red/blue colouring of the edges of $K_n$ contains a red $K_k$ or a blue $K_\ell$. Equivalently, every graph on $n$ vertices contains a clique of size $k$ or an independent set of size $\ell$. So $R(k, k) > n$ means: *some* colouring of $K_n$ has no monochromatic $K_k$.
+
+</Definition>
+
+<Definition term="the random graph G(n, p)">
+
+$G(n, p)$ is the graph on $\{1, \dots, n\}$ in which each of the $\binom n2$ possible edges is present independently with probability $p$. $G(n, \frac12)$ is the uniform distribution on all $2^{\binom n2}$ graphs — equivalently, a uniformly random red/blue colouring of $K_n$. A property holds **with high probability** if its probability tends to $1$ as $n \to \infty$.
+
+</Definition>
+
+<Definition term="Markov's and Chebyshev's inequalities">
+
+For $X \geq 0$ and $a > 0$, $\mathbb{P}(X \geq a) \leq \mathbb{E}[X]/a$ (Markov). For any $X$ with finite variance, $\mathbb{P}(|X - \mathbb{E}X| \geq a) \leq \operatorname{Var}X/a^2$ (Chebyshev). Taking $a = 1$ in Markov for integer $X \geq 0$ gives the **first-moment method**: $\mathbb{P}(X \neq 0) \leq \mathbb{E}[X]$. Taking $a = \mathbb{E}X$ in Chebyshev gives the **second-moment method**: $\mathbb{P}(X = 0) \leq \operatorname{Var}X/(\mathbb{E}X)^2$.
+
+</Definition>
+
+<Definition term="dependency graph">
+
+Events $A_1, \dots, A_m$ have a **dependency graph** $D$ on $\{1, \dots, m\}$ if each $A_i$ is mutually independent of the family $\{A_j : j \neq i,\ j \not\sim i\}$ of events not adjacent to it. (Pairwise independence is not enough; mutual independence of $A_i$ from the whole family is required.) If all events are determined by independent random variables and $A_i$, $A_j$ are joined whenever they share a variable, this is a dependency graph.
+
+</Definition>
+
+<Definition term="girth, chromatic number, independence number">
+
+The **girth** of a graph is the length of its shortest cycle; the **chromatic number** $\chi(G)$ is the least number of colours in a proper vertex colouring; the **independence number** $\alpha(G)$ is the largest size of a set of pairwise non-adjacent vertices. Each colour class of a proper colouring is independent, so $\chi(G) \geq |V(G)|/\alpha(G)$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Warm-up examples">
+
+<Example title="Large cuts">
+
+Every graph with $m$ edges has a bipartition of its vertices that cuts at least $m/2$ edges. *Proof.* Put each vertex on side $0$ or $1$ by independent fair coin flips. An edge is cut with probability $\frac12$, so by linearity the expected number of cut edges is $m/2$, and some bipartition does at least as well as the average. Note that the indicator variables "edge $e$ is cut" are pairwise independent but not mutually independent (the three edges of a triangle cannot all be cut) — linearity does not care.
+
+</Example>
+
+<Example title="Tournaments with many Hamiltonian paths (Szele, 1943)">
+
+A **tournament** orients every edge of $K_n$. Orient each edge by a fair coin. For each of the $n!$ orderings $v_1, \dots, v_n$ of the vertices, the probability that $v_1 \to v_2 \to \cdots \to v_n$ is a directed path is $2^{-(n-1)}$. So the expected number of Hamiltonian paths is $n!/2^{n-1}$, and some tournament has at least that many — one of the first applications of the method.
+
+</Example>
+
+<Example title="Independent sets (Caro, 1979; Wei, 1981)">
+
+Every graph satisfies $\alpha(G) \geq \sum_v \frac{1}{d(v) + 1}$. *Proof.* Order the vertices uniformly at random and let $I$ be the set of vertices that come before all their neighbours. $I$ is independent, and $v \in I$ with probability $\frac{1}{d(v) + 1}$ (among $v$ and its $d(v)$ neighbours, each is equally likely to be first). So $\mathbb{E}|I| = \sum_v \frac{1}{d(v)+1}$. By convexity this is at least $\frac{n}{\bar d + 1}$, where $\bar d$ is the average degree — a form of Turán's theorem.
+
+</Example>
+
+<Example title="Two-colouring hypergraphs (Erdős, 1963)">
+
+A family of $m$ sets, each of size $k$, with $m < 2^{k-1}$, can be 2-coloured so that no set is monochromatic. *Proof.* Colour the points at random; each set is monochromatic with probability $2^{1-k}$, and the expected number of monochromatic sets is $m2^{1-k} < 1$. This is the same calculation as Theorem 1, with the $k$-sets of vertices replaced by arbitrary sets.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The main theorems">
+
+<Theorem name="Theorem 1 (Erdős, 1947)">
+
+If $\binom nk 2^{1 - \binom k2} < 1$, then $R(k, k) > n$. In particular $R(k, k) > \lfloor 2^{k/2}\rfloor$ for every $k \geq 3$.
+
+</Theorem>
+
+<Proof>
+
+Colour the edges of $K_n$ independently and uniformly at random. For a fixed set $S$ of $k$ vertices, the $\binom k2$ edges inside $S$ are all red with probability $2^{-\binom k2}$ and all blue with the same probability, so $\mathbb{P}(S \text{ monochromatic}) = 2^{1 - \binom k2}$. Let $X$ be the number of monochromatic $k$-sets. By linearity, $\mathbb{E}[X] = \binom nk 2^{1-\binom k2} < 1$, so $\mathbb{P}(X = 0) > 0$: some colouring has no monochromatic $K_k$, and $R(k, k) > n$.
+
+Now let $k \geq 3$ and $n = \lfloor 2^{k/2}\rfloor$, so $n^2 \leq 2^k$. Using $\binom nk \leq \frac{n^k}{k!}$ and $n^k \leq 2^{k^2/2}$,
+$$
+\binom nk 2^{1 - \binom k2} \leq \frac{2^{k^2/2}}{k!}\cdot 2^{1 - \frac{k^2}{2} + \frac k2} = \frac{2^{1 + k/2}}{k!} < 1,
+$$
+because $k! > 2^{1 + k/2}$ for $k \geq 3$, i.e. $(k!)^2 > 4 \cdot 2^k$: true for $k = 3$ ($36 > 32$), and each step multiplies the left side by $(k + 1)^2 \geq 16$ and the right side by $2$.
+
+</Proof>
+
+The Lean formalisation below proves exactly this, phrased as counting: at most $\binom nk \cdot 2 \cdot 2^{\binom n2 - \binom k2}$ of the $2^{\binom n2}$ colourings have a monochromatic $K_k$, and this is fewer than all of them. The proof gives no colouring — and for $k = 4$ it is weak (it shows only $R(4, 4) > 6$), while the explicit **Paley colouring** of $K_{17}$ (red when $i - j$ is a square mod $17$) shows $R(4, 4) > 17$. The first experiment checks both. For large $k$ the roles reverse: random colourings beat every known construction.
+
+<Theorem name="Theorem 2 (the deletion method)">
+
+For all $n$ and $k$, $R(k, k) > n - \binom nk 2^{1 - \binom k2}$. Choosing $n$ optimally gives $R(k, k) > \left(\tfrac1e + o(1)\right)k\,2^{k/2}$, a factor $\sqrt 2$ better than the best bound obtainable from Theorem 1, which is $\left(\tfrac{1}{e\sqrt 2} + o(1)\right)k\,2^{k/2}$.
+
+</Theorem>
+
+<Proof>
+
+With $X$ as above, $\mathbb{E}[X] = E := \binom nk 2^{1-\binom k2}$, so some colouring has $X \leq E$. Delete one vertex from each monochromatic $k$-set: at least $n - E$ vertices remain, and the colouring restricted to them has no monochromatic $K_k$. So $R(k, k) > n - E$. For the asymptotics, $\binom nk \leq (en/k)^k$ and one takes $n = \frac{k}{e}2^{k/2}(1 - o(1))$ chosen so that $E = o(n)$; see Alon–Spencer, §3.1.
+
+</Proof>
+
+<Theorem name="Theorem 3 (Erdős, 1959: high girth and high chromatic number)">
+
+For all integers $g, k \geq 3$ there is a graph with girth greater than $g$ and chromatic number greater than $k$.
+
+</Theorem>
+
+<Proof>
+
+Fix $0 < \theta < 1/g$, let $p = n^{\theta - 1}$ and consider $G \sim G(n, p)$ for large $n$.
+
+*Few short cycles.* Let $Y$ be the number of cycles of length at most $g$. A cycle of length $i$ is determined by an ordered sequence of $i$ distinct vertices up to $2i$ rotations and reflections, so
+$$
+\mathbb{E}[Y] = \sum_{i=3}^{g}\frac{(n)_i}{2i}p^i \leq \sum_{i=3}^g \frac{(np)^i}{2i} \leq g\,n^{\theta g} = o(n),
+$$
+since $\theta g < 1$. By Markov's inequality, $\mathbb{P}(Y \geq n/2) \leq \frac{2\,\mathbb{E}[Y]}{n} \to 0$.
+
+*No large independent sets.* Let $a = \lceil \frac{3}{p}\log n\rceil$. The probability that some $a$-set is independent is at most
+$$
+\binom na (1 - p)^{\binom a2} < \left(n\,e^{-p(a-1)/2}\right)^a \leq \left(n \cdot n^{-3/2}\, e^{p/2}\right)^a \to 0.
+$$
+
+*Deletion.* For large $n$ both bad events have probability less than $\frac12$, so some graph $G$ on $n$ vertices has $Y < n/2$ and $\alpha(G) < a$. Delete one vertex from each cycle of length at most $g$. The resulting graph $G^*$ has more than $n/2$ vertices, girth greater than $g$, and $\alpha(G^*) \leq \alpha(G) < a$. Therefore
+$$
+\chi(G^*) \geq \frac{|V(G^*)|}{\alpha(G^*)} > \frac{n/2}{a} \approx \frac{n^\theta}{6\log n} \to \infty,
+$$
+which exceeds $k$ for large $n$.
+
+</Proof>
+
+Explicit graphs with these properties were found later (Lovász, 1968, and, much more elegantly, the Ramanujan graphs of Lubotzky, Phillips and Sarnak, 1988), but the random proof came first and is still the simplest. Locally (within distance $g/2$ of any vertex) $G^*$ looks like a tree, yet globally it needs many colours: chromatic number is not a local property.
+
+<Theorem name="Theorem 4 (second moment: the threshold for triangles)">
+
+Let $X$ be the number of triangles in $G(n, p)$. If $np \to 0$ then $\mathbb{P}(X > 0) \to 0$; if $np \to \infty$ then $\mathbb{P}(X > 0) \to 1$. So $p = 1/n$ is a **threshold** for containing a triangle.
+
+</Theorem>
+
+<Proof>
+
+$X = \sum_T \mathbf{1}_T$ over the $\binom n3$ triples $T$, and $\mathbb{E}[X] = \binom n3 p^3 \sim (np)^3/6$. If $np \to 0$, $\mathbb{P}(X > 0) \leq \mathbb{E}[X] \to 0$ (first moment). If $np \to \infty$, compute
+$$
+\operatorname{Var}X = \sum_T \operatorname{Var}\mathbf{1}_T + \sum_{T \neq T'}\operatorname{Cov}(\mathbf{1}_T, \mathbf{1}_{T'}).
+$$
+The first sum is at most $\mathbb{E}[X]$. If $T, T'$ share at most one vertex they have no common edge, so $\mathbf{1}_T$ and $\mathbf{1}_{T'}$ are independent and the covariance is $0$. If they share two vertices (one edge), $\operatorname{Cov} \leq \mathbb{E}[\mathbf{1}_T\mathbf{1}_{T'}] = p^5$, and there are at most $n^4$ such ordered pairs. Hence $\operatorname{Var}X \leq \mathbb{E}[X] + n^4p^5$ and, by the second-moment method,
+$$
+\mathbb{P}(X = 0) \leq \frac{\operatorname{Var}X}{(\mathbb{E}X)^2} \leq \frac{1}{\mathbb{E}X} + \frac{n^4p^5}{\binom n3^2 p^6} = O\!\left(\frac{1}{(np)^3} + \frac{1}{n^2p}\right) \to 0.
+$$
+
+</Proof>
+
+Erdős and Rényi (1960) found such thresholds for many properties; at $p = c/n$ the random graph undergoes a **phase transition**: for $c < 1$ all components have $O(\log n)$ vertices, while for $c > 1$ a unique **giant component** with a positive fraction of the vertices appears.
+
+<Theorem name="Theorem 5 (the Lovász local lemma)">
+
+Let $A_1, \dots, A_m$ be events with dependency graph $D$. If there are numbers $x_1, \dots, x_m \in [0, 1)$ with
+$$
+\mathbb{P}(A_i) \leq x_i\prod_{j \sim i}(1 - x_j) \qquad\text{for all } i,
+$$
+then $\mathbb{P}\big(\bigcap_i \overline{A_i}\big) \geq \prod_i(1 - x_i) > 0$. **Symmetric form:** if every $\mathbb{P}(A_i) \leq p$, every vertex of $D$ has degree at most $d$, and $e\,p\,(d + 1) \leq 1$, then with positive probability no $A_i$ occurs.
+
+</Theorem>
+
+<Proof>
+
+*Claim:* for every $S \subseteq \{1, \dots, m\}$ and $i \notin S$ with $\mathbb{P}(\bigcap_{j \in S}\overline{A_j}) > 0$,
+$$
+\mathbb{P}\Big(A_i \,\Big|\, \bigcap_{j \in S}\overline{A_j}\Big) \leq x_i.
+$$
+We induct on $|S|$. Split $S = S_1 \cup S_2$ with $S_1 = \{j \in S : j \sim i\}$ and $S_2 = S \setminus S_1$, and write $B_1 = \bigcap_{S_1}\overline{A_j}$, $B_2 = \bigcap_{S_2}\overline{A_j}$. If $S_1 = \varnothing$, the conditional probability is $\mathbb{P}(A_i \mid B_2) = \mathbb{P}(A_i) \leq x_i$ by mutual independence. Otherwise
+$$
+\mathbb{P}(A_i \mid B_1 \cap B_2) = \frac{\mathbb{P}(A_i \cap B_1 \mid B_2)}{\mathbb{P}(B_1 \mid B_2)}.
+$$
+The numerator is at most $\mathbb{P}(A_i \mid B_2) = \mathbb{P}(A_i) \leq x_i\prod_{j \sim i}(1 - x_j)$. For the denominator, list $S_1 = \{j_1, \dots, j_r\}$; then
+$$
+\mathbb{P}(B_1 \mid B_2) = \prod_{t=1}^r\Big(1 - \mathbb{P}\big(A_{j_t} \,\big|\, B_2 \cap \overline{A_{j_1}} \cap \cdots \cap \overline{A_{j_{t-1}}}\big)\Big) \geq \prod_{t=1}^r(1 - x_{j_t}) \geq \prod_{j \sim i}(1 - x_j),
+$$
+by the induction hypothesis (each conditioning set has fewer than $|S|$ events). The ratio is at most $x_i$, proving the claim. (Positivity of the conditioning probabilities follows along the way from the same product formula.)
+
+Finally, $\mathbb{P}\big(\bigcap_{i=1}^m \overline{A_i}\big) = \prod_{i=1}^m\Big(1 - \mathbb{P}\big(A_i \,\big|\, \bigcap_{j < i}\overline{A_j}\big)\Big) \geq \prod_i(1 - x_i)$. For the symmetric form take $x_i = \frac{1}{d+1}$: then $x_i\prod_{j \sim i}(1 - x_j) \geq \frac{1}{d + 1}\left(1 - \frac{1}{d+1}\right)^d \geq \frac{1}{e(d + 1)} \geq p$, using $\left(1 + \frac1d\right)^d \leq e$.
+
+</Proof>
+
+The conclusion can be exponentially small — $\prod(1 - x_i)$ — which is why the union bound could not have found it.
+
+<Example title="Applications of the local lemma">
+
+- **Satisfiability.** A $k$-CNF formula in which each clause shares variables with at most $2^k/e - 1$ other clauses is satisfiable: under a uniform random assignment each clause fails with probability $p = 2^{-k}$, and $e\,p\,(d + 1) \leq 1$. No bound on the *number* of clauses is needed.
+- **Hypergraph colouring.** If every set of a family of $k$-sets meets at most $2^{k-1}/e - 1$ others, the family can be 2-coloured with no monochromatic set — compare the example above, which needed fewer than $2^{k-1}$ sets in total.
+- **Ramsey numbers (Spencer, 1975).** With the events "the $k$-set $S$ is monochromatic", two events are dependent only if the sets share an edge, so each depends on at most $\binom k2\binom{n}{k-2}$ others; the symmetric local lemma gives $R(k, k) > \left(\frac{\sqrt 2}{e} + o(1)\right)k\,2^{k/2}$ — still the best lower bound known, a factor $\sqrt 2$ better than the deletion bound and $2$ better than the first moment.
+
+</Example>
+
+<Theorem name="Theorem 6 (Chernoff bound for random signs)">
+
+Let $\varepsilon_1, \dots, \varepsilon_n$ be independent with $\mathbb{P}(\varepsilon_i = 1) = \mathbb{P}(\varepsilon_i = -1) = \frac12$, and $S = \varepsilon_1 + \cdots + \varepsilon_n$. For every $a > 0$,
+$$
+\mathbb{P}(S \geq a) < e^{-a^2/(2n)}, \qquad \mathbb{P}(|S| \geq a) < 2e^{-a^2/(2n)}.
+$$
+
+</Theorem>
+
+<Proof>
+
+For $\lambda > 0$, Markov's inequality applied to $e^{\lambda S}$ gives $\mathbb{P}(S \geq a) \leq e^{-\lambda a}\,\mathbb{E}[e^{\lambda S}]$. By independence, $\mathbb{E}[e^{\lambda S}] = \prod_i \mathbb{E}[e^{\lambda\varepsilon_i}] = (\cosh\lambda)^n$. Comparing Taylor series, $\cosh\lambda = \sum_k \frac{\lambda^{2k}}{(2k)!} \leq \sum_k \frac{\lambda^{2k}}{2^k k!} = e^{\lambda^2/2}$, because $(2k)! \geq 2^k k!$, with strict inequality for $\lambda \neq 0$ (as $(2k)! > 2^k k!$ for $k \geq 2$). So $\mathbb{P}(S \geq a) < e^{n\lambda^2/2 - \lambda a}$, and $\lambda = a/n$ gives $e^{-a^2/(2n)}$. By symmetry the same bound holds for $\mathbb{P}(S \leq -a)$, which gives the two-sided bound.
+
+</Proof>
+
+Compare Chebyshev: $\operatorname{Var}S = n$ gives only $\mathbb{P}(|S| \geq a) \leq n/a^2$. At $a = 10\sqrt n$ Chebyshev gives $0.01$ and Chernoff $2e^{-50} \approx 4 \cdot 10^{-22}$. The same exponential-moment method gives bounds for sums of independent bounded variables (Hoeffding, 1963) and for Bernoulli sums around their mean.
+
+<Theorem name="Corollary 7 (balancing sets)">
+
+For any $m$ subsets $A_1, \dots, A_m$ of an $n$-element set there is a colouring $\chi$ of the points by $\pm 1$ with $\big|\sum_{x \in A_j}\chi(x)\big| \leq \sqrt{2n\log(2m)}$ for every $j$.
+
+</Theorem>
+
+<Proof>
+
+Colour uniformly at random and let $\lambda = \sqrt{2n\log(2m)}$. For each $j$, $\chi(A_j)$ is a sum of $|A_j| \leq n$ random signs, so by Theorem 6, $\mathbb{P}(|\chi(A_j)| > \lambda) < 2e^{-\lambda^2/(2|A_j|)} \leq 2e^{-\lambda^2/(2n)} = \frac1m$. By the union bound, the probability that some set is unbalanced is less than $m \cdot \frac1m = 1$.
+
+</Proof>
+
+For $m = n$ this gives $O(\sqrt{n\log n})$. Spencer's "six standard deviations" theorem (1985) improves it to $6\sqrt n$, by a cleverer, partly non-random argument; Bansal (2010) and Lovett and Meka (2012) found efficient algorithms achieving $O(\sqrt n)$.
+
+<Theorem name="Theorem 8 (derandomisation, two ways)">
+
+1. **Conditional expectations.** A cut of size at least $m/2$ can be found deterministically in polynomial time: place the vertices one by one on the side that cuts at least as many of the edges to already-placed vertices.
+2. **Moser–Tardos (2010).** In the setting of the local lemma with events determined by independent variables: start from a random assignment and, while some bad event $A_i$ occurs, resample the variables of one such event. Under the hypothesis of Theorem 5, the expected total number of resamplings is at most $\sum_i \frac{x_i}{1 - x_i}$; in the symmetric case, at most $m/d$.
+
+</Theorem>
+
+*Proof of 1; 2 is cited.* Let $W$ be the expected number of cut edges when the unplaced vertices are coloured at random, given the placements so far; initially $W = m/2$. Placing the next vertex $v$ on side $0$ or $1$ changes $W$ to $W_0$ or $W_1$ with $W = \frac{W_0 + W_1}{2}$, so one choice does not decrease $W$; the greedy rule picks it (only the edges from $v$ to placed vertices change). At the end $W$ is the actual number of cut edges, which is at least $m/2$. The Moser–Tardos theorem is proved by an ingenious "witness tree" counting argument (Moser and Tardos, J. ACM 57, 2010; Alon–Spencer, §5.7). $\square$
+
+Conditional expectations also derandomise Theorem 1 — but only in time polynomial in $\binom nk$, which is not an "explicit construction" in the sense of Ramsey theory (where one wants to compute the colour of an edge in time polynomial in $\log n$).
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: first moments and an explicit colouring">
+
+**Expectation versus probability.** In a group of $23$ people the expected number of pairs sharing a birthday is $\binom{23}{2}/365 \approx 0.69 < 1$, yet the probability that at least one pair shares a birthday is about $0.507$. Both facts are consistent: Markov's inequality only says $\mathbb{P}(X \geq 1) \leq \mathbb{E}[X]$. Change $k$ and compare the simulated probability with the expected count $\binom k2/365$; the first moment is an upper bound that becomes useless once it exceeds $1$.
+
+<ChanceLab experiment="birthday" k={23} trials={2000} title="Shared birthdays: P(X ≥ 1) ≤ E[X]" subtitle="E[X] = C(k, 2)/365 pairs; the first-moment bound holds, but it is far from the truth once E[X] is large." />
+
+**An explicit colouring for small $k$.** Below, the edges of a pentagon are the red edges of $K_5$; the five missing edges (the pentagram) are blue. Neither colour class contains a triangle — check with the Degrees tab that every vertex has two red and two blue edges — so $R(3, 3) > 5$. The Lean file checks this by computation. For large $k$ no explicit colouring comes close to the random one.
+
+<GraphExplorer
+  nodes={["0", "1", "2", "3", "4"]}
+  edges={[[0, 1], [1, 2], [2, 3], [3, 4], [4, 0]]}
+  positions={[[0, -1], [0.95, -0.31], [0.59, 0.81], [-0.59, 0.81], [-0.95, -0.31]]}
+  modes={["degrees", "colour"]}
+  title="The pentagon colouring of K₅"
+  subtitle="Drawn edges are red, missing edges blue: no monochromatic triangle, so R(3, 3) > 5."
+/>
+
+</Section>
+
+<Section id="formal" kind="formal" title="A complete formal proof of Erdős's theorem">
+
+On a finite probability space with the uniform distribution, every probabilistic argument is a counting argument, and Lean checks counting arguments well. We first formalise the three counting principles behind the method — the union bound (first moment), averaging, and Markov's inequality:
+
+<Lean decl="Lumenary.ProbabilisticMethod.exists_avoiding" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.exists_ge_average" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.markov_count" />
+
+Then the probability space of Theorem 1: edges of $K_n$, colourings, and monochromatic sets.
+
+<Lean decl="Lumenary.ProbabilisticMethod.Edge" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.Colouring" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.Monochromatic" />
+
+The counting steps: $K_n$ has $\binom n2$ edges, a $k$-set spans $\binom k2$ of them, and therefore a fixed $k$-set is monochromatic in at most $2 \cdot 2^{\binom n2 - \binom k2}$ colourings — the formal version of $\mathbb{P}(S\text{ monochromatic}) = 2^{1 - \binom k2}$:
+
+<Lean decl="Lumenary.ProbabilisticMethod.card_edge" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.card_edges_inside" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.card_constant_on_le" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.card_monochromatic_le" />
+
+The arithmetic of Theorem 1, and the theorem itself — $R(k, k) > n$ whenever $k \geq 3$ and $n^2 \leq 2^k$:
+
+<Lean decl="Lumenary.ProbabilisticMethod.factorial_sq_gt" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.erdos_arithmetic" />
+
+<Lean decl="Lumenary.ProbabilisticMethod.erdos_ramsey_lower_bound" />
+
+By contrast, for tiny cases a computer can simply check an explicit colouring:
+
+<Lean decl="Lumenary.ProbabilisticMethod.pentagon_colouring" />
+
+Finally, the analytic inequality at the heart of the Chernoff bound (Theorem 6), from Mathlib:
+
+<Lean decl="Lumenary.ProbabilisticMethod.cosh_le_exp_half_sq" />
+
+**What is and is not formalised.** Proved here, completely: Erdős's theorem $R(k, k) > n$ for $n^2 \leq 2^k$, $k \geq 3$ (Theorem 1), through the union bound on the uniform space of colourings, with no probability theory beyond counting; the averaging principle and Markov's inequality for counting measure; and $R(3, 3) > 5$ by computation. From Mathlib: finite cardinalities and binomial bounds, and $\cosh x \leq e^{x^2/2}$. Not formalised: the deletion method, Theorems 3–6 and Corollary 7 as probabilistic statements (Mathlib's measure-theoretic probability can express them, but we have not done so), and the Moser–Tardos analysis. Note that the formal proof, like the human one, does not produce a colouring: it proves an existence statement by counting.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Coin flips, counted">
+
+The first experiment tabulates the first-moment and deletion bounds for $R(k, k)$, simulates random colourings of $K_6$ to see the guarantee $\mathbb{P}(\text{no monochromatic } K_4) \geq 1 - \mathbb{E}[X]$ in action, and verifies exhaustively that the Paley colouring of $K_{17}$ has no monochromatic $K_4$.
+
+<Python id="probabilistic_method_ramsey" />
+
+The second compares Chebyshev's and Chernoff's bounds with the exact tail of a sum of random signs, and checks Corollary 7 on random set systems.
+
+<Python id="probabilistic_method_chernoff" />
+
+The third builds a random $5$-CNF formula satisfying the hypothesis of the symmetric local lemma and runs the Moser–Tardos algorithm: it finds a satisfying assignment after a handful of resamplings, while the local lemma itself only guarantees that a uniformly random assignment succeeds with probability at least about $10^{-6}$.
+
+<Python id="probabilistic_method_moser_tardos" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A probabilistic existence proof tells us how to build the object efficiently."** Often it does not. Erdős's proof shows that most colourings of $K_n$ with $n = 2^{k/2}$ have no monochromatic $K_k$, but no explicit colouring anywhere near this size is known, and checking a given colouring takes time about $\binom nk$. When good objects are plentiful, random sampling is a fine *randomised* algorithm — but it is not a construction, and verifying the output may be infeasible. Sometimes derandomisation succeeds (conditional expectations for cuts; Moser–Tardos for the local lemma), and sometimes, as for Ramsey graphs, it is a famous open problem.
+
+</Misconception>
+
+<Misconception>
+
+**"Linearity of expectation needs independence."** It does not: $\mathbb{E}[X + Y] = \mathbb{E}X + \mathbb{E}Y$ for any random variables with finite expectations. In the max-cut example the events "edge $e$ is cut" are dependent, and in Theorem 1 the events "$S$ is monochromatic" overlap heavily; linearity is exactly what lets us ignore these dependencies. Independence is needed for *variances of sums* and for multiplying probabilities.
+
+</Misconception>
+
+<Misconception>
+
+**"If $\mathbb{E}[X] \to \infty$ then $X > 0$ with high probability."** Not without concentration: if $X = n^2$ with probability $1/n$ and $0$ otherwise, then $\mathbb{E}X = n \to \infty$ but $\mathbb{P}(X = 0) \to 1$. The second-moment method (Theorem 4) supplies the missing condition $\operatorname{Var}X = o\big((\mathbb{E}X)^2\big)$. Conversely, $\mathbb{E}[X] < 1$ shows $\mathbb{P}(X = 0) > 0$ but need not show that it is close to $1$.
+
+</Misconception>
+
+<Misconception>
+
+**"Probabilistic proofs are heuristic, or only true 'with high probability'."** The conclusions are ordinary, certain theorems — "there exists a colouring with no monochromatic $K_k$" — proved by computing probabilities on a precisely defined space. On finite spaces they are counting arguments, as the Lean proof shows. (Heuristic probabilistic *models*, such as Cramér's model of the primes, are a different thing and must be labelled as such.)
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="combinatorics" title="Weighted counting and double counting">
+
+Every argument on a finite uniform space is double counting: "$\mathbb{E}[X] = \sum_S \mathbb{P}(S \text{ bad})$" is the identity $\sum_{\text{colourings}}\#\{\text{bad } S\} = \sum_S \#\{\text{colourings making } S \text{ bad}\}$, and Theorem 1 says the right-hand side is less than the number of colourings. Non-uniform distributions such as $G(n, p)$ are **weighted** counts, and the weights are a tuning parameter: Theorem 3 works only because $p = n^{\theta - 1}$ balances short cycles against independent sets. The method interacts with extremal combinatorics everywhere: the Kővári–Sós–Turán bounds for bipartite Turán numbers are matched (for some graphs) by random algebraic constructions, the **semi-random method** of Rödl ("nibble") gives near-perfect packings and designs, and Kim (1995) used it to determine $R(3, t)$ up to a constant factor, $R(3, t) \asymp t^2/\log t$ (upper bound by Ajtai, Komlós and Szemerédi, 1980). See <TopicLink id="math.discrete.additive-extremal-combinatorics">extremal and additive combinatorics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random structures as the subject">
+
+What began as a proof technique became a field: the study of typical properties of random graphs, random matrices and random formulas. Thresholds (Theorem 4) are a general phenomenon — every monotone graph property has a threshold (Bollobás and Thomason, 1987), and the "expectation threshold" conjecture of Kahn and Kalai was proved by Park and Pham (2022). Concentration inequalities (Chernoff, Azuma, Talagrand) show that complicated functions of many independent variables — the chromatic number of $G(n, \frac12)$, the length of the longest increasing subsequence — are sharply concentrated. The phase transition of $G(n, c/n)$ at $c = 1$ resembles percolation in statistical physics (see <TopicLink id="math.prob.random-geometry">random structures</TopicLink> and <TopicLink id="math.prob.stochastic-processes">stochastic processes</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Randomness, derandomisation and pseudorandomness">
+
+In computer science the probabilistic method is everywhere: random algorithms (randomised rounding of linear programs, Raghavan and Thompson, 1987; primality testing; hashing), and the question of when randomness can be removed. Conditional expectations with **pessimistic estimators** (Raghavan, 1988) derandomise many Chernoff-bound arguments; Moser and Tardos derandomised the local lemma in the sense of efficient randomised algorithms, and later work made it deterministic in many cases. The harder goal — **explicit** objects as good as random ones — connects to complexity theory: explicit Ramsey graphs are closely related to randomness **extractors**, and expander graphs and error-correcting codes with random-like properties now have explicit constructions. Whether every efficient randomised algorithm can be derandomised (P = BPP) is open, though widely believed (see <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Random projections and high-dimensional geometry">
+
+The **Johnson–Lindenstrauss lemma** (1984): any $N$ points in a Euclidean space can be mapped into $\R^k$ with $k = O(\varepsilon^{-2}\log N)$ so that all pairwise distances change by a factor at most $1 \pm \varepsilon$. The proof is the probabilistic method: a random linear projection works with positive probability, because the length of a projected vector is sharply concentrated (a Chernoff-type bound for sums of squared Gaussians) and there are only $\binom N2$ distances to control. More generally, **concentration of measure** on high-dimensional spheres (Lévy; Milman) says that a Lipschitz function is almost constant on most of the sphere, which gives Dvoretzky's theorem — every high-dimensional convex body has almost-spherical sections of dimension about $\log n$ — by choosing a random subspace. In high dimensions, random choices are the source of most good geometric configurations.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Zero–one laws">
+
+For a property expressible in **first-order logic** of graphs (quantifiers over vertices, adjacency and equality), the probability that $G(n, \frac12)$ has the property tends to $0$ or $1$ (Glebskii, Kogan, Liogon'kii and Talanov, 1969; Fagin, 1976). The proof is model-theoretic: the "extension axioms" — for all disjoint finite sets $U, W$ there is a vertex adjacent to all of $U$ and none of $W$ — each hold with high probability by a first-moment computation, and together they axiomatise a complete theory, that of the countable **random graph** (Rado graph). So "having a triangle" has limiting probability $1$, while non-first-order properties such as "having an even number of edges" can have other limits ($\frac12$). See <TopicLink id="math.found.model-theory">model theory</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Tibor Szele** (1943) used random tournaments to show that some tournament has at least $n!/2^{n-1}$ Hamiltonian paths. **Claude Shannon**'s random coding argument (1948) proved the existence of codes achieving channel capacity by averaging over random codes — a cornerstone of information theory and an early masterpiece of the method.
+- **Paul Erdős** (1947) proved $R(k, k) > 2^{k/2}$, and (1959) the existence of graphs of large girth and chromatic number; with **Alfréd Rényi** (1959–60) he founded the theory of random graphs. Erdős's many problems, often with cash prizes, kept the method at the centre of combinatorics.
+- **Herman Chernoff** (1952) introduced the exponential-moment bounds now named after him (related bounds go back to Bernstein); **Wassily Hoeffding** (1963) gave the general bounded-variable form. **László Lovász** and Erdős (1975) proved the local lemma, published in a paper on hypergraph colouring; **Joel Spencer** (1975) applied it to Ramsey numbers and (1985) proved that six standard deviations suffice for discrepancy.
+- **Noga Alon** and Spencer's *The Probabilistic Method* (1992) made the subject a standard graduate course. **Jeong Han Kim** (1995) determined $R(3, t)$ up to a constant factor with the semi-random method; **Robin Moser** (2009) and Moser and **Gábor Tardos** (2010) made the local lemma algorithmic; **Nikhil Bansal** (2010) did the same for Spencer's discrepancy theorem.
+- On Ramsey numbers: **Greenwood** and **Gleason** (1955) found $R(4, 4) = 18$; **Geoffrey Exoo** (1989) showed $R(5, 5) \geq 43$; **Vigleik Angeltveit** and **Brendan McKay** (2024) showed $R(5, 5) \leq 46$ with large computations; **Marcelo Campos**, **Simon Griffiths**, **Robert Morris** and **Julian Sahasrabudhe** (2023) gave the first exponential improvement of the Erdős–Szekeres upper bound.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Noga Alon and Joel H. Spencer, *The Probabilistic Method* (1992; 4th ed. 2016) — the standard text, with Erdős's theorems, the local lemma, concentration, random graphs and derandomisation.
+- Joel Spencer, *Ten Lectures on the Probabilistic Method* (1987; 2nd ed. 1994) — short, sparkling lectures.
+- Michael Molloy and Bruce Reed, *Graph Colouring and the Probabilistic Method* (2002) — the local lemma and concentration in action.
+- Béla Bollobás, *Random Graphs* (1985; 2nd ed. 2001), and Svante Janson, Tomasz Łuczak and Andrzej Ruciński, *Random Graphs* (2000) — thresholds, phase transitions and the giant component.
+- Michael Mitzenmacher and Eli Upfal, *Probability and Computing* (2005) — the method from the algorithmic side, including Chernoff bounds and the Moser–Tardos algorithm (2nd ed., 2017).
+
+</Section>

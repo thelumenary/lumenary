@@ -1,0 +1,507 @@
+---
+slug: first-order-logic
+topic: math.found.first-order-logic
+title: First-order logic
+subtitle: The precise language of "for all" and "there exists" — signatures, structures, Tarski's definition of truth and a proof system — with a proof that everything provable is true, and a first look at why the converse holds too.
+level: ug1
+ages: Undergraduate
+minutes: 120
+order: 5001
+objectives:
+  - Write first-order formulas in a given signature, such as the axioms for groups, linear orders and fields, and recognise statements that are not first-order
+  - Decide whether a sentence is true in a given structure by unwinding the definition of satisfaction
+  - Use natural deduction to derive simple consequences, and prove the soundness theorem $\Gamma \vdash \varphi \Rightarrow \Gamma \models \varphi$
+  - Prove that isomorphic structures satisfy the same sentences, and use sentences and countermodels to show non-isomorphism and non-derivability
+  - State Gödel's completeness theorem and distinguish $\models$ from $\vdash$
+narrators: []
+lean:
+  - Lumenary.FirstOrderLogic.Signature
+  - Lumenary.FirstOrderLogic.Term
+  - Lumenary.FirstOrderLogic.Formula
+  - Lumenary.FirstOrderLogic.Structure
+  - Lumenary.FirstOrderLogic.cons
+  - Lumenary.FirstOrderLogic.Term.eval
+  - Lumenary.FirstOrderLogic.Formula.Realize
+  - Lumenary.FirstOrderLogic.Formula.Holds
+  - Lumenary.FirstOrderLogic.GroupFunc
+  - Lumenary.FirstOrderLogic.groupAxioms
+  - Lumenary.FirstOrderLogic.intAdd
+  - Lumenary.FirstOrderLogic.intAdd_group
+  - Lumenary.FirstOrderLogic.Term.subst
+  - Lumenary.FirstOrderLogic.up
+  - Lumenary.FirstOrderLogic.inst
+  - Lumenary.FirstOrderLogic.Formula.subst
+  - Lumenary.FirstOrderLogic.Formula.shift
+  - Lumenary.FirstOrderLogic.Term.eval_subst
+  - Lumenary.FirstOrderLogic.Formula.realize_subst
+  - Lumenary.FirstOrderLogic.Formula.realize_shift
+  - Lumenary.FirstOrderLogic.Formula.realize_inst
+  - Lumenary.FirstOrderLogic.Derivable
+  - Lumenary.FirstOrderLogic.soundness
+  - Lumenary.FirstOrderLogic.all_imp_ex
+  - Lumenary.FirstOrderLogic.boolP
+  - Lumenary.FirstOrderLogic.ex_imp_all_not_derivable
+  - Lumenary.FirstOrderLogic.Iso
+  - Lumenary.FirstOrderLogic.Iso.realize
+  - Lumenary.FirstOrderLogic.Iso.holds_iff
+  - Lumenary.FirstOrderLogic.hasLeast
+  - Lumenary.FirstOrderLogic.nat_hasLeast
+  - Lumenary.FirstOrderLogic.int_not_hasLeast
+  - Lumenary.FirstOrderLogic.nat_not_iso_int
+  - Lumenary.FirstOrderLogic.iso_sentence_library
+compute: [first_order_logic_finite_models]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Saying exactly what we mean">
+
+A function $f : \R \to \R$ is **continuous** if
+
+$$
+\forall x\ \forall \varepsilon > 0\ \exists \delta > 0\ \forall y\ \big( |x - y| < \delta \to |f(x) - f(y)| < \varepsilon \big),
+$$
+
+and **uniformly continuous** if
+
+$$
+\forall \varepsilon > 0\ \exists \delta > 0\ \forall x\ \forall y\ \big( |x - y| < \delta \to |f(x) - f(y)| < \varepsilon \big).
+$$
+
+The only difference is where "$\forall x$" stands — and $x \mapsto x^2$ is continuous but not uniformly continuous. In the lesson on <TopicLink id="math.found.propositional-logic">propositional logic</TopicLink> you made "and", "or", "not" and "if … then" exact. This lesson does the same for the **quantifiers** "for all" and "there exists", which carry most of the weight in mathematical statements.
+
+There is a second motive. In the 1920s David Hilbert asked questions *about* mathematics itself: can every true statement be proved? Is there an algorithm that decides whether a statement follows from axioms? To answer such questions — and they were answered, by Gödel, Church and Turing — statements and proofs must themselves become mathematical objects. First-order logic is the language in which this was done, and in which most of mathematics, through the axioms of <TopicLink id="math.found.zfc">ZFC</TopicLink>, can be written.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Syntax, meaning and proof">
+
+First-order logic has three layers.
+
+1. **Syntax.** Formulas are strings of symbols, built by rules, like $\forall x\, \exists y\, (y < x)$. On their own they mean nothing.
+2. **Semantics.** A **structure** gives the symbols a meaning: a set of elements for the quantifiers to range over, and an actual relation for $<$. The sentence above is *true* in $(\Z, <)$ — below every integer there is another — and *false* in $(\N, <)$, where nothing lies below $0$. Truth is always truth *in a structure*.
+3. **Proof.** A proof system manipulates formulas by rules, without looking at any structure.
+
+This gives two notions of "$\varphi$ follows from $\Gamma$": $\Gamma \models \varphi$ (**semantic consequence**: $\varphi$ is true in every structure in which all of $\Gamma$ is true) and $\Gamma \vdash \varphi$ (**derivability**: there is a formal proof). The **soundness theorem**, proved in this lesson, says $\vdash$ implies $\models$: proofs never lead from truth to falsehood. The **completeness theorem** of Kurt Gödel (1929) says that conversely $\models$ implies $\vdash$. That these two very different notions coincide is one of the great facts of logic.
+
+The word "first-order" refers to what the quantifiers range over: **elements** of the structure — never subsets, functions or relations on it. That restriction is what makes the beautiful theorems of first-order logic true, and also what limits its expressive power.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="The language and its meaning">
+
+<Definition term="signature">
+
+A **signature** $L$ consists of **constant symbols**, **function symbols** and **relation symbols**, each function and relation symbol with an **arity** (number of arguments) $n \ge 1$.
+
+</Definition>
+
+Examples: the signature of groups $\{\cdot, e, {}^{-1}\}$ (binary function, constant, unary function); of orders $\{<\}$ (binary relation); of graphs $\{E\}$; of rings $\{+, \cdot, -, 0, 1\}$; of set theory $\{\in\}$. The symbol $=$ and the logical symbols $\bot, \neg, \wedge, \vee, \to, \forall, \exists$, brackets and the variables $x_0, x_1, \dots$ are always available.
+
+<Definition term="terms and formulas">
+
+**Terms** are built from variables and constants by applying function symbols: if $f$ is $n$-ary and $t_1, \dots, t_n$ are terms, so is $f(t_1, \dots, t_n)$.
+**Atomic formulas** are $\bot$, $t_1 = t_2$, and $R(t_1, \dots, t_n)$ for an $n$-ary relation symbol $R$.
+**Formulas** are built from atomic formulas: if $\varphi, \psi$ are formulas and $x$ is a variable, then $\neg \varphi$, $(\varphi \wedge \psi)$, $(\varphi \vee \psi)$, $(\varphi \to \psi)$, $\forall x\, \varphi$ and $\exists x\, \varphi$ are formulas.
+
+</Definition>
+
+An occurrence of $x$ in $\varphi$ is **bound** if it lies inside a part $\forall x\, \psi$ or $\exists x\, \psi$, and **free** otherwise. A **sentence** is a formula with no free variables. In $\exists y\, (y \cdot y = x)$ the variable $y$ is bound and $x$ is free: the formula says something about $x$ ("$x$ is a square"), not about $y$.
+
+<Definition term="structure">
+
+An **$L$-structure** $\mathcal{M}$ is a **non-empty** set $M$ (the domain) together with an element $c^{\mathcal{M}} \in M$ for each constant symbol, a function $f^{\mathcal{M}} : M^n \to M$ for each $n$-ary function symbol, and a relation $R^{\mathcal{M}} \subseteq M^n$ for each $n$-ary relation symbol.
+
+</Definition>
+
+An **assignment** is a function $s$ from the variables to $M$. The **value** $t^{\mathcal{M}}[s]$ of a term is computed in the obvious way: $x^{\mathcal{M}}[s] = s(x)$, $c^{\mathcal{M}}[s] = c^{\mathcal{M}}$ and $f(t_1, \dots, t_n)^{\mathcal{M}}[s] = f^{\mathcal{M}}(t_1^{\mathcal{M}}[s], \dots, t_n^{\mathcal{M}}[s])$. For $a \in M$, write $s[x \mapsto a]$ for the assignment that agrees with $s$ except that it sends $x$ to $a$.
+
+<Definition term="satisfaction (Tarski)">
+
+The relation $\mathcal{M} \models \varphi[s]$ ("$\varphi$ is true in $\mathcal{M}$ under $s$") is defined by recursion on $\varphi$:
+
+- $\mathcal{M} \not\models \bot[s]$;
+- $\mathcal{M} \models (t_1 = t_2)[s]$ iff $t_1^{\mathcal{M}}[s] = t_2^{\mathcal{M}}[s]$;
+- $\mathcal{M} \models R(t_1, \dots, t_n)[s]$ iff $(t_1^{\mathcal{M}}[s], \dots, t_n^{\mathcal{M}}[s]) \in R^{\mathcal{M}}$;
+- $\neg, \wedge, \vee, \to$ are interpreted by their truth tables;
+- $\mathcal{M} \models \forall x\, \varphi[s]$ iff $\mathcal{M} \models \varphi[s[x \mapsto a]]$ for **every** $a \in M$;
+- $\mathcal{M} \models \exists x\, \varphi[s]$ iff $\mathcal{M} \models \varphi[s[x \mapsto a]]$ for **some** $a \in M$.
+
+</Definition>
+
+The truth of $\varphi$ depends only on the values of $s$ at the free variables of $\varphi$ (Lemma 1 below). So for a sentence $\sigma$ we simply write $\mathcal{M} \models \sigma$, "$\sigma$ is true in $\mathcal{M}$", or "$\mathcal{M}$ is a **model** of $\sigma$".
+
+<Definition term="models and consequence">
+
+A **theory** is a set $\Gamma$ of sentences; a **model** of $\Gamma$ is a structure in which every sentence of $\Gamma$ is true. $\Gamma \models \varphi$ (**$\varphi$ is a semantic consequence of $\Gamma$**) means: for every structure $\mathcal{M}$ and every assignment $s$, if $\mathcal{M} \models \gamma[s]$ for all $\gamma \in \Gamma$, then $\mathcal{M} \models \varphi[s]$. A formula is **valid**, $\models \varphi$, if it is true in every structure under every assignment.
+
+</Definition>
+
+### Substitution
+
+We write $\varphi[t/x]$ for the result of replacing the free occurrences of $x$ in $\varphi$ by the term $t$. There is a trap: in $\varphi = \exists y\, \neg(y = x)$ ("something differs from $x$"), naively substituting $y$ for $x$ gives $\exists y\, \neg(y = y)$, which is false everywhere — the $y$ we put in was **captured** by the quantifier. Substitution must avoid capture, by renaming bound variables first: $\exists z\, \neg(z = y)$. We always assume this has been done. (The Lean formalisation avoids the issue altogether with *de Bruijn indices*, see below.)
+
+### Natural deduction
+
+A **derivation** shows a **sequent** $\Gamma \vdash \varphi$ ("$\varphi$ follows from the assumptions $\Gamma$") using the rules below. One introduction and one elimination rule per symbol, plus classical reductio. We write $\Gamma, \psi$ for $\Gamma \cup \{\psi\}$ and $\neg\varphi$ for $\varphi \to \bot$.
+
+| Rule | From | Infer |
+| --- | --- | --- |
+| assumption | — | $\Gamma \vdash \varphi$ when $\varphi \in \Gamma$ |
+| $\to$I | $\Gamma, \varphi \vdash \psi$ | $\Gamma \vdash \varphi \to \psi$ |
+| $\to$E | $\Gamma \vdash \varphi \to \psi$ and $\Gamma \vdash \varphi$ | $\Gamma \vdash \psi$ |
+| $\wedge$I | $\Gamma \vdash \varphi$ and $\Gamma \vdash \psi$ | $\Gamma \vdash \varphi \wedge \psi$ |
+| $\wedge$E | $\Gamma \vdash \varphi \wedge \psi$ | $\Gamma \vdash \varphi$, and $\Gamma \vdash \psi$ |
+| $\vee$I | $\Gamma \vdash \varphi$ (or $\Gamma \vdash \psi$) | $\Gamma \vdash \varphi \vee \psi$ |
+| $\vee$E | $\Gamma \vdash \varphi \vee \psi$, $\ \Gamma, \varphi \vdash \chi$, $\ \Gamma, \psi \vdash \chi$ | $\Gamma \vdash \chi$ |
+| $\bot$E | $\Gamma \vdash \bot$ | $\Gamma \vdash \varphi$ |
+| RAA | $\Gamma, \neg\varphi \vdash \bot$ | $\Gamma \vdash \varphi$ |
+| $\forall$I | $\Gamma \vdash \varphi[y/x]$, $y$ not free in $\Gamma$ or in $\forall x\, \varphi$ | $\Gamma \vdash \forall x\, \varphi$ |
+| $\forall$E | $\Gamma \vdash \forall x\, \varphi$ | $\Gamma \vdash \varphi[t/x]$ for any term $t$ |
+| $\exists$I | $\Gamma \vdash \varphi[t/x]$ for some term $t$ | $\Gamma \vdash \exists x\, \varphi$ |
+| $\exists$E | $\Gamma \vdash \exists x\, \varphi$ and $\Gamma, \varphi[y/x] \vdash \psi$, $y$ not free in $\Gamma$, $\psi$ or $\exists x\, \varphi$ | $\Gamma \vdash \psi$ |
+| $=$I | — | $\Gamma \vdash t = t$ |
+| $=$E | $\Gamma \vdash s = t$ and $\Gamma \vdash \varphi[s/x]$ | $\Gamma \vdash \varphi[t/x]$ |
+
+The side conditions on $\forall$I and $\exists$E (the **eigenvariable conditions**) formalise familiar habits: "let $y$ be arbitrary" is only legitimate if nothing has been assumed about $y$; and "let $y$ be such an element" must not let $y$ leak into the conclusion. $\Gamma \vdash \varphi$ for a set $\Gamma$ means that $\Gamma_0 \vdash \varphi$ is derivable for some finite $\Gamma_0 \subseteq \Gamma$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Writing and reading formulas">
+
+<Example title="Axioms as sentences">
+
+- **Groups** (signature $\{\cdot, e, {}^{-1}\}$): $\forall x\, \forall y\, \forall z\ (x \cdot y) \cdot z = x \cdot (y \cdot z)$; $\ \forall x\ (x \cdot e = x \wedge e \cdot x = x)$; $\ \forall x\ (x \cdot x^{-1} = e \wedge x^{-1} \cdot x = e)$.
+- **Strict linear orders** ($\{<\}$): $\forall x\, \neg(x < x)$; $\ \forall x\, \forall y\, \forall z\, (x < y \wedge y < z \to x < z)$; $\ \forall x\, \forall y\, (x < y \vee x = y \vee y < x)$.
+- **Fields** ($\{+, \cdot, -, 0, 1\}$): the commutative ring axioms, $\neg(0 = 1)$, and $\forall x\, (\neg(x = 0) \to \exists y\ x \cdot y = 1)$.
+- **"There are at least three elements"**: $\exists x\, \exists y\, \exists z\, (\neg x = y \wedge \neg x = z \wedge \neg y = z)$ — a sentence in the empty signature.
+- **Graphs** ($\{E\}$): "no vertex is isolated" is $\forall x\, \exists y\, E(x, y)$; "there is no triangle" is $\neg \exists x\, \exists y\, \exists z\, (E(x, y) \wedge E(y, z) \wedge E(x, z))$.
+
+</Example>
+
+<Example title="Unwinding satisfaction">
+
+Let $\mathcal{C} = (\{1, 2, 3\}, E)$ be the directed 3-cycle, $E = \{(1, 2), (2, 3), (3, 1)\}$.
+
+- $\mathcal{C} \models \forall x\, \exists y\, E(x, y)$: for $x = 1, 2, 3$ choose $y = 2, 3, 1$.
+- $\mathcal{C} \not\models \exists y\, \forall x\, E(x, y)$: for any $y$, the choice $x = y$ fails, since $E$ has no loops. Swapping the quantifiers changed the truth value.
+- $\mathcal{C} \models \forall x\, \forall y\, (E(x, y) \to \neg E(y, x))$: no edge is reversed.
+
+In $(\N, <)$, $\ \exists x\, \forall y\, \neg(y < x)$ ("there is a least element") is true (take $x = 0$); in $(\Z, <)$ it is false (for any $x$, take $y = x - 1$). In $(\Q, <)$, $\ \forall x\, \forall y\, (x < y \to \exists z\, (x < z \wedge z < y))$ ("density") is true (take $z = (x + y)/2$); in $(\Z, <)$ it is false ($x = 0$, $y = 1$).
+
+</Example>
+
+<Example title="What first-order logic cannot say directly">
+
+"Every non-empty **subset** has a least element" (the well-ordering of $\N$) quantifies over subsets; it is a *second-order* statement. First-order arithmetic replaces it by a **schema**: one induction axiom $\big(\varphi(0) \wedge \forall n\, (\varphi(n) \to \varphi(n + 1))\big) \to \forall n\, \varphi(n)$ for each formula $\varphi$. This covers only the subsets that a formula can define, and it is genuinely weaker: by the compactness theorem, first-order arithmetic has non-standard models (see <TopicLink id="math.found.completeness-theorem">completeness and compactness</TopicLink>). Similarly "the domain is finite" and "the graph is connected" cannot be expressed by any set of first-order sentences, and "the graph can be properly coloured with three colours" needs "there **exist** three sets of vertices such that …" — an existential second-order statement.
+
+</Example>
+
+<Example title="A derivation">
+
+We derive $\forall x\, (P(x) \to Q(x)),\ \forall x\, P(x) \vdash \forall x\, Q(x)$. Let $\Gamma$ be the two assumptions and $y$ a variable not occurring in them.
+
+1. $\Gamma \vdash \forall x\, (P(x) \to Q(x))$ — assumption.
+2. $\Gamma \vdash P(y) \to Q(y)$ — $\forall$E on 1, with $t = y$.
+3. $\Gamma \vdash \forall x\, P(x)$ — assumption.
+4. $\Gamma \vdash P(y)$ — $\forall$E on 3.
+5. $\Gamma \vdash Q(y)$ — $\to$E on 2 and 4.
+6. $\Gamma \vdash \forall x\, Q(x)$ — $\forall$I on 5; allowed because $y$ is not free in $\Gamma$.
+
+This is the formal version of "let $y$ be arbitrary; then $P(y)$, hence $Q(y)$; since $y$ was arbitrary, $Q$ holds for all".
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Soundness and invariance">
+
+Two lemmas about the semantics come first. Both are proved by induction on terms and formulas, and both are formalised in Lean below.
+
+<Theorem name="Lemma 1 (coincidence)">
+
+If assignments $s$ and $s'$ agree on the free variables of $\varphi$, then $\mathcal{M} \models \varphi[s]$ iff $\mathcal{M} \models \varphi[s']$.
+
+</Theorem>
+
+<Proof>
+
+For terms, $t^{\mathcal{M}}[s] = t^{\mathcal{M}}[s']$ when $s, s'$ agree on the variables of $t$ (induction on $t$). For formulas, induction on $\varphi$: atomic formulas by the term case; connectives directly; and for $\forall x\, \psi$, the assignments $s[x \mapsto a]$ and $s'[x \mapsto a]$ agree on the free variables of $\psi$ (those of $\forall x\, \psi$, plus $x$), so the induction hypothesis applies for every $a$. The case $\exists$ is the same.
+
+</Proof>
+
+<Theorem name="Lemma 2 (substitution)">
+
+If $t$ is substitutable for $x$ in $\varphi$ (no capture), then $\mathcal{M} \models \varphi[t/x][s]$ iff $\mathcal{M} \models \varphi[s[x \mapsto t^{\mathcal{M}}[s]]]$.
+
+</Theorem>
+
+<Proof>
+
+First for terms: $u[t/x]^{\mathcal{M}}[s] = u^{\mathcal{M}}[s[x \mapsto t^{\mathcal{M}}[s]]]$, by induction on $u$ (the variable $x$ is replaced by $t$, whose value is exactly what the new assignment gives $x$). Then by induction on $\varphi$. The atomic cases are the term case and the connectives are immediate. For $\forall y\, \psi$ with $y \neq x$: since there is no capture, $y$ does not occur in $t$, so $t^{\mathcal{M}}[s[y \mapsto a]] = t^{\mathcal{M}}[s]$ by Lemma 1, and the induction hypothesis for $\psi$ under $s[y \mapsto a]$ gives the claim for every $a$. If $y = x$, then $x$ is not free in $\forall x\, \psi$, the substitution does nothing, and Lemma 1 applies.
+
+</Proof>
+
+<Theorem name="Theorem 3 (soundness)">
+
+If $\Gamma \vdash \varphi$, then $\Gamma \models \varphi$.
+
+</Theorem>
+
+<Proof>
+
+By induction on the derivation, we show for each rule: if the premises are semantic consequences, so is the conclusion. Fix a structure $\mathcal{M}$ and an assignment $s$ making every formula of $\Gamma$ true.
+
+- **Assumption:** $\varphi \in \Gamma$ is true under $s$ by hypothesis.
+- **$\to$I:** if $\mathcal{M} \models \varphi[s]$ then $s$ makes all of $\Gamma, \varphi$ true, so by the induction hypothesis $\mathcal{M} \models \psi[s]$; hence $\mathcal{M} \models (\varphi \to \psi)[s]$. **$\to$E**, **$\wedge$I/E**, **$\vee$I/E** and **$\bot$E** are the corresponding facts about truth tables (for $\vee$E, whichever disjunct is true, the corresponding premise gives $\chi$; for $\bot$E, the premise is never true, so the case is vacuous).
+- **RAA:** if $\mathcal{M} \not\models \varphi[s]$, then $s$ makes $\Gamma, \neg\varphi$ true, and the premise gives $\mathcal{M} \models \bot[s]$, which is impossible. So $\mathcal{M} \models \varphi[s]$. (This step uses classical reasoning in the metatheory.)
+- **$\forall$E:** by hypothesis $\mathcal{M} \models \varphi[s[x \mapsto a]]$ for every $a$; take $a = t^{\mathcal{M}}[s]$ and apply Lemma 2 to get $\mathcal{M} \models \varphi[t/x][s]$. **$\exists$I** is the same argument backwards, with the witness $a = t^{\mathcal{M}}[s]$.
+- **$\forall$I:** let $a \in M$. The assignment $s' = s[y \mapsto a]$ agrees with $s$ on the free variables of $\Gamma$ (since $y$ is not free there), so by Lemma 1 it makes $\Gamma$ true, and the induction hypothesis gives $\mathcal{M} \models \varphi[y/x][s']$. By Lemma 2 this is $\mathcal{M} \models \varphi[s'[x \mapsto a]]$, and since $y$ is not free in $\forall x\, \varphi$, Lemma 1 turns it into $\mathcal{M} \models \varphi[s[x \mapsto a]]$. As $a$ was arbitrary, $\mathcal{M} \models \forall x\, \varphi[s]$.
+- **$\exists$E:** by the first premise there is $a$ with $\mathcal{M} \models \varphi[s[x \mapsto a]]$. As in the previous case, $s' = s[y \mapsto a]$ makes $\Gamma$ and $\varphi[y/x]$ true, so the second premise gives $\mathcal{M} \models \psi[s']$, and since $y$ is not free in $\psi$, $\mathcal{M} \models \psi[s]$.
+- **$=$I** is reflexivity of equality in $M$. **$=$E:** if $s^{\mathcal{M}}[s] = t^{\mathcal{M}}[s]$, then by Lemma 2, $\varphi[s/x]$ and $\varphi[t/x]$ are true under $s$ for exactly the same reason.
+
+</Proof>
+
+Soundness is the tool for proving that something is **not** derivable: exhibit one structure where the premises are true and the conclusion false.
+
+<Example title="Consequences of soundness">
+
+- $\nvdash \exists x\, P(x) \to \forall x\, P(x)$: in the structure $(\{0, 1\}, P = \{1\})$ some element has $P$ and not every element does.
+- $\vdash \forall x\, P(x) \to \exists x\, P(x)$ (assume $\forall x\, P(x)$, use $\forall$E with $t = x$, then $\exists$I with $t = x$). Soundness then says the sentence is valid — which is true only because **structures are non-empty**. The definition of structure and the rules of the proof system have to fit together.
+- Every theory with a model is **consistent** ($\Gamma \nvdash \bot$): a derivation of $\bot$ would make $\bot$ true in the model. For instance, the group axioms are consistent because $(\Z, +, 0, -)$ is a group.
+
+</Example>
+
+<Theorem name="Theorem 4 (isomorphic structures satisfy the same sentences)">
+
+Let $h : \mathcal{M} \to \mathcal{N}$ be an isomorphism of $L$-structures: a bijection $M \to N$ with $h(c^{\mathcal{M}}) = c^{\mathcal{N}}$, $h(f^{\mathcal{M}}(\vec a)) = f^{\mathcal{N}}(h(\vec a))$ and $\vec a \in R^{\mathcal{M}} \iff h(\vec a) \in R^{\mathcal{N}}$. Then for every formula $\varphi$ and assignment $s$, $\mathcal{M} \models \varphi[s]$ iff $\mathcal{N} \models \varphi[h \circ s]$. In particular $\mathcal{M}$ and $\mathcal{N}$ satisfy exactly the same sentences.
+
+</Theorem>
+
+<Proof>
+
+For terms, $h(t^{\mathcal{M}}[s]) = t^{\mathcal{N}}[h \circ s]$, by induction on $t$ using that $h$ commutes with constants and functions. For formulas, by induction on $\varphi$. Equations: $t_1^{\mathcal{M}}[s] = t_2^{\mathcal{M}}[s]$ iff their images under $h$ are equal, because $h$ is injective. Relations: by the condition on $R$. Connectives: immediate. Quantifiers: $\mathcal{M} \models \forall x\, \psi[s]$ iff for all $a \in M$, $\mathcal{M} \models \psi[s[x \mapsto a]]$, iff (induction hypothesis, since $h \circ s[x \mapsto a] = (h \circ s)[x \mapsto h(a)]$) for all $a \in M$, $\mathcal{N} \models \psi[(h \circ s)[x \mapsto h(a)]]$, iff for all $b \in N$, $\mathcal{N} \models \psi[(h \circ s)[x \mapsto b]]$ — here we use that $h$ is **surjective**, so $b = h(a)$ ranges over all of $N$. That is $\mathcal{N} \models \forall x\, \psi[h \circ s]$. The case $\exists$ is the same.
+
+</Proof>
+
+So sentences prove non-isomorphism: $(\N, <) \not\cong (\Z, <)$ because "there is a least element" separates them, and $(\Z, <) \not\cong (\Q, <)$ because of density. The converse of Theorem 4 fails: $(\Q, <)$ and $(\R, <)$ satisfy exactly the same first-order sentences (as shown in the completeness lesson), but they are not isomorphic, since $\Q$ is countable and $\R$ is not. A first-order theory usually has many non-isomorphic models.
+
+<Theorem name="Theorem 5 (Gödel's completeness theorem, 1929)">
+
+If $\Gamma \models \varphi$, then $\Gamma \vdash \varphi$. Equivalently: every consistent set of sentences has a model.
+
+</Theorem>
+
+We do not prove it here; the proof (Henkin's construction of a model out of the language itself) is the subject of the lesson on <TopicLink id="math.found.completeness-theorem">completeness, compactness and Löwenheim–Skolem</TopicLink>. Together, soundness and completeness say $\Gamma \vdash \varphi \iff \Gamma \models \varphi$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="A first-order logic built in Lean">
+
+We build a complete, small first-order logic in Lean, so that every definition of this lesson can be read as code, and then prove soundness. Mathlib has its own first-order logic (`FirstOrder.Language`), with semantics and the theorem that isomorphisms preserve truth, but at this version no proof calculus — so we write our own.
+
+**Syntax.** Signatures, terms and formulas, as inductive types:
+
+<Lean decl="Lumenary.FirstOrderLogic.Signature" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Term" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Formula" />
+
+Variables are **de Bruijn indices**: a variable is a number, and inside a quantifier the variable $0$ is the one just bound, while the others shift up by one. So $\forall x\, \exists y\, R(x, y)$ is written `all (ex (rel R ![var 1, var 0]))`. This removes variable capture entirely; the price is that substitution has to shift indices.
+
+**Semantics.** A structure interprets the symbols; an environment (assignment) is a function from indices to elements, and `cons a ρ` gives the newly bound variable the value `a`. Satisfaction is Tarski's definition, clause by clause:
+
+<Lean decl="Lumenary.FirstOrderLogic.Structure" />
+
+<Lean decl="Lumenary.FirstOrderLogic.cons" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Term.eval" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Formula.Realize" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Formula.Holds" />
+
+Here is satisfaction unwound in an example: the group axioms as sentences, and the proof that $(\Z, +, 0, -)$ satisfies them, in which each sentence becomes an ordinary statement about integers:
+
+<Lean decl="Lumenary.FirstOrderLogic.GroupFunc" />
+
+<Lean decl="Lumenary.FirstOrderLogic.groupAxioms" />
+
+<Lean decl="Lumenary.FirstOrderLogic.intAdd" />
+
+<Lean decl="Lumenary.FirstOrderLogic.intAdd_group" />
+
+**Substitution** and the **substitution lemma** (Lemma 2). Moving a substitution under a quantifier uses `up`; instantiating the bound variable with a term uses `inst`:
+
+<Lean decl="Lumenary.FirstOrderLogic.Term.subst" />
+
+<Lean decl="Lumenary.FirstOrderLogic.up" />
+
+<Lean decl="Lumenary.FirstOrderLogic.inst" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Formula.subst" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Formula.shift" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Term.eval_subst" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Formula.realize_subst" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Formula.realize_shift" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Formula.realize_inst" />
+
+`realize_shift` plays the role of Lemma 1 for the eigenvariable conditions: in the rules `allI` and `exE` the assumptions are shifted, which is how "the variable $0$ is fresh" is expressed with de Bruijn indices.
+
+**Natural deduction and soundness** (Theorem 3). The proof is one case per rule, as above:
+
+<Lean decl="Lumenary.FirstOrderLogic.Derivable" />
+
+<Lean decl="Lumenary.FirstOrderLogic.soundness" />
+
+**Using soundness.** A derivation of $\forall x\, \varphi \to \exists x\, \varphi$, and a proof that $\exists x\, P(x) \to \forall x\, P(x)$ is not derivable, by the two-element countermodel:
+
+<Lean decl="Lumenary.FirstOrderLogic.all_imp_ex" />
+
+<Lean decl="Lumenary.FirstOrderLogic.boolP" />
+
+<Lean decl="Lumenary.FirstOrderLogic.ex_imp_all_not_derivable" />
+
+**Isomorphism invariance** (Theorem 4), and its application to $(\N, <)$ and $(\Z, <)$:
+
+<Lean decl="Lumenary.FirstOrderLogic.Iso" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Iso.realize" />
+
+<Lean decl="Lumenary.FirstOrderLogic.Iso.holds_iff" />
+
+<Lean decl="Lumenary.FirstOrderLogic.hasLeast" />
+
+<Lean decl="Lumenary.FirstOrderLogic.nat_hasLeast" />
+
+<Lean decl="Lumenary.FirstOrderLogic.int_not_hasLeast" />
+
+<Lean decl="Lumenary.FirstOrderLogic.nat_not_iso_int" />
+
+Mathlib's version of Theorem 4, for its own syntax:
+
+<Lean decl="Lumenary.FirstOrderLogic.iso_sentence_library" />
+
+What is and is not formalised. Formalised and proved here: the syntax, Tarski semantics, the substitution lemma, natural deduction, **soundness**, isomorphism invariance, and the examples. Simplifications: constants are function symbols of arity $0$, contexts are lists, and the de Bruijn presentation replaces named variables. Not formalised: Gödel's completeness theorem (see the completeness lesson for what Mathlib and the Lumenary formalise around it).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Truth in every small structure">
+
+Tarski's definition is an algorithm when the domain is finite: a quantifier is a loop over the elements. The experiment stores formulas in the signature $\{R\}$ as nested Python tuples, implements satisfaction clause by clause, and evaluates the axioms of equivalence relations, partial orders and linear orders in **all** $2^9 = 512$ structures on a three-element domain. It counts models and models up to isomorphism (a theory usually has many non-isomorphic models), checks that isomorphic copies satisfy the same sentences, and separates the five partial orders on three points with four sentences.
+
+<Python id="first_order_logic_finite_models" />
+
+The evidence is **exact and exhaustive** for these finite structures, nothing more. For infinite structures the loop never ends — and in fact, as Church and Turing showed in 1936, no algorithm decides whether a first-order sentence is valid.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: structures you can see">
+
+**A graph is a structure.** A graph is a structure for the signature $\{E\}$, with $E$ the adjacency relation. Use the Degrees tab to decide which of these sentences are true in each graph: $\forall x\, \exists y\, E(x, y)$ (no isolated vertex); $\exists x\, \forall y\, (\neg x = y \to E(x, y))$ (some vertex is adjacent to all others); $\forall x\, \exists y\, \exists z\, (\neg y = z \wedge E(x, y) \wedge E(x, z))$ (every degree is at least $2$); $\neg \exists x\, \exists y\, \exists z\, (E(x, y) \wedge E(y, z) \wedge E(x, z))$ (no triangle). Then try the Colouring tab: "can be coloured with three colours" is true of some of these graphs and false of others, yet it is **not** expressible by a first-order sentence in $\{E\}$ that works for all graphs — it needs quantifiers over sets of vertices.
+
+<GraphExplorer preset="wheel" presets={["wheel", "cycle6", "petersen", "tree", "k4"]} modes={["degrees", "colour"]} title="Which sentences are true in this graph?" />
+
+**Tautologies are valid, but validity is more.** If a propositional formula is a tautology, every sentence obtained by substituting first-order sentences for its letters is valid. For instance $(p \to q) \wedge p \to q$ is a tautology, so $(\forall x\, P(x) \to \exists y\, Q(y)) \wedge \forall x\, P(x) \to \exists y\, Q(y)$ is valid. Now type $p \to q$: it is not a tautology, yet the sentence $\forall x\, P(x) \to \exists x\, P(x)$ with this skeleton *is* valid. Its validity comes from the meaning of the quantifiers (and non-empty domains), which no truth table can see.
+
+<TruthTable formula="(p → q) ∧ p → q" title="The propositional skeleton of a first-order sentence" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Confusing $\models$ with $\vdash$.** $\Gamma \models \varphi$ is about *truth in all models* — a statement quantifying over all structures. $\Gamma \vdash \varphi$ is about the *existence of a finite derivation* — a combinatorial statement about strings. They are defined completely differently; soundness and Gödel's completeness theorem are the (non-trivial!) theorems that make them coincide.
+
+</Misconception>
+
+<Misconception>
+
+**Quantifying over subsets in a first-order formula.** In a first-order formula, $\forall x$ and $\exists x$ range over *elements* of the domain. "For every subset $S$ …" is second-order; first-order theories approximate it with schemas (one axiom per formula), as in induction. In the language of set theory the elements *are* sets, so there "every subset" becomes first-order — at the price of moving to a different structure.
+
+</Misconception>
+
+<Misconception>
+
+**"A theory determines its model."** Most theories have many non-isomorphic models: the group axioms have models of every size, abelian and not; the axioms of linear orders have a finite model $\{0 < 1 < \dots < n - 1\}$ for every $n \ge 1$, and infinite models $\N$, $\Z$, $\Q$, $\R$, … Even a *complete* theory such as that of $(\Q, <)$ has non-isomorphic models, such as $(\R, <)$. By the Löwenheim–Skolem theorem, a theory with an infinite model has models of every infinite size.
+
+</Misconception>
+
+<Misconception>
+
+**"The order of quantifiers doesn't matter."** $\forall x\, \exists y\, (y > x)$ is true in $(\N, <)$, while $\exists y\, \forall x\, (y > x)$ is false. Quantifiers of the *same* kind can be swapped; $\forall$ and $\exists$ cannot. Continuity versus uniform continuity is the classic example.
+
+</Misconception>
+
+<Misconception>
+
+**"Domains may be empty."** In standard first-order logic every structure is non-empty, which is why $\forall x\, \varphi \to \exists x\, \varphi$ is valid and derivable. Logics allowing empty domains ("free" or "inclusive" logics) exist, but they need different rules.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="Equations, varieties and Birkhoff's theorem">
+
+Many algebraic theories — monoids, groups, rings, vector spaces over a fixed field, lattices — are axiomatised by **equations**, universally quantified identities $\forall \vec x\ (s = t)$. Garrett Birkhoff (1935) characterised such classes exactly: a class of structures is defined by equations if and only if it is closed under **h**omomorphic images, **s**ubstructures and **p**roducts (the HSP theorem). So fields are *not* an equational class: $\mathbb{F}_2 \times \mathbb{F}_2$ has zero divisors, so it is not a field, and closure under products fails — the field axiom $\forall x\, (\neg x = 0 \to \exists y\, xy = 1)$ is not an equation. Logic and algebra meet again in the **Lindenbaum–Tarski algebra**: formulas up to provable equivalence form a Boolean algebra, and soundness and completeness become statements about its homomorphisms to $\{0, 1\}$.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Compactness is compactness">
+
+Fix a signature and consider the set $S$ of all **complete theories of structures**, $\mathrm{Th}(\mathcal{M}) = \{ \sigma \mid \mathcal{M} \models \sigma \}$ (two structures giving the same set count once). Give it the topology whose basic open sets are $[\varphi] = \{ T \in S \mid \varphi \in T \}$. The sets $[\varphi]$ are both open and closed, and $S$ is a compact Hausdorff space — a *Stone space*. Its compactness is precisely the **compactness theorem** of first-order logic: a set of sentences has a model as soon as every finite subset does. (Stone's representation theorem (1936) makes this precise: Boolean algebras correspond to such spaces.) Model theorists study *type spaces*, spaces of this kind built from formulas with free variables, with genuinely topological methods: isolated points, Cantor–Bendixson rank, and so on. See <TopicLink id="math.found.model-theory">model theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Quantifier elimination and semialgebraic geometry">
+
+Alfred Tarski proved (published 1948–1951) that the first-order theory of the real ordered field $(\R, +, \cdot, 0, 1, <)$ admits **quantifier elimination**: every formula is equivalent to one without quantifiers, a Boolean combination of polynomial inequalities. Geometrically (the Tarski–Seidenberg theorem): the projection of a **semialgebraic set** — a set in $\R^n$ defined by polynomial equations and inequalities — is again semialgebraic. For example, $\exists y\, (x^2 + y^2 = 1)$ defines the projection of the circle onto the $x$-axis, and it is equivalent to the quantifier-free formula $-1 \le x \le 1$. As a consequence, elementary Euclidean geometry is decidable — see <TopicLink id="math.geom.euclidean-geometry">Euclidean geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Validity is semi-decidable but not decidable">
+
+By the completeness theorem, a sentence is valid iff it has a derivation; derivations are finite strings that can be listed one by one and checked mechanically. So there is a procedure that halts with "yes" exactly on the valid sentences: validity is **semi-decidable** (recursively enumerable). But Alonzo Church and Alan Turing (1936) proved that no algorithm decides validity — it never answers "no" correctly on all invalid sentences — settling Hilbert's *Entscheidungsproblem* negatively. Restricted fragments can be decidable: Presburger arithmetic ($\N$ with $+$ only) is decidable, and so is monadic first-order logic (only unary relations). See <TopicLink id="math.comp.computability">computability</TopicLink>. Automated theorem provers and proof assistants such as Lean live in the gap between these two facts.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Quantifiers as adjoints">
+
+F. William Lawvere (1969) observed that the quantifiers are characterised by universal properties. For formulas in variables $x, y$ and in $x$ alone, ordered by entailment, "weakening" regards a formula $\psi(x)$ as a formula in $x, y$. Then $\exists y$ and $\forall y$ are its **left and right adjoints**: $\exists y\, \varphi(x, y) \vdash \psi(x)$ iff $\varphi(x, y) \vdash \psi(x)$, and $\psi(x) \vdash \forall y\, \varphi(x, y)$ iff $\psi(x) \vdash \varphi(x, y)$ — which are exactly the rules $\exists$E and $\forall$I with their eigenvariable conditions. This leads to the interpretation of first-order logic in categories other than sets, such as toposes: see <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- The study of valid inference is ancient: Aristotle's syllogistic, the propositional logic of the Stoics, and, in India, the Nyāya school's analysis of inference and the later Navya-Nyāya technical language. Medieval logicians writing in Arabic and Latin developed these traditions further. Quantifiers as we use them are much younger.
+- George Boole (1847, 1854) made propositional logic algebraic. **Gottlob Frege**'s *Begriffsschrift* (1879) introduced quantifiers and a formal proof system; Charles S. Peirce and his student Oscar Howard Mitchell introduced quantifiers independently (1883–1885). Giuseppe Peano's notation and Whitehead and Russell's *Principia Mathematica* (1910–1913) spread the ideas.
+- Leopold Löwenheim (1915) and Thoralf Skolem (1920) proved the first theorems about models; David Hilbert and Wilhelm Ackermann's textbook (1928) isolated first-order logic and asked whether its rules are complete. **Kurt Gödel** proved completeness in his 1929 doctoral thesis (published 1930). **Alfred Tarski** gave the definition of truth in a structure ("The concept of truth in formalized languages", in Polish 1933).
+- Natural deduction was introduced independently by **Gerhard Gentzen** and **Stanisław Jaśkowski** in 1934. Church and Turing proved the undecidability of validity in 1936; Leon Henkin's proof of completeness (1949) is the one usually taught today.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Herbert B. Enderton, *A Mathematical Introduction to Logic* (1972; 2nd ed. 2001), chapter 2.
+- Dirk van Dalen, *Logic and Structure* (1980; 5th ed. 2013) — natural deduction, soundness and completeness.
+- Heinz-Dieter Ebbinghaus, Jörg Flum and Wolfgang Thomas, *Mathematical Logic* (1984; 3rd ed. 2021).
+- Ian Chiswell and Wilfrid Hodges, *Mathematical Logic* (2007) — a gentle introduction centred on natural deduction.
+
+</Section>

@@ -1,0 +1,585 @@
+---
+slug: complex-analysis
+topic: math.analysis.complex-analysis
+title: Complex analysis
+subtitle: Ask a function of a complex variable for **one** derivative and it gives you infinitely many, a power series, and Cauchy's integral formula — and from there real integrals, the fundamental theorem of algebra and maps that preserve every angle.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6021
+objectives:
+  - Test complex differentiability with the Cauchy–Riemann equations, and explain why $z \mapsto \bar z$ is not holomorphic although it is real-differentiable
+  - Compute contour integrals, prove Goursat's theorem and Cauchy's theorem in a disc, and prove Cauchy's integral formula
+  - Deduce that holomorphic functions are infinitely differentiable and analytic, with the Cauchy estimates, Liouville's theorem and the fundamental theorem of algebra
+  - Use Laurent series and the residue theorem to evaluate real integrals
+  - Explain conformality, isolated singularities, and why $1/z$ has no holomorphic extension to $0$
+narrators: []
+lean:
+  - Lumenary.ComplexAnalysis.HolomorphicOn
+  - Lumenary.ComplexAnalysis.directional_derivatives
+  - Lumenary.ComplexAnalysis.conj_not_differentiableAt
+  - Lumenary.ComplexAnalysis.cauchy_theorem_disc
+  - Lumenary.ComplexAnalysis.circle_integral_inv
+  - Lumenary.ComplexAnalysis.cauchy_integral_formula
+  - Lumenary.ComplexAnalysis.holomorphic_is_analytic
+  - Lumenary.ComplexAnalysis.inv_no_entire_extension
+  - Lumenary.ComplexAnalysis.cauchy_estimate
+  - Lumenary.ComplexAnalysis.liouville_from_cauchy_estimate
+  - Lumenary.ComplexAnalysis.liouville_library
+  - Lumenary.ComplexAnalysis.fta_from_liouville
+  - Lumenary.ComplexAnalysis.fta_library
+  - Lumenary.ComplexAnalysis.integral_inv_one_add_sq
+compute: [complex_analysis_contour_integrals]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="One derivative, and everything follows">
+
+Here is a real integral that resists every technique of first-year calculus:
+
+$$
+\int_{-\infty}^{\infty} \frac{\cos x}{1 + x^2}\,dx = \frac{\pi}{e}.
+$$
+
+The integrand has no elementary antiderivative. Yet a complex analyst evaluates it in three lines, by walking around a semicircle in the complex plane and computing one number at the point $z = i$. The same method counts the zeros of a polynomial inside a circle without finding them. It proves that every polynomial has a complex root, and it is the engine behind the prime number theorem.
+
+All of this comes from a definition that looks harmless: a function $f$ of a complex variable is **holomorphic** if the limit
+
+$$
+f'(z) = \lim_{h \to 0} \frac{f(z + h) - f(z)}{h}
+$$
+
+exists, where now $h$ is a *complex* number that may approach $0$ from any direction. That one requirement is far stronger than it looks. A real function can be differentiable once and not twice. A holomorphic function is automatically differentiable infinitely often and equal to its Taylor series. It is determined everywhere by its values on a tiny segment, and inside a disc it is determined by its values on the boundary circle. Engineers use the same functions to map the flow of air around a circle onto the flow around an aeroplane wing.
+
+This lesson builds the theory from the definition: the Cauchy–Riemann equations, contour integrals, Cauchy's theorem and integral formula, power series, Liouville's theorem, the fundamental theorem of algebra, and the residue theorem.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Derivatives that rotate and stretch">
+
+A real-differentiable map of the plane looks, near a point, like a linear map $\R^2 \to \R^2$ — any $2 \times 2$ matrix. A complex derivative $f'(z_0) = re^{i\theta}$ says much more: near $z_0$, $f$ acts like *multiplication* by $f'(z_0)$, that is, a rotation by $\theta$ combined with scaling by $r$. Rotations-with-scaling are the matrices
+
+$$
+\begin{pmatrix} a & -b \\ b & a \end{pmatrix}, \qquad a + ib = f'(z_0).
+$$
+
+So a holomorphic map, wherever $f' \ne 0$, turns tiny squares into tiny squares. It may rotate and resize them, but it never shears them or flips them over. It **preserves angles and orientation**: it is *conformal*. Complex conjugation $z \mapsto \bar z$ is a reflection, the matrix $\mathrm{diag}(1, -1)$. It is perfectly smooth as a map of the plane, but it reverses orientation, so it is not complex-differentiable anywhere.
+
+The second picture is the **contour integral**. Walking once around the origin, $\oint dz/z = 2\pi i$ measures how far the argument of $z$ turns: one full turn, $2\pi$. For a function holomorphic inside the loop, the corresponding integral is $0$. Cauchy's theorem says that integrals of holomorphic functions only notice the *holes* the path goes around. That is why complex analysis is secretly topology.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="complex derivative, holomorphic, entire">
+
+Let $U \subseteq \C$ be open and $f : U \to \C$. $f$ is **complex-differentiable** at $z_0 \in U$ if $f'(z_0) = \lim_{h \to 0,\ h \in \C} \frac{f(z_0 + h) - f(z_0)}{h}$ exists. $f$ is **holomorphic** on $U$ if it is complex-differentiable at every point of $U$, and **entire** if it is holomorphic on $\C$.
+
+</Definition>
+
+Sums, products, quotients (where the denominator is non-zero) and composites of holomorphic functions are holomorphic, with the usual rules, by the same proofs as in real calculus. Polynomials are entire, and so are $e^z = \sum z^n/n!$, $\sin z$ and $\cos z$.
+
+<Definition term="contour integral">
+
+A **path** is a piecewise continuously differentiable map $\gamma : [a, b] \to \C$; it is **closed** if $\gamma(a) = \gamma(b)$. For $f$ continuous on the image of $\gamma$,
+
+$$
+\int_\gamma f(z)\,dz = \int_a^b f(\gamma(t))\,\gamma'(t)\,dt.
+$$
+
+The circle $|z - c| = R$ traversed once anticlockwise, $\gamma(t) = c + Re^{it}$ for $t \in [0, 2\pi]$, gives $\oint_{|z - c| = R} f(z)\,dz$.
+
+</Definition>
+
+Two facts are used constantly. The **ML-inequality**: if $|f| \le M$ on the image of $\gamma$ and $\gamma$ has length $L$, then $\left|\int_\gamma f\right| \le ML$. And **primitives kill closed integrals**: if $F' = f$ on an open set containing the image of $\gamma$, then $\int_\gamma f = F(\gamma(b)) - F(\gamma(a))$, which is $0$ for closed $\gamma$ (chain rule plus the real fundamental theorem of calculus).
+
+<Definition term="isolated singularity, pole, residue">
+
+If $f$ is holomorphic on a punctured disc $0 < |z - a| < r$, then $a$ is an **isolated singularity**. It is **removable** if $f$ extends holomorphically to $a$. It is a **pole of order $m \ge 1$** if $f(z) = g(z)/(z - a)^m$ with $g$ holomorphic near $a$ and $g(a) \ne 0$. Otherwise it is **essential**. The **residue** $\operatorname{Res}_a f$ is the coefficient $c_{-1}$ of $(z - a)^{-1}$ in the Laurent expansion $f(z) = \sum_{n \in \Z} c_n (z - a)^n$ about $a$.
+
+</Definition>
+
+<Definition term="winding number">
+
+For a closed path $\gamma$ and a point $w$ not on it, the **winding number** is $n(\gamma, w) = \frac{1}{2\pi i} \int_\gamma \frac{dz}{z - w}$. It is an integer, and it counts the number of times $\gamma$ travels anticlockwise around $w$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="The integral of (z − c) to the power n">
+
+Parametrise $z = c + Re^{it}$, so $dz = iRe^{it}\,dt$. For every integer $n$,
+
+$$
+\oint_{|z - c| = R} (z - c)^n\,dz = \int_0^{2\pi} R^n e^{int}\, iRe^{it}\,dt = iR^{n+1} \int_0^{2\pi} e^{i(n+1)t}\,dt = \begin{cases} 2\pi i & n = -1, \\ 0 & n \ne -1. \end{cases}
+$$
+
+For $n \ne -1$ this also follows from the primitive $(z - c)^{n+1}/(n+1)$. For $n = -1$ there is no primitive on $\C \setminus \{c\}$: a "logarithm" would have to increase by $2\pi i$ every time it goes around $c$. This single computation is the seed of the residue theorem.
+
+</Example>
+
+<Example title="Real-differentiable is not enough">
+
+Write $z = x + iy$. The map $f(z) = \bar z = x - iy$ is linear over $\R$, hence real-differentiable. But along a real increment $h = t$ the difference quotient is $\bar t/t = 1$, and along an imaginary increment $h = it$ it is $\overline{it}/(it) = -1$. The limit does not exist, so $\bar z$ is complex-differentiable nowhere. Similarly $|z|^2 = z\bar z$ is complex-differentiable *only* at $0$, and $\operatorname{Re} z$ nowhere. Consistently, $\oint_{|z| = 1} \bar z\,dz = \oint dz/z = 2\pi i \ne 0$, since $\bar z = 1/z$ on the unit circle.
+
+</Example>
+
+<Example title="Three kinds of isolated singularity">
+
+- $\frac{\sin z}{z}$ at $0$: **removable**, since $\frac{\sin z}{z} = 1 - \frac{z^2}{3!} + \frac{z^4}{5!} - \cdots$ extends with value $1$.
+- $\frac{1}{z^2 + 1}$ at $i$: a **simple pole**, $\frac{1}{(z - i)(z + i)}$, with residue $\frac{1}{2i}$.
+- $e^{1/z} = \sum_{n \ge 0} \frac{1}{n!\,z^n}$ at $0$: **essential**, with infinitely many negative powers and residue $1$. Near $0$ it takes every non-zero value infinitely often (a theorem of Picard).
+
+</Example>
+
+</Section>
+
+<Section id="cauchy-riemann" kind="proof" title="The Cauchy–Riemann equations">
+
+<Theorem name="Theorem 1 (Cauchy–Riemann)">
+
+Write $f = u + iv$ with $u, v$ real-valued functions of $(x, y)$. If $f$ is complex-differentiable at $z_0 = x_0 + iy_0$, then the partial derivatives of $u$ and $v$ exist at $(x_0, y_0)$ and
+
+$$
+u_x = v_y, \qquad u_y = -v_x, \qquad f'(z_0) = u_x + iv_x.
+$$
+
+Conversely, if $u$ and $v$ have continuous partial derivatives near $(x_0, y_0)$ satisfying these equations there, then $f$ is holomorphic near $z_0$.
+
+</Theorem>
+
+<Proof>
+
+Let $h \to 0$ along the real axis, $h = t \in \R$: the difference quotient tends to $u_x + iv_x$, which must equal $f'(z_0)$. Along the imaginary axis, $h = it$:
+
+$$
+\frac{f(z_0 + it) - f(z_0)}{it} = \frac{1}{i}\left( \frac{u(x_0, y_0 + t) - u(x_0, y_0)}{t} + i\,\frac{v(x_0, y_0 + t) - v(x_0, y_0)}{t} \right) \to -iu_y + v_y.
+$$
+
+Equating real and imaginary parts of $u_x + iv_x = v_y - iu_y$ gives the equations.
+
+Conversely, continuous partial derivatives make $(u, v)$ real-differentiable: $f(z_0 + h) - f(z_0) = A h + o(|h|)$, where $A$ is the Jacobian matrix acting on $h = (h_1, h_2)$. The equations say $A = \begin{pmatrix} a & -b \\ b & a \end{pmatrix}$ with $a = u_x$, $b = v_x$, and this matrix acts on $h_1 + ih_2$ as multiplication by $a + ib$. So $\frac{f(z_0 + h) - f(z_0)}{h} = (a + ib) + o(1)$.
+
+</Proof>
+
+The equations have a striking consequence. If $u, v$ are twice continuously differentiable (we shall see that they always are), then $u_{xx} + u_{yy} = v_{yx} - v_{xy} = 0$. **The real and imaginary parts of a holomorphic function are harmonic.** For example, $z^2 = (x^2 - y^2) + i(2xy)$, and both $x^2 - y^2$ and $2xy$ satisfy Laplace's equation.
+
+</Section>
+
+<Section id="cauchy" kind="proof" title="Cauchy's theorem and the integral formula">
+
+<Theorem name="Theorem 2 (Goursat)">
+
+If $f$ is holomorphic on an open set containing a closed triangle $T$ (with its inside), then $\oint_{\partial T} f(z)\,dz = 0$.
+
+</Theorem>
+
+<Proof>
+
+Let $I = \left|\oint_{\partial T} f\right|$, and let $p$ and $d$ be the perimeter and diameter of $T$. Join the midpoints of the sides to cut $T$ into four similar triangles. The integrals over their boundaries add up to the integral over $\partial T$, because the inner edges are traversed twice in opposite directions. So one of them, $T_1$, has $\left|\oint_{\partial T_1} f\right| \ge I/4$. Repeating gives nested triangles $T \supset T_1 \supset T_2 \supset \cdots$ with
+
+$$
+\left|\oint_{\partial T_n} f\right| \ge 4^{-n} I, \qquad \text{perimeter } 2^{-n} p, \qquad \text{diameter } 2^{-n} d.
+$$
+
+By completeness (the nested compact sets have a common point) there is $z_0 \in \bigcap T_n$. Since $f$ is differentiable at $z_0$, $f(z) = f(z_0) + f'(z_0)(z - z_0) + \psi(z)(z - z_0)$ with $\psi(z) \to 0$ as $z \to z_0$. The linear part has a primitive, so its integral over $\partial T_n$ vanishes. Let $\varepsilon_n = \sup_{T_n} |\psi|$, so $\varepsilon_n \to 0$. By the ML-inequality,
+
+$$
+4^{-n} I \le \left|\oint_{\partial T_n} \psi(z)(z - z_0)\,dz\right| \le \varepsilon_n \cdot 2^{-n} d \cdot 2^{-n} p.
+$$
+
+So $I \le \varepsilon_n\, dp \to 0$, and $I = 0$.
+
+</Proof>
+
+<Theorem name="Lemma 3 (one exceptional point)">
+
+Goursat's theorem still holds if $f$ is continuous on the open set and holomorphic except at one point $w$.
+
+</Theorem>
+
+<Proof>
+
+If $w$ is a vertex of $T$, cut off a tiny triangle at $w$ of perimeter $\eta$. The rest of $T$ splits into triangles not containing $w$, whose integrals vanish by Theorem 2. The tiny triangle contributes at most $\eta \cdot \sup_T |f|$, which tends to $0$ with $\eta$. If $w$ lies elsewhere in $T$, split $T$ into triangles that have $w$ as a vertex.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Cauchy's theorem in a disc)">
+
+Let $f$ be continuous on an open disc $D$ and holomorphic on $D$ except possibly at one point. Then $f$ has a primitive on $D$, and $\int_\gamma f\,dz = 0$ for every closed path $\gamma$ in $D$.
+
+</Theorem>
+
+<Proof>
+
+Let $c$ be the centre and set $F(z) = \int_{[c, z]} f$, the integral along the segment from $c$ to $z$. For $z, z + h \in D$, Lemma 3 for the triangle with vertices $c, z, z + h$ gives $F(z + h) - F(z) = \int_{[z, z + h]} f$. Since $\int_{[z, z + h]} f(z)\,d\zeta = h f(z)$,
+
+$$
+\left| \frac{F(z + h) - F(z)}{h} - f(z) \right| = \left| \frac{1}{h} \int_{[z, z + h]} \big(f(\zeta) - f(z)\big)\,d\zeta \right| \le \sup_{\zeta \in [z, z + h]} |f(\zeta) - f(z)| \to 0
+$$
+
+by continuity. So $F' = f$, and integrals of $f$ over closed paths vanish because $f$ has a primitive.
+
+</Proof>
+
+<Note>
+
+Cauchy's theorem holds far beyond discs. **General form (stated, not proved here):** if $f$ is holomorphic on an open set $U$ and the closed path $\gamma$ in $U$ is null-homotopic in $U$ — or more generally has winding number $0$ about every point outside $U$ — then $\int_\gamma f = 0$. In particular this holds for every closed path in a simply connected domain. See Ahlfors (1979), chapter 4, or Stein and Shakarchi (2003), chapter 3. In this lesson we use only discs and circles.
+
+</Note>
+
+<Theorem name="Lemma 5">
+
+If $|w - c| < R$, then $\displaystyle \oint_{|z - c| = R} \frac{dz}{z - w} = 2\pi i$.
+
+</Theorem>
+
+<Proof>
+
+On the circle $|w - c| / |z - c| = |w - c|/R =: q < 1$, so the geometric series
+
+$$
+\frac{1}{z - w} = \frac{1}{(z - c)\big(1 - \frac{w - c}{z - c}\big)} = \sum_{n \ge 0} \frac{(w - c)^n}{(z - c)^{n+1}}
+$$
+
+converges uniformly on the circle (M-test with $M_n = q^n/R$). Integrate term by term: by the first example, only $n = 0$ survives, giving $2\pi i$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (Cauchy's integral formula)">
+
+Let $f$ be holomorphic on an open set containing the closed disc $|z - c| \le R$. Then for every $w$ with $|w - c| < R$,
+
+$$
+f(w) = \frac{1}{2\pi i} \oint_{|z - c| = R} \frac{f(z)}{z - w}\,dz.
+$$
+
+</Theorem>
+
+<Proof>
+
+$f$ is holomorphic on a slightly larger disc $D$. Define $g(z) = \frac{f(z) - f(w)}{z - w}$ for $z \ne w$ and $g(w) = f'(w)$. Then $g$ is continuous on $D$ and holomorphic except at $w$, so $\oint g = 0$ by Theorem 4. Hence
+
+$$
+\oint \frac{f(z)}{z - w}\,dz = f(w) \oint \frac{dz}{z - w} = 2\pi i\, f(w)
+$$
+
+by Lemma 5.
+
+</Proof>
+
+The values of a holomorphic function *inside* a disc are determined by its values on the boundary. Nothing like this is true for real-differentiable functions.
+
+</Section>
+
+<Section id="analytic" kind="proof" title="Power series, Liouville and the fundamental theorem of algebra">
+
+<Theorem name="Theorem 7 (holomorphic functions are analytic)">
+
+Let $f$ be holomorphic on the open disc $|z - c| < \rho$. Then $f(w) = \sum_{n \ge 0} a_n (w - c)^n$ for all $|w - c| < \rho$, where, for any $0 < R < \rho$,
+
+$$
+a_n = \frac{1}{2\pi i} \oint_{|z - c| = R} \frac{f(z)}{(z - c)^{n+1}}\,dz.
+$$
+
+Consequently $f$ is infinitely complex-differentiable, with $f^{(n)}(c) = n!\,a_n$.
+
+</Theorem>
+
+<Proof>
+
+Fix $w$ and choose $R$ with $|w - c| < R < \rho$. Substitute the uniformly convergent geometric series of Lemma 5 into Cauchy's formula. Uniform convergence allows term-by-term integration (the ML-inequality bounds the tail by $2\pi R \cdot \sup|f| \cdot \sum_{n > N} q^n/R$), and this gives the series. A power series is infinitely differentiable inside its disc of convergence, with derivatives computed term by term, so $f^{(n)}(c) = n!\,a_n$. The coefficients do not depend on $R$, because they are determined by the derivatives at $c$.
+
+</Proof>
+
+So the Taylor series of a holomorphic function converges on the *largest disc on which the function is holomorphic*. That explains a real-analysis puzzle. The Taylor series of $\frac{1}{1 + x^2}$ about $0$ has radius $1$, although the function is perfectly smooth on all of $\R$. Over $\C$ it has poles at $\pm i$, at distance $1$.
+
+<Theorem name="Corollary 8 (Cauchy's estimates)">
+
+If $f$ is holomorphic on a neighbourhood of $|z - c| \le R$ and $|f| \le M$ on the circle $|z - c| = R$, then $|f^{(n)}(c)| \le n!\,M / R^n$.
+
+</Theorem>
+
+<Proof>
+
+ML-inequality in the formula for $a_n$: $|a_n| \le \frac{1}{2\pi} \cdot 2\pi R \cdot \frac{M}{R^{n+1}} = \frac{M}{R^n}$.
+
+</Proof>
+
+<Theorem name="Theorem 9 (Liouville)">
+
+Every bounded entire function is constant.
+
+</Theorem>
+
+<Proof>
+
+If $|f| \le M$ on $\C$, Corollary 8 with $n = 1$ gives $|f'(c)| \le M/R$ for every $R > 0$, so $f'(c) = 0$ for every $c$. A function with zero derivative on the connected set $\C$ is constant (integrate along segments from $0$).
+
+</Proof>
+
+<Theorem name="Theorem 10 (fundamental theorem of algebra)">
+
+Every non-constant polynomial $p$ with complex coefficients has a complex root. Hence $p$ factors as $c\prod_{k=1}^n (z - z_k)$.
+
+</Theorem>
+
+<Proof>
+
+Write $p(z) = a_n z^n + \cdots + a_0$ with $n \ge 1$ and $a_n \ne 0$. For $|z| \ge R_0 := \max\big(1, 2\sum_{k < n} |a_k| / |a_n|\big)$ we have $|p(z)| \ge |a_n||z|^n - \sum_{k<n} |a_k||z|^{n-1} \ge \tfrac12 |a_n| |z|^n$, so $|p(z)| \to \infty$. Suppose $p$ had no root. Then $1/p$ is entire. It is bounded by $2/|a_n|$ for $|z| \ge R_0$, and bounded on the compact disc $|z| \le R_0$ by continuity. By Liouville, $1/p$ is constant, so $p$ is constant — a contradiction. The factorisation follows by induction on the degree, dividing by $z - z_1$.
+
+</Proof>
+
+</Section>
+
+<Section id="residues" kind="proof" title="Laurent series and the residue theorem">
+
+<Theorem name="Proposition 11 (principal parts)">
+
+Let $f$ have a pole of order $m$ at $a$: $f(z) = g(z)/(z - a)^m$ with $g$ holomorphic near $a$, $g(a) \ne 0$. Expanding $g(z) = \sum_{k \ge 0} b_k (z - a)^k$ (Theorem 7) gives
+
+$$
+f(z) = \underbrace{\frac{b_0}{(z - a)^m} + \cdots + \frac{b_{m-1}}{z - a}}_{\text{principal part } P_a(z)} + \sum_{k \ge 0} b_{m + k}(z - a)^k,
+$$
+
+so $f - P_a$ is holomorphic near $a$ (after removing the singularity), and $\operatorname{Res}_a f = b_{m-1} = \frac{g^{(m-1)}(a)}{(m-1)!}$. For a simple pole of a quotient $f = \phi/\psi$ with $\psi(a) = 0 \ne \psi'(a)$ and $\phi(a) \ne 0$: $\operatorname{Res}_a f = \phi(a)/\psi'(a)$.
+
+</Theorem>
+
+(Every isolated singularity, including essential ones, has a two-sided **Laurent expansion** $\sum_{n \in \Z} c_n (z - a)^n$ on a punctured disc, proved like Theorem 7 on an annulus. We will only need poles.)
+
+<Theorem name="Theorem 12 (residue theorem for a disc)">
+
+Let $f$ be holomorphic on an open set containing the closed disc $|z - c| \le R$, except at finitely many poles $a_1, \dots, a_k$, all with $|a_j - c| < R$. Then
+
+$$
+\oint_{|z - c| = R} f(z)\,dz = 2\pi i \sum_{j=1}^k \operatorname{Res}_{a_j} f.
+$$
+
+</Theorem>
+
+<Proof>
+
+Let $P_j$ be the principal part at $a_j$. The function $h = f - \sum_j P_j$ has only removable singularities in the disc. Each $P_\ell$ is holomorphic away from $a_\ell$, and $f - P_j$ is holomorphic near $a_j$ by Proposition 11. After removing those singularities, $h$ is holomorphic on a disc slightly larger than $|z - c| \le R$. By Theorem 4, $\oint h = 0$. And $\oint P_j = \sum_n b^{(j)}_n \oint (z - a_j)^{-n}\,dz$, where only the term $(z - a_j)^{-1}$ survives, by the computation $\oint (z - a)^{-n} dz = 0$ for $n \ge 2$ and Lemma 5 for $n = 1$. That term contributes $2\pi i \operatorname{Res}_{a_j} f$.
+
+</Proof>
+
+The same proof works for any simple closed contour on which Cauchy's theorem is available (for example a semicircle, using its convexity and Theorem 4 on a slightly larger convex region). We use a semicircle now.
+
+<Example title="Two real integrals by residues">
+
+**(a)** $\int_{-\infty}^\infty \frac{dx}{1 + x^2} = \pi$. Let $\Gamma_R$ be the segment $[-R, R]$ followed by the upper semicircle $C_R$ of radius $R > 1$. Inside lies one simple pole of $\frac{1}{1 + z^2}$, at $i$, with residue $\frac{1}{2i}$. So $\oint_{\Gamma_R} \frac{dz}{1 + z^2} = 2\pi i \cdot \frac{1}{2i} = \pi$. On $C_R$, $|1 + z^2| \ge R^2 - 1$, so the ML-inequality bounds that part by $\frac{\pi R}{R^2 - 1} \to 0$. Letting $R \to \infty$ gives $\pi$.
+
+**(b)** $\int_{-\infty}^\infty \frac{\cos x}{1 + x^2}\,dx = \frac{\pi}{e}$. Use $f(z) = \frac{e^{iz}}{1 + z^2}$ instead. On the upper half-plane $|e^{iz}| = e^{-\operatorname{Im} z} \le 1$, so the same estimate kills $C_R$. The residue at $i$ is $\frac{e^{i \cdot i}}{2i} = \frac{e^{-1}}{2i}$. Hence $\int_{-\infty}^\infty \frac{e^{ix}}{1 + x^2}\,dx = 2\pi i \cdot \frac{e^{-1}}{2i} = \frac{\pi}{e}$. Taking real parts gives the result, and the imaginary part, $\int \frac{\sin x}{1 + x^2}\,dx = 0$, is consistent with the integrand being odd. (Using $\cos z$ directly would fail: $|\cos z|$ grows like $e^{|\operatorname{Im} z|}$ on the semicircle.)
+
+</Example>
+
+Applied to $f'/f$, the residue theorem counts zeros. **Argument principle:** if $f$ is holomorphic on a neighbourhood of $|z - c| \le R$ with no zeros on the circle, then $\frac{1}{2\pi i}\oint \frac{f'(z)}{f(z)}\,dz$ is the number of zeros inside, counted with multiplicity. (At a zero of order $m$, $f'/f$ has a simple pole with residue $m$.) Its corollary, **Rouché's theorem**, says: if $|g| < |f|$ on the circle, then $f$ and $f + g$ have the same number of zeros inside. For example $z^5 - 3z + 1$ has exactly one zero in $|z| < 1$, since $|z^5 + 1| \le 2 < 3 = |{-3z}|$ there.
+
+<Theorem name="Proposition 13 (1/z has no holomorphic extension)">
+
+There is no entire function $g$ with $g(z) = 1/z$ for all $z \ne 0$. More generally, $1/z$ has no primitive on $\C \setminus \{0\}$.
+
+</Theorem>
+
+<Proof>
+
+If $g$ were entire, Cauchy's theorem would give $\oint_{|z|=1} g = 0$. But $g = 1/z$ on the circle, and $\oint dz/z = 2\pi i$. A primitive $F$ of $1/z$ on $\C \setminus \{0\}$ would also force $\oint dz/z = 0$.
+
+</Proof>
+
+The obstruction is exactly that $1/z$ is unbounded near $0$. **Riemann's removable singularity theorem** says that a function holomorphic on a punctured disc and *bounded* near the puncture extends holomorphically to it. (Apply Theorem 7 to $(z - a)^2 f(z)$, which is complex-differentiable at $a$ with derivative $0$.)
+
+</Section>
+
+<Section id="conformal" kind="human" title="Conformal maps">
+
+<Theorem name="Proposition 14 (holomorphic maps preserve angles)">
+
+If $f$ is holomorphic near $z_0$ and $f'(z_0) \ne 0$, then $f$ preserves the oriented angle between any two smooth curves crossing at $z_0$.
+
+</Theorem>
+
+<Proof>
+
+A curve $\gamma$ with $\gamma(0) = z_0$ and $\gamma'(0) \ne 0$ is mapped to $f \circ \gamma$, with tangent $(f \circ \gamma)'(0) = f'(z_0)\gamma'(0)$ by the chain rule. Every tangent vector is multiplied by the same non-zero complex number $f'(z_0) = re^{i\theta}$, which rotates all of them by $\theta$. So the angle between any two of them is unchanged.
+
+</Proof>
+
+Where $f'(z_0) = 0$ angles are multiplied: $z \mapsto z^2$ doubles every angle at $0$. The **Möbius transformations** $z \mapsto \frac{az + b}{cz + d}$ ($ad - bc \ne 0$) are conformal bijections of the Riemann sphere $\C \cup \{\infty\}$ that send circles and lines to circles and lines. For example $z \mapsto \frac{z - i}{z + i}$ maps the upper half-plane onto the unit disc. **Riemann mapping theorem (stated, not proved here):** every simply connected open set $U \subsetneq \C$ is conformally equivalent to the open unit disc. Riemann stated it in 1851. Rigorous proofs came around 1900–1912 (Osgood, Carathéodory, Koebe), and the standard textbook proof is due to Fejér and Riesz (1922).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Complex analysis in Lean and Mathlib">
+
+Mathlib's complex analysis is extensive. Holomorphic functions are `DifferentiableOn ℂ f U`, and contour integrals over circles are `circleIntegral`, written `∮ z in C(c, R), f z`. Mathlib proves Cauchy's theorem for rectangles by a version of Green's theorem (not by Goursat subdivision), and deduces from it the disc theorem, Cauchy's integral formula, analyticity, the Cauchy estimates and Liouville's theorem. We name the notion of the lesson:
+
+<Lean decl="Lumenary.ComplexAnalysis.HolomorphicOn" />
+
+The Cauchy–Riemann equations in derivative form: a complex derivative $f'$ gives rate $f'$ in the real direction and $f' \cdot i$ in the imaginary direction. Applied to conjugation, whose rates are $1$ and $-i$, it proves that $\bar z$ is nowhere complex-differentiable:
+
+<Lean decl="Lumenary.ComplexAnalysis.directional_derivatives" />
+
+<Lean decl="Lumenary.ComplexAnalysis.conj_not_differentiableAt" />
+
+Cauchy's theorem on a disc, the basic integral of Lemma 5, Cauchy's integral formula (Theorem 6) and analyticity (Theorem 7), cited from Mathlib:
+
+<Lean decl="Lumenary.ComplexAnalysis.cauchy_theorem_disc" />
+
+<Lean decl="Lumenary.ComplexAnalysis.circle_integral_inv" />
+
+<Lean decl="Lumenary.ComplexAnalysis.cauchy_integral_formula" />
+
+<Lean decl="Lumenary.ComplexAnalysis.holomorphic_is_analytic" />
+
+Proposition 13 — no entire extension of $1/z$ — proved from those two facts exactly as on paper:
+
+<Lean decl="Lumenary.ComplexAnalysis.inv_no_entire_extension" />
+
+Liouville's theorem, proved from the Cauchy estimate as in Theorem 9, next to Mathlib's own statement:
+
+<Lean decl="Lumenary.ComplexAnalysis.cauchy_estimate" />
+
+<Lean decl="Lumenary.ComplexAnalysis.liouville_from_cauchy_estimate" />
+
+<Lean decl="Lumenary.ComplexAnalysis.liouville_library" />
+
+The fundamental theorem of algebra, by the argument of Theorem 10. Here the Liouville step uses Mathlib's variant "an entire function with a limit at infinity is constant", and the growth $|p(z)| \to \infty$ is Mathlib's `Polynomial.tendsto_norm_atTop`.
+
+<Lean decl="Lumenary.ComplexAnalysis.fta_from_liouville" />
+
+<Lean decl="Lumenary.ComplexAnalysis.fta_library" />
+
+Finally, the real integral of Example (a), which Mathlib evaluates with $\arctan$ rather than residues:
+
+<Lean decl="Lumenary.ComplexAnalysis.integral_inv_one_add_sq" />
+
+**What is and is not formalised.** Proved here: the Cauchy–Riemann equations in directional form (the necessity half of Theorem 1), the nowhere-differentiability of $\bar z$, Proposition 13, Liouville's theorem from the Cauchy estimate, and the fundamental theorem of algebra from Liouville. Cited from Mathlib: Cauchy's theorem and integral formula on discs, Lemma 5, analyticity, the Cauchy estimates and the integral $\int dx/(1 + x^2) = \pi$. Not formalised: Goursat's subdivision proof (Mathlib takes a different route to Cauchy's theorem), the converse half of Theorem 1, Laurent series, the residue theorem and the argument principle — Mathlib has no general residue theorem at this version — and the Riemann mapping theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Contour integrals by computer">
+
+On a circle, $z = c + Re^{it}$ makes every contour integral an integral of a periodic function of $t$. For periodic integrands that are analytic near the circle, the plain trapezoid rule with $n$ equally spaced points converges *geometrically* in $n$, far faster than for general integrands. The program uses this to check the theory: $\oint dz/z = 2\pi i$, $\oint \bar z\,dz = 2\pi i$ (so Cauchy's theorem fails for $\bar z$), $\oint z^2\,dz = 0$, the derivative formula $\oint e^z/z^3\,dz = 2\pi i \cdot \frac{1}{2!}$, Cauchy's formula for $e^{1/2}$, the two residue integrals of the lesson, and the argument principle counting the zeros of $z^5 - 3z + 1$.
+
+<Python id="complex_analysis_contour_integrals" />
+
+Look at the error column for Cauchy's formula: it falls from $10^{-1}$ to $10^{-10}$ as $n$ goes from $4$ to $32$. That geometric decay is itself a theorem of complex analysis: the error is controlled by how far the integrand can be continued holomorphically off the circle. The zero counts come out as near-integers $1, 1, 5$, which Rouché's theorem confirms exactly. All of this is **numerical evidence**: it checks the theorems on examples to many digits, but proves nothing about other functions or circles.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: conformal maps and winding numbers">
+
+**Conformality.** The left panel is a grid in the $z$-plane; the right is its image under $w = z^2$. Drag the probe. The little right-angled cross stays right-angled everywhere, except at $z = 0$, where $f'(0) = 0$ and the angle doubles to $180°$. Then try $e^z$, which turns horizontal lines into rays and vertical lines into circles.
+
+<ComplexPlane mode="map" map="z^2" title="w = z²: angles are preserved where f′ ≠ 0" />
+
+**The Joukowski map** $w = z + 1/z$ sends circles through $-1$ and enclosing $1$ to wing-shaped curves. Because it is conformal away from $\pm 1$, it carries the flow of air around a cylinder, which is easy to write down, to the flow around an aerofoil.
+
+<ComplexPlane mode="map" map="joukowski" grid="polar" title="The Joukowski map z + 1/z" />
+
+**Winding numbers.** Send a point around the loop and watch the angle accumulate. The widget computes $\frac{1}{2\pi i}\oint \frac{dz}{z - a}$ numerically and it agrees with the count of turns. Drag the hole outside the loop: the integral becomes $0$, as Cauchy's theorem predicts, because $1/(z - a)$ is then holomorphic inside the loop.
+
+<WindingNumber loop="twice" loops={["circle", "twice", "miss"]} title="Winding number and ∮ dz/(z − a)" subtitle="The integral counts how many times the loop winds around a." />
+
+<ComplexPlane mode="winding" curve="figure8" z={[1.2, 0.2]} subtitle="Move p from one lobe to the other: the winding number changes sign." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A function of two real variables that is differentiable is holomorphic."** Real differentiability allows any $2 \times 2$ Jacobian. Complex differentiability demands that the Jacobian be a rotation-with-scaling, which is exactly the Cauchy–Riemann equations. The map $z \mapsto \bar z$ is real-linear — as smooth as possible — and complex-differentiable nowhere. $|z|^2$ is complex-differentiable only at $0$, and holomorphic nowhere, since holomorphy requires differentiability on an open set.
+
+</Misconception>
+
+<Misconception>
+
+**"If $f$ is holomorphic except at one point, it extends holomorphically to that point."** Only if $f$ is bounded near the point (Riemann's removable singularity theorem). $1/z$ is holomorphic on $\C \setminus \{0\}$ and has no holomorphic extension: $\oint_{|z| = 1} dz/z = 2\pi i$, while the integral of any entire function over that circle is $0$. Poles and essential singularities such as $e^{1/z}$ cannot be removed.
+
+</Misconception>
+
+<Misconception>
+
+**"$\oint \frac{dz}{z} = 0$, because $\log z$ is a primitive of $1/z$."** There is no holomorphic logarithm on all of $\C \setminus \{0\}$. Any branch must jump by $2\pi i$ somewhere around the origin, and that jump is precisely the value of the integral. Cauchy's theorem needs the path to avoid winding around points where $f$ fails to be holomorphic.
+
+</Misconception>
+
+<Misconception>
+
+**"Liouville's theorem says bounded holomorphic functions are constant."** Only *entire* ones. On the unit disc, $f(z) = z$ is bounded and holomorphic. The domain matters, and the theorem distinguishes $\C$ from the disc: there is no conformal bijection between them, although they are homeomorphic.
+
+</Misconception>
+
+<Misconception>
+
+**"The residue theorem lets you compute any real integral."** It needs a closed contour on which the extra pieces can be estimated. That is why the example used $e^{iz}$ (bounded in the upper half-plane) and not $\cos z$ (which grows exponentially there). For $\int_0^\infty \frac{\sin x}{x}\,dx$ one needs a contour indented around $0$: the singularity of $\frac{\sin x}{x}$ there is removable, but that of $e^{iz}/z$ is a pole. For some integrals no convenient contour is known.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Integrals that only see holes">
+
+Cauchy's theorem says that $\int_\gamma f$ depends only on the **homotopy class** of $\gamma$ in the domain of holomorphy: deforming the path without crossing a singularity changes nothing. On $\C \setminus \{0\}$ the integral $\gamma \mapsto \frac{1}{2\pi i}\int_\gamma \frac{dz}{z}$ is the winding number, an isomorphism from the <TopicLink id="math.geom.fundamental-group">fundamental group</TopicLink> $\pi_1(\C \setminus \{0\}) \cong \Z$ onto $\Z$. The argument principle is a theorem about the **degree** of the map $\theta \mapsto f(c + Re^{i\theta})/|f(c + Re^{i\theta})|$ from the circle to itself. It gives a topological proof of the fundamental theorem of algebra: for large $R$ the loop $p(Re^{i\theta})$ winds $n$ times around $0$, for $R$ near $0$ it winds $0$ times (if $p(0) \ne 0$), so somewhere in between it must pass through $0$. In de Rham's language, $\frac{dz}{z}$ is a closed but not exact $1$-form on the punctured plane, a generator of its first cohomology.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Conformal geometry and the hyperbolic disc">
+
+A holomorphic map with non-vanishing derivative is a conformal map, so complex analysis in one variable *is* conformal geometry of surfaces. The Riemann sphere $\C \cup \{\infty\}$ has the Möbius transformations as its conformal automorphisms, a group isomorphic to $\mathrm{PSL}(2, \C)$. The unit disc's conformal automorphisms are the maps $e^{i\theta}\frac{z - a}{1 - \bar a z}$, and the **Schwarz–Pick lemma** says every holomorphic self-map of the disc is a contraction for the Poincaré metric $\frac{2|dz|}{1 - |z|^2}$. That metric has constant curvature $-1$: it is the hyperbolic plane of <TopicLink id="math.geom.non-euclidean-geometry">non-Euclidean geometry</TopicLink>. The uniformisation theorem extends Riemann's mapping theorem: every simply connected Riemann surface is conformally the sphere, the plane or the disc. See <TopicLink id="math.geom.riemann-surfaces">Riemann surfaces</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Potential flow, electrostatics and the mean value property">
+
+For an ideal fluid in the plane (incompressible, irrotational) the velocity field is the gradient of a harmonic **potential** $\phi$, and the streamlines are level curves of a harmonic conjugate $\psi$. Together they form a holomorphic **complex potential** $\Phi = \phi + i\psi$, with complex velocity $\overline{\Phi'}$. The flow past a cylinder has $\Phi(z) = U(z + 1/z)$, and the Joukowski map carries it to flow past an aerofoil. That was Kutta's and Joukowski's route, between 1902 and 1910, to the lift on a wing. The same mathematics describes electrostatic fields and steady heat flow. Cauchy's integral formula, specialised to a circle centred at $w$, gives the **mean value property** $f(w) = \frac{1}{2\pi}\int_0^{2\pi} f(w + re^{it})\,dt$, which harmonic functions inherit. These ideas return in <TopicLink id="math.analysis.pde-intro">partial differential equations</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Primes from contour integrals">
+
+Riemann's 1859 paper continued $\zeta(s) = \sum n^{-s}$ holomorphically from $\operatorname{Re} s > 1$ to $\C \setminus \{1\}$, and related the primes to its zeros by a contour integral. The **prime number theorem** — the number of primes up to $x$ is asymptotic to $x/\ln x$ — was proved in 1896 by Hadamard and de la Vallée Poussin. The key complex-analytic input is that $\zeta(s) \ne 0$ on the line $\operatorname{Re} s = 1$. The Riemann hypothesis, that the non-trivial zeros lie on $\operatorname{Re} s = \tfrac12$, is open. In 1918 Hardy and Ramanujan invented the **circle method**, which integrates a generating function around circles approaching its natural boundary, and obtained an asymptotic formula for the number of partitions of $n$. See <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Algebraically closed, and algebraic curves">
+
+The fundamental theorem of algebra says that $\C$ is algebraically closed. It is one of the rare facts of algebra whose standard proofs all use analysis or topology, since some completeness of $\R$ is unavoidable. The Artin–Schreier route needs only that odd-degree real polynomials have roots (the intermediate value theorem) and Galois theory. Much further, a compact Riemann surface is the same thing as a smooth projective complex algebraic curve, with meromorphic functions corresponding to rational functions on the curve. Riemann's existence theorem and Chow's theorem link the analytic and algebraic worlds, the starting point of <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink> over $\C$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Complex numbers.** Rafael Bombelli's *L'Algebra* (1572) calculated with square roots of negative numbers to solve cubics. The plane picture was given by Caspar Wessel (1799, in Danish), Jean-Robert Argand (1806) and Gauss.
+- **Hydrodynamics and the Cauchy–Riemann equations.** The equations appear in Jean le Rond d'Alembert's work on fluid resistance (1752) and in Leonhard Euler's work in the 1770s, long before Cauchy and Riemann.
+- **Cauchy.** Augustin-Louis Cauchy's memoir on definite integrals (1814, published 1827) and his 1825 memoir on integrals between imaginary limits contain the integral theorem; he developed the residue calculus from 1826 and the integral formula in 1831. Liouville stated his theorem in 1844 for elliptic functions; Cauchy gave the general version the same year.
+- **Riemann and Weierstrass.** Bernhard Riemann's 1851 dissertation took the Cauchy–Riemann equations as the definition, introduced Riemann surfaces and stated the mapping theorem. Karl Weierstrass built the theory from power series instead. Édouard Goursat (1900) removed the assumption that $f'$ is continuous from Cauchy's theorem.
+- **Number theory.** Riemann's 1859 paper on $\zeta$, the prime number theorem of Hadamard and de la Vallée Poussin (1896), and the circle method of G. H. Hardy and Srinivasa Ramanujan (1918) made complex analysis a central tool of arithmetic.
+- **Applications.** Martin Kutta and Nikolai Joukowski used conformal maps to compute the lift of aerofoils (between 1902 and 1910), and conformal mapping remains a standard tool in fluid dynamics and electrostatics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Elias M. Stein and Rami Shakarchi, *Complex Analysis* (2003) — the modern standard course; Goursat-based proofs as in this lesson, with applications to number theory.
+- Lars V. Ahlfors, *Complex Analysis* (1953; 3rd edition 1979) — the classic, with the general homology form of Cauchy's theorem.
+- Tristan Needham, *Visual Complex Analysis* (1997) — geometric intuition for everything in this lesson.
+- John B. Conway, *Functions of One Complex Variable I* (1973; 2nd edition 1978) — careful and complete, including the Riemann mapping theorem.
+
+</Section>

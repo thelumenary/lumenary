@@ -1,0 +1,526 @@
+---
+slug: probability-rules
+topic: math.prob.probability-rules
+title: Conditional probability and independence
+subtitle: How new information changes a probability — tree diagrams, independence, the law of total probability, and Bayes' theorem, which explains why a positive test is not a diagnosis.
+level: g9-12
+ages: Ages 14–18
+minutes: 70
+order: 4020
+objectives:
+  - Compute conditional probabilities from two-way tables and tree diagrams, and use the multiplication rule
+  - Decide whether events are independent, and distinguish independence from mutual exclusivity
+  - Prove the rules of conditional probability, the law of total probability and Bayes' theorem from the definitions
+  - Apply Bayes' theorem to diagnostic tests with base rates, using natural frequencies
+  - Recognise the confusion of $P(A \mid B)$ with $P(B \mid A)$, including the prosecutor's fallacy
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.ProbabilityRules.FinProb
+  - Lumenary.ProbabilityRules.FinProb.P
+  - Lumenary.ProbabilityRules.FinProb.cond
+  - Lumenary.ProbabilityRules.FinProb.Indep
+  - Lumenary.ProbabilityRules.FinProb.prob_compl
+  - Lumenary.ProbabilityRules.FinProb.prob_union
+  - Lumenary.ProbabilityRules.FinProb.mul_rule
+  - Lumenary.ProbabilityRules.FinProb.bayes
+  - Lumenary.ProbabilityRules.FinProb.total_probability
+  - Lumenary.ProbabilityRules.FinProb.total_probability_two
+  - Lumenary.ProbabilityRules.FinProb.bayes_total
+  - Lumenary.ProbabilityRules.FinProb.base_rate_example
+  - Lumenary.ProbabilityRules.FinProb.indep_iff_cond
+  - Lumenary.ProbabilityRules.FinProb.exclusive_not_indep
+  - Lumenary.ProbabilityRules.FinProb.indep_compl
+  - Lumenary.ProbabilityRules.FinProb.uniform
+  - Lumenary.ProbabilityRules.FinProb.uniform_P
+  - Lumenary.ProbabilityRules.FinProb.uniform_indep_iff
+  - Lumenary.ProbabilityRules.FinProb.dice_even_seven
+  - Lumenary.ProbabilityRules.FinProb.dice_six_high
+  - Lumenary.ProbabilityRules.bayes_library
+  - Lumenary.ProbabilityRules.total_probability_library
+compute: [probability_rules_bayes_table, probability_rules_simulation]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="You tested positive. Now what?">
+
+A screening test for a condition is described as "95% accurate": it detects $95\%$ of people who have the condition, and it gives a correct negative result for $95\%$ of people who do not. About $1$ person in $100$ who take the test has the condition. You take the test, and the result is **positive**. How likely is it that you have the condition?
+
+Most people answer "about $95\%$". The true answer is about $16\%$.
+
+That is not a trick, and it is not a flaw in the test. It is what happens when we confuse two different questions — "how likely is a positive result, if you have the condition?" and "how likely is the condition, if your result is positive?" — and forget how rare the condition was to begin with. Doctors, juries, journalists and scientists have all made this mistake, sometimes with serious consequences. This lesson gives you the tools to get it right: **conditional probability**, **independence** and **Bayes' theorem**.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="New information shrinks the sample space">
+
+Roll two fair dice. The probability that the first die shows a $6$ is $\tfrac16$. Now suppose a friend peeks and tells you: "the total is $10$". Only three of the $36$ equally likely outcomes are left:
+$$
+(4, 6), \quad (5, 5), \quad (6, 4).
+$$
+In one of these three the first die shows a $6$. So, **given** that the total is $10$, the probability that the first die is a $6$ has risen from $\tfrac16$ to $\tfrac13$.
+
+Conditioning on an event $B$ means **throwing away every outcome outside $B$** and rescaling, so that the outcomes left over carry all the probability. Here is a second example, from a survey of $400$ secondary-school students in Hanoi about how they travel to school and whether they arrived late at least once last month:
+
+| | late | not late | total |
+| --- | --- | --- | --- |
+| **cycle** | 30 | 170 | 200 |
+| **bus** | 50 | 150 | 200 |
+| **total** | 80 | 320 | 400 |
+
+Pick a student at random. $P(\text{late}) = \tfrac{80}{400} = 0.2$. Among the cyclists only, $P(\text{late} \mid \text{cycle}) = \tfrac{30}{200} = 0.15$; among the bus riders, $P(\text{late} \mid \text{bus}) = \tfrac{50}{200} = 0.25$. And among the late students, $P(\text{cycle} \mid \text{late}) = \tfrac{30}{80} = 0.375$ — a quite different number from $0.15$, because it divides by a different total.
+
+<Narrator who="chloe">
+
+The vertical bar is read "given". The event after the bar is what we *know*; the event before it is what we *ask about*. Swap them and you're dividing by a different row or column — a different question altogether.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+We work, as in the lesson on <TopicLink id="math.prob.probability-intro">probability</TopicLink>, with a finite **sample space** $\Omega$ of outcomes. Each outcome $\omega$ has a probability $p(\omega) \ge 0$, these add up to $1$, and the probability of an event $A \subseteq \Omega$ is $P(A) = \sum_{\omega \in A} p(\omega)$. Equally likely outcomes are the special case $p(\omega) = 1/|\Omega|$, where $P(A) = |A|/|\Omega|$.
+
+<Definition term="conditional probability">
+
+For events $A$ and $B$ with $P(B) > 0$, the **conditional probability of $A$ given $B$** is
+$$
+P(A \mid B) = \frac{P(A \cap B)}{P(B)}.
+$$
+It is not defined when $P(B) = 0$.
+
+</Definition>
+
+<Definition term="independent events">
+
+Events $A$ and $B$ are **independent** if $P(A \cap B) = P(A)\,P(B)$.
+
+</Definition>
+
+<Definition term="mutually exclusive events">
+
+Events $A$ and $B$ are **mutually exclusive** if they cannot both happen: $A \cap B = \varnothing$.
+
+</Definition>
+
+<Definition term="partition">
+
+Events $B_1, \dots, B_n$ **partition** the sample space if they are pairwise mutually exclusive and together cover it: every outcome lies in exactly one $B_i$. For example, $B$ and its complement $B^c$ form a partition.
+
+</Definition>
+
+The definition of independence is symmetric in $A$ and $B$ and makes sense even when a probability is $0$; Theorem 5 below explains why it captures the idea "knowing $B$ tells us nothing about $A$".
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Two cards without replacement">
+
+Draw two cards from a shuffled pack of $52$, without putting the first back. What is the probability that both are aces? The first is an ace with probability $\tfrac{4}{52}$. **Given** that it was, $51$ cards remain, of which $3$ are aces, so the second is an ace with conditional probability $\tfrac{3}{51}$. Multiplying along the branches of the tree,
+$$
+P(\text{both aces}) = \frac{4}{52} \times \frac{3}{51} = \frac{12}{2652} = \frac{1}{221}.
+$$
+The draws are **not** independent: $P(\text{2nd ace} \mid \text{1st ace}) = \tfrac{3}{51} \ne \tfrac{4}{52} = P(\text{2nd ace})$.
+
+</Example>
+
+<Example title="Independent events from dice">
+
+Roll two dice. Let $A$ = "the first die is even" and $B$ = "the total is $7$". Then $P(A) = \tfrac{18}{36} = \tfrac12$, $P(B) = \tfrac{6}{36} = \tfrac16$, and $A \cap B = \{(2, 5), (4, 3), (6, 1)\}$, so $P(A \cap B) = \tfrac{3}{36} = \tfrac1{12} = P(A)\,P(B)$. They are independent: whatever the first die shows, exactly one face of the second die makes the total $7$.
+
+By contrast, $C$ = "the first die is $6$" and $D$ = "the total is at least $10$" are **not** independent: $P(C \cap D) = \tfrac{3}{36}$, but $P(C)\,P(D) = \tfrac16 \cdot \tfrac16 = \tfrac{1}{36}$.
+
+</Example>
+
+<Example title="Mutually exclusive is not independent">
+
+With one die, "roll a $1$" and "roll a $6$" are mutually exclusive. Are they independent? $P(\text{both}) = 0$, but $P(1)\,P(6) = \tfrac{1}{36} \ne 0$. No — learning that you rolled a $6$ tells you **for certain** that you did not roll a $1$. Mutually exclusive events with positive probabilities are as far from independent as can be.
+
+</Example>
+
+<Example title="Pairwise is not enough">
+
+Toss two fair coins. Let $A$ = "the first is heads", $B$ = "the second is heads", $C$ = "the two coins show the same face". Each has probability $\tfrac12$, and each pair is independent: for instance $A \cap C$ = "both heads" has probability $\tfrac14 = \tfrac12 \cdot \tfrac12$. But $A$ and $B$ together force $C$: $P(A \cap B \cap C) = \tfrac14 \ne \tfrac18 = P(A)P(B)P(C)$. For three events to be (**mutually**) independent we require the product rule for every pair **and** for all three together.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The rules, with proofs">
+
+Throughout, $\Omega$ is a finite sample space with probabilities $p(\omega)$ as above.
+
+<Theorem name="Theorem 1 (basic rules)">
+
+For all events $A$ and $B$: if $A \cap B = \varnothing$ then $P(A \cup B) = P(A) + P(B)$; in general
+$$
+P(A \cup B) = P(A) + P(B) - P(A \cap B), \qquad P(A^c) = 1 - P(A).
+$$
+
+</Theorem>
+
+<Proof>
+
+If $A$ and $B$ are disjoint, the sum of $p(\omega)$ over $A \cup B$ splits into the sum over $A$ plus the sum over $B$. In general, $P(A) + P(B)$ adds $p(\omega)$ twice for each $\omega \in A \cap B$ and once for every other outcome of $A \cup B$; subtract $P(A \cap B)$. Finally $A$ and $A^c$ are disjoint with union $\Omega$, so $P(A) + P(A^c) = P(\Omega) = 1$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (conditioning gives a new probability)">
+
+Fix an event $B$ with $P(B) > 0$. Then $A \mapsto P(A \mid B)$ is again a probability: $0 \le P(A \mid B) \le 1$, $P(\Omega \mid B) = P(B \mid B) = 1$, and $P(A_1 \cup A_2 \mid B) = P(A_1 \mid B) + P(A_2 \mid B)$ when $A_1 \cap A_2 = \varnothing$.
+
+</Theorem>
+
+<Proof>
+
+Since $A \cap B \subseteq B$, we have $0 \le P(A \cap B) \le P(B)$; divide by $P(B)$. Next, $P(\Omega \cap B) = P(B)$. If $A_1$ and $A_2$ are disjoint, so are $A_1 \cap B$ and $A_2 \cap B$, and their union is $(A_1 \cup A_2) \cap B$; apply Theorem 1 and divide by $P(B)$.
+
+</Proof>
+
+In fact $P(\,\cdot \mid B)$ gives each outcome $\omega \in B$ the new probability $p(\omega)/P(B)$ and each outcome outside $B$ probability $0$: the "throw away and rescale" of the intuition section. So **every** rule of probability holds for conditional probabilities too — for instance $P(A^c \mid B) = 1 - P(A \mid B)$.
+
+<Theorem name="Theorem 3 (multiplication rule)">
+
+If $P(B) > 0$ then $P(A \cap B) = P(A \mid B)\,P(B)$. More generally, if $P(A_1 \cap A_2) > 0$,
+$$
+P(A_1 \cap A_2 \cap A_3) = P(A_1)\,P(A_2 \mid A_1)\,P(A_3 \mid A_1 \cap A_2).
+$$
+
+</Theorem>
+
+<Proof>
+
+The first statement is the definition of $P(A \mid B)$ multiplied by $P(B)$. For the second, write out the right-hand side: $P(A_1) \cdot \dfrac{P(A_1 \cap A_2)}{P(A_1)} \cdot \dfrac{P(A_1 \cap A_2 \cap A_3)}{P(A_1 \cap A_2)}$; everything cancels except $P(A_1 \cap A_2 \cap A_3)$. (Both denominators are positive, since $P(A_1) \ge P(A_1 \cap A_2) > 0$.)
+
+</Proof>
+
+This is why we **multiply along the branches** of a tree diagram: each branch carries a conditional probability, given everything on the path before it.
+
+<Theorem name="Theorem 4 (law of total probability)">
+
+If $B_1, \dots, B_n$ partition $\Omega$ and each $P(B_i) > 0$, then for every event $A$,
+$$
+P(A) = \sum_{i=1}^{n} P(A \mid B_i)\,P(B_i).
+$$
+In particular, if $0 < P(B) < 1$: $\;P(A) = P(A \mid B)\,P(B) + P(A \mid B^c)\,P(B^c)$.
+
+</Theorem>
+
+<Proof>
+
+Every outcome of $A$ lies in exactly one $B_i$, so $A$ is the union of the pairwise disjoint pieces $A \cap B_1, \dots, A \cap B_n$, and $P(A) = \sum_i P(A \cap B_i)$ by Theorem 1 (applied repeatedly). By the multiplication rule, $P(A \cap B_i) = P(A \mid B_i)\,P(B_i)$.
+
+</Proof>
+
+On a tree diagram: to find $P(A)$, add up the probabilities of all the paths that end in $A$.
+
+<Theorem name="Theorem 5 (Bayes' theorem)">
+
+If $P(A) > 0$ and $P(B) > 0$, then
+$$
+P(A \mid B) = \frac{P(B \mid A)\,P(A)}{P(B)}.
+$$
+Combined with Theorem 4, when $0 < P(A) < 1$:
+$$
+P(A \mid B) = \frac{P(B \mid A)\,P(A)}{P(B \mid A)\,P(A) + P(B \mid A^c)\,P(A^c)}.
+$$
+
+</Theorem>
+
+<Proof>
+
+By the multiplication rule, used twice, $P(A \mid B)\,P(B) = P(A \cap B) = P(B \cap A) = P(B \mid A)\,P(A)$. Divide by $P(B)$. For the second form, expand the denominator $P(B)$ by the law of total probability with the partition $A, A^c$.
+
+</Proof>
+
+Bayes' theorem **reverses** a conditional probability. It needs one extra ingredient: the **base rate** (or **prior** probability) $P(A)$.
+
+<Example title="The screening test, solved">
+
+Let $D$ = "has the condition" and $T$ = "tests positive". We know $P(D) = 0.01$, $P(T \mid D) = 0.95$ and $P(T \mid D^c) = 0.05$. By Bayes' theorem,
+$$
+P(D \mid T) = \frac{0.95 \times 0.01}{0.95 \times 0.01 + 0.05 \times 0.99} = \frac{0.0095}{0.059} = \frac{19}{118} \approx 0.161.
+$$
+
+**Natural frequencies** make this transparent. Imagine $10\,000$ people. About $100$ have the condition, and $95$ of them test positive. Of the $9\,900$ who do not, $5\%$ — that is $495$ — also test positive. So of the $95 + 495 = 590$ positive results, only $95$ come from people with the condition: $\tfrac{95}{590} \approx 16\%$. The false positives outnumber the true ones because healthy people are so much more numerous.
+
+</Example>
+
+<Figure caption="The screening test as a tree. Multiply along each path; the two paths ending in a positive result have probabilities $0.0095$ and $0.0495$, so $P(T) = 0.059$ and $P(D \mid T) = 0.0095 / 0.059 \approx 0.16$.">
+
+<svg viewBox="0 0 460 220" role="img" aria-label="Tree diagram. From the start, a branch with probability 0.01 goes to condition and 0.99 to no condition. From condition, 0.95 goes to positive and 0.05 to negative. From no condition, 0.05 goes to positive and 0.95 to negative. The four paths have probabilities 0.0095, 0.0005, 0.0495 and 0.9405.">
+  <g stroke="var(--ink-2)" strokeWidth="2">
+    <line x1="30" y1="110" x2="150" y2="55" />
+    <line x1="30" y1="110" x2="150" y2="165" />
+    <line x1="210" y1="55" x2="300" y2="28" />
+    <line x1="210" y1="55" x2="300" y2="82" />
+    <line x1="210" y1="165" x2="300" y2="138" />
+    <line x1="210" y1="165" x2="300" y2="192" />
+  </g>
+  <circle cx="30" cy="110" r="6" fill="var(--ink-2)" />
+  <g fontSize="14" fill="var(--ink-2)" textAnchor="middle">
+    <text x="80" y="70">0.01</text>
+    <text x="80" y="160">0.99</text>
+    <text x="248" y="32">0.95</text>
+    <text x="248" y="88">0.05</text>
+    <text x="248" y="142">0.05</text>
+    <text x="248" y="198">0.95</text>
+  </g>
+  <g fontSize="15" fill="var(--human)" textAnchor="middle">
+    <text x="180" y="60">D</text>
+    <text x="180" y="170">not D</text>
+  </g>
+  <g fontSize="15">
+    <text x="310" y="33" fill="var(--gold)">T: 0.0095</text>
+    <text x="310" y="87" fill="var(--ink-2)">not T: 0.0005</text>
+    <text x="310" y="143" fill="var(--gold)">T: 0.0495</text>
+    <text x="310" y="197" fill="var(--ink-2)">not T: 0.9405</text>
+  </g>
+</svg>
+
+</Figure>
+
+### Independence
+
+<Theorem name="Theorem 6 (independence as irrelevance)">
+
+If $P(B) > 0$, then $A$ and $B$ are independent if and only if $P(A \mid B) = P(A)$.
+
+</Theorem>
+
+<Proof>
+
+$P(A \mid B) = P(A)$ means $\dfrac{P(A \cap B)}{P(B)} = P(A)$, which (multiplying by $P(B) > 0$) is the same as $P(A \cap B) = P(A)\,P(B)$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (complements)">
+
+If $A$ and $B$ are independent, so are $A$ and $B^c$ (and hence also $A^c$ and $B$, and $A^c$ and $B^c$).
+
+</Theorem>
+
+<Proof>
+
+$A$ is the disjoint union of $A \cap B$ and $A \cap B^c$, so
+$$
+P(A \cap B^c) = P(A) - P(A \cap B) = P(A) - P(A)P(B) = P(A)\big(1 - P(B)\big) = P(A)\,P(B^c),
+$$
+using independence in the second step and the complement rule in the last. Applying this again with the roles of the events exchanged gives the other two statements.
+
+</Proof>
+
+<Theorem name="Theorem 8 (exclusive events are dependent)">
+
+If $A$ and $B$ are mutually exclusive and $P(A) > 0$, $P(B) > 0$, then $A$ and $B$ are **not** independent.
+
+</Theorem>
+
+<Proof>
+
+$P(A \cap B) = P(\varnothing) = 0$, while $P(A)\,P(B) > 0$.
+
+</Proof>
+
+<Narrator who="chloe">
+
+So "independent" and "mutually exclusive" are almost opposites. Independent: learning that one happened leaves the chance of the other alone. Mutually exclusive: learning that one happened makes the other impossible.
+
+</Narrator>
+
+</Section>
+
+<Section id="formal" kind="formal" title="The rules, checked by Lean">
+
+We formalise a **finite probability space** exactly as in the definitions: a finite type of outcomes and a rational probability for each, adding up to $1$. Using rational numbers keeps every calculation exact.
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.P" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.cond" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.Indep" />
+
+<Narrator who="gideon">
+
+Look at the docstring of `cond`. In Lean, dividing by zero is allowed and gives $0$ — a convenient convention, not a mathematical claim. So `cond A B` has a value even when $P(B) = 0$, a meaningless one. That is why the theorems below carry hypotheses such as `μ.P B ≠ 0`: they say exactly when a formula is meaningful, just like the human statements.
+
+</Narrator>
+
+The basic rules (Theorem 1) and the multiplication rule:
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.prob_compl" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.prob_union" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.mul_rule" />
+
+Bayes' theorem and the law of total probability (Theorems 4 and 5), and the screening test as a theorem about **every** probability space with those three numbers:
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.bayes" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.total_probability" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.total_probability_two" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.bayes_total" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.base_rate_example" />
+
+Independence (Theorems 6, 7 and 8):
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.indep_iff_cond" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.exclusive_not_indep" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.indep_compl" />
+
+For equally likely outcomes, probability is counting, and independence becomes a statement about counts that Lean can check by listing all $36$ outcomes of two dice:
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.uniform" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.uniform_P" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.uniform_indep_iff" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.dice_even_seven" />
+
+<Lean decl="Lumenary.ProbabilityRules.FinProb.dice_six_high" />
+
+At university, probability is built on **measure theory**, which also handles infinitely many outcomes (a point chosen at random on a line, a random walk that goes on forever). Mathlib's probability library is written in that language; here are Bayes' theorem and total probability as it states them. The notation `μ[t | s]` is $P(t \mid s)$, and probabilities take values in $[0, \infty]$:
+
+<Lean decl="Lumenary.ProbabilityRules.bayes_library" />
+
+<Lean decl="Lumenary.ProbabilityRules.total_probability_library" />
+
+Our finite spaces are a special case of Mathlib's measures; we have not formally proved that the two notions of conditional probability agree on them, though they do.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Tables and simulations">
+
+<Narrator who="margaret">
+
+First, natural frequencies done exactly: the screening test on $100\,000$ imaginary people, the same test with different base rates, a second test, and a courtroom.
+
+</Narrator>
+
+<Python id="probability_rules_bayes_table" />
+
+Look at the base-rate table. The test never changes, yet a positive result means anything from a $2\%$ to a $95\%$ chance of having the condition, depending on how common the condition is among the people tested. That is why screening programmes usually follow a positive result with a second, different test — and why a test used on people who already have symptoms (a higher base rate) is more informative than the same test used on everyone.
+
+The last lines are the **prosecutor's fallacy**. "Only one person in a million has this DNA profile" is $P(\text{match} \mid \text{innocent})$. But in a city of two million there are about two innocent people who match as well as the guilty one, so, if the match is the only evidence and the suspect was found by searching, $P(\text{innocent} \mid \text{match})$ is about $\tfrac23$. Real cases have other evidence, which changes the numbers — but the two conditional probabilities must never be confused.
+
+<Narrator who="margaret">
+
+Now simulation. A conditional probability can be estimated by keeping only the trials where the condition happened, and asking how often the event happened among those.
+
+</Narrator>
+
+<Python id="probability_rules_simulation" />
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: the Monty Hall problem">
+
+<ChanceLab experiment="monty-hall" trials={1000} title="Stick or switch?" />
+
+In a game show there are three doors: a car behind one, goats behind the other two. You pick a door. The host, who knows where the car is, always opens a **different** door with a goat behind it (choosing at random if there are two), and offers you the chance to switch. Should you? Play a few rounds yourself, then run thousands.
+
+Bayes' theorem explains the answer. Say you picked door $1$ and the host opened door $3$. Each door hides the car with prior probability $\tfrac13$. If the car is behind door $1$, the host opens door $3$ with probability $\tfrac12$; if it is behind door $2$, he **must** open door $3$ (probability $1$); if it is behind door $3$, he never opens it. By total probability, $P(\text{host opens } 3) = \tfrac13 \cdot \tfrac12 + \tfrac13 \cdot 1 + \tfrac13 \cdot 0 = \tfrac12$, and by Bayes
+$$
+P(\text{car behind 2} \mid \text{host opens 3}) = \frac{1 \cdot \tfrac13}{\tfrac12} = \frac23.
+$$
+Switching wins with probability $\tfrac23$. The host's choice carries information, because it depends on where the car is.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Confusing $P(A \mid B)$ with $P(B \mid A)$.** The probability that a person who has the condition tests positive ($95\%$) is not the probability that a person who tests positive has the condition (about $16\%$). In court this is the **prosecutor's fallacy**: "the chance of this evidence if the defendant were innocent is tiny" is not "the chance that the defendant is innocent is tiny". Bayes' theorem converts one into the other, and it needs the base rate.
+
+</Misconception>
+
+<Misconception>
+
+**Ignoring base rates.** A very accurate test for a very rare condition produces mostly false positives, simply because there are so many more people without the condition. Always ask: "out of how many people, and how many of them had it to begin with?"
+
+</Misconception>
+
+<Misconception>
+
+**"Independent means mutually exclusive."** Almost the opposite: mutually exclusive events with positive probabilities are never independent (Theorem 8). "First coin heads" and "second coin heads" are independent and can perfectly well happen together.
+
+</Misconception>
+
+<Misconception>
+
+**"Independence can always be read off the story."** Sometimes it can (separate coins, separate dice), but often it must be checked with numbers. "First die even" and "total even" are independent, which surprises many people; and two events can be dependent through a common cause, like two family members' illnesses. Assuming independence when it fails can turn a large probability into a tiny one — as happened in the case of Sally Clark (see the history section).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="geometry" title="Probability as area">
+
+Picture $\Omega$ as a unit square and events as regions, with probability equal to area. Conditioning on $B$ means **zooming in** on the region $B$ and rescaling it to have area $1$; $P(A \mid B)$ is the fraction of $B$ covered by $A$. Two events are independent when they look like a vertical strip and a horizontal strip: the strip $\{x \le a\}$ and the strip $\{y \le b\}$ meet in a rectangle of area $ab$, exactly the product of their areas. Choosing a random point in the square, "$x \le a$" and "$y \le b$" are independent — the two coordinates do not influence each other.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Bayes in odds form">
+
+Write probabilities as **odds**: $O(A) = P(A)/P(A^c)$. Dividing Bayes' theorem for $A$ by Bayes' theorem for $A^c$ cancels $P(B)$ and leaves
+$$
+\underbrace{\frac{P(A \mid B)}{P(A^c \mid B)}}_{\text{posterior odds}} = \underbrace{\frac{P(B \mid A)}{P(B \mid A^c)}}_{\text{likelihood ratio}} \times \underbrace{\frac{P(A)}{P(A^c)}}_{\text{prior odds}}.
+$$
+For the screening test the likelihood ratio is $0.95 / 0.05 = 19$, the prior odds are $1 : 99$, so the posterior odds are $19 : 99$ — the $19/118$ we found. Evidence acts by **multiplication**, and independent pieces of evidence multiply their likelihood ratios; taking logarithms turns this into addition, which is how Alan Turing and I. J. Good scored evidence at Bletchley Park.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Learning from data">
+
+Bayes' theorem is the engine of a large part of modern statistics and machine learning. A spam filter estimates $P(\text{spam} \mid \text{words})$ from the frequencies of words in spam and in ordinary mail; a "naive Bayes" filter simply assumes the words are independent given the class, and works surprisingly well although the assumption is false. In <TopicLink id="math.prob.statistics">statistical inference</TopicLink>, Bayesian methods treat an unknown quantity as uncertain and update a prior distribution into a posterior distribution as data arrive — the screening-test calculation, repeated with many hypotheses at once.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="sets" kind="sets" title="Set-theoretic connection">
+
+Every rule in this lesson is a statement about subsets of $\Omega$. Conditioning on $B$ replaces the universe $\Omega$ by $B$ and each event $A$ by $A \cap B$. A partition is a way of cutting $\Omega$ into disjoint pieces — the same notion as the classes of an <TopicLink id="math.found.equivalence-relations">equivalence relation</TopicLink> — and the law of total probability adds the probability of $A$ up piece by piece. Mutually exclusive means disjoint, a set-theoretic property; independence is a numerical one, which is why the two are so different.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Bayes and Laplace.** Thomas Bayes, an English minister, worked out how to reason from observed outcomes back to unknown chances; his essay was published in 1763, after his death, by his friend Richard Price. Pierre-Simon Laplace discovered the theorem independently (1774) and developed it into a general method, applying it, for example, to birth records from Paris and London.
+- **Foundations.** Andrey Kolmogorov's book of 1933, which set out the axioms of probability used today, defines conditional probability by the ratio $P(A \cap B)/P(B)$ used in this lesson.
+- **Codebreaking.** During the Second World War, Alan Turing and I. J. Good used Bayes factors — likelihood ratios, added on a logarithmic scale — to weigh evidence when breaking German naval codes at Bletchley Park.
+- **Base-rate neglect.** In a 1978 study by Ward Casscells, Arno Schoenberger and Thomas Graboys, staff and students at Harvard Medical School were asked about a test with a $5\%$ false-positive rate for a disease affecting $1$ person in $1000$. The most common answer for the chance that a person with a positive result has the disease was $95\%$; fewer than one in five gave the correct answer, about $2\%$. Gerd Gigerenzer and Ulrich Hoffrage showed in 1995 that people reason far more accurately with natural frequencies than with percentages.
+- **A miscarriage of justice.** In 1999 Sally Clark, a solicitor in England, was convicted of murdering her two baby sons. An expert witness told the court that the chance of two sudden infant deaths in such a family was about $1$ in $73$ million, obtained by squaring the chance of one — assuming the two deaths independent, although shared genetic and environmental factors make that assumption doubtful — and the figure was widely misread as the chance of her innocence. The Royal Statistical Society publicly criticised this use of statistics in 2001, and her convictions were overturned in 2003.
+- **Monty Hall.** The puzzle was posed by the statistician Steve Selvin in 1975 and became famous in 1990, when Marilyn vos Savant's correct answer — switch — drew thousands of letters insisting she was wrong.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Joseph K. Blitzstein and Jessica Hwang, *Introduction to Probability* (2014), chapter 2 on conditional probability.
+- Charles M. Grinstead and J. Laurie Snell, *Introduction to Probability* (1997).
+- Gerd Gigerenzer, *Calculated Risks: How to Know When Numbers Deceive You* (2002).
+- David Spiegelhalter, *The Art of Statistics: Learning from Data* (2019).
+- William Feller, *An Introduction to Probability Theory and Its Applications*, volume 1 (1950), chapter 5 — a classic, for later.
+
+</Section>

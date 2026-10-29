@@ -1,0 +1,360 @@
+---
+slug: path-algebras
+topic: math.algebra.path-algebras
+title: Quivers and path algebras
+subtitle: Draw a directed graph, multiply its paths by concatenation, and get an algebra whose modules are exactly the configurations of vector spaces and linear maps shaped like the graph.
+level: grad
+ages: Graduate
+minutes: 120
+order: 7013
+objectives:
+  - Compute the path algebra $kQ$ of a small quiver, with an explicit convention for multiplying paths, and show that for a finite quiver it is finite-dimensional exactly when $Q$ has no oriented cycles
+  - Identify $kQ$ for basic examples — $k[x]$, free algebras, upper triangular matrices — and describe its idempotents, simple and projective modules
+  - Prove that representations of a finite quiver $Q$ correspond to $kQ$-modules, giving an equivalence of categories
+  - Classify the indecomposable representations of the linearly oriented quiver $A_n$ as interval modules, and compute the multiplicities from ranks
+narrators: []
+lean:
+  - Lumenary.PathAlgebras.PathOrZero
+  - Lumenary.PathAlgebras.pmul
+  - Lumenary.PathAlgebras.pmul_assoc
+  - Lumenary.PathAlgebras.idempotents
+  - Lumenary.PathAlgebras.concat_assoc
+  - Lumenary.PathAlgebras.path_length_le
+  - Lumenary.PathAlgebras.cyclePow
+  - Lumenary.PathAlgebras.cycle_infinite
+  - Lumenary.PathAlgebras.LinA
+  - Lumenary.PathAlgebras.linAQuiver
+  - Lumenary.PathAlgebras.lin_a_length
+  - Lumenary.PathAlgebras.rep_extends
+compute: [path_algebras_path_counting, path_algebras_barcodes]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Linear algebra shaped like a graph">
+
+Many problems of linear algebra ask for normal forms of a configuration of vector spaces and linear maps:
+
+- one linear map $V \to W$ (normal form: its rank);
+- one endomorphism $V \to V$ (normal form: Jordan blocks, depending on eigenvalues);
+- a chain $V_1 \to V_2 \to \cdots \to V_n$ — for instance the homology of a growing sequence of spaces in data analysis;
+- two maps $V \rightrightarrows W$ (Kronecker's matrix pencils).
+
+Each is described by a directed graph — a **quiver** — with a vector space at each vertex and a linear map on each arrow. Gabriel (1972) observed that such **representations of a quiver $Q$** are precisely the modules over a single algebra, the **path algebra** $kQ$, whose basis is the set of paths in $Q$ and whose multiplication is concatenation. So the whole theory of modules — submodules, quotients, direct sums, projectives, $\mathrm{Ext}$ — applies to these problems at once, and conversely quivers give a concrete, pictorial handle on finite-dimensional algebras.
+
+This lesson builds path algebras, proves the equivalence between representations and modules, and classifies the representations of the simplest family, the linearly oriented quivers $A_n$. It assumes <TopicLink id="math.algebra.modules">modules</TopicLink>; the classification of all quivers of finite type (Gabriel's theorem) is the subject of <TopicLink id="math.algebra.quiver-representations">quiver representations</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Paths multiply when they meet">
+
+Picture the quiver $1 \xrightarrow{\alpha} 2 \xrightarrow{\beta} 3$. Its paths are the three "stay-at-home" paths $e_1, e_2, e_3$, the arrows $\alpha, \beta$, and the path $\alpha\beta$ ("first $\alpha$, then $\beta$"). Multiply two paths by walking one after the other if the first ends where the second starts, and get $0$ otherwise: $\alpha \cdot \beta = \alpha\beta$, but $\beta \cdot \alpha = 0$ because $\beta$ ends at $3$ and $\alpha$ starts at $1$. The trivial paths act as "you are here" markers: $e_1 \alpha = \alpha$ and $\alpha e_2 = \alpha$, while $\alpha e_1 = 0$.
+
+Now give each vertex a vector space and each arrow a linear map. A path acts by composing the maps along it, and a vector sitting at vertex $1$ can be pushed along $\alpha$, then along $\beta$. That is a module over the algebra of paths: the vector space is $V_1 \oplus V_2 \oplus V_3$, the idempotent $e_i$ projects onto $V_i$, and the arrows act by the maps. Every module arises this way.
+
+Cycles change everything. A single loop $x$ at one vertex has paths $e, x, x^2, x^3, \dots$, all different: the path algebra is the polynomial ring $k[x]$, infinite-dimensional, and its finite-dimensional modules are vector spaces with an operator, classified by Jordan normal form — with a continuous parameter, the eigenvalue.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions and conventions">
+
+<Definition term="quiver; path">
+
+A **quiver** $Q = (Q_0, Q_1, s, t)$ consists of a set $Q_0$ of vertices, a set $Q_1$ of arrows, and maps $s, t : Q_1 \to Q_0$ giving the source and target of each arrow. Loops ($s(\alpha) = t(\alpha)$) and multiple arrows are allowed. $Q$ is **finite** if $Q_0$ and $Q_1$ are finite. A **path** of length $\ell \geq 1$ from $a$ to $b$ is a sequence of arrows $\alpha_1 \alpha_2 \cdots \alpha_\ell$ with $s(\alpha_1) = a$, $t(\alpha_i) = s(\alpha_{i+1})$ and $t(\alpha_\ell) = b$; for each vertex $a$ there is also a **trivial path** $e_a$ of length $0$ from $a$ to $a$. An **oriented cycle** is a path of positive length from a vertex to itself.
+
+</Definition>
+
+<Definition term="path algebra">
+
+Let $k$ be a field. The **path algebra** $kQ$ is the $k$-vector space with basis the set of all paths of $Q$, with multiplication defined on basis elements by
+$$
+p \cdot q = \begin{cases} pq \ (\text{first } p, \text{ then } q) & \text{if } t(p) = s(q), \\ 0 & \text{otherwise,} \end{cases}
+$$
+and extended bilinearly. **Convention.** This "left to right" order is used by Assem, Simson and Skowroński, among others; many texts multiply in the opposite order, like composition of functions. The two conventions give opposite algebras, and they interchange left and right modules — the main source of sign-of-the-direction confusion in the literature.
+
+</Definition>
+
+<Definition term="representation of a quiver">
+
+A **representation** $V$ of $Q$ over $k$ assigns a vector space $V_a$ to each vertex $a$ and a linear map $V_\alpha : V_{s(\alpha)} \to V_{t(\alpha)}$ to each arrow. A **morphism** $\varphi : V \to W$ is a family of linear maps $\varphi_a : V_a \to W_a$ with $W_\alpha \varphi_{s(\alpha)} = \varphi_{t(\alpha)} V_\alpha$ for every arrow. Representations and morphisms form a $k$-linear abelian category $\mathrm{Rep}_k(Q)$ (kernels and cokernels are computed vertex by vertex). For finite-dimensional $V$, the **dimension vector** is $\underline{\dim}\, V = (\dim V_a)_{a \in Q_0}$. A path $p = \alpha_1 \cdots \alpha_\ell$ acts by $V_p = V_{\alpha_\ell} \circ \cdots \circ V_{\alpha_1}$, and $V_{e_a} = \mathrm{id}_{V_a}$.
+
+</Definition>
+
+<Definition term="simple, projective and injective representations">
+
+For a vertex $a$: the **simple** representation $S(a)$ has $k$ at $a$ and $0$ elsewhere; the **projective** representation $P(a)$ has $P(a)_b$ = the vector space with basis the paths from $a$ to $b$, with arrows acting by extending paths ($p \mapsto p\alpha$); the **injective** representation $I(a)$ has $I(a)_b$ = the dual of the space spanned by the paths from $b$ to $a$.
+
+</Definition>
+
+<Definition term="indecomposable; interval module">
+
+A non-zero representation is **indecomposable** if it is not a direct sum of two non-zero subrepresentations. For the linearly oriented quiver $A_n : 1 \to 2 \to \cdots \to n$ and $1 \leq a \leq b \leq n$, the **interval module** $[a, b]$ has $k$ at the vertices $a, a+1, \dots, b$, the identity on the arrows between them, and $0$ elsewhere.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Path algebras you already know">
+
+- **One vertex, no arrows:** $kQ = k$. **$n$ vertices, no arrows:** $kQ = k^n = k \times \cdots \times k$.
+- **One loop $x$:** paths $e, x, x^2, \dots$ with $x^i x^j = x^{i+j}$, so $kQ \cong k[x]$. Representations are pairs $(V, T)$: a vector space with an operator, as in <TopicLink id="math.algebra.modules">modules over $k[x]$</TopicLink>.
+- **One vertex, $m$ loops:** $kQ$ is the **free algebra** $k\langle x_1, \dots, x_m \rangle$ on $m$ non-commuting variables; there are $m^\ell$ paths of length $\ell$.
+- **Kronecker quiver** $1 \rightrightarrows 2$ (arrows $\alpha, \beta$): basis $e_1, e_2, \alpha, \beta$, so $\dim kQ = 4$; $kQ \cong \left(\begin{smallmatrix} k & k^2 \\ 0 & k \end{smallmatrix}\right)$. Representations are pairs of matrices up to $(A, B) \mapsto (gAh^{-1}, gBh^{-1})$: matrix pencils.
+
+</Example>
+
+<Example title="Linear Aₙ is upper triangular matrices">
+
+In $A_n : 1 \to 2 \to \cdots \to n$ there is exactly one path $p_{ij}$ from $i$ to $j$ for each $i \leq j$ (with $p_{ii} = e_i$), and none for $i > j$. The multiplication is $p_{ij} p_{jl} = p_{il}$ and $p_{ij} p_{kl} = 0$ for $j \neq k$ — exactly the rule $E_{ij} E_{kl} = \delta_{jk} E_{il}$ for matrix units. So $p_{ij} \mapsto E_{ij}$ is an isomorphism from $kA_n$ onto the algebra $T_n(k)$ of upper triangular $n \times n$ matrices, and $\dim kA_n = n(n+1)/2$.
+
+</Example>
+
+<Example title="Projectives and injectives of A₃">
+
+For $1 \to 2 \to 3$: $P(1) = [1, 3]$ (paths from $1$ reach $1, 2, 3$), $P(2) = [2, 3]$, $P(3) = [3, 3] = S(3)$; $I(1) = [1, 1] = S(1)$, $I(2) = [1, 2]$, $I(3) = [1, 3]$. So $[1, 3]$ is projective and injective, the sink gives a simple projective and the source a simple injective. The six interval modules $[1,1], [2,2], [3,3], [1,2], [2,3], [1,3]$ are all the indecomposables (Theorem 4).
+
+</Example>
+
+<Example title="Orientation matters">
+
+The quivers $1 \to 2 \to 3$ and $1 \to 2 \leftarrow 3$ have the same underlying graph but different path algebras: the first has $6$ paths ($3$ trivial, $2$ arrows, $1$ of length $2$), the second only $5$. Their representation categories are not equivalent — the first has an indecomposable representation that is both projective and injective, $[1, 3]$, and the second has none — though they have the same number of indecomposables, as Gabriel's theorem predicts for every orientation of a Dynkin diagram.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The main theorems">
+
+<Theorem name="Proposition 1 (structure of kQ)">
+
+$kQ$ is an associative algebra. The trivial paths are orthogonal idempotents, $e_a e_a = e_a$ and $e_a e_b = 0$ for $a \neq b$; $e_a\, p = p$ if $p$ starts at $a$ and $0$ otherwise, and $p\, e_b = p$ if $p$ ends at $b$ and $0$ otherwise. If $Q_0$ is finite, $1 = \sum_{a \in Q_0} e_a$ is the identity element, and $kQ = \bigoplus_{a, b} e_a\, kQ\, e_b$ with $e_a\, kQ\, e_b$ spanned by the paths from $a$ to $b$.
+
+</Theorem>
+
+<Proof>
+
+On basis elements, $(p \cdot q) \cdot r$ and $p \cdot (q \cdot r)$ are both non-zero exactly when $t(p) = s(q)$ and $t(q) = s(r)$, and then both equal the concatenation $pqr$; by bilinearity, multiplication is associative. The statements about $e_a$ are the definition of the product, with $e_a$ the path of length $0$ at $a$. If $Q_0$ is finite, $\bigl(\sum_a e_a\bigr) p = e_{s(p)} p = p$ and similarly on the right. Finally $e_a\, p\, e_b$ is $p$ if $p$ runs from $a$ to $b$ and $0$ otherwise.
+
+</Proof>
+
+<Theorem name="Theorem 2 (finite dimension)">
+
+For a finite quiver $Q$, $kQ$ is finite-dimensional if and only if $Q$ has no oriented cycles. In that case every path has length less than $|Q_0|$.
+
+</Theorem>
+
+<Proof>
+
+If $c$ is an oriented cycle, its powers $c, c^2, c^3, \dots$ are paths of lengths $\ell, 2\ell, 3\ell, \dots$ ($\ell \ge 1$), all distinct basis elements, so $\dim kQ = \infty$. Conversely, if there is no oriented cycle, a path $\alpha_1 \cdots \alpha_\ell$ visits the vertices $s(\alpha_1), t(\alpha_1), \dots, t(\alpha_\ell)$, and these $\ell + 1$ vertices are distinct — a repetition would contain an oriented cycle. So $\ell + 1 \leq |Q_0|$. There are at most $|Q_1|^\ell$ paths of length $\ell$, hence finitely many paths in all.
+
+</Proof>
+
+The Lean proof of the second half uses a **height function**: in an acyclic finite quiver one can number the vertices so that every arrow increases the number (a topological sort), and then a path from $a$ to $b$ has length at most $h(b) - h(a)$. The first experiment counts paths with powers of the adjacency matrix $A$: the number of paths of length $\ell$ from $a$ to $b$ is $(A^\ell)_{ab}$, and $Q$ is acyclic iff $A$ is nilpotent.
+
+<Theorem name="Theorem 3 (representations are modules)">
+
+Let $Q$ be a finite quiver, and use the multiplication convention above. Then $\mathrm{Rep}_k(Q)$ is equivalent to the category of right $kQ$-modules (finite-dimensional representations corresponding to finite-dimensional modules). Under this equivalence $S(a)$, $P(a)$ and $I(a)$ correspond to the simple module, the projective module $e_a\, kQ$ and the injective module $\Hom_k(kQ\, e_a, k)$, and $\Hom(P(a), V) \cong V_a$ for every representation $V$.
+
+</Theorem>
+
+<Proof>
+
+*From representations to modules.* Given $V$, let $F(V) = M = \bigoplus_{a} V_a$, and for a vector $v \in V_a$ and a path $p$ put $v \cdot p = V_p(v) \in V_{t(p)}$ if $s(p) = a$, and $v \cdot p = 0$ otherwise; extend bilinearly. Then $(v \cdot p) \cdot q = V_q V_p (v) = V_{pq}(v) = v \cdot (pq)$ when the paths compose, and both sides are $0$ otherwise; and $v \cdot 1 = \sum_a v \cdot e_a = v$. So $M$ is a right $kQ$-module. A morphism $(\varphi_a)$ gives $\bigoplus \varphi_a$, which commutes with the action of arrows — hence of all paths — because $\varphi_{t(\alpha)} V_\alpha = W_\alpha \varphi_{s(\alpha)}$.
+
+*From modules to representations.* Given a right module $M$, put $G(M)_a = M e_a$ and, for an arrow $\alpha : a \to b$, $G(M)_\alpha(m) = m\alpha$; this lies in $M e_b$ because $\alpha = \alpha e_b$. A module homomorphism $f$ restricts to maps $M e_a \to N e_a$ commuting with the arrows.
+
+*They are inverse.* $F(V) e_a = V_a$ with the original maps, so $GF(V) = V$. Conversely, since the $e_a$ are orthogonal idempotents with sum $1$, $M = \bigoplus_a M e_a$, and the action of a path $p = \alpha_1 \cdots \alpha_\ell$ on $m \in Me_a$ is the composite of the actions of its arrows, so $FG(M) \cong M$, naturally in $M$.
+
+*Special objects.* $F(P(a))$ is spanned by the paths starting at $a$, that is, $e_a\, kQ$, a direct summand of $kQ = \bigoplus_a e_a\, kQ$ and hence projective. A module map $e_a kQ \to M$ is determined by the image $m$ of $e_a$, which can be any element with $m = m e_a$, so $\Hom(e_a kQ, M) \cong M e_a = V_a$. The statement for $S(a)$ is clear, and that for $I(a)$ is the dual argument.
+
+</Proof>
+
+The isomorphism $\Hom(P(a), V) \cong V_a$ is the **Yoneda lemma** in disguise: $P(a)$ is the linearised representable functor "paths out of $a$" (see the categories viewpoint).
+
+<Theorem name="Theorem 4 (representations of linear Aₙ)">
+
+Every finite-dimensional representation of $A_n : 1 \to 2 \to \cdots \to n$ is isomorphic to a direct sum of interval modules $[a, b]$, $1 \le a \le b \le n$. The interval modules are indecomposable and pairwise non-isomorphic, so $A_n$ has exactly $n(n+1)/2$ indecomposable representations up to isomorphism. The multiplicity of $[i, j]$ in $V$ is
+$$
+m_{ij}(V) = r_{ij} - r_{i-1,\,j} - r_{i,\,j+1} + r_{i-1,\,j+1},
+$$
+where $r_{ij}$ is the rank of the composite map $V_i \to V_j$ (for $i \leq j$), and $r_{ij} = 0$ if $i = 0$ or $j = n + 1$. In particular the decomposition is unique up to isomorphism.
+
+</Theorem>
+
+<Proof>
+
+*Reformulation.* Let $M = V_1 \oplus \cdots \oplus V_n$, graded by vertex, and let $T : M \to M$ act as $V_{i \to i+1}$ on $V_i$ (and as $0$ on $V_n$). Then $T$ is nilpotent and raises degree by $1$. Subrepresentations of $V$ are exactly the $T$-invariant graded subspaces, and direct sum decompositions of $V$ are decompositions of $M$ into $T$-invariant graded subspaces. Call a homogeneous vector $u \in V_a$ with $T^{b-a}u \neq 0$ and $T^{b-a+1}u = 0$ the top of a **chain** $u, Tu, \dots, T^{b-a}u$; these vectors lie in different degrees, so they are linearly independent, and they span a subrepresentation isomorphic to $[a, b]$. It suffices to show that $M$ has a basis that is a disjoint union of chains.
+
+*Existence of a chain basis* — the Jordan normal form argument for nilpotent operators, done with homogeneous vectors. Induct on $\dim M$; if $T = 0$, any homogeneous basis consists of chains of length one. Otherwise $W = T(M)$ is a graded $T$-invariant subspace of smaller dimension (a nilpotent map is not surjective unless $M = 0$), so it has a chain basis, with chains $C_1, \dots, C_r$ with tops $w_1, \dots, w_r$ and last vectors $z_1, \dots, z_r$. Each $w_i = T(u_i)$ with $u_i$ homogeneous: if $w_i \in V_{c}$ and $w_i = T(u)$, take for $u_i$ the component of $u$ in $V_{c-1}$. The last vectors $z_i$ form a basis of $\ker T \cap W$, because $T$ maps each other chain vector to the next vector of its chain. Choose homogeneous $y_1, \dots, y_s$ forming a basis of a graded complement of $\ker T \cap W$ in $\ker T$ (complements can be chosen degree by degree). We claim that the extended chains $u_i, T u_i, \dots$ together with the chains $y_j$ of length one form a basis of $M$. *Count:* their number is $\dim W + r + s = \dim T(M) + \dim \ker T = \dim M$. *Independence:* apply $T$ to a vanishing linear combination; the result is a combination of chain vectors of $W$ in which each $w_i$ appears only with the coefficient of $u_i$, and the other vectors are images of distinct chain vectors, so all coefficients of the $u_i$ and of the non-last vectors of the $C_i$ vanish; what remains is a combination of the $z_i$ and the $y_j$, which are independent.
+
+*Indecomposability.* An endomorphism of $[a, b]$ is a family of scalars $\varphi_a, \dots, \varphi_b$ with $\varphi_{i+1} = \varphi_i$ (commutation with the identity maps), so $\operatorname{End}([a, b]) = k$. A decomposition into two non-zero summands would give an idempotent endomorphism other than $0$ and $1$, which $k$ does not have.
+
+*Multiplicities.* On $[a, b]$, the composite map from vertex $i$ to vertex $j$ is the identity of $k$ if $a \leq i \leq j \leq b$ and $0$ otherwise. Ranks add over direct sums, so if $V \cong \bigoplus [a, b]^{m_{ab}}$ then $r_{ij} = \sum_{a \le i,\ b \ge j} m_{ab}$. Inclusion–exclusion over the conditions $a \leq i - 1$ and $b \geq j + 1$ gives the formula for $m_{ij}$. The ranks depend only on $V$, so the multiplicities do too; in particular non-isomorphic interval modules are distinguished and the decomposition is unique.
+
+</Proof>
+
+The same reformulation shows that representations of linear $A_n$ are graded modules over $k[t]$ killed by $t^n$, and Theorem 4 is the graded version of the structure theorem for modules over the PID $k[t]$ — the statement behind **barcodes** in persistent homology (topology viewpoint below). The second experiment hides a known decomposition by random changes of basis and recovers it from the ranks.
+
+<Theorem name="Theorem 5 (path algebras are hereditary; stated)">
+
+Let $Q$ be a finite quiver without oriented cycles. For every representation $V$ there is a short exact sequence, the **standard resolution**,
+$$
+0 \to \bigoplus_{\alpha \in Q_1} V_{s(\alpha)} \otimes_k P(t(\alpha)) \longrightarrow \bigoplus_{a \in Q_0} V_a \otimes_k P(a) \longrightarrow V \to 0.
+$$
+Hence every representation has projective dimension at most $1$, submodules of projective modules are projective, and $\mathrm{Ext}^n = 0$ for $n \geq 2$: $kQ$ is **hereditary**. Moreover, for finite-dimensional $V, W$,
+$$
+\dim \Hom(V, W) - \dim \mathrm{Ext}^1(V, W) = \sum_{a \in Q_0} v_a w_a - \sum_{\alpha \in Q_1} v_{s(\alpha)} w_{t(\alpha)},
+$$
+the **Euler form** of the dimension vectors $v = \underline{\dim}\, V$, $w = \underline{\dim}\, W$.
+
+</Theorem>
+
+For a proof see Crawley-Boevey's *Lectures on Representations of Quivers* (1992), §1, or Schiffler, *Quiver Representations*, Chapter 2. For $A_n$ the hereditary property can be seen directly: the subrepresentations of $P(i) = [i, n]$ are the $[j, n] = P(j)$ for $j \geq i$, all projective. The Euler form leads to Gabriel's and Kac's theorems, treated in <TopicLink id="math.algebra.quiver-representations">quiver representations</TopicLink>.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: paths that compose">
+
+The diagram below is a representation of the linearly oriented quiver $A \to B \to C \to D$ in sets rather than vector spaces: each vertex carries a finite set and each arrow a function. Build a path by clicking arrows. When the next arrow starts where your path ends, the path grows and acts by the composite function; when it does not, the widget refuses — that refusal is the rule "$p \cdot q = 0$ unless $t(p) = s(q)$" of the path algebra. The comparison of $h \circ (g \circ f)$ and $(h \circ g) \circ f$ is associativity, Proposition 1. (The widget writes composites in function order, $g \circ f$ for "first $f$, then $g$", which is the path $fg$ in this lesson's convention.)
+
+<ArrowComposer />
+
+Representations of the **one-loop quiver** are vector spaces with an operator: on $\R^2$, a $2 \times 2$ matrix. Its subrepresentations are the invariant subspaces, which the widget draws as dashed lines. A diagonal matrix with distinct eigenvalues decomposes into two simple representations; a shear $\left(\begin{smallmatrix} 1 & 1 \\ 0 & 1 \end{smallmatrix}\right)$ is indecomposable but not simple; and the scaling preset, with its sliders, decomposes into one-dimensional representations $(\R, \lambda)$, which are pairwise non-isomorphic for different $\lambda$ — a continuous family of indecomposables. This is why a quiver with a loop has infinitely many indecomposable representations, while $A_n$ has $n(n+1)/2$.
+
+<MatrixTransform matrix={[[1, 1], [0, 1]]} mode="single" presets={["shear", "scale", "rotation", "identity"]} title="Representations of the one-loop quiver" subtitle="A representation of x ↻ on the plane is a matrix; dashed lines are subrepresentations." />
+
+</Section>
+
+<Section id="formal" kind="formal" title="Quivers in Lean and Mathlib">
+
+Mathlib has quivers and their paths, but not path algebras. We formalise the multiplication table of the basis of $kQ$ — paths with a zero adjoined — and prove that it is associative, which is the combinatorial content of Proposition 1; extending it bilinearly gives $kQ$.
+
+<Lean decl="Lumenary.PathAlgebras.PathOrZero" />
+
+<Lean decl="Lumenary.PathAlgebras.pmul" />
+
+<Lean decl="Lumenary.PathAlgebras.pmul_assoc" />
+
+<Lean decl="Lumenary.PathAlgebras.idempotents" />
+
+<Lean decl="Lumenary.PathAlgebras.concat_assoc" />
+
+Both halves of Theorem 2: a height function bounds the lengths of paths, and a cycle of positive length has infinitely many distinct powers.
+
+<Lean decl="Lumenary.PathAlgebras.path_length_le" />
+
+<Lean decl="Lumenary.PathAlgebras.cyclePow" />
+
+<Lean decl="Lumenary.PathAlgebras.cycle_infinite" />
+
+The linearly oriented quiver $A_n$ on the vertices `Fin n`, and the length of its paths:
+
+<Lean decl="Lumenary.PathAlgebras.LinA" />
+
+<Lean decl="Lumenary.PathAlgebras.linAQuiver" />
+
+<Lean decl="Lumenary.PathAlgebras.lin_a_length" />
+
+Finally the categorical half of Theorem 3, from Mathlib's universal property of the free category: a representation is the same as a functor out of the path category.
+
+<Lean decl="Lumenary.PathAlgebras.rep_extends" />
+
+**What is and is not formalised.** Proved here: associativity of path multiplication with zero, orthogonality of the trivial idempotents, the length bound for acyclic quivers, infinitely many paths in the presence of a cycle, and the length of paths in $A_n$. From Mathlib: associativity of concatenation and the universal property of the free category. Not formalised: $kQ$ as a $k$-algebra (it is the contracted semigroup algebra of `PathOrZero`), the equivalence with $kQ$-modules, the existence of a height function for every finite acyclic quiver, Theorem 4 and Theorem 5. The research lesson on quiver representations formalises Tits forms and the root combinatorics of $D_4$.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Paths and barcodes, computed">
+
+The first experiment counts paths with powers of the adjacency matrix: it finds $\dim kQ$ for several acyclic quivers (including $n(n+1)/2$ for linear $A_n$), the **Cartan matrix** $C = I + A + A^2 + \cdots = (I - A)^{-1}$ whose entries are the dimensions $\dim e_a\, kQ\, e_b$, and the growth of path counts when the quiver has cycles.
+
+<Python id="path_algebras_path_counting" />
+
+The second builds random representations of $A_5$ over $\mathbb{F}_7$ as sums of interval modules, disguises them by random changes of basis at every vertex, and recovers the multiplicities from ranks alone, using the formula of Theorem 4.
+
+<Python id="path_algebras_barcodes" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The order of multiplication of paths is standard."** It is not. This lesson writes $pq$ for "first $p$, then $q$", and representations become right modules; texts that multiply like composition of functions write $qp$ for the same path, and representations become left modules. Neither is wrong, but mixing them silently replaces $kQ$ by its opposite algebra — which is the path algebra $kQ^{\mathrm{op}}$ of the quiver with all arrows reversed — and exchanges projectives with injectives. Always check a book's convention before using its formulas.
+
+</Misconception>
+
+<Misconception>
+
+**"A quiver is just a graph."** Orientation and multiplicity matter. $1 \to 2 \to 3$ and $1 \to 2 \leftarrow 3$ have the same underlying graph but path algebras of different dimensions ($6$ and $5$) and inequivalent representation categories. Two arrows $1 \rightrightarrows 2$ give the Kronecker quiver, with infinitely many indecomposables, while one arrow gives $A_2$, with three. What the underlying graph does control, by Gabriel's theorem, is whether there are finitely many indecomposables at all.
+
+</Misconception>
+
+<Misconception>
+
+**"Path algebras are always finite-dimensional"** — or, conversely, "an infinite-dimensional path algebra has no interesting finite-dimensional representations". A single loop already gives $k[x]$, whose finite-dimensional modules are all square matrices up to similarity. Finiteness of $kQ$ is about oriented cycles (Theorem 2), not about the number of arrows.
+
+</Misconception>
+
+<Misconception>
+
+**"The dimension vector determines a representation."** For $A_3$, the representations $[1,2] \oplus [2,3] \oplus [1,3]$ and $[1,3]^2 \oplus [2,2]$ both have dimension vector $(2, 3, 2)$, but the rank of $V_1 \to V_3$ is $1$ for the first and $2$ for the second. The dimension vector is the first invariant; the ranks of composite maps complete it for $A_n$ (Theorem 4).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="categories" title="Free categories, functors and Yoneda">
+
+The paths of $Q$ form the **free category** $\mathrm{Path}(Q)$ on $Q$: objects are vertices, morphisms are paths, composition is concatenation, and every graph morphism from $Q$ to the underlying graph of a category $\mathcal{C}$ extends uniquely to a functor $\mathrm{Path}(Q) \to \mathcal{C}$. The path algebra is its **linearisation** — the free $k$-linear category with all objects added together — and a representation is a functor $\mathrm{Path}(Q) \to \cat{Vect}_k$, with morphisms of representations the natural transformations (see <TopicLink id="math.cat.categories">categories</TopicLink> and <TopicLink id="math.cat.functors">functors</TopicLink>). The projective $P(a)$ is the linearised representable functor $k\,\mathrm{Path}(Q)(a, -)$, and $\Hom(P(a), V) \cong V_a$ is the Yoneda lemma. Representations in sets, as in the widget above, are functors to $\cat{Set}$.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Every finite-dimensional algebra is a quotient of a path algebra">
+
+Path algebras are the free objects among finite-dimensional algebras of a certain kind: $kQ$ is the tensor algebra of the $k^{Q_0}$-bimodule spanned by the arrows. Gabriel proved that every finite-dimensional algebra $A$ over an algebraically closed field is Morita equivalent to a **bound quiver algebra** $kQ/I$, where $Q$ — the Gabriel quiver of $A$ — has one vertex for each simple module and $\dim \mathrm{Ext}^1(S_a, S_b)$ arrows joining $a$ and $b$ (oriented according to the chosen convention), and $I$ is an admissible ideal of relations (Assem–Simson–Skowroński, Chapter II). So quivers with relations are a universal language for finite-dimensional algebras; for instance the group algebra of a cyclic $p$-group over $\mathbb{F}_p$ is $k[x]/(x^{p^m})$, one loop with one relation. Conversely, the basic connected hereditary finite-dimensional algebras over an algebraically closed field are exactly the path algebras $kQ$ of acyclic quivers, with no relations (Assem–Simson–Skowroński, Chapter VII).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Persistence modules and barcodes">
+
+In topological data analysis a point cloud is thickened at increasing scales $\varepsilon_1 < \cdots < \varepsilon_n$, giving spaces $X_1 \subseteq \cdots \subseteq X_n$ and, for each degree $d$, a representation $H_d(X_1) \to \cdots \to H_d(X_n)$ of linear $A_n$ — a **persistence module**. Theorem 4 decomposes it into intervals $[a, b]$: homological features (components, loops, voids) born at scale $\varepsilon_a$ and dying after $\varepsilon_b$. This **barcode** is computed from the ranks $r_{ij}$ exactly as in the formula of Theorem 4, and the stability theorem of Cohen-Steiner, Edelsbrunner and Harer (2007) shows it changes little when the data change little (in the bottleneck distance). Zigzag persistence (Carlsson and de Silva, 2010) uses $A_n$ with arbitrary orientations, where Gabriel's theorem again guarantees interval decompositions (see <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Representation spaces and orbits">
+
+Fix a dimension vector $d$. All representations with $V_a = k^{d_a}$ form the affine space $\mathrm{Rep}(Q, d) = \prod_{\alpha \in Q_1} \Hom(k^{d_{s(\alpha)}}, k^{d_{t(\alpha)}})$, on which the group $GL(d) = \prod_a GL_{d_a}(k)$ acts by change of basis; isomorphism classes of representations are its **orbits**. For $A_2$ the orbits in $\Hom(k^m, k^n)$ are the matrices of fixed rank, and orbit closures are the determinantal varieties "rank $\leq r$". Counting dimensions — $\dim \mathrm{Rep}(Q, d) = \sum_\alpha d_{s(\alpha)} d_{t(\alpha)}$ against $\dim GL(d) - 1 = \sum_a d_a^2 - 1$ (scalars act trivially) — shows that finitely many orbits force $\sum_a d_a^2 - \sum_\alpha d_{s(\alpha)}d_{t(\alpha)} \geq 1$: the Euler form of Theorem 5 again, the starting point of Tits' proof of one half of Gabriel's theorem. Quotients of $\mathrm{Rep}(Q, d)$ by $GL(d)$ in geometric invariant theory give quiver varieties, used for example in Nakajima's geometric construction of representations of Kac–Moody algebras.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Special cases are classical: **Karl Weierstrass** (1868) and **Leopold Kronecker** (1890) classified matrix pencils — representations of the Kronecker quiver — and Jordan normal form classifies representations of the loop.
+- **Israel Gelfand** and **V. A. Ponomarev** solved the four-subspace problem (1970). **Pierre Gabriel** introduced the word *Köcher* (quiver) and the general notion of quiver representation, and proved that a connected quiver has finitely many indecomposables exactly when its graph is of type $A$, $D$ or $E$ (1972). **I. N. Bernstein**, **I. M. Gelfand** and **V. A. Ponomarev** gave a new proof with reflection functors (1973), and the tame quivers (extended Dynkin diagrams) were classified independently by **L. A. Nazarova** (1973) and by **Peter Donovan** and **Mary Ruth Freislich** (1973).
+- The Kyiv school of matrix problems (**A. V. Roiter**, who proved the first Brauer–Thrall conjecture in 1968, and **Nazarova**), **Maurice Auslander** and **Idun Reiten**'s almost split sequences (1970s), **Claus Michael Ringel**'s work on tame algebras, and **Victor Kac**'s theorem relating indecomposables to roots (1980) shaped the representation theory of finite-dimensional algebras, now pursued by research groups across Europe, the Americas and Asia; a standard textbook is by **Ibrahim Assem** (Sherbrooke), **Daniel Simson** and **Andrzej Skowroński** (Toruń).
+- Persistence: **Herbert Edelsbrunner**, **David Letscher** and **Afra Zomorodian** introduced persistent homology (2002); **Zomorodian** and **Gunnar Carlsson** gave its module-theoretic form (2005); **Carlsson** and **Vin de Silva** connected it to quiver representations through zigzag persistence (2010).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Ralf Schiffler, *Quiver Representations* (2014) — an accessible first course: path algebras, the equivalence of categories, Auslander–Reiten theory and Gabriel's theorem.
+- Ibrahim Assem, Daniel Simson and Andrzej Skowroński, *Elements of the Representation Theory of Associative Algebras, Volume 1* (2006) — bound quiver algebras, Gabriel's theorem on finite-dimensional algebras, hereditary algebras.
+- Harm Derksen and Jerzy Weyman, *An Introduction to Quiver Representations* (2017) — with invariant theory and the geometric viewpoint.
+- William Crawley-Boevey, *Lectures on Representations of Quivers* (1992 lecture notes) — a short, classic introduction including the standard resolution and Gabriel's theorem.
+- Alexander Kirillov Jr., *Quiver Representations and Quiver Varieties* (2016) — from quivers to Lie theory and geometry.
+- Steve Y. Oudot, *Persistence Theory: From Quiver Representations to Data Analysis* (2015) — barcodes, stability and zigzags.
+
+</Section>

@@ -1,0 +1,443 @@
+---
+slug: representation-theory
+topic: math.algebra.representation-theory
+title: Representation theory of finite groups
+subtitle: Let a group act by matrices, split the action into irreducible pieces, and read everything off a small table of traces — which still cannot tell the dihedral group from the quaternions.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7014
+objectives:
+  - Define representations, intertwiners and irreducibility, and identify representations of $G$ with modules over the group algebra $k[G]$
+  - Prove Maschke's theorem and Schur's lemma, and explain why complete reducibility fails when the characteristic divides $|G|$
+  - Derive the orthogonality relations for characters, and deduce that the number of irreducible complex representations equals the number of conjugacy classes and that the squares of their dimensions sum to $|G|$
+  - Decompose representations with characters, and construct the character tables of $S_3$, $S_4$, $D_4$ and $Q_8$
+  - Compute induced representations and prove Frobenius reciprocity; show that $D_4$ and $Q_8$ have the same character table
+narrators: []
+lean:
+  - Lumenary.RepresentationTheory.schur
+  - Lumenary.RepresentationTheory.schur_library
+  - Lumenary.RepresentationTheory.schur_dimension
+  - Lumenary.RepresentationTheory.maschke
+  - Lumenary.RepresentationTheory.shear
+  - Lumenary.RepresentationTheory.shear_sq
+  - Lumenary.RepresentationTheory.maschke_fails
+  - Lumenary.RepresentationTheory.char_class_function
+  - Lumenary.RepresentationTheory.char_orthonormal
+  - Lumenary.RepresentationTheory.s3Table
+  - Lumenary.RepresentationTheory.s3_orthogonality
+  - Lumenary.RepresentationTheory.order8Table
+  - Lumenary.RepresentationTheory.order8_orthogonality
+  - Lumenary.RepresentationTheory.d4_not_q8
+  - Lumenary.RepresentationTheory.frobenius_reciprocity
+compute: [representation_theory_character_tables, representation_theory_maschke_char_p]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Symmetry, made linear">
+
+Groups are abstract, but they usually come to us acting on something: the symmetries of a molecule act on the displacements of its atoms, the rotations of a sphere act on functions on the sphere, the permutations of $n$ objects act on polynomials in $n$ variables. In each case the group acts by **linear maps** on a vector space, and the most useful thing one can do is to split the space into pieces that the group preserves and cannot split further. For a vibrating molecule the pieces are the normal modes; for functions on a circle under rotations they are the Fourier modes $e^{in\theta}$; for the sphere, the spherical harmonics.
+
+**Representation theory** studies these linear actions. For finite groups over $\C$ the theory is complete and beautiful. Every representation splits into irreducible ones (Maschke); there are finitely many irreducible ones, as many as conjugacy classes; and each representation is determined by a single function on the group, its **character** $\chi(g) = \operatorname{tr} \rho(g)$, so that the whole theory of a group is compressed into a square **character table**. The theory grew out of a question of Dedekind about factoring a determinant, answered by Frobenius in 1896, and it now runs through number theory, combinatorics, physics and chemistry.
+
+This lesson assumes <TopicLink id="math.algebra.groups">groups</TopicLink> (conjugacy classes, cosets) and <TopicLink id="math.algebra.advanced-linear-algebra">advanced linear algebra</TopicLink> (eigenvalues, traces, tensor products, duals). Unless stated otherwise, $G$ is a finite group and representations are finite-dimensional over $\C$.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Splitting the permutation action of S₃">
+
+Let $S_3$ permute the coordinates of $\C^3$. Two subspaces are obviously preserved: the line $L$ spanned by $(1, 1, 1)$, on which every permutation acts trivially, and the plane $P = \{x + y + z = 0\}$. So $\C^3 = L \oplus P$. The plane cannot be split further: a line in $P$ preserved by all of $S_3$ would have to be an eigenline of the $3$-cycle, which acts on $P$ as a rotation by $120^\circ$ with eigenvalues $\omega, \omega^2$ ($\omega = e^{2\pi i/3}$) — and the transpositions swap those two eigenlines. Geometrically, $P$ is the plane of an equilateral triangle, with $S_3$ acting as its symmetry group.
+
+Now take traces. The trace of a permutation matrix counts fixed points: $3$ for the identity, $1$ for a transposition, $0$ for a $3$-cycle. On $L$ the trace is always $1$; so on $P$ it is $2, 0, -1$. These numbers turn out to determine everything: the decomposition of any representation of $S_3$ can be read off from its traces by taking inner products with the rows
+$$
+(1, 1, 1), \qquad (1, -1, 1), \qquad (2, 0, -1)
+$$
+of the character table of $S_3$ (values on the identity, transpositions and $3$-cycles). Why this works is the main theorem of the lesson.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="representation; intertwiner">
+
+A **representation** of $G$ on a vector space $V$ over a field $k$ is a homomorphism $\rho : G \to GL(V)$; we often write $gv$ for $\rho(g)v$. Its **degree** is $\dim V$. An **intertwiner** (or $G$-map) between representations $V$ and $W$ is a linear map $\varphi : V \to W$ with $\varphi(gv) = g\varphi(v)$ for all $g, v$; they form a vector space $\Hom_G(V, W)$. An invertible intertwiner is an **isomorphism** of representations.
+
+</Definition>
+
+<Definition term="subrepresentation; irreducible; completely reducible">
+
+A subspace $U \subseteq V$ with $gU \subseteq U$ for all $g$ is a **subrepresentation** (an invariant subspace). $V$ is **irreducible** if $V \neq 0$ and its only subrepresentations are $0$ and $V$. It is **completely reducible** if it is a direct sum of irreducible subrepresentations.
+
+</Definition>
+
+<Definition term="group algebra">
+
+The **group algebra** $k[G]$ has basis $\{e_g : g \in G\}$ and multiplication $e_g e_h = e_{gh}$. A representation of $G$ on $V$ is the same as a $k[G]$-module structure on $V$ (extend $\rho$ linearly), and intertwiners are $k[G]$-module homomorphisms. So the language of <TopicLink id="math.algebra.modules">modules</TopicLink> applies: irreducible representations are simple modules. The **regular representation** is $k[G]$ acting on itself by left multiplication.
+
+</Definition>
+
+<Definition term="character; class function; inner product">
+
+The **character** of a representation $\rho$ is $\chi_\rho : G \to k$, $\chi_\rho(g) = \operatorname{tr} \rho(g)$. A **class function** is a function $G \to \C$ constant on conjugacy classes. For class functions $\alpha, \beta$, define the Hermitian inner product
+$$
+\langle \alpha, \beta \rangle = \frac{1}{|G|} \sum_{g \in G} \alpha(g)\, \overline{\beta(g)}.
+$$
+
+</Definition>
+
+<Definition term="restriction and induction">
+
+For a subgroup $H \leq G$, every representation $V$ of $G$ restricts to a representation $\operatorname{Res}^G_H V$ of $H$. Conversely, for a representation $W$ of $H$, the **induced representation** is $\operatorname{Ind}_H^G W = k[G] \otimes_{k[H]} W$. Choosing coset representatives $g_1, \dots, g_r$ of $G/H$, it is $\bigoplus_i g_i W$, of dimension $[G : H] \dim W$, where $g$ sends $g_i w$ to $g_j (h w)$ when $g g_i = g_j h$ with $h \in H$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="One-dimensional representations">
+
+A one-dimensional representation is a homomorphism $\chi : G \to \C^\times$, and it equals its character. The **trivial** representation sends everything to $1$; the **sign** of $S_n$ is another. For the cyclic group $C_n = \langle g \rangle$ there are exactly $n$ of them, $\chi_j(g^m) = \zeta^{jm}$ with $\zeta = e^{2\pi i/n}$, $j = 0, \dots, n-1$ — the characters of the discrete Fourier transform. One-dimensional characters factor through the abelianisation $G/[G, G]$, so there are $|G/[G,G]|$ of them.
+
+</Example>
+
+<Example title="Permutation and regular representations">
+
+If $G$ acts on a finite set $X$, it acts on $\C^X$ by permuting basis vectors, and the character is $\chi(g) = \#\{x : gx = x\}$, the number of fixed points. The regular representation is the case $X = G$, with character $\chi_{\mathrm{reg}}(1) = |G|$ and $\chi_{\mathrm{reg}}(g) = 0$ for $g \neq 1$.
+
+</Example>
+
+<Example title="The two-dimensional representations of S₃, D₄ and Q₈">
+
+- $S_3 \cong D_3$ acts on the plane of an equilateral triangle: the $3$-cycle as a rotation by $120^\circ$, a transposition as a reflection. Character $(2, 0, -1)$.
+- The dihedral group $D_4$ of order $8$ (symmetries of a square, generated by a rotation $r$ by $90^\circ$ and a reflection $s$) acts on $\R^2$: $r \mapsto \left(\begin{smallmatrix} 0 & -1 \\ 1 & 0 \end{smallmatrix}\right)$, $s \mapsto \left(\begin{smallmatrix} 1 & 0 \\ 0 & -1 \end{smallmatrix}\right)$.
+- The quaternion group $Q_8 = \{\pm 1, \pm i, \pm j, \pm k\}$ acts on $\C^2$ by $i \mapsto \left(\begin{smallmatrix} i & 0 \\ 0 & -i \end{smallmatrix}\right)$, $j \mapsto \left(\begin{smallmatrix} 0 & 1 \\ -1 & 0 \end{smallmatrix}\right)$.
+
+Each is irreducible: two non-commuting matrices cannot both be diagonal in one basis, and a two-dimensional representation is reducible exactly when it has an invariant line, after which (by Maschke) it splits into two one-dimensional pieces with commuting images. Both order-$8$ representations have character $2$ at the identity, $-2$ at the central element ($r^2$, respectively $-1$), and $0$ elsewhere.
+
+</Example>
+
+<Example title="Representations that are not completely reducible">
+
+- **Infinite groups.** $\Z$ acting on $\C^2$ by $n \mapsto \left(\begin{smallmatrix} 1 & n \\ 0 & 1 \end{smallmatrix}\right)$: the line $\C e_1$ is invariant, and it is the only invariant line, so it has no invariant complement.
+- **Characteristic dividing $|G|$.** Over $\mathbb{F}_p$, the same matrix with $n \in \mathbb{F}_p$ gives a representation of the cyclic group of order $p$ with a single invariant line (formalised below for $p = 2$; computed for $p \leq 7$ in the second experiment).
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The main theorems">
+
+<Theorem name="Theorem 1 (Maschke, 1898)">
+
+Let $G$ be a finite group and $k$ a field whose characteristic does not divide $|G|$. Then every subrepresentation $W$ of a representation $V$ has an invariant complement. Consequently every finite-dimensional representation is completely reducible.
+
+</Theorem>
+
+<Proof>
+
+Choose any linear projection $\pi : V \to W$ (a linear map with $\pi(w) = w$ for $w \in W$), for instance by extending a basis of $W$. Average it over $G$:
+$$
+\pi_0 = \frac{1}{|G|} \sum_{g \in G} g \circ \pi \circ g^{-1}.
+$$
+This makes sense because $|G|$ is invertible in $k$. Each term maps $V$ into $W$ (as $W$ is invariant), and for $w \in W$, $g\pi(g^{-1}w) = g g^{-1} w = w$, so $\pi_0$ is again a projection onto $W$. It is an intertwiner: for $h \in G$,
+$$
+h \pi_0 h^{-1} = \frac{1}{|G|} \sum_{g} (hg)\, \pi\, (hg)^{-1} = \pi_0,
+$$
+reindexing $g \mapsto hg$. Hence $U = \ker \pi_0$ is invariant, and $V = W \oplus U$. Complete reducibility follows by induction on $\dim V$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (Schur's lemma, 1905)">
+
+Let $V, W$ be irreducible representations of $G$ over a field $k$.
+
+1. Every non-zero intertwiner $V \to W$ is an isomorphism; so $\Hom_G(V, W) = 0$ if $V \not\cong W$.
+2. If $k$ is algebraically closed and $V$ is finite-dimensional, every intertwiner $V \to V$ is a scalar: $\Hom_G(V, V) = k \cdot \mathrm{id}$.
+
+</Theorem>
+
+<Proof>
+
+(1) For an intertwiner $\varphi$, $\ker \varphi$ and $\operatorname{im} \varphi$ are subrepresentations. If $\varphi \neq 0$, then $\ker \varphi \neq V$, so $\ker \varphi = 0$; and $\operatorname{im} \varphi \neq 0$, so $\operatorname{im} \varphi = W$.
+
+(2) $\varphi$ has an eigenvalue $\lambda \in k$ ($k$ algebraically closed, $V \neq 0$ finite-dimensional). Then $\varphi - \lambda\,\mathrm{id}$ is an intertwiner with non-zero kernel, hence zero by (1).
+
+</Proof>
+
+A first consequence: **every irreducible complex representation of an abelian group is one-dimensional**, since each $\rho(g)$ commutes with the action and is therefore a scalar, so every line is invariant.
+
+From now on $k = \C$. Two facts about characters are immediate: $\chi(1) = \dim V$, and $\chi$ is a class function, since $\operatorname{tr}(\rho(h)\rho(g)\rho(h)^{-1}) = \operatorname{tr} \rho(g)$. Moreover $\rho(g)^{|G|} = 1$, so $\rho(g)$ is diagonalisable with roots of unity $\lambda_i$ as eigenvalues, and $\chi(g^{-1}) = \sum \lambda_i^{-1} = \sum \overline{\lambda_i} = \overline{\chi(g)}$. Characters add over direct sums and multiply over tensor products, and the dual representation $V^*$ has character $\overline{\chi_V}$.
+
+<Theorem name="Theorem 3 (orthogonality of characters)">
+
+For representations $V, W$ of $G$,
+$$
+\langle \chi_V, \chi_W \rangle = \dim \Hom_G(W, V).
+$$
+In particular, the characters of irreducible representations are **orthonormal**: $\langle \chi_V, \chi_W \rangle = 1$ if $V \cong W$ and $0$ otherwise.
+
+</Theorem>
+
+<Proof>
+
+*Invariants.* For any representation $U$, the average $e = \frac{1}{|G|}\sum_g \rho_U(g)$ satisfies $\rho_U(h) e = e$ for all $h$, so it maps $U$ into the invariants $U^G = \{u : gu = u \ \forall g\}$, and it is the identity on $U^G$. So $e$ is a projection onto $U^G$, and its trace is its rank:
+$$
+\dim U^G = \operatorname{tr} e = \frac{1}{|G|} \sum_g \chi_U(g).
+$$
+*Apply it to $U = \Hom(W, V)$*, with $G$ acting by $(g \cdot \varphi)(w) = g\varphi(g^{-1}w)$. Its invariants are exactly the intertwiners, and since $\Hom(W, V) \cong W^* \otimes V$, its character is $\overline{\chi_W(g)}\, \chi_V(g)$. So $\dim \Hom_G(W, V) = \frac{1}{|G|}\sum_g \chi_V(g)\overline{\chi_W(g)} = \langle \chi_V, \chi_W \rangle$. For irreducible $V, W$, Schur's lemma gives $\dim \Hom_G(W, V) = 1$ or $0$.
+
+</Proof>
+
+<Theorem name="Corollary 4 (decomposing with characters)">
+
+Let $V_1, \dots, V_r$ be the distinct irreducible representations, with characters $\chi_1, \dots, \chi_r$ and degrees $d_i$.
+
+1. In any decomposition $V \cong \bigoplus_i V_i^{m_i}$, the multiplicities are $m_i = \langle \chi_V, \chi_i \rangle$; so **a representation is determined up to isomorphism by its character**.
+2. $V$ is irreducible if and only if $\langle \chi_V, \chi_V \rangle = 1$.
+3. The regular representation contains each $V_i$ exactly $d_i$ times, $\C[G] \cong \bigoplus_i V_i^{d_i}$, and hence $\sum_i d_i^2 = |G|$. In particular there are finitely many irreducibles.
+
+</Theorem>
+
+<Proof>
+
+(1) By orthonormality, $\langle \sum_j m_j \chi_j, \chi_i \rangle = m_i$. (2) $\langle \chi_V, \chi_V \rangle = \sum_i m_i^2$, which is $1$ exactly when one $m_i$ is $1$ and the rest vanish. (3) $\langle \chi_{\mathrm{reg}}, \chi_i \rangle = \frac{1}{|G|} |G| \, \overline{\chi_i(1)} = d_i$; every irreducible $V$ occurs, since $d_V \geq 1$; and comparing dimensions gives $|G| = \sum d_i \cdot d_i$.
+
+</Proof>
+
+<Theorem name="Theorem 5 (the character table is square)">
+
+The irreducible characters form an orthonormal basis of the space of class functions on $G$. Hence the number of irreducible representations equals the number of conjugacy classes. Moreover the columns are orthogonal: for $g, h \in G$,
+$$
+\sum_{i} \chi_i(g)\, \overline{\chi_i(h)} = \begin{cases} |C_G(g)| & \text{if } g, h \text{ are conjugate}, \\ 0 & \text{otherwise.} \end{cases}
+$$
+
+</Theorem>
+
+<Proof>
+
+Orthonormal vectors are independent, so it remains to show that the $\chi_i$ span. Let $f$ be a class function with $\langle f, \chi_i \rangle = 0$ for all $i$. For a representation $V$ put $\rho_f = \sum_g \overline{f(g)}\, \rho(g)$. Since $f$ is a class function, $\rho(h)\rho_f\rho(h)^{-1} = \sum_g \overline{f(g)}\rho(hgh^{-1}) = \rho_f$, so $\rho_f$ is an intertwiner. On $V_i$ it is a scalar $\lambda$ by Schur's lemma, and taking traces, $\lambda d_i = \sum_g \overline{f(g)} \chi_i(g) = |G|\, \overline{\langle f, \chi_i \rangle} = 0$. So $\rho_f = 0$ on every irreducible, hence on every representation (Maschke), in particular on the regular one, where $\rho_f(e_1) = \sum_g \overline{f(g)}\, e_g = 0$ forces $f = 0$.
+
+For the columns: let $X$ be the square matrix with entries $X_{iC} = \sqrt{|C|/|G|}\,\chi_i(C)$ over irreducibles $i$ and classes $C$. Row orthonormality says $X \overline{X}^{\mathsf T} = I$; for a square matrix this implies $\overline{X}^{\mathsf T} X = I$, which is the column relation, using $|G|/|C| = |C_G(g)|$ (orbit–stabiliser).
+
+</Proof>
+
+<Theorem name="Theorem 6 (Frobenius reciprocity, 1898)">
+
+For $H \leq G$, a class function $\psi$ on $H$ and a class function $\chi$ on $G$, define the induced class function
+$$
+\operatorname{Ind}\psi(g) = \frac{1}{|H|} \sum_{\substack{x \in G \\ x^{-1}gx \in H}} \psi(x^{-1} g x).
+$$
+It is the character of $\operatorname{Ind}_H^G W$ when $\psi = \chi_W$, and
+$$
+\langle \operatorname{Ind} \psi, \chi \rangle_G = \langle \psi, \operatorname{Res} \chi \rangle_H.
+$$
+Equivalently $\Hom_G(\operatorname{Ind} W, V) \cong \Hom_H(W, \operatorname{Res} V)$: induction is left adjoint to restriction.
+
+</Theorem>
+
+<Proof>
+
+*The character.* In $\operatorname{Ind} W = \bigoplus_i g_i W$, the element $g$ maps $g_i W$ to $g_j W$ with $g g_i = g_j h$. Only blocks with $j = i$ contribute to the trace, that is $g_i^{-1} g g_i \in H$, and there the block acts as $g_i^{-1} g g_i$ on $W$. So $\chi(g) = \sum_{i : g_i^{-1}gg_i \in H} \chi_W(g_i^{-1} g g_i)$; replacing $g_i$ by any $x \in g_i H$ gives the same term, hence the formula with $\frac{1}{|H|}\sum_x$.
+
+*Reciprocity.* Using that $\chi$ is a class function and substituting $h = x^{-1}gx$ (for each $x$ a bijection between the $g$ with $x^{-1}gx \in H$ and $H$),
+$$
+\langle \operatorname{Ind}\psi, \chi \rangle_G = \frac{1}{|G||H|} \sum_{x \in G} \sum_{h \in H} \psi(h)\, \overline{\chi(xhx^{-1})} = \frac{1}{|H|} \sum_{h \in H} \psi(h) \overline{\chi(h)} = \langle \psi, \operatorname{Res}\chi \rangle_H.
+$$
+The adjunction form follows from Theorem 3 and complete reducibility, or directly from $\operatorname{Ind} W = \C[G] \otimes_{\C[H]} W$ and the tensor–hom adjunction.
+
+</Proof>
+
+<Theorem name="Theorem 7 (four character tables)">
+
+With classes listed as indicated, the character tables of $S_3$, $D_4$, $Q_8$ and $S_4$ are:
+
+$S_3$ — classes $1$, $(12)$, $(123)$ of sizes $1, 3, 2$: rows $(1,1,1)$, $(1,-1,1)$, $(2,0,-1)$.
+
+$D_4$ and $Q_8$ — classes of sizes $1, 1, 2, 2, 2$, namely $1, r^2, \{r^{\pm 1}\}, \{s, sr^2\}, \{sr, sr^3\}$ for $D_4$ and $1, -1, \{\pm i\}, \{\pm j\}, \{\pm k\}$ for $Q_8$: rows
+$$
+(1,1,1,1,1),\ (1,1,1,-1,-1),\ (1,1,-1,1,-1),\ (1,1,-1,-1,1),\ (2,-2,0,0,0).
+$$
+
+$S_4$ — classes $1$, $(12)(34)$, $(12)$, $(123)$, $(1234)$ of sizes $1, 3, 6, 8, 6$: rows
+$$
+(1,1,1,1,1),\ (1,1,-1,1,-1),\ (2,2,0,-1,0),\ (3,-1,1,0,-1),\ (3,-1,-1,0,1).
+$$
+In particular $D_4$ and $Q_8$ have the same character table, although they are not isomorphic.
+
+</Theorem>
+
+<Proof>
+
+*$S_3$:* three classes, so three irreducibles; trivial and sign; the third has degree $d$ with $1 + 1 + d^2 = 6$, so $d = 2$, and its character is $(2, 0, -1)$ from the intuition section (or from column orthogonality).
+
+*$D_4$ and $Q_8$:* five classes. In both groups the commutator subgroup is the centre $\{1, z\}$ ($z = r^2$, respectively $-1$), and $G/\{1, z\} \cong C_2 \times C_2$, which has four one-dimensional characters; they give the first four rows (they are $1$ on $z$). The fifth irreducible has degree $d$ with $4 + d^2 = 8$, so $d = 2$; its character is the one computed in the examples, and column orthogonality confirms its values.
+
+*$S_4$:* five classes. Trivial and sign. The permutation representation on $\C^4$ has character $(4, 0, 2, 1, 0)$ and $\langle \chi, \chi \rangle = (16 + 0 + 24 + 8 + 0)/24 = 2$, so it is the trivial representation plus an irreducible $V$ with character $(3, -1, 1, 0, -1)$. Then $V \otimes \mathrm{sign}$ has character $(3, -1, -1, 0, 1)$, a different irreducible. The last has degree $d$ with $1 + 1 + 9 + 9 + d^2 = 24$, so $d = 2$; it is pulled back from $S_3$ through the surjection $S_4 \to S_3$ (the action on the three ways of splitting $\{1,2,3,4\}$ into two pairs, with kernel $\{1, (12)(34), (13)(24), (14)(23)\}$), giving $(2, 2, 0, -1, 0)$.
+
+*$D_4 \not\cong Q_8$:* $D_4$ has five elements of order $2$ ($r^2$ and four reflections), $Q_8$ only one ($-1$).
+
+</Proof>
+
+The character table does not see the power map $g \mapsto g^2$: the **Frobenius–Schur indicator** $\frac{1}{|G|}\sum_g \chi(g^2)$ of the two-dimensional character is $+1$ for $D_4$ (it is realisable over $\R$) and $-1$ for $Q_8$ (it is quaternionic, not realisable over $\R$), as the first experiment computes.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: the two-dimensional representation of S₃">
+
+Below, $A$ is the rotation by $120^\circ$ (a $3$-cycle in $S_3$) and $B$ the reflection in the $x$-axis (a transposition), the images of two generators in the two-dimensional representation of $S_3 \cong D_3$. Compare "first $A$, then $B$" with "first $B$, then $A$": they differ, so the representation is not a sum of one-dimensional ones (whose images would commute). Look also at the invariant lines: the reflection has two, the rotation none over $\R$ — there is no line preserved by both, which is irreducibility seen geometrically. Over $\C$ the rotation has two eigenlines, but the reflection swaps them. Check the traces: $\operatorname{tr} A = -1$ and $\operatorname{tr} B = 0$, the character values $\chi(123) = -1$ and $\chi(12) = 0$.
+
+<MatrixTransform mode="compose" matrix={[["cos(2*pi/3)", "-sin(2*pi/3)"], ["sin(2*pi/3)", "cos(2*pi/3)"]]} matrix2={[[1, 0], [0, -1]]} title="Two generators of S₃ acting on the plane" subtitle="Rotation by 120° and a reflection do not commute: the representation is irreducible." />
+
+Every representation in this lesson can be seen as symmetries of a shape: $S_3 \cong D_3$ for the triangle, $D_4$ for the square. Turn on the lines of symmetry and the rotation to see the elements of each group; the class sizes of $D_4$ ($1, 1, 2, 2, 2$) appear as the identity, the half-turn, the two quarter-turns, and the two pairs of mirror lines (through vertices, and through edge midpoints).
+
+<ShapeExplorer shapes={["equilateral", "square"]} show={["symmetry", "rotation"]} title="Symmetry groups of polygons" subtitle="D₃ ≅ S₃ for the triangle, D₄ for the square." />
+
+</Section>
+
+<Section id="formal" kind="formal" title="Representation theory in Lean and Mathlib">
+
+Mathlib's `Representation k G V` is a monoid homomorphism `G →* (V →ₗ[k] V)`, and `FDRep k G` is the category of finite-dimensional representations. Schur's lemma, proved here as in the text from the simplicity of kernels and images (stated for simple modules over any ring, which covers $k[G]$-modules), with Mathlib's versions:
+
+<Lean decl="Lumenary.RepresentationTheory.schur" />
+
+<Lean decl="Lumenary.RepresentationTheory.schur_library" />
+
+<Lean decl="Lumenary.RepresentationTheory.schur_dimension" />
+
+Maschke's theorem from Mathlib, proved there by the same averaging argument; and its failure when the characteristic divides $|G|$, proved here for the shear over $\mathbb{F}_2$, following the human argument:
+
+<Lean decl="Lumenary.RepresentationTheory.maschke" />
+
+<Lean decl="Lumenary.RepresentationTheory.shear" />
+
+<Lean decl="Lumenary.RepresentationTheory.shear_sq" />
+
+<Lean decl="Lumenary.RepresentationTheory.maschke_fails" />
+
+Characters are class functions, and irreducible characters are orthonormal (Mathlib, over any algebraically closed field in which $|G|$ is invertible):
+
+<Lean decl="Lumenary.RepresentationTheory.char_class_function" />
+
+<Lean decl="Lumenary.RepresentationTheory.char_orthonormal" />
+
+The character tables of $S_3$ and of the groups of order $8$, with their orthogonality relations checked by evaluation, and the non-isomorphism of $D_4$ and $Q_8$ (Mathlib's `DihedralGroup 4` and `QuaternionGroup 2`) by counting solutions of $g^2 = 1$:
+
+<Lean decl="Lumenary.RepresentationTheory.s3Table" />
+
+<Lean decl="Lumenary.RepresentationTheory.s3_orthogonality" />
+
+<Lean decl="Lumenary.RepresentationTheory.order8Table" />
+
+<Lean decl="Lumenary.RepresentationTheory.order8_orthogonality" />
+
+<Lean decl="Lumenary.RepresentationTheory.d4_not_q8" />
+
+Frobenius reciprocity in its categorical form:
+
+<Lean decl="Lumenary.RepresentationTheory.frobenius_reciprocity" />
+
+**What is and is not formalised.** Proved here: Schur's lemma, the counterexample to Maschke in characteristic $2$, the orthogonality relations of the two tables as integer identities, and $D_4 \not\cong Q_8$. From Mathlib: Maschke's theorem, Schur's lemma over algebraically closed fields, characters as class functions, orthonormality of irreducible characters, and induction as left adjoint to restriction. Not formalised: Theorem 5 (characters span the class functions; number of irreducibles = number of classes), $\sum d_i^2 = |G|$, and the fact that the listed rows *are* the irreducible characters of these groups — our tables are definitions whose orthogonality we check, and the first experiment derives them from the groups.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Character tables, computed">
+
+The first experiment builds $S_3$, $S_4$, $D_4$ and $Q_8$ explicitly, finds their conjugacy classes, and extracts the irreducible characters from permutation characters (on cosets of cyclic subgroups) and natural characters: it repeatedly subtracts known irreducible components and keeps any remainder $\chi$ with $\langle \chi, \chi \rangle = 1$ — irreducible by Corollary 4. It then checks Theorem 5 and $\sum d_i^2 = |G|$, compares the tables of $D_4$ and $Q_8$, and computes the Frobenius–Schur indicators that tell them apart.
+
+<Python id="representation_theory_character_tables" />
+
+The second experiment lists all lines of $\mathbb{F}_p^2$ for $p = 2, 3, 5, 7$ and finds those invariant under the shear (order $p$) and the swap (order $2$), then runs Maschke's averaging, which needs to divide by $|G|$.
+
+<Python id="representation_theory_maschke_char_p" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every representation of a finite group is completely reducible."** Only when the characteristic of the field does not divide $|G|$. Over $\mathbb{F}_p$, the cyclic group of order $p$ acting by $\left(\begin{smallmatrix} 1 & 1 \\ 0 & 1 \end{smallmatrix}\right)$ has exactly one invariant line, with no invariant complement; the averaging in Maschke's proof needs $1/|G|$. The theory of representations in characteristic dividing $|G|$ — **modular representation theory**, founded by Richard Brauer — is much harder and still full of open problems.
+
+</Misconception>
+
+<Misconception>
+
+**"The character table determines the group."** $D_4$ and $Q_8$ have the same table but are not isomorphic. The table determines a lot — the order, the class sizes, the normal subgroups, whether the group is abelian, simple or solvable — but not the power maps or the Frobenius–Schur indicators, and not the group itself.
+
+</Misconception>
+
+<Misconception>
+
+**"Irreducible over $\R$ means irreducible over $\C$."** The rotation by $90^\circ$ gives an irreducible two-dimensional real representation of $C_4$ (no real eigenvector), but over $\C$ it splits into the two eigenlines with eigenvalues $\pm i$. Schur's lemma in the form "intertwiners are scalars" needs an algebraically closed field: here $\Hom_{C_4}(\R^2, \R^2) \cong \C$.
+
+</Misconception>
+
+<Misconception>
+
+**"The tensor product of irreducible representations is irreducible."** For the two-dimensional representation $V$ of $S_3$, $\chi_V^2 = (4, 0, 1)$ and $\langle \chi_V^2, \chi_V^2 \rangle = (16 + 0 + 2)/6 = 3$: $V \otimes V \cong \mathbf{1} \oplus \mathrm{sign} \oplus V$. Decomposing tensor products (Clebsch–Gordan problems) is one of the central computations of the subject.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="Groups as symmetries; the cube">
+
+Every finite group is a symmetry group, and its representations are the ways it can act by linear symmetries. The rotation group of the cube is isomorphic to $S_4$, acting on the four long diagonals. Its action on $\R^3$ is a three-dimensional representation: the identity has trace $3$; the three half-turns about face axes, forming the class of $(12)(34)$, have trace $-1$; the eight rotations by $120^\circ$ about long diagonals ($3$-cycles) have trace $0$; the six quarter-turns about face axes ($4$-cycles) have trace $1$; and the six half-turns about edge axes (transpositions) have trace $-1$. This is the row $(3, -1, -1, 0, 1)$ of the table of $S_4$, the standard representation twisted by the sign — which proves at once that the cube's rotations act irreducibly on space. Klein's Erlangen programme reads geometry through such groups; crystallographic point groups and their character tables organise the symmetries of crystals (see <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Fourier analysis on groups">
+
+For an abelian group the irreducible characters are homomorphisms $G \to S^1$, and expanding a function $f : G \to \C$ in characters is Fourier analysis: on $\Z/n$ it is the discrete Fourier transform, $\hat f(j) = \langle f, \chi_j \rangle$, computed by the fast Fourier transform. For non-abelian $G$, Corollary 4(3) says $\C[G] \cong \bigoplus_i \operatorname{End}(V_i)$ (Wedderburn), and the Fourier transform of $f$ is the family of matrices $\sum_g f(g)\rho_i(g)$. For compact groups, averaging over $G$ becomes integration against Haar measure, and the **Peter–Weyl theorem** (1927) decomposes $L^2(G)$ in the same way; for the circle it is classical Fourier series, and for $SO(3)$ acting on the sphere it gives spherical harmonics, with $L^2(S^2) = \widehat{\bigoplus}_{\ell} \mathcal{H}_\ell$, $\dim \mathcal{H}_\ell = 2\ell + 1$ (see <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Degeneracy and selection rules">
+
+If a symmetry group $G$ acts on the state space of a quantum system and commutes with the Hamiltonian $H$, then each eigenspace of $H$ is a representation of $G$; Schur's lemma says $H$ acts as a scalar on each isotypic piece. So, generically, the **degeneracies** of energy levels are the dimensions of irreducible representations — for a molecule with symmetry group $D_3$ one sees levels of multiplicity $1$ and $2$ — and a level of dimension $d$ that is not irreducible signals hidden symmetry or accident. Characters give **selection rules**: a transition between states in representations $V$ and $W$, driven by an operator transforming like $U$, can occur only if $\mathbf{1}$ appears in $V^* \otimes U \otimes W$. Wigner and Weyl introduced these methods around 1927–31; they are theorems about the symmetric model, and the physical predictions are only as good as the model (see <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Dirichlet characters and Artin L-functions">
+
+The characters of the abelian group $(\Z/n)^\times$ — **Dirichlet characters** — were the first characters in mathematics. Dirichlet (1837) used their orthogonality to isolate the primes $p \equiv a \pmod n$: the indicator of the class $a$ is $\frac{1}{\varphi(n)}\sum_\chi \overline{\chi(a)}\chi$, and the non-vanishing of $L(1, \chi)$ for $\chi \neq 1$ gives infinitely many such primes. For a Galois extension $K/\Q$ with group $G$, each representation of $G$ has an **Artin $L$-function**, and Artin's conjecture that these are entire for non-trivial irreducibles remains open in general. The Langlands programme proposes a vast correspondence between such Galois representations and automorphic representations (see <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink> and <TopicLink id="math.number.langlands-programme">the Langlands programme</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Representations as functors; Tannaka duality">
+
+A group $G$ is a one-object category $BG$, and a representation is a functor $BG \to \cat{Vect}_k$; intertwiners are natural transformations, so $\mathrm{Rep}(G) = [BG, \cat{Vect}_k]$ (see <TopicLink id="math.cat.functors">functors</TopicLink>). Restriction along $H \hookrightarrow G$ is precomposition, and induction is its left adjoint (Theorem 6) — a left Kan extension. Over $\C$, $\mathrm{Rep}(G)$ is semisimple with finitely many simple objects, and the character table records its Grothendieck ring only additively; the tensor product adds the fusion rules, which coincide for $D_4$ and $Q_8$. **Tannaka–Krein duality** (in Deligne's form for symmetric tensor categories) says that $G$ is recovered from $\mathrm{Rep}(G)$ *as a symmetric monoidal category with its forgetful functor to vector spaces* — structure that does distinguish $D_4$ from $Q_8$. This is the starting point of <TopicLink id="math.cat.categorical-representation-theory">categorical representation theory</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Peter Gustav Lejeune Dirichlet** (1837) used characters of $(\Z/n)^\times$ to prove his theorem on primes in arithmetic progressions; characters of finite abelian groups were developed by Dedekind and Weber.
+- **Richard Dedekind** asked **Ferdinand Georg Frobenius** about the factorisation of the "group determinant" $\det(x_{gh^{-1}})$; in answering (1896) Frobenius created the characters of non-abelian groups, and soon after induced representations and reciprocity (1898). **Heinrich Maschke** proved complete reducibility (1898–99); **William Burnside** used characters to prove his $p^aq^b$ theorem (1904); **Issai Schur** gave a new foundation of the theory based on his lemma (1905); **Alfred Young** and Frobenius found the representations of $S_n$, indexed by partitions.
+- **Emmy Noether** recast the subject as the theory of modules over the group algebra (1929). **Hermann Weyl** and **Eugene Wigner** brought representations into quantum mechanics (1927–31), and **Fritz Peter** and Weyl extended the theory to compact groups (1927). **Richard Brauer** founded modular representation theory from the 1930s.
+- Infinite-dimensional representations of Lie groups were developed by **Harish-Chandra**, **Israel Gelfand** and many others from the 1940s; **Robert Langlands**'s conjectures (from 1967) link representation theory with number theory, and research in the field is now pursued worldwide.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Jean-Pierre Serre, *Linear Representations of Finite Groups* (1977) — Part I is the classic concise course on characters over $\C$.
+- William Fulton and Joe Harris, *Representation Theory: A First Course* (1991) — Lectures 1–3 for finite groups, then on to Lie groups and algebras.
+- Gordon James and Martin Liebeck, *Representations and Characters of Groups* (2nd ed., 2001) — a gentle, example-rich undergraduate text.
+- I. Martin Isaacs, *Character Theory of Finite Groups* (1976) — the standard advanced text.
+- Pavel Etingof et al., *Introduction to Representation Theory* (2011) — finite groups, quivers and categories in one short book.
+- Shlomo Sternberg, *Group Theory and Physics* (1994) — representations in quantum mechanics and chemistry.
+
+</Section>

@@ -1,0 +1,437 @@
+---
+slug: computational-reproducibility
+topic: math.comp.computational-reproducibility
+title: Computational reproducibility
+subtitle: When is a computation evidence that someone else can check? Pinned environments and seeds, floating-point error bounds, interval arithmetic, certificates — and saying exactly what kind of evidence you have.
+level: grad
+ages: Graduate
+minutes: 120
+order: 7040
+objectives:
+  - Package a computation with version control, a pinned environment, tests and a single command that regenerates its results
+  - Classify a computational claim as exact, numerical, statistical or experimental, and state what it does not establish
+  - Prove the standard error bound for floating-point summation and use it to choose and justify tolerances
+  - Turn numerical results into theorems with interval arithmetic, and make results checkable with certificates
+  - Archive code and data with persistent identifiers and cite software properly
+narrators: []
+lean:
+  - Lumenary.ComputationalReproducibility.fsum
+  - Lumenary.ComputationalReproducibility.fsum_error
+  - Lumenary.ComputationalReproducibility.Ival
+  - Lumenary.ComputationalReproducibility.Ival.Mem
+  - Lumenary.ComputationalReproducibility.Ival.add
+  - Lumenary.ComputationalReproducibility.Ival.mul
+  - Lumenary.ComputationalReproducibility.Ival.add_mem
+  - Lumenary.ComputationalReproducibility.Ival.mul_mem
+  - Lumenary.ComputationalReproducibility.sqrt_two_bounds
+  - Lumenary.ComputationalReproducibility.gcd_certificate
+  - Lumenary.ComputationalReproducibility.lucas_certificate
+  - Lumenary.ComputationalReproducibility.prime_65537
+compute: [computational_reproducibility_floating_point, computational_reproducibility_seeds]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A result someone else can check">
+
+Amara in Accra and Minh in Hanoi run the same notebook from a published paper. Amara's table agrees with the paper to sixteen digits; Minh's differs in the ninth digit of one entry, and a Monte Carlo figure looks slightly different. Neither of them has made a mistake. Different library versions summed the same numbers in a different order, and the random generator was never seeded. Is the paper's claim wrong? Without more information, nobody can say — and that is the problem.
+
+Mathematics has met this problem at the highest level. Appel and Haken's 1976 proof of the four colour theorem rested on a computer check of 1,936 configurations that no referee could repeat by hand; doubts persisted until Robertson, Sanders, Seymour and Thomas (1997) gave a new proof with new, independently written programs, and Gonthier (2005) checked a complete proof in the Coq proof assistant. The referees of Hales's 1998 proof of the Kepler conjecture reported that they were "99% certain" but could not verify all of the computations; the Flyspeck project then verified the whole proof formally, finishing in 2014.
+
+A computation counts as mathematical evidence only if others can repeat it and know *what kind* of evidence it is. This lesson develops the mathematics and the practice behind that: floating-point error bounds that tell you which digits to trust, interval arithmetic and certificates that turn computations into theorems, and the engineering — pinned environments, seeds, tests, archives — that lets someone else get your answer.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="What can change between two runs">
+
+A computation is a function of more inputs than the ones we think about:
+
+- **Code** — fixed by version control, if the exact commit is recorded.
+- **Data** — fixed by keeping raw data read-only and recording checksums.
+- **Environment** — the interpreter, libraries, compiler, linear-algebra back end, operating system and hardware. A library update may change an algorithm; a compiler may fuse a multiplication and an addition into one correctly rounded operation; different processors may use different instruction sets.
+- **Hidden nondeterminism** — the order in which parallel threads add up partial sums, unseeded random numbers, iteration order over hash tables (Python randomises string hashing between runs, so the iteration order of a set of strings can change), and notebook cells run out of order.
+
+Each of these is either *pinned* (fixed and recorded) or *tolerated* (its effect bounded and stated). Exact computations — integers, rationals, symbolic algebra — can be pinned completely and reproduced bit for bit. Floating-point results generally cannot be guaranteed bit for bit across environments; for them the honest statement is a result *with a tolerance*, and the tolerance should come from an error analysis, not from hope.
+
+There are levels of checking: **re-running** the same code on the same machine; **reproducing** it from the same code and data elsewhere; **replicating** with an independent implementation (or new data); and, strongest of all for proofs, **formal verification**.
+
+The lesson builds on floating-point arithmetic and error analysis from <TopicLink id="math.comp.numerical-methods">numerical methods</TopicLink>, and on the habit, from <TopicLink id="math.found.mathematical-writing">mathematical writing</TopicLink>, of stating exactly what has and has not been established.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="reproducible">
+
+A computational result is **reproducible** if others can obtain the same result — exactly, or within a stated tolerance — from the same code, data and environment. It is **replicable** if an independent study (new code or new data) reaches consistent conclusions. (Terminology varies between communities; these are the definitions of the US National Academies' 2019 report.)
+
+</Definition>
+
+<Definition term="pinned environment">
+
+An environment is **pinned** when the exact versions of all software dependencies are fixed and recorded — typically in a lock file listing every package, version and content hash, or as a container image or a functional package specification (Nix, Guix) that rebuilds the same software.
+
+</Definition>
+
+<Definition term="floating-point numbers">
+
+A binary floating-point system with precision $p$ consists of $0$ and the numbers $\pm m \cdot 2^{e - p + 1}$ with integer **significand** $2^{p-1} \le m \lt 2^p$ (normal numbers) and exponent $e_{\min} \le e \le e_{\max}$, together with subnormal numbers below $2^{e_{\min}}$. IEEE 754 double precision has $p = 53$. Rounding to nearest maps a real number to a nearest floating-point number. The **unit roundoff** is $u = 2^{-p}$, so $u = 2^{-53} \approx 1.1 \times 10^{-16}$ in double precision.
+
+</Definition>
+
+<Definition term="evidence types">
+
+A computational claim is
+
+- **exact** if it is computed with exact arithmetic (integers, rationals, exact symbolic algebra) or by exhaustive enumeration; it is then as reliable as the code and its trusted base;
+- **numerical** if it is an approximation of a real quantity; it is meaningful only with an **error bound**, which may be heuristic, proved a priori, or rigorous a posteriori (as with interval arithmetic);
+- **statistical** if it rests on random sampling; it holds with a stated confidence and is reproducible only given the generator and seed;
+- **experimental** if it reports a pattern observed in finitely many cases, with no error model at all.
+
+A **formal proof** checked by a proof assistant is stronger than all of these for a mathematical statement.
+
+</Definition>
+
+<Definition term="certificate">
+
+A **certificate** for a claim is extra output from which the claim can be verified by a check that is simpler, cheaper or independently trusted — for example Bézout coefficients for a gcd, a factor for compositeness, or a primitive root for primality.
+
+</Definition>
+
+<Definition term="persistent identifier">
+
+A **persistent identifier** names a digital object permanently: a DOI (Digital Object Identifier) for a deposited release of code or data, or an intrinsic identifier such as a Software Heritage identifier (SWHID), computed from the content itself by a cryptographic hash.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Classifying claims">
+
+- "$2^{127} - 1$ is prime" (Lucas, 1876; checkable today in a millisecond with integer arithmetic) — **exact**.
+- "$\zeta(3) = 1.2020569031595942\ldots$" printed by a double-precision program — **numerical**; it needs a bound on the error of truncating the series and of rounding.
+- "The giant component of the random graph $G(1000, 0.002)$ has about 800 vertices, averaged over 100 samples" — **statistical**; it needs the spread of the samples and the seed.
+- "The pattern continues for $n \le 10^9$" — **experimental**, however large the bound; the bound must be stated.
+
+</Example>
+
+<Example title="Catastrophic cancellation">
+
+In double precision, $\cos(10^{-8})$ rounds to exactly $1$, so the program `(1 - cos(x))/x**2` returns $0$ at $x = 10^{-8}$, while the true value is very close to $\tfrac12$. The subtraction itself is exact (see Sterbenz's lemma below); it merely *exposes* the rounding error of $\cos x$, which is about $u$ in absolute size and therefore enormous relative to $1 - \cos x \approx x^2/2$. The algebraically equal expression $2\sin^2(x/2)/x^2$ involves no cancellation and is accurate to a few units of $u$. Rearranging formulas is an error-analysis decision, not a cosmetic one.
+
+</Example>
+
+<Example title="The dependency problem in interval arithmetic">
+
+Interval arithmetic computes with intervals guaranteed to contain the true values. For $X = [0, 1]$, evaluating $x(1 - x)$ as $X \cdot (1 - X) = [0,1] \cdot [0,1] = [0, 1]$ is a valid enclosure of the true range $[0, \tfrac14]$, but four times too wide, because the two occurrences of $x$ are treated as independent. Splitting $X$ into small subintervals gives sharper enclosures, and rewriting the expression as $\tfrac14 - (x - \tfrac12)^2$, with a single occurrence of $x$ and an interval *squaring* operation (which knows that a square is non-negative), gives the exact range.
+
+</Example>
+
+<Example title="A reproducible project">
+
+A layout that someone else can use without asking you anything:
+
+```text
+project/
+  README.md         what is computed, how long it takes, the one command
+  CITATION.cff      how to cite this software, with its DOI
+  LICENSE           terms of reuse
+  environment.lock  exact versions and hashes of every dependency
+  data/raw/         read-only inputs, with SHA-256 checksums
+  src/              the code, under version control (git)
+  tests/            unit and regression tests, with stated tolerances
+  Makefile          "make reproduce" regenerates every table and figure
+```
+
+Every output records the commit hash, the environment and the seeds that produced it; a released version is archived with a DOI (for example on Zenodo) and is also preserved by Software Heritage.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Error bounds, enclosures and certificates">
+
+<Theorem name="Theorem 1 (the standard model of rounding)">
+
+If $z$ is a real number in the normal range and $\hat z$ is a nearest floating-point number, then $\hat z = z(1 + \delta)$ with $|\delta| \le u = 2^{-p}$. Consequently IEEE 754 arithmetic, which rounds every basic operation correctly, satisfies $\mathrm{fl}(x \circ y) = (x \circ y)(1 + \delta)$, $|\delta| \le u$, for $\circ \in \{+, -, \times, \div\}$, barring overflow and underflow.
+
+</Theorem>
+
+<Proof>
+
+Let $2^e \le |z| \lt 2^{e+1}$. In that range consecutive floating-point numbers are $2^{e - p + 1}$ apart, so a nearest one satisfies $|\hat z - z| \le \tfrac12 \cdot 2^{e - p + 1} = 2^{-p} \cdot 2^{e} \le u\,|z|$. Put $\delta = (\hat z - z)/z$. IEEE 754 requires each basic operation to return the correctly rounded exact result, so the second statement follows. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Theorem 2 (recursive summation)">
+
+Let $\hat s_0 = x_0$ and $\hat s_k = (\hat s_{k-1} + x_k)(1 + \delta_k)$ with $|\delta_k| \le u$, and let $s_n = \sum_{i=0}^{n} x_i$. Then
+
+$$
+|\hat s_n - s_n| \;\le\; \big((1+u)^n - 1\big) \sum_{i=0}^{n} |x_i| \;\le\; \gamma_n \sum_{i=0}^n |x_i|, \qquad \gamma_n = \frac{nu}{1 - nu} \ \ (nu \lt 1).
+$$
+
+</Theorem>
+
+<Proof>
+
+Write $e_k = \hat s_k - s_k$ and $A_k = \sum_{i \le k} |x_i|$. For $n = 0$ both sides are $0$. For the step,
+
+$$
+e_{k} = (\hat s_{k-1} + x_k)(1 + \delta_k) - (s_{k-1} + x_k) = e_{k-1}(1 + \delta_k) + s_k\, \delta_k .
+$$
+
+Using the induction hypothesis $|e_{k-1}| \le ((1+u)^{k-1} - 1) A_{k-1}$, together with $A_{k-1} \le A_k$ and $|s_k| \le A_k$,
+
+$$
+|e_k| \le \big((1+u)^{k-1} - 1\big)(1 + u) A_k + u A_k = \big((1+u)^{k} - 1\big) A_k .
+$$
+
+Finally $(1 + u)^n \le e^{nu} \le 1/(1 - nu)$ for $0 \le nu \lt 1$ (since $e^{-t} \ge 1 - t$), so $(1+u)^n - 1 \le nu/(1 - nu)$. $\blacksquare$
+
+</Proof>
+
+Three lessons follow. The bound involves $\sum |x_i|$, not $|\sum x_i|$: when there is cancellation the *relative* error of the sum can be huge. The bound holds for every order of summation (apply it to the reordered list), but the actual results of two orders can differ by up to twice the bound; so a parallel reduction whose order depends on thread timing is not bitwise reproducible, and a test comparing results must use a tolerance — this theorem tells you how large. And the bound grows like $nu$, while pairwise summation achieves $O(u \log n)$ and Kahan's compensated summation $2u + O(nu^2)$ (Higham 2002, chapter 4).
+
+<Theorem name="Theorem 3 (Sterbenz's lemma, 1974)">
+
+If $x$ and $y$ are floating-point numbers with $y/2 \le x \le 2y$, then $x - y$ is a floating-point number: the subtraction is exact.
+
+</Theorem>
+
+<Proof>
+
+The hypothesis forces $x, y \ge 0$, and the case $y = 0$ is trivial; if $x \lt y$ we compute $y - x$ instead (then $x \le y \le 2x$), so assume $0 \lt y \le x \le 2y$. Write $y = m_y \cdot 2^{e_y - p + 1}$, where $2^{e_y - p + 1}$ is the spacing of floating-point numbers at $y$ and $m_y \lt 2^p$ is an integer. Every floating-point number $\ge y$ has an exponent at least $e_y$, so it is an integer multiple of $2^{e_y - p + 1}$; in particular $x - y = N \cdot 2^{e_y - p + 1}$ for an integer $N \ge 0$. From $x - y \le y$ we get $N \le m_y \lt 2^p$, and every number $N \cdot 2^{e_y - p + 1}$ with $0 \le N \lt 2^p$ and $e_y \ge e_{\min}$ is representable (as a normal or subnormal number). $\blacksquare$
+
+</Proof>
+
+So cancellation never *creates* error; it reveals the errors already present in its operands.
+
+<Theorem name="Theorem 4 (interval arithmetic is sound)">
+
+For intervals $[a, b]$, $[c, d]$ define $[a,b] + [c,d] = [a + c, b + d]$ and $[a,b] \cdot [c,d] = [\min P, \max P]$ with $P = \{ac, ad, bc, bd\}$. If $x \in [a,b]$ and $y \in [c, d]$ then $x + y \in [a,b] + [c,d]$ and $xy \in [a,b]\cdot[c,d]$. Consequently, if an expression $E(x_1, \dots, x_k)$ built from $+, -, \times$ is evaluated on intervals $X_i \ni x_i$, the resulting interval contains $E(x_1, \dots, x_k)$.
+
+</Theorem>
+
+<Proof>
+
+Addition is immediate. For multiplication, suppose $y \ge 0$; then $a y \le x y \le b y$. If $a \ge 0$ then $ay \ge ac$, and if $a \le 0$ then $ay \ge ad$; either way $xy \ge \min P$. If $b \ge 0$ then $by \le bd$, and if $b \le 0$ then $by \le bc$; so $xy \le \max P$. The case $y \le 0$ is symmetric, with $by \le xy \le ay$. The statement for expressions follows by induction on the expression, using these two cases at each operation (and $X - Y = X + (-1)\cdot Y$). $\blacksquare$
+
+</Proof>
+
+On a computer the endpoints are themselves floating-point numbers, so each computed lower endpoint is rounded *down* and each upper endpoint *up* (IEEE 754 provides these directed rounding modes). With that **outward rounding** Theorem 4 survives, and a computation can establish strict inequalities, enclosures of integrals and zeros of functions, and existence results via fixed-point theorems: Tucker's computer-assisted proof (2002) that the Lorenz equations have a strange attractor, answering Smale's 14th problem, is built on rigorous interval computations.
+
+<Theorem name="Theorem 5 (a Bézout identity certifies a gcd)">
+
+If $d \ge 0$, $d \mid a$, $d \mid b$ and $d = ax + by$ for some integers $x, y$, then $d = \gcd(a, b)$.
+
+</Theorem>
+
+<Proof>
+
+Since $d$ divides $a$ and $b$, it divides $\gcd(a, b)$. Since $\gcd(a, b)$ divides $a$ and $b$, it divides $ax + by = d$. Two non-negative integers that divide each other are equal. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Theorem 6 (Lucas's primality certificate) — proof sketched">
+
+Let $p \ge 2$. If some $a$ satisfies $a^{p-1} \equiv 1 \pmod p$ and $a^{(p-1)/q} \not\equiv 1 \pmod p$ for every prime $q \mid p - 1$, then $p$ is prime.
+
+</Theorem>
+
+<Proof>
+
+The conditions say that $a$ is a unit modulo $p$ of multiplicative order exactly $p - 1$. So the unit group of $\Z/p\Z$ has at least $p - 1$ elements, i.e. every non-zero residue is a unit, which happens only when $p$ is prime. $\blacksquare$
+
+</Proof>
+
+Pratt (1975) observed that the prime factors $q$ can be certified recursively in the same way, giving certificates of polynomial size: primality is in NP (and, by Agrawal, Kayal and Saxena, 2002, in P). The point for reproducibility is that **checking a certificate is far easier than trusting the program that found it**.
+
+For statistical claims, the analogue of an error bound is a probability bound. If $X_1, \dots, X_n$ are independent with values in $[\alpha, \beta]$ and mean $\mu$, **Hoeffding's inequality** (1963) gives $\Pr\big(|\bar X - \mu| \ge \varepsilon\big) \le 2 \exp\!\big(-2 n \varepsilon^2 / (\beta - \alpha)^2\big)$ for every $\varepsilon \gt 0$, a non-asymptotic guarantee for Monte Carlo estimates; the familiar interval $\bar X \pm 1.96\, \hat\sigma/\sqrt n$ is the asymptotic version from the central limit theorem. Either is a statement about the *method*: about 5% of honest 95% intervals miss the truth.
+
+</Section>
+
+<Section id="practice" kind="human" title="Packaging and reporting a computation">
+
+**Version control.** Keep code (and small data) in a version-control system such as git, and record in every output the commit that produced it. A result that cannot be traced to a commit cannot be reproduced.
+
+**Pinned environment and one command.** Record exact versions with hashes in a lock file, or build a container or a Nix/Guix environment. Provide a single command that regenerates every number, table and figure from the raw data. Run it on a clean machine before publishing.
+
+**Tests.** Unit tests check the pieces on cases with known answers; regression tests compare the outputs with recorded values — exactly for exact computations, and within a tolerance justified by an error analysis such as Theorem 2 for floating point. A test with tolerance `1e-6` chosen because "it passed" is not evidence.
+
+**Notebooks.** A notebook that "ran once" may depend on cells run out of order, on variables that no longer exist in the code, and on an unrecorded environment. Restart the kernel and run all cells from the top, and pin its environment like any other code.
+
+**Randomness.** Seed every generator and record the seeds, the generator and its version. Python guarantees that `random.random()` gives the same stream for the same seed across versions, but other methods may change; NumPy's `Generator` with explicitly spawned independent streams is the safe pattern for parallel work. Report the spread over seeds, not the luckiest run.
+
+**Data provenance.** Keep raw data immutable, record where it came from and checksums of the files, and script every transformation.
+
+**Archiving and citation.** Deposit each released version in an archive that issues a DOI (for example Zenodo); Software Heritage additionally preserves public source code with intrinsic identifiers. Cite software like a paper: authors, title, version, year and identifier — a `CITATION.cff` file makes this easy — and cite the libraries your result depends on. zbMATH's swMATH database indexes mathematical software and the papers that use it.
+
+**Reporting.** State the evidence type of each computational claim, its bounds (searched ranges, error bounds, confidence levels) and what it does not establish. This site follows the same rule: every experiment declares its evidence types and ends with an "Epistemic status" paragraph, and its "formally verified" and "computationally tested" labels are derived from build reports, never written by hand.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Error bounds and certificates in Lean">
+
+The Lean module proves Theorem 2 in the standard model. Recursive summation with the rounding errors as data:
+
+<Lean decl="Lumenary.ComputationalReproducibility.fsum" />
+
+The bound, by induction on $n$ with exactly the steps of the proof above:
+
+<Lean decl="Lumenary.ComputationalReproducibility.fsum_error" />
+
+Interval arithmetic with rational endpoints (exact, so no outward rounding is needed) and Theorem 4 for $+$ and $\times$:
+
+<Lean decl="Lumenary.ComputationalReproducibility.Ival" />
+
+<Lean decl="Lumenary.ComputationalReproducibility.Ival.Mem" />
+
+<Lean decl="Lumenary.ComputationalReproducibility.Ival.add" />
+
+<Lean decl="Lumenary.ComputationalReproducibility.Ival.mul" />
+
+<Lean decl="Lumenary.ComputationalReproducibility.Ival.add_mem" />
+
+<Lean decl="Lumenary.ComputationalReproducibility.Ival.mul_mem" />
+
+A numerical value as a theorem — the same kind of statement as Zu Chongzhi's bounds on $\pi$ (see the history below):
+
+<Lean decl="Lumenary.ComputationalReproducibility.sqrt_two_bounds" />
+
+Certificates. Theorem 5 is proved here; Theorem 6 is Mathlib's `lucas_primality`, and is then used to certify that $65537$ is prime from the single witness $a = 3$:
+
+<Lean decl="Lumenary.ComputationalReproducibility.gcd_certificate" />
+
+<Lean decl="Lumenary.ComputationalReproducibility.lucas_certificate" />
+
+<Lean decl="Lumenary.ComputationalReproducibility.prime_65537" />
+
+The last proof asks Lean's kernel to evaluate $3^{65536} \bmod 65537$ (`decide +kernel`); the kernel does this with built-in arbitrary-precision arithmetic on natural numbers, which is therefore part of the trusted base of that proof — a small, well-tested part, but a part.
+
+**What is formalised:** Theorems 2, 4 (for $+$ and $\times$), 5 and the certified examples; Theorem 6 is from Mathlib. **Not formalised:** IEEE 754 itself (Theorem 1 and Sterbenz's lemma need a model of floating-point formats; the Flocq library for Coq provides one), outward rounding, and Hoeffding's inequality.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments on reproducibility">
+
+The first experiment sums the same 100,000 numbers in several orders. Because every double is a rational number, the exact sum can be computed with integers, so every error is measured exactly. Watch how many different "answers" appear, how small they are compared with the worst-case bound of Theorem 2, and how pairwise and compensated summation do.
+
+<Python id="computational_reproducibility_floating_point" />
+
+The second experiment fixes a seed and checks, with a 64-bit fingerprint of the output, that two runs agree bit for bit; then it shows what different seeds do, and how often the nominal 95% confidence intervals actually contain the exact answer.
+
+<Python id="computational_reproducibility_seeds" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: cancellation and seeds">
+
+Both curves below are the same function in exact arithmetic, $\frac{1 - \cos x}{x^2} = \frac{2\sin^2(x/2)}{x^2}$, which tends to $\tfrac12$ as $x \to 0$. The window is $|x| \le 10^{-7}$. The first formula, evaluated in double precision, dissolves into steps and noise as $x$ shrinks; the second stays at $\tfrac12$. Use the trace to read off values near $x = 2 \times 10^{-8}$.
+
+<FunctionPlot fns={["(1 - cos(x))/x^2", "2*sin(x/2)^2/x^2"]} labels={["(1 − cos x)/x², as written", "2 sin²(x/2)/x², rearranged"]} x={[-0.0000001, 0.0000001]} y={[-0.25, 1.25]} title="Catastrophic cancellation, live" />
+
+The exact pattern of the noise may differ between browsers: JavaScript's `Math.cos` is not required to be correctly rounded. That is itself a reproducibility lesson.
+
+The simulation below estimates $\pi$ with Buffon's needle. **Replay** reruns the same seed and gives exactly the same result; **New run** changes the seed. Compare several runs with the reported margin: the estimates differ, but they should scatter within it about 95% of the time.
+
+<ChanceLab experiment="buffon" trials={1000} title="Same seed, same result" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The notebook ran, so it is reproducible."** A notebook that ran once on one machine may depend on out-of-order cells, on unrecorded library versions and on unseeded randomness. Reproducibility is demonstrated by someone else, from a clean environment, with one command.
+
+</Misconception>
+
+<Misconception>
+
+**"Agreement to many digits is a proof."** The number $e^{\pi\sqrt{163}} = 262537412640768743.99999999999925\ldots$ agrees with an integer to twelve decimal places, and is not an integer. Agreement is evidence that guides the search for a proof — or a certified computation — and is reported as numerical evidence.
+
+</Misconception>
+
+<Misconception>
+
+**"Floating point is random noise, so its results mean nothing."** Floating-point arithmetic is deterministic and precisely specified, and its errors can be bounded by theorems such as Theorem 2. Results are meaningful when reported with a justified tolerance.
+
+</Misconception>
+
+<Misconception>
+
+**"Exact arithmetic means the result is proved."** Exact integer or symbolic computation removes rounding error, not programming error. An exact computation is as reliable as the code, the libraries and the hardware; a certificate, an independent reimplementation or a formal proof is needed to go further.
+
+</Misconception>
+
+<Misconception>
+
+**"Setting a seed makes a statistical result correct."** A seed makes the run repeatable. Whether the conclusion holds is a statistical question about the spread over seeds; reporting only a favourable seed is a form of selective reporting.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="analysis" title="Backward error and conditioning">
+
+Wilkinson's **backward error analysis** asks not "how wrong is the answer?" but "for which nearby input is the computed answer exact?". Theorem 2's proof shows that recursive summation computes the exact sum of perturbed data $x_i(1 + \theta_i)$ with $|\theta_i| \le \gamma_n$: it is *backward stable*. The forward error then obeys $\text{forward error} \lesssim \kappa \cdot \text{backward error}$, where the **condition number** $\kappa$ measures the sensitivity of the problem itself — for summation $\kappa = \sum|x_i| / |\sum x_i|$, which is large precisely when there is cancellation. Good algorithms cannot fix ill-conditioned problems; they can only avoid adding instability. See <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Rounding as a projection; ill-conditioning as distance">
+
+Floating-point numbers form a grid on the real line whose spacing doubles at each power of two, and rounding to nearest is the nearest-point projection onto that grid: relative distances, not absolute ones, are preserved, which is why the standard model is multiplicative. Conditioning has a geometric meaning too. For an invertible matrix $A$, the relative distance to the nearest singular matrix in the spectral norm is exactly $1/\kappa_2(A) = \sigma_{\min}(A)/\sigma_{\max}(A)$ (Eckart–Young), and Demmel (1987) showed that for many problems the condition number is the reciprocal of the distance to the set of ill-posed problems. A problem is hard to compute reproducibly when it lies close to a singular one.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Floating-point numbers are not a field">
+
+Floating-point addition is commutative but not associative ($(0.1 + 0.2) + 0.3 \ne 0.1 + (0.2 + 0.3)$), and multiplication does not distribute over addition, so floats form no ring — algebraic rewritings that are identities over $\R$ change the result, which is why compilers may not reorder floating-point arithmetic without permission. Exact computation lives in genuine algebraic structures ($\Z$, $\Q$, finite fields, polynomial rings), and certificates are often algebraic identities: Bézout's identity certifies a gcd, a Nullstellensatz identity $\sum g_i f_i = 1$ certifies that polynomial equations have no common complex solution, and a sum-of-squares decomposition certifies that a polynomial is non-negative. Each can be checked by exact multiplication and addition. See <TopicLink id="math.algebra.rings">rings</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Statistical reproducibility">
+
+A Monte Carlo estimate is a random variable; reproducing it bit for bit only reproduces one sample. The meaningful claim is about its distribution: a confidence interval from Hoeffding's inequality or the central limit theorem, whose coverage can itself be checked by repeating the experiment over many seeds (as in the second experiment). Pseudorandom generators are deterministic, and their statistical quality is tested empirically (for example with L'Ecuyer and Simard's TestU01 suite); for rigorous statements one uses either certified randomness assumptions or bounds that hold for every outcome. See <TopicLink id="math.prob.statistics">statistical inference</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Proof checking as the strongest reproducibility">
+
+A formal proof is a finite object that a small program — the kernel of a proof assistant — checks deterministically; anyone can re-check it, and the trusted base is explicit. The **de Bruijn criterion** asks that this checker be small enough to be trusted by inspection. Large computations can be brought into this framework by certificates: SAT solvers emit DRAT proofs of unsatisfiability that verified checkers validate, which is how the 200-terabyte proof of the Boolean Pythagorean triples theorem (Heule, Kullmann and Marek, 2016) was checked. See <TopicLink id="math.comp.formalising-published-mathematics">formalising published mathematics</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Reporting precision.** Zu Chongzhi in fifth-century China bounded $\pi$ between $3.1415926$ and $3.1415927$ — a numerical result stated as a rigorous enclosure. In Kerala, Mādhava (c. 1400) gave series for $\pi$ with correction terms that control the truncation error, recorded in Jyeṣṭhadeva's *Yuktibhāṣā*. In Samarkand, Jamshīd al-Kāshī's *Treatise on the Circumference* (1424) computed $2\pi$ to the equivalent of sixteen decimal places, choosing a polygon of $3 \cdot 2^{28}$ sides so that the error was guaranteed to be small enough.
+- **Rounding error as mathematics.** Turing (1948) and von Neumann and Goldstine (1947) analysed rounding errors in matrix computations; Wilkinson developed backward error analysis (*Rounding Errors in Algebraic Processes*, 1963). Kahan led the design of the IEEE 754 standard (1985, revised 2008 and 2019), which made floating-point results specified and portable, and received the 1989 Turing Award.
+- **Interval arithmetic** was proposed by Warmus in Poland (1956) and Sunaga in Japan (1958), and developed by Moore (*Interval Analysis*, 1966); validated numerics later underpinned computer-assisted proofs such as Tucker's (2002).
+- **Reproducible research.** The geophysicist Jon Claerbout made his Stanford group's papers reproducible from their code around 1990; Buckheit and Donoho (1995) summarised his view: an article about computational science is "merely advertising of the scholarship", the scholarship being the code and data that produced its figures. Knuth's literate programming (1984) and the frozen, versioned design of TeX are early examples of software built to give the same output for decades.
+- **Infrastructure.** CERN launched Zenodo in 2013; Software Heritage was started by Inria in 2016 with UNESCO support; the FAIR principles (findable, accessible, interoperable, reusable) were published in 2016; and the US National Academies' report *Reproducibility and Replicability in Science* appeared in 2019.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms* (2nd ed., 2002) — chapter 4 is summation; the standard reference for error analysis.
+- David Goldberg, "What every computer scientist should know about floating-point arithmetic", *ACM Computing Surveys* (1991).
+- Jean-Michel Muller et al., *Handbook of Floating-Point Arithmetic* (2nd ed., 2018).
+- Ramon E. Moore, R. Baker Kearfott and Michael J. Cloud, *Introduction to Interval Analysis* (2009); Warwick Tucker, *Validated Numerics* (2011).
+- National Academies of Sciences, Engineering, and Medicine, *Reproducibility and Replicability in Science* (2019).
+- Victoria Stodden, Friedrich Leisch and Roger D. Peng (eds.), *Implementing Reproducible Research* (2014); Greg Wilson et al., "Good enough practices in scientific computing", *PLOS Computational Biology* (2017).
+
+</Section>

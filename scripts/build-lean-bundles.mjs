@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // For every Lean source file, write a tiny static page under public/lean-open/
 // that opens a self-contained copy of the file in the official Lean web editor
-// (live.lean-lang.org). `import Lumenary.X` lines are inlined recursively, which
-// works because the library uses core Lean only. Runs before `next build`/`dev`.
+// (live.lean-lang.org). `import Lumenary.X` lines are inlined recursively; other imports
+// (Mathlib, which the web editor provides) are collected and hoisted to the top, since Lean
+// requires every import before the first command. Runs before `next build`/`dev`.
 import fs from "node:fs";
 import path from "node:path";
 
@@ -10,7 +11,7 @@ const ROOT = path.resolve(import.meta.dirname, "..");
 const FORMAL = path.join(ROOT, "formal");
 const OUT = path.join(ROOT, "public/lean-open");
 
-function bundle(file, seen = new Set()) {
+function bundle(file, seen = new Set(), imports = new Set()) {
   if (seen.has(file)) return "";
   seen.add(file);
   const full = path.join(FORMAL, file);
@@ -19,7 +20,11 @@ function bundle(file, seen = new Set()) {
   for (const line of fs.readFileSync(full, "utf8").split("\n")) {
     const m = line.match(/^import\s+(Lumenary\S*)/);
     if (m) {
-      out.push(bundle(`${m[1].replaceAll(".", "/")}.lean`, seen));
+      out.push(bundle(`${m[1].replaceAll(".", "/")}.lean`, seen, imports));
+      continue;
+    }
+    if (/^import\s+\S+/.test(line)) {
+      imports.add(line.trim());
       continue;
     }
     if (/^\s*--\s*@(region|endregion|provenance|solution)\b/.test(line)) continue;
@@ -46,7 +51,9 @@ if (fs.existsSync(FORMAL)) walk(FORMAL);
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
 for (const file of files) {
-  const code = bundle(file).trim() + "\n";
+  const imports = new Set();
+  const body = bundle(file, new Set(), imports).trim();
+  const code = (imports.size ? [...imports].join("\n") + "\n\n" : "") + body + "\n";
   const esc = code.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]);
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">

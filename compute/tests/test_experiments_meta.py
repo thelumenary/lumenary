@@ -15,23 +15,18 @@ import time
 
 import pytest
 
-from conftest import EXPECTED_IDS, EXPERIMENTS_DIR, REPO_ROOT, experiment_ids, load_experiment
+from conftest import EXPERIMENTS_DIR, REPO_ROOT, experiment_ids, load_experiment
 
 import verify
 
-KNOWN_LESSONS = {"collections", "sets", "integers", "functions", "composition"}
-KNOWN_TRAILS = {
-    "inverses-and-structure",
-    "arrows-that-compose",
-    "clock-arithmetic",
-    "remainder-families",
-    "how-many-infinities",
-}
+#: Lesson and Wonder Trail slugs an experiment may name in EXPERIMENT["lessons"].
+KNOWN_LESSONS = {p.parent.name for p in (REPO_ROOT / "content" / "math" / "lessons").glob("*/en.mdx")}
+KNOWN_TRAILS = {p.parent.name for p in (REPO_ROOT / "content" / "math" / "trails").glob("*/en.mdx")}
 #: Standard-library modules experiments may import (all present in Pyodide 0.29.3).
 ALLOWED_STDLIB = {
-    "bisect", "cmath", "collections", "dataclasses", "decimal", "fractions", "functools",
-    "heapq", "itertools", "math", "numbers", "operator", "random", "statistics", "string",
-    "textwrap", "typing",
+    "abc", "array", "bisect", "cmath", "collections", "copy", "dataclasses", "decimal", "enum",
+    "fractions", "functools", "heapq", "itertools", "math", "numbers", "operator", "random",
+    "re", "statistics", "string", "textwrap", "typing",
 }
 #: Third-party packages the browser can load, keyed by import name -> Pyodide package name.
 BROWSER_PACKAGES = {"sympy": "sympy", "numpy": "numpy"}
@@ -63,8 +58,9 @@ def imported_modules(tree):
     return names
 
 
-def test_expected_experiments_exist():
-    assert IDS == sorted(EXPECTED_IDS)
+def test_experiment_ids_are_unique_snake_case():
+    assert IDS, "no experiments found"
+    assert all(re.fullmatch(r"[a-z][a-z0-9_]*", i) for i in IDS)
 
 
 @pytest.mark.parametrize("experiment_id", IDS, ids=IDS)

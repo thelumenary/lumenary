@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Map as MapIcon } from "lucide-react";
+import { ChevronDown, Map as MapIcon } from "lucide-react";
 import { Messages } from "@/i18n/Messages";
 import { getT, resolveLocale } from "@/i18n/server";
-import { getGraph, getLessonList, getPathways } from "@/lib/content";
+import { getGraph, getLessonsByLevel, getPathways } from "@/lib/content";
 import { href } from "@/lib/href";
 import { CurriculumBrowser } from "@/components/curriculum/CurriculumBrowser";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -17,7 +17,7 @@ export default async function CurriculumPage({ params }: { params: Promise<{ loc
   const locale = await resolveLocale(params);
   const t = await getT(locale);
   const graph = getGraph();
-  const lessons = getLessonList(locale).map((l) => l.frontmatter);
+  const groups = getLessonsByLevel(locale);
   const pathways = getPathways();
   return (
     <Messages locale={locale} ns={["curriculum"]}>
@@ -27,7 +27,7 @@ export default async function CurriculumPage({ params }: { params: Promise<{ loc
           <Link href={href(locale, "math/graph")} className="btn btn-primary">
             <MapIcon size={16} aria-hidden="true" /> {t("nav.graph")}
           </Link>
-          <Link href={href(locale, "math/trails")} className="btn btn-ghost">
+          <Link prefetch={false} href={href(locale, "math/trails")} className="btn btn-ghost">
             {t("nav.trails")}
           </Link>
         </div>
@@ -35,20 +35,31 @@ export default async function CurriculumPage({ params }: { params: Promise<{ loc
       <div className="container-page py-12">
         <section>
           <h2 className="text-2xl font-semibold text-ink">{t("curriculum.lessonsAvailable")}</h2>
-          <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {lessons.map((l, i) => (
-              <li key={l.slug}>
-                <Link href={href(locale, `math/lessons/${l.slug}`)} className="card group block h-full p-4 hover:shadow-[var(--shadow-lg)]">
-                  <span className="text-xs font-semibold text-gold-ink">
-                    {i + 1} · {t(`levels.${l.level}`)}
-                  </span>
-                  <span className="mt-1 flex items-center justify-between font-display text-lg font-semibold text-ink">
-                    {l.title} <ArrowRight size={15} className="text-muted transition-transform group-hover:translate-x-0.5 rtl:rotate-180" />
-                  </span>
-                </Link>
-              </li>
+          <div className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line bg-card">
+            {groups.map(({ level, lessons }) => (
+              <details key={level} className="group" id={`lessons-${level}`}>
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 [&::-webkit-details-marker]:hidden">
+                  <span className="font-display text-lg font-semibold text-ink">{t(`levels.${level}`)}</span>
+                  <span className="chip">{lessons.length}</span>
+                  <ChevronDown size={16} className="ms-auto text-muted transition-transform group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <ol className="grid gap-2 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {lessons.map((l) => (
+                    <li key={l.slug}>
+                      <Link prefetch={false} href={href(locale, `math/lessons/${l.slug}`)} className="flex items-center justify-between gap-2 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink hover:bg-paper-2">
+                        <span>{l.title}</span>
+                        {locale !== "en" && href(locale, `math/lessons/${l.slug}`).startsWith("/en/") && (
+                          <span className="chip shrink-0 text-xs font-normal" lang="en">
+                            EN<span className="sr-only"> · {t("curriculum.englishOnly")}</span>
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                </ol>
+              </details>
             ))}
-          </ol>
+          </div>
         </section>
 
         <section className="mt-14">

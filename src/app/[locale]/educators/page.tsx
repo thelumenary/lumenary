@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, FileText, Presentation } from "lucide-react";
 import { getT, resolveLocale } from "@/i18n/server";
-import { getGraph, getLessonList, getPage } from "@/lib/content";
+import { getGraph, getLessonsByLevel, getPage } from "@/lib/content";
 import { href } from "@/lib/href";
 import { ProsePage } from "@/components/site/ProsePage";
 
@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function EducatorsPage({ params }: { params: Promise<{ locale: string }> }) {
   const locale = await resolveLocale(params);
   const t = await getT(locale);
-  const lessons = getLessonList(locale).map((l) => l.frontmatter);
+  const groups = getLessonsByLevel(locale);
   const graph = getGraph();
   return (
     <ProsePage slug="educators" locale={locale} t={t}>
@@ -32,23 +32,24 @@ export default async function EducatorsPage({ params }: { params: Promise<{ loca
         <section>
           <h2 className="text-3xl font-semibold text-ink">{t("educators.worksheets")}</h2>
           <p className="mt-2 text-ink-2">{t("educators.worksheetsLead")}</p>
-          <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {lessons.map((l, i) => (
-              <li key={l.slug}>
-                <Link href={href(locale, `educators/worksheets/${l.slug}`)} className="card flex items-center gap-3 p-4 hover:shadow-[var(--shadow-lg)]">
-                  <FileText size={20} className="text-sky" />
-                  <span>
-                    <span className="block font-semibold text-ink">
-                      {i + 1}. {l.title}
-                    </span>
-                    <span className="text-xs text-muted">
-                      {t(`levels.${l.level}`)} · {l.ages}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {groups.map(({ level, lessons }) => (
+            <div key={level} className="mt-8">
+              <h3 className="font-display text-xl font-semibold text-ink">{t(`levels.${level}`)}</h3>
+              <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {lessons.map((l) => (
+                  <li key={l.slug}>
+                    <Link prefetch={false} href={href(locale, `educators/worksheets/${l.slug}`)} className="card flex h-full items-center gap-3 p-4 hover:shadow-[var(--shadow-lg)]">
+                      <FileText size={20} className="shrink-0 text-sky" />
+                      <span>
+                        <span className="block font-semibold text-ink">{l.title}</span>
+                        <span className="text-xs text-muted">{l.ages}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </section>
 
         <section>
@@ -77,7 +78,7 @@ export default async function EducatorsPage({ params }: { params: Promise<{ loca
                           <ul className="space-y-1">
                             {here.map((x) => (
                               <li key={x.id}>
-                                <Link href={x.lesson ? href(locale, `math/lessons/${x.lesson}`) : href(locale, `math/topics/${x.id}`)} className={`text-xs leading-snug hover:underline ${x.status === "implemented" ? "font-bold text-gold-ink" : "text-ink-2"}`}>
+                                <Link prefetch={false} href={x.lesson ? href(locale, `math/lessons/${x.lesson}`) : href(locale, `math/topics/${x.id}`)} className={`text-xs leading-snug hover:underline ${x.status === "implemented" ? "font-bold text-gold-ink" : "text-ink-2"}`}>
                                   {x.title}
                                 </Link>
                               </li>

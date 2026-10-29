@@ -1,0 +1,741 @@
+---
+slug: groups
+topic: math.algebra.groups
+title: Groups
+subtitle: Symmetry made algebraic. Cosets give Lagrange's theorem, kernels are exactly the normal subgroups, and counting orbits tells a jeweller how many bracelets she can make.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6007
+objectives:
+  - Work with cyclic, dihedral and symmetric groups, computing orders of elements and finding subgroups
+  - Prove Lagrange's theorem by partitioning a group into cosets, deduce its corollaries, and show with $A_4$ that its converse fails
+  - Identify kernels and images of homomorphisms, recognise normal subgroups, and prove that the kernels are exactly the normal subgroups
+  - Prove the orbit–stabiliser theorem and Burnside's lemma, and apply them to counting problems
+  - Prove Cayley's theorem that every group is a group of permutations
+narrators: []
+lean:
+  - Lumenary.Groups.coset_relation
+  - Lumenary.Groups.card_coset
+  - Lumenary.Groups.lagrange
+  - Lumenary.Groups.card_mul_index
+  - Lumenary.Groups.orderOf_dvd
+  - Lumenary.Groups.pow_card_eq_one
+  - Lumenary.Groups.prime_order_cyclic
+  - Lumenary.Groups.subgroup_cyclic
+  - Lumenary.Groups.comm_of_sq_eq_one
+  - Lumenary.Groups.dihedral_not_comm
+  - Lumenary.Groups.sq_mem_of_index_two
+  - Lumenary.Groups.card_alternating_four
+  - Lumenary.Groups.squares_alternating_four
+  - Lumenary.Groups.alternating_four_no_subgroup_of_order_six
+  - Lumenary.Groups.ker_normal
+  - Lumenary.Groups.ker_coset_action
+  - Lumenary.Groups.orbit_stabilizer
+  - Lumenary.Groups.burnside
+  - Lumenary.Groups.cayley
+compute: [groups_subgroup_lattice, groups_burnside_counting]
+trails: [inverses-and-structure, clock-arithmetic]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Counting what symmetry hides">
+
+A jeweller in Jaipur threads six beads, each red or white, onto a loop of wire. There are $2^6 = 64$ ways to colour six labelled positions, but the bracelet can be turned and flipped over, and many of the 64 patterns are the same bracelet seen from a different side. How many genuinely different bracelets are there? Listing them by hand is error-prone. The answer, $13$, drops out of a two-line formula once we understand the **group** of symmetries of a hexagon and how it acts on colourings.
+
+The same kind of structure appears elsewhere. The moves of a Rubik's cube form a group with $43\,252\,003\,274\,489\,856\,000$ elements. The residues coprime to $n$ form a group under multiplication, and a single theorem about groups (Lagrange's) gives Fermat's little theorem, which underlies the RSA cryptosystem. The symmetries of a crystal form a group, and chemists classify molecules by them. When Évariste Galois asked which polynomial equations can be solved by radicals, the answer came out as a property of a group.
+
+What these situations share is a set of transformations that can be **composed**, that include **doing nothing**, and that can each be **undone**. This lesson takes that structure seriously. Its three central results are **Lagrange's theorem** (the size of a subgroup divides the size of the group), the fact that **kernels of homomorphisms are exactly the normal subgroups**, and the **orbit–stabiliser theorem** with its counting corollary, **Burnside's lemma**.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The symmetries of a triangle">
+
+Cut an equilateral triangle out of card, label its corners $1, 2, 3$, and trace its outline on the table. A **symmetry** is a way to pick the triangle up and put it back into its outline. There are exactly six: do nothing ($e$), rotate anticlockwise by $120^\circ$ ($r$) or $240^\circ$ ($r^2$), or flip over one of the three axes ($s$, $rs$, $r^2 s$).
+
+<Figure caption="The six symmetries of an equilateral triangle: three rotations about the centre (the arrow shows r, a turn by 120°) and three reflections in the dashed axes. Together they form the dihedral group D₃.">
+<svg viewBox="0 0 300 230" role="img" aria-label="An equilateral triangle with corners labelled 1, 2, 3, three dashed reflection axes through the corners and the centre, and a curved arrow around the centre indicating a rotation">
+  <polygon points="150,30 60,186 240,186" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2.5" />
+  <line x1="150" y1="14" x2="150" y2="200" stroke="var(--human)" strokeWidth="1.5" strokeDasharray="5 4" />
+  <line x1="46" y1="194" x2="208" y2="101" stroke="var(--human)" strokeWidth="1.5" strokeDasharray="5 4" />
+  <line x1="254" y1="194" x2="92" y2="101" stroke="var(--human)" strokeWidth="1.5" strokeDasharray="5 4" />
+  <path d="M 172 128 A 23 23 0 1 1 158 113" fill="none" stroke="var(--gold)" strokeWidth="2.5" />
+  <polygon points="158,105 160,121 148,113" fill="var(--gold)" />
+  <circle cx="150" cy="134" r="3" fill="var(--ink-2)" />
+  <text x="150" y="24" textAnchor="middle" fontSize="15" fill="var(--ink)">1</text>
+  <text x="48" y="210" textAnchor="middle" fontSize="15" fill="var(--ink)">2</text>
+  <text x="252" y="210" textAnchor="middle" fontSize="15" fill="var(--ink)">3</text>
+  <text x="196" y="140" fontSize="14" fill="var(--gold)">r</text>
+  <text x="156" y="212" fontSize="14" fill="var(--human)">s</text>
+</svg>
+</Figure>
+
+Doing one symmetry and then another is again a symmetry, so the six can be **composed**. Composition is associative because it is composition of functions. Every symmetry can be **undone**: the inverse of $r$ is $r^2$, and each flip is its own inverse. But the order matters. Rotate and then flip, or flip and then rotate: the corner that ends up on top is different. In symbols, $rs \ne sr$, and in fact $sr = r^2 s = r^{-1}s$.
+
+Two more observations will grow into theorems.
+
+- The rotations $\{e, r, r^2\}$ form a smaller group inside the six. The six symmetries split into two blocks of three: the rotations, and the rotations followed by $s$. Every block has the same size as the subgroup. This is the idea behind **Lagrange's theorem**.
+- Each corner can be sent to each of the three corners, and for each target there are exactly two symmetries that do it. So the group has $3 \times 2 = 6$ elements. This is the **orbit–stabiliser theorem** in miniature.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Groups, subgroups, homomorphisms and actions">
+
+<Definition term="group">
+
+A **group** is a set $G$ with an operation $G \times G \to G$, $(a, b) \mapsto ab$, such that
+
+1. the operation is **associative**: $(ab)c = a(bc)$;
+2. there is an **identity** $e$ with $ea = ae = a$ for all $a$;
+3. every $a$ has an **inverse** $a^{-1}$ with $aa^{-1} = a^{-1}a = e$.
+
+$G$ is **abelian** if $ab = ba$ for all $a, b$; abelian groups are often written additively, with $0$ and $-a$. The **order** of $G$ is its number of elements, $|G|$.
+
+</Definition>
+
+From <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink> we know that the identity and inverses are unique, that $(ab)^{-1} = b^{-1}a^{-1}$, and that we can cancel: $ab = ac$ implies $b = c$. Powers $g^k$ are defined for all $k \in \Z$, with $g^0 = e$ and $g^{-k} = (g^{-1})^k$, and $g^{j}g^{k} = g^{j+k}$.
+
+<Definition term="order of an element">
+
+The **order** $\operatorname{ord}(g)$ of $g \in G$ is the least $m \ge 1$ with $g^m = e$, or $\infty$ if there is none. By the division algorithm, if $\operatorname{ord}(g) = n$ then $g^k = e \iff n \mid k$, and $g^j = g^k \iff j \equiv k \pmod n$.
+
+</Definition>
+
+<Definition term="subgroup">
+
+A **subgroup** $H \le G$ is a subset that contains $e$ and is closed under the operation and under inverses; it is then a group in its own right. **Subgroup test:** a non-empty $H \subseteq G$ is a subgroup if and only if $ab^{-1} \in H$ for all $a, b \in H$. (Given $a \in H$: $e = aa^{-1} \in H$; then $b^{-1} = eb^{-1} \in H$; then $ab = a(b^{-1})^{-1} \in H$.) The **cyclic subgroup** generated by $g$ is $\langle g \rangle = \{g^k \mid k \in \Z\}$, and $G$ is **cyclic** if $G = \langle g \rangle$ for some $g$.
+
+</Definition>
+
+If $\operatorname{ord}(g) = n$ is finite, then $\langle g \rangle = \{e, g, \dots, g^{n-1}\}$ and these $n$ powers are distinct, so $|\langle g \rangle| = \operatorname{ord}(g)$. (If $g^i = g^j$ with $0 \le i \lt j \lt n$, then $g^{j-i} = e$ with $0 \lt j - i \lt n$.)
+
+<Definition term="homomorphism, kernel, image">
+
+A **homomorphism** $\varphi : G \to H$ is a map with $\varphi(ab) = \varphi(a)\varphi(b)$ for all $a, b$. Its **kernel** is $\ker \varphi = \{g \in G \mid \varphi(g) = e\}$ and its **image** is $\operatorname{im} \varphi = \varphi(G)$. A bijective homomorphism is an **isomorphism** (its inverse is automatically a homomorphism), and $G \cong H$ means that one exists.
+
+</Definition>
+
+<Definition term="cosets and index">
+
+For $H \le G$ and $g \in G$, the **left coset** of $H$ containing $g$ is $gH = \{gh \mid h \in H\}$; right cosets $Hg$ are defined similarly. The **index** $[G : H]$ is the number of left cosets.
+
+</Definition>
+
+<Definition term="normal subgroup">
+
+A subgroup $N \le G$ is **normal**, written $N \trianglelefteq G$, if $gNg^{-1} = N$ for every $g \in G$. Equivalently: $gng^{-1} \in N$ for all $g \in G$, $n \in N$ (applying this to $g^{-1}$ gives the reverse inclusion); or again, $gN = Ng$ for every $g$.
+
+</Definition>
+
+<Definition term="group action">
+
+An **action** of $G$ on a set $X$ is a map $G \times X \to X$, $(g, x) \mapsto g \cdot x$, with $e \cdot x = x$ and $g \cdot (h \cdot x) = (gh) \cdot x$. The **orbit** of $x$ is $G \cdot x = \{g \cdot x \mid g \in G\}$, its **stabiliser** is $G_x = \{g \in G \mid g \cdot x = x\}$, and the **fixed set** of $g$ is $\operatorname{Fix}(g) = \{x \in X \mid g \cdot x = x\}$.
+
+</Definition>
+
+Each $g$ acts by a bijection $x \mapsto g \cdot x$ of $X$, with inverse $x \mapsto g^{-1} \cdot x$. So an action is the same thing as a homomorphism $G \to \operatorname{Sym}(X)$ to the group of all bijections of $X$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="A gallery of groups">
+
+<Example title="Numbers and remainders">
+
+$(\Z, +)$ is an infinite cyclic group, generated by $1$ (or by $-1$). Its subgroups include $n\Z = \{nk \mid k \in \Z\}$. The integers modulo $n$, $\Z/n\Z = \{0, 1, \dots, n-1\}$ under addition modulo $n$, form a cyclic group of order $n$. So do the complex $n$-th roots of unity $\mu_n = \{e^{2\pi i k/n}\}$ under multiplication, and $k \mapsto e^{2\pi i k/n}$ is an isomorphism $\Z/n\Z \cong \mu_n$.
+
+The **units** modulo $n$, $(\Z/n\Z)^\times = \{a \mid \gcd(a, n) = 1\}$ under multiplication, form an abelian group of order $\varphi(n)$ (Euler's totient), as shown in <TopicLink id="math.number.congruences">congruences</TopicLink>. $(\Z/5\Z)^\times = \{1, 2, 3, 4\}$ is cyclic, generated by $2$ (its powers are $2, 4, 3, 1$). $(\Z/8\Z)^\times = \{1, 3, 5, 7\}$ is not cyclic, because every element squares to $1$.
+
+</Example>
+
+<Example title="Dihedral groups">
+
+The **dihedral group** $D_n$ ($n \ge 3$) is the group of symmetries of a regular $n$-gon. Let $r$ be the rotation by $2\pi/n$ and $s$ a reflection. Then
+
+$$
+r^n = e, \qquad s^2 = e, \qquad srs^{-1} = r^{-1},
+$$
+
+and the $2n$ elements are $e, r, \dots, r^{n-1}$ (rotations) and $s, rs, \dots, r^{n-1}s$ (reflections). The relation $sr = r^{-1}s$ lets us move every $s$ to the right, which is how products are computed: for instance $(rs)(rs) = r(sr)s = r r^{-1} s s = e$, so every reflection has order $2$. $D_n$ is not abelian for $n \ge 3$, since $rs = sr$ would force $r = r^{-1}$. (Some books write $D_{2n}$ for this group of order $2n$.)
+
+</Example>
+
+<Example title="Symmetric and alternating groups">
+
+The **symmetric group** $S_n$ consists of all bijections of $\{1, \dots, n\}$, so $|S_n| = n!$. In **cycle notation**, $(1\,2\,3)$ sends $1 \mapsto 2 \mapsto 3 \mapsto 1$. Every permutation is a product of disjoint cycles, uniquely up to order, and its order is the lcm of the cycle lengths. We compose like functions, right to left: $\sigma\tau$ means "first $\tau$, then $\sigma$". Then
+
+$$
+(1\,2)(2\,3) = (1\,2\,3), \qquad (2\,3)(1\,2) = (1\,3\,2),
+$$
+
+so $S_n$ is not abelian for $n \ge 3$. (Check the first: $1 \mapsto 1 \mapsto 2$, $2 \mapsto 3 \mapsto 3$, $3 \mapsto 2 \mapsto 1$.)
+
+Every permutation is a product of transpositions. The **sign** $\operatorname{sgn}(\sigma) = (-1)^k$, for any such product of $k$ transpositions, is well defined: $\sigma$ multiplies the polynomial $\Delta = \prod_{i \lt j}(x_i - x_j)$ by $\operatorname{sgn}(\sigma)$ when it permutes the variables. And $\operatorname{sgn} : S_n \to \{\pm 1\}$ is a homomorphism. A $k$-cycle has sign $(-1)^{k-1}$. Its kernel, the **alternating group** $A_n$ of even permutations, has order $n!/2$ for $n \ge 2$. For example $A_4$ consists of the identity, the three double transpositions $(1\,2)(3\,4), (1\,3)(2\,4), (1\,4)(2\,3)$ and the eight 3-cycles.
+
+</Example>
+
+<Example title="Matrix groups and the circle">
+
+$\mathrm{GL}_n(\R)$, the invertible $n \times n$ real matrices under multiplication, is a group; $\det : \mathrm{GL}_n(\R) \to \R^\times$ is a homomorphism by the product rule for determinants, and its kernel is $\mathrm{SL}_n(\R)$. The orthogonal group $\mathrm{O}(n)$ consists of the matrices preserving lengths, and $\mathrm{SO}(2) \cong \{z \in \C \mid |z| = 1\}$ is the circle group of rotations of the plane. These infinite groups are the subject of <TopicLink id="math.geom.matrix-groups">matrix groups</TopicLink>.
+
+</Example>
+
+<Example title="The Klein four-group">
+
+$V = \{e, a, b, c\}$ with $a^2 = b^2 = c^2 = e$ and $ab = c$. It is isomorphic to $\Z/2 \times \Z/2$, to $(\Z/8\Z)^\times$, to the symmetries of a non-square rectangle, and to the subgroup $\{e, (1\,2)(3\,4), (1\,3)(2\,4), (1\,4)(2\,3)\}$ of $A_4$. It is the smallest non-cyclic group. Any group in which every element squares to $e$ is abelian: $ab = (ab)^{-1} = b^{-1}a^{-1} = ba$.
+
+</Example>
+
+<Example title="Non-examples">
+
+- $(\Z, -)$: subtraction is not associative, as $(1 - 1) - 1 \ne 1 - (1 - 1)$.
+- $(\N, +)$: there is an identity, but $1$ has no inverse.
+- $\{1, 2, 3, 4, 5\}$ under multiplication modulo $6$: not closed, since $2 \cdot 3 \equiv 0$.
+- The odd permutations in $S_n$: the product of two odd permutations is even, and the identity is even.
+- The three reflections of the triangle: the product of two reflections is a rotation.
+
+</Example>
+
+</Section>
+
+<Section id="cyclic" kind="proof" title="Cyclic groups">
+
+<Theorem name="Theorem 1 (subgroups of the integers)">
+
+Every subgroup of $(\Z, +)$ equals $n\Z$ for exactly one integer $n \ge 0$.
+
+</Theorem>
+
+<Proof>
+
+Let $H \le \Z$. If $H = \{0\}$, take $n = 0$. Otherwise $H$ contains a non-zero $a$, and $-a$, so it contains a positive integer; let $n$ be the least. Closure gives $n\Z \subseteq H$. Conversely, for $a \in H$ write $a = qn + \rho$ with $0 \le \rho \lt n$. Then $\rho = a - qn \in H$, so $\rho = 0$ by minimality of $n$, and $a \in n\Z$. The integer $n$ is determined by $H$, as its least positive element (or $0$).
+
+</Proof>
+
+<Theorem name="Theorem 2 (subgroups of cyclic groups)">
+
+Every subgroup of a cyclic group is cyclic.
+
+</Theorem>
+
+<Proof>
+
+Let $G = \langle g \rangle$. The map $\varepsilon : \Z \to G$, $k \mapsto g^k$, is a surjective homomorphism, since $g^{j+k} = g^j g^k$. If $H \le G$, then $\varepsilon^{-1}(H)$ is a subgroup of $\Z$, so it equals $n\Z$ by Theorem 1. Since $\varepsilon$ is surjective, $H = \varepsilon(\varepsilon^{-1}(H)) = \varepsilon(n\Z) = \langle g^n \rangle$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (classification of cyclic groups)">
+
+Let $G = \langle g \rangle$. If $g$ has infinite order then $G \cong \Z$; if $\operatorname{ord}(g) = n$ then $G \cong \Z/n\Z$.
+
+</Theorem>
+
+<Proof>
+
+Use $\varepsilon : \Z \to G$ again. If $\operatorname{ord}(g) = \infty$, then $g^j = g^k$ forces $g^{j-k} = e$ and so $j = k$. Thus $\varepsilon$ is injective, hence an isomorphism. If $\operatorname{ord}(g) = n$, then $g^j = g^k \iff j \equiv k \pmod n$. So $\bar\varepsilon : \Z/n\Z \to G$, $k \bmod n \mapsto g^k$, is well defined ("$\Leftarrow$") and injective ("$\Rightarrow$"). It is surjective because $\varepsilon$ is, and it is a homomorphism because $\varepsilon$ is.
+
+</Proof>
+
+This argument is the first isomorphism theorem, $\Z/\ker\varepsilon \cong \operatorname{im}\varepsilon$, in one special case. The general theorem is proved in <TopicLink id="math.algebra.quotients">quotient groups and quotient rings</TopicLink>.
+
+<Theorem name="Proposition 4 (inside Z/nZ)">
+
+In $\Z/n\Z$: (a) the element $k$ has order $n/\gcd(k, n)$; (b) for every divisor $d$ of $n$ there is exactly one subgroup of order $d$, namely $\langle n/d \rangle$, and there are no others; (c) $\Z/n\Z$ has exactly $\varphi(n)$ generators, and $\sum_{d \mid n} \varphi(d) = n$.
+
+</Theorem>
+
+<Proof>
+
+(a) Let $c = \gcd(k, n)$. Then $mk \equiv 0 \pmod n$ iff $\frac{n}{c} \mid m \frac{k}{c}$ iff $\frac{n}{c} \mid m$, because $\gcd(\frac{n}{c}, \frac{k}{c}) = 1$. So the least such $m \ge 1$ is $n/c$.
+
+(b) By Theorem 2 every subgroup is $\langle k \rangle$ for some $k$. Since $\gcd(k, n) = uk + vn$ for some integers $u, v$, we get $\gcd(k, n) \in \langle k \rangle$. Conversely $k$ is a multiple of $\gcd(k, n)$. So $\langle k \rangle = \langle \gcd(k, n) \rangle$. The subgroups are therefore exactly the $\langle c \rangle$ for divisors $c$ of $n$, and $\langle c \rangle$ has order $n/c$ by (a). Distinct divisors give subgroups of distinct orders. Putting $d = n/c$ gives the statement.
+
+(c) By (a), $k$ generates iff $\gcd(k, n) = 1$, and there are $\varphi(n)$ such $k$ in $\{0, \dots, n-1\}$. Each element generates exactly one subgroup, of some order $d \mid n$. By (b) that subgroup is the unique one of order $d$, which is cyclic of order $d$ and so has $\varphi(d)$ generators. Counting all $n$ elements by the subgroup they generate gives $\sum_{d \mid n}\varphi(d) = n$.
+
+</Proof>
+
+The identity $\sum_{d \mid n} \varphi(d) = n$ is the key step in the proof that $(\Z/p\Z)^\times$ is cyclic, in <TopicLink id="math.number.elementary-number-theory">number theory</TopicLink>.
+
+</Section>
+
+<Section id="lagrange" kind="proof" title="Cosets and Lagrange's theorem">
+
+Fix a subgroup $H \le G$.
+
+<Theorem name="Lemma 5 (cosets are equivalence classes)">
+
+The relation $a \sim b \iff a^{-1}b \in H$ is an equivalence relation on $G$, and the class of $a$ is the coset $aH$. Hence two left cosets are either equal or disjoint, they cover $G$, and $aH = bH \iff a^{-1}b \in H$.
+
+</Theorem>
+
+<Proof>
+
+Reflexive: $a^{-1}a = e \in H$. Symmetric: if $a^{-1}b \in H$ then $(a^{-1}b)^{-1} = b^{-1}a \in H$. Transitive: if $a^{-1}b, b^{-1}c \in H$ then $(a^{-1}b)(b^{-1}c) = a^{-1}c \in H$. The class of $a$ is $\{b \mid a^{-1}b \in H\} = \{b \mid b = ah \text{ for some } h \in H\} = aH$. Equivalence classes partition the set, as in <TopicLink id="math.found.equivalence-relations">equivalence relations and partitions</TopicLink>.
+
+</Proof>
+
+<Theorem name="Lemma 6 (cosets have equal size)">
+
+For every $a \in G$, the map $H \to aH$, $h \mapsto ah$, is a bijection. So $|aH| = |H|$.
+
+</Theorem>
+
+<Proof>
+
+It is surjective by the definition of $aH$, and injective by cancellation: $ah = ah'$ implies $h = h'$. (Its inverse is $x \mapsto a^{-1}x$.)
+
+</Proof>
+
+<Theorem name="Theorem 7 (Lagrange)">
+
+If $G$ is finite and $H \le G$, then $|G| = [G : H] \cdot |H|$. In particular the order of every subgroup divides the order of the group.
+
+</Theorem>
+
+<Proof>
+
+By Lemma 5, $G$ is the disjoint union of its $[G : H]$ distinct left cosets, and by Lemma 6 each has $|H|$ elements.
+
+</Proof>
+
+<Theorem name="Corollary 8">
+
+Let $G$ be a finite group.
+
+1. The order of every element divides $|G|$.
+2. $g^{|G|} = e$ for every $g \in G$.
+3. A group of prime order $p$ is cyclic, and is generated by each of its $p - 1$ non-identity elements.
+4. (Euler) If $\gcd(a, n) = 1$ then $a^{\varphi(n)} \equiv 1 \pmod n$. (Fermat) If $p$ is prime and $p \nmid a$ then $a^{p-1} \equiv 1 \pmod p$.
+5. If $K \le H \le G$ then $[G : K] = [G : H]\,[H : K]$.
+
+</Theorem>
+
+<Proof>
+
+(1) Apply Lagrange to $\langle g \rangle$, which has $\operatorname{ord}(g)$ elements. (2) Write $|G| = \operatorname{ord}(g)\,k$; then $g^{|G|} = (g^{\operatorname{ord}(g)})^k = e$. (3) If $g \ne e$, then $\operatorname{ord}(g)$ divides $p$ and is not $1$, so it is $p$ and $\langle g \rangle = G$. (4) Apply (2) to the group $(\Z/n\Z)^\times$ of order $\varphi(n)$; for $n = p$ prime, $\varphi(p) = p - 1$. (5) $[G:K] = |G|/|K| = (|G|/|H|)(|H|/|K|)$.
+
+</Proof>
+
+Lagrange's theorem says which orders are *possible*. It never says that a divisor *occurs*.
+
+<Theorem name="Lemma 9 (index two)">
+
+If $[G : H] = 2$, then $g^2 \in H$ for every $g \in G$.
+
+</Theorem>
+
+<Proof>
+
+If $g \in H$ this is closure. If $g \notin H$, the two left cosets are $H$ and $gH$, so $G = H \sqcup gH$. If $g^2$ were in $gH$, say $g^2 = gh$ with $h \in H$, cancelling $g$ would give $g = h \in H$, a contradiction. So $g^2 \in H$.
+
+</Proof>
+
+<Theorem name="Theorem 10 (the converse of Lagrange fails)">
+
+The alternating group $A_4$ has order $12$ but no subgroup of order $6$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $H \le A_4$ with $|H| = 6$. Then $[A_4 : H] = 12/6 = 2$, so by Lemma 9, $H$ contains the square of every element of $A_4$. Every 3-cycle $c$ is such a square: $c^3 = e$ gives $c = c^4 = (c^2)^2$, and $c^2 \in A_4$. There are eight 3-cycles in $A_4$: choose the three points moved ($4$ ways) and one of the two cyclic orders. So $H$ contains $e$ and eight 3-cycles, which is nine elements, more than six. This contradiction shows no such $H$ exists.
+
+</Proof>
+
+Partial converses do hold. **Cauchy's theorem** gives an element of order $p$ for every prime $p$ dividing $|G|$. The **Sylow theorems** give a subgroup of order $p^k$ for every prime power $p^k$ dividing $|G|$. For cyclic groups, every divisor occurs (Proposition 4). The first experiment below finds all ten subgroups of $A_4$ and confirms that none has order $6$.
+
+</Section>
+
+<Section id="homomorphisms" kind="proof" title="Homomorphisms and normal subgroups">
+
+<Theorem name="Proposition 11 (kernels and images)">
+
+Let $\varphi : G \to H$ be a homomorphism and $K = \ker\varphi$.
+
+1. $\varphi(e) = e$, $\varphi(g^{-1}) = \varphi(g)^{-1}$ and $\varphi(g^k) = \varphi(g)^k$.
+2. $\operatorname{im}\varphi$ is a subgroup of $H$, and $K$ is a normal subgroup of $G$.
+3. $\varphi(a) = \varphi(b) \iff a^{-1}b \in K \iff aK = bK$. So the fibres of $\varphi$ are the cosets of its kernel.
+4. $\varphi$ is injective if and only if $K = \{e\}$.
+
+</Theorem>
+
+<Proof>
+
+(1) $\varphi(e) = \varphi(ee) = \varphi(e)\varphi(e)$; cancel. Then $\varphi(g)\varphi(g^{-1}) = \varphi(e) = e$. Powers follow by induction. (2) For the image, $\varphi(a)\varphi(b)^{-1} = \varphi(ab^{-1})$. If $a, b \in K$ then $\varphi(ab^{-1}) = e$, so $K$ is a subgroup. If $k \in K$ and $g \in G$, then $\varphi(gkg^{-1}) = \varphi(g)\,e\,\varphi(g)^{-1} = e$, so $K$ is normal. (3) $\varphi(a) = \varphi(b) \iff \varphi(a)^{-1}\varphi(b) = e \iff \varphi(a^{-1}b) = e$, and Lemma 5 gives the rest. (4) By (3), $\varphi$ is injective iff each coset of $K$ is a single point, iff $K = \{e\}$.
+
+</Proof>
+
+<Example title="Homomorphisms to know">
+
+- $\operatorname{sgn} : S_n \to \{\pm 1\}$, with kernel $A_n$.
+- $\det : \mathrm{GL}_n(\R) \to \R^\times$, with kernel $\mathrm{SL}_n(\R)$.
+- Reduction $\Z \to \Z/n\Z$, with kernel $n\Z$.
+- $t \mapsto e^{2\pi i t}$ from $(\R, +)$ to $(\C^\times, \cdot)$, with kernel $\Z$ and image the unit circle.
+- $D_n \to \{\pm 1\}$, sending rotations to $1$ and reflections to $-1$ (the determinant of the symmetry as a matrix), with kernel $\langle r \rangle$.
+- Not a homomorphism: $x \mapsto x + 1$ on $\Z$, because it does not send $0$ to $0$.
+
+</Example>
+
+<Example title="Normal and not normal">
+
+- Every subgroup of an abelian group is normal.
+- A subgroup of index $2$ is normal. Its left cosets are $H$ and $G \setminus H$, and so are its right cosets, so $gH = Hg$ for every $g$.
+- The **centre** $Z(G) = \{z \mid zg = gz \text{ for all } g\}$ is normal.
+- $A_n \trianglelefteq S_n$ and $\mathrm{SL}_n(\R) \trianglelefteq \mathrm{GL}_n(\R)$, as kernels. The Klein group $V$ is normal in $A_4$ and in $S_4$, because conjugation preserves cycle type.
+- **Not normal:** $\langle s \rangle = \{e, s\}$ in $D_n$ for $n \ge 3$. Indeed $rsr^{-1} = r(sr^{-1}) = r(rs) = r^2 s$, which equals $s$ only if $r^2 = e$. In $S_3$: $(1\,3)(1\,2)(1\,3)^{-1} = (2\,3) \notin \{e, (1\,2)\}$.
+
+</Example>
+
+So every kernel is normal. The converse is the third key result of the lesson. It needs no quotient group: only the set of cosets and the action of $G$ on it.
+
+<Theorem name="Theorem 12 (kernels are exactly the normal subgroups)">
+
+A subgroup $N \le G$ is normal if and only if $N = \ker\varphi$ for some homomorphism $\varphi$ from $G$ to some group.
+
+</Theorem>
+
+<Proof>
+
+"If" is Proposition 11(2). For "only if", let $N \trianglelefteq G$ and let $G$ act on the set $G/N$ of left cosets by $g \cdot (aN) = (ga)N$. This is well defined: if $aN = bN$ then $a^{-1}b \in N$, so $(ga)^{-1}(gb) = a^{-1}b \in N$ and $gaN = gbN$. It is an action: $e \cdot aN = aN$ and $g \cdot (h \cdot aN) = (gha)N = (gh) \cdot aN$. So we have a homomorphism $\lambda : G \to \operatorname{Sym}(G/N)$, and
+
+$$
+g \in \ker\lambda \iff gaN = aN \text{ for all } a \iff a^{-1}ga \in N \text{ for all } a \iff g \in \bigcap_{a \in G} aNa^{-1}.
+$$
+
+Because $N$ is normal, every $aNa^{-1}$ equals $N$, and so $\ker\lambda = N$.
+
+</Proof>
+
+The same computation shows that for an arbitrary subgroup $H$, the kernel of $G \to \operatorname{Sym}(G/H)$ is $\bigcap_a aHa^{-1}$, the largest normal subgroup of $G$ contained in $H$ (its **normal core**). In <TopicLink id="math.algebra.quotients">quotients</TopicLink>, $G/N$ becomes a group in its own right, with $(aN)(bN) = abN$; this product is well defined precisely when $N$ is normal.
+
+</Section>
+
+<Section id="actions" kind="proof" title="Actions, orbits and counting">
+
+<Example title="Actions everywhere">
+
+- $S_n$ acts on $\{1, \dots, n\}$, $\mathrm{GL}_n(\R)$ on $\R^n$, and $D_n$ on the vertices of the $n$-gon.
+- $G$ acts on itself by **left multiplication**, $g \cdot x = gx$ (the regular action). It also acts by **conjugation**, $g \cdot x = gxg^{-1}$. The orbits of the conjugation action are the **conjugacy classes**, and the stabiliser of $x$ is its centraliser $C_G(x)$.
+- $G$ acts on the cosets $G/H$ by left multiplication, as in Theorem 12.
+- The rotation group of a cube acts on its $6$ faces, $8$ vertices, $12$ edges and $4$ long diagonals.
+- $\Z$ acts on $\R$ by $n \cdot x = x + n$. The orbits are the sets $x + \Z$, and "$\R$ modulo this action" is a circle.
+
+</Example>
+
+<Theorem name="Lemma 13">
+
+The orbits of an action partition $X$, and each stabiliser $G_x$ is a subgroup of $G$. Moreover $g \cdot x = h \cdot x \iff g^{-1}h \in G_x$, and $G_{g \cdot x} = gG_xg^{-1}$.
+
+</Theorem>
+
+<Proof>
+
+"$y$ is in the orbit of $x$" is an equivalence relation: $x = e \cdot x$; if $y = g \cdot x$ then $x = g^{-1} \cdot y$; if $y = g \cdot x$ and $z = h \cdot y$ then $z = (hg) \cdot x$. Its classes are the orbits. Since $e \cdot x = x$, the stabiliser contains $e$; if $g, h \in G_x$ then $(gh) \cdot x = g \cdot (h \cdot x) = x$ and $g^{-1} \cdot x = g^{-1} \cdot (g \cdot x) = x$. Next, $g \cdot x = h \cdot x \iff x = (g^{-1}h) \cdot x$. Finally $k \cdot (g \cdot x) = g \cdot x \iff (g^{-1}kg) \cdot x = x \iff k \in gG_xg^{-1}$.
+
+</Proof>
+
+<Theorem name="Theorem 14 (orbit–stabiliser)">
+
+For every $x \in X$, the map $G/G_x \to G \cdot x$, $gG_x \mapsto g \cdot x$, is a well-defined bijection. Hence, for finite $G$,
+
+$$
+|G \cdot x| = [G : G_x] = \frac{|G|}{|G_x|}.
+$$
+
+</Theorem>
+
+<Proof>
+
+By Lemma 13 and Lemma 5, $g \cdot x = h \cdot x \iff g^{-1}h \in G_x \iff gG_x = hG_x$. Read from right to left, this says the map is well defined; from left to right, that it is injective. It is surjective by the definition of the orbit. The formula then follows from Lagrange's theorem.
+
+</Proof>
+
+<Example title="Counting symmetries">
+
+The rotations of a cube act transitively on the $6$ faces, and the stabiliser of a face consists of the $4$ quarter-turns about its axis. So the rotation group has $6 \cdot 4 = 24$ elements. Faces, vertices and edges give the same answer: $6 \cdot 4 = 8 \cdot 3 = 12 \cdot 2 = 24$. For $D_n$, the orbit of a vertex has $n$ elements and its stabiliser is $\{e, \text{the reflection through it}\}$, so $|D_n| = 2n$.
+
+</Example>
+
+<Theorem name="Corollary 15 (class equation; p-groups)">
+
+Let $G$ be finite, and let $x_1, \dots, x_k$ represent the conjugacy classes with more than one element. Then $|G| = |Z(G)| + \sum_i [G : C_G(x_i)]$, and each term $[G : C_G(x_i)]$ divides $|G|$. Consequently, if $|G| = p^m$ with $p$ prime and $m \ge 1$, then $Z(G) \ne \{e\}$.
+
+</Theorem>
+
+<Proof>
+
+The conjugacy classes partition $G$. The one-element classes are the elements of $Z(G)$, and the class of $x_i$ has $[G : C_G(x_i)]$ elements by orbit–stabiliser. If $|G| = p^m$, each $[G : C_G(x_i)]$ is a power of $p$ greater than $1$, so it is divisible by $p$. Then $p$ divides $|Z(G)| = |G| - \sum_i [G : C_G(x_i)]$, and $|Z(G)| \ge 1$, so $|Z(G)| \ge p$.
+
+</Proof>
+
+<Theorem name="Theorem 16 (Burnside's lemma; Cauchy–Frobenius)">
+
+If a finite group $G$ acts on a finite set $X$, the number of orbits is
+
+$$
+\frac{1}{|G|} \sum_{g \in G} |\operatorname{Fix}(g)|,
+$$
+
+the average number of points fixed by an element of $G$.
+
+</Theorem>
+
+<Proof>
+
+Count the set $S = \{(g, x) \in G \times X \mid g \cdot x = x\}$ in two ways. Grouping by $g$ gives $|S| = \sum_g |\operatorname{Fix}(g)|$. Grouping by $x$ and using orbit–stabiliser gives
+
+$$
+|S| = \sum_{x \in X} |G_x| = \sum_{x \in X} \frac{|G|}{|G \cdot x|} = |G| \sum_{\text{orbits } O} \; \sum_{x \in O} \frac{1}{|O|} = |G| \cdot (\text{number of orbits}).
+$$
+
+</Proof>
+
+<Example title="The jeweller's bracelets">
+
+A colouring of the six beads is fixed by a symmetry exactly when it is constant on each cycle of that symmetry on the beads. With $2$ colours, a symmetry with $c$ cycles fixes $2^c$ colourings.
+
+| symmetry of the hexagon | how many | cycles on beads | fixed colourings each |
+| --- | --- | --- | --- |
+| identity | 1 | 6 | 64 |
+| rotation by $\pm 60^\circ$ | 2 | 1 | 2 |
+| rotation by $\pm 120^\circ$ | 2 | 2 | 4 |
+| rotation by $180^\circ$ | 1 | 3 | 8 |
+| reflection through two opposite beads | 3 | 4 | 16 |
+| reflection through two opposite gaps | 3 | 3 | 8 |
+
+Under rotations alone there are $\frac{1}{6}(64 + 2\cdot 2 + 2 \cdot 4 + 8) = \frac{84}{6} = 14$ **necklaces**. With reflections too there are $\frac{1}{12}(84 + 3 \cdot 16 + 3 \cdot 8) = \frac{156}{12} = 13$ **bracelets**. The same reasoning for rotation by $j$ steps, which has $\gcd(j, n)$ cycles, gives the necklace formula $\frac{1}{n} \sum_{d \mid n} \varphi(d)\, k^{n/d}$ for $n$ beads and $k$ colours.
+
+</Example>
+
+<Theorem name="Theorem 17 (Cayley)">
+
+Every group $G$ is isomorphic to a subgroup of $\operatorname{Sym}(G)$. In particular every group of order $n$ is isomorphic to a subgroup of $S_n$.
+
+</Theorem>
+
+<Proof>
+
+The regular action $g \cdot x = gx$ gives a homomorphism $\lambda : G \to \operatorname{Sym}(G)$. If $\lambda_g = \lambda_h$ then $g = \lambda_g(e) = \lambda_h(e) = h$, so $\lambda$ is injective, and $G \cong \lambda(G)$.
+
+</Proof>
+
+Cayley's embedding is usually wasteful: $D_3$ embeds in $S_3$ (through its action on the three corners) rather than only in $S_6$. Its importance is conceptual. Abstract groups are no more general than groups of permutations, and every group is the symmetry group of something.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Groups in Lean and Mathlib">
+
+Mathlib's `Group G` class packages the axioms, and `Subgroup G` bundles a subset with its closure properties. Cardinalities are measured by `Nat.card` (which is $0$ for infinite types, so finiteness hypotheses appear only where needed). The quotient `G ⧸ H` of a group by a subgroup is the *set of left cosets*. It becomes a group only when Lean can find an instance `H.Normal`, exactly as in the lesson.
+
+The two halves of the proof of Lagrange's theorem — Lemma 5 and Lemma 6 — proved here:
+
+<Lean decl="Lumenary.Groups.coset_relation" />
+
+<Lean decl="Lumenary.Groups.card_coset" />
+
+Lagrange's theorem and its precise form are in Mathlib (proved there by the same partition argument), and Corollary 8 follows:
+
+<Lean decl="Lumenary.Groups.lagrange" />
+
+<Lean decl="Lumenary.Groups.card_mul_index" />
+
+<Lean decl="Lumenary.Groups.orderOf_dvd" />
+
+<Lean decl="Lumenary.Groups.pow_card_eq_one" />
+
+<Lean decl="Lumenary.Groups.prime_order_cyclic" />
+
+<Lean decl="Lumenary.Groups.subgroup_cyclic" />
+
+Commutativity, and its failure in the triangle's group. Mathlib's `DihedralGroup n` has elements `r i` and `sr i` for `i : ZMod n`, and its multiplication table is computable, so `decide` checks the inequality:
+
+<Lean decl="Lumenary.Groups.comm_of_sq_eq_one" />
+
+<Lean decl="Lumenary.Groups.dihedral_not_comm" />
+
+The converse of Lagrange fails (Lemma 9 and Theorem 10). The Lean proof of Lemma 9 is a variant of the human one: Mathlib characterises index $2$ by an element $a$ such that each $b$ satisfies exactly one of $ba \in H$, $b \in H$. The count of squares in $A_4$ is checked by `decide` over all twelve elements, and the main proof is the lesson's counting argument.
+
+<Lean decl="Lumenary.Groups.sq_mem_of_index_two" />
+
+<Lean decl="Lumenary.Groups.card_alternating_four" />
+
+<Lean decl="Lumenary.Groups.squares_alternating_four" />
+
+<Lean decl="Lumenary.Groups.alternating_four_no_subgroup_of_order_six" />
+
+Theorem 12, both directions. The second proof uses only the coset *set* `G ⧸ N` with Mathlib's action of `G` on it, mirroring the lesson:
+
+<Lean decl="Lumenary.Groups.ker_normal" />
+
+<Lean decl="Lumenary.Groups.ker_coset_action" />
+
+Orbit–stabiliser and Burnside's lemma are in Mathlib, proved through an explicit bijection $G/G_x \simeq G \cdot x$ and a sum over orbits; Cayley's theorem is proved here:
+
+<Lean decl="Lumenary.Groups.orbit_stabilizer" />
+
+<Lean decl="Lumenary.Groups.burnside" />
+
+<Lean decl="Lumenary.Groups.cayley" />
+
+**What is and is not formalised.** Proved independently here: Lemmas 5, 6 and 9, Corollary 8(2), Theorem 10 (the converse of Lagrange fails for $A_4$), both directions of Theorem 12, Cayley's theorem, and the facts about the Klein-type groups and $D_3$. Cited from Mathlib: Lagrange's theorem, Corollary 8(1, 3), Theorem 2, orbit–stabiliser and Burnside's lemma. Not formalised here: Theorem 1 and Proposition 4 (Mathlib has them, e.g. `Int.subgroup_cyclic` and `IsCyclic.card_orderOf_eq_totient`), the class equation (Mathlib's `Group.card_center_add_sum_card_noncenter_eq_card`) and the bracelet count, which the second experiment checks by computer.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Every subgroup, and every orbit, by machine">
+
+A finite group given by permutations can be explored completely. The first program generates $S_3$, $D_4$, $A_4$, $S_4$ and the cyclic group $C_{12}$, and finds **every** subgroup. Every subgroup is the join of its cyclic subgroups, so starting from the cyclic subgroups and repeatedly forming the subgroup generated by two known ones is exhaustive. It then checks Lagrange's theorem on all of them, counts normal subgroups and reports divisors of $|G|$ with no subgroup.
+
+<Python id="groups_subgroup_lattice" />
+
+The $A_4$ row is a genuine counterexample: an exhaustive search is a proof that no subgroup of order $6$ exists, independent of (and agreeing with) Theorem 10. The other rows are exact facts about five particular groups, not general laws. Note also that the cyclic group $C_{12}$ has exactly one subgroup for each of the six divisors of $12$, as Proposition 4 predicts.
+
+The second program counts necklaces and bracelets in two ways, by Burnside's formula and by brute-force enumeration of orbits, and does the same for colourings of a cube's faces under its $24$ rotations.
+
+<Python id="groups_burnside_counting" />
+
+Agreement in every row is evidence that the formula is right. It is not a proof: the proof is Theorem 16. The computation also shows why the formula matters. Brute force must look at all $k^n$ colourings, while Burnside's formula needs only the cycle structure of the $2n$ symmetries.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: a Cayley graph, non-commuting matrices and clock arithmetic">
+
+The **Cayley graph** of $D_3$ with respect to the generators $r$ and $s$ has a vertex for each element, and joins $g$ to $gr$ and to $gs$. Here the outer triangle $e, r, r^2$ and the inner triangle $s, rs, r^2s$ are $r$-edges, and the three spokes are $s$-edges. Edges are drawn without arrows, so read each triangle in the direction of increasing powers of $r$. Every closed walk from $e$ spells out a word in $r^{\pm 1}$ and $s$ that equals $e$ — a **relation**. In the Walks tab, find the closed walk of length $3$ (the relation $r^3 = e$) and a closed walk of length $4$ that alternates spokes and triangle edges, such as $e \to s \to r^2s \to r^2 \to e$: it records $srsr = e$, which is the relation $srs^{-1} = r^{-1}$. In the Matrix tab, the diagonal entries of $A^k$ count the closed walks of length $k$.
+
+<GraphExplorer
+  nodes={["e", "r", "r2", "s", "rs", "r2s"]}
+  edges={[["e", "r"], ["r", "r2"], ["r2", "e"], ["s", "r2s"], ["r2s", "rs"], ["rs", "s"], ["e", "s"], ["r", "rs"], ["r2", "r2s"]]}
+  positions={[[2, 0], [3.7, 3], [0.3, 3], [2, 1.2], [2.7, 2.4], [1.3, 2.4]]}
+  modes={["walk", "matrix", "degrees"]}
+  title="The Cayley graph of D₃"
+  subtitle="Outer and inner triangles: multiplication by r. Spokes: multiplication by s."
+/>
+
+The symmetry group of the square, $D_4$, sits inside $\mathrm{GL}_2(\R)$. Compose the rotation by $90^\circ$ with the reflection in the $x$-axis in both orders and watch the flag. The two composites are different reflections, so $D_4$ is not abelian.
+
+<MatrixTransform mode="compose" matrix={[[0, -1], [1, 0]]} matrix2={[[1, 0], [0, -1]]} title="Rotate then reflect, or reflect then rotate?" />
+
+Finally, $\Z/k\Z$ is the group of a $k$-hour clock. In the addition tab, repeatedly adding a step $a$ visits exactly the multiples of $\gcd(a, k)$: the cyclic subgroup $\langle a \rangle$ of Proposition 4. In the multiplication tab, the numbers with a partner form the unit group $(\Z/k\Z)^\times$.
+
+<ClockLab />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"If $d$ divides $|G|$, then $G$ has a subgroup of order $d$."** This is the converse of Lagrange's theorem, and it is false: $A_4$ has order $12$ and no subgroup of order $6$ (Theorem 10). It does hold for cyclic groups, for prime $d$ (Cauchy), for prime powers $d$ (Sylow) and for all finite abelian groups.
+
+</Misconception>
+
+<Misconception>
+
+**"Every subgroup is normal."** This is true in abelian groups, but in general it is false. In $S_3$, conjugating $(1\,2)$ by $(1\,3)$ gives $(2\,3)$, so $\{e, (1\,2)\}$ is not normal. Normality is not even transitive. In $D_4$, $\{e, s\} \trianglelefteq \{e, r^2, s, r^2 s\} \trianglelefteq D_4$ (both have index $2$), but $\{e, s\}$ is not normal in $D_4$.
+
+</Misconception>
+
+<Misconception>
+
+**"Groups are commutative."** Numbers taught us to expect $ab = ba$, but symmetries, permutations and matrices do not behave that way: $(1\,2)(2\,3) = (1\,2\,3)$ while $(2\,3)(1\,2) = (1\,3\,2)$. Write proofs without silently commuting factors. For example, $(ab)^{-1} = b^{-1}a^{-1}$, and $(ab)^2 = a^2b^2$ holds for all $a, b$ only in abelian groups.
+
+</Misconception>
+
+<Misconception>
+
+**"$gN = Ng$ means $gn = ng$ for every $n \in N$."** Normality is an equality of *sets*. In $S_3$, $(1\,2)A_3 = A_3(1\,2)$ as sets, but $(1\,2)$ does not commute with $(1\,2\,3)$. Elementwise commuting would put $g$ in the centraliser of $N$, which is a much stronger condition.
+
+</Misconception>
+
+<Misconception>
+
+**"The order of $gh$ is determined by the orders of $g$ and $h$."** In $S_3$ the transpositions $(1\,2)$ and $(2\,3)$ both have order $2$, but their product $(1\,2\,3)$ has order $3$. Two reflections of the plane in lines meeting at angle $\pi/n$ compose to a rotation of order $n$, and two reflections in parallel lines compose to a translation of infinite order.
+
+</Misconception>
+
+<Misconception>
+
+**"Permutations are composed left to right."** Some books and software do this. This lesson, Lean and most algebra texts compose right to left, like functions. The same symbols $(1\,2)(2\,3)$ denote $(1\,2\,3)$ in one convention and $(1\,3\,2)$ in the other. State your convention.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Every group is a symmetry group">
+
+Felix Klein's **Erlangen programme** (1872) defines a geometry by its group of transformations: Euclidean geometry studies the invariants of the isometry group, affine geometry those of the affine group, projective geometry those of the projective group (see <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>). Conversely, every group is a symmetry group. A group is the symmetry group of its Cayley graph with coloured, directed edges, and by **Frucht's theorem** (1939) every finite group is the full automorphism group of some ordinary graph.
+
+Geometry also constrains groups. In the **crystallographic restriction**, a rotation preserving a lattice in the plane has order $1$, $2$, $3$, $4$ or $6$. In a lattice basis it has an integer matrix, so its trace $2\cos\theta$ is an integer, and that forces $\theta \in \{0, \pm\frac{\pi}{3}, \pm\frac{\pi}{2}, \pm\frac{2\pi}{3}, \pi\}$. This restriction is the first step in the classification of the $17$ wallpaper groups (Fedorov 1891, Pólya 1924). Geometric group theory goes further and treats the Cayley graph of a finitely generated group, with its word metric, as a geometric object in its own right (<TopicLink id="math.geom.geometric-group-theory">geometric group theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Groups from spaces, spaces from groups">
+
+Loops in a space up to deformation form its <TopicLink id="math.geom.fundamental-group">fundamental group</TopicLink>, and every group arises this way, as the fundamental group of a 2-dimensional cell complex built from a presentation. Group actions give quotient spaces: $\Z$ acting on $\R$ by translation gives the circle, $\Z^2$ acting on $\R^2$ gives the torus, and the deck transformations of a covering space form a group acting freely on it. Topological groups add continuity. $\mathrm{GL}_n(\R)$ has two connected components, distinguished by the sign of the determinant: the kernel of $\mathrm{GL}_n(\R) \to \{\pm1\}$, $A \mapsto \operatorname{sgn}\det A$, is the identity component. This is the topological meaning of orientation. The rotation group $\mathrm{SO}(3)$ has fundamental group $\Z/2$, a fact you can feel with a belt or a plate held in your hand (the "plate trick").
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Lagrange's theorem as arithmetic">
+
+Applied to $(\Z/n\Z)^\times$, Lagrange's theorem is Euler's theorem $a^{\varphi(n)} \equiv 1 \pmod n$. It underlies the RSA cryptosystem, where decryption works because $(m^e)^d = m^{1 + k\varphi(n)} \equiv m \pmod n$ (for $m$ coprime to $n$; the general case follows from the Chinese remainder theorem). The finer structure is number theory proper. $(\Z/p\Z)^\times$ is **cyclic** for every prime $p$ (a generator is a *primitive root*), while $(\Z/8\Z)^\times$ is not. That is the starting point of <TopicLink id="math.number.elementary-number-theory">number theory</TopicLink>. Diffie–Hellman key exchange uses a large cyclic group in which computing $g^k$ is fast but recovering $k$ from $g^k$ (the discrete logarithm) is believed to be hard; elliptic-curve cryptography uses the group of points on an elliptic curve (<TopicLink id="math.applied.cryptography">cryptography</TopicLink>). This hardness is a belief supported by decades of failed attacks, not a theorem.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Counting up to symmetry">
+
+Burnside's lemma is the first step of **Pólya enumeration** (Redfield 1927, Pólya 1937). Record each symmetry by its cycle type in the **cycle index** $Z_G = \frac{1}{|G|}\sum_g \prod_i t_i^{c_i(g)}$, where $c_i(g)$ is the number of $i$-cycles of $g$. Then substituting $t_i = x^i + y^i$ counts colourings by how many beads of each colour they use. For the cube's faces $Z = \frac{1}{24}(t_1^6 + 6t_1^2t_4 + 3t_1^2t_2^2 + 8t_3^2 + 6t_2^3)$, and setting every $t_i = 2$ gives the $10$ two-colourings counted in the exercises. Pólya used this to count chemical isomers; it is a staple of <TopicLink id="math.discrete.enumerative-combinatorics">enumerative combinatorics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Symmetry in physical law">
+
+Physical laws are often stated by their symmetry groups. Galilean or Lorentz symmetry constrains the form of the equations of motion. By **Noether's theorem** (1918), each continuous symmetry of a Lagrangian system gives a conserved quantity: time translation gives energy, space translation momentum, rotation angular momentum. These are Lie groups, the continuous cousins of the groups here (<TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>). Finite groups classify crystals: there are $32$ crystallographic point groups and $230$ space groups (Fedorov and Schoenflies, 1891). In quantum mechanics a symmetry group acts on the space of states, and Eugene Wigner (1931) showed how its representations organise atomic spectra. These applications rest on physical models; the group theory within them is proved mathematics, while the claim that nature has a given symmetry is an empirical one.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="A group is a one-object category">
+
+A group $G$ is a category $\mathbf{B}G$ with one object $\ast$, an arrow $\ast \to \ast$ for each element, composition given by the group operation, and every arrow invertible. Homomorphisms $G \to H$ are exactly the functors $\mathbf{B}G \to \mathbf{B}H$. An action of $G$ on a set $X$ is exactly a functor $\mathbf{B}G \to \mathbf{Set}$ sending $\ast$ to $X$, and maps of $G$-sets are natural transformations (<TopicLink id="math.cat.functors">functors</TopicLink>). In this language Cayley's theorem is an instance of the Yoneda lemma. The representable functor $\Hom(\ast, -)$ is the set $G$ with $G$ acting by left multiplication; <TopicLink id="math.cat.yoneda">Yoneda</TopicLink> identifies its automorphisms as a $G$-set with $\Hom(\ast, \ast) = G$, acting by right multiplications $x \mapsto xg$; and forgetting the action embeds this copy of $G$ (anti-isomorphic to $G$, hence isomorphic to it via $g \mapsto g^{-1}$) in $\operatorname{Sym}(G)$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+These optional trails approach the group idea from below — undoing an operation, and arithmetic on a clock.
+
+<Trail slug="inverses-and-structure" />
+
+<Trail slug="clock-arithmetic" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Before the definition.** Craft traditions across the world explored symmetry in practice long before it was formalised: Islamic geometric ornament, Chinese lattice windows, and the textiles and carvings of many African, American and Pacific peoples display a wide variety of symmetry types. Dorothy Washburn and Donald Crowe (1988) describe how to classify such patterns by their symmetry groups.
+- **Permutations of roots.** In 1770–71, Joseph-Louis Lagrange studied how expressions in the roots of a polynomial change when the roots are permuted. He proved a special case of the theorem now named after him. Paolo Ruffini (1799, with gaps) and Niels Henrik Abel (1824) used permutations to show that the general quintic cannot be solved by radicals. Augustin-Louis Cauchy developed the calculus of permutations (1815, 1844–46) and proved the theorem on elements of prime order that bears his name.
+- **Galois.** Évariste Galois (1830–32, published by Joseph Liouville in 1846) introduced the word *groupe*, recognised normal subgroups, and tied solvability by radicals to the structure of a group. See <TopicLink id="math.algebra.fields-galois">fields and Galois theory</TopicLink>.
+- **Abstraction.** Carl Friedrich Gauss's *Disquisitiones Arithmeticae* (1801) worked, without the word, with the cyclic groups of residues. Arthur Cayley (1854) gave the first abstract definition of a finite group by a multiplication table, together with the theorem now named after him. Camille Jordan's *Traité des substitutions* (1870) systematised permutation groups, Ludwig Sylow proved his theorems in 1872, and Klein's Erlangen programme (1872) and Sophus Lie's continuous groups carried groups into geometry and analysis.
+- **Counting orbits.** The lemma named after William Burnside was known to Cauchy and proved by Georg Frobenius (1887). Burnside's 1897 textbook made it widely known, hence Peter Neumann's phrase "the lemma that is not Burnside's" (1979).
+- **Symmetry in science.** Evgraf Fedorov and Arthur Schoenflies independently classified the $230$ crystallographic space groups in 1891. Emmy Noether proved her theorem on symmetries and conservation laws in 1918, and Eugene Wigner and Hermann Weyl brought group theory into quantum mechanics around 1930.
+- **The landscape today.** The classification of finite simple groups — every finite simple group is cyclic of prime order, alternating, of Lie type, or one of $26$ sporadic groups — was the work of more than a hundred mathematicians across several continents. It was announced in the early 1980s, and its last gap was closed by Michael Aschbacher and Stephen Smith in 2004.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Michael Artin, *Algebra* (1991; 2nd edition 2011), chapters 2 and 6–7 — groups, symmetry and group actions.
+- David S. Dummit and Richard M. Foote, *Abstract Algebra* (3rd edition, 2004), chapters 1–4.
+- M. A. Armstrong, *Groups and Symmetry* (1988) — a geometric first course.
+- Nathan Carter, *Visual Group Theory* (2009) — Cayley graphs and pictures throughout.
+- Joseph J. Rotman, *An Introduction to the Theory of Groups* (4th edition, 1995) — for going further (Sylow theory, solvable groups, presentations).
+- Dorothy K. Washburn and Donald W. Crowe, *Symmetries of Culture: Theory and Practice of Plane Pattern Analysis* (1988).
+
+</Section>

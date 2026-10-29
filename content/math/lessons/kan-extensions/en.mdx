@@ -1,0 +1,601 @@
+---
+slug: kan-extensions
+topic: math.cat.kan-extensions
+title: Kan extensions
+subtitle: The best possible way to extend a functor along another — and why limits, adjoints, induced representations and even the floor function are all instances of it.
+level: grad
+ages: Graduate
+minutes: 120
+order: 7036
+objectives:
+  - Define left and right Kan extensions by their universal properties, and recognise the adjunction $\mathrm{Lan}_K \dashv K^* \dashv \mathrm{Ran}_K$
+  - Prove the pointwise formula $(\mathrm{Lan}_K F)(d) = \operatorname{colim}_{(K \downarrow d)} F$ and state when it guarantees existence
+  - Express limits, colimits and adjoint functors as Kan extensions, and prove Mac Lane's criterion for adjoints
+  - Use left Kan extension along the Yoneda embedding to extend a functor from representables to all presheaves
+  - Compute Kan extensions between posets and of finite set-valued functors, including induced and coinduced group actions
+narrators: []
+lean:
+  - Lumenary.KanExtensions.lan
+  - Lumenary.KanExtensions.ran
+  - Lumenary.KanExtensions.lan_monotone
+  - Lumenary.KanExtensions.le_lan_comp
+  - Lumenary.KanExtensions.lan_le_iff
+  - Lumenary.KanExtensions.lan_unique
+  - Lumenary.KanExtensions.lan_comp_of_embedding
+  - Lumenary.KanExtensions.lan_gc
+  - Lumenary.KanExtensions.ran_monotone
+  - Lumenary.KanExtensions.ran_comp_le
+  - Lumenary.KanExtensions.le_ran_iff
+  - Lumenary.KanExtensions.ran_const_eq_iInf
+  - Lumenary.KanExtensions.lan_const_eq_iSup
+  - Lumenary.KanExtensions.left_adjoint_eq_ran
+  - Lumenary.KanExtensions.right_adjoint_eq_lan
+  - Lumenary.KanExtensions.exists_left_adjoint_iff
+  - Lumenary.KanExtensions.exists_left_adjoint_of_map_sInf
+  - Lumenary.KanExtensions.lan_isLeftAdjoint
+  - Lumenary.KanExtensions.lan_obj_iso_colimit
+compute: [kan_extensions_pointwise]
+trails: [products-by-maps]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Extending as well as possible">
+
+Here are three problems that look unrelated.
+
+- You know a function only on the integers, say $n \mapsto n$, and you want a monotone function on all of $\mathbb{R}$ that is “as close as possible” to it. From below, the answer is $\lfloor x \rfloor$; from above, $\lceil x \rceil$.
+- A subgroup $H$ of a group $G$ acts on a set or a vector space $V$. You want a $G$-action that is “freely generated” by the $H$-action. The answer is the induced representation $\mathrm{Ind}_H^G V$.
+- You know a topological space $\Delta^n$ for each standard simplex $[n]$, and you want to turn *every* simplicial set into a space, gluing simplices the way the simplicial set says. The answer is geometric realisation.
+
+In each case there is a functor $F : \mathcal{C} \to \mathcal{E}$ defined on a “small piece” $\mathcal{C}$, a functor $K : \mathcal{C} \to \mathcal{D}$ embedding (or merely mapping) that piece into a larger world, and we want the best functor $\mathcal{D} \to \mathcal{E}$ that extends $F$. In general no functor extends $F$ on the nose — but there is a best approximation from the left and a best approximation from the right. These are the **left and right Kan extensions**, and they turn out to be so universal that Saunders Mac Lane ended the first edition of *Categories for the Working Mathematician* (1971) with a section titled **“All concepts are Kan extensions”**.
+
+This lesson assumes <TopicLink id="math.cat.adjunctions">adjunctions</TopicLink>, <TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink> and <TopicLink id="math.cat.yoneda">the Yoneda lemma</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The picture: a triangle that need not commute">
+
+Draw $F$ and $K$ as two sides of a triangle. We want to fill in the third side.
+
+<CommutativeDiagram
+  objects={[
+    { id: "C", tex: "\\mathcal{C}", row: 0, col: 0 },
+    { id: "E", tex: "\\mathcal{E}", row: 0, col: 1 },
+    { id: "D", tex: "\\mathcal{D}", row: 1, col: 0 }
+  ]}
+  arrows={[
+    { from: "C", to: "E", tex: "F" },
+    { from: "C", to: "D", tex: "K", labelSide: "right" },
+    { from: "D", to: "E", tex: "\\mathrm{Lan}_K F", style: "dashed", labelSide: "right" }
+  ]}
+  caption="A left Kan extension fills the triangle up to a universal natural transformation $\eta : F \Rightarrow (\mathrm{Lan}_K F) \circ K$, not up to equality."
+/>
+
+Asking for $L \circ K = F$ is usually hopeless: if $K$ sends two objects $a, b$ to the same object $d$, then $L(d)$ would have to equal both $F(a)$ and $F(b)$. Category theory's answer is to ask instead for a **natural transformation** $F \Rightarrow L \circ K$ — “$L$ is at least as big as $F$ along $K$” — and to take the *smallest* such $L$. Dually, a right Kan extension is the *largest* $R$ with $R \circ K \Rightarrow F$.
+
+The poset case makes this concrete. A poset is a category with at most one arrow between two objects, a functor between posets is a monotone map, and a natural transformation $f \Rightarrow g$ exists exactly when $f \le g$ pointwise. The smallest monotone $L$ with $f(c) \le L(k(c))$ is forced: $L(d)$ must be at least $f(c)$ whenever $k(c) \le d$, so the best choice is
+
+$$
+L(d) = \bigvee \{\, f(c) \mid k(c) \le d \,\}.
+$$
+
+That supremum is the poset shadow of the general formula: **a left Kan extension at $d$ is the colimit of everything that maps to $d$.**
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $K : \mathcal{C} \to \mathcal{D}$ and $F : \mathcal{C} \to \mathcal{E}$ are functors. For a functor $G : \mathcal{D} \to \mathcal{E}$, write $GK = G \circ K$, and for a natural transformation $\sigma : G \Rightarrow G'$ write $\sigma K : GK \Rightarrow G'K$ for the whiskered transformation with components $(\sigma K)_c = \sigma_{Kc}$.
+
+<Definition term="left Kan extension">
+
+A **left Kan extension** of $F$ along $K$ is a functor $L : \mathcal{D} \to \mathcal{E}$ together with a natural transformation $\eta : F \Rightarrow LK$ (the **unit**) such that for every functor $G : \mathcal{D} \to \mathcal{E}$ and every natural transformation $\alpha : F \Rightarrow GK$ there is a **unique** natural transformation $\sigma : L \Rightarrow G$ with
+
+$$
+\alpha = (\sigma K) \circ \eta, \qquad\text{i.e.}\qquad \alpha_c = \sigma_{Kc} \circ \eta_c \ \text{ for all } c.
+$$
+
+Equivalently, $\sigma \mapsto (\sigma K) \circ \eta$ is a bijection $\mathrm{Nat}(L, G) \cong \mathrm{Nat}(F, GK)$ for every $G$. We write $L = \mathrm{Lan}_K F$; it is unique up to unique isomorphism, as any universal object is.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "F", tex: "F", row: 0, col: 0 },
+    { id: "LK", tex: "(\\mathrm{Lan}_K F)\\,K", row: 0, col: 2 },
+    { id: "GK", tex: "G K", row: 1, col: 2 }
+  ]}
+  arrows={[
+    { from: "F", to: "LK", tex: "\\eta" },
+    { from: "F", to: "GK", tex: "\\alpha", labelSide: "right" },
+    { from: "LK", to: "GK", tex: "\\sigma K", style: "dashed" }
+  ]}
+  caption="The universal property, drawn in the functor category $[\mathcal{C}, \mathcal{E}]$: every $\alpha$ factors uniquely through the unit $\eta$."
+/>
+
+<Definition term="right Kan extension">
+
+A **right Kan extension** of $F$ along $K$ is a functor $R = \mathrm{Ran}_K F : \mathcal{D} \to \mathcal{E}$ with a natural transformation $\varepsilon : RK \Rightarrow F$ (the **counit**) such that for every $G$ and every $\beta : GK \Rightarrow F$ there is a unique $\sigma : G \Rightarrow R$ with $\beta = \varepsilon \circ (\sigma K)$. Equivalently, $\mathrm{Nat}(G, R) \cong \mathrm{Nat}(GK, F)$.
+
+</Definition>
+
+If every $F : \mathcal{C} \to \mathcal{E}$ has a left (respectively right) Kan extension along $K$, the bijections above say precisely that $\mathrm{Lan}_K$ and $\mathrm{Ran}_K$ are the left and right adjoints of **restriction along $K$**, the functor $K^* : [\mathcal{D}, \mathcal{E}] \to [\mathcal{C}, \mathcal{E}]$, $G \mapsto GK$:
+
+$$
+\mathrm{Lan}_K \;\dashv\; K^* \;\dashv\; \mathrm{Ran}_K .
+$$
+
+To compute Kan extensions we need comma categories.
+
+<Definition term="comma categories over and under an object">
+
+For an object $d \in \mathcal{D}$, the comma category $(K \downarrow d)$ has as objects the pairs $(c, f)$ with $c \in \mathcal{C}$ and $f : Kc \to d$; a morphism $(c, f) \to (c', f')$ is a morphism $u : c \to c'$ with $f' \circ K(u) = f$. It comes with the projection $\pi_d : (K \downarrow d) \to \mathcal{C}$, $(c, f) \mapsto c$. Dually, $(d \downarrow K)$ has objects $(c, f : d \to Kc)$ and morphisms $u$ with $K(u) \circ f = f'$. (Mathlib calls these `CostructuredArrow K d` and `StructuredArrow d K`.)
+
+</Definition>
+
+<Definition term="pointwise Kan extension">
+
+The left Kan extension is **pointwise** when, for every $d$,
+
+$$
+(\mathrm{Lan}_K F)(d) = \operatorname*{colim}_{(c,\, f) \in (K \downarrow d)} F(c),
+$$
+
+the colimit of $F \circ \pi_d$, and dually $(\mathrm{Ran}_K F)(d) = \lim_{(c, f) \in (d \downarrow K)} F(c)$. In words: the left Kan extension at $d$ glues together the values $F(c)$ of everything that maps to $d$, identified along the arrows between them.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples, non-examples and boundary cases">
+
+<Example title="Floor and ceiling">
+
+Let $K : \mathbb{Z} \hookrightarrow \mathbb{R}$ be the inclusion and $F : \mathbb{Z} \to \overline{\mathbb{Z}} = \mathbb{Z} \cup \{\pm\infty\}$ the inclusion into the complete lattice of extended integers. By the poset formula,
+
+$$
+(\mathrm{Lan}_K F)(x) = \sup\{\, n \in \mathbb{Z} \mid n \le x \,\} = \lfloor x \rfloor, \qquad (\mathrm{Ran}_K F)(x) = \inf\{\, n \in \mathbb{Z} \mid x \le n \,\} = \lceil x \rceil.
+$$
+
+Every monotone $g : \mathbb{R} \to \overline{\mathbb{Z}}$ that agrees with $F$ on the integers satisfies $\lfloor x \rfloor \le g(x) \le \lceil x \rceil$: the Kan extensions are the extreme extensions. Since $K$ is an order embedding, both restrict back to $F$ on $\mathbb{Z}$.
+
+</Example>
+
+<Figure caption="The floor function (solid) is the left Kan extension of the integers along ℤ ⊂ ℝ, the ceiling (dashed) the right Kan extension. They agree exactly at the integers, where both extend the original function.">
+
+<svg viewBox="0 0 320 200" role="img" aria-label="Graphs of the floor and ceiling functions between 0 and 3: solid steps for floor, dashed steps for ceiling, meeting at integer points on the diagonal.">
+  <line x1="30" y1="170" x2="300" y2="170" stroke="var(--ink-2)" strokeWidth="1" />
+  <line x1="40" y1="190" x2="40" y2="20" stroke="var(--ink-2)" strokeWidth="1" />
+  <line x1="40" y1="170" x2="280" y2="35" stroke="var(--ink-2)" strokeWidth="0.8" strokeDasharray="2 3" />
+  <line x1="40" y1="170" x2="120" y2="170" stroke="var(--human)" strokeWidth="3" />
+  <line x1="120" y1="125" x2="200" y2="125" stroke="var(--human)" strokeWidth="3" />
+  <line x1="200" y1="80" x2="280" y2="80" stroke="var(--human)" strokeWidth="3" />
+  <line x1="40" y1="125" x2="120" y2="125" stroke="var(--formal)" strokeWidth="2" strokeDasharray="6 4" />
+  <line x1="120" y1="80" x2="200" y2="80" stroke="var(--formal)" strokeWidth="2" strokeDasharray="6 4" />
+  <line x1="200" y1="35" x2="280" y2="35" stroke="var(--formal)" strokeWidth="2" strokeDasharray="6 4" />
+  <circle cx="40" cy="170" r="4" fill="var(--gold)" />
+  <circle cx="120" cy="125" r="4" fill="var(--gold)" />
+  <circle cx="200" cy="80" r="4" fill="var(--gold)" />
+  <circle cx="280" cy="35" r="4" fill="var(--gold)" />
+  <text x="120" y="186" fontSize="11" textAnchor="middle" fill="var(--ink-2)">1</text>
+  <text x="200" y="186" fontSize="11" textAnchor="middle" fill="var(--ink-2)">2</text>
+  <text x="280" y="186" fontSize="11" textAnchor="middle" fill="var(--ink-2)">3</text>
+  <text x="246" y="98" fontSize="12" fill="var(--human)">floor</text>
+  <text x="62" y="117" fontSize="12" fill="var(--formal)">ceiling</text>
+</svg>
+
+</Figure>
+
+<Example title="Limits and colimits">
+
+Let $\mathbf{1}$ be the terminal category and $! : J \to \mathbf{1}$ the unique functor. A functor $c : \mathbf{1} \to \mathcal{E}$ is an object $c$, and a natural transformation $c \circ {!} \Rightarrow F$ is a family of maps $c \to F(j)$ compatible with all $F(u)$ — a **cone** over $F$ with vertex $c$. The universal property of $\mathrm{Ran}_! F$ says that there is a universal cone. Hence
+
+$$
+\mathrm{Ran}_! F = \lim F, \qquad \mathrm{Lan}_! F = \operatorname{colim} F,
+$$
+
+each existing exactly when the (co)limit does. (A full proof is in the next section.) For $J$ the discrete category on two objects this gives products and coproducts: the right Kan extension of $(A, B)$ to $\mathbf{1}$ is $A \times B$ — the universal property explored in the trail *The product, by its maps*.
+
+</Example>
+
+<Example title="Extending along a non-injective functor: no strict extension">
+
+Let $K : \{a, b\} \to \mathbf{1}$ (discrete source) and $F : \{a, b\} \to \mathbf{Set}$ with $|F(a)| = 2$, $|F(b)| = 3$. Then $(\mathrm{Lan}_K F)(\ast) = F(a) \sqcup F(b)$ has $5$ elements and $(\mathrm{Ran}_K F)(\ast) = F(a) \times F(b)$ has $6$. Neither restricts back to $F$: $(\mathrm{Lan}_K F)K(a)$ has $5$ elements, not $2$. The unit $\eta_a : F(a) \to F(a) \sqcup F(b)$ is the coproduct inclusion — a genuine map, not an identity.
+
+</Example>
+
+<Example title="Induced and coinduced actions">
+
+A group $G$ is a category $\mathbf{B}G$ with one object $\ast$ and one arrow for each $g \in G$; a functor $\mathbf{B}G \to \mathbf{Set}$ is a $G$-set. For a subgroup $H \le G$ with inclusion $i : \mathbf{B}H \to \mathbf{B}G$ and an $H$-set $X$:
+
+- The comma category $(i \downarrow \ast)$ has one object for each $g \in G$ (an arrow $i(\ast) \to \ast$), and an arrow $g'h \to g'$ for each $h \in H$. Its colimit glues $(g'h, x)$ to $(g', h x)$, so $(\mathrm{Lan}_i X)(\ast) = G \times_H X$, the **induced** $G$-set, with $[G : H]\,|X|$ elements when $G$ is finite.
+- Dually $(\mathrm{Ran}_i X)(\ast) = \mathrm{Hom}_H(G, X)$, the **coinduced** $G$-set of $H$-equivariant maps, with $|X|^{[G:H]}$ elements.
+
+For $H = 1$ and $X = \{\ast\}$, $\mathrm{Lan}_i X = G$ acting on itself: the free $G$-set on one generator. The experiment below computes all of these as colimits and limits.
+
+</Example>
+
+<Example title="Non-example: a Kan extension that does not exist">
+
+Let $k$ be the inclusion of the discrete poset $\{a, b\}$ into $\{a, b, \top\}$ with $a, b \le \top$, and let $f$ send $a \mapsto x$, $b \mapsto y$ in the *discrete* two-element poset $\{x, y\}$. A monotone $g$ with $f \le g \circ k$ would need $x \le g(a) \le g(\top)$ and $y \le g(b) \le g(\top)$, which is impossible. So there is no extension at all, and certainly no Kan extension. The pointwise formula fails precisely because the join $x \vee y$ does not exist.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The main theorems">
+
+<Theorem name="Theorem 1 (the pointwise formula)">
+
+Suppose that for every $d \in \mathcal{D}$ the colimit $L(d) = \operatorname{colim}(F \circ \pi_d)$ over $(K \downarrow d)$ exists, with coprojections $\iota_{(c, f)} : F(c) \to L(d)$. Then $d \mapsto L(d)$ extends uniquely to a functor $L : \mathcal{D} \to \mathcal{E}$ with $L(g) \circ \iota_{(c, f)} = \iota_{(c,\, g f)}$, and with $\eta_c = \iota_{(c,\, \mathrm{id}_{Kc})}$ the pair $(L, \eta)$ is a left Kan extension of $F$ along $K$.
+
+</Theorem>
+
+<Proof>
+
+*Functoriality.* An arrow $g : d \to d'$ induces a functor $g_* : (K \downarrow d) \to (K \downarrow d')$, $(c, f) \mapsto (c, gf)$, with $\pi_{d'} \circ g_* = \pi_d$. The maps $\iota_{(c, gf)} : F(c) \to L(d')$ therefore form a cocone over $F \circ \pi_d$, so there is a unique $L(g) : L(d) \to L(d')$ with $L(g) \circ \iota_{(c, f)} = \iota_{(c, gf)}$. Both $L(\mathrm{id})$ and $\mathrm{id}$, and both $L(g'g)$ and $L(g') L(g)$, satisfy the same equations on coprojections, so they agree by the uniqueness clause of the colimit.
+
+*The unit is natural.* For $u : c \to c'$ in $\mathcal{C}$ we must show $L(Ku) \circ \eta_c = \eta_{c'} \circ F(u)$. The left side is $\iota_{(c, Ku)}$ by definition of $L(Ku)$. On the right, $u$ is a morphism $(c, Ku) \to (c', \mathrm{id}_{Kc'})$ of $(K \downarrow Kc')$, so the cocone condition gives $\iota_{(c', \mathrm{id})} \circ F(u) = \iota_{(c, Ku)}$.
+
+*Existence of factorisations.* Let $G : \mathcal{D} \to \mathcal{E}$ and $\alpha : F \Rightarrow GK$. For fixed $d$, the maps $G(f) \circ \alpha_c : F(c) \to G(d)$ form a cocone over $F \circ \pi_d$: if $u : (c, f) \to (c', f')$, then $f' \circ K(u) = f$, and naturality of $\alpha$ gives
+
+$$
+G(f') \circ \alpha_{c'} \circ F(u) = G(f') \circ G(Ku) \circ \alpha_c = G(f) \circ \alpha_c .
+$$
+
+So there is a unique $\sigma_d : L(d) \to G(d)$ with $\sigma_d \circ \iota_{(c, f)} = G(f) \circ \alpha_c$. It is natural in $d$, because for $g : d \to d'$ both $\sigma_{d'} \circ L(g)$ and $G(g) \circ \sigma_d$ send $\iota_{(c,f)}$ to $G(gf) \circ \alpha_c$. Finally $\sigma_{Kc} \circ \eta_c = \sigma_{Kc} \circ \iota_{(c, \mathrm{id})} = G(\mathrm{id}) \circ \alpha_c = \alpha_c$.
+
+*Uniqueness.* If $\sigma' : L \Rightarrow G$ also satisfies $\sigma'_{Kc} \circ \eta_c = \alpha_c$, then, using $\iota_{(c, f)} = L(f) \circ \iota_{(c, \mathrm{id})} = L(f) \circ \eta_c$ and naturality of $\sigma'$,
+
+$$
+\sigma'_d \circ \iota_{(c, f)} = \sigma'_d \circ L(f) \circ \eta_c = G(f) \circ \sigma'_{Kc} \circ \eta_c = G(f) \circ \alpha_c = \sigma_d \circ \iota_{(c, f)} ,
+$$
+
+so $\sigma'_d = \sigma_d$ by the uniqueness of maps out of a colimit.
+
+</Proof>
+
+<Theorem name="Corollary (existence)">
+
+If $\mathcal{C}$ is small, $\mathcal{D}$ is locally small and $\mathcal{E}$ has all small colimits, then every $F : \mathcal{C} \to \mathcal{E}$ has a pointwise left Kan extension along every $K$, so $\mathrm{Lan}_K \dashv K^*$. Dually, if $\mathcal{E}$ has all small limits, $K^* \dashv \mathrm{Ran}_K$.
+
+</Theorem>
+
+<Proof>
+
+Each $(K \downarrow d)$ is small: its objects form the set $\coprod_{c} \mathcal{D}(Kc, d)$ (a set because $\mathcal{C}$ is small and $\mathcal{D}$ locally small), and its morphisms are among those of $\mathcal{C}$. So the colimits in Theorem 1 exist. The dual statement is Theorem 1 applied to $K^{\mathrm{op}}$ and $F^{\mathrm{op}}$.
+
+</Proof>
+
+<Theorem name="Proposition 2 (extension along a fully faithful functor)">
+
+If $K$ is fully faithful and $\mathrm{Lan}_K F$ is pointwise, then the unit $\eta : F \Rightarrow (\mathrm{Lan}_K F) K$ is a natural isomorphism: the Kan extension really extends $F$.
+
+</Theorem>
+
+<Proof>
+
+In $(K \downarrow Kc)$ the object $(c, \mathrm{id}_{Kc})$ is terminal: given $(c', f : Kc' \to Kc)$, full faithfulness gives a unique $u : c' \to c$ with $K(u) = f$, which is exactly a unique morphism $(c', f) \to (c, \mathrm{id})$. The colimit of a diagram over a category with a terminal object $t$ is its value at $t$, with coprojection at $t$ an isomorphism. Here that coprojection is $\iota_{(c, \mathrm{id})} = \eta_c$.
+
+</Proof>
+
+The hypothesis matters: the two-point example above shows what happens for a $K$ that is not injective on objects.
+
+<Theorem name="Proposition 3 (limits are right Kan extensions)">
+
+For $F : J \to \mathcal{E}$, an object $\ell$ with a cone $\lambda : \ell \circ {!} \Rightarrow F$ is a right Kan extension of $F$ along $! : J \to \mathbf{1}$ if and only if $(\ell, \lambda)$ is a limit of $F$.
+
+</Theorem>
+
+<Proof>
+
+Functors $\mathbf{1} \to \mathcal{E}$ are objects, and natural transformations between them are morphisms. A transformation $\beta : c \circ {!} \Rightarrow F$ is a cone with vertex $c$, and for $\sigma : c \to \ell$ the composite $\lambda \circ (\sigma\, {!})$ is the cone $(\lambda_j \circ \sigma)_j$. So the universal property of $\mathrm{Ran}_!$ — every $\beta$ equals $\lambda \circ (\sigma\, !)$ for a unique $\sigma$ — is word for word the universal property of a limit.
+
+</Proof>
+
+<Theorem name="Theorem 4 (adjoints are Kan extensions; Mac Lane)">
+
+A functor $G : \mathcal{A} \to \mathcal{X}$ has a left adjoint if and only if the right Kan extension $(R, \varepsilon) = \mathrm{Ran}_G \mathrm{id}_{\mathcal{A}}$ exists and is **preserved by $G$**, meaning that $(GR, G\varepsilon)$ is a right Kan extension of $G$ along $G$. In that case $R$ is the left adjoint, with counit $\varepsilon$. In fact, if $F \dashv G$ then $(F, \varepsilon)$ is preserved by *every* functor out of $\mathcal{A}$.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) Let $F \dashv G$ with unit $\eta : \mathrm{id}_{\mathcal{X}} \Rightarrow GF$, counit $\varepsilon : FG \Rightarrow \mathrm{id}_{\mathcal{A}}$, and triangle identities $G\varepsilon \circ \eta G = 1_G$ and $\varepsilon F \circ F\eta = 1_F$. Let $P : \mathcal{A} \to \mathcal{B}$ be any functor; we show $(PF, P\varepsilon)$ is a right Kan extension of $P$ along $G$. Given $H : \mathcal{X} \to \mathcal{B}$ and $\beta : HG \Rightarrow P$, put $\sigma_x = \beta_{Fx} \circ H(\eta_x) : H(x) \to PF(x)$. Then, by naturality of $\beta$ at $\varepsilon_a$ and the first triangle identity,
+
+$$
+P(\varepsilon_a) \circ \sigma_{Ga} = P(\varepsilon_a) \circ \beta_{FGa} \circ H(\eta_{Ga}) = \beta_a \circ HG(\varepsilon_a) \circ H(\eta_{Ga}) = \beta_a \circ H\big(G(\varepsilon_a) \circ \eta_{Ga}\big) = \beta_a .
+$$
+
+If $\sigma'$ is another solution, the second triangle identity and naturality of $\sigma'$ at $\eta_x$ give
+
+$$
+\sigma'_x = P(\varepsilon_{Fx}) \circ PF(\eta_x) \circ \sigma'_x = P(\varepsilon_{Fx}) \circ \sigma'_{GFx} \circ H(\eta_x) = \beta_{Fx} \circ H(\eta_x) = \sigma_x .
+$$
+
+Taking $P = \mathrm{id}$ shows $(F, \varepsilon) = \mathrm{Ran}_G \mathrm{id}$; taking $P = G$ shows that $G$ preserves it.
+
+($\Leftarrow$) Suppose $(R, \varepsilon : RG \Rightarrow \mathrm{id}_{\mathcal{A}})$ is $\mathrm{Ran}_G \mathrm{id}$ and $(GR, G\varepsilon)$ is $\mathrm{Ran}_G G$. Apply the universal property of $(GR, G\varepsilon)$ to the identity transformation $1_G : \mathrm{id}_{\mathcal{X}} G \Rightarrow G$: there is a unique $\eta : \mathrm{id}_{\mathcal{X}} \Rightarrow GR$ with $G\varepsilon \circ \eta G = 1_G$, which is one triangle identity. For the other, both $1_R$ and $\tau = \varepsilon R \circ R\eta$ are transformations $R \Rightarrow R$, and the universal property of $(R, \varepsilon)$ says there is only one $\tau$ with $\varepsilon \circ \tau G = \varepsilon$. The identity qualifies, and so does $\tau$: by naturality of $\varepsilon$ at the arrow $\varepsilon_a$,
+
+$$
+\varepsilon_a \circ \varepsilon_{RGa} \circ R(\eta_{Ga}) = \varepsilon_a \circ RG(\varepsilon_a) \circ R(\eta_{Ga}) = \varepsilon_a \circ R\big(G(\varepsilon_a) \circ \eta_{Ga}\big) = \varepsilon_a .
+$$
+
+Hence $\varepsilon R \circ R\eta = 1_R$. Both triangle identities hold, so $R \dashv G$ with unit $\eta$ and counit $\varepsilon$.
+
+</Proof>
+
+Note the twist: a **left** adjoint is a **right** Kan extension, $F = \mathrm{Ran}_G \mathrm{id}$, and dually a right adjoint is a left Kan extension, $G = \mathrm{Lan}_F \mathrm{id}$. In posets: the ceiling function, left adjoint to $\mathbb{Z} \hookrightarrow \mathbb{R}$, is an infimum; the floor, right adjoint, is a supremum.
+
+<Theorem name="Theorem 5 (extending along the Yoneda embedding)">
+
+Let $\mathcal{C}$ be small, $\mathcal{E}$ cocomplete and locally small, $F : \mathcal{C} \to \mathcal{E}$, and $y : \mathcal{C} \to \widehat{\mathcal{C}} = [\mathcal{C}^{\mathrm{op}}, \mathbf{Set}]$ the Yoneda embedding. Then $L = \mathrm{Lan}_y F$ exists and is given by
+
+$$
+L(P) = \operatorname*{colim}_{(c,\, x) \in \int P} F(c),
+$$
+
+the colimit over the category of elements of $P$ (objects: pairs $c \in \mathcal{C}$, $x \in P(c)$). Moreover $L \circ y \cong F$; $L$ is left adjoint to the “nerve” $N_F : \mathcal{E} \to \widehat{\mathcal{C}}$, $N_F(e) = \mathcal{E}(F(-), e)$; and $L$ is, up to isomorphism, the unique colimit-preserving functor $\widehat{\mathcal{C}} \to \mathcal{E}$ whose composite with $y$ is isomorphic to $F$.
+
+</Theorem>
+
+<Proof>
+
+*Sketch.* By the Yoneda lemma an arrow $y(c) \to P$ is the same as an element $x \in P(c)$, and this identifies the comma category $(y \downarrow P)$ with $\int P$ (up to size: $\widehat{\mathcal{C}}$ is locally small because $\mathcal{C}$ is small, so $\int P$ is small). Theorem 1 gives the formula. The Yoneda embedding is fully faithful, so Proposition 2 gives $Ly \cong F$. For the adjunction, maps out of a colimit are compatible families:
+
+$$
+\mathcal{E}(L P, e) \cong \lim_{(c, x) \in \int P} \mathcal{E}(F c, e) \cong \mathrm{Nat}\big(P, \mathcal{E}(F(-), e)\big),
+$$
+
+the second step because a natural transformation $P \Rightarrow N_F(e)$ is exactly an assignment $x \mapsto (Fc \to e)$ compatible with restriction. Being a left adjoint, $L$ preserves colimits. Uniqueness: every presheaf is canonically the colimit of representables over its category of elements (the density theorem, which is the case $F = y$), so a colimit-preserving functor is determined by its values on representables. Full details: Riehl (2016), Chapter 6, or Mac Lane and Moerdijk (1992), Chapter I.
+
+</Proof>
+
+This “nerve and realisation” pattern appears all over mathematics: with $F : \Delta \to \mathbf{Top}$, $[n] \mapsto \Delta^n$, it gives geometric realisation $|{-}| \dashv \mathrm{Sing}$; with $F : \Delta \to \mathbf{Cat}$, $[n] \mapsto$ the poset $\{0 < \dots < n\}$, it gives the nerve of a category and its left adjoint.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Kan extensions in Lean">
+
+The Lean module has two parts.
+
+**Part 1 (independent): the thin case.** For preorders $C, D$ and a complete lattice $E$, everything above can be proved from scratch, because in a thin category a natural transformation exists exactly when there is a pointwise inequality, and colimits and limits in a complete lattice are suprema and infima. The definitions are the pointwise formulas:
+
+<Lean decl="Lumenary.KanExtensions.lan" />
+
+<Lean decl="Lumenary.KanExtensions.ran" />
+
+`lan k f` is a functor, the unit exists, and the universal property holds — the poset shadow of Theorem 1:
+
+<Lean decl="Lumenary.KanExtensions.lan_monotone" />
+
+<Lean decl="Lumenary.KanExtensions.le_lan_comp" />
+
+<Lean decl="Lumenary.KanExtensions.lan_le_iff" />
+
+Any functor with this universal property *is* `lan k f` (uniqueness of universal objects), and along an order embedding the extension restricts back to `f` (Proposition 2):
+
+<Lean decl="Lumenary.KanExtensions.lan_unique" />
+
+<Lean decl="Lumenary.KanExtensions.lan_comp_of_embedding" />
+
+Read as an adjunction between the preorders of monotone maps, the universal property is $\mathrm{Lan}_k \dashv k^*$:
+
+<Lean decl="Lumenary.KanExtensions.lan_gc" />
+
+The right Kan extension is dual, and limits and colimits are Kan extensions along the map to `Unit` (Proposition 3):
+
+<Lean decl="Lumenary.KanExtensions.ran_monotone" />
+
+<Lean decl="Lumenary.KanExtensions.ran_comp_le" />
+
+<Lean decl="Lumenary.KanExtensions.le_ran_iff" />
+
+<Lean decl="Lumenary.KanExtensions.ran_const_eq_iInf" />
+
+<Lean decl="Lumenary.KanExtensions.lan_const_eq_iSup" />
+
+Theorem 4 for complete lattices, where adjunctions are Galois connections: a left adjoint is $\mathrm{Ran}_G \mathrm{id}$, a right adjoint is $\mathrm{Lan}_F \mathrm{id}$, and $G$ has a left adjoint exactly when it preserves $\mathrm{Ran}_G \mathrm{id}$. The last result is the adjoint functor theorem for complete lattices.
+
+<Lean decl="Lumenary.KanExtensions.left_adjoint_eq_ran" />
+
+<Lean decl="Lumenary.KanExtensions.right_adjoint_eq_lan" />
+
+<Lean decl="Lumenary.KanExtensions.exists_left_adjoint_iff" />
+
+<Lean decl="Lumenary.KanExtensions.exists_left_adjoint_of_map_sInf" />
+
+**Part 2 (library): the general theory.** Mathlib has Kan extensions for arbitrary categories (`Functor.LeftExtension`, `Functor.IsLeftKanExtension`, `Functor.leftKanExtension`, pointwise Kan extensions in `Mathlib.CategoryTheory.Functor.KanExtension.Pointwise`). Two results of this lesson, in full generality, by applying Mathlib's theorems: $\mathrm{Lan}_L$ is left adjoint to restriction, and the pointwise formula with its existence conditions (Theorem 1 and its corollary).
+
+<Lean decl="Lumenary.KanExtensions.lan_isLeftAdjoint" />
+
+<Lean decl="Lumenary.KanExtensions.lan_obj_iso_colimit" />
+
+**What is and is not formalised.** Theorems 1–4 are proved here independently only in the thin case (posets valued in complete lattices); the general pointwise formula and adjunction are cited from Mathlib. Theorem 4 in general (with absolute Kan extensions) and Theorem 5 (extension along Yoneda) are not formalised in this module.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing Kan extensions of finite sets">
+
+For functors into finite sets the pointwise formulas are algorithms: a colimit is a disjoint union glued along the arrows (a union–find computation), and a limit is the set of compatible families. The experiment computes Lan and Ran along a map of finite posets, a colimit over a diagram with a terminal object, and induced and coinduced actions of the subgroups of $S_3$.
+
+<Python id="kan_extensions_pointwise" />
+
+What to notice: at the top of the poset, Lan gives the coproduct ($2 + 3$); at the bottom, Ran gives the product ($2 \times 3$); at $a$ and $b$, both restrict back to $F$, as Proposition 2 predicts for an order embedding. For groups, induction multiplies by the index while coinduction exponentiates. This is exact computation in finitely many cases — it illustrates the theorems but does not prove them.
+
+</Section>
+
+<Section id="pictures" kind="visualization" title="Seeing the pointwise formula">
+
+A left Kan extension at $d$ is a colimit: each object $(c, f)$ of $(K \downarrow d)$ contributes a coprojection, and each morphism $u : (c, f) \to (c', f')$ forces a triangle to commute.
+
+<CommutativeDiagram
+  objects={[
+    { id: "Fc", tex: "F(c)", row: 0, col: 0 },
+    { id: "Fc2", tex: "F(c')", row: 0, col: 2 },
+    { id: "L", tex: "(\\mathrm{Lan}_K F)(d)", row: 1, col: 1 }
+  ]}
+  arrows={[
+    { from: "Fc", to: "Fc2", tex: "F(u)" },
+    { from: "Fc", to: "L", tex: "\\iota_{(c,f)}", labelSide: "right" },
+    { from: "Fc2", to: "L", tex: "\\iota_{(c',f')}" }
+  ]}
+  caption="The colimit cocone over the comma category: whenever $f' \circ K(u) = f$, the triangle commutes."
+/>
+
+In the poset example of the experiment ($C = \{a, b\}$ discrete inside $\{\bot < a, b < \top\}$), the comma category at $\top$ is $\{a, b\}$ and the one under $\bot$ is $\{a, b\}$ as well, so the two extensions produce the two universal constructions on the pair $F(a), F(b)$:
+
+<CommutativeDiagram
+  objects={[
+    { id: "P", tex: "(\\mathrm{Ran}_k F)(\\bot) = F(a) \\times F(b)", row: 0, col: 1 },
+    { id: "A", tex: "F(a)", row: 1, col: 0 },
+    { id: "B", tex: "F(b)", row: 1, col: 2 },
+    { id: "S", tex: "(\\mathrm{Lan}_k F)(\\top) = F(a) \\sqcup F(b)", row: 2, col: 1 }
+  ]}
+  arrows={[
+    { from: "P", to: "A", tex: "\\pi_1", labelSide: "right" },
+    { from: "P", to: "B", tex: "\\pi_2" },
+    { from: "A", to: "S", tex: "\\iota_1", labelSide: "right" },
+    { from: "B", to: "S", tex: "\\iota_2" }
+  ]}
+  caption="Right Kan extension at the bottom is a limit (product); left Kan extension at the top is a colimit (coproduct)."
+/>
+
+Try it yourself: in the experiment's code, change the sizes of $F(a)$ and $F(b)$ in `POSET_SETS` and predict the table before running it. Then compare part 2 of the experiment: there the indexing category is the chain $0 < 1 < 2$, which has the terminal object $2$, so the colimit is $F(2)$ and, dually, the limit is the value $F(0)$ at the initial object.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**“Kan extensions always exist.”** They do not: the two-point example above has no extension at all, because the target lacks a join. The standard sufficient condition is: $\mathcal{C}$ small, $\mathcal{D}$ locally small, and $\mathcal{E}$ cocomplete (for $\mathrm{Lan}$) or complete (for $\mathrm{Ran}$). The local smallness of $\mathcal{D}$ is easy to forget: it is what makes the comma categories $(K \downarrow d)$ small. Not every Kan extension that exists is pointwise either; in practice the pointwise ones are the ones that behave well.
+
+</Misconception>
+
+<Misconception>
+
+**Confusing left and right.** Left Kan extensions are computed by **colimits** over $(K \downarrow d)$ — “everything that maps *to* $d$” — and right Kan extensions by **limits** over $(d \downarrow K)$. Mnemonic: floor is $\mathrm{Lan}$, ceiling is $\mathrm{Ran}$. But beware the twist: a *left adjoint* is a *right* Kan extension, $F = \mathrm{Ran}_G \mathrm{id}$, because its counit $FG \Rightarrow \mathrm{id}$ has the shape of a Kan extension counit.
+
+</Misconception>
+
+<Misconception>
+
+**“A Kan extension restricts back to the original functor.”** Only when the unit is an isomorphism, which holds for pointwise extensions along fully faithful $K$ (Proposition 2). Along $K : \{a, b\} \to \mathbf{1}$, $(\mathrm{Lan}_K F)K(a) = F(a) \sqcup F(b) \neq F(a)$.
+
+</Misconception>
+
+<Misconception>
+
+**“A Kan extension is just some extension.”** The universal property is the point: $\mathrm{Lan}_K F$ is the *initial* functor equipped with $F \Rightarrow (-)K$. In the floor example infinitely many monotone functions extend the integers; the Kan extensions are the two extreme ones.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="algebra" title="Induction, Frobenius reciprocity and extension of scalars">
+
+For a subgroup $H \le G$ and the inclusion $i : \mathbf{B}H \to \mathbf{B}G$, restriction $i^*$ is restriction of representations from $G$ to $H$. For functors into $\mathrm{Vect}_k$, the pointwise formula gives
+
+$$
+\mathrm{Lan}_i V = k[G] \otimes_{k[H]} V = \mathrm{Ind}_H^G V, \qquad \mathrm{Ran}_i V = \mathrm{Hom}_{k[H]}(k[G], V) = \mathrm{CoInd}_H^G V,
+$$
+
+and the adjunctions $\mathrm{Lan}_i \dashv i^* \dashv \mathrm{Ran}_i$ are **Frobenius reciprocity**: $\mathrm{Hom}_G(\mathrm{Ind}_H^G V, W) \cong \mathrm{Hom}_H(V, \mathrm{Res}^G_H W)$, and its dual. For linear representations and $[G:H] < \infty$, induction and coinduction are isomorphic; for $G$-sets they are not ($[G:H]\,|X|$ versus $|X|^{[G:H]}$ elements), which the experiment shows. More generally, a ring homomorphism $R \to S$ is a functor between one-object $\mathbf{Ab}$-enriched categories, and the *enriched* left Kan extension of a module along it is extension of scalars $S \otimes_R M$, with coextension $\mathrm{Hom}_R(S, M)$ on the right; this needs the enriched theory of <TopicLink id="math.cat.enriched-categories">enriched categories</TopicLink>, where Kan extensions are coends.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Inverse images of presheaves and geometric realisation">
+
+Let $f : X \to Y$ be continuous and write $\mathcal{O}(X)$ for the poset of open sets. Preimage is a monotone map $f^{-1} : \mathcal{O}(Y) \to \mathcal{O}(X)$. For a presheaf $\mathcal{F}$ on $Y$, the pushforward is just precomposition, $f_*\mathcal{F} = \mathcal{F} \circ (f^{-1})^{\mathrm{op}}$, so its left adjoint is a left Kan extension along $(f^{-1})^{\mathrm{op}}$. The pointwise formula computes it: the comma category at an open $U \subseteq X$ consists of the opens $V \subseteq Y$ with $U \subseteq f^{-1}(V)$, i.e. $f(U) \subseteq V$, so
+
+$$
+(f^{-1}_{\mathrm{pre}} \mathcal{F})(U) = \operatorname*{colim}_{V \supseteq f(U)} \mathcal{F}(V),
+$$
+
+the familiar formula for the presheaf inverse image (the sheaf inverse image is its sheafification; see <TopicLink id="math.geom.sheaves">sheaves</TopicLink>). Geometric realisation of simplicial sets is the left Kan extension of $[n] \mapsto \Delta^n$ along the Yoneda embedding $\Delta \to \mathbf{sSet}$ (Theorem 5), with right adjoint the singular complex. Beyond this lesson: in <TopicLink id="math.geom.homotopy-theory">homotopy theory</TopicLink> one needs *homotopy* Kan extensions (derived functors of $\mathrm{Lan}$, such as homotopy colimits), and in <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink> Kan extensions are defined up to coherent homotopy.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Best approximations from below and above">
+
+Let $f : \mathbb{Q} \to \mathbb{R}$ be monotone and $k : \mathbb{Q} \hookrightarrow \mathbb{R}$ the inclusion, with values in the complete lattice $[-\infty, \infty]$. Then
+
+$$
+(\mathrm{Lan}_k f)(x) = \sup_{q \le x} f(q), \qquad (\mathrm{Ran}_k f)(x) = \inf_{q \ge x} f(q).
+$$
+
+Both extend $f$ (since $k$ is an order embedding), every monotone extension $g$ of $f$ satisfies $\mathrm{Lan}_k f \le g \le \mathrm{Ran}_k f$, and at an irrational $x$ the two are the one-sided limits $f(x^-)$ and $f(x^+)$. They differ exactly at the jumps of $f$, and a monotone real-valued function has at most countably many jumps (disjoint open intervals each contain a rational). So the monotone extension of $f$ to $\mathbb{R}$ is unique if and only if $f$ has no jumps at irrational points. The Python exercise computes these envelopes on finitely many sample points.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Quantifiers are Kan extensions">
+
+Regard a function $f : X \to Y$ as a functor between discrete categories, and a predicate on $X$ as a functor $P : X \to \mathbf{2} = \{\bot \le \top\}$. Then the pointwise formulas give
+
+$$
+(\mathrm{Lan}_f P)(y) = \exists x\, \big(f(x) = y \wedge P(x)\big), \qquad (\mathrm{Ran}_f P)(y) = \forall x\, \big(f(x) = y \Rightarrow P(x)\big),
+$$
+
+and $\mathrm{Lan}_f \dashv f^* \dashv \mathrm{Ran}_f$ is Lawvere's discovery that $\exists_f \dashv f^* \dashv \forall_f$: quantifiers are adjoint to substitution. For a projection $X \times Y \to X$ these are the ordinary quantifiers over $Y$. See <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Codensity monads and faster programs">
+
+For any functor $G : \mathcal{A} \to \mathcal{X}$, if the right Kan extension $T = \mathrm{Ran}_G G$ exists it carries a canonical <TopicLink id="math.cat.monads">monad</TopicLink> structure, the **codensity monad** of $G$; when $G$ has a left adjoint $F$, $T \cong GF$ is the monad of the adjunction (by Theorem 4, applied with $P = G$). A classical example (Kennison and Gildenhuys, 1971): the codensity monad of the inclusion $\mathbf{FinSet} \hookrightarrow \mathbf{Set}$ is the ultrafilter monad. In functional programming, Haskell's `Codensity m a = forall b. (a -> m b) -> m b` is $\mathrm{Ran}_m m$ written as an end, and Voigtländer (2008) used it to turn left-nested binds of free monads from quadratic into linear time.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="categories" kind="categories" title="All concepts are Kan extensions">
+
+Mac Lane's slogan collects the results of this lesson:
+
+- **limits and colimits** are Kan extensions along $J \to \mathbf{1}$ (Proposition 3);
+- **adjoints** are Kan extensions of identities, $F = \mathrm{Ran}_G \mathrm{id}$ and $G = \mathrm{Lan}_F \mathrm{id}$ (Theorem 4);
+- **density and Yoneda**: the density theorem says $\mathrm{Lan}_y\, y \cong \mathrm{id}_{\widehat{\mathcal{C}}}$ — every presheaf is canonically a colimit of representables (Theorem 5 with $F = y$);
+- **monads** arise as codensity monads $\mathrm{Ran}_G G$.
+
+Even Kan extensions are Kan extensions: the definition uses only functors, natural transformations and their composites, so it makes sense in any 2-category, and the pointwise formula becomes a weighted colimit (a coend, $\int^{c} \mathcal{D}(Kc, d) \cdot F(c)$) in the enriched setting of Kelly (1982). The slogan is an exaggeration — not every concept is usefully a Kan extension — but it records how often a construction turns out to be “the best approximation along a functor”.
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trail">
+
+The product $A \times B$ is the right Kan extension of the pair $(A, B)$ along the functor from the two-object discrete category to $\mathbf{1}$. This trail explores its universal property from first principles.
+
+<Trail slug="products-by-maps" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Daniel M. Kan** (born in the Netherlands, later at MIT) introduced adjoint functors in his paper *Adjoint functors* (Transactions of the American Mathematical Society, 1958), working in homotopy theory and simplicial sets. The same paper constructs what are now called Kan extensions, by the colimit and limit formulas.
+- In the 1960s, the Grothendieck school's work on topos theory (SGA 4, 1963–64) made systematic use of extending functors from a site to all presheaves by colimits, and **F. William Lawvere** showed that quantifiers are adjoint to substitution (1969).
+- **Saunders Mac Lane**'s *Categories for the Working Mathematician* (1971) ends its chapter on Kan extensions with the section “All concepts are Kan extensions”.
+- **Eduardo Dubuc** (Argentina) developed *Kan extensions in enriched category theory* (Springer Lecture Notes 145, 1970), and **G. M. Kelly** (Sydney) made pointwise enriched Kan extensions central in *Basic Concepts of Enriched Category Theory* (1982).
+- Today Kan extensions are basic tools in homotopy theory (homotopy Kan extensions, ∞-categorical Kan extensions in Lurie's *Higher Topos Theory*, 2009), in representation theory, in algebraic geometry, and in functional programming.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Saunders Mac Lane, *Categories for the Working Mathematician* (1971; 2nd edition 1998), Chapter X — Kan extensions, pointwise extensions, density, and “all concepts are Kan extensions”.
+- Emily Riehl, *Category Theory in Context* (2016), Chapter 6 — a modern account with many examples.
+- Fosco Loregian, *(Co)end Calculus* (2021) — Kan extensions as coends, with applications.
+- G. M. Kelly, *Basic Concepts of Enriched Category Theory* (1982), Chapter 4 — enriched and pointwise Kan extensions.
+- Emily Riehl, *Categorical Homotopy Theory* (2014) — homotopy Kan extensions and derived functors.
+- Daniel M. Kan, “Adjoint functors”, *Transactions of the American Mathematical Society* 87 (1958) — the original paper.
+- Saunders Mac Lane and Ieke Moerdijk, *Sheaves in Geometry and Logic* (1992), Chapter I — presheaves, colimits of representables and the nerve–realisation adjunction.
+
+</Section>
