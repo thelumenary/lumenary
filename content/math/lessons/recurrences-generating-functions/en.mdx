@@ -13,7 +13,7 @@ objectives:
   - Work with ordinary generating functions as formal power series, and use them to solve recurrences and counting problems
   - Prove that the Catalan numbers $\binom{2n}{n}/(n+1)$ count balanced bracket sequences, by a reflection argument and by a generating function
   - Compare growth rates with $O$, $\Omega$, $\Theta$, $o$ and $\sim$, and solve the divide-and-conquer recurrence $T(n) = 2T(n/2) + n$ on powers of two
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.RecurrencesGeneratingFunctions.IsSol
   - Lumenary.RecurrencesGeneratingFunctions.isSol_geom
@@ -48,7 +48,7 @@ labels: [ai-drafted]
 
 A drummer in a Carnatic ensemble, or a poet composing in Sanskrit or Prakrit, builds rhythms from **short** beats (one unit of time) and **long** beats (two units). How many different rhythms fill exactly $n$ units? For $n = 1, 2, 3, 4, 5$ there are $1, 2, 3, 5, 8$. Indian prosodists noticed — more than five centuries before Leonardo of Pisa wrote about rabbits — that each count is the sum of the previous two: a rhythm of length $n$ either ends with a short beat (after a rhythm of length $n - 1$) or with a long beat (after a rhythm of length $n - 2$).
 
-That one observation is a **recurrence**: it defines a sequence by its own past. Recurrences are everywhere. The number of moves needed to solve the Tower of Hanoi, the running time of mergesort, the balance of a loan in Nairobi or Lima with monthly interest and repayments, the population of a species with age classes, the number of ways to bracket a long product — each is described most naturally by saying how the next value depends on the earlier ones.
+That one observation is a **recurrence**: it defines a sequence by its own past. Recurrences are everywhere. The number of moves needed to solve the Tower of Hanoi, the running time of mergesort, the balance of a loan in Nairobi, Lima or Toronto with monthly interest and repayments, the population of a species with age classes, the number of ways to bracket a long product — each is described most naturally by saying how the next value depends on the earlier ones.
 
 This lesson answers three questions about such sequences:
 
@@ -277,6 +277,12 @@ First, $n r^n$ is a solution: $(n+2)r^{n+2} - 2r(n+1)r^{n+1} + r^2 \cdot n r^n =
 
 </Proof>
 
+<Narrator who="gideon">
+
+The hypothesis $r \ne 0$ is doing real work. If $r = 0$ the recurrence is $a_{n+2} = 0$, whose solutions $a_0, a_1, 0, 0, \dots$ form a $2$-dimensional space, while $(A + Bn)\,0^n$ (with $0^0 = 1$) gives only $A, 0, 0, \dots$ — the value $a_1$ is lost. The definition's condition $c_k \ne 0$ is what rules this out: it says $\chi(0) = -c_k \ne 0$, so $0$ is never a characteristic root.
+
+</Narrator>
+
 <Theorem name="Corollary (Binet's formula)">
 
 With $F_0 = 0$, $F_1 = 1$, $F_{n+2} = F_{n+1} + F_n$, and $\varphi = \frac{1 + \sqrt5}{2}$, $\psi = \frac{1 - \sqrt5}{2}$,
@@ -369,6 +375,8 @@ $$
 
 Group by the number of five-rupee coins: with none, $10$ rupees from $1$s and $2$s ($6$ ways: zero to five $2$s); with one, $5$ rupees ($3$ ways); with two, $1$ way. Total $10$.
 
+Only the denominations enter the generating function, not the currency: a baker in Lisbon making $10$ euro cents from $1$-, $2$- and $5$-cent coins also has exactly $10$ ways.
+
 </Example>
 
 <Example title="Compositions">
@@ -414,6 +422,12 @@ $$
 since $\binom{2n}{n+1} = \binom{2n}{n}\frac{n}{n+1}$.
 
 </Proof>
+
+<Narrator who="chloe">
+
+Why does reflection work so well? "Touches height $-1$" is a condition on the *whole* path and hard to count directly; after reflecting up to the first visit it becomes "starts at height $-2$", a condition on the endpoints alone, and paths with given endpoints are counted by a single binomial coefficient. Counting the complement, then trading a global condition for an endpoint condition, is a trick worth keeping — it reappears in the ballot problem and in the reflection principle for Brownian motion.
+
+</Narrator>
 
 **A second proof, by generating functions.** Let $C(x) = \sum C_n x^n$. Segner's recurrence says exactly that $C(x) = 1 + x\,C(x)^2$. Multiplying by $4x$ and completing the square, $(1 - 2x\,C(x))^2 = 1 - 4x$. In $\Q[[x]]$ the series $1 - 4x$ has exactly two square roots, $\pm S(x)$, where $S$ is the unique square root with constant term $1$ (its coefficients are found one at a time, as for inverses). Since $1 - 2xC(x)$ has constant term $1$, $1 - 2x\,C(x) = S(x) = \sqrt{1 - 4x}$. The binomial series $\sqrt{1 - 4x} = \sum_n \binom{1/2}{n}(-4)^n x^n = 1 - 2\sum_{n \ge 1} \frac{1}{n}\binom{2n-2}{n-1}x^n$ (it has constant term $1$, and its square is $1 - 4x$ by Vandermonde's identity $\sum_i \binom{a}{i}\binom{b}{n-i} = \binom{a+b}{n}$, a polynomial identity in $a$ and $b$) then gives
 
@@ -559,9 +573,21 @@ The first experiment computes Fibonacci numbers from the recurrence, from the ge
 
 <Python id="recurrences_generating_functions_binet" />
 
+<Narrator who="margaret">
+
+The failure at $n = 71$ is predictable before running anything. A 64-bit float stores $\varphi$ with relative error about $10^{-16}$, raising it to the $n$-th power multiplies that relative error by about $n$, and the absolute error, roughly $n \cdot 10^{-16} \cdot F_n$, passes $\tfrac12$ near $n \approx 70$, where $F_n$ has $15$ digits. From then on, rounding can pick the wrong integer.
+
+</Narrator>
+
 The second experiment counts balanced bracket strings by brute force and compares the counts with Segner's recurrence, the closed form, and the coefficients of $C(x)$ obtained by iterating $C \leftarrow 1 + x\,C^2$ on truncated series. Watch the iteration: each round fixes at least one more coefficient. This is convergence of formal power series in the "$x$-adic" sense — two series are close when they agree in many leading coefficients — with no analysis at all. Finally it measures $C_n$ against $4^n/(\sqrt\pi\, n^{3/2})$.
 
 <Python id="recurrences_generating_functions_catalan" />
+
+<Narrator who="margaret">
+
+Read the last column closely: $0.8978$, $0.98886$, $0.99888$. Each tenfold increase of $n$ shrinks the gap to $1$ about tenfold, so the relative error is $\Theta(1/n)$ — just what the next term of Stirling's series predicts, $1 - \frac{9}{8n} + O(n^{-2})$.
+
+</Narrator>
 
 </Section>
 

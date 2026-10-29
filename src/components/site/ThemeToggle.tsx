@@ -3,18 +3,15 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/client";
+import { THEME_KEY as KEY } from "./init-scripts";
 
 type Theme = "system" | "light" | "dark";
-const KEY = "lumenary:theme";
 
 function apply(theme: Theme) {
   const root = document.documentElement;
   if (theme === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", theme);
 }
-
-/** Inline script run before paint so the chosen theme never flashes. */
-export const themeInitScript = `try{var t=localStorage.getItem("${KEY}");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}`;
 
 export function ThemeToggle() {
   const { t } = useI18n();

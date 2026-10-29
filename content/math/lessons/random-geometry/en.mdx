@@ -2,7 +2,7 @@
 slug: random-geometry
 topic: math.prob.random-geometry
 title: "Random structures: walks, percolation and random geometry"
-subtitle: A random walker is sure to come home on a street grid but may be lost forever in space; a random forest either burns locally or burns forever — and the boundary between the two regimes has a geometry of its own.
+subtitle: A random walker is sure to come home on a street grid but may be lost forever in space; water in a random porous rock either stays in finite pockets or finds an infinite path — and the boundary between the two regimes has a geometry of its own.
 level: research
 ages: Research orientation (stochastic processes and the probabilistic method assumed)
 minutes: 140
@@ -13,7 +13,7 @@ objectives:
   - Describe the phase transition in bond percolation, prove $\frac13 \le p_c(\Z^2) \le \frac23$ by Peierls' argument, and state Kesten's theorem $p_c = \frac12$
   - Describe the giant component of the Erdős–Rényi graph $G(n, c/n)$ and its branching-process explanation
   - Describe Brownian motion and Schramm–Loewner evolution as scaling limits, separating theorems from conjectures and from numerical evidence
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.RandomGeometry.four_pow_le_central_binom
   - Lumenary.RandomGeometry.central_binom_sq_lower
@@ -170,6 +170,12 @@ because the numbers $\frac{n!}{i!j!k!3^n}$ are the probabilities of a trinomial 
 
 </Proof>
 
+<Narrator who="chloe">
+
+Why does the rotation trick exist only in the plane? After rotating by $45°$ (and rescaling), the four unit steps of $\Z^2$ are exactly the four steps $(\pm1, \pm1)$ of a pair of independent walks on $\Z$. In $\Z^3$ the six unit steps cannot be the eight steps $(\pm1, \pm1, \pm1)$ of three independent walks — the counts do not even match — so three dimensions needs Stirling's estimate instead of a trick.
+
+</Narrator>
+
 The proof for $d = 1, 2$ is formalised in Lean below, apart from the probabilistic modelling (the formula for $u_{2n}$ and Theorem 1). For $d = 3$ the Stirling step is cited, not proved. The first experiment computes $G(N) = \sum_{n \le N} u_{2n}$ for all three dimensions: it grows like $2\sqrt{N/\pi}$, like $\frac{1}{\pi}\log N$, and converges to Watson's constant $1.5164$, so the walk on $\Z^3$ returns with probability $1 - 1/1.5164 = 0.3405$.
 
 **Recurrent is not the same as "returns quickly".** For the walk on $\Z$, the first return time $T$ satisfies $P(T \gt 2n) = u_{2n}$ (a classical reflection-principle identity; see Feller, Vol. I, Ch. III). So $E[T] = 2\sum_n u_{2n} = \infty$: the walk returns with probability one, but the expected time it takes is infinite. In Lean, `return_prob_tendsto_zero` and `return_1d_not_summable` are exactly the two halves of this picture.
@@ -311,6 +317,12 @@ Peierls' argument, with the path count of Lemma 4 as a hypothesis:
 
 <Lean decl="Lumenary.RandomGeometry.peierls_tendsto" />
 
+<Narrator who="gideon">
+
+Read the hypothesis of `peierls_tendsto` carefully: the path count enters as an assumption $c_n \le 4 \cdot 3^n$, slightly weaker than Lemma 4's $4 \cdot 3^{n-1}$ — harmless, since only the exponential rate $3$ matters when $p \lt \tfrac13$. And the conclusion is about a sequence of real numbers, not a probability: the step “$\theta(p) \le c_n p^n$”, a union bound in a product measure, is the human input that connects it to percolation.
+
+</Narrator>
+
 <Lean decl="Lumenary.RandomGeometry.dual_circuits_summable" />
 
 And the subcritical random graph:
@@ -326,6 +338,12 @@ And the subcritical random graph:
 The first experiment checks the rotation trick by brute force (all $4^{2n}$ walks of length $2n \le 8$) and then sums exact return probabilities. In $d = 3$ it uses the formula obtained by conditioning on the number of vertical steps, and compares the partial sums — and a tail correction based on $u_{2n} \sim 2\big(\frac{3}{4\pi n}\big)^{3/2}$ — with Watson's closed form $G = \frac{\sqrt6}{32\pi^3}\Gamma(\frac1{24})\Gamma(\frac5{24})\Gamma(\frac7{24})\Gamma(\frac{11}{24})$ (Watson, 1939, in the form given by Glasser and Zucker, 1977).
 
 <Python id="random_geometry_polya" />
+
+<Narrator who="margaret">
+
+Look at the $d = 3$ columns. At $N = 1200$ the raw partial sum is still $0.013$ short of Watson's value, while the tail-corrected one agrees with it to the digits shown. Since $u_{2n} \sim 2\big(\tfrac{3}{4\pi n}\big)^{3/2}$, the tail after $N$ terms is about $0.47/\sqrt N$, so four correct decimals from the raw sum alone would take tens of millions of terms. Convergent is not the same as fast.
+
+</Narrator>
 
 The second experiment estimates by simulation the probability of an open left–right crossing of the self-dual $(L + 1) \times L$ rectangle for several $p$, showing the curve sharpening around $\frac12$ as $L$ grows — and staying at $\frac12$ at $p = \frac12$, as self-duality requires. Then it measures the largest component of random graphs with $2000$ vertices and average degree $c$, against the branching-process prediction $\beta(c)$.
 

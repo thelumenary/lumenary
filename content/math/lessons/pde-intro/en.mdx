@@ -13,7 +13,7 @@ objectives:
   - Prove Dirichlet's convergence theorem at points of differentiability, explain the Gibbs phenomenon with its constant $\tfrac{2}{\pi}\mathrm{Si}(\pi)$, and recognise when term-by-term differentiation fails
   - Prove d'Alembert's formula for the wave equation on the line
   - Prove uniqueness for the heat and wave equations with the maximum principle and energy methods, and state the mean value property of harmonic functions
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.PdeIntro.heat_mode
   - Lumenary.PdeIntro.heat_mode_boundary
@@ -36,7 +36,7 @@ labels: [ai-drafted]
 
 <Section id="motivation" kind="motivation" title="Three equations that run the world">
 
-Heat a metal rod at its middle and hold its ends in ice water. How does the temperature evolve? Pluck a string on a kora in Bamako, a sitar in Varanasi or a guitar in Seville: why does it sound a note and its overtones, and nothing in between? Dip a bent wire loop into soapy water: what shape does the film take? Each question is answered by a **partial differential equation** (PDE) — an equation linking the rates of change of a function of several variables:
+A metal rod starts out warm in the middle while its ends are held in ice water. How does the temperature evolve? Pluck a string on a kora in Bamako, a sitar in Varanasi or a guitar in Seville: why does it sound a note and its overtones, and nothing in between? Dip a bent wire loop into soapy water: what shape does the film take? Each question is answered by a **partial differential equation** (PDE) — an equation linking the rates of change of a function of several variables:
 
 $$
 u_t = k\,u_{xx} \;\;\text{(heat)}, \qquad u_{tt} = c^2 u_{xx} \;\;\text{(wave)}, \qquad u_{xx} + u_{yy} = 0 \;\;\text{(Laplace)}.
@@ -158,6 +158,12 @@ We solve the heat equation on $[0, \pi]$ with $u(t, 0) = u(t, \pi) = 0$ and $u(0
 **Step 1: separated solutions.** Look for $u = T(t)X(x)$. Then $T'X = kTX''$, so $\frac{T'}{kT} = \frac{X''}{X}$ wherever these are defined. The left side depends only on $t$ and the right only on $x$, so both equal a constant $-\lambda$. The problem $X'' = -\lambda X$ with $X(0) = X(\pi) = 0$ has a non-zero solution only when $\lambda = n^2$, $n = 1, 2, \dots$, with $X = \sin nx$. (For $\lambda \le 0$ the solutions are $A + Bx$ or combinations of $e^{\pm\sqrt{-\lambda}x}$, and the boundary conditions force them to vanish; for $\lambda > 0$, $X = A\cos\sqrt\lambda x + B\sin\sqrt\lambda x$, and $X(0) = 0$, $X(\pi) = 0$ force $A = 0$ and $\sqrt\lambda \in \Z$.) Then $T = e^{-kn^2t}$.
 
 **Step 2: superposition.** Formally, $u(t, x) = \sum_{n \ge 1} b_n e^{-kn^2t}\sin nx$ with $b_n$ the sine coefficients of $\varphi$, so that $u(0, x) = \varphi(x)$.
+
+<Narrator who="chloe">
+
+Why should every initial profile be a sum of separated solutions? Integrating by parts twice gives $\int_0^\pi (-X'')\,Y = \int_0^\pi X\,(-Y'')$ whenever $X$ and $Y$ vanish at both ends, so $-d^2/dx^2$ with these boundary conditions is a *symmetric* operator, and the $\sin nx$ are its eigenfunctions. Like the eigenvectors of a symmetric matrix, they are orthogonal and — this is the hard part, settled in the next section — complete. Separation of variables is diagonalisation in infinite dimensions.
+
+</Narrator>
 
 <Theorem name="Theorem 1 (the series solves the heat equation)">
 
@@ -389,6 +395,12 @@ Orthogonality of the sine modes, from an explicit antiderivative and the second 
 
 A discrete analogue of the maximum principle (Theorem 6): the explicit finite-difference scheme, its convex-combination property when $r = k\,\Delta t/\Delta x^2 \le \frac12$, the resulting stability for all time, and the explosion of the sawtooth mode when $r = 1$. These are the facts behind the computation section.
 
+<Narrator who="gideon">
+
+Mathlib's `deriv f t` is defined to be $0$ wherever $f$ is not differentiable, so an equation written only with `deriv` does not assert that $u$ is differentiable at all. For the explicit modes this is harmless, since the proof of `heat_mode` establishes `HasDerivAt` facts first. But as a *definition* of "solves the heat equation" it would be too weak: $u(t, x) = W(x)$, with $W$ Weierstrass's nowhere-differentiable function, makes both sides $0$ everywhere. A careful formal definition adds differentiability hypotheses or is stated with `HasDerivAt`.
+
+</Narrator>
+
 <Lean decl="Lumenary.PdeIntro.heatStep" />
 
 <Lean decl="Lumenary.PdeIntro.heatStep_bounded" />
@@ -424,6 +436,12 @@ Notice that $S_n(0) = 0$ for every $n$, the average of the one-sided limits $\pm
 The second program solves the heat equation twice: by the Fourier sine series of the third example, and by the **explicit finite-difference scheme**, which replaces $u_t$ and $u_{xx}$ by difference quotients on a grid. With $r = \Delta t/\Delta x^2 \le \frac12$ every new value is a weighted average of old ones, and the scheme obeys a discrete maximum principle — proved in Lean above. With $r = 0.6$ the grid's most oscillatory mode is multiplied by about $1 - 4r = -1.4$ per step, and the computation explodes.
 
 <Python id="pde_intro_heat_scheme" />
+
+<Narrator who="margaret">
+
+The threshold can be predicted before running anything. One step of the scheme multiplies the grid mode $\sin(mx)$ by $1 - 4r\sin^2(m\,\Delta x/2)$, and these factors all lie in $[-1, 1]$, on every grid, exactly when $r \le \frac12$. At $r = 0.6$ the smooth initial profile has only a tiny component in the most oscillatory modes, but each step multiplies it by about $-1.4$, so the error has reached $5.5$ by $t = 0.5$ and grows without limit after that.
+
+</Narrator>
 
 With $r = 0.4$ fixed, halving $\Delta x$ divides the error by about $4$: the scheme is second-order accurate in space. The stability condition $r \le \frac12$ is severe — halving $\Delta x$ forces four times as many time steps. That is why implicit schemes, which have no such restriction, are used in practice, as discussed in <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink>.
 

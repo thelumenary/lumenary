@@ -13,7 +13,7 @@ objectives:
   - Model-check finite transition systems against CTL formulas by fixed-point iteration, and explain the cost of the labelling algorithm
   - Prove type soundness by progress and preservation, and explain what it does and does not guarantee
   - Explain what a verification result is relative to — its specification, semantics and trusted base — and why Rice's theorem rules out full automation
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.FormalMethods.Com
   - Lumenary.FormalMethods.BigStep
@@ -202,6 +202,12 @@ The program has disappeared from three **verification conditions**: $a \ge 0 \we
 <Example title="A too-weak invariant">
 
 With $I' \equiv a = qb + r \wedge b \gt 0$ the first two verification conditions still hold, but the exit condition $I' \wedge b \gt r \Rightarrow r \ge 0$ fails (take $r = -1$, $b = 1$, $q = -3$, $a = -4$). This refutes the *proof attempt*, not the program: invariants must be strong enough to be inductive *and* to imply the goal. Finding them is where human insight (or a clever algorithm) enters.
+
+<Narrator who="chloe">
+
+Notice where the missing conjunct comes from and why it survives. The exit condition needs $r \ge 0$, so we add it; it is preserved only because the loop guard $b \le r$ guarantees $r - b \ge 0$. Strengthening an invariant is a negotiation between two demands, strong enough to imply the goal and weak enough to be preserved, exactly as when you strengthen an induction hypothesis.
+
+</Narrator>
 
 </Example>
 
@@ -412,6 +418,12 @@ Termination is proved separately from the variant $r$, by strong induction (Theo
 
 <Lean decl="Lumenary.FormalMethods.div_terminates" />
 
+<Narrator who="gideon">
+
+Read `div_correct` as the partial-correctness statement it is: on its own it would also be satisfied by a version of the program that loops forever, as `loopForever_hoare` below makes vivid. Only `div_correct` and `div_terminates` together give Theorem 3, and a verification report that cites only the first has proved less than it seems.
+
+</Narrator>
+
 The diverging loop and the vacuously valid triple $\{\top\}\,\Omega\,\{\bot\}$:
 
 <Lean decl="Lumenary.FormalMethods.loopForever_diverges" />
@@ -451,6 +463,12 @@ Finally, Rice's theorem (Theorem 8), applied from Mathlib's computability librar
 The first experiment is a small explicit-state model checker. It explores every interleaving of two processes for three mutual-exclusion protocols by breadth-first search, returns a *shortest* counterexample when mutual exclusion fails, finds the deadlock of the second protocol, and computes $\mathsf{EF}\,\mathit{crit}_0$ by the fixed-point iteration of Theorem 5 — the printed sizes are the iterates $Z_1 \subseteq Z_2 \subseteq \cdots$.
 
 <Python id="formal_methods_model_checking" />
+
+<Narrator who="margaret">
+
+Read the Peterson iterates as a breadth-first search run backwards: $Z_{k+1}$ is the set of states that can reach $\mathit{crit}_0$ within $k$ steps. The sizes stabilise at $34$, every reachable state, which is why $\mathsf{AG}\,\mathsf{EF}\,\mathit{crit}_0$ holds; and since $Z_6$ still misses one state while $Z_7$ has them all, the farthest state needs exactly six steps.
+
+</Narrator>
 
 This is exhaustive evidence about each finite *model*. The model is interleaving semantics with atomic reads and writes; on real multiprocessors with weak memory, Peterson's algorithm needs memory fences.
 

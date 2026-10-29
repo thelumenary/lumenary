@@ -14,7 +14,7 @@ objectives:
   - Explain type I and type II errors and power, and why multiple testing needs a correction such as Bonferroni's
   - Fit linear regression by least squares through the normal equations $X^\top X\beta = X^\top y$, and check its assumptions with residuals
   - Compare frequentist and Bayesian inference through the beta–binomial model
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.Statistics.sampleMean
   - Lumenary.Statistics.sum_eq_card_mul_mean
@@ -40,7 +40,7 @@ labels: [ai-drafted]
 
 <Section id="motivation" kind="motivation" title="From data back to the world">
 
-In a trial of a malaria vaccine in West Africa, some children receive the vaccine and some a control injection, and the numbers of malaria cases in the two groups are counted. The counts are data; the question is about the world: *how well does the vaccine protect children in general?* A soil scientist in Punjab measures wheat yields on forty plots treated with a new fertiliser. A survey team in Nairobi asks four hundred households whether they use mobile money. In each case we see a finite, random sample and want to say something about an unknown quantity — a protection rate, a mean yield, a population proportion — **with an honest statement of how uncertain we are**.
+In a trial of a malaria vaccine in West Africa, some children receive the vaccine and some a control injection, and the numbers of malaria cases in the two groups are counted. The counts are data; the question is about the world: *how well does the vaccine protect children in general?* A soil scientist in Punjab measures wheat yields on forty plots treated with a new fertiliser. A survey team in Nairobi asks four hundred households whether they use mobile money, and Statistics Canada estimates the national unemployment rate each month from a survey of tens of thousands of households. In each case we see a finite, random sample and want to say something about an unknown quantity — a protection rate, a mean yield, a population proportion — **with an honest statement of how uncertain we are**.
 
 <TopicLink id="math.prob.probability-theory">Probability theory</TopicLink> goes forwards: given the model (a coin with $P(\text{heads}) = p$), what data should we expect? **Statistical inference goes backwards**: given the data, what can we say about $p$? It does so by imagining the study repeated: an estimate computed from the data is itself a random variable, and its distribution across hypothetical repetitions — its **sampling distribution** — tells us how far to trust it.
 
@@ -276,6 +276,12 @@ It suffices to show that $F(T)$ is uniform on $[0, 1]$, since then $P(1 - F(T) \
 
 </Proof>
 
+<Narrator who="gideon">
+
+The continuity of $F$ is essential, and the die example above does not have it: the number of sixes is discrete, so its p-value takes only finitely many values, and $P_{H_0}(P \le \alpha) = \alpha$ fails for most $\alpha$. What survives is the inequality $P_{H_0}(P \le \alpha) \le \alpha$ for every $\alpha$: exact binomial tests are valid but conservative, their true type I error strictly below the nominal level for most choices of $\alpha$.
+
+</Narrator>
+
 The **power** of a test depends on the true effect, the noise and the sample size. For a one-sided $z$-test of $H_0 : \mu = 0$ at level $0.05$ with known $\sigma$, we reject when $\sqrt n\,\bar X/\sigma > 1.645$; if the true mean is $\mu = \delta\sigma$, the power is $1 - \Phi(1.645 - \delta\sqrt n)$. For an effect of half a standard deviation ($\delta = 0.5$), the power is $0.47$ with $n = 10$, $0.80$ with $n = 25$ and $0.95$ with $n = 44$.
 
 <FunctionPlot
@@ -342,6 +348,12 @@ $$
 *Only if.* If $\hat\beta$ is a minimiser, let $g = X^\top r$ and $t \in \R$. The same expansion gives $\|y - X(\hat\beta + tg)\|^2 = \|r\|^2 - 2t\|g\|^2 + t^2\|Xg\|^2$, which must be at least $\|r\|^2$ for every $t$. If $g \ne 0$, small $t > 0$ make $-2t\|g\|^2 + t^2\|Xg\|^2$ negative; so $g = 0$. *Uniqueness.* If $X^\top Xv = 0$ then $\|Xv\|^2 = v^\top X^\top Xv = 0$, so $Xv = 0$, and $v = 0$ when the columns are independent; thus $X^\top X$ is invertible.
 
 </Proof>
+
+<Narrator who="chloe">
+
+Strip away the symbols and the *if* direction is Pythagoras: once the residual $r$ is perpendicular to every column of $X$, it is perpendicular to every vector $Xw$ of the column space, so $\|r + Xw\|^2 = \|r\|^2 + \|Xw\|^2$. The best approximation from a subspace is the one whose error is orthogonal to the subspace — the same principle produces Fourier coefficients and conditional expectations.
+
+</Narrator>
 
 The fitted values $\hat y = X\hat\beta$ are the **orthogonal projection** of $y$ onto the column space of $X$ — the viewpoints section takes this picture further. For a straight line $y = \beta_0 + \beta_1 x$, the two normal equations $\sum_i(y_i - \beta_0 - \beta_1x_i) = 0$ and $\sum_i x_i(y_i - \beta_0 - \beta_1x_i) = 0$ give
 
@@ -450,6 +462,12 @@ Consistency of the sample mean (Mathlib's Chebyshev inequality applied to $\bar 
 Do confidence intervals deliver what they promise? First, the exact coverage of the Wald and Wilson intervals for a proportion, computed by summing binomial probabilities; then a simulation comparing the $z$-interval, the $t$-interval and the naive interval that plugs the sample standard deviation into the $z$-formula.
 
 <Python id="statistics_interval_coverage" />
+
+<Narrator who="margaret">
+
+The row $n = 10$, $p = 0.05$ deserves a second look: the Wald interval covers only $40\%$ of the time. The reason is visible by hand: with probability $0.95^{10} \approx 0.60$ there are no successes at all, then $\hat p = 0$, the estimated standard error is $0$, and the "interval" collapses to the single point $\{0\}$, which never contains $p$.
+
+</Narrator>
 
 Next, multiple testing by simulation: null p-values are uniform, twenty uncorrected tests produce a false positive about $64\%$ of the time, Bonferroni restores control, and Benjamini–Hochberg finds more real effects at the price of a controlled fraction of false ones.
 

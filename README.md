@@ -12,11 +12,11 @@ Every topic in the curriculum now has a **first-draft lesson**. None has yet bee
 | Area | Status |
 | --- | --- |
 | Website | Static Next.js 16 site at [lumenary.academy](https://lumenary.academy), 6 demo interface locales (en, es, ar RTL, hi, zh-Hans, sw), light/dark themes, works without accounts |
-| Lessons | **200 lessons**, one for every topic in the knowledge graph, from K–2 counting and shapes to graduate topics and research directions; each with exercises, a Lean module and tested Python experiments |
+| Lessons | **201 lessons**, one for every topic in the knowledge graph, from K–2 counting and shapes to graduate topics and research directions; each with exercises, a Lean module and tested Python experiments |
 | Viewpoints | From early undergraduate level every lesson shows its subject through several mathematicians' eyes — topologist, geometer, analyst, algebraist, number theorist, probabilist, logician, physicist — as well as through set theory and category theory |
 | Wonder Trails | 19 optional trails, toward algebraic structures, modular arithmetic, quotients, foundations, countability, category theory, topology, curvature, infinite sums, primes, random walks, computability and planetary orbits |
 | Interactive explorations | About 30 generic widgets (place value, fractions, area, data, functions and calculus, vector fields, the complex plane, matrices, graphs, truth tables, probability, polyhedra and the Euler characteristic, curved triangles, surface gluing, knots, winding numbers, curvature) plus commutative diagrams; documented in `docs/widgets/` |
-| Knowledge graph | 200 topics across 8 levels and 10 subjects, required prerequisites (acyclic, checked automatically), optional discovery edges, 12 learning pathways (including geometry and topology, analysis and dynamics, algebra and number theory, mathematical physics) |
+| Knowledge graph | 201 topics across 8 levels and 10 subjects, required prerequisites (acyclic, checked automatically), optional discovery edges, 12 learning pathways (including geometry and topology, analysis and dynamics, algebra and number theory, mathematical physics) |
 | Formal library | Lean 4.35.0 with Mathlib `v4.35.0` (K–8 modules use core Lean only): 3,666 declarations in 202 modules, none depending on `sorry`, each recorded with its axioms, provenance (proved here / applies a library theorem / definition) and foundation; 349 Lean exercises |
 | Computation | 368 Python experiments that run in the browser (Pyodide, sandboxed Web Worker), tested by 5,993 pytest tests |
 | Practice | Exercises with progressive hints, targeted feedback, worked solutions and in-browser Python tests; no scores, streaks or rankings |
@@ -27,7 +27,7 @@ The figures on the website come from generated reports (`content/verification/*.
 
 ### Honesty notes
 
-- **No content has been reviewed by a human mathematician, educator or translator.** All 200 lessons were drafted with AI assistance and are labelled *AI-drafted · awaiting human review*. At graduate and research level many central theorems are stated with references or proved in outline; each lesson says which.
+- **No content has been reviewed by a human mathematician, educator or translator.** All 201 lessons were drafted with AI assistance and are labelled *AI-drafted · awaiting human review*. At graduate and research level many central theorems are stated with references or proved in outline; each lesson says which.
 - A lesson shows **Formally verified** only if every Lean declaration it cites is in the latest Lean build report, compiled, and uses no `sorry`. Formal sections often formalise a key lemma, special case or definition rather than the headline theorem, and each says precisely what is and is not formalised.
 - A lesson shows **Computationally tested** only if its experiments ran and passed their tests. Experiments label their evidence (exact, numerical, statistical, …); evidence is never presented as proof.
 - Non-English interface strings and the translated first lesson are **machine-generated drafts**, labelled as such. Other lessons exist in English only; in other locales they are linked in English and marked "EN". Six demo locales are not global coverage.

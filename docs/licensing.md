@@ -10,7 +10,7 @@
 ## Notes
 
 - **Mixed files.** MDX lessons contain both prose (CC BY-SA 4.0) and small code snippets. Code embedded in lessons is offered under both licences, so it can be reused as software.
-- **Third-party fonts** (Fraunces, Inter, Source Serif 4, JetBrains Mono, Noto) are under the SIL Open Font License and are self-hosted by `next/font` at build time.
+- **Third-party fonts** (Inter, Source Serif 4, JetBrains Mono, Noto) are under the SIL Open Font License and are self-hosted by `next/font` at build time.
 - **KaTeX** (MIT), **Shiki** (MIT), **lucide** icons (ISC), **Next.js/React** (MIT) and **Tailwind CSS** (MIT) are all compatible with Apache-2.0 distribution.
 - **Quotations** from scripture in optional reflections are short and attributed.
 - This is a proposal. Before the project accepts outside contributions it should adopt a contributor agreement or a Developer Certificate of Origin, and have the dual-licensing of embedded snippets reviewed by someone qualified.

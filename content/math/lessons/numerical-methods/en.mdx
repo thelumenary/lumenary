@@ -13,7 +13,7 @@ objectives:
   - Define the order of convergence of an iterative method and estimate it from computed errors
   - Derive the error of polynomial interpolation and of difference quotients, and balance truncation error against rounding error
   - Implement the composite trapezoidal and Simpson rules and prove their error bounds $O(h^2)$ and $O(h^4)$ for smooth integrands
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.NumericalMethods.IsBinary64
   - Lumenary.NumericalMethods.one_add_eps_is_binary64
@@ -162,6 +162,12 @@ The length is halved at each step, and the sign condition is preserved by constr
 
 </Proof>
 
+<Narrator who="gideon">
+
+Theorem 3 is a statement about exact real arithmetic. In binary64, once $a_n$ and $b_n$ are adjacent floating-point numbers the computed midpoint rounds to one of them, and the interval stops shrinking. Near a root at $1000$ adjacent numbers are about $10^{-13}$ apart, so a loop that waits for the width to fall below $10^{-20}$ never ends; a careful implementation stops when the midpoint equals an endpoint.
+
+</Narrator>
+
 Bisection is slow — about $3.3$ steps per decimal digit — but it needs only continuity and a sign change, and it cannot fail. Its proof rests on the completeness of $\R$: the nested intervals shrink to a point, which is a root.
 
 **Newton's method.** Replace $f$ near the current guess $x_n$ by its tangent line, and take the tangent's zero as the next guess:
@@ -203,6 +209,12 @@ $$
 Hence $|x_{n+1} - r| \le M|x_n - r|^2 \le M\delta\,|x_n - r| \le \tfrac12|x_n - r|$. By induction every iterate stays within $\delta$ of $r$, $|x_n - r| \le \delta/2^n \to 0$, and the quadratic bound holds at every step. Finally $\xi_n \to r$ and $x_n \to r$, so by continuity the ratio tends to $f''(r)/(2f'(r))$.
 
 </Proof>
+
+<Narrator who="chloe">
+
+Why is the error *squared*? The tangent line agrees with $f$ to first order at $x_n$, so the only thing it gets wrong is the curvature term $\tfrac12 f''(\xi_n)(r - x_n)^2$ — and that is exactly the error identity in the proof. Once $M|x_n - r|$ is small, each step roughly doubles the number of correct digits.
+
+</Narrator>
 
 The hypotheses are all needed, and Newton's method can fail badly when they are not met or when the start is too far away.
 
@@ -386,6 +398,12 @@ The second solves $x^2 = 2$ with $50$-digit decimal arithmetic, so rounding does
 The third shows the V-shaped total error of difference quotients, and how the smoothness hypotheses govern the convergence of the trapezoidal and Simpson rules.
 
 <Python id="numerical_methods_differentiation" />
+
+<Narrator who="margaret">
+
+Two lines of the last tables deserve a second look. For the periodic function $e^{\cos x}$ the trapezoidal error falls from $10^{-6}$ to $10^{-15}$ when $n$ merely doubles from $8$ to $16$ — far faster than $O(h^2)$: over a full period the correction terms of the Euler–Maclaurin formula cancel, and for analytic periodic integrands the error decays geometrically. For $\sqrt x$, whose derivatives blow up at $0$, both rules are stuck at order $1.5$: Simpson's $h^4$ needs a bounded fourth derivative.
+
+</Narrator>
 
 </Section>
 

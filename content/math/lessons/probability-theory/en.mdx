@@ -13,7 +13,7 @@ objectives:
   - Work with joint distributions, independence and covariance, and know exactly when $E[XY] = E[X]E[Y]$ and $\operatorname{Var}(X + Y) = \operatorname{Var} X + \operatorname{Var} Y$
   - Prove Markov's and Chebyshev's inequalities and the weak law of large numbers
   - State the central limit theorem precisely, use the normal approximation, and explain what the theorem does not say
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.ProbabilityTheory.expectation_sum_indicators
   - Lumenary.ProbabilityTheory.perm_fixed_points_average
@@ -41,7 +41,7 @@ labels: [ai-drafted]
 
 <Section id="motivation" kind="motivation" title="Unpredictable outcomes, predictable averages">
 
-A seed cooperative in western Kenya tests a new maize variety: each seed germinates with probability about $0.9$, and nobody can say which seeds will fail. Yet of $10\,000$ seeds, the cooperative can promise that between roughly $8\,940$ and $9\,060$ will germinate, and be right about $95$ times in $100$. A call centre in Manila cannot predict when the next call will come, but it can staff its desks because the *number* of calls per minute follows a stable pattern. A detector in Chile's Atacama desert counts cosmic-ray muons arriving at random moments; the counts per hour cluster tightly around their average.
+A seed cooperative in western Kenya tests a new maize variety: each seed germinates with probability about $0.9$, and nobody can say which seeds will fail. Yet of $10\,000$ seeds, the cooperative can promise that between roughly $8\,940$ and $9\,060$ will germinate, and be right about $95$ times in $100$. A call centre in Manila cannot predict when the next call will come, but it can staff its desks because the *number* of calls per minute follows a stable pattern. An airline on the Tokyo–Seoul route cannot know which booked passengers will fail to turn up, yet it can predict how many will, closely enough to sell a few more seats than the plane holds. A detector in Chile's Atacama desert counts cosmic-ray muons arriving at random moments; the counts per hour cluster tightly around their average.
 
 Individual outcomes are unpredictable; **aggregates are predictable, within quantifiable limits**. Probability theory explains this. It answers four questions about a random quantity:
 
@@ -369,6 +369,12 @@ By linearity, $E[\bar X_n] = \frac1n \cdot n\mu = \mu$. By the variance-of-a-sum
 
 </Proof>
 
+<Narrator who="chloe">
+
+Notice how little the proof uses: not full independence, not identical distributions — only a common mean, a common finite variance and vanishing covariances, so that $\operatorname{Var}\bar X_n = \sigma^2/n$. The whole law rests on one idea: uncorrelated errors partly cancel, so $n$ of them add up to a typical size $\sigma\sqrt n$ rather than $\sigma n$, and dividing by $n$ wins.
+
+</Narrator>
+
 <ChanceLab experiment="coin" trials={2000} title="Does the coin remember?" subtitle="The running proportion of heads wanders into the band 1/2 ± 1/√n and stays near 1/2. Run it several times: early on, the paths differ a lot." />
 
 The law of large numbers works by **swamping, not compensation**. After ten heads in a row the coin is not "due" a tail; the next thousand flips simply dilute the early surplus. The *number* of excess heads $S_n - n/2$ typically grows like $\sqrt n$; only the *proportion* settles.
@@ -445,6 +451,12 @@ The theorem also explains why the normal distribution is everywhere: a measureme
 
 Mathlib builds probability on measure theory: a probability space is a measure `μ` with `IsProbabilityMeasure μ`, a random variable is a function `X : Ω → ℝ`, its expectation is the integral `∫ ω, X ω ∂μ` (written `μ[X]`), its variance is `Var[X; μ]`, and `X ⟂ᵢ[μ] Y` says that `X` and `Y` are independent. "Has finite variance" is `MemLp X 2 μ`. Mathlib's library has grown to include the strong law of large numbers and, recently, the central limit theorem, so this lesson can connect its whole arc to formal proofs.
 
+<Narrator who="gideon">
+
+One convention to know before reading these statements: in Mathlib the integral of a function that is not integrable is *defined* to be $0$, and `Var[X; μ]` is likewise $0$ when the variance is infinite. So for a Cauchy variable `μ[X]` is $0$, not "undefined". That is why the theorems carry explicit hypotheses such as `Integrable X μ` or `MemLp X 2 μ`: they are the formal counterparts of "the sum converges absolutely" and "the variance is finite", and dropping them would make some statements false.
+
+</Narrator>
+
 **Linearity and indicators.** The expected number of events that occur is the sum of their probabilities, with no independence assumed; and the "fixed points of a shuffle" example, proved through Burnside's lemma (the total number of fixed points of a group action is the number of orbits times the size of the group — here there is one orbit):
 
 <Lean decl="Lumenary.ProbabilityTheory.expectation_sum_indicators" />
@@ -512,6 +524,12 @@ Next, how good is Chebyshev's inequality? For fair coins we compute the exact ta
 Finally, how fast does the central limit theorem take hold? The exact distribution of a sum of $n$ dice or of $n$ lopsided coins is computed by repeated convolution, and its largest gap from the normal distribution function is compared with the Berry–Esseen bound.
 
 <Python id="probability_theory_clt_convergence" />
+
+<Narrator who="margaret">
+
+The column to watch is $\sqrt n\,D_n$: it settles near $0.117$ for the die and near $0.84$ for the lopsided coin. Since $D_n \approx c/\sqrt n$, matching the die's accuracy at $n = 16$ ($D_{16} \approx 0.029$) would take the coin about $(0.84/0.029)^2 \approx 800$ tosses — a factor of fifty, the price of skewness.
+
+</Narrator>
 
 The first experiment is **exhaustive** for finitely many $n$ and exact; the second computes **exact** probabilities and floating-point bounds; the third is **numerical** (exact distributions, floating-point arithmetic). None of them proves a theorem for all $n$ — that is the job of the proofs above and of the Lean module.
 

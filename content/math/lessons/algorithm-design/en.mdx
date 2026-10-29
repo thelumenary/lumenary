@@ -13,7 +13,7 @@ objectives:
   - Prove the correctness of greedy algorithms by exchange arguments — Kruskal's algorithm via the cut property, and Dijkstra's algorithm when all edge weights are non-negative — and recognise when greedy choice fails
   - Design dynamic-programming algorithms from an optimal-substructure recurrence, as for the longest common subsequence, and analyse their cost
   - Use breadth-first search for unweighted distances and choose an appropriate algorithm for a graph problem
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.AlgorithmDesign.mergeSort_perm
   - Lumenary.AlgorithmDesign.mergeSort_sorted
@@ -44,7 +44,7 @@ labels: [ai-drafted]
 <Section id="motivation" kind="motivation" title="Four problems, four ideas">
 
 - A national statistics office in Jakarta must sort the records of 280 million people by an identity number. Comparing every pair would take about $4 \times 10^{16}$ comparisons; a good algorithm needs about $8 \times 10^{9}$.
-- A rural electrification agency in Malawi must connect twelve villages to a grid with as little cable as possible. A complete graph on twelve villages has $12^{10} \approx 6 \times 10^{10}$ spanning trees; we cannot try them all.
+- A rural electrification agency in Malawi must connect twelve villages to a grid with as little cable as possible. A complete graph on twelve villages has $12^{10} \approx 6 \times 10^{10}$ spanning trees; we cannot try them all. (It is the problem Otakar Borůvka solved in 1926 for the electricity network of southern Moravia, in today's Czech Republic.)
 - An ambulance dispatcher in São Paulo needs the fastest route from the station to every address in the city, recomputed whenever traffic changes.
 - A biologist in Nairobi compares a gene from a cassava virus with a gene from a related strain, looking for the longest stretch of shared structure — a **longest common subsequence** of two strings of thousands of letters.
 
@@ -157,6 +157,12 @@ For the estimate, at least $n/2$ of the factors of $n! = 1 \cdot 2 \cdots n$ are
 
 </Proof>
 
+<Narrator who="chloe">
+
+The proof never asks *how* the algorithm chooses its comparisons — that is its strength. It is an information argument: each comparison answers one yes-or-no question, so $h$ comparisons can distinguish at most $2^h$ situations, while the algorithm must tell apart all $n!$ orderings. Sorting needs about $\log_2 n!$ bits of information, and comparisons deliver at most one bit each.
+
+</Narrator>
+
 The two bounds nearly meet: for $n = 5$ the lower bound is $\lceil \log_2 120 \rceil = 7$ and mergesort's worst case is $8$ (the first experiment below computes both exactly). Stirling's formula gives $\log_2 n! = n\log_2 n - n\log_2 e + O(\log n)$, while mergesort's worst case is $n\log_2 n - n + 1$ when $n$ is a power of two: mergesort is within about $0.44n$ comparisons of optimal.
 
 **More divide and conquer.** Binary search satisfies $T(n) = T(n/2) + 1$, so $T(n) = O(\log n)$. Karatsuba's method multiplies two $n$-digit numbers with three half-size multiplications instead of four, using $(a + b)(c + d) - ac - bd = ad + bc$; its recurrence $T(n) = 3T(n/2) + O(n)$ gives $O(n^{\log_2 3}) \approx O(n^{1.585})$. The **master theorem** in <TopicLink id="math.discrete.recurrences-generating-functions">recurrences and generating functions</TopicLink> solves such recurrences in general.
@@ -208,6 +214,12 @@ If $e \in T$, then $F + e \subseteq T$ and we are done. Otherwise $T + e$ contai
 At the end, $F$ is a spanning tree: it is acyclic, and if it had two components, some edge of the connected graph $G$ would join them, and that edge would have been added when it was processed. A spanning tree contained in an MST $T$ has as many edges as $T$, so it *is* $T$.
 
 </Proof>
+
+<Narrator who="gideon">
+
+Notice that the invariant says *some* minimum spanning tree, not *the* one. With equal weights there can be several, and when $w(e') = w(e)$ the exchange step really does move from one MST to another; an invariant naming a fixed tree $T$ would be false. With pairwise distinct weights the MST is unique, and the same exchange argument proves it.
+
+</Narrator>
 
 The argument contains the general **cut property**: for any cut, a lightest edge crossing it belongs to some MST. With a union–find data structure to test "same component?", Kruskal runs in $O(|E| \log |E|)$ time, dominated by sorting.
 
@@ -261,7 +273,7 @@ Here $\delta(s, x) + w(x, y) = \delta(s, y)$ because the part of $P$ up to $y$ i
 
 With negative weights (but no cycle of negative total weight) the **Bellman–Ford** algorithm is correct: relax every edge $|V| - 1$ times, in $O(|V|\,|E|)$ time. Adding a constant to every weight to make them non-negative does **not** work: it penalises paths with many edges, so it can change which path is shortest.
 
-**When greedy fails.** Paying an amount with as few coins as possible, the greedy rule "use the largest coin that fits" is optimal for coins $1, 5, 10, 25$ — but with coins $1, 3, 4$ it pays $6$ as $4 + 1 + 1$, while $3 + 3$ uses two coins. Nothing in the *form* of a greedy algorithm tells you whether it is correct; only a proof does. (For change-making, dynamic programming always works: the fewest coins for amount $x$ is $1 + \min_c (\text{fewest for } x - c)$.)
+**When greedy fails.** Paying an amount with as few coins as possible, the greedy rule "use the largest coin that fits" is optimal for the United States coins of $1, 5, 10$ and $25$ cents — but with coins $1, 3, 4$ it pays $6$ as $4 + 1 + 1$, while $3 + 3$ uses two coins. Nothing in the *form* of a greedy algorithm tells you whether it is correct; only a proof does. (For change-making, dynamic programming always works: the fewest coins for amount $x$ is $1 + \min_c (\text{fewest for } x - c)$.)
 
 </Section>
 
@@ -372,6 +384,12 @@ The first experiment counts comparisons. For $n \le 7$ it tries all $n!$ inputs,
 The second experiment tests the greedy algorithms against brute force: Kruskal against every spanning tree, Dijkstra against Bellman–Ford (with and without negative weights), and greedy change-making against dynamic programming for every coin system $\{1, a, b\}$ with $b \le 12$.
 
 <Python id="algorithm_design_greedy" />
+
+<Narrator who="margaret">
+
+Greed is right for only $27$ of the $55$ coin systems $\{1, a, b\}$ — about half. And why may a finite search settle each system for *all* amounts? Because of a theorem of Kozen and Zaks (1994): if the greedy rule fails for coins $1 < c_2 < \cdots < c_m$, it already fails for some amount below $c_{m-1} + c_m$. For $\{1, 3, 4\}$ that means below $7$, and indeed $6$ is the culprit.
+
+</Narrator>
 
 The third fills the LCS table for the example above and measures how much work the table saves compared with the plain recursion.
 

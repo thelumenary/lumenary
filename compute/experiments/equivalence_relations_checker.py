@@ -81,7 +81,7 @@ def share_a_letter(u, v):
 
 
 COUNTRIES = ["Chad", "Peru", "Iran", "Fiji", "Ghana", "Nepal", "Kenya",
-             "Malta", "Bhutan", "Mexico"]
+             "Malta", "Japan", "Bhutan", "Mexico", "Canada"]
 
 RELATIONS = [
     ("same remainder mod 3", list(range(12)), lambda a, b: a % 3 == b % 3),
@@ -106,8 +106,13 @@ def report(name, elements, rel):
             lines.append(f"   fails {prop}: ({shown})")
     if all(cx is None for _, cx in checks):
         blocks = equivalence_classes(elements, rel)
-        shown = " ".join("{" + ",".join(str(x) for x in b) + "}" for b in blocks)
-        lines.append(f"   {len(blocks)} classes: {shown}")
+        shown = ["{" + ",".join(str(x) for x in b) + "}" for b in blocks]
+        line = f"   {len(blocks)} classes: {' '.join(shown)}"
+        if len(line) <= 80:
+            lines.append(line)
+        else:  # one class per line, to keep within 80 characters
+            lines.append(f"   {len(blocks)} classes:")
+            lines.extend(f"     {b}" for b in shown)
         lines.append(f"   the classes form a partition: {is_partition(elements, blocks)}")
     return lines
 

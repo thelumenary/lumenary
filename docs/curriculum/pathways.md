@@ -21,7 +21,7 @@ Pathways are ordered selections of milestones through the knowledge graph, defin
 | `cs-formal-methods` | Computer science and formal methods | 18 |
 | `applied-math` | Applied mathematics | 16 |
 | `graduate-prep` | Graduate preparation | 18 |
-| `research-prep` | Research preparation | 13 |
+| `research-prep` | Research preparation | 14 |
 | `geometry-topology` | Geometry and topology | 20 |
 | `analysis-dynamics` | Analysis, PDE and dynamics | 18 |
 | `algebra-number-theory` | Algebra and number theory | 17 |
@@ -221,7 +221,7 @@ Consolidates the foundations most first-year graduate programmes assume (analysi
 
 **Audience:** Graduate students and advanced independent learners preparing to read, write, check and contribute to research mathematics.
 
-Research skills (writing, reading the literature, reproducible computation, experimental mathematics, formalisation and research ethics) together with one illustrative specialisation: from the Yoneda lemma and homological algebra through quivers and path algebras to derived categories and quiver representations. Research directions vary widely, so the specialisation is an example to adapt, and established results are always distinguished from open questions.
+Research skills (writing, reading the literature, reproducible computation, experimental mathematics, formalisation, research ethics and the responsible use of AI) together with one illustrative specialisation: from the Yoneda lemma and homological algebra through quivers and path algebras to derived categories and quiver representations. Research directions vary widely, so the specialisation is an example to adapt, and established results are always distinguished from open questions.
 
 | # | Level | Milestone | Title | Subject |
 |---|---|---|---|---|
@@ -238,6 +238,7 @@ Research skills (writing, reading the literature, reproducible computation, expe
 | 11 | Research | `math.algebra.quiver-representations` | Quiver representations | Algebra |
 | 12 | Research | `math.comp.formalising-published-mathematics` | Formalising published mathematics | Computation |
 | 13 | Research | `math.found.research-ethics` | Research ethics and attribution | Foundations |
+| 14 | Research | `math.comp.ai-assisted-mathematics` | AI-assisted mathematical research | Computation |
 
 ## Geometry and topology (`geometry-topology`)
 

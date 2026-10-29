@@ -28,7 +28,7 @@ Colour is never the only carrier of meaning. Mode badges include a letter and an
 
 | Use | Family |
 | --- | --- |
-| Display headings | Fraunces (optical sizes) |
+| Display headings | Source Serif 4 (its optical-size axis selects the display cut at large sizes) |
 | Interface | Inter |
 | Lesson prose | Source Serif 4, paired with KaTeX's Computer Modern style |
 | Code | JetBrains Mono |
@@ -41,7 +41,7 @@ Mathematics and code are always isolated as left-to-right runs, including inside
 
 - **Section** — a lesson section with its kind label and mode badge, so the lens can highlight it.
 - **Blocks** — Definition (sky), Theorem (ink), Proof (rule with ∎), Example, Misconception (warn), Note, Analogy (dashed gold: "analogy, not a formal construction"), Reflection (collapsed and clearly optional), For grown-ups.
-- **Narrators** — vector portraits of Chloe (terracotta, Human), Margaret (teal, Computational) and Gideon (violet, Formal, a black tomcat with a bow tie). Used sparingly, and never in a way that infantilises advanced material.
+- **Narrators** — vector portraits of Chloe (terracotta, Human), Margaret (teal, Computational) and Gideon (violet, Formal, a black tomcat with a bow tie). They appear at every level, as brief substantive asides that never infantilise advanced material. They are shown by default; the cat button in the header hides them site-wide (`<html data-cats="hidden">` hides every element marked `data-cat`, leaving each aside's role label and text), and the choice is remembered in the browser.
 - **Verified code frames** — Lean frames carry the verification badge, provenance (library or independent), axioms and a link to the web editor. Python frames carry the evidence type and the test status.
 - **Widget frame** — the shared chrome for interactive explorations. Every exploration can be operated with clicks or a keyboard; none requires dragging.
 

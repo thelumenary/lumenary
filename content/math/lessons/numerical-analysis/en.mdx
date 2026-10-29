@@ -12,7 +12,7 @@ objectives:
   - Solve linear systems by LU factorisation with partial pivoting, explain why pivoting is needed and why one should not form $A^{-1}$
   - Solve least-squares problems by QR factorisation, explain why the normal equations square the condition number, and describe the QR algorithm for eigenvalues
   - Prove that Euler's method converges with order 1, state and test the order of Runge–Kutta methods, and analyse absolute stability, stiffness and A-stability
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.NumericalAnalysis.condNum
   - Lumenary.NumericalAnalysis.op_norm_bound
@@ -153,6 +153,12 @@ and for each $A$ there are $b$ and $\delta b$ for which equality holds.
 Subtracting, $A\,\delta x = \delta b$, so $\delta x = A^{-1}\delta b$ and $\|\delta x\| \le \|A^{-1}\|\|\delta b\|$. Also $\|b\| = \|Ax\| \le \|A\|\|x\|$, so $\frac{1}{\|x\|} \le \frac{\|A\|}{\|b\|}$. Multiply the two inequalities. For equality, choose $x$ with $\|Ax\| = \|A\|\|x\|$ and $\delta b$ with $\|A^{-1}\delta b\| = \|A^{-1}\|\|\delta b\|$; both exist because the maximum defining an induced norm is attained.
 
 </Proof>
+
+<Narrator who="chloe">
+
+Why can the worst case actually happen? Because the two inequalities in the proof concern different vectors: one asks where $A$ stretches most, the other where $A^{-1}$ stretches most, and nothing prevents the data and the perturbation from lining up with each. In the 2-norm picture: $b$ along the long axis of the ellipse, $\delta b$ along the short one.
+
+</Narrator>
 
 <Theorem name="Theorem 2 (perturbing the matrix)">
 
@@ -309,6 +315,12 @@ has order 4. *Theorem (stated):* a Runge–Kutta method whose local truncation e
 
 A problem is **stiff** when it contains decay rates far faster than the time scale of interest. The equation $y' = -50(y - \cos t)$ has the smooth solution $y \approx \cos t$ after a transient of length $\approx 0.1$, yet explicit Euler needs $50h < 2$ for ever after. In chemical kinetics or circuit simulation, rates can differ by factors of $10^{10}$, and only implicit methods are practical. Germund Dahlquist (1963) proved the **second Dahlquist barrier**: an A-stable linear multistep method has order at most $2$. Among the A-stable multistep methods of order 2, the trapezoidal rule has the smallest error constant.
 
+<Narrator who="chloe">
+
+A stiff problem is like a cat's afternoon: a sprint lasting a tenth of a second, then hours of slow drifting. Accuracy only asks us to follow the drifting, but an explicit method's step size stays limited by the sprint long after it is over — its stability depends on the fastest rate in the equation, not on how fast the solution is changing now.
+
+</Narrator>
+
 **Smaller is not always better.** Each step makes a rounding error of order $u$, and $N = T/h$ steps accumulate roughly $uT/h$ of it. So the total error behaves like $Ch^p + uT/h$, which is smallest at a moderate $h$ and *grows* as $h \to 0$. The same trade-off appears in a single difference quotient: $(f(x + h) - f(x))/h$ has truncation error $\approx h|f''|/2$ and rounding error $\approx 2u|f|/h$, optimal near $h \approx \sqrt u \approx 10^{-8}$.
 
 </Section>
@@ -351,6 +363,12 @@ Theorem 6, Euler's method has order 1, in three steps that follow the human proo
 
 <Lean decl="Lumenary.NumericalAnalysis.euler_global_error" />
 
+<Narrator who="gideon">
+
+Read `euler_global_error` closely: it mentions no differential equation at all. It is a statement about any sequence $e$ with $e_0 = 0$ obeying the recursion `hstep` — the *stability* half of the proof. The *consistency* half, where Taylor's theorem and the hypothesis $|y''| \le M$ produce that recursion with $C = M/2$, stays in the human proof; that is what "given the one-step recursion" means below.
+
+</Narrator>
+
 Stability on the test equation: explicit Euler multiplies by $1 + h\lambda$ and is stable exactly when $h|\lambda| < 2$, while backward Euler contracts for every step size:
 
 <Lean decl="Lumenary.NumericalAnalysis.explicit_euler_iterate" />
@@ -374,6 +392,12 @@ The second program measures the order of three one-step methods by halving $h$ �
 <Python id="numerical_analysis_ode_order" />
 
 These are numerical experiments on single examples. They illustrate the theorems, and the agreement with the predicted rates is good evidence that the code is right, but they prove nothing about other matrices or equations.
+
+<Narrator who="margaret">
+
+The "order" columns are $\log_2$ of successive error ratios: if the error is $Ch^p$, halving $h$ divides it by $2^p$, whatever $C$ is. Without an exact solution you can still measure $p$ from three runs, since $(y_h - y_{h/2})/(y_{h/2} - y_{h/4}) \to 2^p$ — the unknown constant and the unknown answer both cancel. And in the stiff table, notice that once $50h$ is safely inside the stability interval, explicit Euler is as accurate as backward Euler.
+
+</Narrator>
 
 </Section>
 

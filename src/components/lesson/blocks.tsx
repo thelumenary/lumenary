@@ -2,6 +2,7 @@ import { ChevronDown, Heart, Users } from "lucide-react";
 import type { TFunction } from "@/i18n/dictionary";
 import { NarratorAvatar, type NarratorId } from "@/components/brand/Narrators";
 import { ModeBadge } from "@/components/ui/ModeBadge";
+import { mdInline } from "@/lib/markdown";
 import { LENSES, SECTION_KINDS, type Lens, type SectionKind } from "./kinds";
 
 type P = { children?: React.ReactNode };
@@ -32,10 +33,13 @@ export function makeBlocks(t: TFunction) {
   function Narrator({ who, children }: P & { who: NarratorId }) {
     return (
       <aside className="!mt-7 flex items-start gap-3.5" data-mode={NARRATOR_MODE[who]}>
-        <NarratorAvatar who={who} size={46} className="mt-1 shrink-0" />
+        <span data-cat className="mt-1 shrink-0">
+          <NarratorAvatar who={who} size={46} />
+        </span>
         <div className={`relative min-w-0 flex-1 rounded-2xl rounded-ss-md px-4 py-3 font-sans text-[0.98rem] leading-relaxed text-ink ${NARRATOR_BG[who]}`}>
           <p className={`text-xs font-bold ${NARRATOR_FG[who]}`}>
-            {t(`narrators.${who}`)} <span className="font-medium opacity-80">· {t(`narrators.${who}Role`)}</span>
+            <span data-cat>{t(`narrators.${who}`)} · </span>
+            <span>{t(`narrators.${who}Role`)}</span>
           </p>
           <div className="mt-1 [&>p]:m-0 [&>p+p]:mt-2">{children}</div>
         </div>
@@ -134,7 +138,8 @@ export function makeBlocks(t: TFunction) {
         <div className="flex justify-center [&_svg]:h-auto [&_svg]:max-w-full" dir="ltr">
           {children}
         </div>
-        {caption && <figcaption className="mt-3 text-center font-sans text-sm leading-snug text-muted">{caption}</figcaption>}
+        {/* Captions are inline Markdown, so $…$ is typeset like the prose around the figure. */}
+        {caption && <figcaption className="mt-3 text-center font-sans text-sm leading-snug text-muted" dangerouslySetInnerHTML={{ __html: mdInline(caption) }} />}
       </figure>
     ),
     ForGrownUps: ({ children, title }: P & { title?: string }) => (

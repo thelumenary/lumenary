@@ -35,6 +35,44 @@ export function viewpointRequirement(level: LevelId): { lenses: number; nonFound
   return null;
 }
 
+/**
+ * How many `<Narrator>` asides a lesson must have. The three cat guides appear at every level
+ * (readers can hide them); from early undergraduate onwards they are brief, substantive asides.
+ */
+export function narratorRequirement(level: LevelId): number {
+  return lvl(level) >= lvl("ug1") ? 2 : 1;
+}
+
+/**
+ * Phrases that describe, and so may implicitly encourage, actions that could hurt people or
+ * damage property. Falling-object examples use natural events (an apple from a tree), safe
+ * sport, or a supervised laboratory demonstration instead. See docs/authoring-guide.md §9.
+ */
+export const SAFETY_PATTERNS: { re: RegExp; why: string }[] = [
+  {
+    re: /\b(?:drop|dropp|throw|threw|thrown|toss|fling|flung|hurl|push|roll|lob|launch|fir(?:e|es|ed|ing))\w*\b[^.!?\n]{0,80}?\b(?:from|off|over)\s+(?:the\s+|a\s+|an\s+|your\s+|their\s+)?(?:[\w-]+\s+){0,2}?(?:bridge|balcony|window|roof|rooftop|cliff|tower|overpass|ledge|parapet|stairwell)s?\b/gi,
+    why: "dropping or throwing something from a height where it could hurt someone",
+  },
+  {
+    re: /\b(?:stone|rock|brick|object|ball|coin|egg)s?\b[^.!?\n]{0,40}?\b(?:dropped|thrown|tossed|falls?|falling|fell)\b[^.!?\n]{0,40}?\b(?:from|off)\s+(?:the\s+|a\s+|an\s+)?(?:[\w-]+\s+){0,2}?(?:bridge|balcony|window|roof|rooftop|cliff|tower|overpass|ledge|parapet|building)s?\b/gi,
+    why: "an object falling from a height where it could hurt someone",
+  },
+  { re: /\b(?:look|looking|stare|staring|gaze|gazing|peek|peeking)\s+(?:directly\s+|straight\s+)?(?:at|into)\s+the\s+sun\b/gi, why: "looking at the Sun" },
+  { re: /\b(?:play|playing|walk|walking|stand|standing|count|counting)\b[^.!?\n]{0,30}?\b(?:on|along|across)\s+(?:the\s+|a\s+)?(?:railway|railroad|train)\s+tracks?\b/gi, why: "being on railway tracks" },
+];
+
+/** Safety problems in a piece of learner-facing text (empty = fine). Warnings against a danger are allowed. */
+export function safetyProblems(text: string): string[] {
+  const out: string[] = [];
+  for (const { re, why } of SAFETY_PATTERNS)
+    for (const m of text.matchAll(re)) {
+      const before = text.slice(Math.max(0, (m.index ?? 0) - 30), m.index);
+      if (/\b(?:never|not|n't|no one|nobody|avoid)\b[^.!?]*$/i.test(before)) continue;
+      out.push(`unsafe example (${why}): "${m[0].slice(0, 100)}"`);
+    }
+  return out;
+}
+
 const attrs = (s: string) => Object.fromEntries([...s.matchAll(/(\w+)="([^"]*)"/g)].map((a) => [a[1], a[2]]));
 
 export function sectionsOf(body: string) {
@@ -171,6 +209,17 @@ export function lessonProblems(slug: string, { components }: LessonProblemOption
     if (other.length < req.nonFoundational)
       say(`needs at least ${req.nonFoundational} viewpoint(s) beyond set theory, category theory and logic (e.g. topology, geometry, analysis, algebra)`);
   }
+
+  // Narrators (the cat guides)
+  const narratorTags = [...body.matchAll(/<Narrator\b([^>]*)>/g)].map((m) => attrs(m[1]).who);
+  const minNarrators = narratorRequirement(f.level);
+  if (narratorTags.length < minNarrators) say(`has ${narratorTags.length} <Narrator> aside(s); needs at least ${minNarrators} (the cat guides appear at every level)`);
+  for (const n of new Set(narratorTags)) if (!(f.narrators as string[]).includes(n)) say(`<Narrator who="${n}"> is not listed in the frontmatter "narrators"`);
+  for (const n of f.narrators) if (!narratorTags.includes(n)) say(`frontmatter narrator "${n}" never speaks in the lesson`);
+
+  // Safety: nothing that could hurt people or damage property, even as a problem's setting
+  for (const p of safetyProblems(body)) say(p);
+  if (exists(`${dir}/exercises.json`)) for (const p of safetyProblems(read(`${dir}/exercises.json`))) say(`exercises.json: ${p}`);
 
   // Components used in MDX
   for (const m of body.matchAll(/<([A-Z][A-Za-z0-9]*)\b/g)) if (!components.has(m[1])) say(`unknown MDX component <${m[1]}>`);
