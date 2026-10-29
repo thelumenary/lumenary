@@ -98,8 +98,10 @@ def main():
     print("   1/10 in binary: 0." + binary_fraction_digits(Fraction(1, 10), 24)
           + "...")
     print("   the stored value of 0.1 is exactly", Fraction(0.1))
-    tenths = sum([0.1] * 10)
-    print("   adding 0.1 ten times gives", tenths)
+    tenths = 0.0
+    for _ in range(10):
+        tenths += 0.1
+    print("   adding 0.1 ten times, one step at a time, gives", tenths)
     exact = Fraction(1, 10) + Fraction(2, 10) == Fraction(3, 10)
     print("   with exact fractions, 1/10 + 2/10 == 3/10 is", exact)
     print()

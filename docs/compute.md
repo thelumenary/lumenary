@@ -186,7 +186,9 @@ floats became compensated (more accurate) in Python 3.12, so
 `exact_vs_numerical` uses an explicit loop for its "naive" float sum. The
 report records the interpreter actually used (`"python"` field). To verify on
 the same interpreter as the browser, create the venv with Python 3.13
-(`python3.13 -m venv compute/.venv`); no other change is needed.
+(`python3.13 -m venv compute/.venv`); no other change is needed. CI does exactly
+this: it runs `verify:compute` on Python 3.13, and all experiments and tests
+also passed locally on CPython 3.13.1.
 
 Note: the lock file's `info.version` field reads `0.28.0.dev0`, although it is
 served from the v0.29.3 release (whose `package.json` says `0.29.3`). The package

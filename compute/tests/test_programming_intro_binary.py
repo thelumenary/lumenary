@@ -40,4 +40,9 @@ def test_floating_point_facts():
     assert Fraction(0.1) == Fraction(3602879701896397, 36028797018963968)
     assert Fraction(0.1) != Fraction(1, 10)
     assert Fraction(1, 10) + Fraction(2, 10) == Fraction(3, 10)
-    assert sum([0.1] * 10) != 1.0
+    # An explicit loop: since Python 3.12 the built-in sum() of floats is
+    # compensated and returns 1.0 here.
+    tenths = 0.0
+    for _ in range(10):
+        tenths += 0.1
+    assert tenths == 0.9999999999999999
