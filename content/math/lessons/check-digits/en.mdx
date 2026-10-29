@@ -1,0 +1,442 @@
+---
+slug: check-digits
+topic: math.applied.check-digits
+title: Check digits and error detection
+subtitle: How a book number, a bank card or a string of bits can tell that it has been mistyped — and the clock arithmetic that makes it work.
+level: g6-8
+ages: Ages 11–14
+minutes: 60
+order: 3021
+objectives:
+  - Compute and verify ISBN-10 and ISBN-13 check digits
+  - Prove that ISBN-10 detects every single-digit error and every swap of two neighbouring digits
+  - Explain why ISBN-13 detects every single-digit error but misses swaps of neighbouring digits that differ by 5
+  - Add a parity bit to binary data and prove that it detects any odd number of flipped bits and no even number
+  - Explain why a single check digit can detect an error but cannot correct it
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.CheckDigits.wsum
+  - Lumenary.CheckDigits.wsum_append_cons
+  - Lumenary.CheckDigits.isbn10Sum
+  - Lumenary.CheckDigits.ValidISBN10
+  - Lumenary.CheckDigits.example_isbn10
+  - Lumenary.CheckDigits.isbn10_check_digit
+  - Lumenary.CheckDigits.cancel_mod_eleven
+  - Lumenary.CheckDigits.isbn10_single_error
+  - Lumenary.CheckDigits.isbn10_adjacent_swap
+  - Lumenary.CheckDigits.swap_caught_by_isbn10
+  - Lumenary.CheckDigits.isbn13Weight
+  - Lumenary.CheckDigits.ValidISBN13
+  - Lumenary.CheckDigits.example_isbn13
+  - Lumenary.CheckDigits.cancel_three_mod_ten
+  - Lumenary.CheckDigits.isbn13_single_error
+  - Lumenary.CheckDigits.isbn13_swap_rule
+  - Lumenary.CheckDigits.isbn13_missed_swap
+  - Lumenary.CheckDigits.luhnDouble
+  - Lumenary.CheckDigits.luhnSumRev
+  - Lumenary.CheckDigits.example_luhn
+  - Lumenary.CheckDigits.luhn_double_shuffle
+  - Lumenary.CheckDigits.luhn_swap_rule
+  - Lumenary.CheckDigits.parity
+  - Lumenary.CheckDigits.parity_append
+  - Lumenary.CheckDigits.add_parity_bit
+  - Lumenary.CheckDigits.parity_flip
+  - Lumenary.CheckDigits.single_flip_detected
+  - Lumenary.CheckDigits.double_flip_undetected
+  - Lumenary.CheckDigits.OneDigitApart
+  - Lumenary.CheckDigits.cannot_correct
+compute: [check_digits_error_rates, check_digits_parity_noise]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A number that knows when it is wrong">
+
+A librarian in Kampala types the 13-digit number from the back of a new book. A cashier in Lima scans a packet of rice; the scanner misreads one bar. A student in Seoul types her card number into a website and swaps two digits. In each case the computer answers at once: *that number is not valid — please check it.*
+
+How can a computer know that a number is wrong without knowing what the right number was? The trick is to add one extra digit — a **check digit** — calculated from all the others. If any digit is typed wrongly, the calculation no longer comes out right. The calculation is clock arithmetic, from <TopicLink id="math.number.modular-arithmetic">the previous lesson</TopicLink>, and the reason it works is a small, beautiful theorem about the number 11.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A digit that summarises the others">
+
+Here is a first attempt. Add up the digits of a number, and choose one extra digit so that the total ends in $0$ — that is, so that the digit sum is a multiple of $10$. For the number $2\,7\,4\,1$ the digit sum is $14$, so we append $6$ and send $2\,7\,4\,1\,6$ (total $20$).
+
+- If one digit is mistyped, say $2\,7\,\mathbf{9}\,1\,6$, the total becomes $25$. It no longer ends in $0$: **caught**. Changing one digit changes the total by a number between $-9$ and $9$ that is not $0$, so the total can never land on another multiple of $10$.
+- If two neighbouring digits are swapped, $2\,\mathbf{4}\,\mathbf{7}\,1\,6$, the total is still $20$. A plain sum does not care about order: **missed**.
+
+Swapping neighbours is one of the most common mistakes people make when they copy numbers. To catch it, the check must notice *where* each digit is. The idea: multiply each digit by a **weight** that depends on its position before adding up. Then moving a digit changes its weight, and so changes the total. But which weights, and which modulus? That is where the mathematics comes in.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="check digit">
+
+A **check digit** is an extra digit computed from the other digits of a code number so that certain errors can be detected. A code number is **valid** if its check digit is the right one.
+
+</Definition>
+
+<Definition term="ISBN-10">
+
+An **ISBN-10** (International Standard Book Number, used until 2006) has ten digits $d_1 d_2 \dots d_{10}$ with
+$$
+1 \cdot d_1 + 2 \cdot d_2 + 3 \cdot d_3 + \dots + 10 \cdot d_{10} \equiv 0 \pmod{11}.
+$$
+The check digit $d_{10}$ can be $10$, which is printed as **X** (the Roman numeral for ten).
+
+</Definition>
+
+Some books state the rule with the weights in the other order, $10 \cdot d_1 + 9 \cdot d_2 + \dots + 1 \cdot d_{10}$. The two rules accept exactly the same numbers, because the two sums add up to $11 \cdot (d_1 + \dots + d_{10})$, a multiple of 11.
+
+<Definition term="ISBN-13">
+
+An **ISBN-13** (used since 2007; the same system as the EAN-13 barcodes on shop goods) has thirteen digits with weights alternating $1, 3, 1, 3, \dots$:
+$$
+d_1 + 3 d_2 + d_3 + 3 d_4 + \dots + 3 d_{12} + d_{13} \equiv 0 \pmod{10}.
+$$
+
+</Definition>
+
+<Definition term="parity bit">
+
+A message of bits (0s and 1s) is protected by a **parity bit**: one extra bit chosen so that the total number of 1s is even. The receiver counts the 1s; an odd count means something went wrong.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Computing an ISBN-10 check digit">
+
+The first nine digits of a sample ISBN are $3\text{-}16\text{-}148410$. The weighted sum of these nine is
+$$
+1 \cdot 3 + 2 \cdot 1 + 3 \cdot 6 + 4 \cdot 1 + 5 \cdot 4 + 6 \cdot 8 + 7 \cdot 4 + 8 \cdot 1 + 9 \cdot 0 = 131.
+$$
+We need $131 + 10 \cdot d_{10}$ to be a multiple of 11. Since $10 \equiv -1 \pmod{11}$, this says $131 - d_{10} \equiv 0$, so $d_{10} \equiv 131 \equiv 10 \pmod{11}$ (as $131 = 11 \cdot 11 + 10$). The check digit is $10$, printed **X**: the full ISBN is **3-16-148410-X**. Check: $131 + 100 = 231 = 21 \cdot 11$. ✓
+
+In general, **the ISBN-10 check digit is the weighted sum of the first nine digits, modulo 11.**
+
+</Example>
+
+<Example title="Verifying an ISBN-13">
+
+For **978-3-16-148410-0**:
+$$
+9 + 3 \cdot 7 + 8 + 3 \cdot 3 + 1 + 3 \cdot 6 + 1 + 3 \cdot 4 + 8 + 3 \cdot 4 + 1 + 3 \cdot 0 + 0 = 100,
+$$
+a multiple of 10. Valid. If the librarian types 978-3-16-148**7**10-0 instead (a $4$ in a weight-3 position became $7$), the sum grows by $3 \cdot 3 = 9$ to $109$, which is not a multiple of 10: **caught**.
+
+</Example>
+
+<Example title="A swap that ISBN-13 cannot see">
+
+Swap the neighbouring digits $1$ and $6$ of 978-3-16-148410-0 to get 978-3-61-148410-0. Positions 5 and 6 have weights $1$ and $3$, so their contribution changes from $1 \cdot 1 + 3 \cdot 6 = 19$ to $1 \cdot 6 + 3 \cdot 1 = 9$: down by $10$. The total becomes $90$, still a multiple of 10. The wrong number is accepted! The same swap in the ISBN-10, 3-**61**-148410-X, is caught: its sum is $226 = 20 \cdot 11 + 6$.
+
+</Example>
+
+<Example title="A parity bit">
+
+The 7-bit message $1011001$ contains four 1s, an even number, so its parity bit is $0$ and we send $1011001\mathbf{0}$. If noise flips one bit and $10100010$ arrives, it has three 1s — odd — and the receiver asks for the message again. But if two bits flip, say $00100011$, the count is again even and the damage goes unnoticed.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="What each scheme catches, and why">
+
+All the proofs below use one observation: **if two code numbers are both valid, the difference of their check sums is a multiple of the modulus.** So to show that an error is always caught, we show that it changes the check sum by something that is *not* a multiple of the modulus.
+
+<Theorem name="Theorem 1 (ISBN-10 catches every single-digit error)">
+
+If one digit of a valid ISBN-10 is changed, the result is not a valid ISBN-10.
+
+</Theorem>
+
+<Proof>
+
+Suppose the digit in position $k$ changes from $x$ to $y \ne x$. Only one term of the check sum changes, from $k x$ to $k y$, so the sum changes by $k (y - x)$. If the new number were valid too, 11 would divide $k(y - x)$. Now $1 \le k \le 10$ and $1 \le |y - x| \le 10$, so neither factor is a multiple of 11. Because 11 is **prime**, it divides a product only if it divides one of the factors (Euclid's lemma). So 11 does not divide $k(y - x)$, and the error is caught. (Without Euclid's lemma: the multiplication table modulo 11 has no $0$ outside row $0$ and column $0$ — every non-zero row is a shuffle, as you can check in the explorer below.)
+
+</Proof>
+
+<Theorem name="Theorem 2 (ISBN-10 catches every swap of neighbours)">
+
+If two different neighbouring digits of a valid ISBN-10 are swapped, the result is not a valid ISBN-10.
+
+</Theorem>
+
+<Proof>
+
+Let the neighbours be $x$ in position $k$ and $y$ in position $k + 1$, with $x \ne y$. Their contribution to the sum is $k x + (k + 1) y$ before the swap and $k y + (k + 1) x$ after. The difference is
+$$
+\big(kx + (k+1)y\big) - \big(ky + (k+1)x\big) = y - x,
+$$
+and $1 \le |y - x| \le 10$, so it is not a multiple of 11. The swap is caught.
+
+</Proof>
+
+In fact ISBN-10 catches the swap of *any* two different digits, neighbours or not: swapping positions $j$ and $k$ changes the sum by $(k - j)(x - y)$, and the argument of Theorem 1 applies to this product.
+
+<Theorem name="Theorem 3 (ISBN-13 catches every single-digit error)">
+
+If one digit of a valid ISBN-13 is changed, the result is not a valid ISBN-13.
+
+</Theorem>
+
+<Proof>
+
+Changing $x$ to $y \ne x$ changes the sum by $y - x$ (weight 1) or by $3(y - x)$ (weight 3), where $1 \le |y - x| \le 9$. In the first case the change is not a multiple of 10. In the second case, suppose $3(y - x)$ were a multiple of 10. Then so would be $7 \cdot 3 (y - x) = 21(y - x) = 20 (y - x) + (y - x)$, and hence $y - x$ itself — impossible. (We used that $7$ is the partner of $3$ modulo $10$: $3 \cdot 7 = 21 \equiv 1$.)
+
+</Proof>
+
+<Theorem name="Theorem 4 (the ISBN-13 blind spot)">
+
+Swapping two neighbouring digits $a \ne b$ of a valid ISBN-13 gives another valid ISBN-13 exactly when $a$ and $b$ differ by $5$.
+
+</Theorem>
+
+<Proof>
+
+Neighbouring positions have weights $1$ and $3$ (in some order). Say $a$ has weight 1 and $b$ weight 3. The contribution changes from $a + 3b$ to $b + 3a$, a change of $2(a - b)$. This is a multiple of 10 exactly when $a - b$ is a multiple of 5, that is (for digits $a \ne b$) when $|a - b| = 5$. The other order of weights gives the change $2(b - a)$ and the same conclusion.
+
+</Proof>
+
+<Theorem name="Theorem 5 (parity bits)">
+
+A parity bit detects every error in which an odd number of bits are flipped, and no error in which an even number are flipped.
+
+</Theorem>
+
+<Proof>
+
+Flipping one bit changes the number of 1s by exactly one (up or down), so it changes the count from even to odd or from odd to even. Flipping $m$ bits changes the parity $m$ times. The sent word has an even number of 1s; the received word therefore has an odd number of 1s exactly when $m$ is odd. The receiver rejects exactly those words.
+
+</Proof>
+
+<Narrator who="chloe">
+
+Look at what made ISBN-10 so good: the weights $1, \dots, 10$ are all different modulo 11, none of them is $0$, and 11 is prime. ISBN-13 works modulo 10, which is not prime — and the weak spot is exactly the factor 5 of 10.
+
+</Narrator>
+
+</Section>
+
+<Section id="correct" kind="human" title="Detecting is not correcting">
+
+When a number fails the test, can the computer work out what it should have been? With one check digit, **no**. Suppose 3-**2**6-148410-X arrives. It fails the ISBN-10 test (its sum is $233 \equiv 2 \pmod{11}$). It could be 3-16-148410-X with the second digit mistyped — but it could equally be 1-26-148410-X with the *first* digit mistyped, and that is also a valid ISBN-10. In general, for an invalid number, almost every position has some digit that would make it valid again.
+
+Mathematicians measure this with the **Hamming distance**: the number of positions in which two code numbers differ. Theorem 1 says any two valid ISBN-10s are at distance at least 2. That is enough to *notice* one error, but a damaged number can sit at distance 1 from two valid ones, so there is no way to choose. To *correct* one error, valid code numbers must be at distance at least 3 from each other. Codes with that property exist — Richard Hamming and Marcel Golay published early examples around 1950 — but they need more than one check symbol (see <TopicLink id="math.applied.information-theory">information theory</TopicLink>).
+
+</Section>
+
+<Section id="luhn" kind="human" title="Bank cards and phones: Luhn's scheme">
+
+Bank card numbers, and the 15-digit IMEI number that identifies every mobile phone, end in a check digit computed by the **Luhn scheme**, patented by Hans Peter Luhn of IBM (filed 1954). Reading from the **right**, leave the last digit alone, double the next one, leave the next, double the next, and so on; whenever doubling gives a two-digit number, add its digits ($2 \cdot 7 = 14 \to 1 + 4 = 5$). The number is valid if the total is a multiple of 10.
+
+<Example title="The Luhn test">
+
+For $7\,9\,9\,2\,7\,3\,9\,8\,7\,1\,3$, from the right: $3$; $1 \to 2$; $7$; $8 \to 16 \to 7$; $9$; $3 \to 6$; $7$; $2 \to 4$; $9$; $9 \to 18 \to 9$; $7$. The total is $3 + 2 + 7 + 7 + 9 + 6 + 7 + 4 + 9 + 9 + 7 = 70$: valid.
+
+</Example>
+
+Doubling-and-adding-digits sends the digits $0, 1, 2, \dots, 9$ to $0, 2, 4, 6, 8, 1, 3, 5, 7, 9$ — a shuffle, with no two digits landing on the same value. That is why Luhn's scheme catches every single-digit error. Neighbour swaps are caught too, with exactly one exception: swapping $0$ and $9$ ($09 \leftrightarrow 90$) leaves the total unchanged. Neither ISBN-13 nor Luhn catches swaps of digits *two* places apart, because those positions get the same treatment; ISBN-10 does.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Check digits in Lean">
+
+A code number is a list of digits. Everything rests on one definition and one lemma: a weighted sum, and what happens to it when one digit in the middle of the list changes.
+
+<Lean decl="Lumenary.CheckDigits.wsum" />
+
+<Lean decl="Lumenary.CheckDigits.wsum_append_cons" />
+
+Then ISBN-10: the definition, our example, the recipe for the check digit, and Theorems 1 and 2 for **every** ISBN-10. The finite fact “a non-zero weight can be cancelled modulo 11” is checked by `decide`, which tries all $11^3$ cases.
+
+<Lean decl="Lumenary.CheckDigits.isbn10Sum" />
+
+<Lean decl="Lumenary.CheckDigits.ValidISBN10" />
+
+<Lean decl="Lumenary.CheckDigits.example_isbn10" />
+
+<Lean decl="Lumenary.CheckDigits.isbn10_check_digit" />
+
+<Lean decl="Lumenary.CheckDigits.cancel_mod_eleven" />
+
+<Lean decl="Lumenary.CheckDigits.isbn10_single_error" />
+
+<Lean decl="Lumenary.CheckDigits.isbn10_adjacent_swap" />
+
+<Lean decl="Lumenary.CheckDigits.swap_caught_by_isbn10" />
+
+<Narrator who="gideon">
+
+Notice how the statements are phrased. “If `… x …` and `… y …` are *both* valid, then `x = y`” is the precise form of “a single error is always caught”: an error would mean $x \ne y$, so at least one of the two numbers must fail the test.
+
+</Narrator>
+
+ISBN-13: Theorem 3 for every ISBN-13, and Theorem 4 checked for all 100 pairs of digits, with the swap from our example.
+
+<Lean decl="Lumenary.CheckDigits.isbn13Weight" />
+
+<Lean decl="Lumenary.CheckDigits.ValidISBN13" />
+
+<Lean decl="Lumenary.CheckDigits.example_isbn13" />
+
+<Lean decl="Lumenary.CheckDigits.cancel_three_mod_ten" />
+
+<Lean decl="Lumenary.CheckDigits.isbn13_single_error" />
+
+<Lean decl="Lumenary.CheckDigits.isbn13_swap_rule" />
+
+<Lean decl="Lumenary.CheckDigits.isbn13_missed_swap" />
+
+`isbn13_swap_rule` is about the two neighbouring digits only; combined with `wsum_append_cons` it gives Theorem 4 for whole code numbers, a step we explain in words rather than formalise. The Luhn scheme, with its two key facts checked over all pairs of digits:
+
+<Lean decl="Lumenary.CheckDigits.luhnDouble" />
+
+<Lean decl="Lumenary.CheckDigits.luhnSumRev" />
+
+<Lean decl="Lumenary.CheckDigits.example_luhn" />
+
+<Lean decl="Lumenary.CheckDigits.luhn_double_shuffle" />
+
+<Lean decl="Lumenary.CheckDigits.luhn_swap_rule" />
+
+Parity bits (Theorem 5), proved by induction on the list of bits:
+
+<Lean decl="Lumenary.CheckDigits.parity" />
+
+<Lean decl="Lumenary.CheckDigits.parity_append" />
+
+<Lean decl="Lumenary.CheckDigits.add_parity_bit" />
+
+<Lean decl="Lumenary.CheckDigits.parity_flip" />
+
+<Lean decl="Lumenary.CheckDigits.single_flip_detected" />
+
+<Lean decl="Lumenary.CheckDigits.double_flip_undetected" />
+
+And the reason a check digit cannot correct:
+
+<Lean decl="Lumenary.CheckDigits.OneDigitApart" />
+
+<Lean decl="Lumenary.CheckDigits.cannot_correct" />
+
+All of these are proved here (core Lean only); none quotes a library theorem about codes. In Mathlib, `ZMod 11` is the field of remainders modulo 11 and `hammingDist` is the Hamming distance.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Every typo, counted">
+
+<Narrator who="margaret">
+
+Let me make 300 valid numbers for each scheme, apply every possible single-digit error and every swap, and count what gets through.
+
+</Narrator>
+
+<Python id="check_digits_error_rates" />
+
+The table agrees with the theorems: ISBN-10 rejects every damaged number; ISBN-13 lets through about one neighbour swap in nine (those of digits five apart); Luhn lets through only $09 \leftrightarrow 90$; the plain digit sum catches every single error but no swap at all. The percentages for ISBN-13 and Luhn are **exact counts for this sample**, not universal constants — they depend on which digit pairs happen to occur.
+
+<Narrator who="margaret">
+
+Now bits on a noisy line. Each bit flips with probability $p$. How often does a damaged word slip past the parity check?
+
+</Narrator>
+
+<Python id="check_digits_parity_noise" />
+
+This is **statistical** evidence: the simulated counts wobble around the exact values from one run to another. The exact columns come from Theorem 5 together with an extra assumption — that each bit flips independently — which real channels do not always satisfy (noise often comes in bursts that damage several neighbouring bits).
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: good weights and parity">
+
+A weight $w$ catches every single-digit error modulo $m$ exactly when the row of $w$ in the multiplication table modulo $m$ is a shuffle (no repeated values). Open the **Multiply** tab and set $k = 11$: every non-zero row is a shuffle, so any of the weights $1, \dots, 10$ works. Now set $k = 10$: only the rows of $1, 3, 7, 9$ are shuffles. That is why ISBN-13 uses the weights $1$ and $3$ — and why no weighted scheme modulo 10 can use ten different good weights.
+
+<ClockLab />
+
+Below, $a$, $b$, $c$ are three data bits and $a \oplus b \oplus c$ is their parity bit ($\oplus$ is *exclusive or*: true when exactly one input is true). The receiver adds up the received bits modulo 2 — that is the formula. The first formula flips bit $a$ in transit; it is true (odd: **rejected**) in every row. The second flips $a$ and $b$; it is false (even: **accepted**) in every row.
+
+<TruthTable formula="(not a) xor b xor c xor (a xor b xor c)" compare="(not a) xor (not b) xor c xor (a xor b xor c)" showSubformulas={false} title="One flipped bit versus two" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**“A check digit can correct the error.”** A single check digit only *detects* errors. As the example 3-26-148410-X shows, a damaged number can be one digit away from several valid numbers, so there is no way to tell which digit was wrong. Correcting errors needs more redundancy.
+
+</Misconception>
+
+<Misconception>
+
+**“Every possible error is detected.”** Each scheme catches certain kinds of errors and misses others. ISBN-13 misses neighbour swaps of digits differing by 5; Luhn misses $09 \leftrightarrow 90$; even ISBN-10 misses some errors that change two digits at once, such as a damaged number that happens to be another valid ISBN. A valid check digit means “no *likely* error”, not “certainly correct”.
+
+</Misconception>
+
+<Misconception>
+
+**“The X in an ISBN is a misprint.”** In ISBN-10 the check digit is a remainder modulo 11, so it can be $10$, which is written X. ISBN-13 works modulo 10 and never needs an X.
+
+</Misconception>
+
+<Misconception>
+
+**“The more bits go wrong, the more likely a parity bit is to notice.”** Not at all: a second flipped bit undoes the effect of the first on the count, so two flipped bits are never noticed. On a very noisy line a large share of the damaged words slip through, as the simulation above shows.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="algebra" title="Why 11 — and what Verhoeff did instead">
+
+A weighted scheme modulo $m$ catches every single error when each weight has a partner modulo $m$, and every neighbour swap when each *difference* of neighbouring weights has a partner. Modulo 10 that is impossible: the weights with partners are $1, 3, 7, 9$, all odd, so the difference of two of them is even, and an even difference times $a - b = 5$ is a multiple of 10. **No weighted scheme modulo 10 can catch all single errors and all neighbour swaps.** ISBN-10 escapes by working modulo the prime 11, at the price of the extra symbol X. In 1969 the Dutch mathematician Jacobus Verhoeff found a cleverer escape: he replaced addition modulo 10 by the multiplication table of the **dihedral group** of order 10 — the ten rigid motions of a regular pentagon (five turns and five flips) — combined with a shuffle of the digits. Because that group is not commutative ($a \ast b \ne b \ast a$ in general), it notices order, and Verhoeff's scheme catches every single error and every neighbour swap using the digits $0$–$9$ only. India's Aadhaar identity numbers end in a Verhoeff check digit. See <TopicLink id="math.algebra.groups">groups</TopicLink> and <TopicLink id="math.geom.rigid-motions-similarity">rigid motions</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Codes as points at a distance">
+
+Think of all strings of 10 digits as points, and say two strings are at **distance** $d$ when they differ in $d$ positions (the Hamming distance). The valid ISBN-10s are a set of points no two of which are at distance 1: around each valid code is a “ball” of the strings one error away, containing no other valid code. Detecting one error needs minimum distance 2; correcting one error needs minimum distance 3, so that the balls of radius 1 do not overlap. Counting points in balls gives limits on how many valid codes there can be — the start of coding theory.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="How likely is an undetected error?">
+
+If a number is damaged in a completely random way, its check sum modulo 11 is essentially a random remainder, so it passes the ISBN-10 test with probability about $\tfrac{1}{11}$. But real errors are not random: studies of people copying numbers, such as Verhoeff's, found that single-digit errors are by far the most common, followed by neighbour swaps. A good scheme is designed for the errors people actually make — and for those, ISBN-10 is perfect.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1948–1950.** Claude Shannon's theory of communication (1948) showed that errors can in principle be corrected efficiently; Marcel Golay (1949) and Richard Hamming (1950), both working in the USA, published some of the first error-*correcting* codes.
+- **1954.** Hans Peter Luhn of IBM filed a patent for a device that computes his check digit (granted in 1960). His scheme now protects bank cards worldwide and the IMEI numbers of mobile phones.
+- **1966–1970.** A 9-digit Standard Book Numbering system was devised in the United Kingdom in 1966 and became the international ISBN-10 standard (ISO 2108) in 1970.
+- **1969.** Jacobus Verhoeff in the Netherlands published his dihedral-group scheme, together with a study of the errors people make when copying numbers.
+- **1974.** The first product with a Universal Product Code barcode (weights $3, 1$ modulo 10) was scanned in a supermarket in Ohio, USA. The European Article Number (EAN-13) followed and spread around the world.
+- **2007.** Books switched to 13-digit ISBNs, identical to EAN-13 barcodes with the prefix 978 or 979.
+- **Today.** International bank account numbers (IBANs), used in dozens of countries, carry two check digits computed modulo 97; India's Aadhaar numbers use Verhoeff's scheme.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Joseph A. Gallian, *Contemporary Abstract Algebra* (1986; 10th edition 2021), which uses check digits — including Verhoeff's dihedral scheme — as running examples.
+- Joseph A. Gallian, “The mathematics of identification numbers”, *The College Mathematics Journal* 22 (1991).
+- Joseph Kirtland, *Identification Numbers and Check Digit Schemes* (Mathematical Association of America, 2000), written for school and college classrooms.
+- Richard W. Hamming, “Error detecting and error correcting codes”, *Bell System Technical Journal* 29 (1950).
+
+</Section>

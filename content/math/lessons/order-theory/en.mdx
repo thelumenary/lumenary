@@ -1,0 +1,472 @@
+---
+slug: order-theory
+topic: math.found.order-theory
+title: Orders, lattices and well-orders
+subtitle: Not everything can be ranked in a single line — prerequisites, subsets and divisors are ordered only partially, and that changes what "best", "bound" and "least" mean.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 100
+order: 5002
+objectives:
+  - Verify the axioms of a partial order and draw Hasse diagrams for finite posets such as divisibility on $\{1, \dots, 12\}$ and inclusion on $\mathcal{P}(\{1, 2, 3\})$
+  - Distinguish maximal from greatest elements and upper bounds from least upper bounds, and prove that every finite non-empty poset has a maximal element
+  - Define lattices and complete lattices, identify joins and meets in $(\mathcal{P}(A), \subseteq)$ and $(\N, \mid)$, and prove the Knaster–Tarski fixed-point theorem
+  - Define well-orders and prove that $\N$ is well-ordered by $\le$ while $\Z$ and $\Q$ are not
+  - State Zorn's lemma and explain why it is needed for infinite posets
+narrators: []
+lean:
+  - Lumenary.OrderTheory.nat_dvd_antisymm
+  - Lumenary.OrderTheory.DivNat
+  - Lumenary.OrderTheory.DivNat.instPartialOrder
+  - Lumenary.OrderTheory.int_dvd_not_antisymm
+  - Lumenary.OrderTheory.maximal_in_one_to_twelve
+  - Lumenary.OrderTheory.no_greatest_in_one_to_twelve
+  - Lumenary.OrderTheory.exists_maximal_of_finite
+  - Lumenary.OrderTheory.union_isLUB
+  - Lumenary.OrderTheory.inter_isGLB
+  - Lumenary.OrderTheory.gcd_is_meet
+  - Lumenary.OrderTheory.lub_not_mem
+  - Lumenary.OrderTheory.absorption
+  - Lumenary.OrderTheory.nat_wellOrdered
+  - Lumenary.OrderTheory.int_not_wellOrdered
+  - Lumenary.OrderTheory.rat_pos_no_least
+  - Lumenary.OrderTheory.knaster_tarski
+  - Lumenary.OrderTheory.zorn
+compute: [order_theory_counting_posets, order_theory_divisibility]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Which phone is best?">
+
+A student in Accra is choosing a phone. She cares about two things: price (lower is better) and battery life (longer is better).
+
+| Phone | Price (cedis) | Battery (hours) |
+| --- | --- | --- |
+| A | 1 200 | 20 |
+| B | 1 500 | 30 |
+| C | 1 800 | 25 |
+| D | 2 400 | 40 |
+| E | 1 400 | 18 |
+
+Phone B is better than C in both respects, and A is better than E. But A and B cannot be compared: A is cheaper, B lasts longer. So "is at least as good in both respects as" orders the phones only **partially**. There is no single best phone; instead there are several that nothing beats — A, B and D — which economists call **Pareto optimal** and mathematicians call **maximal**.
+
+Partial orders are everywhere once you look: courses and their prerequisites (this curriculum is organised by one), tasks in a building project, versions of a document, subsets ordered by inclusion, whole numbers ordered by divisibility. This lesson gives the precise language for them — and shows how carefully one must use words like "best", "bound" and "least" when not everything can be compared.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Pictures of orders: Hasse diagrams">
+
+A finite partial order can be drawn as a **Hasse diagram**: put larger elements higher up, and draw a line from $a$ up to $b$ when $b$ **covers** $a$ — that is, $a < b$ with nothing strictly in between. All other comparisons are then read off as upward paths: $a \le b$ exactly when one can climb from $a$ to $b$.
+
+Here are the subsets of $\{1, 2, 3\}$ ordered by inclusion. The diagram is a cube: $\varnothing$ at the bottom, the whole set at the top.
+
+<CommutativeDiagram
+  objects={[
+    { id: "top", tex: "\\{1,2,3\\}", row: 0, col: 1 },
+    { id: "s12", tex: "\\{1,2\\}", row: 1, col: 0 },
+    { id: "s13", tex: "\\{1,3\\}", row: 1, col: 1 },
+    { id: "s23", tex: "\\{2,3\\}", row: 1, col: 2 },
+    { id: "s1", tex: "\\{1\\}", row: 2, col: 0 },
+    { id: "s2", tex: "\\{2\\}", row: 2, col: 1 },
+    { id: "s3", tex: "\\{3\\}", row: 2, col: 2 },
+    { id: "bot", tex: "\\varnothing", row: 3, col: 1 },
+  ]}
+  arrows={[
+    { from: "bot", to: "s1" },
+    { from: "bot", to: "s2" },
+    { from: "bot", to: "s3" },
+    { from: "s1", to: "s12" },
+    { from: "s1", to: "s13" },
+    { from: "s2", to: "s12" },
+    { from: "s2", to: "s23" },
+    { from: "s3", to: "s13" },
+    { from: "s3", to: "s23" },
+    { from: "s12", to: "top" },
+    { from: "s13", to: "top" },
+    { from: "s23", to: "top" },
+  ]}
+  ariaLabel="Hasse diagram of the subsets of {1, 2, 3} under inclusion, drawn as a cube: the empty set at the bottom, the three one-element sets above it, the three two-element sets above those, and {1, 2, 3} at the top."
+  caption="$(\mathcal{P}(\{1, 2, 3\}), \subseteq)$. Arrows go from a set to the sets covering it. $\{1\}$ and $\{2, 3\}$ are incomparable."
+/>
+
+And here is divisibility on $\{1, \dots, 12\}$, with $a$ below $b$ when $a \mid b$. Try tracing upward walks: each one is a **chain**, a set of pairwise comparable elements. Notice how many elements sit at the top with nothing above them.
+
+<GraphExplorer
+  nodes={["1", "2", "3", "5", "7", "11", "4", "6", "9", "10", "8", "12"]}
+  edges={[["1", "2"], ["1", "3"], ["1", "5"], ["1", "7"], ["1", "11"], ["2", "4"], ["2", "6"], ["2", "10"], ["3", "6"], ["3", "9"], ["4", "8"], ["4", "12"], ["5", "10"], ["6", "12"]]}
+  positions={[[2.75, 3], [0.75, 2], [2.25, 2], [3.75, 2], [4.75, 2], [5.75, 2], [0, 1], [1.75, 1], [3, 1], [3.75, 1], [0, 0], [1.5, 0]]}
+  modes={["walk", "degrees"]}
+  title="Divisibility on {1, …, 12}"
+  subtitle="Edges join a number to the multiples that cover it. Which numbers have nothing above them?"
+/>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="preorder, partial order, total order">
+
+A relation $\le$ on a set $P$ is a **preorder** if it is **reflexive** ($a \le a$) and **transitive** ($a \le b$ and $b \le c$ imply $a \le c$). It is a **partial order** if moreover it is **antisymmetric** ($a \le b$ and $b \le a$ imply $a = b$); then $(P, \le)$ is a **partially ordered set**, or **poset**. Elements with $a \le b$ or $b \le a$ are **comparable**. A partial order in which every two elements are comparable is a **total** (or **linear**) order. We write $a < b$ for "$a \le b$ and $a \neq b$".
+
+</Definition>
+
+<Definition term="chain, antichain, cover">
+
+A **chain** is a subset in which every two elements are comparable; an **antichain** is one in which no two distinct elements are. $b$ **covers** $a$ if $a < b$ and there is no $c$ with $a < c < b$; the covering pairs are the edges of the Hasse diagram.
+
+</Definition>
+
+<Definition term="maximal and greatest elements">
+
+An element $m \in P$ is **maximal** if there is no $x \in P$ with $m < x$, and **greatest** if $x \le m$ for every $x \in P$. **Minimal** and **least** elements are defined dually.
+
+</Definition>
+
+<Definition term="upper bounds and suprema">
+
+Let $S \subseteq P$. An **upper bound** of $S$ is an element $b \in P$ with $s \le b$ for all $s \in S$. A **least upper bound** or **supremum** of $S$, written $\sup S$ or $\bigvee S$, is an upper bound that is $\le$ every upper bound. **Lower bounds** and the **greatest lower bound** (**infimum**, $\inf S$ or $\bigwedge S$) are defined dually. Note that $\sup S$ is an element of $P$; it need not belong to $S$.
+
+</Definition>
+
+<Definition term="lattice, complete lattice">
+
+A **lattice** is a poset in which every pair $a, b$ has a supremum $a \vee b$ (the **join**) and an infimum $a \wedge b$ (the **meet**). A **complete lattice** is a poset in which *every* subset, including $\varnothing$ and infinite ones, has a supremum and an infimum.
+
+</Definition>
+
+<Definition term="well-order">
+
+A **well-order** is a total order in which every non-empty subset has a least element.
+
+</Definition>
+
+<Definition term="monotone map">
+
+A map $f : P \to Q$ between posets is **monotone** (order-preserving) if $a \le b$ implies $f(a) \le f(b)$. A **fixed point** of $f : P \to P$ is an element with $f(a) = a$.
+
+</Definition>
+
+<Definition term="Zorn's lemma">
+
+**Zorn's lemma:** if $P$ is a non-empty poset in which every chain has an upper bound in $P$, then $P$ has a maximal element. (We state it now and discuss its status below.)
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Orders on numbers">
+
+- $(\N, \le)$, $(\Z, \le)$, $(\Q, \le)$ and $(\R, \le)$ are total orders.
+- $(\N, \mid)$, divisibility, is a partial order but not a total one ($2$ and $3$ are incomparable). Its least element is $1$, which divides everything; its greatest element is $0$, which every number divides.
+- On $\Z$, divisibility is only a preorder: $2 \mid -2$ and $-2 \mid 2$ but $2 \neq -2$. Identifying each integer with its negative (passing to equivalence classes) turns it into a partial order — a general way of making a preorder into a partial order.
+- The strict relation $<$ is not a partial order in our sense, because it is not reflexive; it is a **strict order**. Partial orders and strict orders correspond one-to-one via $a < b \iff (a \le b$ and $a \neq b)$.
+
+</Example>
+
+<Example title="Orders on pairs">
+
+On $\R^2$, the **product order** $(a, b) \le (c, d) \iff a \le c$ and $b \le d$ is partial: $(1, 2)$ and $(2, 1)$ are incomparable. This is the Pareto order of the motivating example, with prices negated. The **lexicographic order** — compare first coordinates, and use the second only to break ties, as in a dictionary — is total.
+
+</Example>
+
+<Example title="Maximal but not greatest">
+
+In $(\{1, \dots, 12\}, \mid)$ the maximal elements are $7, 8, 9, 10, 11, 12$ — exactly the numbers with no proper multiple in the set — and there is no greatest element. The least element is $1$. In the phones example, A, B and D are maximal and none is greatest.
+
+</Example>
+
+<Example title="Bounds and suprema">
+
+- In $(\mathcal{P}(A), \subseteq)$, every family of subsets has a supremum, its union, and an infimum, its intersection: $\mathcal{P}(A)$ is a complete lattice.
+- In $(\N, \mid)$, $\gcd(a, b)$ is the meet of $a$ and $b$ and $\operatorname{lcm}(a, b)$ is the join; $(\N, \mid)$ is a lattice (in fact a complete one). But $\{1, \dots, 12\}$ with divisibility is not a lattice: $2$ and $7$ have no upper bound in the set at all.
+- In $(\Q, \le)$, the set $\{q : q < 1\}$ has supremum $1$, which is not in the set, while $\{q : q^2 < 2\}$ is bounded above but has no supremum in $\Q$ (see <TopicLink id="math.number.real-numbers">real numbers</TopicLink>).
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Maximal elements and suprema">
+
+<Theorem name="Proposition 1 (greatest versus maximal)">
+
+In a poset, a greatest element, if it exists, is unique and is the only maximal element. In a total order, an element is maximal if and only if it is greatest.
+
+</Theorem>
+
+<Proof>
+
+If $g$ and $g'$ are greatest, then $g \le g'$ and $g' \le g$, so $g = g'$ by antisymmetry. A greatest $g$ is maximal: if $g < x$ then also $x \le g$, and antisymmetry gives $x = g$, contradicting $g < x$. If $m$ is any maximal element, then $m \le g$, and maximality forbids $m < g$, so $m = g$. In a total order, let $m$ be maximal and $x$ arbitrary; $x$ and $m$ are comparable, and $m < x$ is impossible, so $x \le m$: $m$ is greatest.
+
+</Proof>
+
+<Theorem name="Theorem 2 (finite posets have maximal elements)">
+
+Every finite non-empty poset has a maximal element.
+
+</Theorem>
+
+<Proof>
+
+*First proof (climbing).* Start at any element $a_0$. If it is not maximal, pick $a_1 > a_0$; if $a_1$ is not maximal, pick $a_2 > a_1$, and so on. By transitivity $a_i < a_j$ whenever $i < j$, so the $a_i$ are distinct (if $a_i = a_j$ with $i < j$ we would have $a_i < a_i$). A finite set cannot contain infinitely many distinct elements, so the climb stops — at a maximal element.
+
+*Second proof (counting, the one checked in Lean).* For each $y$ let $D(y) = \{x : x \le y\}$ be its down-set, and choose $m$ with $|D(m)|$ as large as possible. If $m \le x$, then $D(m) \subseteq D(x)$ by transitivity; by the choice of $m$, $|D(x)| \le |D(m)|$, so $D(m) = D(x)$. As $x \in D(x) = D(m)$, we get $x \le m$, and antisymmetry gives $x = m$. So nothing is strictly above $m$.
+
+</Proof>
+
+The first proof makes a sequence of choices, which is harmless for finitely many steps; for infinite posets the climb may go on for ever ($0 < 1 < 2 < \cdots$ in $\N$), and Zorn's lemma is exactly the principle that rescues it when every chain is bounded.
+
+<Theorem name="Corollary 3 (linear extensions)">
+
+Every partial order on a finite set can be extended to a total order: there is a total order $\preceq$ with $a \le b \Rightarrow a \preceq b$.
+
+</Theorem>
+
+<Proof>
+
+Induction on the number of elements. The empty poset is totally ordered. Otherwise let $m$ be maximal (Theorem 2), totally order $P \setminus \{m\}$ extending its partial order (induction hypothesis), and put $m$ at the end. Since nothing in $P$ is strictly above $m$, no comparison $m < x$ is violated.
+
+</Proof>
+
+This is the mathematics behind **topological sorting**: listing courses so that every course comes after its prerequisites, or scheduling tasks so that each starts after the tasks it depends on.
+
+<Theorem name="Proposition 4 (suprema are unique; unions and gcds)">
+
+A subset has at most one supremum. In $(\mathcal{P}(A), \subseteq)$, $\sup\{S, T\} = S \cup T$ and $\inf\{S, T\} = S \cap T$; in $(\N, \mid)$, $\inf\{a, b\} = \gcd(a, b)$ and $\sup\{a, b\} = \operatorname{lcm}(a, b)$.
+
+</Theorem>
+
+<Proof>
+
+If $s$ and $s'$ are both suprema, each is an upper bound and each is below every upper bound, so $s \le s'$ and $s' \le s$: $s = s'$.
+
+$S \cup T$ contains $S$ and $T$, and any set $U$ containing both contains $S \cup T$; so $S \cup T$ is the least upper bound. Dually for $S \cap T$. In $(\N, \mid)$, $\gcd(a, b)$ divides $a$ and $b$, and every common divisor of $a$ and $b$ divides $\gcd(a, b)$ (a consequence of Bézout's identity; see <TopicLink id="math.number.divisibility-gcd">divisibility</TopicLink>), so $\gcd(a, b)$ is the greatest lower bound in the divisibility order. Dually, every common multiple is a multiple of $\operatorname{lcm}(a, b)$.
+
+</Proof>
+
+In any lattice the operations satisfy associative and commutative laws, $a \vee a = a$, and the **absorption laws**
+
+$$
+a \vee (a \wedge b) = a, \qquad a \wedge (a \vee b) = a.
+$$
+
+(For the first: $a$ is an upper bound of $a$ and of $a \wedge b \le a$, so $a \vee (a \wedge b) \le a$, and the reverse inequality always holds.) Conversely, a set with two operations obeying these laws is a lattice, ordered by $a \le b \iff a \wedge b = a$: lattices can be defined algebraically, as in <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink>.
+
+</Section>
+
+<Section id="well-orders" kind="proof" title="Well-orders">
+
+<Theorem name="Theorem 5 (ℕ is well-ordered)">
+
+Every non-empty subset of $\N$ has a least element.
+
+</Theorem>
+
+<Proof>
+
+Suppose $S \subseteq \N$ has no least element. We show by strong induction that no $k$ lies in $S$. Assume that no $n < k$ lies in $S$. If $k \in S$, then — as $k$ is not the least element of $S$ — some $n \in S$ satisfies $n < k$, contradicting the assumption. So $k \notin S$. Hence $S = \varnothing$.
+
+</Proof>
+
+The well-ordering principle and induction are two faces of the same fact (see <TopicLink id="math.found.proof-techniques">proof techniques</TopicLink>): induction can also be derived from well-ordering, by considering the least counterexample.
+
+<Theorem name="Proposition 6 (ℤ and ℚ are not well-ordered)">
+
+$(\Z, \le)$ is not a well-order: $\Z$ itself has no least element. $(\Q, \le)$ is not a well-order either, and even $\{q \in \Q : q > 0\}$ has no least element.
+
+</Theorem>
+
+<Proof>
+
+For every $m \in \Z$, $m - 1 < m$. For every positive rational $m$, $m/2$ is a smaller positive rational.
+
+</Proof>
+
+Being well-ordered depends on the order, not just the set: $\Z$ *can* be well-ordered, for example as $0, -1, 1, -2, 2, \dots$ (compare by absolute value, negatives first). Cantor's **ordinal numbers** are the "lengths" of well-orders, continuing the natural numbers into the infinite: $0, 1, 2, \dots, \omega, \omega + 1, \dots$ Every well-order supports proofs by **transfinite induction**, the same argument as Theorem 5. Zermelo's **well-ordering theorem** (1904) says every set can be well-ordered — even $\R$ — but its proof uses the axiom of choice, and no explicit well-order of $\R$ can be written down.
+
+</Section>
+
+<Section id="fixed-points" kind="proof" title="Fixed points and Zorn's lemma">
+
+<Theorem name="Theorem 7 (Knaster–Tarski)">
+
+Let $L$ be a complete lattice and $f : L \to L$ a monotone map. Then $f$ has a least fixed point, namely
+
+$$
+a = \inf\{x \in L : f(x) \le x\}.
+$$
+
+</Theorem>
+
+<Proof>
+
+Let $X = \{x : f(x) \le x\}$. For every $x \in X$ we have $a \le x$, so $f(a) \le f(x) \le x$ by monotonicity. Thus $f(a)$ is a lower bound of $X$, and $f(a) \le a$ since $a$ is the *greatest* lower bound. Applying $f$, $f(f(a)) \le f(a)$, so $f(a) \in X$, and therefore $a \le f(a)$. Hence $f(a) = a$. Any fixed point $b$ satisfies $f(b) \le b$, so $b \in X$ and $a \le b$.
+
+</Proof>
+
+This theorem is how mathematics and computer science *define* things "inductively". For instance, the set of vertices reachable from a vertex $v_0$ in a graph is the least fixed point of the monotone map $S \mapsto \{v_0\} \cup \{\text{successors of } S\}$ on the complete lattice of sets of vertices. In a finite lattice it can also be computed by iterating $f$ from the bottom element, $\varnothing \subseteq f(\varnothing) \subseteq f(f(\varnothing)) \subseteq \cdots$, until the sequence stops growing. Knaster–Tarski also gives a slick proof of the Cantor–Schröder–Bernstein theorem (see <TopicLink id="math.found.cardinals">cardinals</TopicLink>).
+
+**Zorn's lemma.** Theorem 2 guarantees maximal elements in finite posets. In infinite posets they may not exist — $(\N, \le)$ has none — and Zorn's lemma gives a sufficient condition: if every chain has an upper bound, a maximal element exists. It is the standard tool for producing "maximal" objects in infinite settings. For example, to find a basis of a vector space $V$, consider the poset of linearly independent subsets of $V$ ordered by inclusion; the union of a chain of independent sets is independent and is an upper bound, so Zorn's lemma gives a maximal independent set, which must span $V$ (otherwise a vector outside the span could be added). The same pattern gives maximal ideals in rings. Zorn's lemma cannot be proved from the other axioms of set theory (ZF): over ZF it is **equivalent to the axiom of choice** (see <TopicLink id="math.found.axiom-of-choice">the axiom of choice</TopicLink>). In this lesson we use it as a tool, to be justified there.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Orders in Lean and Mathlib">
+
+Mathlib's order theory is organised by type classes — `Preorder`, `PartialOrder`, `LinearOrder`, `Lattice` (with `⊔` and `⊓`), `CompleteLattice` (with `sSup` and `sInf`) — and predicates such as `IsLUB s a` ("`a` is a least upper bound of `s`") and `IsMax m` ("nothing is strictly above `m`").
+
+**Divisibility.** Antisymmetry on $\N$ by the human argument ($b = ak$, $a = a(kl)$, so $kl = 1$); a copy of $\N$ carrying the divisibility order, built as a genuine `PartialOrder` instance from the three axioms; and the failure of antisymmetry on $\Z$.
+
+<Lean decl="Lumenary.OrderTheory.nat_dvd_antisymm" />
+
+<Lean decl="Lumenary.OrderTheory.DivNat" />
+
+<Lean decl="Lumenary.OrderTheory.DivNat.instPartialOrder" />
+
+<Lean decl="Lumenary.OrderTheory.int_dvd_not_antisymm" />
+
+**Maximal versus greatest**, checked by `decide` on $\{1, \dots, 12\}$, and Theorem 2 by the counting proof — the down-set of largest size.
+
+<Lean decl="Lumenary.OrderTheory.maximal_in_one_to_twelve" />
+
+<Lean decl="Lumenary.OrderTheory.no_greatest_in_one_to_twelve" />
+
+<Lean decl="Lumenary.OrderTheory.exists_maximal_of_finite" />
+
+**Joins and meets.** Unions and intersections are the joins and meets of subsets, the gcd is the meet for divisibility (core Lean's `Nat.dvd_gcd_iff`), a supremum outside its set, and absorption.
+
+<Lean decl="Lumenary.OrderTheory.union_isLUB" />
+
+<Lean decl="Lumenary.OrderTheory.inter_isGLB" />
+
+<Lean decl="Lumenary.OrderTheory.gcd_is_meet" />
+
+<Lean decl="Lumenary.OrderTheory.lub_not_mem" />
+
+<Lean decl="Lumenary.OrderTheory.absorption" />
+
+**Well-orders.** Theorem 5 by strong induction, exactly as above, and the two non-examples of Proposition 6.
+
+<Lean decl="Lumenary.OrderTheory.nat_wellOrdered" />
+
+<Lean decl="Lumenary.OrderTheory.int_not_wellOrdered" />
+
+<Lean decl="Lumenary.OrderTheory.rat_pos_no_least" />
+
+**Fixed points and Zorn.** Knaster–Tarski in four lines, each matching a sentence of the proof; and Zorn's lemma, which Mathlib proves from the axiom of choice (Lean's `Classical.choice`).
+
+<Lean decl="Lumenary.OrderTheory.knaster_tarski" />
+
+<Lean decl="Lumenary.OrderTheory.zorn" />
+
+**Not formalised here:** Proposition 1, the linear-extension corollary, the algebraic characterisation of lattices, and the well-ordering theorem (Mathlib: `WellOrderingRel`), whose proof, like Zorn's lemma, uses choice.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting orders, and computing with them">
+
+How many partial orders are there on a small set? Every partial order is reflexive, so it suffices to try all choices of the off-diagonal pairs — $2^{12} = 4096$ relations on four elements — and test the axioms. The census shows that total orders and lattices are rare among partial orders, and checks Theorem 2 on every poset with at most four elements. (The number of preorders, $1, 4, 29, 355$, will reappear in the topologist's viewpoint.)
+
+<Python id="order_theory_counting_posets" />
+
+The second experiment computes the Hasse diagram of divisibility on $\{1, \dots, 12\}$, confirms that the divisors of $60$ form a lattice with $\gcd$ and $\operatorname{lcm}$ as meet and join while $\{1, \dots, 12\}$ does not, and finds the set of vertices reachable in a small graph as a least fixed point — once by iterating from $\varnothing$, once as the intersection of all pre-fixed points, as in Theorem 7.
+
+<Python id="order_theory_divisibility" />
+
+Both are exhaustive and exact for the finite examples computed. They illustrate the theorems; the proofs above cover all posets and all complete lattices.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Treating "maximal" and "greatest" as synonyms.** Greatest means above *everything*; maximal means *nothing is above it*. They agree in total orders, but a partial order can have many maximal elements and no greatest one: in $(\{1, \dots, 12\}, \mid)$ there are six maximal elements and no greatest. If a greatest element exists, it is the unique maximal element (Proposition 1) — but a unique maximal element need not be greatest in an infinite poset (take $\N$ together with one extra element $\top$ that is comparable only with itself: $\top$ is the only maximal element, yet it is not above $0$).
+
+</Misconception>
+
+<Misconception>
+
+**Assuming every partial order is total.** Divisibility, inclusion of sets and the product order on pairs all have incomparable elements. Arguments such as "either $a \le b$ or $b \le a$" are valid only after totality has been established.
+
+</Misconception>
+
+<Misconception>
+
+**"The least upper bound of a set belongs to the set."** It need not: $\sup\{q \in \Q : q < 1\} = 1$ is not in the set, and in $(\mathcal{P}(A), \subseteq)$ the supremum of $\{\{1\}, \{2\}\}$ is $\{1, 2\}$. When the supremum does belong to the set, it is the set's greatest element.
+
+</Misconception>
+
+<Misconception>
+
+**"A set with a least element is well-ordered."** Well-ordering requires that *every non-empty subset* has a least element. The non-negative rationals have a least element, $0$, but their subset of positive rationals has none.
+
+</Misconception>
+
+<Misconception>
+
+**"Zorn's lemma is proved by climbing until you reach the top."** Climbing works for finite posets (Theorem 2). For infinite ones the climb must continue transfinitely, choosing an upper bound at every limit stage — infinitely many arbitrary choices, which is exactly what the axiom of choice provides. Without choice, Zorn's lemma cannot be proved.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Finite topologies are preorders">
+
+Every topological space $X$ carries a **specialisation preorder**: $x \preceq y$ when every open set containing $x$ also contains $y$ (equivalently, $x$ lies in the closure of $\{y\}$, with the convention that open sets are "up-sets"). For finite spaces the correspondence is perfect: topologies on a finite set are in one-to-one correspondence with preorders on it, the open sets being exactly the up-closed sets, and the space is $T_0$ (points are distinguished by open sets) exactly when the preorder is a partial order. So the census counts topologies too: there are $29$ topologies on a three-point set, the same as the number of preorders. Continuous maps between finite spaces are exactly the monotone maps. In the other direction, every total order generates an **order topology**, and for a dense total order connectedness is equivalent to completeness — the reason $\R$ is connected and $\Q$ is not (see <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="The Boolean lattice is a cube">
+
+The Hasse diagram of $\mathcal{P}(\{1, \dots, n\})$ is the graph of the $n$-dimensional cube: identify a subset with its indicator vector in $\{0, 1\}^n$, and two subsets are joined when they differ in one coordinate. Rank (the size of a subset) is height in the cube; the meet and join are coordinatewise minimum and maximum. More generally, the faces of a convex polytope — vertices, edges, faces, …, ordered by inclusion — form a lattice, the **face lattice**, which captures the polytope's combinatorial shape; the face lattice of a cube, for instance, has $8 + 12 + 6$ elements between the empty face and the whole cube. Product orders on $\R^n$ are geometric too: the elements above a point form a closed orthant, and the Pareto front of a finite set is its set of maximal points.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Chains, antichains and Dilworth's theorem">
+
+In a finite poset, a chain and an antichain share at most one element, so covering the poset by chains needs at least as many chains as the size of the largest antichain. **Dilworth's theorem** (1950) says this bound is attained: the minimum number of chains covering a finite poset equals the maximum size of an antichain. Its dual, **Mirsky's theorem**, says the length of the longest chain equals the minimum number of antichains covering the poset. In $\mathcal{P}(\{1, \dots, n\})$, the largest antichain has $\binom{n}{\lfloor n/2 \rfloor}$ sets — all subsets of the middle size — which is **Sperner's theorem** (1928). For $(\{1, \dots, 12\}, \mid)$, the six maximal elements $7, \dots, 12$ form an antichain, and the chains $1 \mid 2 \mid 4 \mid 8$, $3 \mid 6 \mid 12$, $9$, $5 \mid 10$, $7$, $11$ cover the poset, so six is the answer to both questions (see <TopicLink id="math.discrete.combinatorics">combinatorics</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Implication is an order, and induction is a least fixed point">
+
+Propositions ordered by implication ($p \le q$ when $p$ implies $q$, up to logical equivalence) form a lattice whose meet is "and" and whose join is "or": a **Boolean algebra**, the algebraic face of propositional logic (see <TopicLink id="math.found.propositional-logic">propositional logic</TopicLink>). The Knaster–Tarski theorem is the foundation of inductive definitions: the natural numbers, the well-formed formulas of a logic and the theorems of a proof system are each the *least* set closed under certain rules — the least fixed point of a monotone operator — and proofs by induction over them are proofs that a property defines a pre-fixed point. In computer science, the meaning of a recursive program is the least fixed point of a monotone map on a lattice of partial functions, and static analysers compute least fixed points by exactly the iteration from the bottom element used in the computation section.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="A preorder is a category with at most one arrow">
+
+A preorder $(P, \le)$ is the same thing as a category with at most one morphism between any two objects: put an arrow $a \to b$ exactly when $a \le b$; reflexivity provides identities and transitivity provides composition. Monotone maps are then exactly functors, a supremum is a **coproduct**, an infimum is a **product**, a greatest element is a **terminal object** and a least element an **initial object**. A pair of monotone maps $f : P \to Q$, $g : Q \to P$ with $f(p) \le q \iff p \le g(q)$ — a **Galois connection** — is precisely an **adjunction** between thin categories, and much of category theory can be first learned in this simplified, ordered setting (see <TopicLink id="math.cat.categories">categories</TopicLink> and <TopicLink id="math.cat.adjunctions">adjunctions</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Orders of magnitude and of numbers.** Comparisons of size are as old as counting, but the idea of a relation that orders only *some* pairs emerged in the nineteenth century, in the algebra of logic of George Boole, Charles Sanders Peirce and Ernst Schröder, and in Richard Dedekind's work on ideals: Dedekind's "Dualgruppen" (1897, 1900) are what we now call lattices.
+- **Well-orders and choice.** Georg Cantor introduced well-ordered sets and ordinal numbers in the 1880s and 1890s. Ernst Zermelo proved in 1904 that every set can be well-ordered, using the axiom of choice he made explicit for the purpose. Felix Hausdorff's *Grundzüge der Mengenlehre* (1914) developed the theory of ordered sets systematically and stated a maximal principle; Kazimierz Kuratowski (1922) and Max Zorn (1935) gave the forms now used as "Zorn's lemma".
+- **Lattices and fixed points.** Garrett Birkhoff's *Lattice Theory* (1940) established lattices as a field of their own. Bronisław Knaster and Alfred Tarski proved the fixed-point theorem for sets in 1928, and Tarski gave the general lattice version in 1955. Hasse diagrams take their name from Helmut Hasse, who used them in algebraic number theory; Robert Dilworth proved his decomposition theorem in 1950.
+- **Orders at work.** Algorithms for ordering tasks consistently with their dependencies — topological sorting — were developed for project planning and computing in the 1950s and 1960s, and today schedule everything from building projects to software compilation.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- B. A. Davey and H. A. Priestley, *Introduction to Lattices and Order* (1990; 2nd ed. 2002) — the standard introduction, with many pictures.
+- Garrett Birkhoff, *Lattice Theory* (1940; 3rd ed. 1967) — the classic monograph.
+- Paul R. Halmos, *Naive Set Theory* (1960) — short chapters on orders, Zorn's lemma, well-ordering and ordinals.
+- Bernd S. W. Schröder, *Ordered Sets: An Introduction* (2003) — combinatorial order theory, including Dilworth's theorem and fixed points.
+- William T. Trotter, *Combinatorics and Partially Ordered Sets: Dimension Theory* (1992) — for the combinatorial side.
+
+</Section>

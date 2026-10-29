@@ -1,0 +1,577 @@
+---
+slug: arithmetic-geometry
+topic: math.number.arithmetic-geometry
+title: Arithmetic geometry and elliptic curves
+subtitle: Draw a line through two rational points of a cubic curve and the third intersection is rational too. From this one observation grow the Mordell–Weil theorem, the Hasse bound, the proof of Fermat's Last Theorem — and a million-dollar open problem.
+level: research
+ages: Research orientation (algebraic number theory and algebraic geometry assumed)
+minutes: 140
+order: 8004
+objectives:
+  - Define elliptic curves, construct the chord-and-tangent group law, and compute torsion points with the Nagell–Lutz theorem
+  - State the Mordell–Weil theorem, prove its descent step, and prove the Hasse bound from the theory of the Frobenius endomorphism
+  - Count points of elliptic curves over small finite fields and use the Weil zeta function to count over extensions
+  - Explain the statements of the Weil conjectures, the modularity theorem, the route from modularity to Fermat's Last Theorem, and the Birch and Swinnerton-Dyer conjecture, separating theorems from conjectures
+narrators: []
+lean:
+  - Lumenary.ArithmeticGeometry.short_discriminant
+  - Lumenary.ArithmeticGeometry.chord_third_point
+  - Lumenary.ArithmeticGeometry.tangent_third_point
+  - Lumenary.ArithmeticGeometry.sum_on_curve
+  - Lumenary.ArithmeticGeometry.add_assoc_points
+  - Lumenary.ArithmeticGeometry.two_torsion
+  - Lumenary.ArithmeticGeometry.torsionCurve
+  - Lumenary.ArithmeticGeometry.torsionPoint
+  - Lumenary.ArithmeticGeometry.torsion_order_six
+  - Lumenary.ArithmeticGeometry.bachetCurve
+  - Lumenary.ArithmeticGeometry.bachet_duplication
+  - Lumenary.ArithmeticGeometry.curve37a
+  - Lumenary.ArithmeticGeometry.curve_37a_discriminant
+  - Lumenary.ArithmeticGeometry.pointCount
+  - Lumenary.ArithmeticGeometry.hasse_small_primes
+  - Lumenary.ArithmeticGeometry.torsion_finite
+  - Lumenary.ArithmeticGeometry.mordell_weil_of_weak
+  - Lumenary.ArithmeticGeometry.flt_three
+  - Lumenary.ArithmeticGeometry.flt_four
+compute: [arithmetic_geometry_group_law, arithmetic_geometry_point_counts]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Rational points on cubic curves">
+
+Which whole numbers $n$ are the area of a right-angled triangle whose three sides are rational? The $(3, 4, 5)$ triangle shows that $6$ is such a **congruent number**; the triangle with sides $\tfrac32, \tfrac{20}{3}, \tfrac{41}{6}$ shows that $5$ is. The question appears in Arabic manuscripts of the tenth century, Fibonacci showed in 1225 that $5$ is congruent, and Fermat proved by infinite descent that $1$ is **not** congruent. A little algebra turns the question into geometry: $n$ is congruent exactly when the cubic curve
+
+$$
+y^2 = x^3 - n^2 x
+$$
+
+has a rational point with $y \neq 0$. (For $n = 6$ the $(3,4,5)$ triangle gives the point $(12, 36)$: indeed $36^2 = 1296 = 12^3 - 36 \cdot 12$.) A complete answer is still not known: Tunnell's theorem (1983) gives a simple criterion that decides the question — *provided* the Birch and Swinnerton-Dyer conjecture holds.
+
+This is the pattern of the whole subject. **Arithmetic geometry** studies polynomial equations with integer or rational coefficients by looking at the geometry of their solution sets. For plane curves the geometry dictates the arithmetic with remarkable force:
+
+- **Conics** (genus $0$) have either no rational points or a rational parametrisation by a line — infinitely many, all known (whether a point exists is decided by the Hasse–Minkowski local–global principle).
+- **Cubic curves with a rational point** (genus $1$, the *elliptic curves*) have rational points forming a **finitely generated abelian group**: finitely many points generate all the others by a chord-and-tangent construction (Mordell, 1922).
+- **Curves of genus at least $2$** have only **finitely many** rational points (Faltings, 1983).
+
+Elliptic curves sit on the boundary between "parametrisable" and "finite", which is why they are so rich. They also connect three worlds that this lesson visits in turn: rational points (Mordell–Weil, the rank, Birch and Swinnerton-Dyer), points over finite fields (Hasse, Weil, Sato–Tate) and modular forms (the modularity theorem, and through it Fermat's Last Theorem). This lesson builds on <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink> and <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Chords, tangents and a group">
+
+Take a cubic curve $E$ and two rational points $P$ and $Q$ on it. The line through them is defined over $\Q$, and substituting it into the cubic gives a cubic equation in $x$ with rational coefficients. Two of its roots, $x(P)$ and $x(Q)$, are rational — so the third root is rational too, because the three roots add up to a rational coefficient. The **third intersection point** $R$ is a new rational point. (If $P = Q$, use the tangent line.)
+
+Diophantus already used such tricks, and Bachet (1621) found that doubling a point of $y^2 = x^3 - 2$ by the tangent turns $(3, 5)$ into $\left(\tfrac{129}{100}, -\tfrac{383}{1000}\right)$. Newton described the chord and tangent constructions geometrically. The decisive step came with Poincaré (1901): reflect the third point in the $x$-axis and declare the result to be $P + Q$. With the "point at infinity" $O$ as zero, this is an **abelian group law**, and the arithmetic of the curve becomes the algebra of a group.
+
+Three features of the picture organise everything that follows.
+
+- **Size.** The coordinates of $P, 2P, 3P, \dots$ on Bachet's curve have denominators with $1, 3, 5, 8, 15, 21, \dots$ digits — roughly proportional to $n^2$. Heights grow quadratically, and this is what makes the group finitely generated.
+- **Reduction.** Reducing the equation modulo a prime $p$ gives a curve over $\mathbb{F}_p$ with about $p$ points. The errors $a_p = p + 1 - \#E(\mathbb{F}_p)$ carry deep information.
+- **Analysis.** Packaging all the $a_p$ into one function $L(E, s)$ links the finite fields back to the rational points: the conjecture of Birch and Swinnerton-Dyer.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $K$ is a field. When we write short equations we assume $\operatorname{char} K \neq 2, 3$.
+
+<Definition term="Weierstrass equation and elliptic curve">
+
+A **Weierstrass equation** over $K$ is
+
+$$
+y^2 + a_1 xy + a_3 y = x^3 + a_2 x^2 + a_4 x + a_6, \qquad a_i \in K,
+$$
+
+with associated quantities $b_2 = a_1^2 + 4a_2$, $b_4 = 2a_4 + a_1a_3$, $b_6 = a_3^2 + 4a_6$, $b_8 = a_1^2a_6 + 4a_2a_6 - a_1a_3a_4 + a_2a_3^2 - a_4^2$ and **discriminant** $\Delta = -b_2^2b_8 - 8b_4^3 - 27b_6^2 + 9b_2b_4b_6$. An **elliptic curve** over $K$ is the projective curve defined by a Weierstrass equation with $\Delta \neq 0$; it consists of the affine solutions together with one **point at infinity** $O = [0 : 1 : 0]$. When $\operatorname{char} K \neq 2, 3$, a change of variables brings it to the **short form** $y^2 = x^3 + ax + b$, for which $\Delta = -16(4a^3 + 27b^2)$. Intrinsically, an elliptic curve is a smooth projective curve of genus $1$ with a chosen $K$-rational point.
+
+</Definition>
+
+The condition $\Delta \neq 0$ says that the cubic $x^3 + ax + b$ has no repeated root, which is exactly the condition that the curve is smooth.
+
+<Definition term="the group law">
+
+For $P, Q \in E(K)$, let $R$ be the third intersection point of the line $PQ$ (the tangent if $P = Q$) with $E$, counted with multiplicity, and define $P + Q$ to be the third intersection of the line $RO$ with $E$. In short form, $-(x, y) = (x, -y)$ and $P + Q = -R$. Explicitly, if $P = (x_1, y_1)$, $Q = (x_2, y_2)$ and $Q \neq -P$, set
+
+$$
+\lambda = \frac{y_2 - y_1}{x_2 - x_1} \ (x_1 \neq x_2), \qquad \lambda = \frac{3x_1^2 + a}{2y_1} \ (P = Q);
+$$
+
+then $x_3 = \lambda^2 - x_1 - x_2$ and $P + Q = \big(x_3,\ -\lambda(x_3 - x_1) - y_1\big)$. The point $O$ is the zero, and $P + (-P) = O$.
+
+</Definition>
+
+<Definition term="Mordell–Weil group, rank and torsion">
+
+For a number field $K$, $E(K)$ is the **Mordell–Weil group**. By the Mordell–Weil theorem it is finitely generated, so $E(K) \cong E(K)_{\mathrm{tors}} \times \Z^r$ with $E(K)_{\mathrm{tors}}$ finite; $r$ is the **rank** of $E$ over $K$.
+
+</Definition>
+
+<Definition term="reduction, the trace of Frobenius and the L-function">
+
+Let $E/\Q$ be given by a Weierstrass equation with integer coefficients and minimal discriminant $\Delta$. For a prime $p \nmid \Delta$ the reduced equation defines an elliptic curve $\tilde E$ over $\mathbb{F}_p$ (**good reduction**), and we put $a_p = p + 1 - \#\tilde E(\mathbb{F}_p)$. For $p \mid \Delta$ the reduction is singular, and $a_p \in \{1, -1, 0\}$ according as it has a node with rational tangents (split multiplicative), a node with conjugate tangents (non-split multiplicative), or a cusp (additive). The **conductor** $N$ is a product of the bad primes, to the first power exactly at multiplicative primes. The **L-function** is
+
+$$
+L(E, s) = \prod_{p \nmid \Delta} \big(1 - a_p p^{-s} + p^{1 - 2s}\big)^{-1} \prod_{p \mid \Delta} \big(1 - a_p p^{-s}\big)^{-1} = \sum_{n \ge 1} \frac{a_n}{n^s},
+$$
+
+which converges for $\operatorname{Re} s > \tfrac32$ by the Hasse bound below.
+
+</Definition>
+
+<Definition term="modular elliptic curve">
+
+$E/\Q$ of conductor $N$ is **modular** if there is a weight-$2$ cuspidal newform $f = \sum a_n(f) q^n$ for $\Gamma_0(N)$ with $L(E, s) = L(f, s)$, that is, $a_p(f) = a_p(E)$ for every prime $p$. (Equivalently, there is a non-constant map $X_0(N) \to E$ defined over $\Q$.)
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="A point of order six">
+
+On $y^2 = x^3 + 1$ (discriminant $-432$) take $P = (2, 3)$. The tangent at $P$ has slope $\lambda = \tfrac{3 \cdot 4}{2 \cdot 3} = 2$, so $x(2P) = 4 - 4 = 0$ and $2P = (0, 1)$. Chords then give
+
+| $n$ | $1$ | $2$ | $3$ | $4$ | $5$ | $6$ |
+| --- | --- | --- | --- | --- | --- | --- |
+| $nP$ | $(2, 3)$ | $(0, 1)$ | $(-1, 0)$ | $(0, -1)$ | $(2, -3)$ | $O$ |
+
+so $P$ has order $6$. Every multiple is integral, as the Nagell–Lutz theorem below requires of torsion points, and $3P = (-1, 0)$ has $y = 0$: it is a point of order $2$. In fact $E(\Q) \cong \Z/6\Z$.
+
+</Example>
+
+<Example title="A point of infinite order">
+
+On Bachet's curve $y^2 = x^3 - 2$, $P = (3, 5)$ and $2P = \left(\tfrac{129}{100}, -\tfrac{383}{1000}\right)$. Since $2P$ is not integral, it is not a torsion point (Nagell–Lutz), so neither is $P$. The rank of this curve is $1$ and $P$ generates $E(\Q) \cong \Z$.
+
+</Example>
+
+<Example title="The congruent number curves">
+
+$E_n: y^2 = x^3 - n^2 x$. Its points of order $2$ are $(0, 0)$ and $(\pm n, 0)$, and one can show that these, with $O$, are all the torsion. So $n$ is congruent if and only if $E_n(\Q)$ has positive rank. For $n = 1$ the rank is $0$ (Fermat's descent), for $n = 5$ the point $(-4, 6)$ has infinite order (check: $(-4)^3 + 25 \cdot 4 = 36$), and for $n = 6$ the point $(12, 36)$ comes from the $(3, 4, 5)$ triangle.
+
+</Example>
+
+<Example title="Counting points over a small field">
+
+Take $E: y^2 = x^3 + x + 1$ over $\mathbb{F}_5$ (here $4 + 27 = 31 \not\equiv 0$). The squares mod $5$ are $0, 1, 4$. For $x = 0, 1, 2, 3, 4$ the right-hand side is $1, 3, 1, 1, 4$, which has $2, 0, 2, 2, 2$ square roots. So there are $8$ affine points and $\#E(\mathbb{F}_5) = 9$, inside the Hasse interval $6 \pm 2\sqrt 5 \approx [1.5,\ 10.5]$, with $a_5 = 6 - 9 = -3$. A group of order $9$ is $\Z/9$ or $(\Z/3)^2$; the second would need all of $E[3]$ to be rational, and the Weil pairing would then force $\mathbb{F}_5$ to contain the cube roots of unity, which it does not ($3 \nmid 5 - 1$). So $E(\mathbb{F}_5) \cong \Z/9\Z$.
+
+</Example>
+
+<Example title="Curves of rank 0, 1, 2 and 3">
+
+From Cremona's tables, labelled by conductor: $11a1: y^2 + y = x^3 - x^2 - 10x - 20$ has rank $0$ (and $E(\Q) \cong \Z/5$); $37a1: y^2 + y = x^3 - x$ has rank $1$, generated by $(0, 0)$, and discriminant $37$; $389a1: y^2 + y = x^3 + x^2 - 2x$ has rank $2$; $5077a1: y^2 + y = x^3 - 7x + 6$ has rank $3$. Each is the curve of smallest conductor with its rank. The computation section repeats Birch and Swinnerton-Dyer's experiment on these four.
+
+</Example>
+
+<Example title="Non-examples: singular cubics">
+
+$y^2 = x^3$ has $\Delta = 0$: it has a **cusp** at the origin. Its non-singular points still form a group under the chord rule, but $(x, y) \mapsto x/y$ identifies that group with $(K, +)$. Similarly $y^2 = x^3 + x^2$ has a **node**, and its non-singular points form a group isomorphic to $K^\times$ (when the tangents at the node are rational). These degenerate "elliptic curves" are exactly what appears at primes of multiplicative and additive reduction.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central results">
+
+<Theorem name="Theorem 1 (the group law)">
+
+Let $E: y^2 = x^3 + ax + b$ be an elliptic curve over $K$ ($\operatorname{char} K \neq 2, 3$). The chord-and-tangent rule makes $E(K)$ an abelian group with identity $O$ and $-(x, y) = (x, -y)$.
+
+</Theorem>
+
+<Proof>
+
+*Closure.* Let $P = (x_1, y_1)$, $Q = (x_2, y_2)$ with $x_1 \neq x_2$ and slope $\lambda$ as in the definition, so $y_2 - y_1 = \lambda(x_2 - x_1)$. Substituting the line $y = \lambda(x - x_1) + y_1$ into the equation gives
+
+$$
+f(x) := x^3 + ax + b - \big(\lambda(x - x_1) + y_1\big)^2 = x^3 - \lambda^2 x^2 + \cdots,
+$$
+
+a monic cubic with coefficients in $K$ that vanishes at $x_1$ and $x_2$. Hence $f(x) = (x - x_1)(x - x_2)(x - x_3)$ with $x_1 + x_2 + x_3 = \lambda^2$ (Vieta), so $x_3 = \lambda^2 - x_1 - x_2 \in K$, and $y_3 = \lambda(x_3 - x_1) + y_1 \in K$ satisfies the equation because $f(x_3) = 0$. If $P = Q$ with $y_1 \neq 0$, the tangent line $y = \lambda(x - x_1) + y_1$ with $2y_1\lambda = 3x_1^2 + a$ makes $x_1$ a double root of $f$ (as $f'(x_1) = 3x_1^2 + a - 2\lambda y_1 = 0$), and the same argument gives $x_3 = \lambda^2 - 2x_1$. In the remaining cases ($x_1 = x_2$, $y_1 = -y_2$) the line is vertical, meets $E$ again at $O$, and $P + Q = O$. Reflection preserves the equation, so $P + Q \in E(K)$.
+
+*Identity, inverses, commutativity.* The line through $P$ and $O$ is the vertical line through $P$; its third point is $-P$, and reflecting gives $P + O = P$. The line through $P$ and $-P$ is vertical, so $P + (-P) = O$. The line through $P$ and $Q$ does not depend on their order, so $P + Q = Q + P$.
+
+*Associativity* is the one non-trivial axiom. It can be verified by a long computation with the formulas (computer algebra does it in seconds), but the conceptual proof identifies $E(K)$ with the degree-zero Picard group: $P \mapsto [P] - [O]$ is a bijection $E(K) \to \operatorname{Pic}^0_K(E)$ by the Riemann–Roch theorem, and the chord rule is the statement that $P + Q + R = O$ exactly when $[P] + [Q] + [R] - 3[O]$ is the divisor of a line, a principal divisor. So the group law is transported from a group (Silverman, *The Arithmetic of Elliptic Curves*, III.3.4). Mathlib uses an algebraic version of this idea; see the formal section.
+
+</Proof>
+
+<Theorem name="Proposition 2 (points of order two)">
+
+A point $P \neq O$ satisfies $2P = O$ if and only if $y(P) = 0$. Over an algebraic closure there are exactly three such points, $(e_i, 0)$ for the three roots $e_i$ of $x^3 + ax + b$, and $E[2] \cong (\Z/2)^2$.
+
+</Theorem>
+
+<Proof>
+
+$2P = O$ means $P = -P$, i.e. $(x, y) = (x, -y)$, i.e. $y = 0$ (as $\operatorname{char} K \neq 2$). The points with $y = 0$ are the $(e, 0)$ with $e^3 + ae + b = 0$, and the three roots are distinct because $\Delta \neq 0$. With $O$ these form a group of order $4$ in which every element has order at most $2$, so it is $(\Z/2)^2$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (Nagell 1935, Lutz 1937; Mazur 1977)">
+
+Let $E: y^2 = x^3 + ax + b$ with $a, b \in \Z$. If $P = (x, y) \in E(\Q)$ is a torsion point, then $x, y \in \Z$, and either $y = 0$ or $y^2 \mid 4a^3 + 27b^2$. Moreover (Mazur) $E(\Q)_{\mathrm{tors}}$ is isomorphic to one of the fifteen groups $\Z/n$ for $1 \le n \le 10$ or $n = 12$, and $\Z/2 \times \Z/2m$ for $1 \le m \le 4$.
+
+</Theorem>
+
+Nagell–Lutz is proved with the formal group (or by valuations of denominators) in Silverman–Tate, Chapter 2; it makes torsion **computable**: only finitely many candidates $y$ need testing. Mazur's theorem is much deeper (it rests on the arithmetic of the modular curves $X_0(N)$ and $X_1(N)$).
+
+<Theorem name="Theorem 4 (Mordell 1922; Weil 1928)">
+
+For an elliptic curve $E$ over a number field $K$, the group $E(K)$ is finitely generated.
+
+</Theorem>
+
+The proof has two halves. The **weak Mordell–Weil theorem** says that $E(K)/2E(K)$ is finite. Over $L = K(E[2])$, a Kummer map embeds $E(L)/2E(L)$ into $(L^\times/L^{\times 2})^2$, landing in the classes that are unramified outside a finite set $S$ of primes; that group is finite by the finiteness of the class group and Dirichlet's $S$-unit theorem, and finiteness over $L$ implies finiteness over $K$. The **descent** half uses a height function and is purely group-theoretic; we prove it in full.
+
+<Theorem name="Lemma 5 (the descent lemma)">
+
+Let $A$ be an abelian group and $h: A \to \R_{\ge 0}$ a function such that (i) for every $B$ the set $\{P : h(P) \le B\}$ is finite; (ii) there is a constant $C$ with $|h(P + Q) + h(P - Q) - 2h(P) - 2h(Q)| \le C$ for all $P, Q$; (iii) $A/2A$ is finite. Then $A$ is finitely generated.
+
+</Theorem>
+
+<Proof>
+
+Choose representatives $Q_1, \dots, Q_m$ of the cosets of $2A$ and let $c = \max_i h(Q_i)$. Taking $Q = P$ in (ii) gives $h(2P) \ge 4h(P) - h(0) - C$, and (ii) also gives $h(P - Q) \le 2h(P) + 2h(Q) + C$. Now let $P \in A$ and write $P = Q_{i} + 2P_1$. Then
+
+$$
+4h(P_1) - h(0) - C \le h(2P_1) = h(P - Q_i) \le 2h(P) + 2c + C,
+$$
+
+so $h(P_1) \le \tfrac12 h(P) + c'$ with $c' = \tfrac14 (2c + 2C + h(0))$. Repeating, $P = Q_{i_1} + 2Q_{i_2} + \cdots + 2^{n-1}Q_{i_n} + 2^n P_n$ with
+
+$$
+h(P_n) \le 2^{-n} h(P) + c'\left(1 + \tfrac12 + \cdots + 2^{1-n}\right) \le 2^{-n} h(P) + 2c'.
+$$
+
+For $n$ large $h(P_n) \le 1 + 2c'$. Hence $A$ is generated by $Q_1, \dots, Q_m$ together with the set $\{R : h(R) \le 1 + 2c'\}$, which is finite by (i).
+
+</Proof>
+
+For $E(K)$ one takes the **naïve height** $h(P) = \log H(x(P))$, where $H(u/v) = \max(|u|, |v|)$ in lowest terms over $\Q$ (with the analogous product over places for number fields). Property (i) holds because there are finitely many rationals of bounded height, and (ii), the approximate parallelogram law, is a careful estimate with the duplication formula. The limit $\hat h(P) = \lim_n h(2^nP)/4^n$ is the **canonical height**, an exact quadratic form on $E(K)$: this is the quadratic growth seen on Bachet's curve.
+
+<Theorem name="Theorem 6 (Hasse 1933)">
+
+For an elliptic curve $E$ over $\mathbb{F}_q$, $\big|\#E(\mathbb{F}_q) - (q + 1)\big| \le 2\sqrt q$.
+
+</Theorem>
+
+<Proof>
+
+We use two standard facts about the endomorphism ring of $E$ over $\overline{\mathbb{F}}_q$ (Silverman III.6 and V.1). Let $\phi(x, y) = (x^q, y^q)$ be the **Frobenius endomorphism**; its fixed points are exactly $E(\mathbb{F}_q)$, so $E(\mathbb{F}_q) = \ker(1 - \phi)$.
+
+1. The degree map $\deg : \operatorname{End}(E) \to \Z$ is a positive definite quadratic form: $\deg(\psi) \ge 0$, with equality only for $\psi = 0$, and $(\psi, \chi) \mapsto \deg(\psi + \chi) - \deg\psi - \deg\chi$ is bilinear. Also $\deg \phi = q$.
+2. $1 - \phi$ is separable (its differential is $1$), so $\#\ker(1 - \phi) = \deg(1 - \phi)$.
+
+Put $N = \#E(\mathbb{F}_q) = \deg(1 - \phi)$ and $a = q + 1 - N$. By fact 1, for all integers $m, n$,
+
+$$
+0 \le \deg(m - n\phi) = m^2 \deg(1) + n^2 \deg(\phi) - mn\big(\deg(1) + \deg(\phi) - \deg(1 - \phi)\big) = m^2 - a\,mn + q\,n^2.
+$$
+
+A binary quadratic form that is non-negative on $\Z^2$ is non-negative on $\Q^2$ (scale) and hence on $\R^2$ (continuity), so its discriminant is $\le 0$: $a^2 - 4q \le 0$, that is $|a| \le 2\sqrt q$.
+
+</Proof>
+
+The same computation gives more. $\phi$ satisfies $\phi^2 - a\phi + q = 0$ in $\operatorname{End}(E)$; if $\alpha, \beta$ are the roots of $T^2 - aT + q$ (complex conjugates of absolute value $\sqrt q$), then $\#E(\mathbb{F}_{q^n}) = q^n + 1 - \alpha^n - \beta^n$ for every $n$, and the zeta function
+
+$$
+Z(E/\mathbb{F}_q, T) = \exp\Big(\sum_{n \ge 1} \#E(\mathbb{F}_{q^n}) \frac{T^n}{n}\Big) = \frac{1 - aT + qT^2}{(1 - T)(1 - qT)}
+$$
+
+is rational, satisfies a functional equation under $T \mapsto 1/(qT)$, and has its zeros on $|T| = q^{-1/2}$ — the **Riemann hypothesis** for $E$. For $y^2 = x^3 + x + 1$ over $\mathbb{F}_5$, $a = -3$, so $\#E(\mathbb{F}_{25}) = 26 - (\alpha^2 + \beta^2) = 26 - (a^2 - 2q) = 27$.
+
+<Theorem name="Theorem 7 (the Weil conjectures; Weil, Dwork, Grothendieck, Deligne)">
+
+For a smooth projective variety $X$ of dimension $d$ over $\mathbb{F}_q$, the zeta function $Z(X, T)$ is a rational function $\frac{P_1(T) P_3(T) \cdots P_{2d-1}(T)}{P_0(T) P_2(T) \cdots P_{2d}(T)}$ satisfying a functional equation, and the reciprocal roots of $P_i$ have absolute value $q^{i/2}$. If $X$ lifts to characteristic $0$, $\deg P_i$ is the $i$-th Betti number of the complex variety.
+
+</Theorem>
+
+Weil proved the case of curves (1940s); Dwork proved rationality (1960); Grothendieck and his school built $\ell$-adic cohomology, which gives rationality and the functional equation via a Lefschetz trace formula; Deligne proved the Riemann hypothesis (1974). For an elliptic curve, $H^1$ has rank $2$ and Frobenius acts on it with eigenvalues $\alpha, \beta$: Hasse's theorem is the case $d = 1$, $g = 1$.
+
+<Theorem name="Theorem 8 (modularity; Wiles 1995, Taylor–Wiles 1995, Breuil–Conrad–Diamond–Taylor 2001)">
+
+Every elliptic curve over $\Q$ is modular. Consequently $L(E, s)$ has an analytic continuation to all of $\C$ and satisfies the functional equation $\Lambda(s) = \pm \Lambda(2 - s)$, where $\Lambda(s) = N^{s/2} (2\pi)^{-s} \Gamma(s) L(E, s)$.
+
+</Theorem>
+
+Wiles (with Taylor–Wiles for a key step) proved the theorem for **semistable** curves, those with only multiplicative bad reduction; Breuil, Conrad, Diamond and Taylor completed the general case. Example: for $11a1$, $\sum a_n q^n = q \prod_{n \ge 1} (1 - q^n)^2 (1 - q^{11n})^2$, a weight-$2$ cusp form for $\Gamma_0(11)$; the Langlands lesson checks this numerically.
+
+<Theorem name="Corollary 9 (Fermat's Last Theorem)">
+
+For $n \ge 3$ there are no positive integers with $a^n + b^n = c^n$.
+
+</Theorem>
+
+The route, in outline. It suffices to treat $n = 4$ (Fermat) and odd primes $n = \ell \ge 5$ ($\ell = 3$ is Euler's case). Given a solution $a^\ell + b^\ell = c^\ell$ with $a, b, c$ coprime, suitably normalised, Frey (1984–86) considered
+
+$$
+E_{a,b}: y^2 = x(x - a^\ell)(x + b^\ell),
+$$
+
+whose discriminant is $16(abc)^{2\ell}$: it is semistable, and its $\ell$-torsion is "too lightly ramified". **Ribet's theorem** (1986–90, proving Serre's $\varepsilon$-conjecture) then says that if $E_{a,b}$ were modular of level $N$, its $\ell$-torsion would come from a weight-$2$ newform of level $2$. There are no such forms (the space $S_2(\Gamma_0(2))$ is zero). So $E_{a,b}$ is not modular, contradicting Wiles's theorem for semistable curves.
+
+<Theorem name="Conjecture 10 (Birch and Swinnerton-Dyer, 1960s)">
+
+For $E/\Q$, the order of vanishing of $L(E, s)$ at $s = 1$ equals the rank $r$ of $E(\Q)$, and
+
+$$
+\lim_{s \to 1} \frac{L(E, s)}{(s - 1)^r} = \frac{\#\text{Ш}(E/\Q)\ \Omega_E\ \operatorname{Reg}_E \prod_p c_p}{\big(\#E(\Q)_{\mathrm{tors}}\big)^2},
+$$
+
+where $\Omega_E$ is the real period, $\operatorname{Reg}_E$ the determinant of the canonical height pairing on a basis of $E(\Q)/E(\Q)_{\mathrm{tors}}$, $c_p$ the Tamagawa numbers, and $\text{Ш}$ the Tate–Shafarevich group (conjecturally finite).
+
+</Theorem>
+
+The heuristic behind it: $L(E, 1)$ is formally $\prod_p (1 - a_p/p + 1/p)^{-1} = \prod_p p/N_p$. If $E$ has many rational points, they reduce to many points mod $p$, the $N_p$ are on average a little larger than $p$, and the product is pulled towards $0$. Birch and Swinnerton-Dyer computed $\prod_{p \le X} N_p/p$ on the EDSAC-2 computer at Cambridge and saw growth like $C(\log X)^r$.
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: what is known, what is open">
+
+**Established theorems.**
+
+- *Rank 0 and 1.* If the **analytic rank** $\operatorname{ord}_{s=1} L(E, s)$ is $0$ or $1$, then it equals the rank and Ш is finite: Gross–Zagier (1986) constructed Heegner points whose height is $L'(E, 1)$ up to a non-zero factor, Kolyvagin (1988–89) bounded Selmer groups with Euler systems, and modularity (Theorem 8) removes the hypothesis they needed. Earlier, Coates and Wiles (1977) proved that $L(E, 1) \neq 0$ implies $E(\Q)$ finite for curves with complex multiplication.
+- *Averages.* Ordering curves by height, Bhargava and Shankar (2010s) proved that the average rank is bounded (by $0.885$, using $5$-Selmer groups); a positive proportion of curves have rank $0$ and a positive proportion rank $1$; and Bhargava, Skinner and Zhang (2014) deduced that a majority of elliptic curves over $\Q$ satisfy the rank part of BSD.
+- *Congruent numbers.* Tian Ye (2014) proved that for every $k \ge 1$ there are infinitely many square-free congruent numbers with exactly $k$ prime factors.
+- *Sato–Tate.* For $E/\Q$ without complex multiplication the angles $\theta_p$ in $a_p = 2\sqrt p \cos\theta_p$ are equidistributed with density $\tfrac{2}{\pi}\sin^2\theta$: proved by Clozel, Harris, Shepherd-Barron and Taylor (2008) when $j(E) \notin \Z$, and by Barnet-Lamb, Geraghty, Harris and Taylor (2011) in general.
+- *Higher genus.* Faltings (1983) proved Mordell's conjecture: a curve of genus $\ge 2$ over a number field has finitely many rational points. The proof is not effective: it bounds the number of points but gives no algorithm to find them all.
+
+**Open problems.**
+
+- **The Birch and Swinnerton-Dyer conjecture** — open for analytic rank $\ge 2$, and the full leading-term formula is open in general even in ranks $0$ and $1$ (it is known for many individual curves). It is one of the Clay Millennium Problems.
+- **Finiteness of Ш** — known when the analytic rank is at most $1$, open in general.
+- **Computing the rank.** No algorithm is known that provably computes the rank of every $E/\Q$; descent algorithms terminate if Ш is finite (or if BSD holds), which is why they work in practice.
+- **Boundedness of ranks.** Curves of rank at least $28$ are known (Elkies, 2006). Whether ranks over $\Q$ are bounded is open; the heuristics of Park, Poonen, Voight and Wood (2019) predict that only finitely many curves have rank greater than $21$.
+- **Uniformity.** Is the number of rational points on curves of genus $g \ge 2$ bounded in terms of $g$ and the rank of the Jacobian alone? Major progress came in 2020–21 (Dimitrov, Gao and Habegger; Kühne), but effective versions remain open.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Elliptic curves in Lean and Mathlib">
+
+Mathlib has Weierstrass curves over any commutative ring, their discriminants and $j$-invariants, nonsingular points, the group of points of an elliptic curve over a field, reduction, naïve heights and the formal $L$-function of a curve over a number field. We formalise the algebra of the lesson and connect it to these definitions.
+
+The discriminant of the short form, from Mathlib's general formula:
+
+<Lean decl="Lumenary.ArithmeticGeometry.short_discriminant" />
+
+The closure step of Theorem 1. The Lean proof follows the human one with the Vieta argument unwound: subtracting the two curve equations and cancelling $x_2 - x_1$ solves for $a$, the first equation solves for $b$, and what remains is a polynomial identity.
+
+<Lean decl="Lumenary.ArithmeticGeometry.chord_third_point" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.tangent_third_point" />
+
+Mathlib's general formula, for any Weierstrass equation, and associativity. Mathlib's proof of associativity (Angdinata and Xu, 2023) is elementary but not computational: it sends each point to the class of its ideal in the coordinate ring $K[x, y]/(W)$, shows that this map into the ideal class group is injective and turns the chord rule into multiplication — an algebraic avatar of the map $E \to \operatorname{Pic}^0(E)$ in the proof of Theorem 1.
+
+<Lean decl="Lumenary.ArithmeticGeometry.sum_on_curve" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.add_assoc_points" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.two_torsion" />
+
+The worked examples, computed in Lean with Mathlib's addition law: the point of order six, Bachet's duplication and the curve $37a1$.
+
+<Lean decl="Lumenary.ArithmeticGeometry.torsionCurve" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.torsionPoint" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.torsion_order_six" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.bachetCurve" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.bachet_duplication" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.curve37a" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.curve_37a_discriminant" />
+
+Point counts over $\mathbb{F}_p$, and an exhaustive kernel check of the Hasse bound for every curve over $\mathbb{F}_5, \mathbb{F}_7, \mathbb{F}_{11}, \mathbb{F}_{13}$ — a finite verification, clearly weaker than Theorem 6:
+
+<Lean decl="Lumenary.ArithmeticGeometry.pointCount" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.hasse_small_primes" />
+
+Mordell–Weil. Mathlib (work of M. Stoll and collaborators, 2026) contains the descent lemma, the naïve height with its approximate parallelogram law, and the Northcott property for number fields. So both the finiteness of torsion and the **descent half** of Theorem 4 are formal theorems; what is missing is the weak Mordell–Weil theorem.
+
+<Lean decl="Lumenary.ArithmeticGeometry.torsion_finite" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.mordell_weil_of_weak" />
+
+Fermat's Last Theorem for exponents $3$ and $4$ is in Mathlib, by elementary methods:
+
+<Lean decl="Lumenary.ArithmeticGeometry.flt_three" />
+
+<Lean decl="Lumenary.ArithmeticGeometry.flt_four" />
+
+**What is and is not formalised.** Formalised here or in Mathlib: Weierstrass curves, discriminants, the group law with associativity, the closure computation, finiteness of torsion over number fields, the descent step of Mordell–Weil, the worked examples, finite checks of the Hasse bound, FLT for $n = 3, 4$. Not formalised: weak Mordell–Weil (hence Mordell–Weil), Nagell–Lutz and Mazur, Hasse's theorem in general and the Weil conjectures, modularity and FLT in general (a large collaborative project led by Kevin Buzzard began formalising FLT in Lean in 2024), and of course BSD, which is a conjecture.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing with points">
+
+The first experiment implements the group law with exact fractions. It recomputes the table of multiples of $(2, 3)$ on $y^2 = x^3 + 1$, follows the multiples of Bachet's point $(3, 5)$ — whose denominators grow so that the number of digits divided by $n^2$ settles near a constant, a shadow of the canonical height — and checks associativity on every triple of points of a curve over $\mathbb{F}_{13}$.
+
+<Python id="arithmetic_geometry_group_law" />
+
+The second experiment counts points of $11a1$, $37a1$, $389a1$ and $5077a1$ over $\mathbb{F}_p$ for all $p \lt 1000$. It checks the Hasse bound, compares the Sato–Tate angles of $37a1$ with the density $\tfrac2\pi \sin^2\theta$, and recomputes Birch and Swinnerton-Dyer's products $\prod_{p \le X} N_p/p$.
+
+<Python id="arithmetic_geometry_point_counts" />
+
+Be precise about what this shows. The counts are exact, and the Hasse check is exhaustive for these primes — but Hasse's theorem is what covers every prime. The Sato–Tate and BSD tables are numerical illustrations of asymptotic statements; the BSD products in particular converge very slowly and fluctuate (the rank-$1$ column dips between $X = 250$ and $X = 500$). The ordering by rank is visible, which is what Birch and Swinnerton-Dyer saw; a proof needs other tools entirely.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Seeing the curves">
+
+**The family $y^2 = x^3 + ax + b$.** Move $a$ and $b$. When $4a^3 + 27b^2 \lt 0$ the real points form two pieces (an "egg" and an unbounded branch); when it is positive, one piece. At $a = b = 0$ the curve acquires a cusp, and at $a = -3$, $b = 2$ a node: these are the singular cubics excluded by $\Delta \neq 0$.
+
+<FunctionPlot
+  fns={["sqrt(x^3 + a*x + b)", "-sqrt(x^3 + a*x + b)"]}
+  labels={["upper half", "lower half"]}
+  params={[
+    { name: "a", min: -3, max: 3, step: 0.1, value: -1 },
+    { name: "b", min: -3, max: 3, step: 0.1, value: 1 },
+  ]}
+  x={[-3, 3]}
+  y={[-4, 4]}
+  title="Elliptic curves y² = x³ + ax + b"
+  subtitle="Two real components or one? Find the cusp at a = b = 0 and the node at a = −3, b = 2."
+/>
+
+**Bachet's tangent.** The tangent to $y^2 = x^3 - 2$ at $P = (3, 5)$ has slope $\tfrac{27}{10}$. It meets the curve again at $R = (1.29, 0.383)$, and reflecting gives $2P = \left(\tfrac{129}{100}, -\tfrac{383}{1000}\right)$. Trace along the line to see it touch the curve at $P$ and cross it at $R$.
+
+<FunctionPlot
+  fns={["sqrt(x^3 - 2)", "-sqrt(x^3 - 2)", "2.7*(x - 3) + 5"]}
+  labels={["y = √(x³ − 2)", "y = −√(x³ − 2)", "tangent at P"]}
+  points={[[3, 5, "P"], [1.29, 0.383, "R"], [1.29, -0.383, "2P"]]}
+  x={[0, 4]}
+  y={[-8, 8]}
+  editable={false}
+  title="Doubling a point on Bachet's curve"
+/>
+
+**Sato–Tate in a histogram.** These are the $120$ values $\cos\theta_p = a_p / (2\sqrt p)$ for $37a1$ and the first $120$ primes $p \neq 37$ (computed by the second experiment). Sato–Tate predicts the semicircle density $\tfrac{2}{\pi}\sqrt{1 - t^2}$ on $[-1, 1]$: a hump in the middle, thin tails. With only $120$ primes the agreement is rough — evidence, not proof.
+
+<DataChart
+  values={[-0.71, -0.87, -0.45, -0.19, -0.75, -0.28, 0.0, 0.0, 0.21, 0.56, -0.36, -0.7, 0.15, -0.66, 0.07, 0.52, -0.51, 0.49, 0.53, -0.06, 0.23, -0.82, 0.21, 0.2, 0.15, 0.89, -0.58, -0.77, -0.85, 0.04, -0.52, -0.26, 0.17, -0.2, 0.65, 0.92, -0.7, -0.46, 0.34, 0.67, 0.19, -0.14, -0.94, 0.11, 0.07, -0.45, -0.57, -0.53, 0.23, 0.2, -0.19, 0.45, -0.06, 0.0, 0.59, -0.18, -0.94, 0.36, 0.36, 0.12, -0.06, -0.49, 0.0, 0.62, 0.62, -0.05, -0.68, -0.27, 0.16, 0.21, -0.4, 0.21, -0.49, 0.39, 0.51, 0.1, -0.13, 0.45, 0.49, 0.17, -0.58, -0.72, 0.22, 0.67, 0.02, 0.85, 0.42, 0.7, -0.51, -0.05, 0.32, -0.54, -0.63, 0.27, 0.36, -0.69, -0.72, -0.48, 0.43, 0.17, -0.38, -0.63, -0.5, 0.15, 0.0, -0.66, -0.1, 0.02, -0.45, -0.65, 0.3, 0.34, -0.02, -0.56, -0.02, 0.28, -0.16, -0.47, -0.29, -0.54]}
+  view="histogram"
+  views={["histogram", "dot"]}
+  binWidth={0.25}
+  editable={false}
+  title="Normalised traces a_p / 2√p for the curve 37a1"
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Elliptic curves are ellipses."** They are not: an ellipse is a conic (genus $0$), an elliptic curve is a cubic of genus $1$. The name comes from **elliptic integrals** such as $\int dx/\sqrt{x^3 + ax + b}$, which arise in computing the arc length of an ellipse; inverting them gives the elliptic functions that parametrise the complex points of $E$.
+
+</Misconception>
+
+<Misconception>
+
+**"The Mordell–Weil theorem gives an algorithm for the rank."** The proof is ineffective at one point: the weak theorem bounds $E(\Q)/2E(\Q)$ by the computable $2$-Selmer group, but the gap between them is measured by Ш, which is not known to be finite in general. No algorithm is known that provably computes the rank of every elliptic curve over $\Q$; in practice descent plus point search succeeds, and it would always succeed if Ш were finite.
+
+</Misconception>
+
+<Misconception>
+
+**"Wiles proved the Taniyama–Shimura conjecture."** Wiles (with Taylor–Wiles) proved modularity of **semistable** curves, which suffices for Fermat. The full modularity theorem was completed in 2001 by Breuil, Conrad, Diamond and Taylor, building on Wiles's methods.
+
+</Misconception>
+
+<Misconception>
+
+**"BSD is known in ranks 0 and 1."** What is known (Gross–Zagier, Kolyvagin, plus modularity) is that **analytic** rank $0$ or $1$ implies algebraic rank equal to it and Ш finite. The exact formula for the leading coefficient is proved only for many individual curves and families, not in general — and nothing comparable is known when the analytic rank is $2$ or more.
+
+</Misconception>
+
+<Misconception>
+
+**"$a_p$ is small, so $\#E(\mathbb{F}_p)$ determines nothing interesting."** The $a_p$ are anything but noise: they determine $E$ up to isogeny (Faltings), they are the Fourier coefficients of a modular form (Theorem 8), and their statistics follow Sato–Tate. Hasse's bound says only that the fluctuation is of size at most $2\sqrt p$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="Genus decides">
+
+For a smooth projective curve $C$ over a number field the genus governs the rational points: genus $0$ — none or a $\mathbb{P}^1$'s worth; genus $1$ — a finitely generated group (once there is one point); genus $\ge 2$ — finitely many (Faltings). Geometrically, the group law is the identification $E \cong \operatorname{Pic}^0(E)$, $P \mapsto [P] - [O]$, given by Riemann–Roch, and "$P + Q + R = O$ iff $P, Q, R$ are collinear" because a line cuts out a divisor linearly equivalent to $3[O]$. For higher genus the analogue of $E$ is the Jacobian $J(C) = \operatorname{Pic}^0(C)$, an abelian variety of dimension $g$ into which $C$ embeds — and Faltings's theorem says $C$ meets the finitely generated group $J(K)$ in only finitely many points. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Tori, circles and the Lefschetz trace formula">
+
+Over $\C$, an elliptic curve is a torus: the Weierstrass function $\wp$ for a lattice $\Lambda \subset \C$ gives a complex-analytic group isomorphism $\C/\Lambda \to E(\C)$, $z \mapsto (\wp(z), \wp'(z))$ (for the equation $y^2 = 4x^3 - g_2x - g_3$). So $E(\C) \cong S^1 \times S^1$ as a group, and $E(\R)$ is a closed subgroup of dimension one: one circle when $\Delta \lt 0$, two circles when $\Delta \gt 0$ — the components you see in the plot. The Weil conjectures are topology in disguise: Grothendieck's $\ell$-adic cohomology gives the Lefschetz fixed-point formula $\#E(\mathbb{F}_{q^n}) = \sum_i (-1)^i \operatorname{tr}(\phi^n \mid H^i) = 1 - (\alpha^n + \beta^n) + q^n$, and $\dim H^1 = 2$ because a torus has two independent loops. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Elliptic functions and L-functions">
+
+Analysis enters twice. First, at the infinite place: $\wp$ is doubly periodic and satisfies $\wp'^2 = 4\wp^3 - g_2\wp - g_3$, and the periods $\int dx/y$ are the elliptic integrals that gave the subject its name; the real period $\Omega_E$ appears in the BSD formula. Second, globally: $L(E, s) = \sum a_n n^{-s}$ converges for $\operatorname{Re} s \gt \tfrac32$ by Hasse's bound, and its continuation to $s = 1$ — the centre of the critical strip — needs modularity, i.e. it is the Mellin transform of a weight-$2$ cusp form. BSD then asks an analyst's question (the order of a zero) about an algebraist's object (a group). See <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Galois representations and the Tate module">
+
+For a prime $\ell$, the $\ell^n$-torsion $E[\ell^n] \cong (\Z/\ell^n)^2$ over $\overline{\Q}$, and the inverse limit $T_\ell E \cong \Z_\ell^2$ carries an action of $\operatorname{Gal}(\overline{\Q}/\Q)$: a **Galois representation** $\rho_{E,\ell} : \operatorname{Gal}(\overline{\Q}/\Q) \to GL_2(\Z_\ell)$, unramified at primes $p \nmid N\ell$ with $\operatorname{tr} \rho_{E,\ell}(\operatorname{Frob}_p) = a_p$ and $\det = p$. Serre's open image theorem (1972) says the image is open for curves without complex multiplication. Modularity is the statement that $\rho_{E,\ell}$ is also attached to a modular form, the first non-abelian case of the Langlands correspondence; Wiles proved it by identifying a deformation ring with a Hecke algebra, "$R = T$". See <TopicLink id="math.number.langlands-programme">the Langlands programme</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Cryptography and algorithms">
+
+Over a large prime field, the discrete logarithm problem in $E(\mathbb{F}_p)$ — given $P$ and $nP$, find $n$ — has no known subexponential algorithm for well-chosen curves, so Koblitz and Miller (1985) proposed elliptic-curve cryptography, now standard for key exchange and signatures (see <TopicLink id="math.applied.cryptography">cryptography</TopicLink>). The security is conditional on the hardness assumption, and Shor's algorithm would break it on a large quantum computer. Schoof's algorithm (1985) counts $\#E(\mathbb{F}_p)$ in time polynomial in $\log p$ by computing $a_p \bmod \ell$ for small primes $\ell$ from the action of Frobenius on $E[\ell]$; H. W. Lenstra's elliptic curve method (1987) factors integers by working in $E(\Z/n)$ as if $n$ were prime. Cremona's tables and the LMFDB list hundreds of thousands of curves with their ranks, generators and $L$-values.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Hilbert's tenth problem">
+
+Hilbert asked for an algorithm to decide whether a polynomial equation has integer solutions. Matiyasevich (1970), completing work of Davis, Putnam and Robinson, proved that none exists. Over $\Q$ the question is **open**; Mazur's conjectures on the topology of rational points suggest that $\Z$ is not Diophantine in $\Q$, which would block the standard approach. Over the ring of integers $\mathcal{O}_K$ of a number field, Poonen and Shlapentokh showed that a negative answer would follow from an elliptic curve over $\Q$ whose rank does not grow over $K$. Proofs that such curves exist for every number field, and hence that Hilbert's tenth problem is undecidable over every $\mathcal{O}_K$, were announced in 2024 by Koymans and Pagano and independently by Alpöge, Bhargava, Ho and Shnidman. See <TopicLink id="math.comp.computability">computability</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **c. 250 CE.** Diophantus of Alexandria's *Arithmetica* finds rational solutions of quadratic and cubic equations by intersecting with well-chosen lines.
+- **628 and 1150.** Brahmagupta composes solutions of $x^2 - Ny^2 = 1$ (his *bhāvanā*), in effect a group law on a conic; Bhāskara II's *chakravala* method finds the fundamental solution. Genus-$0$ curves with a group law were thus studied in India long before elliptic curves.
+- **10th century.** The congruent number problem appears in Arabic manuscripts; Fibonacci (1225) shows that $5$ is congruent.
+- **1621–1670.** Bachet's edition of Diophantus, with his duplication formula for $y^2 = x^3 + c$; in its margin Fermat writes his "Last Theorem" and later proves the case $n = 4$ by infinite descent.
+- **18th–19th centuries.** Euler treats $n = 3$; Abel and Jacobi invert elliptic integrals; Weierstrass introduces $\wp$.
+- **1901–1928.** Poincaré formulates the group law and asks about the rank; Mordell proves finite generation over $\Q$ (1922); Weil extends it to number fields and abelian varieties (1928).
+- **1933–1974.** Hasse proves his bound; Weil proves the Riemann hypothesis for curves and states his conjectures (1949); Dwork (1960), Grothendieck's school and Deligne (1974) prove them.
+- **1955–1967.** Yutaka Taniyama poses problems at the Tokyo–Nikkō symposium suggesting a link between elliptic curves and modular forms; Goro Shimura sharpens it; Weil (1967) makes it precise with the conductor.
+- **1960s.** Bryan Birch and Peter Swinnerton-Dyer formulate their conjecture from EDSAC computations at Cambridge; Mikio Sato and John Tate independently conjecture the $\sin^2$ distribution.
+- **1977–1989.** Mazur classifies torsion over $\Q$; Coates–Wiles; Faltings proves Mordell's conjecture (1983); Tunnell's criterion (1983); Frey's curve and Ribet's theorem; Gross–Zagier and Kolyvagin.
+- **1994–2001.** Andrew Wiles, with Richard Taylor, proves modularity of semistable curves and Fermat's Last Theorem; Breuil, Conrad, Diamond and Taylor complete modularity.
+- **2008–present.** The Sato–Tate conjecture (Clozel, Harris, Shepherd-Barron, Taylor; Barnet-Lamb, Geraghty, Harris, Taylor); Bhargava and Shankar's average-rank theorems; Yuan, Zhang and Zhang's general Gross–Zagier formula (2013); Tian Ye's work on congruent numbers.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Joseph H. Silverman and John Tate, *Rational Points on Elliptic Curves* (1992; 2nd ed. 2015) — the gentlest rigorous introduction: group law, Nagell–Lutz, Mordell over $\Q$, finite fields.
+- Joseph H. Silverman, *The Arithmetic of Elliptic Curves* (1986; 2nd ed. 2009) — the standard graduate text; Chapters III (group law, isogenies), V (finite fields, Hasse), VIII (Mordell–Weil), X (descent and Ш).
+- Neal Koblitz, *Introduction to Elliptic Curves and Modular Forms* (1984; 2nd ed. 1993) — built around the congruent number problem and Tunnell's theorem.
+- Fred Diamond and Jerry Shurman, *A First Course in Modular Forms* (2005) — modular curves, Hecke operators and the statement of modularity.
+- Lawrence C. Washington, *Elliptic Curves: Number Theory and Cryptography* (2nd ed. 2008) — computational and cryptographic aspects, Schoof's algorithm.
+- Gary Cornell, Joseph H. Silverman and Glenn Stevens (eds.), *Modular Forms and Fermat's Last Theorem* (1997) — expository articles on every step of the proof.
+- Andrew Wiles, "Modular elliptic curves and Fermat's Last Theorem", *Annals of Mathematics* 141 (1995).
+
+A reading path: Silverman–Tate Chapters 1–4 → Silverman Chapters III, V, VII, VIII → Diamond–Shurman for modular forms → the Cornell–Silverman–Stevens volume for the proof of Fermat's Last Theorem, or the Clay Institute's problem description of BSD (by Wiles) and the surveys of Bhargava's work for current research.
+
+</Section>

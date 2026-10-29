@@ -1,0 +1,438 @@
+---
+slug: probability-intro
+topic: math.prob.probability-intro
+title: Probability
+subtitle: Chance as a number from $0$ to $1$ — counting equally likely outcomes, checking against experiment, and the famous puzzles that got it wrong.
+level: g6-8
+ages: Ages 11–14
+minutes: 55
+order: 3016
+objectives:
+  - List the sample space of an experiment, using a table or tree diagram for two stages
+  - Compute probabilities of events with equally likely outcomes as fractions
+  - Prove the complement rule, the addition rule and the product rule for two independent stages
+  - Compare theoretical probabilities with relative frequencies from repeated trials and simulations
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.ProbabilityIntro.count
+  - Lumenary.ProbabilityIntro.prob
+  - Lumenary.ProbabilityIntro.prob_nonneg
+  - Lumenary.ProbabilityIntro.prob_le_one
+  - Lumenary.ProbabilityIntro.prob_certain
+  - Lumenary.ProbabilityIntro.count_compl
+  - Lumenary.ProbabilityIntro.prob_compl
+  - Lumenary.ProbabilityIntro.count_union_inter
+  - Lumenary.ProbabilityIntro.prob_union
+  - Lumenary.ProbabilityIntro.pairs
+  - Lumenary.ProbabilityIntro.length_pairs
+  - Lumenary.ProbabilityIntro.count_pairs
+  - Lumenary.ProbabilityIntro.prob_pairs
+  - Lumenary.ProbabilityIntro.die
+  - Lumenary.ProbabilityIntro.twoDice
+  - Lumenary.ProbabilityIntro.prob_sum_seven
+  - Lumenary.ProbabilityIntro.sums_not_equally_likely
+  - Lumenary.ProbabilityIntro.threeDice
+  - Lumenary.ProbabilityIntro.galileo
+  - Lumenary.ProbabilityIntro.at_least_one_head
+compute: [probability_intro_exact_counts, probability_intro_simulation]
+trails: [will-the-walker-return]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A puzzle from seventeenth-century Italy">
+
+Gamblers in Galileo's time played a game with three dice and bet on the total. Experienced players had noticed that a total of **10** turns up a little more often than a total of **9**. That seemed strange, because each total can be made in six ways:
+
+- $9 = 1 + 2 + 6 = 1 + 3 + 5 = 1 + 4 + 4 = 2 + 2 + 5 = 2 + 3 + 4 = 3 + 3 + 3$;
+- $10 = 1 + 3 + 6 = 1 + 4 + 5 = 2 + 2 + 6 = 2 + 3 + 5 = 2 + 4 + 4 = 3 + 3 + 4$.
+
+Were the players imagining it? Galileo explained the answer around 1620, and by the end of this lesson you will be able to explain it too — and even to check it with a computer and with Lean.
+
+Probability is the mathematics of uncertainty. It helps a weather service say “70% chance of rain”, a doctor judge a test result, and an engineer design a network that rarely fails. It begins with a simple idea: **count the equally likely possibilities.**
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Chance as a number">
+
+We measure chance on a scale from $0$ to $1$:
+
+- $0$ means **impossible** (rolling a $7$ on an ordinary die);
+- $1$ means **certain** (rolling a number less than $7$);
+- $\tfrac12$ means **as likely as not** (a fair coin landing heads).
+
+When an experiment has a few outcomes that are all **equally likely**, the probability of an event is the fraction of outcomes that make it happen. A fair die has six equally likely faces, and three are even, so the probability of an even number is $\tfrac36 = \tfrac12$.
+
+But “equally likely” is an assumption that must be checked. The spinner below has three outcomes — but they are not equally likely.
+
+<Spinner sectors={[{ label: "Red", weight: 3, color: "red" }, { label: "Blue", weight: 2, color: "blue" }, { label: "Green", weight: 1, color: "green" }]} spins={60} editable={false} subtitle="Three outcomes, but not equally likely. Spin 60 times: how close does each fraction of spins come to the sector's share?" />
+
+<Narrator who="chloe">
+
+So it isn't enough to count outcomes — they have to be outcomes of the *same* chance. With the spinner, I could cut the red sector into three equal pieces and the blue into two. Then there are six equally likely pieces, and red has three of them: probability $\tfrac36$!
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="sample space, outcome, event">
+
+An **experiment** is something with an uncertain result, like rolling a die. Each possible result is an **outcome**. The **sample space** $S$ is the set of all outcomes. An **event** is a subset $A \subseteq S$: the outcomes for which “it happens”.
+
+</Definition>
+
+For one die, $S = \{1, 2, 3, 4, 5, 6\}$, and “an even number” is the event $A = \{2, 4, 6\}$.
+
+<Definition term="probability with equally likely outcomes">
+
+If all outcomes in a finite sample space $S$ are equally likely, the **probability** of an event $A$ is
+
+$$
+P(A) = \frac{|A|}{|S|} = \frac{\text{number of outcomes in } A}{\text{number of outcomes in } S}.
+$$
+
+</Definition>
+
+Here $|A|$ is the number of elements of $A$, as in the lesson on <TopicLink id="math.found.sets">sets</TopicLink>. The event “not $A$”, written $A^c$ (the **complement**), is the set of outcomes of $S$ that are not in $A$.
+
+<Definition term="relative frequency">
+
+If an experiment is repeated $n$ times and an event happens $m$ times, its **relative frequency** is $\dfrac{m}{n}$.
+
+</Definition>
+
+Probability is a statement about the experiment; relative frequency is a record of what happened. The two are linked, but they are not the same thing.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Two coins: a tree diagram">
+
+Toss a coin twice. The first toss is H or T; for each, the second toss is H or T. A **tree diagram** lists the four equally likely outcomes.
+
+<Figure caption="The tree for two coin tosses. Each path is one outcome; each of the four has probability $\tfrac12 \times \tfrac12 = \tfrac14$.">
+
+<svg viewBox="0 0 440 200" role="img" aria-label="Tree diagram with branches H and T, then H and T again, giving outcomes HH, HT, TH and TT">
+  <line x1="40" y1="100" x2="170" y2="50" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="40" y1="100" x2="170" y2="150" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="190" y1="50" x2="310" y2="25" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="190" y1="50" x2="310" y2="75" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="190" y1="150" x2="310" y2="125" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="190" y1="150" x2="310" y2="175" stroke="var(--ink-2)" strokeWidth="2" />
+  <circle cx="40" cy="100" r="6" fill="var(--ink-2)" />
+  <text x="180" y="55" textAnchor="middle" fontSize="16" fill="var(--human)">H</text>
+  <text x="180" y="155" textAnchor="middle" fontSize="16" fill="var(--human)">T</text>
+  <text x="100" y="65" textAnchor="middle" fontSize="13" fill="var(--ink-2)">1/2</text>
+  <text x="100" y="145" textAnchor="middle" fontSize="13" fill="var(--ink-2)">1/2</text>
+  <text x="250" y="30" textAnchor="middle" fontSize="13" fill="var(--ink-2)">1/2</text>
+  <text x="250" y="78" textAnchor="middle" fontSize="13" fill="var(--ink-2)">1/2</text>
+  <text x="250" y="128" textAnchor="middle" fontSize="13" fill="var(--ink-2)">1/2</text>
+  <text x="250" y="176" textAnchor="middle" fontSize="13" fill="var(--ink-2)">1/2</text>
+  <text x="330" y="30" fontSize="16" fill="var(--gold)">HH   1/4</text>
+  <text x="330" y="80" fontSize="16" fill="var(--gold)">HT   1/4</text>
+  <text x="330" y="130" fontSize="16" fill="var(--gold)">TH   1/4</text>
+  <text x="330" y="180" fontSize="16" fill="var(--gold)">TT   1/4</text>
+</svg>
+
+</Figure>
+
+“At least one head” is $\{HH, HT, TH\}$, so its probability is $\tfrac34$. “Exactly one head” is $\{HT, TH\}$, with probability $\tfrac24 = \tfrac12$.
+
+</Example>
+
+<Example title="Two dice: a table">
+
+Roll a red die and a blue die. Each of the $6 \times 6 = 36$ ordered pairs is equally likely. The table shows the sum for each pair.
+
+| red \ blue | 1 | 2 | 3 | 4 | 5 | 6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **1** | 2 | 3 | 4 | 5 | 6 | 7 |
+| **2** | 3 | 4 | 5 | 6 | 7 | 8 |
+| **3** | 4 | 5 | 6 | 7 | 8 | 9 |
+| **4** | 5 | 6 | 7 | 8 | 9 | 10 |
+| **5** | 6 | 7 | 8 | 9 | 10 | 11 |
+| **6** | 7 | 8 | 9 | 10 | 11 | 12 |
+
+- $P(\text{sum} = 7) = \tfrac{6}{36} = \tfrac16$: the diagonal of $7$s has six cells.
+- $P(\text{sum} = 2) = \tfrac{1}{36}$: only $(1, 1)$.
+- $P(\text{doubles}) = \tfrac{6}{36} = \tfrac16$.
+- $P(\text{sum} \ge 10) = \tfrac{3 + 2 + 1}{36} = \tfrac16$.
+
+There are $11$ possible sums, but they are **not** equally likely: $7$ is six times as likely as $2$.
+
+</Example>
+
+<Example title="Galileo's answer">
+
+With three dice there are $6 \times 6 \times 6 = 216$ equally likely **ordered** outcomes. The six ways of writing $9$ are not equally likely: $1 + 2 + 6$ can come up in $6$ orders (126, 162, 216, 261, 612, 621), $1 + 4 + 4$ in only $3$ orders, and $3 + 3 + 3$ in just $1$. Counting orders, a total of $9$ has $25$ outcomes and a total of $10$ has $27$. So
+
+$$
+P(9) = \tfrac{25}{216} \approx 0.116, \qquad P(10) = \tfrac{27}{216} = 0.125.
+$$
+
+The gamblers were right. The difference is small — they must have played a great many games to notice it.
+
+</Example>
+
+<Example title="A non-example">
+
+“Tomorrow it will either rain or not, so the probability of rain is $\tfrac12$.” This is wrong: the two outcomes are not equally likely. In the Atacama Desert rain is rare; in a Mumbai monsoon it is common. Forecasters estimate such probabilities from data and models, not by counting outcomes.
+
+</Example>
+
+</Section>
+
+<Section id="proof" kind="proof" title="The rules of probability, with proofs">
+
+Throughout, $S$ is a finite, non-empty sample space of equally likely outcomes.
+
+<Theorem name="Theorem 1 (basic properties)">
+
+For every event $A$: $0 \le P(A) \le 1$. Also $P(S) = 1$, $P(\varnothing) = 0$, and
+
+$$
+P(A^c) = 1 - P(A).
+$$
+
+</Theorem>
+
+<Proof>
+
+Since $A \subseteq S$, we have $0 \le |A| \le |S|$; dividing by $|S|$ gives $0 \le P(A) \le 1$. $P(S) = \tfrac{|S|}{|S|} = 1$ and $P(\varnothing) = \tfrac{0}{|S|} = 0$. Every outcome lies in exactly one of $A$ and $A^c$, so $|A| + |A^c| = |S|$. Dividing by $|S|$: $P(A) + P(A^c) = 1$.
+
+</Proof>
+
+The complement rule is often the easy way in. The probability of **at least one** six in four rolls of a die is $1 - P(\text{no six}) = 1 - \tfrac{5^4}{6^4} = 1 - \tfrac{625}{1296} = \tfrac{671}{1296} \approx 0.518$.
+
+<Theorem name="Theorem 2 (addition rule)">
+
+For events $A$ and $B$:
+
+$$
+P(A \text{ or } B) = P(A) + P(B) - P(A \text{ and } B).
+$$
+
+In particular, if $A$ and $B$ cannot both happen, $P(A \text{ or } B) = P(A) + P(B)$.
+
+</Theorem>
+
+<Proof>
+
+“$A$ or $B$” is the union $A \cup B$, and “$A$ and $B$” is the intersection $A \cap B$. Adding $|A| + |B|$ counts every outcome of $A \cup B$ once, except those in $A \cap B$, which are counted twice. So $|A \cup B| = |A| + |B| - |A \cap B|$. Divide by $|S|$.
+
+</Proof>
+
+For one die, $P(\text{even or more than } 4) = \tfrac36 + \tfrac26 - \tfrac16 = \tfrac46$: the outcome $6$ is both even and more than $4$, and must not be counted twice.
+
+<Theorem name="Theorem 3 (product rule for independent stages)">
+
+Suppose an experiment has two stages: the first has a sample space $S$ and the second a sample space $T$, each of equally likely outcomes, and the second stage does not depend on the first. If $A$ is an event of the first stage and $B$ an event of the second, then
+
+$$
+P(A \text{ at stage 1 and } B \text{ at stage 2}) = P(A) \cdot P(B).
+$$
+
+</Theorem>
+
+<Proof>
+
+The outcomes of the whole experiment are the ordered pairs $(s, t)$ with $s \in S$, $t \in T$: the Cartesian product $S \times T$, with $|S| \cdot |T|$ equally likely elements. The favourable pairs form $A \times B$, with $|A| \cdot |B|$ elements. So the probability is $\dfrac{|A| \cdot |B|}{|S| \cdot |T|} = \dfrac{|A|}{|S|} \cdot \dfrac{|B|}{|T|} = P(A)\,P(B)$.
+
+</Proof>
+
+This is why we **multiply along the branches** of a tree diagram. For a double six, $P = \tfrac16 \times \tfrac16 = \tfrac1{36}$. (When the second stage *does* depend on the first — drawing two cards without putting the first back — the rule needs changing; that is the subject of <TopicLink id="math.prob.probability-rules">conditional probability</TopicLink>.)
+
+<Theorem name="Law of large numbers (stated informally, without proof)">
+
+If an experiment is repeated independently many times, the relative frequency of an event tends to settle near its probability: with more and more trials, large deviations become less and less likely.
+
+</Theorem>
+
+We do not prove this here; a precise version was first proved by Jacob Bernoulli (published 1713), and you will meet proofs in <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>. Notice what it does **not** say: it does not say the relative frequency ever equals the probability exactly, and it does not say that the coin “corrects” a run of tails. Earlier results are not undone; they are swamped by the many trials that follow.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Probability in Lean">
+
+In Lean, a finite sample space of equally likely outcomes is a list `S`, and an event is a test `A` that answers `true` or `false` for each outcome. The probability is computed exactly as a rational number.
+
+<Lean decl="Lumenary.ProbabilityIntro.count" />
+
+<Lean decl="Lumenary.ProbabilityIntro.prob" />
+
+Theorem 1. The proofs of `count_compl` and `count_union_inter` go through the list one outcome at a time (induction): each outcome is counted on both sides of the equation in the same way.
+
+<Lean decl="Lumenary.ProbabilityIntro.prob_nonneg" />
+
+<Lean decl="Lumenary.ProbabilityIntro.prob_le_one" />
+
+<Lean decl="Lumenary.ProbabilityIntro.prob_certain" />
+
+<Lean decl="Lumenary.ProbabilityIntro.count_compl" />
+
+<Lean decl="Lumenary.ProbabilityIntro.prob_compl" />
+
+Theorem 2, the addition rule:
+
+<Lean decl="Lumenary.ProbabilityIntro.count_union_inter" />
+
+<Lean decl="Lumenary.ProbabilityIntro.prob_union" />
+
+Theorem 3, the product rule. The sample space of two stages is the list of all pairs.
+
+<Lean decl="Lumenary.ProbabilityIntro.pairs" />
+
+<Lean decl="Lumenary.ProbabilityIntro.length_pairs" />
+
+<Lean decl="Lumenary.ProbabilityIntro.count_pairs" />
+
+<Lean decl="Lumenary.ProbabilityIntro.prob_pairs" />
+
+<Narrator who="gideon">
+
+Our product rule is about pairs in which *every* first outcome can be followed by *every* second outcome — that is exactly what “the second stage does not depend on the first” means here. I'm careful about this: in general, independence is a definition with its own subtleties.
+
+</Narrator>
+
+Finally, Lean computes the dice examples and Galileo's counts by checking all the outcomes:
+
+<Lean decl="Lumenary.ProbabilityIntro.die" />
+
+<Lean decl="Lumenary.ProbabilityIntro.twoDice" />
+
+<Lean decl="Lumenary.ProbabilityIntro.prob_sum_seven" />
+
+<Lean decl="Lumenary.ProbabilityIntro.sums_not_equally_likely" />
+
+<Lean decl="Lumenary.ProbabilityIntro.threeDice" />
+
+<Lean decl="Lumenary.ProbabilityIntro.galileo" />
+
+<Lean decl="Lumenary.ProbabilityIntro.at_least_one_head" />
+
+What is **not** formalised: the law of large numbers, and the modelling assumption that real dice are fair. Lean proves facts about the mathematical model; whether a real die fits the model is a question for experiment.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting and simulating">
+
+<Narrator who="margaret">
+
+First I'll settle the famous puzzles exactly, by listing every outcome — all 216 for three dice, all 1296 for four rolls of one die.
+
+</Narrator>
+
+<Python id="probability_intro_exact_counts" />
+
+The Chevalier de Méré, a French gambler, is said to have asked Blaise Pascal about these two bets in 1654: the first wins slightly more than half the time, the second slightly less.
+
+<Narrator who="margaret">
+
+Now a different kind of evidence. I'll *simulate* thousands of rolls with a pseudo-random number generator and compare what happens with the exact probabilities.
+
+</Narrator>
+
+<Python id="probability_intro_simulation" />
+
+The simulated frequencies are close to the exact probabilities but never exactly equal, and the largest error shrinks as $n$ grows — roughly in step with $\tfrac{1}{\sqrt n}$, so a hundred times as many rolls makes the error about ten times smaller. This is **statistical evidence**: another run would give slightly different numbers. The exact counts are a different kind of knowledge, true for the model of fair dice.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: relative frequency settles down">
+
+<ChanceLab experiments={["two-dice", "coin"]} trials={500} title="Experiment versus theory" />
+
+On the two-dice tab, compare the histogram with the exact triangle of ways out of $36$. Increase the number of rolls: the bars hug the triangle more closely, but never perfectly. On the coin tab, watch the running proportion of heads wander and then settle near $\tfrac12$, mostly inside the band $\tfrac12 \pm \tfrac{1}{\sqrt n}$. Press “New run” several times: every run is different, and every run settles.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**The gambler's fallacy.** “The coin has landed tails five times, so heads is due.” A fair coin has no memory: the next toss is heads with probability $\tfrac12$, whatever happened before. The simulation confirms it — after three tails in a row, heads came up about half the time.
+
+</Misconception>
+
+<Misconception>
+
+**Assuming all outcomes are equally likely.** The sums $2, 3, \ldots, 12$ of two dice are not equally likely, and neither are Galileo's six ways of making $9$. Equally likely outcomes are the ordered ones: $(1, 6)$ and $(6, 1)$ are different outcomes.
+
+</Misconception>
+
+<Misconception>
+
+**“A probability of $\tfrac16$ means exactly one six in every six rolls.”** It describes the long run, not each block of rolls. In six rolls, the chance of exactly one six is only $\left(\tfrac56\right)^5 \approx 0.40$.
+
+</Misconception>
+
+<Misconception>
+
+**“Two outcomes means a probability of one half.”** Rain or no rain, winning or losing the lottery: having two possibilities says nothing about how likely each one is.
+
+</Misconception>
+
+<Misconception>
+
+**“Unlikely means it won't happen.”** An event with probability $\tfrac1{1000}$ is unlikely on one try, but over $10\,000$ tries we expect it about $10$ times. Rare events happen all the time somewhere.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="geometry" title="Probability as area">
+
+Choose a point at random in a $1 \times 1$ square. The probability that it lands in a region is the region's **area**. For example, the quarter-disc of radius $1$ around one corner has area $\tfrac{\pi}{4} \approx 0.785$: about $78.5\%$ of random points land in it, so throwing random points can even estimate $\pi$. Buffon's needle (try it in the Chance Lab) is a famous version of this idea. When the sample space is infinite, “counting outcomes” becomes “measuring areas” — and Andrey Kolmogorov's 1933 foundations of probability make exactly this step, treating probability as a kind of area or volume; see <TopicLink id="math.prob.measure-theoretic-probability">measure-theoretic probability</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Probability is counting, divided">
+
+With equally likely outcomes, every probability question is two counting questions: count the favourable outcomes, count all the outcomes, divide. The tools of <TopicLink id="math.discrete.counting-principles">counting principles</TopicLink> — the multiplication principle, arrangements, complements — become tools of probability. For example, a randomly guessed 4-digit PIN is right with probability $\tfrac{1}{10^4} = \tfrac{1}{10\,000}$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="sets" kind="sets" title="Set-theoretic connection">
+
+Probability speaks the language of <TopicLink id="math.found.sets">sets</TopicLink>. Outcomes are elements, the sample space is the universe, and events are subsets. “Or” is union, “and” is intersection, “not” is complement — so a Venn diagram is a picture of events. The addition rule is the counting formula $|A \cup B| = |A| + |B| - |A \cap B|$, and the product rule is $|A \times B| = |A| \cdot |B|$, both from the sets lesson.
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Optional, and never graded: a question that leads somewhere further.
+
+<Trail slug="will-the-walker-return" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **India.** In the *Mahābhārata*, King Ṛtuparṇa estimates the number of leaves and fruits on a whole tree by counting those on one branch, and connects this skill with knowledge of dice. The philosopher Ian Hacking has pointed to this story as an early link between sampling and chance.
+- **The Islamic world.** In the 9th century, al-Kindī described how to break secret codes by comparing the relative frequencies of letters in a message with their frequencies in ordinary Arabic text.
+- **Italy.** Gerolamo Cardano's *Book on Games of Chance* (written in the 16th century, published in 1663) compared the number of favourable outcomes with the number of all equally likely outcomes. Galileo's short note on three dice (around 1620) explained the 9 versus 10 puzzle by counting ordered outcomes.
+- **France and the Netherlands.** In 1654 Blaise Pascal and Pierre de Fermat exchanged letters on how to divide the stakes of an unfinished game, often seen as the start of mathematical probability. Christiaan Huygens wrote the first printed textbook on probability (1657). In 1754 Jean le Rond d'Alembert argued that the chance of at least one head in two tosses is $\tfrac23$ — a famous mistake.
+- **Switzerland and Russia.** Jacob Bernoulli's *Ars Conjectandi* (1713) proved the first law of large numbers. Andrey Kolmogorov's book of 1933 gave probability the axioms used today.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Ian Hacking, *An Introduction to Probability and Inductive Logic* (2001).
+- Charles M. Grinstead and J. Laurie Snell, *Introduction to Probability* (1997), with many simulations.
+- William Feller, *An Introduction to Probability Theory and Its Applications*, volume 1 (1950) — a classic, for later.
+- Ian Hacking, *The Emergence of Probability* (1975), on the history of the subject.
+
+</Section>

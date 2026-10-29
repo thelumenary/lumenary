@@ -1,0 +1,507 @@
+---
+slug: dynamical-systems
+topic: math.analysis.dynamical-systems
+title: Dynamical systems and chaos
+subtitle: When an equation is too hard to solve, ask a better question — *what happens in the long run?* Fixed points, cycles and bifurcations answer it, until a one-line formula produces behaviour no computer can predict.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6022
+objectives:
+  - Find fixed points of maps and flows, prove the derivative test for attracting and repelling fixed points, and classify the equilibria of planar linear systems by trace and determinant
+  - Use linearisation (Hartman–Grobman) and Lyapunov functions to decide stability, and recognise when linearisation is inconclusive
+  - Use trapping regions and the Poincaré–Bendixson theorem to prove that limit cycles exist, and explain why planar flows cannot be chaotic
+  - Analyse the logistic map — fixed points, the period-2 orbit, period doubling and Feigenbaum's constant — distinguishing numerical evidence from proof
+  - Prove that the doubling map has sensitive dependence and dense periodic points, and transfer this to the logistic map at $r = 4$
+narrators: []
+lean:
+  - Lumenary.DynamicalSystems.logistic
+  - Lumenary.DynamicalSystems.logistic_fixed_points
+  - Lumenary.DynamicalSystems.logistic_deriv_at_fixed
+  - Lumenary.DynamicalSystems.logistic_stable_iff
+  - Lumenary.DynamicalSystems.period_two_orbit
+  - Lumenary.DynamicalSystems.period_two_minimal
+  - Lumenary.DynamicalSystems.two_cycle_multiplier
+  - Lumenary.DynamicalSystems.iterate_contraction
+  - Lumenary.DynamicalSystems.attracting_fixed_point
+  - Lumenary.DynamicalSystems.banach_fixed_point
+  - Lumenary.DynamicalSystems.doubling_separates
+  - Lumenary.DynamicalSystems.lyapunov_decay
+compute: [dynamical_systems_logistic, dynamical_systems_sensitivity]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="The long run">
+
+In 1961 the meteorologist Edward Lorenz restarted a weather simulation halfway through, typing in a value printed to three decimal places, $0.506$, instead of the $0.506127$ stored in the machine. He went for a coffee. When he came back, the new forecast had drifted completely away from the old one. The equations were deterministic and the change was one part in ten thousand. Lorenz had found **sensitive dependence on initial conditions**, and with it the reason why weather cannot be forecast more than a couple of weeks ahead, however good our computers become.
+
+Fifteen years later the ecologist Robert May studied the simplest model of an insect population with limited food: next year's population is $x_{n+1} = r x_n(1 - x_n)$. For small growth rates $r$ the population settles to a steady value. Raise $r$ past $3$ and it alternates between two values, then four, then eight. Past $r \approx 3.57$ it behaves erratically, never repeating — from a quadratic formula that a child could iterate on a calculator.
+
+Most differential equations cannot be solved by a formula. Henri Poincaré, studying the motion of three bodies under gravity in the 1880s, changed the question from *"what is the solution?"* to *"what does it do in the long run?"*: does it settle down, repeat, or wander? That **qualitative theory** is the subject of this lesson. It covers fixed points and their stability, cycles and the theorem of Poincaré and Bendixson that finds them, bifurcations where the behaviour changes, and finally chaos, with an honest account of what computers can and cannot tell us about it.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Valleys, spirals, stretching and folding">
+
+A **dynamical system** is a rule for how a state changes. It may change in discrete steps, $x_{n+1} = f(x_n)$ (a *map*), or continuously, $\dot x = F(x)$ (a *flow*). The states form the **phase space**, and the history of one state is its **orbit**. A pendulum's state is its angle and angular velocity, a point in a plane. Its orbits are closed curves (swinging), wavy lines (spinning over the top), and the two equilibria (hanging down, balanced upright).
+
+**Fixed points** are states that never change. Some are stable, like a ball at the bottom of a valley: nudge it and it returns. Others are unstable, like a ball on a hilltop. For a map of the line the test is the derivative. Near a fixed point $x^*$, $f(x) - x^* \approx f'(x^*)(x - x^*)$, so distances to $x^*$ are multiplied by about $|f'(x^*)|$ at each step. They shrink if $|f'(x^*)| < 1$ and grow if $|f'(x^*)| > 1$.
+
+**Cycles** are orbits that repeat. In the plane, a flow can wind towards a closed loop — a *limit cycle* — like the steady beating of a heart or the squeal of a violin string. In the plane that is about the most complicated thing a bounded orbit can do, because orbits cannot cross.
+
+**Chaos** needs room. Its mechanism is *stretching and folding*. The logistic map at $r = 4$ stretches $[0, \frac12]$ onto $[0, 1]$ and folds $[\frac12, 1]$ back onto $[0, 1]$, like a baker kneading dough. Two nearby points are pulled apart at every step until they end up on opposite sides of a fold, after which their futures are unrelated.
+
+<Figure caption="Cobweb diagram for a map $f$: from $x_0$ go vertically to the graph, horizontally to the diagonal $y = x$, and repeat. Fixed points are where the graph meets the diagonal. Here the slope at the fixed point is between $-1$ and $0$, and the orbit spirals inwards.">
+<svg viewBox="0 0 260 220" role="img" aria-label="A parabola-like curve crossing a diagonal line, with a staircase spiral converging to the crossing point">
+  <line x1="20" y1="200" x2="240" y2="200" stroke="var(--ink-2)" strokeWidth="1" />
+  <line x1="20" y1="200" x2="20" y2="20" stroke="var(--ink-2)" strokeWidth="1" />
+  <line x1="20" y1="200" x2="220" y2="20" stroke="var(--ink-2)" strokeWidth="1.2" strokeDasharray="5 3" />
+  <path d="M 20 200 Q 120 -10 220 200" fill="none" stroke="var(--formal)" strokeWidth="2.5" />
+  <path d="M 60 200 L 60 118 L 111 118 L 111 96 L 135 96 L 135 104 L 127 104 L 127 100 L 131 100" fill="none" stroke="var(--human)" strokeWidth="1.6" />
+  <circle cx="129" cy="102" r="4" fill="var(--gold)" />
+  <text x="54" y="214" fontSize="12" fill="var(--ink-2)">x₀</text>
+  <text x="150" y="60" fontSize="12" fill="var(--ink-2)">y = x</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="map, flow, orbit">
+
+A (discrete) **dynamical system** is a map $f : X \to X$ on a metric space $X$. The **orbit** of $x$ is $x, f(x), f^2(x), \dots$, where $f^n$ is the $n$-fold composite. A **flow** on $\R^d$ is given by an autonomous ODE $\dot x = F(x)$ with $F$ of class $C^1$. By the Picard–Lindelöf theorem through each point passes a unique solution $t \mapsto \phi_t(x)$, and $\phi_{s+t} = \phi_s \circ \phi_t$ wherever defined.
+
+</Definition>
+
+<Definition term="fixed and periodic points, stability">
+
+$x^*$ is a **fixed point** of $f$ if $f(x^*) = x^*$, and an **equilibrium** of a flow if $F(x^*) = 0$. $x$ is **periodic** with period $n$ if $f^n(x) = x$; its **minimal period** is the least such $n \ge 1$. A fixed point is **attracting** if every orbit starting close enough converges to it. It is **Lyapunov stable** if orbits starting close enough stay close for all future time, and **asymptotically stable** if it is both. It is **repelling** if some neighbourhood is left eventually by every orbit starting in it, except $x^*$ itself.
+
+</Definition>
+
+<Definition term="hyperbolic fixed point">
+
+A fixed point $x^*$ of a $C^1$ map is **hyperbolic** if no eigenvalue of $Df(x^*)$ has absolute value $1$. An equilibrium of a flow is hyperbolic if no eigenvalue of $DF(x^*)$ has real part $0$. For a periodic orbit of period $n$ of a map of $\R$, its **multiplier** is $(f^n)'(x) = f'(x)f'(f(x))\cdots f'(f^{n-1}(x))$, by the chain rule.
+
+</Definition>
+
+<Definition term="limit cycle, ω-limit set">
+
+A **periodic orbit** of a flow is a non-constant solution with $\phi_T(x) = x$ for some $T > 0$. A **limit cycle** is a periodic orbit that is isolated: some neighbourhood contains no other periodic orbit. The **ω-limit set** $\omega(x)$ is the set of points $y$ with $\phi_{t_k}(x) \to y$ for some sequence $t_k \to \infty$ — where the orbit ends up.
+
+</Definition>
+
+<Definition term="conjugacy, bifurcation">
+
+Maps $f : X \to X$ and $g : Y \to Y$ are **topologically conjugate** if there is a homeomorphism $h : X \to Y$ with $h \circ f = g \circ h$. Then $h$ carries orbits to orbits, so the two systems are "the same up to a change of coordinates". If $h$ is only a continuous surjection, $g$ is a **factor** of $f$ (a semi-conjugacy). A **bifurcation** is a qualitative change — in the number or stability of fixed points or cycles, say — in a family $f_\mu$ as the parameter $\mu$ varies.
+
+</Definition>
+
+<Definition term="sensitive dependence and chaos">
+
+$f : X \to X$ has **sensitive dependence on initial conditions** if there is $\delta > 0$ such that for every $x$ and every $\varepsilon > 0$ there are $y$ with $d(x, y) < \varepsilon$ and $n \ge 0$ with $d(f^n(x), f^n(y)) \ge \delta$. Following Devaney (1986), $f$ is **chaotic** on $X$ if it has sensitive dependence, its periodic points are dense, and it is **topologically transitive**: for all non-empty open $U, V$ there is $n$ with $f^n(U) \cap V \ne \varnothing$.
+
+</Definition>
+
+The **Lyapunov exponent** of an orbit of a $C^1$ map of $\R$ is $\lambda(x) = \lim_{n\to\infty}\frac1n\sum_{k=0}^{n-1}\ln|f'(f^k(x))|$, when the limit exists. It is the average exponential rate at which nearby orbits separate. Positive exponents are the usual numerical signature of chaos.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Linear maps of the line">
+
+For $f(x) = ax$, $f^n(x) = a^nx$. The fixed point $0$ attracts if $|a| < 1$ and repels if $|a| > 1$. If $a < 0$ the orbit alternates sides. For $|a| = 1$ nothing moves closer or further: $a = -1$ makes every non-zero point periodic of period $2$.
+
+</Example>
+
+<Example title="The doubling map and the circle">
+
+$D(x) = 2x \bmod 1$ on $[0, 1)$, which we think of as the circle $\R/\Z$. In binary, $D$ deletes the first digit: $D(0.b_1b_2b_3\ldots) = 0.b_2b_3\ldots$. So $x$ is periodic exactly when its binary expansion repeats, and the orbit of a point whose binary digits are "random" visits every interval. Points that agree in their first $n$ digits are within $2^{-n}$, but after $n$ steps their orbits have nothing in common.
+
+</Example>
+
+<Example title="An irrational rotation: dense orbits without chaos">
+
+$R_\alpha(x) = x + \alpha \bmod 1$ with $\alpha$ irrational. Every orbit is dense in the circle (Kronecker), so $R_\alpha$ is transitive. But $R_\alpha$ is an isometry, so nearby points stay exactly as close as they were: no sensitive dependence, and no periodic points at all. Transitivity alone is not chaos.
+
+</Example>
+
+<Example title="The pendulum">
+
+$\ddot\theta = -\sin\theta$, or $\dot\theta = v$, $\dot v = -\sin\theta$. The energy $E = \frac12v^2 - \cos\theta$ is constant along orbits ($\dot E = v\dot v + \sin\theta\,\dot\theta = 0$), so orbits lie on its level curves. The equilibrium $(0, 0)$ is surrounded by closed orbits (a centre), while $(\pi, 0)$ is a saddle. The orbits through the saddle, the *separatrices*, divide swinging from spinning.
+
+</Example>
+
+</Section>
+
+<Section id="maps" kind="proof" title="Fixed points of maps and the logistic family">
+
+<Theorem name="Theorem 1 (derivative test)">
+
+Let $f : \R \to \R$ be $C^1$ with $f(x^*) = x^*$. If $|f'(x^*)| < 1$, then $x^*$ is attracting. If $|f'(x^*)| > 1$, then $x^*$ is repelling.
+
+</Theorem>
+
+<Proof>
+
+Suppose $|f'(x^*)| < 1$ and pick $K$ with $|f'(x^*)| < K < 1$. By continuity of $f'$ there is $\delta > 0$ with $|f'| \le K$ on $I = [x^* - \delta, x^* + \delta]$. For $x \in I$ the mean value theorem gives $|f(x) - x^*| = |f(x) - f(x^*)| = |f'(\xi)||x - x^*| \le K|x - x^*|$. In particular $f(x) \in I$, so by induction $f^n(x) \in I$ and $|f^n(x) - x^*| \le K^n|x - x^*| \to 0$.
+
+If $|f'(x^*)| > 1$, choose $K > 1$ and $\delta$ with $|f'| \ge K$ on $I$. As long as $f^n(x)$ stays in $I$, $|f^{n+1}(x) - x^*| \ge K|f^n(x) - x^*|$. Since $K^n|x - x^*| \to \infty$ for $x \ne x^*$, every orbit except $x^*$ leaves $I$.
+
+</Proof>
+
+When $|f'(x^*)| = 1$ the test says nothing: $x \mapsto x - x^3$ attracts to $0$, $x \mapsto x + x^3$ repels, and both have $f'(0) = 1$. The same proof works for periodic orbits, using the multiplier $(f^n)'$.
+
+<Theorem name="Theorem 2 (the logistic map up to the first period doubling)">
+
+Let $f_r(x) = rx(1 - x)$ with $r > 0$.
+
+(a) The fixed points are $0$ and $x_r^* = 1 - \frac1r$, with $f_r'(0) = r$ and $f_r'(x_r^*) = 2 - r$. So $0$ attracts for $r < 1$, and $x_r^*$ attracts for $1 < r < 3$ and repels for $r > 3$.
+
+(b) For $r > 3$ there is an orbit of minimal period $2$, $\{p_+, p_-\}$ with $p_\pm = \frac{r + 1 \pm \sqrt{(r - 3)(r + 1)}}{2r}$. Its multiplier is $f_r'(p_+)f_r'(p_-) = 4 + 2r - r^2$, so it is attracting for $3 < r < 1 + \sqrt6 \approx 3.449$.
+
+</Theorem>
+
+<Proof>
+
+(a) $rx(1 - x) = x$ iff $x(r - 1 - rx) = 0$. The derivative is $f_r'(x) = r(1 - 2x)$, which at $x^*_r$ equals $r\big(\frac2r - 1\big) = 2 - r$. Now $|2 - r| < 1$ iff $1 < r < 3$, and Theorem 1 applies.
+
+(b) Period-2 points satisfy $f_r(f_r(x)) = x$, a quartic divisible by the fixed-point quadratic $x(rx - r + 1)$. The quotient is $r^2x^2 - r(r+1)x + (r + 1) = 0$, with roots $p_\pm$, real and distinct exactly when $(r - 3)(r + 1) > 0$, that is $r > 3$. With $s = \sqrt{(r-3)(r+1)}$ one checks directly that $f_r(p_+) = p_-$ and $f_r(p_-) = p_+$ (Lean verifies the algebra below). Since $p_+ \ne p_-$, the minimal period is $2$. For the multiplier, $p_+ + p_- = \frac{r + 1}{r}$ and $p_+p_- = \frac{r + 1}{r^2}$, so
+
+$$
+r^2(1 - 2p_+)(1 - 2p_-) = r^2\big(1 - 2(p_+ + p_-) + 4p_+p_-\big) = r^2 - 2r(r + 1) + 4(r + 1) = 4 + 2r - r^2.
+$$
+
+This is less than $1$ iff $r^2 - 2r - 3 > 0$, i.e. $r > 3$, and greater than $-1$ iff $r^2 - 2r - 5 < 0$, i.e. $r < 1 + \sqrt6$.
+
+</Proof>
+
+At $r = 3$ the multiplier of $x^*_r$ passes through $-1$. The fixed point loses stability and hands it to a newly born 2-cycle: a **period-doubling bifurcation**. At $r = 1 + \sqrt6$ the 2-cycle's multiplier reaches $-1$ and a stable 4-cycle is born, and so on. The doubling parameters $r_1 = 3$, $r_2 \approx 3.4495$, $r_3 \approx 3.5441$, $r_4 \approx 3.5644, \dots$ accumulate at $r_\infty \approx 3.5699$. Mitchell Feigenbaum discovered numerically in 1975 that the gaps shrink geometrically,
+
+$$
+\frac{r_{n} - r_{n-1}}{r_{n+1} - r_n} \to \delta = 4.6692016\ldots,
+$$
+
+and that *the same* $\delta$ appears for every smooth unimodal family with a quadratic maximum, such as $x \mapsto r\sin(\pi x)$. This **universality** was explained by renormalisation: Feigenbaum (1978) and, independently, Coullet and Tresser. It was proved by Oscar Lanford with a computer-assisted argument in 1982, and Mikhail Lyubich (1999) gave a conceptual proof of the renormalisation conjectures. The experiment below estimates $\delta$. That estimate is evidence, not a proof.
+
+Beyond $r_\infty$ there are windows of periodic behaviour, the largest beginning at $r = 1 + \sqrt8 \approx 3.8284$ with an attracting 3-cycle. **Sharkovskii's theorem** (1964) orders the positive integers as
+
+$$
+3 \rhd 5 \rhd 7 \rhd \cdots \rhd 2\cdot3 \rhd 2\cdot5 \rhd \cdots \rhd 2^2\cdot3 \rhd \cdots \rhd 2^3 \rhd 2^2 \rhd 2 \rhd 1,
+$$
+
+and states that a continuous map of an interval with a periodic point of period $m$ has periodic points of every period $n$ with $m \rhd n$. In particular **period three implies all periods** (Li and Yorke, 1975, who also coined the word "chaos" in this sense).
+
+</Section>
+
+<Section id="flows" kind="proof" title="Planar flows: linearisation and Lyapunov functions">
+
+For a linear system $\dot x = Ax$ with $A$ a real $2\times2$ matrix, the solution is $x(t) = e^{tA}x(0)$. Its behaviour depends on the eigenvalues, which are determined by $\tau = \operatorname{tr}A$ and $\Delta = \det A$: they are $\lambda_{1,2} = \frac{\tau \pm \sqrt{\tau^2 - 4\Delta}}{2}$.
+
+<Theorem name="Theorem 3 (classification of planar linear systems)">
+
+Let $\Delta \ne 0$, so that $0$ is the only equilibrium.
+
+- $\Delta < 0$: a **saddle** (real eigenvalues of opposite signs; unstable).
+- $\Delta > 0$, $\tau^2 \ge 4\Delta$: a **node** (real eigenvalues of the same sign), stable if $\tau < 0$ and unstable if $\tau > 0$.
+- $\Delta > 0$, $\tau^2 < 4\Delta$, $\tau \ne 0$: a **spiral** (complex eigenvalues $\alpha \pm i\beta$, $\alpha = \tau/2$), stable if $\tau < 0$ and unstable if $\tau > 0$.
+- $\Delta > 0$, $\tau = 0$: a **centre** (eigenvalues $\pm i\beta$): every other orbit is a closed ellipse.
+
+In particular $0$ is asymptotically stable if and only if $\tau < 0 < \Delta$.
+
+</Theorem>
+
+<Proof>
+
+Since $\lambda_1\lambda_2 = \Delta$ and $\lambda_1 + \lambda_2 = \tau$, the sign cases follow from the formula for the eigenvalues. For real distinct eigenvalues, in an eigenbasis the system decouples as $\dot y_i = \lambda_iy_i$, so $y_i(t) = e^{\lambda_it}y_i(0)$. Both decay if both $\lambda_i < 0$, both grow if both are positive, and one grows while the other decays if they have opposite signs (the saddle). For a repeated eigenvalue $\lambda$ that is not diagonalisable, the Jordan form gives $y_1 = e^{\lambda t}(y_1(0) + ty_2(0))$, $y_2 = e^{\lambda t}y_2(0)$, which still decays exactly when $\lambda < 0$. For complex eigenvalues $\alpha \pm i\beta$, there is a real basis in which $A = \begin{pmatrix}\alpha & -\beta\\ \beta & \alpha\end{pmatrix}$. In polar coordinates this is $\dot r = \alpha r$, $\dot\theta = \beta$, so $r = e^{\alpha t}r(0)$: inward spirals for $\alpha < 0$, outward for $\alpha > 0$, and circles for $\alpha = 0$ (ellipses in the original coordinates).
+
+</Proof>
+
+For a nonlinear system $\dot x = F(x)$ with $F(x^*) = 0$, the **linearisation** $\dot y = DF(x^*)y$ describes the motion near $x^*$ — when $x^*$ is hyperbolic.
+
+<Theorem name="Theorem 4 (Hartman–Grobman; stated, not proved here)">
+
+If $x^*$ is a hyperbolic equilibrium of a $C^1$ flow, there is a homeomorphism between neighbourhoods of $x^*$ and of $0$ that carries orbits of the flow to orbits of its linearisation, preserving the direction of time. In particular, if all eigenvalues of $DF(x^*)$ have negative real part, $x^*$ is asymptotically stable.
+
+</Theorem>
+
+(Proofs: Hartman 1960 and Grobman 1959; see Perko, *Differential Equations and Dynamical Systems*, §2.8.) Hyperbolicity cannot be dropped. The systems
+
+$$
+\dot x = -y \mp x(x^2 + y^2), \qquad \dot y = x \mp y(x^2 + y^2)
+$$
+
+both have the centre $\dot x = -y$, $\dot y = x$ as linearisation. In polar coordinates they are $\dot r = \mp r^3$, $\dot\theta = 1$. With the upper sign the origin is an asymptotically stable spiral, and with the lower sign an unstable one. A linear centre decides nothing.
+
+<Theorem name="Theorem 5 (Lyapunov's direct method)">
+
+Let $x^*$ be an equilibrium of $\dot x = F(x)$ and $V$ a $C^1$ function on a neighbourhood $U$ of $x^*$ with $V(x^*) = 0$ and $V > 0$ on $U \setminus \{x^*\}$. If $\dot V = \nabla V \cdot F \le 0$ on $U$, then $x^*$ is Lyapunov stable. If $\dot V < 0$ on $U \setminus \{x^*\}$, then $x^*$ is asymptotically stable.
+
+</Theorem>
+
+<Proof>
+
+Take $\varepsilon > 0$ with the closed ball $\overline{B}(x^*, \varepsilon) \subseteq U$, and let $m = \min V$ on the sphere $|x - x^*| = \varepsilon$, so $m > 0$. By continuity there is $\delta \in (0, \varepsilon)$ with $V < m$ on $B(x^*, \delta)$. Since $V$ does not increase along orbits, an orbit starting in $B(x^*, \delta)$ keeps $V < m$ and so never reaches the sphere: it stays in $B(x^*, \varepsilon)$. That is stability.
+
+Now suppose $\dot V < 0$ away from $x^*$. Along such an orbit, $V(\phi_t(x))$ decreases to a limit $c \ge 0$. If $c > 0$, the orbit stays in the compact set $\{c \le V,\ |x - x^*| \le \varepsilon\}$, on which $\dot V \le -\eta < 0$ for some $\eta$. Then $V \to -\infty$, which is absurd. So $V(\phi_t(x)) \to 0$, which forces $\phi_t(x) \to x^*$ (if not, the orbit would return infinitely often to a compact set avoiding $x^*$, on which $V$ is bounded below by a positive constant).
+
+</Proof>
+
+For the spiral sink $\dot x = -x + y$, $\dot y = -x - y$, the function $V = x^2 + y^2$ gives $\dot V = 2x(-x + y) + 2y(-x - y) = -2V$, so $V$ decays like $e^{-2t}$ (formalised below). For the systems above with the upper sign, $V = x^2 + y^2$ gives $\dot V = -2(x^2 + y^2)^2 < 0$, which proves the asymptotic stability that linearisation could not see.
+
+</Section>
+
+<Section id="cycles" kind="proof" title="Limit cycles and the Poincaré–Bendixson theorem">
+
+The simplest limit cycle is visible in polar coordinates: $\dot r = r(1 - r^2)$, $\dot\theta = 1$. For $0 < r < 1$, $r$ increases, and for $r > 1$ it decreases, so every orbit except the origin spirals onto the unit circle. Usually no such coordinates exist, and the existence of a cycle needs a theorem.
+
+<Theorem name="Theorem 6 (Poincaré–Bendixson; stated with a proof sketch)">
+
+Let $\dot x = F(x)$ be a $C^1$ flow on an open set of $\R^2$, and suppose the forward orbit of $x$ stays in a compact set $K$ that contains no equilibrium. Then $\omega(x)$ is a periodic orbit. Either the orbit of $x$ is periodic, or it spirals towards a periodic orbit.
+
+</Theorem>
+
+*Proof sketch.* $\omega(x)$ is non-empty, compact, connected and invariant. Take $y \in \omega(x)$ and $z \in \omega(y) \subseteq \omega(x)$. Since $F(z) \ne 0$, there is a short segment $\Sigma$ through $z$ transverse to the flow. The key lemma: the successive crossings of $\Sigma$ by any orbit are *monotone* along $\Sigma$. A piece of orbit between two crossings, closed up by a piece of $\Sigma$, is a simple closed curve. By the **Jordan curve theorem** it separates the plane, and the flow crosses $\Sigma$ in one direction only, so the orbit cannot come back on the other side. Hence an ω-limit set meets $\Sigma$ in at most one point. This forces the orbit of $y$ to return to the same point of $\Sigma$, so it is periodic, and then $\omega(x)$ is that periodic orbit. Full proofs: Hirsch, Smale and Devaney (2013), chapter 10, or Perko (2001), §3.7. $\square$
+
+<Example title="A trapping annulus">
+
+Consider $\dot r = r(1 - r^2) + \mu r\cos\theta$, $\dot\theta = 1$, with $0 < \mu < 1$ (Strogatz's example). Since $\dot\theta = 1$ there are no equilibria except possibly the origin. On the circle $r = r_{\min} < \sqrt{1 - \mu}$ we have $\dot r \ge r(1 - r^2 - \mu) > 0$, and on $r = r_{\max} > \sqrt{1 + \mu}$ we have $\dot r \le r(1 - r^2 + \mu) < 0$. So the annulus $r_{\min} \le r \le r_{\max}$ is **trapping**: orbits enter it and never leave. It is compact and contains no equilibrium, so by Poincaré–Bendixson it contains a periodic orbit — although we cannot write it down.
+
+</Example>
+
+<Theorem name="Corollary 7 (no chaos in the plane)">
+
+A bounded orbit of a planar $C^1$ flow with finitely many equilibria converges to an equilibrium, to a periodic orbit, or to a cycle of equilibria joined by orbits. In particular planar flows have no strange attractors and no sensitive dependence of the kind seen in the doubling map.
+
+</Theorem>
+
+(The generalised Poincaré–Bendixson theorem gives exactly this trichotomy; see Perko, §3.7.) Chaos for flows needs at least three dimensions. **Lorenz's system** $\dot x = \sigma(y - x)$, $\dot y = x(\rho - z) - y$, $\dot z = xy - \beta z$ with $\sigma = 10$, $\rho = 28$, $\beta = 8/3$ has a famous butterfly-shaped attractor. Only in 2002 did Warwick Tucker prove, with rigorous computer-assisted interval arithmetic, that it really is a strange attractor (a problem on Smale's 1998 list). For *maps*, one dimension is enough: the logistic map shows it.
+
+**Bifurcations of flows.** On the line, the normal forms are the **saddle-node** $\dot x = \mu + x^2$ (two equilibria collide and vanish as $\mu$ increases through $0$), the **transcritical** $\dot x = \mu x - x^2$ (two equilibria exchange stability) and the **pitchfork** $\dot x = \mu x - x^3$ (one equilibrium splits into three). In the plane, in a **Hopf bifurcation** a pair of complex eigenvalues crosses the imaginary axis and a small limit cycle is born — for instance $\dot r = \mu r - r^3$, $\dot\theta = 1$, which has the cycle $r = \sqrt\mu$ for $\mu > 0$. A precise statement, with its non-degeneracy conditions, is in Strogatz (2015), chapter 8.
+
+</Section>
+
+<Section id="chaos" kind="proof" title="Chaos, proved">
+
+<Theorem name="Theorem 8 (the doubling map is chaotic)">
+
+$D(x) = 2x \bmod 1$ on the circle $\R/\Z$ (with distance $d(x, y) = $ the shorter arc) has sensitive dependence with $\delta = \frac14$, dense periodic points, and is topologically transitive.
+
+</Theorem>
+
+<Proof>
+
+*Expansion.* If $d(x, y) < \frac14$, then $d(D(x), D(y)) = 2d(x, y)$.
+
+*Sensitive dependence.* Let $x$ and $\varepsilon > 0$ be given, and let $y \ne x$ with $d(x, y) < \min(\varepsilon, \frac14)$. While the distance is below $\frac14$, it doubles at each step. So there is a first $n$ with $d(D^n(x), D^n(y)) \ge \frac14$.
+
+*Dense periodic points.* $D^n(x) = 2^nx \bmod 1$, so $D^n(x) = x$ iff $(2^n - 1)x \in \Z$. The periodic points of period $n$ are the $2^n - 1$ points $\frac{k}{2^n - 1}$, spaced $\frac{1}{2^n - 1}$ apart. Every interval contains one for large $n$.
+
+*Transitivity.* An open set $U$ contains an arc $J = \big[\frac{k}{2^n}, \frac{k+1}{2^n}\big]$ for large $n$, and $D^n$ maps $J$ onto the whole circle. So $D^n(U)$ meets every $V$.
+
+</Proof>
+
+<Theorem name="Theorem 9 (the logistic map at r = 4 is a factor of the doubling map)">
+
+Let $h(\theta) = \sin^2(\pi\theta)$, a continuous surjection from the circle $\R/\Z$ onto $[0, 1]$. Then $f_4 \circ h = h \circ D$. Consequently $f_4$ has dense periodic points and is topologically transitive on $[0, 1]$, hence chaotic in Devaney's sense, and it has periodic points of every period.
+
+</Theorem>
+
+<Proof>
+
+$f_4(h(\theta)) = 4\sin^2(\pi\theta)\cos^2(\pi\theta) = \sin^2(2\pi\theta) = h(D(\theta))$. (The identity is well defined on the circle because $\sin^2$ has period $\pi$.) If $D^n(\theta) = \theta$, then $f_4^n(h(\theta)) = h(D^n(\theta)) = h(\theta)$. So $h$ maps the dense set of periodic points of $D$ to a set of periodic points of $f_4$, which is dense because $h$ is a continuous surjection. For transitivity, given open $U, V \subseteq [0, 1]$, the sets $h^{-1}(U)$ and $h^{-1}(V)$ are open and non-empty, so $D^n(h^{-1}U)$ meets $h^{-1}V$ for some $n$, and applying $h$ shows that $f_4^n(U)$ meets $V$. Sensitive dependence then follows from transitivity and dense periodic points on an infinite metric space (Banks, Brooks, Cairns, Davis and Stacey, 1992).
+
+</Proof>
+
+So the logistic map at $r = 4$ is chaotic: not "according to the computer", but by a proof. The conjugacy also gives exact formulas. The orbit of $x_0 = \sin^2(\pi\theta_0)$ is $x_n = \sin^2(2^n\pi\theta_0)$, and the Lyapunov exponent of almost every orbit is exactly $\ln 2$. For most $r$ in $(r_\infty, 4)$, by contrast, what happens is subtle. The parameters with an attracting cycle are dense (Graczyk–Świątek and Lyubich, 1997), yet the parameters with an absolutely continuous invariant measure — "stochastic" behaviour — have positive measure (Jakobson, 1981).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Dynamics in Lean and Mathlib">
+
+Mathlib's `Dynamics` library provides the vocabulary: iterates `f^[n]`, `Function.IsFixedPt`, `Function.IsPeriodicPt` and `Function.minimalPeriod`, flows, ω-limit sets, and the Banach fixed point theorem. The lesson's concrete theorems about the logistic map are proved here by algebra and calculus.
+
+<Lean decl="Lumenary.DynamicalSystems.logistic" />
+
+<Lean decl="Lumenary.DynamicalSystems.logistic_fixed_points" />
+
+<Lean decl="Lumenary.DynamicalSystems.logistic_deriv_at_fixed" />
+
+<Lean decl="Lumenary.DynamicalSystems.logistic_stable_iff" />
+
+The period-2 orbit of Theorem 2(b), its minimal period in Mathlib's language, and its multiplier:
+
+<Lean decl="Lumenary.DynamicalSystems.period_two_orbit" />
+
+<Lean decl="Lumenary.DynamicalSystems.period_two_minimal" />
+
+<Lean decl="Lumenary.DynamicalSystems.two_cycle_multiplier" />
+
+The attracting half of Theorem 1, in two steps that follow the human proof: the geometric estimate $|f^n(x) - x^*| \le K^n|x - x^*|$, and the mean value inequality that supplies $K$ from a bound on $f'$. Next to it is Banach's theorem for contractions of complete metric spaces, cited from Mathlib.
+
+<Lean decl="Lumenary.DynamicalSystems.iterate_contraction" />
+
+<Lean decl="Lumenary.DynamicalSystems.attracting_fixed_point" />
+
+<Lean decl="Lumenary.DynamicalSystems.banach_fixed_point" />
+
+The expansion behind sensitive dependence (for the lift $x \mapsto 2x$ of the doubling map), and the Lyapunov function of the spiral sink:
+
+<Lean decl="Lumenary.DynamicalSystems.doubling_separates" />
+
+<Lean decl="Lumenary.DynamicalSystems.lyapunov_decay" />
+
+**What is and is not formalised.** Proved here: Theorem 2 in full (fixed points, their multipliers and stability ranges, the 2-cycle, its minimal period and multiplier), the attracting half of Theorem 1 (with $|f'| \le K < 1$ on an interval as hypothesis), the expansion of the doubling map, and the Lyapunov decay for one linear system. Cited: Banach's fixed point theorem. Not formalised: the repelling half of Theorem 1, the classification of linear systems, Hartman–Grobman, Lyapunov's theorem in general, Poincaré–Bendixson, Theorems 8 and 9 on the circle, Sharkovskii's theorem and Feigenbaum universality. Mathlib has the Jordan curve theorem only in special cases, so Poincaré–Bendixson is some way off.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Periods, Feigenbaum's constant and the limits of simulation">
+
+The first program explores the logistic family. It detects the period of the attractor for several $r$. It locates the **superstable** parameters $R_n$, where the attracting $2^n$-cycle passes through the critical point $\frac12$, by Newton's method in $r$. Their gap ratios approach Feigenbaum's $\delta$, just as the bifurcation points do. It also estimates Lyapunov exponents.
+
+<Python id="dynamical_systems_logistic" />
+
+The exponents fit the theory: $\ln 0.8 = -0.223$ at $r = 2.8$, where the fixed point has multiplier $2 - r = -0.8$; negative in the period-3 window at $r = 3.83$; positive at $r = 3.9$; and $\ln 2$ at $r = 4$ (Theorem 9). The ratios agree with $\delta = 4.66920\ldots$ to five digits. But a table of eight ratios cannot prove that they converge, let alone that the limit is universal. That needed Lanford's computer-assisted proof, where the computer's role was to check rigorous inequalities, not to run a simulation.
+
+How far can a simulation of a chaotic map be trusted? At $r = 4$ the conjugacy of Theorem 9 gives the *true* orbit exactly: $x_n = \sin^2(2^n\pi\theta_0)$, with $2^n\theta_0 \bmod 1$ computed in exact rational arithmetic. The second program compares it with ordinary floating-point iteration.
+
+<Python id="dynamical_systems_sensitivity" />
+
+The floating-point orbit is accurate for about $40$ steps and meaningless after $55$: each step doubles the rounding error. The doubling map in floating point is worse still. Every float is a dyadic rational, so every orbit hits $0$ exactly within about $55$ steps, while in exact arithmetic $\frac17$ cycles forever. This is not a reason to distrust all simulations. The **shadowing lemma** says that for hyperbolic systems a computed pseudo-orbit stays close to *some* true orbit, so statistical features such as the Lyapunov exponent can be reliable even when individual orbits are not.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: cobwebs, cycles and phase portraits">
+
+**The logistic map.** Start at $r = 2.8$: the cobweb spirals into the fixed point $1 - 1/r$. Move $r$ past $3$ and watch the cobweb settle on a square, the 2-cycle. Past $3.45$ you get a 4-cycle, and past $3.57$ chaos, with windows of order such as the 3-cycle near $r = 3.83$. The widget's verdict comes from finitely many iterates.
+
+<SequenceLab mode="cobweb" params={[{"name":"r","min":2.5,"max":4,"step":0.01,"value":2.8}]} x0={0.2} N={80} title="The logistic map x ↦ r x (1 − x)" />
+
+**Linear systems.** This matrix has trace $-3$ and determinant $2$, so its eigenvalues are $-1$ and $-2$: a stable node. Edit the equations to make a saddle ($\Delta < 0$), a spiral ($\tau^2 < 4\Delta$) or a centre ($\tau = 0$), and check the trace–determinant diagram.
+
+<VectorField mode="phase" f="x - 2*y" g="3*x - 4*y" points={[[3, 1], [-2, 3], [1, -3]]} title="A stable node: eigenvalues −1 and −2" />
+
+**A limit cycle.** Van der Pol's oscillator: orbits from inside and outside wind onto the same closed curve. The equilibrium at the origin is an unstable spiral, and a trapping region around it gives the cycle by Poincaré–Bendixson.
+
+<VectorField mode="phase" preset="vanDerPol" title="Van der Pol's limit cycle" />
+
+**Energy and separatrices.** The pendulum conserves energy, so its orbits are level curves. Find the centre, the saddles, and the separatrices that divide swinging from spinning. The linearisation at the bottom is a centre, and here — unlike the earlier example — the nonlinear system really does have closed orbits, because energy is conserved.
+
+<VectorField mode="phase" preset="pendulum" title="The pendulum's phase plane" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Chaos means randomness."** Chaotic systems are deterministic: the logistic map at $r = 4$ has the exact formula $x_n = \sin^2(2^n\pi\theta_0)$. What chaos destroys is *predictability in practice*. Any error in the initial condition, however small, is amplified exponentially (here by $2^n$), so the long-run future depends on digits we cannot know. Chaotic orbits can nonetheless have perfectly regular statistics, such as an invariant density.
+
+</Misconception>
+
+<Misconception>
+
+**"The computer showed it is chaotic, so it is."** A simulation shows finitely many iterates in floating-point arithmetic, which is itself a different dynamical system: every floating-point orbit is eventually periodic, and for the doubling map every one ends at $0$. Numerical evidence of a positive Lyapunov exponent is evidence, not proof. Proofs of chaos use conjugacies (Theorem 9), symbolic dynamics, or computer-assisted arguments with rigorous error bounds, as in Lanford's and Tucker's work.
+
+</Misconception>
+
+<Misconception>
+
+**"If the linearisation is stable, the equilibrium is stable."** Only when the equilibrium is hyperbolic (Hartman–Grobman). A linear centre is consistent with a stable spiral, an unstable spiral, or a true centre for the nonlinear system, as the examples $\dot r = \mp r^3$ show. And for maps, $|f'(x^*)| = 1$ decides nothing.
+
+</Misconception>
+
+<Misconception>
+
+**"Dense orbits mean chaos."** An irrational rotation of the circle has every orbit dense, but nearby points never separate and there are no periodic points. Devaney's definition asks for transitivity *and* dense periodic points, and these together imply sensitive dependence.
+
+</Misconception>
+
+<Misconception>
+
+**"A bounded orbit must settle down or repeat."** In the plane, essentially yes (Poincaré–Bendixson). On the torus, the irrational flow wanders densely for ever with no equilibria and no cycles, and in three dimensions orbits can be chaotic (Lorenz). For maps even the interval allows chaos. The theorem depends on the topology of the plane.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Conjugacy, index and the Jordan curve">
+
+To a topologist, two systems are the same when they are **topologically conjugate**, $h \circ f = g \circ h$ with $h$ a homeomorphism:
+
+<CommutativeDiagram
+  objects={[
+    { id: "X", tex: "X", row: 0, col: 0 },
+    { id: "X2", tex: "X", row: 0, col: 1 },
+    { id: "Y", tex: "Y", row: 1, col: 0 },
+    { id: "Y2", tex: "Y", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "X", to: "X2", tex: "f" },
+    { from: "X", to: "Y", tex: "h", labelSide: "right" },
+    { from: "X2", to: "Y2", tex: "h" },
+    { from: "Y", to: "Y2", tex: "g", labelSide: "right" },
+  ]}
+  caption="Topological conjugacy: $h \circ f = g \circ h$. Hartman–Grobman says a flow near a hyperbolic equilibrium is conjugate to its linearisation."
+/>
+
+Topology also constrains flows globally. The **index** of an isolated equilibrium is the number of turns its vector field makes around a small loop: $+1$ for nodes, spirals and centres, $-1$ for saddles. A periodic orbit in the plane has index $+1$, so it must enclose equilibria of total index $+1$. On a closed surface, the **Poincaré–Hopf theorem** says the indices of the zeros of a vector field add up to the Euler characteristic. On the sphere ($\chi = 2$) every flow has an equilibrium — the hairy ball theorem. On the torus ($\chi = 0$) there are flows without equilibria, which is where Poincaré–Bendixson fails. See <TopicLink id="math.geom.differential-topology">differential topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Phase space, invariant manifolds and conserved area">
+
+Near a saddle the geometric picture is two curves: the **stable manifold** of points flowing into the saddle and the **unstable manifold** of points flowing out, tangent to the eigenvectors. They organise the whole phase portrait — the separatrices of the pendulum are such manifolds. Poincaré discovered that when stable and unstable manifolds of a saddle intersect transversally (a *homoclinic tangle*), the dynamics nearby contains a copy of the doubling map's symbolic dynamics (Smale's horseshoe, 1960s). That is the geometric origin of chaos in mechanics. **Hamiltonian** flows such as the pendulum preserve area in phase space (Liouville's theorem). So they can have no attracting equilibria or limit cycles, and their chaos looks different. See <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Invariant measures and time averages">
+
+A chaotic orbit is unpredictable individually but predictable statistically. For $f_4$ the density $\rho(x) = \frac{1}{\pi\sqrt{x(1 - x)}}$ is **invariant**: if $x_0$ is distributed according to $\rho$, so is $x_1$. It is the image under $h$ of the uniform (Lebesgue) measure, which the doubling map preserves. Birkhoff's ergodic theorem (1931) says that for almost every $x_0$ the time average of any integrable observable equals its space average. For instance the fraction of time an orbit spends in $[a, b]$ tends to $\int_a^b\rho$, and the Lyapunov exponent equals $\int_0^1\ln|4(1 - 2x)|\rho(x)\,dx = \ln 2$. In binary coordinates the doubling map is a sequence of fair coin tosses, and deterministic chaos *is* a Bernoulli process. See <TopicLink id="math.analysis.ergodic-theory">ergodic theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Weather, planets and the limits of prediction">
+
+Lorenz's 1963 system was a drastic truncation of the equations of atmospheric convection, and its sensitive dependence is why weather forecasts lose skill after about two weeks. In celestial mechanics, Poincaré's 1890 prize memoir on the three-body problem first met the homoclinic tangles that produce chaos. A famous correction to it, made before publication, is where he discovered them. Later the **KAM theorem** (Kolmogorov 1954, Arnold 1963, Moser 1962) showed that most quasi-periodic motions of a nearly integrable Hamiltonian system survive small perturbations. Order and chaos coexist in the Solar System, and numerical studies (Laskar, 1989) found that the inner planets' orbits are chaotic on time scales of millions of years — a numerical finding, consistent with but not equivalent to a proof.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Rigorous numerics and computer-assisted proofs">
+
+Floating-point simulation of a chaotic system loses all information about individual orbits within a few dozen steps. A computer can still *prove* theorems about dynamics if it computes with **interval arithmetic**: every number is an interval guaranteed to contain the true value, and every operation rounds outwards. Lanford's 1982 proof of Feigenbaum's conjectures and Tucker's 2002 proof that Lorenz's attractor exists both work this way, checking finitely many rigorous inequalities that a human argument reduces the theorem to. Shadowing theorems explain when long simulations remain statistically meaningful. In <TopicLink id="math.comp.numerical-analysis">numerical analysis</TopicLink>, the same questions of stability and error growth govern the integrators used to compute flows.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Poincaré.** Henri Poincaré's memoir on the three-body problem won King Oscar II of Sweden's prize in 1889. While correcting an error in it he discovered homoclinic tangles, and his *Méthodes nouvelles de la mécanique céleste* (1892–1899) founded the qualitative theory of differential equations. Ivar Bendixson completed the Poincaré–Bendixson theorem in 1901.
+- **Stability.** Aleksandr Lyapunov's 1892 doctoral thesis, written while he taught in Kharkiv, introduced his functions and exponents. Balthasar van der Pol studied relaxation oscillations in electronic circuits in the 1920s. Aleksandr Andronov's school in Gorky (Nizhny Novgorod) developed the theory of limit cycles and bifurcations, and introduced structural stability with Lev Pontryagin in 1937.
+- **Hyperbolicity and chaos.** Stephen Smale's horseshoe (1960s) explained Poincaré's tangles; Dmitri Anosov and Yakov Sinai developed hyperbolic dynamics and its statistics. Oleksandr Sharkovskii proved his ordering of periods in Kyiv in 1964, little noticed in the West until Tien-Yien Li and James Yorke's "Period three implies chaos" (1975).
+- **The 1970s.** Edward Lorenz's "Deterministic nonperiodic flow" (1963) was rediscovered; Robert May's 1976 *Nature* article popularised the logistic map. Mitchell Feigenbaum (1975–1978) found universality, independently of Pierre Coullet and Charles Tresser, and Oscar Lanford proved it with a computer-assisted argument in 1982.
+- **Since.** Warwick Tucker's 2002 proof that the Lorenz attractor exists answered one of Smale's problems for the twenty-first century. Artur Avila and Mikhail Lyubich, among others, have completed much of the picture of one-dimensional dynamics; Avila's Fields Medal (2014) cited this work.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Steven H. Strogatz, *Nonlinear Dynamics and Chaos* (1994; 2nd edition 2015) — the classic introduction, rich in examples from physics, biology and engineering.
+- Robert L. Devaney, *An Introduction to Chaotic Dynamical Systems* (1986; 3rd edition 2022) — one-dimensional dynamics with full proofs: the logistic map, symbolic dynamics and Sharkovskii's theorem.
+- Morris W. Hirsch, Stephen Smale and Robert L. Devaney, *Differential Equations, Dynamical Systems, and an Introduction to Chaos* (3rd edition, 2013) — linear systems, Poincaré–Bendixson and the Lorenz system.
+- Lawrence Perko, *Differential Equations and Dynamical Systems* (3rd edition, 2001) — proofs of Hartman–Grobman and the generalised Poincaré–Bendixson theorem.
+- James Gleick, *Chaos: Making a New Science* (1987) — the story of the 1970s, for a general audience.
+
+</Section>

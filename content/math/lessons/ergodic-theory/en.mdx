@@ -1,0 +1,380 @@
+---
+slug: ergodic-theory
+topic: math.analysis.ergodic-theory
+title: Ergodic theory
+subtitle: When does following one orbit for a long time tell you the average over all of space? Measure-preserving dynamics, from Boltzmann's gas to the digits of continued fractions.
+level: grad
+ages: Graduate
+minutes: 140
+order: 7026
+objectives:
+  - Define measure-preserving systems, ergodicity and mixing, and verify invariance of Lebesgue measure for rotations and the doubling map and of the Gauss measure for the Gauss map
+  - Prove the Poincaré recurrence theorem
+  - Prove von Neumann's mean ergodic theorem and Birkhoff's pointwise ergodic theorem (via the maximal ergodic theorem), and interpret "time average equals space average"
+  - Decide ergodicity and mixing for circle rotations, the doubling map and Bernoulli shifts
+  - Use the Gauss map and the ergodic theorem to derive the statistics of continued fraction digits
+narrators: []
+lean:
+  - Lumenary.ErgodicTheory.recurrence_pigeonhole
+  - Lumenary.ErgodicTheory.poincare_recurrence
+  - Lumenary.ErgodicTheory.birkhoff_sum_coboundary
+  - Lumenary.ErgodicTheory.coboundary_average_tendsto_zero
+  - Lumenary.ErgodicTheory.mean_ergodic
+  - Lumenary.ErgodicTheory.doubling_ergodic
+  - Lumenary.ErgodicTheory.rotation_ergodic_iff
+compute: [ergodic_theory_birkhoff_averages]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Boltzmann's hypothesis">
+
+A litre of gas contains about $10^{22}$ molecules. Nobody can follow them, yet pressure and temperature are perfectly reproducible. In the 1870s Ludwig Boltzmann proposed an explanation: a measuring instrument records a **time average** of some quantity along the system's trajectory, and if the trajectory wanders through its whole energy surface, spending time in each region in proportion to its volume, then the time average equals the **space average** over the energy surface — which can be computed. He called such systems *ergodic*. Whether real gases are ergodic is still not settled, but the question created a branch of mathematics.
+
+Ergodic theory studies transformations $T$ of a space $X$ that preserve a probability measure $\mu$, and asks about the statistics of orbits $x, Tx, T^2x, \ldots$. Its first theorems (Poincaré 1890; Birkhoff and von Neumann 1931–32) say that almost every orbit returns arbitrarily close to where it started, and that for *ergodic* systems time averages equal space averages almost everywhere. Its examples range from rotations of a circle to the continued fraction expansion of a random real number, whose digits are $1$ about $41.5\%$ of the time — a fact Gauss knew in 1812 and that the ergodic theorem explains.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Time averages, space averages and indecomposability">
+
+Take $f : X \to \R$ and an orbit. The **time average** is $\lim_{N \to \infty} \frac1N \sum_{n=0}^{N-1} f(T^n x)$; the **space average** is $\int f \, d\mu$. Two things can make them differ.
+
+- The space can **decompose** into invariant pieces. A rotation of the circle by $\frac25$ of a turn moves each point around a 5-point orbit; the time average only sees those 5 points. If $X = A \cup B$ with both pieces invariant and of positive measure, orbits starting in $A$ never visit $B$. **Ergodicity** rules this out: every invariant set has measure $0$ or $1$.
+- Even in an ergodic system, **exceptional orbits** exist: the fixed point $0$ of the doubling map $x \mapsto 2x \bmod 1$ spends all its time in $[0, \frac12)$. The ergodic theorem promises equality only for **almost every** starting point.
+
+A finer property is **mixing**: $\mu(T^{-n}A \cap B) \to \mu(A)\mu(B)$, which says the event "in $A$ at time $n$" becomes independent of "in $B$ at time $0$" — the system forgets its past. Stirring two liquids mixes them; rotating them does not. An irrational rotation is ergodic (every orbit is dense and equidistributed) but never mixing (it is rigid: a set moves around without spreading). The doubling map is mixing: it stretches every interval by a factor $2$ each step and wraps it around.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Measure-preserving systems">
+
+<Definition term="measure-preserving system">
+
+A **measure-preserving system** $(X, \mathcal B, \mu, T)$ consists of a probability space and a measurable map $T : X \to X$ with $\mu(T^{-1}A) = \mu(A)$ for every $A \in \mathcal B$. Equivalently $\int f \circ T \, d\mu = \int f \, d\mu$ for all $f \in L^1(\mu)$. The **Koopman operator** $U_T f = f \circ T$ is then an isometry of each $L^p(\mu)$.
+
+</Definition>
+
+<Definition term="ergodic, mixing">
+
+$T$ is **ergodic** if every measurable $A$ with $T^{-1}A = A$ (up to a null set) has $\mu(A) \in \{0, 1\}$. It is **(strongly) mixing** if $\mu(T^{-n}A \cap B) \to \mu(A)\mu(B)$ as $n \to \infty$ for all measurable $A, B$.
+
+</Definition>
+
+<Definition term="Birkhoff sums and averages">
+
+For $f : X \to \R$, the **Birkhoff sums** are $S_N f(x) = \sum_{n=0}^{N-1} f(T^n x)$ and the **Birkhoff averages** $A_N f = \frac1N S_N f$.
+
+</Definition>
+
+<Definition term="the standard examples">
+
+On $\mathbb T = [0, 1)$ with Lebesgue measure $\lambda$: the **rotation** $R_\alpha(x) = x + \alpha \bmod 1$ and the **doubling map** $D(x) = 2x \bmod 1$. On $\{0, 1\}^\N$ with the product of $(\frac12, \frac12)$ measures: the **Bernoulli shift** $\sigma(x_0, x_1, \ldots) = (x_1, x_2, \ldots)$. On $[0, 1)$: the **Gauss map** $G(x) = \{1/x\} = 1/x - \lfloor 1/x \rfloor$ for $x \ne 0$, $G(0) = 0$, with the **Gauss measure** $d\gamma = \frac{1}{\log 2} \frac{dx}{1 + x}$.
+
+</Definition>
+
+The Gauss map generates continued fractions: if $x = \cfrac{1}{a_1 + \cfrac{1}{a_2 + \cdots}}$ with digits $a_i \ge 1$, then $a_1 = \lfloor 1/x \rfloor$ and $G(x) = [0; a_2, a_3, \ldots]$, so $a_{n+1}(x) = a_1(G^n x)$ — the digits are read off along the orbit, just as the doubling map reads off binary digits: $D(0.b_1 b_2 b_3\ldots) = 0.b_2 b_3 \ldots$. Through the binary expansion, $D$ on $(\mathbb T, \lambda)$ and $\sigma$ on $\{0, 1\}^\N$ are isomorphic measure-preserving systems.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Invariant measures in practice">
+
+<Example title="Rotations and the doubling map preserve Lebesgue measure">
+
+It suffices to check intervals, since they generate the Borel σ-algebra and form a π-system (two measures agreeing on a π-system that generates the σ-algebra agree everywhere). $R_\alpha^{-1}[a, b)$ is an interval (or two pieces wrapping around $1$) of the same length. $D^{-1}[a, b) = [\frac a2, \frac b2) \cup [\frac{a+1}2, \frac{b+1}2)$: two intervals of half the length. Note that the doubling map is two-to-one, and invariance is about **preimages**: $D[0, \frac12) = [0, 1)$ has twice the measure of $[0, \frac12)$.
+
+</Example>
+
+<Example title="The Gauss measure is invariant">
+
+$G(x) < t$ exactly when $\frac1x - n < t$ for $n = \lfloor 1/x \rfloor$, so $G^{-1}[0, t) = \bigcup_{n \ge 1} \big(\frac{1}{n + t}, \frac1n\big]$ (up to the point $0$). Since $\gamma([a, b]) = \log_2 \frac{1 + b}{1 + a}$,
+
+$$
+\gamma\big(G^{-1}[0, t)\big) = \sum_{n=1}^\infty \log_2 \frac{1 + \frac1n}{1 + \frac{1}{n + t}} = \lim_{M \to \infty} \log_2 \prod_{n=1}^{M} \frac{n + 1}{n} \cdot \frac{n + t}{n + 1 + t}.
+$$
+
+Both products telescope: $\prod_{n \le M} \frac{n+1}{n} = M + 1$ and $\prod_{n \le M} \frac{n + t}{n + 1 + t} = \frac{1 + t}{M + 1 + t}$. The product is $\frac{(M+1)(1+t)}{M+1+t} \to 1 + t$, so $\gamma(G^{-1}[0, t)) = \log_2(1 + t) = \gamma([0, t))$. As the intervals $[0, t)$ form a generating π-system, $G$ preserves $\gamma$. (Lebesgue measure is *not* invariant: $\lambda(G^{-1}[0, \frac12)) = \sum_n \big(\frac1n - \frac{1}{n + 1/2}\big) = 2 - 2\log 2 \approx 0.614 \ne \frac12$.)
+
+</Example>
+
+<Example title="Recurrence without finiteness fails">
+
+The translation $x \mapsto x + 1$ preserves Lebesgue measure on $\R$, and no point of $[0, 1)$ ever returns. The finiteness of $\mu$ is essential in Poincaré's theorem below.
+
+</Example>
+
+</Section>
+
+<Section id="recurrence" kind="proof" title="Recurrence and ergodicity">
+
+<Theorem name="Poincaré recurrence theorem (1890)">
+
+Let $(X, \mathcal B, \mu, T)$ be measure-preserving with $\mu(X) < \infty$, and $A \in \mathcal B$. Then almost every point of $A$ returns to $A$ infinitely often: $\mu\big(\{x \in A : T^n x \in A \text{ for only finitely many } n\}\big) = 0$.
+
+</Theorem>
+
+<Proof>
+
+Let $B = \{x \in A : T^n x \notin A \text{ for all } n \ge 1\}$, the points of $A$ that never return; $B = A \setminus \bigcup_{n \ge 1} T^{-n}A$ is measurable. The sets $B, T^{-1}B, T^{-2}B, \ldots$ are pairwise disjoint: if $x \in T^{-m}B \cap T^{-n}B$ with $m < n$, then $y = T^m x \in B$ and $T^{n-m} y = T^n x \in B \subseteq A$, so $y$ returns to $A$, contradicting $y \in B$. They all have measure $\mu(B)$, so $\sum_{n \ge 0} \mu(B) = \mu\big(\bigcup_n T^{-n}B\big) \le \mu(X) < \infty$, forcing $\mu(B) = 0$.
+
+If $x \in A$ returns only finitely often, let $k \ge 0$ be the last time with $T^k x \in A$; then $T^k x \in B$, so $x \in T^{-k}B$. Hence the set of such $x$ lies in $\bigcup_{k \ge 0} T^{-k}B$, a countable union of null sets.
+
+</Proof>
+
+Zermelo (1896) objected that recurrence contradicts the irreversible approach to equilibrium of Boltzmann's gas. The resolution is quantitative: recurrence times for macroscopic systems are astronomically longer than the age of the universe.
+
+<Theorem name="Proposition (characterisations of ergodicity)">
+
+For a measure-preserving $T$ the following are equivalent: (i) $T$ is ergodic; (ii) every measurable $f$ with $f \circ T = f$ a.e. is a.e. constant; (iii) the same for $f \in L^2(\mu)$.
+
+</Theorem>
+
+<Proof>
+
+(ii) ⇒ (iii) is trivial, and (iii) ⇒ (i) by applying (iii) to $f = \mathbf 1_A$ for invariant $A$: a constant indicator is a.e. $0$ or a.e. $1$. (i) ⇒ (ii): for each $t$, the set $\{f > t\}$ is invariant up to a null set, so it has measure $0$ or $1$. The function $t \mapsto \mu(\{f > t\})$ is non-increasing, so it jumps from $1$ to $0$ at some $c \in [-\infty, \infty]$, and $f = c$ a.e.; $c$ is finite because $f$ is real-valued.
+
+</Proof>
+
+<Theorem name="Theorem (rotations)">
+
+$R_\alpha$ is ergodic if and only if $\alpha$ is irrational. It is never mixing.
+
+</Theorem>
+
+<Proof>
+
+Let $f \in L^2(\mathbb T)$ with $f \circ R_\alpha = f$. Comparing Fourier coefficients, $\widehat{f \circ R_\alpha}(n) = e^{2\pi i n\alpha} \hat f(n) = \hat f(n)$. If $\alpha$ is irrational, $e^{2\pi i n\alpha} \ne 1$ for $n \ne 0$, so $\hat f(n) = 0$ for $n \ne 0$ and $f$ is a.e. constant: $R_\alpha$ is ergodic by the proposition. If $\alpha = p/q$, the non-constant function $e^{2\pi i q x}$ is invariant.
+
+For mixing, take $A = [0, \frac12)$. Then $R_\alpha^{-n}A$ is a half-circle shifted by $n\alpha$, and $\lambda(A \cap R_\alpha^{-n}A) = \frac12 - \|n\alpha\|$, where $\|t\|$ is the distance from $t$ to the nearest integer. By Dirichlet's approximation theorem there are infinitely many $n$ with $\|n\alpha\| < 1/n$, so along those $n$ the overlap tends to $\frac12 \ne \frac14 = \lambda(A)^2$. (For rational $\alpha$ the overlap is periodic in $n$.)
+
+</Proof>
+
+<Theorem name="Theorem (the doubling map is mixing)">
+
+The doubling map is mixing, hence ergodic. More generally, mixing implies ergodicity.
+
+</Theorem>
+
+<Proof>
+
+Let $A = [a, b)$ be any interval and $B$ a dyadic interval $[j 2^{-\ell}, (j+1) 2^{-\ell})$. For $n \ge \ell$, $D^{-n}A = \bigcup_{m=0}^{2^n - 1} \big[\frac{m + a}{2^n}, \frac{m + b}{2^n}\big)$ consists of one interval of length $2^{-n}\lambda(A)$ inside each dyadic interval of level $n$. $B$ is the union of $2^{n-\ell} = 2^n \lambda(B)$ of these, so $\lambda(D^{-n}A \cap B) = \lambda(A)\lambda(B)$ **exactly** for all $n \ge \ell$. Finite disjoint unions of dyadic intervals approximate every Borel set in measure, and a standard $\varepsilon/3$ argument extends $\lambda(D^{-n}A \cap B) \to \lambda(A)\lambda(B)$ to all Borel $A, B$.
+
+If $T$ is mixing and $T^{-1}A = A$, then $\mu(A) = \mu(T^{-n}A \cap A) \to \mu(A)^2$, so $\mu(A) \in \{0, 1\}$.
+
+</Proof>
+
+The same cylinder computation shows that every Bernoulli shift is mixing: for cylinder sets depending on coordinates in a finite window, $\sigma^{-n}A$ and $B$ depend on disjoint coordinates once $n$ is large, so they are independent. The Gauss map is mixing too (indeed exponentially mixing), but the proof needs distortion estimates for the branches of $G$ (Einsiedler–Ward, Ch. 3).
+
+</Section>
+
+<Section id="ergodic-theorems" kind="proof" title="The ergodic theorems">
+
+<Theorem name="Mean ergodic theorem (von Neumann, 1932)">
+
+Let $U$ be a linear operator on a Hilbert space $H$ with $\|U\| \le 1$, and $P$ the orthogonal projection onto $\mathrm{Inv} = \{h : Uh = h\}$. Then $\frac1N \sum_{n=0}^{N-1} U^n h \to Ph$ in norm for every $h \in H$. For a measure-preserving $T$ and $U = U_T$ on $L^2(\mu)$: $A_N f \to Pf$ in $L^2$, and if $T$ is ergodic, $Pf = \int f \, d\mu$.
+
+</Theorem>
+
+<Proof>
+
+*Step 1: $Uh = h$ iff $U^*h = h$.* If $Uh = h$, then $\|U^*h - h\|^2 = \|U^*h\|^2 - 2\operatorname{Re}\langle U^* h, h \rangle + \|h\|^2 = \|U^*h\|^2 - 2\operatorname{Re}\langle h, Uh \rangle + \|h\|^2 = \|U^*h\|^2 - \|h\|^2 \le 0$, because $\|U^*\| = \|U\| \le 1$. The converse is symmetric.
+
+*Step 2: $H = \mathrm{Inv} \oplus \overline{C}$, where $C = \{Ug - g : g \in H\}$ (the coboundaries).* A vector $h$ is orthogonal to $C$ iff $\langle U^*h - h, g \rangle = \langle h, Ug - g \rangle = 0$ for all $g$, iff $U^*h = h$, iff $h \in \mathrm{Inv}$ by Step 1. So $C^\perp = \mathrm{Inv}$, and $\overline C = \mathrm{Inv}^\perp$.
+
+*Step 3: averages.* On $\mathrm{Inv}$ every average equals $h$. On $C$ the sum telescopes: $\frac1N \sum_{n < N} U^n (Ug - g) = \frac1N (U^N g - g)$, of norm at most $\frac2N \|g\|$. The averaging operators $\mathcal M_N = \frac1N\sum_{n < N} U^n$ have norm $\le 1$, so $\mathcal M_N k \to 0$ for every $k \in \overline C$ as well: given $\varepsilon$, choose $c \in C$ with $\|k - c\| < \varepsilon$; then $\|\mathcal M_N k\| \le \varepsilon + \|\mathcal M_N c\| < 2\varepsilon$ for large $N$. Writing $h = Ph + (h - Ph)$ gives $\mathcal M_N h \to Ph$.
+
+For $U_T$, the invariant vectors are the invariant functions; if $T$ is ergodic they are the constants, and the projection onto constants is $f \mapsto \int f \, d\mu$.
+
+</Proof>
+
+<Theorem name="Maximal ergodic theorem (Hopf; Garsia's proof, 1965)">
+
+Let $T$ preserve $\mu$, $f \in L^1(\mu)$, and $M_N = \max(0, S_1 f, \ldots, S_N f)$. Then $\int_{\{M_N > 0\}} f \, d\mu \ge 0$.
+
+</Theorem>
+
+<Proof>
+
+For $1 \le n \le N$, $S_n f = f + (S_{n-1} f) \circ T \le f + M_N \circ T$ (with $S_0 f = 0$). On $E = \{M_N > 0\}$ we have $M_N = \max_{1 \le n \le N} S_n f$, so $M_N \le f + M_N \circ T$ there. Integrating over $E$, and using $M_N = 0$ off $E$, $M_N \circ T \ge 0$, and invariance of $\mu$:
+
+$$
+\int_E f \ge \int_E M_N - \int_E M_N \circ T \ge \int_X M_N - \int_X M_N \circ T = 0.
+$$
+
+</Proof>
+
+<Theorem name="Pointwise ergodic theorem (Birkhoff, 1931)">
+
+Let $T$ preserve the probability measure $\mu$ and $f \in L^1(\mu)$. Then $A_N f(x)$ converges for $\mu$-almost every $x$, to an invariant integrable function $f^*$ with $\int f^* = \int f$. If $T$ is ergodic, $f^* = \int f \, d\mu$ a.e.:
+
+$$
+\lim_{N \to \infty} \frac1N \sum_{n=0}^{N-1} f(T^n x) = \int_X f \, d\mu \quad \text{for } \mu\text{-a.e. } x.
+$$
+
+</Theorem>
+
+<Proof>
+
+We prove the ergodic case; the general case runs the same argument on invariant sets. Let $\bar f = \limsup_N A_N f$. Since $A_N f(Tx) = \frac{N+1}{N} A_{N+1} f(x) - \frac{f(x)}{N}$, we have $\bar f \circ T = \bar f$, so for each real $a$ the set $E_a = \{\bar f > a\}$ is invariant and $\mu(E_a) \in \{0, 1\}$.
+
+Suppose $a > \int f$ and $\mu(E_a) = 1$. Put $g = f - a$. At every $x \in E_a$ some $A_n f(x) > a$, i.e. $S_n g(x) > 0$, so $x \in \{M_N(g) > 0\}$ for large $N$. These sets increase with $N$ to a set of full measure, so by the maximal ergodic theorem and dominated convergence, $0 \le \int_{\{M_N(g) > 0\}} g \to \int g = \int f - a < 0$, a contradiction. Hence $\mu(E_a) = 0$ for every rational $a > \int f$, i.e. $\limsup A_N f \le \int f$ a.e. Applying this to $-f$ gives $\liminf A_N f \ge \int f$ a.e., so $A_N f \to \int f$ almost everywhere.
+
+</Proof>
+
+For the Bernoulli shift and $f(x) = x_0$, Birkhoff's theorem is the **strong law of large numbers** for fair coin tosses; via the doubling map it is Borel's theorem (1909) that almost every number is normal in base $2$. The theorem says nothing about any *particular* point: $0$ (a fixed point of $D$) and $\frac13 = 0.0101\ldots_2$ are exceptional for suitable $f$, and nobody knows whether $\sqrt 2$ or $\pi$ is normal in base $2$.
+
+</Section>
+
+<Section id="applications" kind="human" title="Equidistribution and continued fractions">
+
+**Weyl's theorem.** For irrational $\alpha$, the sequence $n\alpha \bmod 1$ is equidistributed: $\frac1N \#\{n < N : n\alpha \bmod 1 \in [a, b)\} \to b - a$ for every interval — for **every** starting point, not just almost every one. Proof: for $f(x) = e^{2\pi i k x}$ with $k \ne 0$, $\frac1N \sum_{n < N} e^{2\pi i k (x + n\alpha)}$ is a geometric series bounded by $\frac{2}{N |1 - e^{2\pi i k\alpha}|} \to 0$; by linearity averages of trigonometric polynomials converge to their integrals at every point; by Weierstrass approximation (Fejér) so do averages of continuous functions, and squeezing an interval's indicator between continuous functions finishes the proof. A system with this "every point" behaviour is **uniquely ergodic**: $\lambda$ is its only invariant probability measure.
+
+**Continued fraction digits.** The Gauss map is ergodic for $\gamma$, which is equivalent to Lebesgue measure (its density lies between $\frac{1}{2\log 2}$ and $\frac{1}{\log 2}$), so "$\gamma$-almost every" means "Lebesgue-almost every". Apply Birkhoff to $f = \mathbf 1_{\{a_1 = k\}} = \mathbf 1_{(1/(k+1), 1/k]}$: for almost every $x \in [0, 1)$ the digit $k$ appears with frequency
+
+$$
+\gamma\Big(\Big(\tfrac{1}{k+1}, \tfrac1k\Big]\Big) = \log_2 \frac{1 + 1/k}{1 + 1/(k+1)} = \log_2\Big(1 + \frac{1}{k(k+2)}\Big),
+$$
+
+the **Gauss–Kuzmin law**: $41.5\%$ ones, $17.0\%$ twos, $9.3\%$ threes. Applied to $f = \log a_1$ (integrable for $\gamma$), it gives Khinchin's theorem (1935) that the geometric mean $(a_1 \cdots a_n)^{1/n}$ tends almost everywhere to a constant $K \approx 2.685$. Quadratic irrationals, such as the golden ratio $[0; 1, 1, 1, \ldots]$, are exceptional: their digits are eventually periodic.
+
+**Entropy.** Are the Bernoulli shifts with probabilities $(\frac12, \frac12)$ and $(\frac13, \frac13, \frac13)$ isomorphic? Both are mixing; von Neumann's spectral invariants cannot tell them apart. Kolmogorov (1958) and Sinai (1959) introduced the **entropy** $h(T)$, an isomorphism invariant measuring the exponential rate at which a system generates information: $h = \log 2$ and $\log 3$ respectively, so they are not isomorphic; rotations have entropy $0$ and the doubling map entropy $\log 2$. Ornstein (1970) proved the converse for Bernoulli shifts: equal entropy implies isomorphism.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Ergodic theory in Lean and Mathlib">
+
+The pigeonhole form of recurrence, proved from scratch: the sets $T^{-i}A$, $i < N$, all have measure $\mu(A)$, so if $N\mu(A) > \mu(X)$ two of them meet:
+
+<Lean decl="Lumenary.ErgodicTheory.recurrence_pigeonhole" />
+
+Mathlib's Poincaré recurrence theorem, for conservative maps (every finite measure-preserving map is conservative):
+
+<Lean decl="Lumenary.ErgodicTheory.poincare_recurrence" />
+
+The telescoping step at the heart of the mean ergodic theorem, and the vanishing of time averages of bounded coboundaries, proved here; then von Neumann's theorem as Mathlib states it, for a contraction of a Hilbert space:
+
+<Lean decl="Lumenary.ErgodicTheory.birkhoff_sum_coboundary" />
+
+<Lean decl="Lumenary.ErgodicTheory.coboundary_average_tendsto_zero" />
+
+<Lean decl="Lumenary.ErgodicTheory.mean_ergodic" />
+
+On the circle `AddCircle T` $= \R / T\Z$ with Haar measure, Mathlib proves ergodicity of $x \mapsto n x$ for $n \ge 2$ and characterises ergodic rotations; for $T = 1$ the criterion becomes "$\alpha$ is irrational":
+
+<Lean decl="Lumenary.ErgodicTheory.doubling_ergodic" />
+
+<Lean decl="Lumenary.ErgodicTheory.rotation_ergodic_iff" />
+
+**Not formalised (here or, as far as we know, in Mathlib):** Birkhoff's pointwise ergodic theorem and the maximal ergodic theorem, mixing and its consequences, the Gauss map and Gauss measure (we verify invariance by the telescoping argument above and numerically below), entropy, and Weyl equidistribution in the form stated here. Mathlib proves ergodicity of the doubling map with Lebesgue's density theorem rather than through mixing.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Following orbits on a computer">
+
+The experiment follows orbits of four systems. For the golden rotation the time spent in $[0, \frac14)$ approaches $\frac14$, while the rotation by $\frac25$ gives different answers from different starting points; the exact overlaps $\lambda(A \cap R^{-n}A) = \frac12 - \|n\alpha\|$ show the failure of mixing. The doubling map is a cautionary tale: in floating point, $0.1$ reaches $0$ after $55$ steps, because each step shifts out one of the $53$ binary digits a double stores — the computed orbit is not typical. With exact arithmetic on a random binary expansion, the orbit spends half its time in $[0, \frac12)$, as Birkhoff predicts. Finally, the continued fraction digits of $20$ random numbers (exact rational arithmetic) follow the Gauss–Kuzmin law, and the telescoping product confirms $\gamma(G^{-1}[0, 0.3)) = \log_2 1.3$.
+
+<Python id="ergodic_theory_birkhoff_averages" />
+
+Each line is evidence from finitely many points: a typical orbit cannot be certified by computation, and random samples carry statistical error (here about $\pm 0.008$ for the bit frequency). The theorems above are what turn these observations into statements about almost every point.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Cobwebs of chaotic maps">
+
+The Gauss map $x \mapsto 1/x - \lfloor 1/x \rfloor$: each step of the cobweb produces the next continued fraction digit ($a_{n+1} = \lfloor 1/x_n \rfloor$). Try starting points near $0.618$ (the golden ratio's fractional part, a fixed point with all digits $1$) and elsewhere, and compare how long orbits linger near $0$, where the digits are large.
+
+<SequenceLab mode="cobweb" fn="1/x - floor(1/x)" x={[0, 1]} x0={0.3} N={40} title="The Gauss map" />
+
+The doubling map $x \mapsto 2x \bmod 1$ is mixing, and the cobweb wanders all over the square. The widget computes in floating point: with $N$ above about $55$, the orbit of $0.1$ collapses to the fixed point $0$, a failure of the computer, not of the map.
+
+<SequenceLab mode="cobweb" fn="mod(2*x, 1)" x={[0, 1]} x0={0.1} N={60} title="The doubling map in floating point" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Ergodic means every orbit is dense and equidistributed."** The ergodic theorem holds for almost every point. The doubling map is ergodic (even mixing), yet it has a fixed point $0$, periodic orbits at every rational with odd denominator, and orbits whose closure is a Cantor set. "Every orbit equidistributed" is unique ergodicity, a much stronger property that irrational rotations have and the doubling map lacks.
+
+</Misconception>
+
+<Misconception>
+
+**"Ergodicity implies mixing."** Irrational rotations are ergodic but not mixing: the overlap $\lambda(A \cap R^{-n}A) = \frac12 - \|n\alpha\|$ for a half-circle $A$ keeps returning near $\frac12$. Mixing implies ergodicity, not conversely; in between lies weak mixing (convergence in density), which an irrational rotation also fails because its Koopman operator has eigenfunctions $e^{2\pi i k x}$.
+
+</Misconception>
+
+<Misconception>
+
+**"Invariance means $\mu(T(A)) = \mu(A)$."** The definition uses preimages, $\mu(T^{-1}A) = \mu(A)$. For the two-to-one doubling map, $D([0, \frac12)) = [0, 1)$ has measure $1$, but $D^{-1}([0, \frac12)) = [0, \frac14) \cup [\frac12, \frac34)$ has measure $\frac12$, as it should.
+
+</Misconception>
+
+<Misconception>
+
+**"A computer simulation shows what typical orbits do."** Floating-point orbits of the doubling map all end at $0$ within about $55$ steps. Shadowing lemmas guarantee, for some hyperbolic systems, that a computed pseudo-orbit stays close to *some* true orbit — but not that this orbit is typical for the invariant measure. Numerical ergodic averages are evidence, never proof.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="number-theory" title="From Weyl to Szemerédi">
+
+Equidistribution modulo $1$ is ergodic theory of rotations: Weyl (1916) proved that $n\alpha$, and more generally $p(n)$ for any polynomial with an irrational non-constant coefficient, is equidistributed — Furstenberg later reproved the polynomial case by showing that skew products $(x, y) \mapsto (x + \alpha, y + x)$ are uniquely ergodic. Furstenberg (1977) proved Szemerédi's theorem — every set of integers of positive upper density contains arbitrarily long arithmetic progressions — by a multiple recurrence theorem: for measure-preserving $T$ and $\mu(A) > 0$, $\mu(A \cap T^{-n}A \cap \cdots \cap T^{-kn}A) > 0$ for some $n \ge 1$; the case $k = 1$ is Poincaré recurrence. Ideas from this circle fed into Green and Tao's theorem (2004) that the primes contain arbitrarily long progressions; see <TopicLink id="math.discrete.additive-extremal-combinatorics">additive combinatorics</TopicLink>. And Lindenstrauss, with Einsiedler and Katok (2006), proved that the exceptional set in Littlewood's conjecture $\liminf_n n\|n\alpha\|\|n\beta\| = 0$ has Hausdorff dimension zero, using measure rigidity for actions of $\Z^2$; the full conjecture is **open**.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Stationary processes and the law of large numbers">
+
+A measure-preserving system and a function $f$ define a **stationary process** $X_n = f \circ T^n$: its joint distributions are invariant under time shift. Conversely every stationary process is of this form, on the space of its sample paths with the shift. Birkhoff's theorem is then the strong law of large numbers for stationary processes, without any independence: $\frac1N\sum X_n$ converges almost surely, to $\mathbb E[X_0]$ when the process is ergodic. Independent identically distributed sequences are Bernoulli shifts; stationary Markov chains are Markov shifts, ergodic exactly when the chain is irreducible, and mixing when it is also aperiodic — the convergence theorem for <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink> is a mixing statement.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Topological dynamics and invariant measures">
+
+For a continuous map $T$ of a compact metric space, invariant measures always exist (Krylov–Bogolyubov, 1937): any weak-\* limit of the averages $\frac1N\sum_{n < N}\delta_{T^n x}$ is invariant, by Banach–Alaoglu. The invariant probability measures form a compact convex set whose extreme points are exactly the ergodic ones, so every invariant measure is an average of ergodic ones (ergodic decomposition). Topological notions shadow measure-theoretic ones: minimality (every orbit dense) versus ergodicity, unique ergodicity (one invariant measure, then averages of continuous functions converge at *every* point), topological entropy versus measure entropy, linked by the variational principle $h_{\mathrm{top}}(T) = \sup_\mu h_\mu(T)$ (Goodwyn, Dinaburg, Goodman, 1969–71). See <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Geodesic flows and homogeneous dynamics">
+
+On a compact surface of negative curvature, the geodesic flow — moving along geodesics at unit speed on the unit tangent bundle — preserves Liouville measure and is ergodic (Hopf, 1939, for constant curvature and some variable curvature; Anosov, 1967, in general), indeed mixing and Bernoulli. Negative curvature makes nearby geodesics diverge exponentially, exactly like the stretching of the doubling map; the Gauss map is a cross-section of the geodesic flow on the modular surface $SL_2(\Z) \backslash \mathbb H$ (Artin 1924; Series 1985). Homogeneous dynamics studies flows on spaces $\Gamma \backslash G$: Ratner's theorems (1991) on unipotent flows, Margulis's proof of the Oppenheim conjecture (1987) on values of indefinite quadratic forms at integer points, and Eskin, Mirzakhani and Mohammadi's work (2015) on $SL_2(\R)$-orbit closures in moduli spaces of translation surfaces show how invariant measures encode arithmetic and geometric information. See <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Is a gas ergodic?">
+
+Boltzmann's hypothesis motivated the subject, but its truth for realistic systems is subtle. Kolmogorov–Arnold–Moser (KAM) theory (1954–63) shows that small perturbations of integrable Hamiltonian systems keep a set of positive measure of invariant tori, so such systems are **not** ergodic on their energy surfaces. On the other side, Sinai (1970) proved ergodicity of dispersing billiards, and Simányi proved ergodicity of hard-ball systems in many cases, as models of a gas. Physicists often sidestep the question: for macroscopic observables, which are sums over many particles, typicality and concentration of measure explain why time averages look like phase averages without full ergodicity. The mathematics is a theorem about measure-preserving maps; its application to gases remains partly heuristic.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Carl Friedrich Gauss** (letter to Laplace, 1812) stated the limiting distribution of continued fraction digits; **Rodion Kuzmin** (1928) and **Paul Lévy** (1929) proved it with error estimates; **Aleksandr Khinchin** (1935) proved his geometric mean theorem.
+- **Ludwig Boltzmann** formulated the ergodic hypothesis (1870s–1880s); **Henri Poincaré** (1890) proved recurrence in his prize memoir on the three-body problem; **Ernst Zermelo** (1896) raised the recurrence paradox. **Émile Borel** (1909) proved that almost all numbers are normal; **Hermann Weyl** (1916) proved equidistribution.
+- **John von Neumann** (1932) and **George David Birkhoff** (1931) proved the mean and pointwise ergodic theorems; **Eberhard Hopf** developed the theory and proved the maximal ergodic theorem and ergodicity of geodesic flows; **Bernard Koopman** introduced the operator named after him (1931); **Shizuo Kakutani** and **Vladimir Rokhlin** developed the structure theory of measure-preserving maps.
+- **Andrey Kolmogorov** (1958) and **Yakov Sinai** (1959) introduced entropy; **Dmitri Anosov** (1967) proved ergodicity of geodesic flows in negative curvature; **Donald Ornstein** (1970) classified Bernoulli shifts.
+- **Hillel Furstenberg** (1977) connected ergodic theory with combinatorics; **Grigory Margulis**, **S. G. Dani** and **Marina Ratner** built homogeneous dynamics; **Elon Lindenstrauss** proved arithmetic quantum unique ergodicity (2006); **Maryam Mirzakhani**, with **Alex Eskin** and **Amir Mohammadi**, proved rigidity theorems in Teichmüller dynamics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Peter Walters, *An Introduction to Ergodic Theory* (1982) — the classical graduate text: ergodicity, mixing, entropy, topological dynamics.
+- Manfred Einsiedler and Thomas Ward, *Ergodic Theory with a View towards Number Theory* (2011) — the ergodic theorems, continued fractions and the Gauss map, Furstenberg's theorem, and homogeneous dynamics.
+- Karl Petersen, *Ergodic Theory* (1983) — thorough on the ergodic theorems, including Garsia's proof.
+- Hillel Furstenberg, *Recurrence in Ergodic Theory and Combinatorial Number Theory* (1981) — multiple recurrence and Szemerédi's theorem.
+- Anatole Katok and Boris Hasselblatt, *Introduction to the Modern Theory of Dynamical Systems* (1995) — ergodic theory within smooth dynamics.
+- A. Ya. Khinchin, *Continued Fractions* (1935; English translation 1964) — the metric theory of continued fractions from its creator.
+
+</Section>

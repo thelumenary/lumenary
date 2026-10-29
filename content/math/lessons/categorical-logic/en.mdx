@@ -1,0 +1,589 @@
+---
+slug: categorical-logic
+topic: math.cat.categorical-logic
+title: Categorical logic
+subtitle: Proofs as arrows, quantifiers as adjoints, truth values as open sets — logic read through category theory, and why excluded middle is an extra assumption rather than a law of all logic.
+level: grad
+ages: Graduate
+minutes: 130
+order: 7034
+objectives:
+  - Interpret the simply typed λ-calculus with products in a cartesian closed category, prove that βη-equal terms have equal interpretations, and show that $\mathbf{Set}$ is cartesian closed while $\mathbf{Grp}$ is not
+  - Express $\exists$ and $\forall$ as the left and right adjoints of substitution (pulling back predicates), and derive quantifier laws from the fact that adjoints preserve limits or colimits
+  - Define Heyting algebras and prove that intuitionistic propositional logic is sound and complete for them
+  - Use the open sets of $\R$ to show that $P \lor \neg P$ is not intuitionistically derivable, while $\neg\neg(P \lor \neg P)$ is
+  - State the Curry–Howard–Lambek correspondence and place it in the wider landscape (hyperdoctrines, dependent types, toposes)
+narrators: []
+lean:
+  - Lumenary.CategoricalLogic.Tm
+  - Lumenary.CategoricalLogic.Conv
+  - Lumenary.CategoricalLogic.Tm.denote
+  - Lumenary.CategoricalLogic.denote_subst
+  - Lumenary.CategoricalLogic.Conv.sound
+  - Lumenary.CategoricalLogic.no_closed_term_of_base
+  - Lumenary.CategoricalLogic.curryTm_denote
+  - Lumenary.CategoricalLogic.types_cartesianClosed
+  - Lumenary.CategoricalLogic.forallAlong
+  - Lumenary.CategoricalLogic.exists_adjoint
+  - Lumenary.CategoricalLogic.forall_adjoint
+  - Lumenary.CategoricalLogic.forall_along_fst
+  - Lumenary.CategoricalLogic.quantifier_adjunctions_library
+  - Lumenary.CategoricalLogic.frobenius
+  - Lumenary.CategoricalLogic.not_not_em_heyting
+  - Lumenary.CategoricalLogic.not_not_em
+  - Lumenary.CategoricalLogic.opens_real_not_boolean
+  - Lumenary.CategoricalLogic.Derives
+  - Lumenary.CategoricalLogic.derives_sound
+  - Lumenary.CategoricalLogic.derives_not_not_em
+  - Lumenary.CategoricalLogic.not_derives_em
+compute: [categorical_logic_heyting_spaces, categorical_logic_finite_models]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="One law, three readings">
+
+Here are three facts from three different subjects.
+
+- **Programming.** A function of two arguments is the same thing as a function that takes the first argument and returns a function of the second. Every functional programmer meets this as *currying*.
+- **Logic.** From hypotheses $C$ and $A$ you can prove $B$ exactly when from $C$ alone you can prove $A \to B$. This is the *deduction theorem*.
+- **Sets.** Maps $C \times A \to B$ correspond bijectively to maps $C \to B^A$, where $B^A$ is the set of all functions $A \to B$.
+
+They are one fact:
+
+$$
+\Hom(C \times A,\, B) \;\cong\; \Hom(C,\, B^A).
+$$
+
+The functor $- \times A$ has a right adjoint $(-)^A$. Read in a category of types and programs, this is currying. Read in a poset of propositions ordered by provability, it is the deduction theorem $C \wedge A \vdash B \iff C \vdash A \to B$. Read in $\mathbf{Set}$, it is the exponential law. **Categorical logic** studies this coincidence systematically. Connectives and quantifiers are characterised by universal properties, a logic is interpreted in any category that has the matching structure, and proofs become morphisms. William Lawvere's slogan from 1969 is that the logical operations are *adjoint functors*.
+
+Two payoffs make the subject worth learning. First, a single definition (soundness in a category with structure) gives at once the set-theoretic semantics, the topological semantics, Kripke semantics, sheaf semantics and the semantics of programs. Second, the categorical view explains *which* logical laws hold and *why*. Excluded middle, for instance, is not a law of every reasonable logic. It is a special property of Boolean models, and it fails in the open sets of the real line.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The dictionary">
+
+The **Curry–Howard–Lambek correspondence** lines up three languages:
+
+| Logic | Type theory | Category |
+| --- | --- | --- |
+| proposition $A$ | type $A$ | object $A$ |
+| proof of $B$ from $A$ | term $x : A \vdash t : B$ | morphism $A \to B$ |
+| cut, substituting a proof | substitution $t[u/x]$ | composition |
+| truth $\top$ | unit type $1$ | terminal object |
+| conjunction $A \wedge B$ | product type $A \times B$ | product |
+| implication $A \to B$ | function type $A \to B$ | exponential $B^A$ |
+| falsity $\bot$, disjunction $\vee$ | empty type, sum type | initial object, coproduct |
+| proof simplification | β-reduction | equations between morphisms |
+| $\exists x$, $\forall x$ | $\Sigma$-, $\Pi$-types | left and right adjoints to pullback |
+
+Two ways of *forgetting* will matter. If you remember only **whether** $B$ is provable from $A$ and forget which proof, the category becomes a preorder. Identify interderivable propositions and you get a poset. In a poset, products are meets, coproducts are joins and exponentials are implications, so a cartesian closed poset with finite joins is exactly a **Heyting algebra**. If instead you keep the proofs, you get a genuine category in which different proofs of the same statement are different arrows, and β-reduction says when two proofs are "the same".
+
+<CommutativeDiagram
+  objects={[
+    { id: "CA", tex: "C \\times A", row: 0, col: 0 },
+    { id: "BA", tex: "B^A \\times A", row: 0, col: 1.4 },
+    { id: "B", tex: "B", row: 1, col: 1.4 },
+  ]}
+  arrows={[
+    { from: "CA", to: "BA", tex: "\\Lambda f \\times \\id_A", style: "dashed" },
+    { from: "BA", to: "B", tex: "\\mathrm{ev}" },
+    { from: "CA", to: "B", tex: "f", labelSide: "right" },
+  ]}
+  caption="The exponential: every $f : C \times A \to B$ factors as $\mathrm{ev} \circ (\Lambda f \times \id_A)$ for exactly one $\Lambda f : C \to B^A$, the curried form of $f$."
+/>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, the learner is assumed to know <TopicLink id="math.cat.adjunctions">adjunctions</TopicLink>, <TopicLink id="math.cat.products-coproducts">products and terminal objects</TopicLink> and the basics of <TopicLink id="math.found.type-theory">type theory and propositions as types</TopicLink>.
+
+<Definition term="cartesian closed category">
+
+A category $\mathcal{C}$ is **cartesian closed** (a CCC) if it has a terminal object $1$, binary products $A \times B$, and for every object $A$ the functor $- \times A : \mathcal{C} \to \mathcal{C}$ has a right adjoint $(-)^A$. Equivalently, for all $A, B$ there are an object $B^A$ and a morphism $\mathrm{ev} : B^A \times A \to B$ such that for every $f : C \times A \to B$ there is a **unique** $\Lambda f : C \to B^A$ with $\mathrm{ev} \circ (\Lambda f \times \id_A) = f$.
+
+</Definition>
+
+<Definition term="Heyting algebra">
+
+A **Heyting algebra** is a lattice $H$ with a least element $\bot$ and a greatest element $\top$, together with a binary operation $\Rightarrow$ such that for all $a, b, c$:
+
+$$
+c \le (a \Rightarrow b) \quad\iff\quad c \wedge a \le b.
+$$
+
+The **pseudo-complement** is $\neg a := a \Rightarrow \bot$, the largest element whose meet with $a$ is $\bot$. A Heyting algebra is **Boolean** if $a \vee \neg a = \top$ for all $a$ (equivalently, $\neg\neg a = a$ for all $a$).
+
+</Definition>
+
+In categorical terms, a Heyting algebra is a poset that is cartesian closed (finite meets and implications) and has finite coproducts (finite joins). The defining law says precisely that $- \wedge a \dashv a \Rightarrow -$.
+
+<Definition term="simply typed λ-calculus with products">
+
+Types are generated by a base type $o$, the unit type $1$, products $A \times B$ and function types $A \to B$. A context is a list $\Gamma = x_1 : A_1, \dots, x_n : A_n$. Terms are typed by the rules
+
+$$
+\frac{x : A \in \Gamma}{\Gamma \vdash x : A} \qquad
+\frac{}{\Gamma \vdash \star : 1} \qquad
+\frac{\Gamma \vdash s : A \quad \Gamma \vdash t : B}{\Gamma \vdash \langle s, t\rangle : A \times B} \qquad
+\frac{\Gamma \vdash p : A \times B}{\Gamma \vdash \pi_1 p : A \quad \Gamma \vdash \pi_2 p : B}
+$$
+
+$$
+\frac{\Gamma, x : A \vdash t : B}{\Gamma \vdash \lambda x.\, t : A \to B} \qquad
+\frac{\Gamma \vdash s : A \to B \quad \Gamma \vdash u : A}{\Gamma \vdash s\,u : B}
+$$
+
+**βη-equality** is the least congruence containing
+
+$$
+\pi_1\langle s, t\rangle = s, \quad \pi_2\langle s, t\rangle = t, \quad (\lambda x.\, t)\,u = t[u/x] \qquad (\beta)
+$$
+
+$$
+\langle \pi_1 p, \pi_2 p\rangle = p, \quad t = \star \ (t : 1), \quad \lambda x.\, f\,x = f \ (x \text{ not free in } f) \qquad (\eta)
+$$
+
+</Definition>
+
+<Definition term="interpretation in a CCC">
+
+Fix a CCC $\mathcal{C}$ and an object $\llbracket o \rrbracket$. Extend to all types by $\llbracket 1 \rrbracket = 1$, $\llbracket A \times B \rrbracket = \llbracket A \rrbracket \times \llbracket B \rrbracket$ and $\llbracket A \to B \rrbracket = \llbracket B \rrbracket^{\llbracket A \rrbracket}$, and to contexts by $\llbracket x_1 : A_1, \dots, x_n : A_n \rrbracket = (\cdots(1 \times \llbracket A_1 \rrbracket) \times \cdots) \times \llbracket A_n \rrbracket$. A term $\Gamma \vdash t : A$ is interpreted as a morphism $\llbracket t \rrbracket : \llbracket \Gamma \rrbracket \to \llbracket A \rrbracket$, by induction on $t$:
+
+- a variable $x_i$ is the $i$-th product **projection**;
+- $\llbracket \star \rrbracket$ is the unique map to $1$; $\llbracket \langle s, t\rangle \rrbracket = \langle \llbracket s \rrbracket, \llbracket t \rrbracket\rangle$; $\llbracket \pi_i p \rrbracket = \pi_i \circ \llbracket p \rrbracket$;
+- $\llbracket \lambda x.\, t \rrbracket = \Lambda \llbracket t \rrbracket$, the **curried** form of $\llbracket t \rrbracket : \llbracket \Gamma \rrbracket \times \llbracket A \rrbracket \to \llbracket B \rrbracket$;
+- $\llbracket s\,u \rrbracket = \mathrm{ev} \circ \langle \llbracket s \rrbracket, \llbracket u \rrbracket \rangle$.
+
+</Definition>
+
+<Definition term="quantifiers along a map">
+
+For a map $f : X \to Y$ of sets, **substitution** (pulling back) is $f^* : \mathcal{P}(Y) \to \mathcal{P}(X)$, $f^*(T) = f^{-1}(T)$. Define
+
+$$
+\exists_f(S) = \{\, y \mid \exists x\, (f(x) = y \wedge x \in S) \,\}, \qquad
+\forall_f(S) = \{\, y \mid \forall x\, (f(x) = y \Rightarrow x \in S) \,\}.
+$$
+
+For the projection $\pi : X \times Y \to X$ these are $\{x \mid \exists y\, (x, y) \in S\}$ and $\{x \mid \forall y\, (x, y) \in S\}$: quantifying out the variable $y$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Cartesian closed categories">
+
+- $\mathbf{Set}$, with $B^A$ the set of functions (proved below). Also $\mathbf{FinSet}$, which shows that a CCC need not have infinite limits.
+- $\mathbf{Cat}$ (small categories), with $\mathcal{D}^{\mathcal{C}}$ the functor category.
+- Every presheaf category $[\mathcal{C}^{op}, \mathbf{Set}]$. This is part of the reason presheaf categories are <TopicLink id="math.cat.elementary-topoi">toposes</TopicLink>.
+- Every Heyting algebra, viewed as a poset category. In particular every Boolean algebra, with $a \Rightarrow b = \neg a \vee b$, and every finite chain $0 \lt \tfrac12 \lt 1$, with $a \Rightarrow b = 1$ if $a \le b$ and $a \Rightarrow b = b$ otherwise.
+
+</Example>
+
+<Example title="Non-examples">
+
+- **$\mathbf{Grp}$ is not cartesian closed.** In any CCC with an initial object $0$, the functor $- \times B$ is a left adjoint, so it preserves the initial object: $0 \times B \cong 0$. In $\mathbf{Grp}$ the trivial group $1$ is initial, but $1 \times B \cong B$. If $\mathbf{Grp}$ were cartesian closed, every group would be trivial.
+- **$\mathbf{Top}$ is not cartesian closed.** The functor $- \times \Q$ does not preserve all quotient maps, so it has no right adjoint. The exponentiable spaces are exactly the core-compact ones (Day and Kelly, 1970), for example the locally compact Hausdorff spaces. Algebraic topologists therefore work in a convenient subcategory such as compactly generated spaces.
+- **$(\N, \le)$ as a poset category** has products ($\min$) and exponentials would be implications, but it has no top element, so no terminal object. It is not cartesian closed. Adjoining a top element repairs this.
+
+</Example>
+
+<Example title="Open sets of the line">
+
+For any topological space $X$, the open sets $\mathcal{O}(X)$ form a Heyting algebra under inclusion, with
+
+$$
+U \Rightarrow V = \operatorname{int}\big((X \setminus U) \cup V\big), \qquad \neg U = \operatorname{int}(X \setminus U),
+$$
+
+the largest open set whose intersection with $U$ lies in $V$. (Meets are intersections and joins are unions. The residuation law holds because $W \subseteq \operatorname{int}(U^c \cup V)$ iff $W \subseteq U^c \cup V$, as $W$ is open, iff $W \cap U \subseteq V$.) In $\mathcal{O}(\R)$:
+
+- for $U = (0, \infty)$: $\neg U = (-\infty, 0)$, so $U \vee \neg U = \R \setminus \{0\} \ne \R$, and $\neg\neg U = (0, \infty) = U$;
+- for $W = \R \setminus \{0\}$: $\neg W = \operatorname{int}\{0\} = \varnothing$, so $\neg\neg W = \R \ne W$.
+
+Excluded middle and double-negation elimination both fail, and the failure sits at a single boundary point. Truth values in $\mathcal{O}(X)$ are "true on an open region". An open region and its pseudo-complement can leave a boundary on which neither is true.
+
+</Example>
+
+<Figure caption="In the Heyting algebra of open subsets of ℝ, the open set U = (0, ∞) and its pseudo-complement ¬U = (−∞, 0) do not cover the point 0, so U ∨ ¬U ≠ ℝ.">
+<svg viewBox="0 0 600 130" role="img" aria-label="A number line. The open half-line to the right of zero is labelled U, the open half-line to the left of zero is labelled not U, and the point zero, drawn as a hollow circle, belongs to neither.">
+  <line x1="20" y1="65" x2="580" y2="65" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="306" y1="45" x2="580" y2="45" stroke="var(--human)" strokeWidth="6" strokeLinecap="round" />
+  <line x1="20" y1="85" x2="294" y2="85" stroke="var(--formal)" strokeWidth="6" strokeLinecap="round" />
+  <circle cx="300" cy="65" r="6" fill="var(--sky-soft)" stroke="var(--gold)" strokeWidth="2.5" />
+  <text x="300" y="112" textAnchor="middle" fontSize="15" fill="var(--ink-2)">0</text>
+  <text x="450" y="30" textAnchor="middle" fontSize="16" fill="var(--ink-2)">U = (0, ∞)</text>
+  <text x="150" y="112" textAnchor="middle" fontSize="16" fill="var(--ink-2)">¬U = (−∞, 0)</text>
+</svg>
+</Figure>
+
+<Example title="Interpreting a term">
+
+The term $p : A \times B \vdash \langle \pi_2\, p, \pi_1\, p \rangle : B \times A$ is interpreted in any CCC as $\langle \pi_2, \pi_1 \rangle \circ \pi : 1 \times (A \times B) \to B \times A$, where $\pi$ discards the empty part of the context. It is the symmetry isomorphism of the product. The closed term $\lambda f.\, \lambda a.\, \lambda b.\, f\langle a, b\rangle$ of type $(A \times B \to C) \to (A \to (B \to C))$ is interpreted in $\mathbf{Set}$ as currying itself. Under Curry–Howard it is a proof of $(A \wedge B \to C) \to (A \to (B \to C))$.
+
+</Example>
+
+<Example title="Quantifiers as shadows">
+
+Let $S = \{(x, y) \in \R^2 \mid x \le y^2\}$ and $\pi(x, y) = x$. Then $\exists_\pi S = \{x \mid \exists y\; x \le y^2\} = \R$, the shadow of $S$ on the $x$-axis, and $\forall_\pi S = \{x \mid \forall y\; x \le y^2\} = (-\infty, 0]$, the set of $x$ whose entire vertical line lies in $S$. Existential quantification is a direct image (a projection). Universal quantification is its dual.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The central theorems">
+
+<Theorem name="Theorem 1 (Set is cartesian closed)">
+
+For sets $A, B$, let $B^A$ be the set of functions $A \to B$ and $\mathrm{ev}(g, a) = g(a)$. For every $f : C \times A \to B$ there is a unique $\Lambda f : C \to B^A$ with $\mathrm{ev} \circ (\Lambda f \times \id_A) = f$.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* Put $\Lambda f(c) = (a \mapsto f(c, a))$. Then $\mathrm{ev}(\Lambda f(c), a) = f(c, a)$.
+
+*Uniqueness.* If $\mathrm{ev} \circ (g \times \id_A) = f$, then $g(c)(a) = f(c, a)$ for all $a$, so $g(c) = \Lambda f(c)$ by extensionality of functions, for all $c$. With the terminal object $1 = \{\ast\}$ and the cartesian product, $\mathbf{Set}$ is cartesian closed.
+
+</Proof>
+
+A useful consequence of the universal property in any CCC is the **naturality of currying**: for $h : C' \to C$,
+
+$$
+\Lambda\big(f \circ (h \times \id_A)\big) = \Lambda f \circ h,
+$$
+
+because both sides $g$ satisfy $\mathrm{ev} \circ (g \times \id_A) = f \circ (h \times \id_A)$, and the map with that property is unique.
+
+<Theorem name="Theorem 2 (soundness of the interpretation)">
+
+Let $\mathcal{C}$ be a CCC with an object $\llbracket o \rrbracket$. If $\Gamma \vdash s = t : A$ is derivable by βη-equality, then $\llbracket s \rrbracket = \llbracket t \rrbracket : \llbracket \Gamma \rrbracket \to \llbracket A \rrbracket$.
+
+</Theorem>
+
+<Proof>
+
+Two lemmas, both by induction on terms.
+
+*Weakening.* If $t$ is a term in context $\Gamma$ and $\mathrm{wk}(t)$ is the same term regarded in context $\Gamma, x : A$, then $\llbracket \mathrm{wk}(t) \rrbracket = \llbracket t \rrbracket \circ \pi_1$, where $\pi_1 : \llbracket \Gamma \rrbracket \times \llbracket A \rrbracket \to \llbracket \Gamma \rrbracket$. Variables are projections, and projections compose to projections. The $\lambda$ case uses naturality of currying.
+
+*Substitution.* If $\Gamma, x : A \vdash t : B$ and $\Gamma \vdash u : A$, then
+
+$$
+\llbracket t[u/x] \rrbracket = \llbracket t \rrbracket \circ \langle \id_{\llbracket \Gamma \rrbracket}, \llbracket u \rrbracket \rangle .
+$$
+
+More generally, a simultaneous substitution $\sigma$ from $\Gamma$ to $\Delta$ is interpreted as the tuple $\llbracket \sigma \rrbracket : \llbracket \Delta \rrbracket \to \llbracket \Gamma \rrbracket$ of the interpretations of the substituted terms, and $\llbracket t[\sigma] \rrbracket = \llbracket t \rrbracket \circ \llbracket \sigma \rrbracket$. For variables this is the definition of a tuple, and the pairing, projection and application cases follow from $\langle f, g \rangle \circ h = \langle f h, g h \rangle$. For $\lambda y.\, t$, the substitution under the binder is $\sigma$ weakened and extended by $y$, interpreted as $\llbracket \sigma \rrbracket \times \id$ by the weakening lemma. Then naturality of currying gives $\llbracket (\lambda y.\, t)[\sigma] \rrbracket = \Lambda(\llbracket t \rrbracket \circ (\llbracket \sigma \rrbracket \times \id)) = \Lambda \llbracket t \rrbracket \circ \llbracket \sigma \rrbracket$.
+
+*The equations.* The interpretation is defined compositionally, so it respects the congruence rules, reflexivity, symmetry and transitivity. It remains to check the axioms.
+
+- Products: $\pi_1 \circ \langle \llbracket s \rrbracket, \llbracket t \rrbracket \rangle = \llbracket s \rrbracket$ and $\langle \pi_1 \circ \llbracket p \rrbracket, \pi_2 \circ \llbracket p \rrbracket\rangle = \llbracket p \rrbracket$ hold by the universal property of the product. Any two maps into $1$ are equal.
+- β for functions:
+$$
+\llbracket (\lambda x.\, t)\,u \rrbracket = \mathrm{ev} \circ \langle \Lambda \llbracket t \rrbracket, \llbracket u \rrbracket \rangle
+= \mathrm{ev} \circ (\Lambda \llbracket t \rrbracket \times \id) \circ \langle \id, \llbracket u \rrbracket \rangle
+= \llbracket t \rrbracket \circ \langle \id, \llbracket u \rrbracket \rangle
+= \llbracket t[u/x] \rrbracket .
+$$
+- η for functions: by weakening, $\llbracket \lambda x.\, f\,x \rrbracket = \Lambda\big(\mathrm{ev} \circ \langle \llbracket f \rrbracket \circ \pi_1, \pi_2 \rangle\big) = \Lambda\big(\mathrm{ev} \circ (\llbracket f \rrbracket \times \id)\big) = \llbracket f \rrbracket$, by uniqueness in the universal property.
+
+</Proof>
+
+Theorem 2 has a converse. Make a category whose objects are types and whose morphisms $A \to B$ are βη-classes of terms $x : A \vdash t : B$. This **syntactic category** is itself cartesian closed: it is the *free* CCC on the base types. So an equation between terms holds in every CCC exactly when it is βη-derivable. This is the precise content of the Curry–Howard–Lambek correspondence. Lambek and Scott (1986, Part I) give the proof and the equivalence between λ-theories and cartesian closed categories that it extends to. For the single model $\mathbf{Set}$, Friedman (1975) proved that equality in the full set-theoretic model over an *infinite* base set coincides with βη-equality for the simply typed λ-calculus. The computation section shows why finite base sets are not enough.
+
+<Theorem name="Theorem 3 (Lawvere: quantifiers are adjoints)">
+
+For every $f : X \to Y$, as monotone maps between the posets $\mathcal{P}(X)$ and $\mathcal{P}(Y)$,
+
+$$
+\exists_f \;\dashv\; f^* \;\dashv\; \forall_f, \qquad\text{that is}\qquad
+\exists_f S \subseteq T \iff S \subseteq f^* T, \qquad f^* T \subseteq S \iff T \subseteq \forall_f S .
+$$
+
+</Theorem>
+
+<Proof>
+
+($\exists_f \dashv f^*$) If $\exists_f S \subseteq T$ and $x \in S$, then $f(x) \in \exists_f S \subseteq T$, so $x \in f^{-1}(T)$. Conversely, if $S \subseteq f^{-1}(T)$ and $y = f(x)$ with $x \in S$, then $y = f(x) \in T$.
+
+($f^* \dashv \forall_f$) Suppose $f^{-1}(T) \subseteq S$ and $y \in T$. Any $x$ with $f(x) = y$ lies in $f^{-1}(T) \subseteq S$, so $y \in \forall_f S$. Conversely, suppose $T \subseteq \forall_f S$ and $x \in f^{-1}(T)$. Then $f(x) \in T \subseteq \forall_f S$, and $x$ itself lies over $f(x)$, so $x \in S$.
+
+</Proof>
+
+<CommutativeDiagram
+  size="lg"
+  objects={[
+    { id: "PX", tex: "\\mathcal{P}(X)", row: 0, col: 0 },
+    { id: "PY", tex: "\\mathcal{P}(Y)", row: 0, col: 1 },
+  ]}
+  arrows={[
+    { from: "PX", to: "PY", tex: "\\exists_f", bend: 38 },
+    { from: "PY", to: "PX", tex: "f^{*}", labelSide: "right" },
+    { from: "PX", to: "PY", tex: "\\forall_f", bend: -38, labelSide: "right" },
+  ]}
+  caption="The adjoint triple $\exists_f \dashv f^* \dashv \forall_f$: substitution has a left adjoint (existential quantification) and a right adjoint (universal quantification)."
+/>
+
+Since right adjoints preserve limits (here, meets) and left adjoints preserve colimits (joins), Theorem 3 *explains* familiar quantifier laws and their failures:
+
+$$
+\forall y\,(\varphi \wedge \psi) \iff \forall y\,\varphi \wedge \forall y\,\psi, \qquad
+\exists y\,(\varphi \vee \psi) \iff \exists y\,\varphi \vee \exists y\,\psi,
+$$
+
+while $\exists$ need not distribute over $\wedge$ and $\forall$ need not distribute over $\vee$. The same adjunctions make sense in any category with pullbacks and a poset of "predicates" (subobjects) on each object. This is Lawvere's notion of a **hyperdoctrine**. Two compatibility conditions are needed there. **Frobenius reciprocity** says $\exists_f(S \cap f^*T) = \exists_f S \cap T$; it is a one-line check in $\mathbf{Set}$, done in Lean below. **Beck–Chevalley** says that quantification commutes with substitution along pullback squares; in syntax, $(\exists y\, \varphi(x, y))[t/x] = \exists y\, \varphi(t, y)$. Even **equality** is an adjoint. For the diagonal $\delta : X \to X \times X$, the predicate $\exists_\delta(X) = \{(x, x)\}$ is the equality relation (Lawvere 1970).
+
+<Theorem name="Theorem 4 (soundness for Heyting algebras)">
+
+Let $H$ be a Heyting algebra and $v$ an assignment of elements of $H$ to propositional variables, extended to formulas by $\llbracket \top \rrbracket = \top$, $\llbracket \bot \rrbracket = \bot$, $\llbracket \varphi \wedge \psi \rrbracket = \llbracket \varphi \rrbracket \wedge \llbracket \psi \rrbracket$, $\llbracket \varphi \vee \psi \rrbracket = \llbracket \varphi \rrbracket \vee \llbracket \psi \rrbracket$ and $\llbracket \varphi \to \psi \rrbracket = \llbracket \varphi \rrbracket \Rightarrow \llbracket \psi \rrbracket$. If $\varphi$ is derivable from hypotheses $\Gamma$ in intuitionistic natural deduction, then $\bigwedge \llbracket \Gamma \rrbracket \le \llbracket \varphi \rrbracket$.
+
+</Theorem>
+
+<Proof>
+
+First, a Heyting algebra is a distributive lattice. The map $a \wedge -$ is a left adjoint (of $a \Rightarrow -$), so it preserves joins: $a \wedge (b \vee c) = (a \wedge b) \vee (a \wedge c)$.
+
+Now induct on the derivation, writing $c = \bigwedge \llbracket \Gamma \rrbracket$. A hypothesis $\varphi \in \Gamma$ satisfies $c \le \llbracket \varphi \rrbracket$. The rules for $\top$, $\wedge$ and the $\vee$-introductions are the universal properties of top, meet and join, and $\bot$-elimination is $c \le \bot \Rightarrow c \le x$.
+
+- $\to$-introduction: from $\llbracket\varphi\rrbracket \wedge c \le \llbracket \psi \rrbracket$ the residuation law gives $c \le \llbracket \varphi \rrbracket \Rightarrow \llbracket \psi \rrbracket$.
+- $\to$-elimination: from $c \le a \Rightarrow b$ and $c \le a$ we get $c \le (a \Rightarrow b) \wedge a \le b$, the counit of the adjunction.
+- $\vee$-elimination: from $c \le a \vee b$, $a \wedge c \le x$ and $b \wedge c \le x$ we get $c = c \wedge (a \vee b) = (c \wedge a) \vee (c \wedge b) \le x$, by distributivity.
+
+</Proof>
+
+<Theorem name="Theorem 5 (completeness: the Lindenbaum–Tarski algebra)">
+
+If $\llbracket \varphi \rrbracket = \top$ in every Heyting algebra under every valuation, then $\varphi$ is derivable in intuitionistic propositional logic.
+
+</Theorem>
+
+<Proof>
+
+Let $L$ be the set of formulas modulo interderivability ($\varphi \equiv \psi$ iff $\varphi \vdash \psi$ and $\psi \vdash \varphi$), ordered by $[\varphi] \le [\psi]$ iff $\varphi \vdash \psi$. The rules show that the connectives are well defined on classes, that $[\varphi \wedge \psi]$ is the meet, $[\varphi \vee \psi]$ the join ($\vee$-introduction gives the upper bounds and $\vee$-elimination gives leastness), $[\top]$ the top and $[\bot]$ the bottom. Finally, $\chi \wedge \varphi \vdash \psi$ iff $\chi \vdash \varphi \to \psi$ by $\to$-introduction and $\to$-elimination, so $[\varphi \to \psi]$ is the Heyting implication. Thus $L$ is a Heyting algebra (the **Lindenbaum–Tarski algebra**). With the valuation $v(p) = [p]$, induction on formulas gives $\llbracket \varphi \rrbracket = [\varphi]$. If $\varphi$ is valid in all Heyting algebras, then $[\varphi] = \top = [\top]$, so $\top \vdash \varphi$ and hence $\vdash \varphi$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (excluded middle is not derivable, but its double negation is)">
+
+$\nvdash P \lor \neg P$ in intuitionistic propositional logic, while $\vdash \neg\neg(P \lor \neg P)$.
+
+</Theorem>
+
+<Proof>
+
+If $\vdash P \lor \neg P$, Theorem 4 would give $U \vee \neg U = \R$ for every open $U \subseteq \R$. This fails for $U = (0, \infty)$, as computed above. Here is a proof that needs no computation of $\neg U$. In any Heyting algebra $U \wedge \neg U = \bot$. If also $U \vee \neg U = \top$, then $U$ and $\neg U$ are disjoint open sets covering $\R$, so $U$ is open and closed. Since $\R$ is connected, $U$ is $\varnothing$ or $\R$, which is false.
+
+A derivation of $\neg\neg(P \lor \neg P)$: assume $h : \neg(P \lor \neg P)$. Under the further assumption $P$, the formula $P \lor \neg P$ follows by $\vee$-introduction, and $h$ yields $\bot$. Discharging $P$ gives $\neg P$, hence $P \lor \neg P$ again by $\vee$-introduction, and $h$ yields $\bot$. Discharging $h$ gives $\neg\neg(P \lor \neg P)$.
+
+</Proof>
+
+The same argument shows that $\neg(P \lor \neg P)$ is not derivable either: in the two-element Boolean algebra it evaluates to $\bot$. Intuitionistic logic does not *deny* excluded middle. It declines to *assume* it, and it proves that excluded middle can never be refuted. Glivenko's theorem (1929) sharpens this: a propositional formula $\varphi$ is a classical tautology if and only if $\neg\neg\varphi$ is intuitionistically derivable.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Formalisation in Lean">
+
+The Lean module `Lumenary.CategoricalLogic` formalises three pieces of this lesson, mostly from scratch, using Mathlib for lattices, topology and the category of types.
+
+**The λ-calculus and its semantics.** Terms are *intrinsically typed*: `Tm Γ A` contains only well-typed terms, so the typing rules are built into the constructors. Variables are typed de Bruijn indices, which makes substitution capture-avoiding by construction. Lean contexts grow at the front (`A :: Γ` denotes `⟦A⟧ × ⟦Γ⟧`), the mirror image of the convention $\llbracket\Gamma\rrbracket \times \llbracket A\rrbracket$ in the human proof. That is only bookkeeping.
+
+<Lean decl="Lumenary.CategoricalLogic.Tm" />
+
+<Lean decl="Lumenary.CategoricalLogic.Conv" />
+
+The interpretation lands in Lean's types and functions, the type-theoretic stand-in for $\mathbf{Set}$. `lam` is currying and `app` is evaluation, exactly as in the definition above:
+
+<Lean decl="Lumenary.CategoricalLogic.Tm.denote" />
+
+The substitution lemma is the "logical relation" form of the human lemma $\llbracket t[\sigma] \rrbracket = \llbracket t \rrbracket \circ \llbracket \sigma \rrbracket$. Instead of building the tuple $\llbracket\sigma\rrbracket$, it assumes that each substituted term denotes the value of the variable it replaces. The soundness theorem then follows the human proof case by case:
+
+<Lean decl="Lumenary.CategoricalLogic.denote_subst" />
+
+<Lean decl="Lumenary.CategoricalLogic.Conv.sound" />
+
+Two small consequences. A model proves consistency (interpret the base type as the empty type), and the Curry–Howard reading of a closed term computes to the expected function:
+
+<Lean decl="Lumenary.CategoricalLogic.no_closed_term_of_base" />
+
+<Lean decl="Lumenary.CategoricalLogic.curryTm_denote" />
+
+Mathlib knows that `Type` is cartesian closed (as a `MonoidalClosed` category for the cartesian monoidal structure):
+
+<Lean decl="Lumenary.CategoricalLogic.types_cartesianClosed" />
+
+**Quantifiers as adjoints.** The proofs of Theorem 3 are formalised verbatim. Mathlib states them as Galois connections, which are adjunctions between posets:
+
+<Lean decl="Lumenary.CategoricalLogic.forallAlong" />
+
+<Lean decl="Lumenary.CategoricalLogic.exists_adjoint" />
+
+<Lean decl="Lumenary.CategoricalLogic.forall_adjoint" />
+
+<Lean decl="Lumenary.CategoricalLogic.forall_along_fst" />
+
+<Lean decl="Lumenary.CategoricalLogic.quantifier_adjunctions_library" />
+
+<Lean decl="Lumenary.CategoricalLogic.frobenius" />
+
+**Heyting algebras.** The law $\neg\neg(a \vee \neg a) = \top$ is proved from the residuation law alone. Its counterpart in Lean's own logic is proved without excluded middle, and `#print axioms` confirms that it uses no axioms at all:
+
+<Lean decl="Lumenary.CategoricalLogic.not_not_em_heyting" />
+
+<Lean decl="Lumenary.CategoricalLogic.not_not_em" />
+
+The non-Boolean Heyting algebra $\mathcal{O}(\R)$ is handled exactly as in the second proof of Theorem 6, by connectedness:
+
+<Lean decl="Lumenary.CategoricalLogic.opens_real_not_boolean" />
+
+Finally, intuitionistic natural deduction, its soundness for every Heyting algebra (Theorem 4), and the two halves of Theorem 6:
+
+<Lean decl="Lumenary.CategoricalLogic.Derives" />
+
+<Lean decl="Lumenary.CategoricalLogic.derives_sound" />
+
+<Lean decl="Lumenary.CategoricalLogic.derives_not_not_em" />
+
+<Lean decl="Lumenary.CategoricalLogic.not_derives_em" />
+
+**What is not formalised.** The interpretation in an *arbitrary* cartesian closed category (Lean has one model, `Type`; Mathlib's `MonoidalClosed` API would be the place to generalise), the freeness of the syntactic category, Friedman's theorem, and the completeness theorem (Theorem 5), whose Lindenbaum–Tarski construction needs a quotient of formulas by interderivability. Note also that Lean's ambient logic is classical (`Classical.choice` is available). The proofs above that report no axioms are constructive, but the formal system as a whole is not intuitionistic. That is why we formalised intuitionistic logic as an *object* language (`Derives`) instead of relying on Lean's own.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Countermodels and coarse models">
+
+A Heyting algebra in which a formula is not $\top$ is a *proof* that the formula is not intuitionistically derivable (by Theorem 4). Such countermodels can be found by search. The first experiment enumerates every topology on at most three points and evaluates eight classical tautologies in each.
+
+<Python id="categorical_logic_heyting_spaces" />
+
+Two points already refute excluded middle, double-negation elimination and Peirce's law. That is the Sierpiński space: two possible worlds, one of which "knows more". Weak excluded middle $\neg P \vee \neg\neg P$, the De Morgan law $\neg(P \wedge Q) \to \neg P \vee \neg Q$ and Dummett's law $(P \to Q) \vee (Q \to P)$ need three points, arranged in a "V" in which two incomparable opens meet only in $\varnothing$. These laws axiomatise *intermediate* logics between intuitionistic and classical logic. The first two are equivalent over intuitionistic logic and give the logic usually called KC. Dummett's law gives the strictly stronger Gödel–Dummett logic LC. The search counts Boolean topologies too: they are exactly the partition topologies, 1, 2 and 5 of them (the Bell numbers).
+
+The second experiment looks at the λ-calculus side. Church numerals $\lambda f.\lambda x.\, f^n(x)$ are pairwise distinct normal forms. In a finite model, however, $f \mapsto f^n$ must eventually repeat.
+
+<Python id="categorical_logic_finite_models" />
+
+On an $m$-element set the first coincidence is $f^{m-1} = f^{m-1 + \operatorname{lcm}(1, \dots, m)}$. The output shows this for $m \le 4$, and it follows in general from the structure of the full transformation monoid. Finite models are therefore sound but not complete for βη-equality, which is why Friedman's theorem needs an infinite base set. The second part shows the other side of the coin. Of the $256$ functions $X \times X \to X \times X$ on a two-element set $X$, exactly four commute with every map $X \to X$, and they are precisely the four that are definable by closed λ-terms. By the <TopicLink id="math.cat.yoneda">Yoneda lemma</TopicLink>, $\mathrm{Nat}(\Hom(2, -), \Hom(2, -)) \cong \Hom(2, 2)$ has four elements. This is the first glimpse of *parametricity*: definable terms are uniform in the interpretation of the base type.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: what truth tables cannot see">
+
+A classical truth table is evaluation in the two-element Boolean algebra $\{0, 1\}$. Compare $\neg\neg(p \vee \neg p)$ with $p \vee \neg p$ below. Both are tautologies, so the truth table declares them equivalent.
+
+<TruthTable formula="¬¬(p ∨ ¬p)" compare="p ∨ ¬p" title="Two classical tautologies" subtitle="Equivalent in the two-element Boolean algebra, but not intuitionistically" />
+
+Things to try:
+
+- Replace the comparison by `¬¬p → p`, then by `((p → q) → p) → p` (Peirce's law). Every one is a classical tautology, and the computation section exhibits a two-point topological space in which each fails.
+- Try `(p → q) ∨ (q → p)`. It is a tautology too, but it is not intuitionistically derivable. Its smallest topological countermodel has three points.
+- Explain why no truth table can ever separate $\varphi$ from $\neg\neg\varphi$. (Hint: in a Boolean algebra $\neg\neg a = a$.) This is why Heyting algebras, Kripke models or topological spaces are needed to study intuitionistic logic.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Categorical semantics replaces set-theoretic semantics."** It contains it. $\mathbf{Set}$ is one cartesian closed category (and one Boolean topos) among many: Heyting algebras, presheaf and sheaf categories, realizability toposes, categories of domains. Each is useful for a different purpose. Ordinary mathematics is still written in, and about, the model $\mathbf{Set}$. The categorical view tells you which theorems remain true when you change the model.
+
+</Misconception>
+
+<Misconception>
+
+**"Intuitionistic logic asserts that excluded middle is false."** It does not assume excluded middle, and it proves $\neg\neg(P \lor \neg P)$, so excluded middle can never be refuted. $\neg(P \lor \neg P)$ is not derivable: it evaluates to $\bot$ in the two-element Boolean algebra. Every intuitionistic theorem is also a classical theorem.
+
+</Misconception>
+
+<Misconception>
+
+**"Since $\mathbf{Set}$ is complete for βη-equality (Friedman), it is also complete for provability."** No. Friedman's theorem is about *equations between terms*. For *inhabitation* (Curry–Howard provability), $\mathbf{Set}$ is classical. Interpret the base types as any sets: the type $((A \to B) \to A) \to A$ of Peirce's law always gets a non-empty interpretation (check the cases $\llbracket A \rrbracket = \varnothing$ and $\llbracket A \rrbracket \ne \varnothing$), yet no closed λ-term has this type. Detecting intuitionistic unprovability needs non-Boolean models.
+
+</Misconception>
+
+<Misconception>
+
+**"Cartesian closed means having all limits."** A CCC needs only finite products and exponentials. $\mathbf{FinSet}$ is cartesian closed but has no infinite products, and a finite chain is a Heyting algebra regardless of completeness. Conversely, $\mathbf{Grp}$ has all limits but is not cartesian closed.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Truth values are open sets">
+
+The open sets of a space form a Heyting algebra. A proposition interpreted as an open set $U$ is "true at the points of $U$". Openness is the mathematical shape of *observability*: if a property holds at a point, it holds nearby. Excluded middle fails because a property and its pseudo-complement can both fail at a boundary point. This is more than an example. **Tarski (1938)** proved that intuitionistic propositional logic is *complete* for the topological semantics on $\R$, so a formula is derivable if and only if it evaluates to $\R$ under every assignment of open subsets of $\R$. Stone (1937) represented Heyting algebras, then called "Brouwerian logics", by open sets. In modern form, every Heyting algebra embeds in the Heyting algebra of up-sets of its prime filters, and these up-sets are the open sets of a topology. Finite Kripke models are the special case of finite spaces, whose open sets are the up-sets of a preorder. In the other direction, frames (complete lattices in which finite meets distribute over arbitrary joins; equivalently, complete Heyting algebras) are the "spaces without points" of locale theory, and sheaves on a space form a <TopicLink id="math.cat.elementary-topoi">topos</TopicLink> whose internal logic is this topological logic, extended to quantifiers.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="∃ is a projection">
+
+Theorem 3 says that existential quantification is the direct image under a projection, the *shadow* of a set. Eliminating a quantifier is therefore a theorem in geometry. The **Tarski–Seidenberg theorem**, that the projection $\R^{n+1} \to \R^n$ of a semialgebraic set is semialgebraic, is equivalent to quantifier elimination for the real field. **Chevalley's theorem**, that the image of a constructible set under a morphism of varieties over an algebraically closed field is constructible, is the corresponding statement for algebraically closed fields (see <TopicLink id="math.found.model-theory">model theory</TopicLink> and <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>). $\forall_f$ is the dual "everything over this point" operation. Beck–Chevalley says that taking shadows commutes with base change. For instance, for a subset $Z$ of the base, the shadow of the part of $S$ lying over $Z$ is the shadow of $S$ intersected with $Z$.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Free algebras measure a logic">
+
+The Lindenbaum–Tarski algebra on $n$ propositional variables is the **free Heyting algebra** on $n$ generators. Free algebras show how much a logic can distinguish. The free Boolean algebra on one generator $p$ has four elements, $\bot, p, \neg p, \top$. The free Heyting algebra on one generator is *infinite*: the **Rieger–Nishimura lattice** (Rieger 1949, Nishimura 1960) contains $p, \neg p, \neg\neg p, p \vee \neg p, \neg\neg p \to p, \dots$ as pairwise inequivalent formulas. Algebraically, soundness and completeness (Theorems 4 and 5) say that intuitionistic propositional logic is the equational theory of Heyting algebras, a variety in the sense of universal algebra. Intermediate logics such as Dummett's correspond to subvarieties: Dummett's law axiomatises the subvariety generated by the linearly ordered Heyting algebras.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Compiling through a cartesian closed category">
+
+The interpretation of Theorem 2 is a *compiler*. It translates λ-terms, with their named variables, into variable-free combinators: projections, pairing, $\Lambda$ and $\mathrm{ev}$. The **Categorical Abstract Machine** of Cousineau, Curien and Mauny (1985, journal version 1987) executes exactly these CCC combinators, and it gave the original Caml implementation its name. In the other direction, Curry–Howard makes proof assistants possible. Lean checks a proof by type-checking a term, and normalising a proof is running a program. `#print axioms` exposes the constructive/classical boundary: the proof of `¬¬(P ∨ ¬P)` in this lesson uses no axioms, whereas proofs that use excluded middle depend on `Classical.choice`.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Hyperdoctrines: logic over a category of contexts">
+
+Lawvere's hyperdoctrines organise first-order logic categorically. There is a base category of contexts (objects are lists of variables, morphisms are tuples of terms), a poset or Heyting algebra $P(\Gamma)$ of formulas in each context, substitution functors $t^*$, and quantifiers as their adjoints, subject to Beck–Chevalley and Frobenius. Equality is $\exists$ along a diagonal. This is the logic of a <TopicLink id="math.found.first-order-logic">first-order theory</TopicLink> with every structural rule made explicit, and the same pattern governs dependent type theory. There, Seely (1984) matched $\Sigma$- and $\Pi$-types with the left and right adjoints to pullback in a *locally* cartesian closed category. The precise correspondence needs care with substitution, which holds only up to isomorphism (Hofmann 1994).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="A logic that is not Heyting">
+
+Birkhoff and von Neumann (1936) proposed that the propositions about a quantum system are the closed subspaces of a Hilbert space, ordered by inclusion. Meet is intersection and join is closed span. This lattice is *not distributive*. In $\C^2$, take three distinct lines $L_1, L_2, L_3$: then $L_1 \wedge (L_2 \vee L_3) = L_1 \wedge \C^2 = L_1$, but $(L_1 \wedge L_2) \vee (L_1 \wedge L_3) = 0$. A Heyting algebra is always distributive, because $a \wedge -$ is a left adjoint, so in quantum logic conjunction with $a$ has *no* right adjoint. There is no implication obeying the deduction theorem. This contrast clarifies what Heyting algebras capture. It also motivates the topos-theoretic approaches to quantum theory of Isham, Butterfield and Döring, which replace the non-distributive lattice by a Heyting algebra of subobjects in a presheaf topos. These remain a research programme, not settled physics.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape and where to go next">
+
+- **Dependent types and locally cartesian closed categories.** Replacing $\times$ and $\to$ by $\Sigma$ and $\Pi$ moves the correspondence from CCCs to locally cartesian closed categories, where every slice $\mathcal{C}/X$ is cartesian closed. Lean's own type theory is a dependent type theory of this kind, with inductive types and universes added.
+- **Toposes.** A <TopicLink id="math.cat.elementary-topoi">topos</TopicLink> is a category in which the subobjects of each object form a Heyting algebra, functorially, with quantifiers as adjoints. In other words, it is a hyperdoctrine built from the category itself. Its internal logic is higher-order intuitionistic logic (Lambek and Scott, Part II).
+- **Homotopy type theory.** Identity types in dependent type theory have models in which equalities are paths. This leads to <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink> and its semantics in higher categories.
+- **Proof theory.** Normalisation of proofs (Gentzen, Prawitz) is β-reduction under Curry–Howard. Categorical coherence theorems are often normalisation theorems in disguise (see <TopicLink id="math.found.proof-theory">proof theory</TopicLink>).
+- **Linear logic and monoidal closed categories.** Dropping the diagonal $A \to A \times A$ (duplication of hypotheses) replaces cartesian closed categories by symmetric monoidal closed ones; see <TopicLink id="math.cat.monoidal-categories">monoidal categories</TopicLink>.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Intuitionism.** L. E. J. Brouwer (Netherlands) criticised the unrestricted use of excluded middle from 1907 onwards. Valery Glivenko (Moscow) proved his double-negation theorem in 1929. Arend Heyting (Netherlands) formalised intuitionistic logic in 1930, and Andrey Kolmogorov (Moscow) gave its "problem" interpretation in 1932. Together with Brouwer and Heyting this became the Brouwer–Heyting–Kolmogorov interpretation.
+- **Algebraic and topological semantics.** Marshall Stone (1937) and Alfred Tarski (1938) connected intuitionistic logic with lattices of open sets. McKinsey and Tarski developed the algebra of topology in the 1940s. Ladislav Rieger (Prague, 1949) and Iwao Nishimura (Japan, 1960) described the free Heyting algebra on one generator, and Saul Kripke (1965) introduced his possible-worlds semantics.
+- **Propositions as types.** Haskell Curry noticed the match between combinators and axioms of implicational logic (1934, and with Robert Feys in 1958). William Howard's notes on "formulae-as-types" circulated in 1969 and were published in 1980.
+- **Categories.** Samuel Eilenberg and Saunders Mac Lane introduced categories in 1945, and Daniel Kan introduced adjoint functors in 1958. F. William Lawvere's thesis (1963) and papers "Adjointness in foundations" (1969) and on equality in hyperdoctrines (1970) made adjoints the organising principle of logic. Joachim Lambek's "Deductive systems and categories" (1968–1972) and "From λ-calculus to cartesian closed categories" (1980) completed the third side of the correspondence, and Lambek and Philip Scott's book (1986) became its standard reference. Harvey Friedman's completeness theorem for set-theoretic models appeared in 1975. Robert Seely's work on locally cartesian closed categories appeared in 1984.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- J. Lambek and P. J. Scott, *Introduction to Higher Order Categorical Logic* (1986). Part I covers cartesian closed categories and the λ-calculus, Part II toposes and higher-order logic.
+- Steve Awodey, *Category Theory* (2nd edition, 2010). Chapters 6–10 cover exponentials, Heyting algebras, the λ-calculus and adjoints, with quantifiers as adjoints.
+- Bart Jacobs, *Categorical Logic and Type Theory* (1999). Fibrations, hyperdoctrines and dependent types.
+- Andrew M. Pitts, "Categorical logic", in *Handbook of Logic in Computer Science*, vol. 5 (2000). A concise survey.
+- Morten Heine Sørensen and Paweł Urzyczyn, *Lectures on the Curry–Howard Isomorphism* (2006).
+- A. S. Troelstra and D. van Dalen, *Constructivism in Mathematics* (2 vols., 1988). Intuitionistic logic and its semantics.
+- Saunders Mac Lane and Ieke Moerdijk, *Sheaves in Geometry and Logic* (1992). The next step: the internal logic of toposes.
+
+</Section>

@@ -1,0 +1,570 @@
+---
+slug: formal-methods
+topic: math.comp.formal-methods
+title: Formal methods
+subtitle: Programs as mathematical objects — operational semantics, Hoare logic and loop invariants, model checking by fixed points, type soundness, and the limit drawn by Rice's theorem.
+level: grad
+ages: Graduate
+minutes: 140
+order: 7042
+objectives:
+  - Give a big-step operational semantics for a small imperative language and prove properties such as determinism by induction on derivations
+  - State the rules of Hoare logic, prove their soundness, and verify a loop program with an invariant and a variant
+  - Model-check finite transition systems against CTL formulas by fixed-point iteration, and explain the cost of the labelling algorithm
+  - Prove type soundness by progress and preservation, and explain what it does and does not guarantee
+  - Explain what a verification result is relative to — its specification, semantics and trusted base — and why Rice's theorem rules out full automation
+narrators: []
+lean:
+  - Lumenary.FormalMethods.Com
+  - Lumenary.FormalMethods.BigStep
+  - Lumenary.FormalMethods.bigStep_deterministic
+  - Lumenary.FormalMethods.Hoare
+  - Lumenary.FormalMethods.Derivable
+  - Lumenary.FormalMethods.while_sound
+  - Lumenary.FormalMethods.soundness
+  - Lumenary.FormalMethods.divLoop
+  - Lumenary.FormalMethods.divProg
+  - Lumenary.FormalMethods.divInv
+  - Lumenary.FormalMethods.div_correct
+  - Lumenary.FormalMethods.divLoop_terminates
+  - Lumenary.FormalMethods.div_terminates
+  - Lumenary.FormalMethods.loopForever_diverges
+  - Lumenary.FormalMethods.loopForever_hoare
+  - Lumenary.FormalMethods.HasType
+  - Lumenary.FormalMethods.Step
+  - Lumenary.FormalMethods.progress
+  - Lumenary.FormalMethods.preservation
+  - Lumenary.FormalMethods.type_safety
+  - Lumenary.FormalMethods.EF
+  - Lumenary.FormalMethods.efStep
+  - Lumenary.FormalMethods.ef_eq_lfp
+  - Lumenary.FormalMethods.rice
+compute: [formal_methods_model_checking, formal_methods_verification_conditions]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Proving programs, not just testing them">
+
+In 1994 the number theorist Thomas Nicely, computing the sum of the reciprocals of the twin primes, noticed that his new Pentium processor divided some floating-point numbers wrongly. A few entries were missing from a lookup table used by the division circuit; Intel replaced the chips at a cost it put at about 475 million dollars. In 1996 the first Ariane 5 rocket was destroyed about 40 seconds after lift-off because software reused from Ariane 4 converted a 64-bit floating-point number to a 16-bit integer that could not hold it. Both systems had been tested extensively. As Dijkstra put it in 1970, testing can show the presence of bugs, but never their absence.
+
+**Formal methods** treat programs, circuits and protocols as mathematical objects and prove theorems about them. They have succeeded spectacularly where the stakes justify the effort: the CompCert C compiler (Leroy, from 2006) carries a machine-checked proof that compilation preserves the meaning of programs; the seL4 microkernel (Klein et al., 2009) has a proof that its C code implements its specification; Intel and AMD formally verify their floating-point units; Amazon Web Services checks the designs of its distributed storage systems with the TLA+ model checker, which found errors whose shortest traces had dozens of steps; the driverless Line 14 of the Paris Métro (1998) runs software developed with the B method.
+
+This lesson develops the mathematics underneath: what a program *means* (operational semantics), how to prove what it does (Hoare logic, with invariants and variants), how to check finite systems exhaustively (model checking, by fixed points), how type systems rule out a class of errors automatically (progress and preservation), and why none of this can ever be fully automated (Rice's theorem).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Three ways to be sure">
+
+To prove anything about a program we first need a precise definition of what running it does. That is a **semantics**: a mathematical relation between programs, initial states and outcomes. Everything else is measured against it.
+
+- **Deductive verification** proves that every run satisfies a specification, using a logic whose rules follow the program's structure. The creative step is the **loop invariant**, a statement true before and after every iteration — the program-proving analogue of an induction hypothesis.
+- **Model checking** works with a *finite* model of the system and checks a temporal property by exploring every reachable state. It is fully automatic, and when the property fails it returns a concrete counterexample run. Its enemy is the size of the state space.
+- **Type systems** assign types to program phrases by simple, compositional rules. A *sound* type system guarantees, automatically and for every program it accepts, that a certain class of errors never happens.
+
+These approaches trade expressiveness against automation. Rice's theorem says the corner where every property of every program is decided automatically is empty — so each method restricts something: the programs (finite-state), the properties (types), or the automation (a human supplies invariants and proofs).
+
+The lesson uses <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink> for assertions and soundness arguments, the <TopicLink id="math.comp.lambda-calculus">λ-calculus</TopicLink> for reduction and typing, correctness proofs by invariants from <TopicLink id="math.comp.algorithm-design">algorithm design</TopicLink>, and the halting problem from <TopicLink id="math.comp.computability">computability</TopicLink>.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Semantics, Hoare triples, temporal logic and types">
+
+<Definition term="IMP and its states">
+
+A **state** is a function $s : \mathrm{Var} \to \Z$. Arithmetic expressions $a$ and boolean tests $b$ denote functions of the state, written $a(s) \in \Z$ and $b(s) \in \{\mathrm{tt}, \mathrm{ff}\}$. **Commands** are
+
+$$
+c \;::=\; \mathtt{skip} \;\mid\; x := a \;\mid\; c_1 ; c_2 \;\mid\; \mathtt{if}\ b\ \mathtt{then}\ c_1\ \mathtt{else}\ c_2 \;\mid\; \mathtt{while}\ b\ \mathtt{do}\ c .
+$$
+
+We write $s[x \mapsto v]$ for the state that agrees with $s$ except that it sends $x$ to $v$.
+
+</Definition>
+
+<Definition term="big-step operational semantics">
+
+The relation $\langle c, s \rangle \Downarrow t$ ("$c$ run from $s$ terminates in $t$") is the smallest relation closed under the rules
+
+$$
+\dfrac{}{\langle \mathtt{skip}, s\rangle \Downarrow s}
+\qquad
+\dfrac{}{\langle x := a, s\rangle \Downarrow s[x \mapsto a(s)]}
+\qquad
+\dfrac{\langle c_1, s\rangle \Downarrow t \quad \langle c_2, t\rangle \Downarrow u}{\langle c_1 ; c_2, s\rangle \Downarrow u}
+$$
+
+$$
+\dfrac{b(s) = \mathrm{tt} \quad \langle c_1, s\rangle \Downarrow t}{\langle \mathtt{if}\ b\ \mathtt{then}\ c_1\ \mathtt{else}\ c_2, s\rangle \Downarrow t}
+\qquad
+\dfrac{b(s) = \mathrm{ff} \quad \langle c_2, s\rangle \Downarrow t}{\langle \mathtt{if}\ b\ \mathtt{then}\ c_1\ \mathtt{else}\ c_2, s\rangle \Downarrow t}
+$$
+
+$$
+\dfrac{b(s) = \mathrm{tt} \quad \langle c, s\rangle \Downarrow t \quad \langle \mathtt{while}\ b\ \mathtt{do}\ c, t\rangle \Downarrow u}{\langle \mathtt{while}\ b\ \mathtt{do}\ c, s\rangle \Downarrow u}
+\qquad
+\dfrac{b(s) = \mathrm{ff}}{\langle \mathtt{while}\ b\ \mathtt{do}\ c, s\rangle \Downarrow s}
+$$
+
+A judgement holds exactly when it has a finite **derivation tree** built from these rules. A run that never terminates has no derivation.
+
+</Definition>
+
+The last-but-one rule is not compositional: its premise mentions the same loop. So properties of $\Downarrow$ are proved by **induction on derivations** (rule induction), not by induction on the command. A **small-step** semantics $\langle c, s\rangle \to \langle c', s'\rangle$ describes single computation steps instead; it can also talk about non-terminating and concurrent runs, and the two semantics agree on terminating runs.
+
+<Definition term="Hoare triple">
+
+Let $P, Q$ be **assertions** (predicates on states). The **partial-correctness triple** $\{P\}\; c\; \{Q\}$ is *valid*, written $\models \{P\}\, c\, \{Q\}$, if for all states $s, t$: if $P(s)$ and $\langle c, s\rangle \Downarrow t$, then $Q(t)$. The **total-correctness triple** $[P]\; c\; [Q]$ additionally requires that from every $s$ with $P(s)$ the command terminates.
+
+</Definition>
+
+A partial-correctness triple says nothing about runs that do not terminate.
+
+<Definition term="Hoare logic">
+
+The judgement $\vdash \{P\}\, c\, \{Q\}$ is generated by the rules
+
+$$
+\dfrac{}{\{P\}\ \mathtt{skip}\ \{P\}}
+\qquad
+\dfrac{}{\{Q[a/x]\}\ x := a\ \{Q\}}
+\qquad
+\dfrac{\{P\}\ c_1\ \{R\} \quad \{R\}\ c_2\ \{Q\}}{\{P\}\ c_1 ; c_2\ \{Q\}}
+$$
+
+$$
+\dfrac{\{P \wedge b\}\ c_1\ \{Q\} \quad \{P \wedge \neg b\}\ c_2\ \{Q\}}{\{P\}\ \mathtt{if}\ b\ \mathtt{then}\ c_1\ \mathtt{else}\ c_2\ \{Q\}}
+\qquad
+\dfrac{\{I \wedge b\}\ c\ \{I\}}{\{I\}\ \mathtt{while}\ b\ \mathtt{do}\ c\ \{I \wedge \neg b\}}
+\qquad
+\dfrac{P' \Rightarrow P \quad \{P\}\ c\ \{Q\} \quad Q \Rightarrow Q'}{\{P'\}\ c\ \{Q'\}}
+$$
+
+where $Q[a/x]$ is the assertion $s \mapsto Q(s[x \mapsto a(s)])$: assignment works *backwards* by substitution. In the loop rule, $I$ is the **loop invariant**.
+
+</Definition>
+
+<Definition term="weakest precondition">
+
+The **weakest liberal precondition** $\mathrm{wlp}(c, Q)$ is the set of states from which every terminating run of $c$ ends in $Q$; the **weakest precondition** $\mathrm{wp}(c, Q)$ also demands termination (Dijkstra). So $\models \{P\}\, c\, \{Q\}$ iff $P \subseteq \mathrm{wlp}(c, Q)$, and $\mathrm{wlp}(x := a, Q) = Q[a/x]$, $\mathrm{wlp}(c_1;c_2, Q) = \mathrm{wlp}(c_1, \mathrm{wlp}(c_2, Q))$. For loops, $\mathrm{wlp}$ is a greatest fixed point, which is why verifiers ask the user for invariants.
+
+</Definition>
+
+<Definition term="Kripke structure and CTL">
+
+A **Kripke structure** $M = (S, R, L)$ has a set of states $S$, a transition relation $R \subseteq S \times S$ in which every state has a successor, and a labelling $L$ saying which atomic propositions hold in each state. A **path** is an infinite sequence $s_0 R\, s_1 R\, s_2 \cdots$. Formulas of **computation tree logic** (CTL) are
+
+$$
+\varphi \;::=\; p \;\mid\; \neg \varphi \;\mid\; \varphi \wedge \varphi \;\mid\; \mathsf{EX}\,\varphi \;\mid\; \mathsf{E}[\varphi\ \mathsf{U}\ \varphi] \;\mid\; \mathsf{EG}\,\varphi ,
+$$
+
+where $s \models \mathsf{EX}\,\varphi$ if some successor satisfies $\varphi$; $s \models \mathsf{E}[\varphi\,\mathsf{U}\,\psi]$ if along some path from $s$, $\psi$ eventually holds and $\varphi$ holds until then; and $s \models \mathsf{EG}\,\varphi$ if along some path $\varphi$ holds forever. The usual abbreviations are $\mathsf{EF}\,\varphi = \mathsf{E}[\top\,\mathsf{U}\,\varphi]$ ("possibly eventually"), $\mathsf{AG}\,\varphi = \neg\mathsf{EF}\,\neg\varphi$ ("always, on every path") and $\mathsf{AF}\,\varphi = \neg\mathsf{EG}\,\neg\varphi$ ("inevitably"). **Model checking** is deciding whether $s_0 \models \varphi$ for a given finite $M$, state $s_0$ and formula $\varphi$.
+
+</Definition>
+
+A **safety** property says something bad never happens ($\mathsf{AG}\,\neg \mathit{bad}$); a **liveness** property says something good eventually happens ($\mathsf{AG}(\mathit{try} \Rightarrow \mathsf{AF}\, \mathit{crit})$).
+
+<Definition term="type soundness">
+
+Given a small-step reduction $t \longrightarrow t'$ and a set of **values**, a term is **stuck** if it is not a value and cannot reduce. A type system $\vdash t : T$ is **sound** if no well-typed term ever reduces to a stuck term. The standard proof (Wright and Felleisen, 1994) has two parts: **progress** (a well-typed term is a value or can reduce) and **preservation** (reduction preserves types).
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Division by repeated subtraction">
+
+The program
+
+$$
+\mathit{DIV} \;=\; r := a;\ q := 0;\ \mathtt{while}\ b \le r\ \mathtt{do}\ (r := r - b;\ q := q + 1)
+$$
+
+should satisfy $\{a \ge 0 \wedge b \gt 0\}\ \mathit{DIV}\ \{a = qb + r \wedge 0 \le r \lt b\}$. Take the invariant $I \equiv a = qb + r \wedge r \ge 0 \wedge b \gt 0$. The proof outline is
+
+$$
+\begin{aligned}
+&\{a \ge 0 \wedge b \gt 0\} \\
+&\{a = 0 \cdot b + a \wedge a \ge 0 \wedge b \gt 0\}\quad r := a;\ q := 0 \quad \{I\} \\
+&\mathtt{while}\ b \le r\ \mathtt{do} \\
+&\qquad \{I \wedge b \le r\} \;\Rightarrow\; \{a = (q+1)b + (r - b) \wedge r - b \ge 0 \wedge b \gt 0\} \\
+&\qquad r := r - b;\ q := q + 1 \quad \{I\} \\
+&\{I \wedge b \gt r\} \;\Rightarrow\; \{a = qb + r \wedge 0 \le r \lt b\}.
+\end{aligned}
+$$
+
+The program has disappeared from three **verification conditions**: $a \ge 0 \wedge b \gt 0 \Rightarrow a = 0\cdot b + a \wedge a \ge 0 \wedge b \gt 0$; $I \wedge b \le r \Rightarrow a = (q+1)b + (r-b) \wedge r - b \ge 0 \wedge b \gt 0$; and $I \wedge b \gt r \Rightarrow$ the postcondition. Each is elementary integer arithmetic. **Termination** needs a separate argument, a **variant**: the integer $r$ is bounded below by $0$ by the invariant and decreases by $b \ge 1$ in each iteration.
+
+</Example>
+
+<Example title="A too-weak invariant">
+
+With $I' \equiv a = qb + r \wedge b \gt 0$ the first two verification conditions still hold, but the exit condition $I' \wedge b \gt r \Rightarrow r \ge 0$ fails (take $r = -1$, $b = 1$, $q = -3$, $a = -4$). This refutes the *proof attempt*, not the program: invariants must be strong enough to be inductive *and* to imply the goal. Finding them is where human insight (or a clever algorithm) enters.
+
+</Example>
+
+<Example title="Partial correctness without termination">
+
+Let $\Omega = \mathtt{while}\ \mathrm{true}\ \mathtt{do}\ \mathtt{skip}$. No judgement $\langle \Omega, s\rangle \Downarrow t$ is derivable, so $\{\top\}\ \Omega\ \{\bot\}$ is valid: a program that never stops satisfies *every* partial-correctness specification. The loop rule derives it too, with invariant $\top$: from $\{\top \wedge \mathrm{true}\}\ \mathtt{skip}\ \{\top\}$ we get $\{\top\}\ \Omega\ \{\top \wedge \neg\mathrm{true}\}$, and $\top \wedge \neg\mathrm{true} \Rightarrow \bot$.
+
+</Example>
+
+<Example title="A mutual-exclusion protocol as a Kripke structure">
+
+Two processes each cycle through *idle*, *trying* and *critical*, and share some flags. A state records both program counters and the flags; transitions interleave single atomic steps. The specification has a safety part, $\mathsf{AG}\,\neg(\mathit{crit}_0 \wedge \mathit{crit}_1)$, and liveness parts such as $\mathsf{AG}\,\mathsf{EF}\,\mathit{crit}_0$ (process $0$ can always still get in) and, under a fairness assumption, $\mathsf{AG}(\mathit{try}_0 \Rightarrow \mathsf{AF}\,\mathit{crit}_0)$. The computation below checks three protocols: one violates mutual exclusion, one deadlocks, and Peterson's algorithm (1981) satisfies all three properties it checks.
+
+</Example>
+
+<Example title="Typed and stuck terms">
+
+In the language of booleans and numbers used below, $\mathtt{if}\ \mathtt{iszero}\ 0\ \mathtt{then}\ \mathtt{succ}\ 0\ \mathtt{else}\ 0$ has type $\mathtt{Nat}$ and reduces in two steps to the value $\mathtt{succ}\ 0$. The term $\mathtt{succ}\ \mathtt{true}$ is stuck — and ill-typed. The term $\mathtt{pred}\ 0$ is well-typed and reduces to $0$: whether that is what the programmer *wanted* is not a question the type system answers.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The central theorems">
+
+<Theorem name="Theorem 1 (determinism of IMP)">
+
+If $\langle c, s\rangle \Downarrow t$ and $\langle c, s\rangle \Downarrow t'$ then $t = t'$.
+
+</Theorem>
+
+<Proof>
+
+Induction on the derivation $\mathcal{D}$ of $\langle c, s\rangle \Downarrow t$, for all $t'$ simultaneously. In each case the shape of $c$ restricts the last rule of the second derivation $\mathcal{D}'$. For $\mathtt{skip}$ and assignment both derivations are single axioms with the same conclusion. For $c_1 ; c_2$, $\mathcal{D}$ has premises $\langle c_1, s\rangle \Downarrow m$ and $\langle c_2, m\rangle \Downarrow t$, and $\mathcal{D}'$ has $\langle c_1, s\rangle \Downarrow m'$ and $\langle c_2, m'\rangle \Downarrow t'$; by the induction hypothesis $m = m'$, and then $t = t'$. For $\mathtt{if}$ and $\mathtt{while}$, both derivations must use the rule for the same value of $b(s)$, since $b(s)$ cannot be both $\mathrm{tt}$ and $\mathrm{ff}$; the remaining premises are handled exactly as for sequencing (for $\mathtt{while}$ with $b(s) = \mathrm{tt}$, first the body, then the loop from the intermediate state, using the induction hypothesis for the sub-derivation). $\blacksquare$
+
+</Proof>
+
+<Theorem name="Theorem 2 (soundness of Hoare logic)">
+
+If $\vdash \{P\}\, c\, \{Q\}$ then $\models \{P\}\, c\, \{Q\}$.
+
+</Theorem>
+
+<Proof>
+
+Induction on the derivation of $\vdash \{P\}\, c\, \{Q\}$. Suppose $P(s)$ and $\langle c, s\rangle \Downarrow t$.
+
+- *Skip.* The only rule gives $t = s$, so $Q(t) = P(s)$.
+- *Assignment.* Then $t = s[x \mapsto a(s)]$, and the precondition $Q[a/x]$ holds at $s$, which by definition means $Q(s[x \mapsto a(s)])$.
+- *Sequence.* The run decomposes as $\langle c_1, s\rangle \Downarrow m$ and $\langle c_2, m\rangle \Downarrow t$. The induction hypothesis for the first premise gives $R(m)$, and for the second $Q(t)$.
+- *Conditional.* If $b(s) = \mathrm{tt}$ the run is a run of $c_1$ from a state satisfying $P \wedge b$; apply the hypothesis for the first premise. Otherwise use the second.
+- *Consequence.* $P'(s)$ gives $P(s)$, the hypothesis gives $Q(t)$, and $Q(t)$ gives $Q'(t)$.
+- *Loop.* By the induction hypothesis, $\models \{I \wedge b\}\, c\, \{I\}$. We show by a *second* induction, on the derivation of $\langle \mathtt{while}\ b\ \mathtt{do}\ c, s\rangle \Downarrow t$, that $I(s)$ implies $I(t) \wedge \neg b(t)$. If the last rule is the one for $b(s) = \mathrm{ff}$, then $t = s$ and we are done. Otherwise $b(s) = \mathrm{tt}$, $\langle c, s\rangle \Downarrow s'$ and $\langle \mathtt{while}\ b\ \mathtt{do}\ c, s'\rangle \Downarrow t$ by a smaller derivation. From $I(s) \wedge b(s)$ we get $I(s')$, and the inner induction hypothesis gives $I(t) \wedge \neg b(t)$. $\blacksquare$
+
+</Proof>
+
+The inner induction cannot be replaced by induction on the command: unfolding the loop produces the same loop again. It can be read as induction on the number of iterations — which is finite precisely because we only consider terminating runs.
+
+<Theorem name="Theorem 3 (total correctness of DIV)">
+
+From every state with $a \ge 0$ and $b \gt 0$, $\mathit{DIV}$ terminates in a state with $a = qb + r$ and $0 \le r \lt b$.
+
+</Theorem>
+
+<Proof>
+
+The final property is Theorem 2 applied to the proof outline above. For termination, prove by strong induction on $n \in \N$: from every state with $r \le n$ and $b \gt 0$ the loop terminates. If $b \gt r$ the loop stops at once. Otherwise one iteration leads to a state with $r' = r - b \le n - 1$ and the same $b$, from which the loop terminates by the induction hypothesis; the loop rule for $b(s) = \mathrm{tt}$ assembles the two runs. The initialisation sets $r := a \ge 0$, so the hypothesis applies with $n = a$. $\blacksquare$
+
+</Proof>
+
+The converse of soundness is subtler. Hoare logic for IMP over the integers cannot be complete with a computably enumerable proof system: $\{\top\}\, c\, \{\bot\}$ is valid exactly when $c$ halts on no input, and that set of programs is not computably enumerable. What holds is **relative completeness**:
+
+<Theorem name="Theorem 4 (relative completeness; Cook 1978) — stated, not proved here">
+
+Suppose the assertion language can express the weakest liberal precondition of every command and postcondition (it does for IMP with first-order arithmetic, via Gödel's coding of finite sequences). Then every valid triple is derivable, provided the rule of consequence may use every *true* assertion as an axiom.
+
+</Theorem>
+
+So all the difficulty is pushed into the assertion language. Clarke (1979) showed that for some combinations of language features (for example procedures passed as parameters, together with recursion, static scope and global variables) no sound and relatively complete Hoare logic exists. See Apt, de Boer and Olderog (2009) for proofs.
+
+<Theorem name="Theorem 5 (EF as a least fixed point)">
+
+Let $M = (S, R, L)$ be a transition system and $\varphi \subseteq S$. Define the monotone map $F(Z) = \varphi \cup \mathrm{pre}(Z)$ on subsets of $S$, where $\mathrm{pre}(Z) = \{ s : \exists t\ (s R t \wedge t \in Z)\}$. Then $\mathsf{EF}\,\varphi = \{ s : \text{some } \varphi\text{-state is reachable from } s\}$ is the least fixed point $\mu Z.\, F(Z)$. If $S$ is finite, the iterates $Z_0 = \emptyset$, $Z_{k+1} = F(Z_k)$ increase and reach $\mathsf{EF}\,\varphi$ after at most $|S|$ steps.
+
+</Theorem>
+
+<Proof>
+
+$F$ is monotone, so by the Knaster–Tarski theorem its least fixed point exists and equals the intersection of all $Z$ with $F(Z) \subseteq Z$. First, $F(\mathsf{EF}\,\varphi) \subseteq \mathsf{EF}\,\varphi$: a state of $\varphi$ reaches $\varphi$ in zero steps, and a state with a successor in $\mathsf{EF}\,\varphi$ reaches $\varphi$ through it. Hence $\mu F \subseteq \mathsf{EF}\,\varphi$. Conversely let $Z$ be any fixed point and $s = s_0 R s_1 R \cdots R s_n \in \varphi$ a path. By backward induction on $i$, $s_n \in \varphi \subseteq F(Z) = Z$, and $s_{i+1} \in Z$ gives $s_i \in \mathrm{pre}(Z) \subseteq Z$; so $s \in Z$, and $\mathsf{EF}\,\varphi \subseteq \mu F$.
+
+For the iteration: $Z_0 \subseteq Z_1$, and monotonicity gives $Z_k \subseteq Z_{k+1}$ for all $k$; also $Z_k \subseteq \mu F$ by induction ($Z_{k+1} = F(Z_k) \subseteq F(\mu F) = \mu F$). A strictly increasing chain of subsets of $S$ has at most $|S| + 1$ members, so $Z_{m+1} = Z_m$ for some $m \le |S|$. Then $Z_m$ is a fixed point contained in $\mu F$, hence equal to it. $\blacksquare$
+
+</Proof>
+
+In the same way $\mathsf{E}[\varphi\,\mathsf{U}\,\psi] = \mu Z.\, \psi \cup (\varphi \cap \mathrm{pre}(Z))$ and $\mathsf{EG}\,\varphi = \nu Z.\, \varphi \cap \mathrm{pre}(Z)$, a *greatest* fixed point. Computing the iterates naively costs $O(|S| \cdot (|S| + |R|))$ per operator, but each least fixed point is really a backward graph search, and $\mathsf{EG}\,\varphi$ is the set of states from which a path inside $\varphi$ leads to a non-trivial strongly connected component of the subgraph spanned by the $\varphi$-states. Labelling the subformulas from the inside out therefore gives:
+
+<Theorem name="Theorem 6 (Clarke, Emerson and Sistla 1986) — proof sketched above">
+
+CTL model checking can be done in time $O(|\varphi| \cdot (|S| + |R|))$.
+
+</Theorem>
+
+The catch is that $|S|$ is usually exponential in the size of the system's description: $n$ processes with $k$ local states each give up to $k^n$ global states (the **state-explosion problem**). Linear temporal logic (LTL) model checking is linear in $|M|$ but PSPACE-complete in the formula (Sistla and Clarke, 1985).
+
+For type soundness consider the terms $t ::= \mathtt{true} \mid \mathtt{false} \mid \mathtt{if}\ t\ \mathtt{then}\ t\ \mathtt{else}\ t \mid 0 \mid \mathtt{succ}\ t \mid \mathtt{pred}\ t \mid \mathtt{iszero}\ t$ with types $\mathtt{Bool}$ and $\mathtt{Nat}$, the obvious typing rules, values $\mathtt{true}$, $\mathtt{false}$ and the numerals $\mathtt{succ}^n\, 0$, and reduction rules such as $\mathtt{if}\ \mathtt{true}\ \mathtt{then}\ t_2\ \mathtt{else}\ t_3 \longrightarrow t_2$, $\mathtt{pred}\,(\mathtt{succ}\ v) \longrightarrow v$ for a numeral $v$, and congruence rules that reduce inside $\mathtt{if}$, $\mathtt{succ}$, $\mathtt{pred}$ and $\mathtt{iszero}$ (Pierce 2002, chapter 8; all rules are in the Lean code below).
+
+<Theorem name="Theorem 7 (progress, preservation and safety)">
+
+(a) If $\vdash t : T$ then $t$ is a value or $t \longrightarrow t'$ for some $t'$. (b) If $\vdash t : T$ and $t \longrightarrow t'$ then $\vdash t' : T$. (c) Hence if $\vdash t : T$ and $t \longrightarrow^* t'$, then $t'$ is not stuck.
+
+</Theorem>
+
+<Proof>
+
+**Canonical forms:** a value of type $\mathtt{Bool}$ is $\mathtt{true}$ or $\mathtt{false}$, and a value of type $\mathtt{Nat}$ is a numeral — by inspecting the typing rules that can type a value.
+
+(a) Induction on the typing derivation. Constants are values. For $\mathtt{if}\ t_1\ \mathtt{then}\ t_2\ \mathtt{else}\ t_3$ with $\vdash t_1 : \mathtt{Bool}$: by the induction hypothesis $t_1$ is a value — then $\mathtt{true}$ or $\mathtt{false}$ by canonical forms, and one of the two $\mathtt{if}$ rules applies — or $t_1 \longrightarrow t_1'$, and the congruence rule applies. The cases $\mathtt{succ}$, $\mathtt{pred}$ and $\mathtt{iszero}$ are the same, using canonical forms for $\mathtt{Nat}$: for instance $\mathtt{pred}\ v$ with $v$ a numeral reduces to $0$ if $v = 0$ and to $v'$ if $v = \mathtt{succ}\ v'$.
+
+(b) Induction on the typing derivation, inverting the reduction step. The only non-trivial case is $\mathtt{pred}\,(\mathtt{succ}\ v) \longrightarrow v$, where we need $\vdash v : \mathtt{Nat}$: numerals have type $\mathtt{Nat}$ by an easy induction. Congruence steps follow from the induction hypothesis.
+
+(c) Induction on the number of steps using (b), then (a) at the end. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Theorem 8 (Rice 1953)">
+
+Let $\mathcal{P}$ be a set of partial computable functions $\N \rightharpoonup \N$ with $\emptyset \ne \mathcal{P}$ and $\mathcal{P}$ not containing all of them. Then $\{ e : \varphi_e \in \mathcal{P}\}$ is undecidable, where $\varphi_e$ is the function computed by program $e$.
+
+</Theorem>
+
+<Proof>
+
+Replacing $\mathcal{P}$ by its complement if necessary, assume the nowhere-defined function $\bot$ is not in $\mathcal{P}$, and fix a program $e$ with $\varphi_e \in \mathcal{P}$. For a program $M$ and input $x$, let $N_{M,x}$ be the program that on input $y$ first runs $M$ on $x$ and, if that halts, returns $\varphi_e(y)$. Then $\varphi_{N_{M,x}} = \varphi_e \in \mathcal{P}$ if $M$ halts on $x$, and $\varphi_{N_{M,x}} = \bot \notin \mathcal{P}$ otherwise. The map $(M, x) \mapsto N_{M,x}$ is computable (the s-m-n theorem). So a decision procedure for $\mathcal{P}$ would decide the halting problem, which is undecidable (Turing 1936). $\blacksquare$
+
+</Proof>
+
+Rice's theorem concerns *exact* decision of *semantic* properties of *all* programs. It leaves room for everything formal methods actually do: deciding properties of finite-state models; sound but incomplete automatic analyses that may answer "don't know" (type systems, abstract interpretation); bounded checks; and proofs found with human help.
+
+</Section>
+
+<Section id="trust" kind="human" title="What a verification result is relative to">
+
+A verification theorem has the shape "the artefact satisfies the specification, under these semantics and assumptions". Every part can be wrong in a way the proof cannot detect:
+
+- **The specification** may not say what was meant. A sorting function specified only to return a sorted list is satisfied by the function that always returns the empty list; the specification must also say the output is a permutation of the input.
+- **The semantics** may not match reality: the formal model of C, of the processor or of the network may differ from the real thing, for instance on undefined behaviour, weak memory or timing.
+- **The trusted base** — the proof checker's kernel, the compiler that built it, the hardware it ran on, and any unverified tools around the verified core — is assumed correct. In 2011 a random-testing study of C compilers (Yang, Chen, Eide and Regehr) found wrong-code bugs in every compiler it tested except in the verified middle part of CompCert; the bugs it found in CompCert were in front-end components that were not verified at the time.
+
+Proof assistants keep the trusted base small: Lean, Coq (now Rocq), Isabelle and HOL Light check every proof with a small kernel, following the design of Milner's LCF system (1972–79) and de Bruijn's earlier criterion that proofs should be checkable by a small, simple program. The proofs on this page are checked by Lean's kernel; you still have to read each *statement* to know what has been proved.
+
+Compiler correctness is proved by **simulation**. A relation $\sim$ between source and target states is preserved by computation: whenever $s \sim t$ and the source takes a step $s \to s'$, the target can take one or more steps $t \to^{+} t'$ with $s' \sim t'$.
+
+<CommutativeDiagram
+  objects={[
+    { id: "s", tex: "s", row: 0, col: 0 },
+    { id: "s1", tex: "s'", row: 0, col: 1 },
+    { id: "t", tex: "t", row: 1, col: 0 },
+    { id: "t1", tex: "t'", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "s", to: "s1", tex: "\\text{source step}" },
+    { from: "s", to: "t", tex: "\\sim", labelSide: "right" },
+    { from: "s1", to: "t1", tex: "\\sim", style: "dashed" },
+    { from: "t", to: "t1", tex: "\\text{target steps}^{+}", style: "dashed", labelSide: "right" },
+  ]}
+  caption="A forward simulation: given the solid arrows, the dashed ones exist. Pasting such squares along a source run gives a matching target run."
+/>
+
+Pasting squares shows that every source run is matched by a target run. For a deterministic target language this forward simulation also gives the converse direction that one really wants — every behaviour of the compiled code is a behaviour of the source — which is how CompCert's main theorem is proved (Leroy 2009).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Semantics, Hoare logic and model checking in Lean">
+
+The Lean module defines IMP with commands as an inductive type and expressions embedded *shallowly*: an arithmetic expression is any Lean function `State → ℤ`. This keeps the development short, at the price that the assertion language is all of Lean's logic (so the question of relative completeness does not arise).
+
+<Lean decl="Lumenary.FormalMethods.Com" />
+
+<Lean decl="Lumenary.FormalMethods.BigStep" />
+
+Theorem 1 is an induction on the derivation, exactly as in the proof above:
+
+<Lean decl="Lumenary.FormalMethods.bigStep_deterministic" />
+
+Validity of a triple is a definition about runs; derivability is a separate inductive definition with one constructor per rule of Hoare logic. Soundness (Theorem 2) connects them; the loop case is the separate lemma `while_sound`, proved by induction on the execution:
+
+<Lean decl="Lumenary.FormalMethods.Hoare" />
+
+<Lean decl="Lumenary.FormalMethods.Derivable" />
+
+<Lean decl="Lumenary.FormalMethods.while_sound" />
+
+<Lean decl="Lumenary.FormalMethods.soundness" />
+
+The division program and its invariant, and its correctness proved *inside* Hoare logic (the verification conditions are the goals left by the rule of consequence) and transported to the semantics by soundness:
+
+<Lean decl="Lumenary.FormalMethods.divLoop" />
+
+<Lean decl="Lumenary.FormalMethods.divProg" />
+
+<Lean decl="Lumenary.FormalMethods.divInv" />
+
+<Lean decl="Lumenary.FormalMethods.div_correct" />
+
+Termination is proved separately from the variant $r$, by strong induction (Theorem 3):
+
+<Lean decl="Lumenary.FormalMethods.divLoop_terminates" />
+
+<Lean decl="Lumenary.FormalMethods.div_terminates" />
+
+The diverging loop and the vacuously valid triple $\{\top\}\,\Omega\,\{\bot\}$:
+
+<Lean decl="Lumenary.FormalMethods.loopForever_diverges" />
+
+<Lean decl="Lumenary.FormalMethods.loopForever_hoare" />
+
+Type soundness (Theorem 7) for the language of booleans and numbers — typing, reduction, progress, preservation and their combination:
+
+<Lean decl="Lumenary.FormalMethods.HasType" />
+
+<Lean decl="Lumenary.FormalMethods.Step" />
+
+<Lean decl="Lumenary.FormalMethods.progress" />
+
+<Lean decl="Lumenary.FormalMethods.preservation" />
+
+<Lean decl="Lumenary.FormalMethods.type_safety" />
+
+Theorem 5 for an arbitrary (possibly infinite) transition system, using Mathlib's Knaster–Tarski least fixed point `OrderHom.lfp`:
+
+<Lean decl="Lumenary.FormalMethods.EF" />
+
+<Lean decl="Lumenary.FormalMethods.efStep" />
+
+<Lean decl="Lumenary.FormalMethods.ef_eq_lfp" />
+
+Finally, Rice's theorem (Theorem 8), applied from Mathlib's computability library, where programs are codes for partial recursive functions:
+
+<Lean decl="Lumenary.FormalMethods.rice" />
+
+**What is formalised:** Theorems 1, 2, 3, 5 (the fixed-point characterisation, without the iteration bound) and 7 are proved here; Theorem 8 is Mathlib's. **Not formalised:** relative completeness (Theorem 4), the other CTL operators and the complexity bound (Theorem 6), small-step semantics for IMP, and any connection to real programs or hardware.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Model checking and verification conditions, by computer">
+
+The first experiment is a small explicit-state model checker. It explores every interleaving of two processes for three mutual-exclusion protocols by breadth-first search, returns a *shortest* counterexample when mutual exclusion fails, finds the deadlock of the second protocol, and computes $\mathsf{EF}\,\mathit{crit}_0$ by the fixed-point iteration of Theorem 5 — the printed sizes are the iterates $Z_1 \subseteq Z_2 \subseteq \cdots$.
+
+<Python id="formal_methods_model_checking" />
+
+This is exhaustive evidence about each finite *model*. The model is interleaving semantics with atomic reads and writes; on real multiprocessors with weak memory, Peterson's algorithm needs memory fences.
+
+The second experiment mechanises the proof outline of the division program: a weakest-precondition calculus (assignment is substitution) produces the verification conditions, SymPy checks their equational parts exactly, and every integer point of a small box is tested. With the weak invariant the box search finds the counterexample to the exit condition shown in the examples.
+
+<Python id="formal_methods_verification_conditions" />
+
+Industrial verifiers such as Dafny and Why3 work this way, discharging the verification conditions with SMT solvers — decision procedures for combinations of theories like linear integer arithmetic — rather than with a box search.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: an inductive invariant is a tautology">
+
+Hardware model checkers reduce safety to propositional logic. A 2-bit counter with state $(a, b)$ steps $00 \to 01 \to 10 \to 00$; its next state $(c, d)$ is given by $c \leftrightarrow b$ and $d \leftrightarrow (\neg a \wedge \neg b)$. To show the state $11$ is never reached, check that the invariant $\neg(a \wedge b)$ holds initially (it does: the counter starts at $00$) and is **inductive**: invariant now and one transition imply invariant next. The table below shows that this implication is a tautology.
+
+<TruthTable formula="(not (a and b) and (c <-> b) and (d <-> (not a and not b))) -> not (c and d)" showSubformulas={false} title="Is the invariant ¬(a ∧ b) inductive?" />
+
+Now introduce a bug: in the box, replace `(not a and not b)` by `not a`. The formula is no longer a tautology. Find the falsifying row: it is $a = \mathrm{F}$, $b = \mathrm{T}$, $c = \mathrm{T}$, $d = \mathrm{T}$, a transition from $01$ into $11$ — and the buggy counter really does reach $01$ from $00$, so this is a genuine bug, not just a failure of induction. (In general a falsifying row may start from an unreachable state; then the invariant must be strengthened.) SAT solvers decide such questions for millions of variables, and techniques such as $k$-induction and IC3 construct inductive invariants automatically.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A verified program is correct."** It is correct *relative to* its specification, the semantics used in the proof, and its trusted base. A wrong specification, an unfaithful model of the hardware or an unverified component can still let errors through — as the discussion of CompCert's front end shows.
+
+</Misconception>
+
+<Misconception>
+
+**"Partial correctness implies termination."** $\{\top\}\ \mathtt{while}\ \mathrm{true}\ \mathtt{do}\ \mathtt{skip}\ \{\bot\}$ is valid. Termination is a separate obligation, discharged by a variant: a quantity in a well-founded order that every iteration decreases.
+
+</Misconception>
+
+<Misconception>
+
+**"Model checking proves the program correct."** It decides whether a finite *model* satisfies a property. The model may abstract away the very feature that causes the bug, or be cut off at a bound; and a property such as $\mathsf{AG}\,\neg \mathit{bad}$ says nothing about properties that were not checked, such as liveness.
+
+</Misconception>
+
+<Misconception>
+
+**"Rice's theorem makes verification impossible."** It rules out a single algorithm that decides every semantic property for every program. Verification of specific programs, analyses that may answer "don't know", finite-state model checking and interactive proof are all untouched.
+
+</Misconception>
+
+<Misconception>
+
+**"A well-typed program has no bugs."** Type soundness excludes stuck states — such as applying $\mathtt{succ}$ to a boolean — and nothing else. Logical errors, wrong results and non-termination are all compatible with a sound type system (unless the types are rich enough to express the specification, as in Lean).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Safety is closed, liveness is dense">
+
+Give the set $\Sigma^\omega$ of infinite runs over a finite set of states $\Sigma$ the product topology, with metric $d(u, v) = 2^{-\min\{i : u_i \ne v_i\}}$ (a Cantor space). A property $P \subseteq \Sigma^\omega$ is a **safety** property — every violation is witnessed by a finite bad prefix — exactly when $P$ is **closed**; it is a **liveness** property — every finite prefix can be extended into $P$ — exactly when $P$ is **dense**. Every property is the intersection of the two: $P = \overline{P} \cap \big(P \cup (\Sigma^\omega \setminus \overline{P})\big)$, and the second set is dense (Alpern and Schneider, 1985). Topology explains why safety is checked by looking for finite counterexamples, while liveness needs cycles in the state graph. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="The geometry of concurrency">
+
+Dijkstra (1968) drew two processes as a rectangle: one axis records the progress of each process, an execution is a path increasing in both coordinates, and a resource that only one process may hold at a time removes a forbidden rectangle. If the processes take two locks in opposite orders, two forbidden rectangles form a cross (the "Swiss flag"), and there is a region below it from which every increasing path gets stuck: a **deadlock**, visible as a corner of the geometry. Fajstrup, Goubault and Raussen (1998) turned this into an algorithm, and directed algebraic topology studies such spaces of increasing paths up to **directed homotopy**: deforming an execution through executions does not change its result, so the essentially different schedules are counted by a topological invariant rather than enumerated one interleaving at a time.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Programs as elements of an algebra">
+
+In a **Kleene algebra with tests** (Kozen, 1997) programs are elements of an idempotent semiring with a star operation, tests form a Boolean subalgebra, and $\mathtt{if}\ b\ \mathtt{then}\ p\ \mathtt{else}\ q = bp + \bar b q$, $\mathtt{while}\ b\ \mathtt{do}\ p = (bp)^{*}\bar b$. A Hoare triple $\{b\}\, p\, \{c\}$ becomes the equation $b\, p\, \bar c = 0$, and Hoare's rules become theorems of the algebra; the equational theory of KAT is decidable (PSPACE-complete). Predicate transformers give another algebraic picture: strongest postcondition and weakest liberal precondition form a **Galois connection**, $\mathrm{sp}(c, P) \subseteq Q \iff P \subseteq \mathrm{wlp}(c, Q)$. See <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink> and <TopicLink id="math.found.order-theory">order theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Where the cost goes">
+
+CTL model checking is linear in the model and the formula (Theorem 6); LTL is PSPACE-complete in the formula. The real difficulty is that the model is exponentially large. **Symbolic** model checking represents sets of states by binary decision diagrams (Bryant, 1986; Burch, Clarke, McMillan and others, 1990) and computes the fixed points of Theorem 5 on those representations; **bounded** model checking (Biere, Cimatti, Clarke and Zhu, 1999) asks a SAT solver for a counterexample of length at most $k$; partial-order reduction avoids exploring interleavings that commute. On the deductive side, SMT solvers decide the verification conditions that tools like Dafny and Why3 generate. See <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Why completeness can only be relative">
+
+Hoare logic sits on top of an assertion logic, and inherits its incompleteness: by Gödel, the true first-order sentences of arithmetic are not computably enumerable, and the valid triples $\{\top\}\, c\, \{\bot\}$ encode the complement of the halting problem. Cook's theorem isolates exactly this: the program-logic rules are complete, and all incompleteness lives in the assertion language. In a dependently typed proof assistant such as Lean the distinction blurs — specifications are types, and by the Curry–Howard correspondence a verified program is a term together with a proof (see <TopicLink id="math.found.type-theory">type theory</TopicLink> and <TopicLink id="math.found.incompleteness">the incompleteness theorems</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **First proofs of programs.** Goldstine and von Neumann (1947) annotated flow diagrams with assertion boxes. Turing's three-page paper *Checking a large routine* (1949) proved a factorial routine correct with assertions and a termination argument by a decreasing quantity.
+- **Program logics.** Floyd's *Assigning meanings to programs* (1967) attached assertions to flowcharts; Hoare's *An axiomatic basis for computer programming* (1969) turned them into a logic; Dijkstra's guarded commands and weakest preconditions (1975, *A Discipline of Programming*, 1976) made the calculus a method for deriving programs. Cook (1978) proved relative completeness and Clarke (1979) its limits.
+- **Semantics.** Scott and Strachey founded denotational semantics around 1970, with Scott's domain theory giving meaning to recursion as a least fixed point. Plotkin's Aarhus lecture notes (1981) introduced structural operational semantics; Kahn's natural semantics (1987) is the big-step style used here.
+- **Temporal logic and model checking.** Pnueli proposed temporal logic for programs in 1977. Model checking was invented independently by Clarke and Emerson (1981) in the United States and by Queille and Sifakis (1982) in France; Clarke, Emerson and Sifakis received the 2007 Turing Award.
+- **Types.** Milner's slogan "well-typed programs cannot go wrong" (1978) and Wright and Felleisen's syntactic method (1994) gave the progress-and-preservation proofs used today. Milner's LCF system (1972–79) introduced the small trusted kernel used by modern proof assistants; de Bruijn's Automath (from 1967) was the first system for checking mathematics by computer.
+- **Methods and industry.** VDM grew out of IBM's Vienna laboratory in the 1970s; Abrial's Z notation and B method came from Oxford and France, B being used for the Paris Métro Line 14. Patrick and Radhia Cousot introduced abstract interpretation in 1977; their Astrée analyser has been used on Airbus flight-control software. Zhou Chaochen, with Hoare and Ravn, created the Duration Calculus for real-time systems (1991), and He Jifeng and Hoare developed the Unifying Theories of Programming (1998). The United Nations University's International Institute for Software Technology, which opened in Macau in 1992, trained researchers from many developing countries in formal methods.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Glynn Winskel, *The Formal Semantics of Programming Languages* (1993) — operational and denotational semantics, Hoare logic and completeness.
+- Tobias Nipkow and Gerwin Klein, *Concrete Semantics with Isabelle/HOL* (2014) — IMP, Hoare logic and type systems, all machine-checked.
+- Michael Huth and Mark Ryan, *Logic in Computer Science: Modelling and Reasoning about Systems* (2nd ed., 2004) — CTL, LTL, model checking and program verification.
+- Christel Baier and Joost-Pieter Katoen, *Principles of Model Checking* (2008) — the standard graduate text.
+- Benjamin C. Pierce, *Types and Programming Languages* (2002) — chapter 8 is the type-soundness proof above.
+- Krzysztof R. Apt, Frank S. de Boer and Ernst-Rüdiger Olderog, *Verification of Sequential and Concurrent Programs* (3rd ed., 2009) — soundness and relative completeness in full.
+- C. A. R. Hoare, "An axiomatic basis for computer programming", *Communications of the ACM* (1969); Xavier Leroy, "Formal verification of a realistic compiler", *Communications of the ACM* (2009).
+
+</Section>

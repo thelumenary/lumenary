@@ -1,0 +1,548 @@
+---
+slug: natural-transformations
+topic: math.cat.natural-transformations
+title: Natural transformations
+subtitle: Why $V \cong V^{**}$ is “natural” and $V \cong V^*$ is not — morphisms between functors, the functor category, and when two categories are the same.
+level: ug2
+ages: Undergraduate
+minutes: 110
+order: 6026
+objectives:
+  - Define natural transformations and natural isomorphisms, and verify naturality for the double-dual map $V \to V^{**}$ and the determinant $\mathrm{GL}_n(R) \to R^\times$, natural in the commutative ring $R$
+  - Explain why $V \cong V^{**}$ is natural while $V \cong V^*$ cannot even be stated as a natural transformation between functors of the same variance, and prove that it fails even on the groupoid of isomorphisms over a field with more than three elements
+  - Prove that functors $\mathcal{C} \to \mathcal{D}$ and natural transformations form a category $[\mathcal{C}, \mathcal{D}]$, in which the isomorphisms are exactly the natural transformations with invertible components
+  - Use naturality as a uniformity constraint, for example to show that the only natural maps $X \times X \to X$ on sets are the two projections
+  - Define equivalence of categories and prove that a functor is an equivalence if and only if it is full, faithful and essentially surjective
+narrators: []
+lean:
+  - Lumenary.NaturalTransformations.sq
+  - Lumenary.NaturalTransformations.natural_sq_to_id
+  - Lumenary.NaturalTransformations.natTrans_sq_to_id
+  - Lumenary.NaturalTransformations.natural_id_to_id
+  - Lumenary.NaturalTransformations.natTrans_id_eq
+  - Lumenary.NaturalTransformations.reverseNat
+  - Lumenary.NaturalTransformations.double_dual_naturality
+  - Lumenary.NaturalTransformations.double_dual_bijective
+  - Lumenary.NaturalTransformations.no_invariant_pairing
+  - Lumenary.NaturalTransformations.glFunctor
+  - Lumenary.NaturalTransformations.unitsFunctor
+  - Lumenary.NaturalTransformations.detNat
+  - Lumenary.NaturalTransformations.comp_app
+  - Lumenary.NaturalTransformations.isIso_of_components
+  - Lumenary.NaturalTransformations.faithful_of_unitIso
+  - Lumenary.NaturalTransformations.essSurj_of_counitIso
+  - Lumenary.NaturalTransformations.full_of_equivalence
+  - Lumenary.NaturalTransformations.equivalence_iff
+  - Lumenary.NaturalTransformations.codiscreteEquivalence
+  - Lumenary.NaturalTransformations.codiscrete_not_isomorphic
+compute: [natural_transformations_uniform_operations, natural_transformations_dual_pairings]
+trails: [arrows-that-compose]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Canonical, or just convenient?">
+
+Every finite-dimensional vector space $V$ over a field $k$ is isomorphic to its dual $V^* = \Hom(V, k)$: both have dimension $n = \dim V$. It is also isomorphic to its double dual $V^{**}$. Yet working mathematicians treat these two isomorphisms completely differently. Nobody hesitates to identify $V$ with $V^{**}$; identifying $V$ with $V^*$ is regarded as a choice, made only when extra structure (an inner product, a basis) is around.
+
+What is the difference? To write down $V \cong V^*$ you must choose something — a basis $e_1, \dots, e_n$, giving $e_i \mapsto e_i^*$ — and a different basis gives a different isomorphism. The map $V \to V^{**}$ needs no choice at all:
+
+$$
+\mathrm{ev}_V(v) = \big(\varphi \mapsto \varphi(v)\big).
+$$
+
+It is defined by the same recipe for every vector space at once, and it is compatible with every linear map between them. In 1945 Samuel Eilenberg and Saunders Mac Lane turned this feeling into a definition, and the definition needed a whole new language: to say what "the same recipe for every space, compatible with all maps" means, they had to define **categories** and **functors** first. This lesson is about the notion they were really after — the **natural transformation** — and about the notion of "sameness" of categories it makes possible: **equivalence**.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Morphisms between functors">
+
+A <TopicLink id="math.cat.functors">functor</TopicLink> $F : \mathcal{C} \to \mathcal{D}$ draws a picture of $\mathcal{C}$ inside $\mathcal{D}$: each object $A$ becomes $F(A)$, each arrow $f : A \to B$ becomes $F(f) : F(A) \to F(B)$. Given two such pictures $F$ and $G$ of the same category, a natural transformation $\alpha : F \Rightarrow G$ is a way of sliding the first picture onto the second: an arrow $\alpha_A : F(A) \to G(A)$ for each object $A$, chosen so that sliding is compatible with every arrow of the picture. Compatibility is a single equation, drawn as a square:
+
+<CommutativeDiagram
+  objects={[
+    { id: "FA", tex: "F(A)", row: 0, col: 0 },
+    { id: "GA", tex: "G(A)", row: 0, col: 1 },
+    { id: "FB", tex: "F(B)", row: 1, col: 0 },
+    { id: "GB", tex: "G(B)", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "FA", to: "GA", tex: "\\alpha_A" },
+    { from: "FA", to: "FB", tex: "F(f)", labelSide: "right" },
+    { from: "GA", to: "GB", tex: "G(f)" },
+    { from: "FB", to: "GB", tex: "\\alpha_B", labelSide: "right" },
+  ]}
+  caption="The naturality square of $\alpha$ at $f : A \to B$: going right then down equals going down then right, $G(f) \circ \alpha_A = \alpha_B \circ F(f)$."
+/>
+
+Two slogans help, as long as you remember that they are slogans and the square is the definition.
+
+- **Natural means uniform.** A natural family cannot treat different objects by different ad hoc rules, because the arrows between objects force the components to agree. We will see that the only natural ways of turning a pair $(a, b)$ of elements of an arbitrary set $X$ into one element of $X$ are "take $a$" and "take $b$": every other rule, such as "take the smaller one", needs extra structure on $X$.
+- **Natural means basis-free.** In linear algebra, the arrows include all changes of basis. A natural construction cannot depend on a basis, because it must commute with every change of basis.
+
+There is also a geometric picture, made precise in the topology viewpoint below: a natural transformation is to functors what a **homotopy** is to continuous maps — a continuous deformation of one into the other, through a "cylinder" $\mathcal{C} \times \{0 \to 1\}$.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $\mathcal{C}$, $\mathcal{D}$, $\mathcal{E}$ are categories and composition is written $g \circ f$ ("$g$ after $f$").
+
+<Definition term="natural transformation">
+
+Let $F, G : \mathcal{C} \to \mathcal{D}$ be functors. A **natural transformation** $\alpha : F \Rightarrow G$ is a family of morphisms of $\mathcal{D}$, the **components**
+
+$$
+\alpha_A : F(A) \to G(A) \qquad (A \text{ an object of } \mathcal{C}),
+$$
+
+such that for every morphism $f : A \to B$ of $\mathcal{C}$ the **naturality square** commutes:
+
+$$
+G(f) \circ \alpha_A = \alpha_B \circ F(f).
+$$
+
+</Definition>
+
+<Definition term="natural isomorphism">
+
+A natural transformation $\alpha : F \Rightarrow G$ is a **natural isomorphism** if every component $\alpha_A$ is an isomorphism in $\mathcal{D}$. We then write $\alpha : F \cong G$ and say $F$ and $G$ are **naturally isomorphic**. A family of isomorphisms $F(A) \cong G(A)$ that is not natural is sometimes called "unnatural", and the phrase "naturally isomorphic" always refers to some pair of functors.
+
+</Definition>
+
+<Definition term="vertical composition and the functor category">
+
+If $\alpha : F \Rightarrow G$ and $\beta : G \Rightarrow H$, their **vertical composite** $\beta \circ \alpha : F \Rightarrow H$ has components $(\beta \circ \alpha)_A = \beta_A \circ \alpha_A$. The **identity** $1_F : F \Rightarrow F$ has components $\mathrm{id}_{F(A)}$. When $\mathcal{C}$ is small, the **functor category** $[\mathcal{C}, \mathcal{D}]$ (also written $\mathcal{D}^{\mathcal{C}}$) has the functors $\mathcal{C} \to \mathcal{D}$ as objects and the natural transformations between them as morphisms.
+
+</Definition>
+
+<Definition term="whiskering">
+
+For $\alpha : F \Rightarrow G$ with $F, G : \mathcal{C} \to \mathcal{D}$, and functors $K : \mathcal{B} \to \mathcal{C}$, $H : \mathcal{D} \to \mathcal{E}$, the **whiskered** transformations $\alpha K : FK \Rightarrow GK$ and $H\alpha : HF \Rightarrow HG$ have components $(\alpha K)_X = \alpha_{K(X)}$ and $(H\alpha)_A = H(\alpha_A)$. Both are natural (apply $K$ to the arrow, or $H$ to the square).
+
+</Definition>
+
+<Definition term="full, faithful, essentially surjective">
+
+A functor $F : \mathcal{C} \to \mathcal{D}$ is **faithful** if each map $\Hom_{\mathcal{C}}(A, B) \to \Hom_{\mathcal{D}}(FA, FB)$, $f \mapsto F(f)$, is injective; **full** if each is surjective; **fully faithful** if each is bijective. It is **essentially surjective** if every object of $\mathcal{D}$ is isomorphic to $F(A)$ for some object $A$ of $\mathcal{C}$.
+
+</Definition>
+
+<Definition term="equivalence of categories">
+
+An **equivalence of categories** is a functor $F : \mathcal{C} \to \mathcal{D}$ together with a functor $G : \mathcal{D} \to \mathcal{C}$ (a **quasi-inverse**) and natural isomorphisms
+
+$$
+\eta : \mathrm{id}_{\mathcal{C}} \cong G \circ F, \qquad \varepsilon : F \circ G \cong \mathrm{id}_{\mathcal{D}}.
+$$
+
+$\mathcal{C}$ and $\mathcal{D}$ are **equivalent**, $\mathcal{C} \simeq \mathcal{D}$, if there is an equivalence between them. An **isomorphism** of categories is the stricter notion $G \circ F = \mathrm{id}$ and $F \circ G = \mathrm{id}$ on the nose.
+
+</Definition>
+
+<Note>
+
+Equivalence is the right notion of sameness for categories precisely because it is phrased with isomorphisms instead of equalities of objects. Asking two objects of a category to be *equal* is almost never meaningful; asking them to be isomorphic is. Equivalence applies the same principle one level up.
+
+</Note>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="The double dual">
+
+Let $\cat{Vect}_k$ be the category of vector spaces over $k$ and linear maps. The double dual is a covariant functor $(-)^{**} : \cat{Vect}_k \to \cat{Vect}_k$: a linear map $f : V \to W$ gives $f^* : W^* \to V^*$, $\varphi \mapsto \varphi \circ f$, and then $f^{**} : V^{**} \to W^{**}$, $\xi \mapsto \xi \circ f^*$. The maps $\mathrm{ev}_V : V \to V^{**}$ form a natural transformation $\mathrm{ev} : \mathrm{id} \Rightarrow (-)^{**}$: for $v \in V$ and $\varphi \in W^*$,
+
+$$
+\big(f^{**} \circ \mathrm{ev}_V\big)(v)(\varphi) = \mathrm{ev}_V(v)\big(f^*\varphi\big) = (\varphi \circ f)(v) = \varphi(f v) = \mathrm{ev}_W(f v)(\varphi) = \big(\mathrm{ev}_W \circ f\big)(v)(\varphi).
+$$
+
+On the full subcategory $\cat{FinVect}_k$ of finite-dimensional spaces every $\mathrm{ev}_V$ is an isomorphism, so $\mathrm{ev}$ is a natural isomorphism $\mathrm{id} \cong (-)^{**}$ there.
+
+</Example>
+
+<Example title="The determinant, natural in the ring">
+
+Fix $n \ge 1$. For a commutative ring $R$, let $\mathrm{GL}_n(R)$ be the group of invertible $n \times n$ matrices over $R$ and $R^\times$ the group of units. Both are functors $\cat{CRing} \to \cat{Grp}$: a ring homomorphism $\varphi : R \to S$ acts on matrices entrywise and on units by restriction. The determinant $\det_R : \mathrm{GL}_n(R) \to R^\times$ is a group homomorphism, and the naturality square says
+
+$$
+\det_S\big(\varphi(M)\big) = \varphi\big(\det_R M\big) \qquad \text{for all } M \in \mathrm{GL}_n(R).
+$$
+
+This holds because $\det M = \sum_{\sigma \in S_n} \operatorname{sgn}(\sigma) \prod_i M_{i, \sigma(i)}$ is a polynomial with integer coefficients in the entries, and $\varphi$ preserves sums, products and integers. So $\det : \mathrm{GL}_n \Rightarrow (-)^\times$ is natural. By contrast, "the trace of $M$, as an element of $R^\times$" is not even a family of maps $\mathrm{GL}_n(R) \to R^\times$ (the trace of an invertible matrix need not be a unit), and the trace $\mathrm{GL}_n(R) \to R$ is not a group homomorphism: naturality is a condition on families of morphisms in the target category.
+
+</Example>
+
+<Example title="Equivariant maps are natural transformations">
+
+A group $G$ is a category $\mathbf{B}G$ with one object $\ast$ and one invertible arrow for each element of $G$. A functor $X : \mathbf{B}G \to \cat{Set}$ is a set $X(\ast)$ with an action of $G$, i.e. a **$G$-set**. A natural transformation $\alpha : X \Rightarrow Y$ has one component $\alpha_\ast : X(\ast) \to Y(\ast)$, and naturality at the arrow $g$ says $\alpha(g \cdot x) = g \cdot \alpha(x)$: **natural transformations between $G$-sets are exactly the $G$-equivariant maps.** So the functor category $[\mathbf{B}G, \cat{Set}]$ is the category of $G$-sets, and $[\mathbf{B}G, \cat{Vect}_k]$ is the category of linear representations of $G$.
+
+</Example>
+
+<Example title="Commutative squares are natural transformations">
+
+Let $\mathbf{2}$ be the category $0 \to 1$ with one non-identity arrow. A functor $\mathbf{2} \to \mathcal{D}$ is an arrow $u : D_0 \to D_1$ of $\mathcal{D}$, and a natural transformation from $u$ to $u' : D'_0 \to D'_1$ is a pair $(a_0, a_1)$ with $u' \circ a_0 = a_1 \circ u$ — a commutative square. The functor category $[\mathbf{2}, \mathcal{D}]$ is the **arrow category** of $\mathcal{D}$.
+
+</Example>
+
+<Example title="Polymorphic functions">
+
+On $\cat{Set}$, let $L(X)$ be the set of finite lists of elements of $X$, with $L(f)$ applying $f$ to every entry. Reversal $\mathrm{rev}_X : L(X) \to L(X)$ is natural: relabelling the entries and then reversing gives the same list as reversing and then relabelling. So is $X \to L(X)$, $x \mapsto [x, x]$, and $L(X) \to L(X)$, "drop the first entry". "Sort the list in increasing order" is **not** a natural transformation of $L$: it is not even defined for an arbitrary set $X$, since it needs an order on $X$, and on $L(\Z)$ it fails to commute with $f(n) = -n$.
+
+</Example>
+
+<Example title="Abelianisation is natural; the centre is not even a functor">
+
+For a group $G$ let $G^{\mathrm{ab}} = G/[G, G]$. A homomorphism $f : G \to H$ maps commutators to commutators, so it induces $f^{\mathrm{ab}}$, and the quotient maps $q_G : G \to G^{\mathrm{ab}}$ satisfy $f^{\mathrm{ab}} \circ q_G = q_H \circ f$: $q : \mathrm{id}_{\cat{Grp}} \Rightarrow (-)^{\mathrm{ab}}$ is natural. The centre $Z(G)$ looks just as canonical, but $G \mapsto Z(G)$ cannot be made into a functor $\cat{Grp} \to \cat{Grp}$ at all, whatever we try to do on morphisms: the composite $\Z/2 \hookrightarrow S_3 \twoheadrightarrow \Z/2$ (a transposition generates the first copy; the sign map is the second) is the identity, while $Z(\Z/2) = \Z/2$ and $Z(S_3) = 1$, so a functor would have to factor $\mathrm{id}_{Z(\Z/2)} = Z(\mathrm{id})$ through the trivial group $Z(S_3)$. (On the groupoid of groups and *isomorphisms* the centre is a functor, and the inclusions $Z(G) \hookrightarrow G$ are natural there: which arrows are allowed matters.)
+
+</Example>
+
+<Example title="Non-example: a basis is not natural">
+
+Given a basis $e_1, \dots, e_n$ of $V$, the dual basis gives an isomorphism $\theta_V : V \to V^*$, $e_i \mapsto e_i^*$. Already the shape of a naturality square is wrong: a linear map $f : V \to W$ gives $f^* : W^* \to V^*$, pointing the other way, so there is no square $\theta_W \circ f \overset{?}{=} f^{\ast} \circ \theta_V$ to check. The best we can ask is $f^* \circ \theta_W \circ f = \theta_V$, i.e. that $f$ preserves the bilinear form $\langle v, w \rangle = \theta_V(v)(w)$. For the dot product on $k^n$ this holds only for orthogonal $f$ — 8 of the 48 invertible maps of $\mathbb{F}_3^2$, as the computation below shows.
+
+</Example>
+
+<Example title="Equivalent but not isomorphic">
+
+Let $\cat{Mat}_k$ be the category whose objects are the natural numbers, with $\Hom(m, n)$ the set of $n \times m$ matrices over $k$ and composition matrix multiplication. The functor $\cat{Mat}_k \to \cat{FinVect}_k$, $n \mapsto k^n$, $A \mapsto (x \mapsto Ax)$, is an equivalence (proved below). The two categories are not isomorphic: $\cat{Mat}_k$ has one object of each dimension, $\cat{FinVect}_k$ has a proper class of them. In the same way, $\cat{FinSet}$ is equivalent to its full subcategory on the sets $\{1, \dots, n\}$, and a nonempty category in which all objects are isomorphic and every object has only the identity as endomorphism is equivalent to the category $\mathbf{1}$ with one object and one arrow.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems and proofs">
+
+<Theorem name="Theorem 1 (the functor category)">
+
+For categories $\mathcal{C}$ and $\mathcal{D}$, vertical composition of natural transformations is well defined, associative and unital, so functors $\mathcal{C} \to \mathcal{D}$ and natural transformations form a category $[\mathcal{C}, \mathcal{D}]$. If $\mathcal{C}$ is small and $\mathcal{D}$ locally small, its hom-classes are sets.
+
+</Theorem>
+
+<Proof>
+
+Let $\alpha : F \Rightarrow G$ and $\beta : G \Rightarrow H$, and $f : A \to B$. Using naturality of $\beta$ and then of $\alpha$,
+
+$$
+H(f) \circ (\beta_A \circ \alpha_A) = \beta_B \circ G(f) \circ \alpha_A = \beta_B \circ \alpha_B \circ F(f) = (\beta_B \circ \alpha_B) \circ F(f),
+$$
+
+so $\beta \circ \alpha$ is natural. The identity components $\mathrm{id}_{F(A)}$ are natural because $F(f) \circ \mathrm{id} = \mathrm{id} \circ F(f)$. Associativity and the unit laws hold componentwise, because they hold in $\mathcal{D}$. If $\mathcal{C}$ is small and $\mathcal{D}$ locally small, the natural transformations $F \Rightarrow G$ are elements of the set $\prod_A \Hom_{\mathcal{D}}(FA, GA)$, so they form a set.
+
+</Proof>
+
+<Theorem name="Theorem 2 (natural isomorphisms are the isomorphisms of the functor category)">
+
+A natural transformation $\alpha : F \Rightarrow G$ is an isomorphism in $[\mathcal{C}, \mathcal{D}]$ if and only if every component $\alpha_A$ is an isomorphism in $\mathcal{D}$.
+
+</Theorem>
+
+<Proof>
+
+If $\beta$ is inverse to $\alpha$ in the functor category, then componentwise $\beta_A \circ \alpha_A = \mathrm{id}$ and $\alpha_A \circ \beta_A = \mathrm{id}$. Conversely, suppose each $\alpha_A$ is invertible and put $\beta_A = \alpha_A^{-1}$. We must show that $\beta$ is natural: $F(f) \circ \beta_A = \beta_B \circ G(f)$ for $f : A \to B$. Start from the naturality of $\alpha$, $\alpha_B \circ F(f) = G(f) \circ \alpha_A$, compose with $\beta_B$ on the left and with $\beta_A$ on the right:
+
+$$
+F(f) \circ \beta_A = \beta_B \circ \alpha_B \circ F(f) \circ \beta_A = \beta_B \circ G(f) \circ \alpha_A \circ \beta_A = \beta_B \circ G(f).
+$$
+
+The point is that inverses of components are *automatically* natural; nothing new must be checked.
+
+</Proof>
+
+<Theorem name="Theorem 3 (naturality forces uniformity)">
+
+(a) Let $P : \cat{Set} \to \cat{Set}$ be the functor $P(X) = X \times X$, $P(f) = f \times f$. Every natural transformation $\alpha : P \Rightarrow \mathrm{id}_{\cat{Set}}$ is one of the two projections: either $\alpha_X(a, b) = a$ for all $X, a, b$, or $\alpha_X(a, b) = b$ for all $X, a, b$.
+
+(b) The only natural transformation $\mathrm{id}_{\cat{Set}} \Rightarrow \mathrm{id}_{\cat{Set}}$ is the identity.
+
+</Theorem>
+
+<Proof>
+
+(a) Let $B = \{0, 1\}$ and let $c = \alpha_B(0, 1) \in B$. Given any set $X$ and $(a, b) \in X \times X$, let $f : B \to X$ be the function $f(0) = a$, $f(1) = b$. Then $P(f)(0, 1) = (a, b)$, and naturality at $f$ gives
+
+$$
+\alpha_X(a, b) = \alpha_X\big(P(f)(0, 1)\big) = f\big(\alpha_B(0, 1)\big) = f(c).
+$$
+
+If $c = 0$ this is $a$ for every $X, a, b$; if $c = 1$ it is $b$. Both projections are indeed natural, since $f \times f$ followed by a projection is the projection followed by $f$.
+
+(b) If $\alpha_X : X \to X$ is natural, take $x \in X$ and $f : \{\ast\} \to X$ with $f(\ast) = x$. Naturality gives $\alpha_X(x) = \alpha_X(f(\ast)) = f(\alpha_{\{\ast\}}(\ast)) = f(\ast) = x$.
+
+</Proof>
+
+The proof used a single **test object**: a two-element set and one well-chosen element of $P(B)$. This is the first appearance of the <TopicLink id="math.cat.yoneda">Yoneda lemma</TopicLink>: $X \times X \cong \Hom(B, X)$ naturally in $X$, and natural transformations out of $\Hom(B, -)$ correspond to elements of the target at $B$.
+
+<Example title="Natural endomorphisms of the identity on abelian groups">
+
+The same test-object argument computes the natural transformations $\alpha : \mathrm{id}_{\cat{Ab}} \Rightarrow \mathrm{id}_{\cat{Ab}}$. Let $m = \alpha_\Z(1)$. For an abelian group $A$ and $a \in A$, the homomorphism $f : \Z \to A$, $1 \mapsto a$, gives $\alpha_A(a) = \alpha_A(f(1)) = f(\alpha_\Z(1)) = f(m) = m a$. Conversely, multiplication by any $m \in \Z$ is natural. So these natural transformations are exactly "multiplication by $m$", $m \in \Z$, and composition corresponds to multiplication of integers. On $\cat{Grp}$ the same argument shows $\alpha_G(g) = g^m$; but $g \mapsto g^m$ is a homomorphism for every group only when $m = 0$ or $m = 1$ (look at the free group on two letters), so the identity functor of $\cat{Grp}$ has just two natural endomorphisms.
+
+</Example>
+
+<Theorem name="Theorem 4 (the double dual)">
+
+$\mathrm{ev} : \mathrm{id} \Rightarrow (-)^{**}$ is a natural transformation on $\cat{Vect}_k$, and a natural isomorphism on $\cat{FinVect}_k$.
+
+</Theorem>
+
+<Proof>
+
+Naturality is the calculation in the first example. For $\dim V = n < \infty$: if $v \neq 0$, extend $v$ to a basis and let $\varphi$ be the coordinate functional of $v$; then $\mathrm{ev}_V(v)(\varphi) = 1 \neq 0$, so $\mathrm{ev}_V$ is injective. Since $\dim V^{**} = \dim V^* = n$, an injective linear map $V \to V^{**}$ is bijective.
+
+</Proof>
+
+For infinite-dimensional $V$, $\mathrm{ev}_V$ is still injective (the same argument, extending to a basis using Zorn's lemma) but never surjective: by the Erdős–Kaplansky theorem, $\dim V^* > \dim V$ when $\dim V$ is infinite. So naturality and invertibility are different questions — $\mathrm{ev}$ is natural everywhere and invertible only in finite dimension.
+
+<Theorem name="Theorem 5 (V is not naturally isomorphic to V*)">
+
+(a) The dual is a functor $(-)^* : \cat{Vect}_k^{\mathrm{op}} \to \cat{Vect}_k$, while the identity is a functor $\cat{Vect}_k \to \cat{Vect}_k$. A natural transformation requires two functors with the same domain and codomain, so "$\mathrm{id} \cong (-)^*$" is not a meaningful statement.
+
+(b) Restrict to the groupoid $\cat{Vect}_k^{\cong}$ of finite-dimensional spaces and linear *isomorphisms*, where $D(V) = V^*$, $D(f) = (f^{-1})^*$ is a covariant functor. If $k$ has more than three elements, there is no natural isomorphism $\mathrm{id} \Rightarrow D$ on $\cat{Vect}_k^{\cong}$ — not even on its full subcategory of one-dimensional spaces.
+
+</Theorem>
+
+<Proof>
+
+(a) is a matter of types: $(-)^*$ reverses the direction of arrows, $\mathrm{id}$ does not.
+
+(b) A natural $\theta : \mathrm{id} \Rightarrow D$ consists of linear maps $\theta_V : V \to V^*$, i.e. bilinear forms $\langle v, w \rangle_V = \theta_V(v)(w)$, with $(f^{-1})^* \circ \theta_V = \theta_W \circ f$ for every isomorphism $f : V \to W$. Evaluating at $v$ and then at $f(w)$ gives
+
+$$
+\langle f v, f w \rangle_W = \langle v, w \rangle_V .
+$$
+
+Take $V = W = k$ and $f(x) = \lambda x$ for $\lambda \in k^\times$. Every bilinear form on $k$ is $\langle v, w \rangle = c\, v w$ with $c = \langle 1, 1 \rangle$, and invariance gives $c \lambda^2 = c$. A field with more than three elements has some $\lambda \neq 0$ with $\lambda^2 \neq 1$, because $\lambda^2 = 1$ has at most two roots $\pm 1$. Then $c = 0$, so $\theta_k = 0$ is not an isomorphism.
+
+</Proof>
+
+Over $\mathbb{F}_2$ and $\mathbb{F}_3$ every unit satisfies $\lambda^2 = 1$, and small exceptions really occur: on $\mathbb{F}_2^2$ the pairing $\langle v, w \rangle = v_1 w_2 + v_2 w_1 = \det(v \; w)$ is invariant under all of $\mathrm{GL}_2(\mathbb{F}_2)$, because every invertible $2 \times 2$ matrix over $\mathbb{F}_2$ has determinant $1$. The second computation below finds all such exceptions for small $p$ and $n$. This is why careful statements of "$V \not\cong V^*$ naturally" specify both the morphisms and the field.
+
+<Theorem name="Theorem 6 (characterisation of equivalences)">
+
+A functor $F : \mathcal{C} \to \mathcal{D}$ is part of an equivalence of categories if and only if it is full, faithful and essentially surjective. The "if" direction uses the axiom of choice (for a proper class of objects, a global form of it).
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) Let $G$, $\eta : \mathrm{id} \cong GF$ and $\varepsilon : FG \cong \mathrm{id}$ be as in the definition.
+
+*Faithful.* For $f : A \to B$, naturality of $\eta$ says $GF(f) \circ \eta_A = \eta_B \circ f$, so $f = \eta_B^{-1} \circ GF(f) \circ \eta_A$. Thus $f$ is determined by $F(f)$: if $F(f) = F(g)$ then $f = g$.
+
+*Essentially surjective.* Every object $Y$ of $\mathcal{D}$ satisfies $Y \cong F(G(Y))$, via $\varepsilon_Y^{-1}$.
+
+*Full.* By symmetry ($F$ is a quasi-inverse of $G$, with $\varepsilon^{-1} : \mathrm{id}_{\mathcal{D}} \cong FG$), $G$ is faithful too. Let $h : F(A) \to F(B)$ and put $f = \eta_B^{-1} \circ G(h) \circ \eta_A : A \to B$. By naturality of $\eta$,
+
+$$
+GF(f) = \eta_B \circ f \circ \eta_A^{-1} = \eta_B \circ \eta_B^{-1} \circ G(h) \circ \eta_A \circ \eta_A^{-1} = G(h),
+$$
+
+and since $G$ is faithful, $F(f) = h$.
+
+($\Leftarrow$) For each object $Y$ of $\mathcal{D}$ *choose* an object $G(Y)$ of $\mathcal{C}$ and an isomorphism $\varepsilon_Y : F(G(Y)) \to Y$ (possible by essential surjectivity and choice). For $h : Y \to Y'$, the arrow $\varepsilon_{Y'}^{-1} \circ h \circ \varepsilon_Y : FG(Y) \to FG(Y')$ is $F$ of a **unique** arrow $G(Y) \to G(Y')$, because $F$ is full and faithful; call it $G(h)$. Uniqueness makes $G$ a functor: $F(G(h') \circ G(h)) = \varepsilon_{Y''}^{-1} h' \varepsilon_{Y'} \varepsilon_{Y'}^{-1} h \varepsilon_Y = F(G(h' h))$, so $G(h') \circ G(h) = G(h' h)$, and similarly for identities. By construction $\varepsilon_{Y'} \circ FG(h) = h \circ \varepsilon_Y$, so $\varepsilon : FG \Rightarrow \mathrm{id}$ is a natural isomorphism.
+
+For an object $A$ of $\mathcal{C}$, let $\eta_A : A \to GF(A)$ be the unique arrow with $F(\eta_A) = \varepsilon_{F(A)}^{-1}$. It is an isomorphism: if $\eta'_A$ is the unique arrow with $F(\eta'_A) = \varepsilon_{F(A)}$, then $F(\eta'_A \circ \eta_A) = \mathrm{id} = F(\mathrm{id})$, so $\eta'_A \circ \eta_A = \mathrm{id}$ by faithfulness, and likewise in the other order. Naturality of $\eta$ can be checked after applying the faithful functor $F$: for $f : A \to B$,
+
+$$
+F\big(GF(f) \circ \eta_A\big) = FGF(f) \circ \varepsilon_{FA}^{-1} = \varepsilon_{FB}^{-1} \circ F(f) = F\big(\eta_B \circ f\big),
+$$
+
+where the middle step is naturality of $\varepsilon$ at $F(f)$. Hence $\eta : \mathrm{id} \cong GF$, and $F$ is an equivalence.
+
+</Proof>
+
+<Theorem name="Corollary (linear algebra is matrix algebra)">
+
+For every field $k$ the functor $\cat{Mat}_k \to \cat{FinVect}_k$, $n \mapsto k^n$, is an equivalence of categories.
+
+</Theorem>
+
+<Proof>
+
+It is fully faithful because linear maps $k^m \to k^n$ correspond bijectively to $n \times m$ matrices, compatibly with composition. It is essentially surjective because a space of dimension $n$ has a basis, i.e. an isomorphism $k^n \cong V$. Theorem 6 gives a quasi-inverse — which *chooses a basis of every finite-dimensional space*. That choice is exactly what a quasi-inverse costs, and exactly why basis-free linear algebra and matrix algebra are "the same subject" without being "the same thing".
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Natural transformations in Lean and Mathlib">
+
+Mathlib writes a natural transformation $\alpha : F \Rightarrow G$ as `α : F ⟶ G` — a morphism in the functor category `C ⥤ D` — with components `α.app X` and the field `α.naturality`. Composition is written in **diagrammatic order**: `f ≫ g` means "first `f`, then `g`", that is $g \circ f$. So the naturality square $G(f) \circ \alpha_A = \alpha_B \circ F(f)$ appears as `F.map f ≫ α.app B = α.app A ≫ G.map f`.
+
+**Uniformity.** First the functor $X \mapsto X \times X$ and Theorem 3, stated twice: once with plain functions (exactly the human proof, using `ULift Bool` as the two-element test object in the right universe) and once for Mathlib's bundled natural transformations.
+
+<Lean decl="Lumenary.NaturalTransformations.sq" />
+
+<Lean decl="Lumenary.NaturalTransformations.natural_sq_to_id" />
+
+<Lean decl="Lumenary.NaturalTransformations.natTrans_sq_to_id" />
+
+<Lean decl="Lumenary.NaturalTransformations.natural_id_to_id" />
+
+<Lean decl="Lumenary.NaturalTransformations.natTrans_id_eq" />
+
+List reversal, as a natural transformation of Mathlib's list functor:
+
+<Lean decl="Lumenary.NaturalTransformations.reverseNat" />
+
+**Linear algebra.** The double-dual square holds by computation — after applying both sides to `v` and `φ`, Lean sees `φ (f v)` on each side and accepts `rfl`. Bijectivity in finite dimension is Mathlib's theorem. Then Theorem 5(b), in the form "a line over a field with a unit $\lambda$, $\lambda^2 \neq 1$, carries no nonzero automorphism-invariant pairing".
+
+<Lean decl="Lumenary.NaturalTransformations.double_dual_naturality" />
+
+<Lean decl="Lumenary.NaturalTransformations.double_dual_bijective" />
+
+<Lean decl="Lumenary.NaturalTransformations.no_invariant_pairing" />
+
+**The determinant** as an honest natural transformation between functors `CommRingCat ⥤ GrpCat`:
+
+<Lean decl="Lumenary.NaturalTransformations.glFunctor" />
+
+<Lean decl="Lumenary.NaturalTransformations.unitsFunctor" />
+
+<Lean decl="Lumenary.NaturalTransformations.detNat" />
+
+**The functor category** (Theorems 1 and 2) is built into Mathlib:
+
+<Lean decl="Lumenary.NaturalTransformations.comp_app" />
+
+<Lean decl="Lumenary.NaturalTransformations.isIso_of_components" />
+
+**Equivalences** (Theorem 6). The three parts of ($\Rightarrow$) are proved by hand, following the proof above; note how `full_of_equivalence` reuses `faithful_of_unitIso` for $G$, exactly as the human proof says "by symmetry". The ($\Leftarrow$) direction is Mathlib's `Functor.asEquivalence`, which uses choice (`Functor.objPreimage`).
+
+<Lean decl="Lumenary.NaturalTransformations.faithful_of_unitIso" />
+
+<Lean decl="Lumenary.NaturalTransformations.essSurj_of_counitIso" />
+
+<Lean decl="Lumenary.NaturalTransformations.full_of_equivalence" />
+
+<Lean decl="Lumenary.NaturalTransformations.equivalence_iff" />
+
+Finally, equivalent need not mean isomorphic: two isomorphic objects form a category equivalent to the one-object category, but no isomorphism of categories exists.
+
+<Lean decl="Lumenary.NaturalTransformations.codiscreteEquivalence" />
+
+<Lean decl="Lumenary.NaturalTransformations.codiscrete_not_isomorphic" />
+
+What is not formalised here: the equivalence $\cat{Mat}_k \simeq \cat{FinVect}_k$, the failure of surjectivity of $\mathrm{ev}$ in infinite dimension, and Theorem 5(b) for the full groupoid (we formalise its key step, the computation on a line).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: symmetry is not naturality">
+
+Theorem 3 says that only the projections are natural maps $X \times X \to X$. The first experiment searches all $16$ tables on a two-element set and all $3^9 = 19\,683$ tables on a three-element set. Asking only for compatibility with *bijections* — symmetry — leaves a third operation on $\{0, 1, 2\}$: $(a, a) \mapsto a$ and $(a, b) \mapsto$ "the third element". Compatibility with all functions $X \to X$ rules it out, and the experiment prints a non-injective map whose square fails. Naturality is stronger than symmetry precisely because it must commute with maps that *identify* elements.
+
+<Python id="natural_transformations_uniform_operations" />
+
+The second experiment studies Theorem 5(b) over small prime fields: it counts the non-degenerate bilinear forms on $\mathbb{F}_p^n$ that are invariant under every invertible matrix, and finds the exceptional cases over $\mathbb{F}_2$ and $\mathbb{F}_3$ that the theorem's hypothesis "more than three elements" leaves open.
+
+<Python id="natural_transformations_dual_pairings" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: which pairings survive a change of basis?">
+
+A natural isomorphism $V \cong V^*$ on the groupoid would be a pairing preserved by *every* invertible linear map. Try the presets below on the plane $\R^2$. A **shear** has determinant $1$: it preserves area — the pairing $\det(v \; w)$ — but changes lengths and angles, so it does not preserve the dot product. So does the preset **scaling** (factors $2$ and $\tfrac12$). A **rotation** preserves both the dot product and the area; a **reflection** preserves the dot product but reverses the sign of the area. Finally edit the entries to the uniform scaling $\begin{pmatrix} 2 & 0 \\ 0 & 2 \end{pmatrix}$: it multiplies *every* bilinear form by $4$, so no non-zero pairing survives all invertible maps — the plane version of Theorem 5(b).
+
+<MatrixTransform matrix={[[1, 1], [0, 1]]} mode="single" presets={["shear", "rotation", "scale", "reflection"]} title="Invariant pairings under change of basis" subtitle="Shears keep area, rotations keep the dot product, scalings keep neither." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Natural" means "obvious" or "canonical-looking".** Naturality is a precise condition: a family of morphisms, indexed by objects, making every naturality square commute. Some canonical-looking maps are not natural (the inclusions of centres $Z(G) \hookrightarrow G$ are natural only for isomorphisms: $G \mapsto Z(G)$ is not even a functor on $\cat{Grp}$), and some natural transformations look surprising (the two projections are the *only* natural maps $X \times X \to X$, but both are equally natural — naturality does not single out one).
+
+</Misconception>
+
+<Misconception>
+
+**"Equivalent categories are isomorphic."** An equivalence only requires $GF \cong \mathrm{id}$ and $FG \cong \mathrm{id}$, up to natural isomorphism. $\cat{Mat}_k$ and $\cat{FinVect}_k$ are equivalent but not isomorphic; a category with two isomorphic objects (and one arrow between any two objects) is equivalent to the one-object category but has a different number of objects. Equivalence ignores exactly the information — how many copies of each isomorphism class — that categorical constructions cannot detect.
+
+</Misconception>
+
+<Misconception>
+
+**"A natural transformation with injective (or bijective) components is all you need for an isomorphism of whatever you care about."** The double-dual map is natural with injective components on all of $\cat{Vect}_k$, but it is a natural *isomorphism* only on finite-dimensional spaces. Naturality and invertibility are independent requirements.
+
+</Misconception>
+
+<Misconception>
+
+**"If each $F(A)$ is isomorphic to $G(A)$, then $F \cong G$."** Objectwise isomorphisms need not assemble into a natural one. On finite-dimensional spaces, $V \cong V^*$ for every $V$, yet (Theorem 5) there is no natural isomorphism, even on the groupoid of isomorphisms over $\R$. The isomorphisms must be chosen *compatibly with all arrows*.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Natural transformations are homotopies">
+
+Let $\mathbf{2} = \{0 \to 1\}$. A natural transformation $\alpha : F \Rightarrow G$ between functors $\mathcal{C} \to \mathcal{D}$ is the same thing as a functor $H : \mathcal{C} \times \mathbf{2} \to \mathcal{D}$ with $H(-, 0) = F$ and $H(-, 1) = G$ — compare a homotopy $X \times [0, 1] \to Y$ between maps $f$ and $g$. This is more than an analogy: under the classifying-space construction (the geometric realisation of the nerve), $\mathbf{2}$ becomes the interval, and a natural transformation $F \Rightarrow G$ induces a homotopy $BF \simeq BG$ (Segal, 1968). In particular an equivalence of categories induces a homotopy equivalence of classifying spaces.
+
+Historically the influence ran the other way. In <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink> homology is a functor, the connecting maps of the long exact sequence are natural, and the Hurewicz map $\pi_1(X, x) \to H_1(X)$ is natural. The universal coefficient theorem gives isomorphisms $H_n(X; G) \cong (H_n(X) \otimes G) \oplus \mathrm{Tor}(H_{n-1}(X), G)$ that **split non-naturally**: the short exact sequence behind them is natural in $X$, but no splitting can be chosen naturally. Making such distinctions precise was exactly Eilenberg and Mac Lane's goal.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Klein's principle and the musical isomorphism">
+
+Klein's Erlangen programme studies a geometry through the quantities invariant under its symmetry group. Naturality is the same idea with a groupoid (or a category) of symmetries: a construction is natural for a class of maps when it commutes with all of them. On a smooth manifold $M$, the tangent bundle $TM$ and cotangent bundle $T^*M$ are both functorial (for diffeomorphisms), $T^{**}M \cong TM$ canonically, but an identification $TM \cong T^*M$ — the "musical isomorphism" $v \mapsto v^\flat = g(v, -)$ of Riemannian geometry — requires a metric $g$, and it is natural only for isometries. This is Theorem 5 in geometric dress: a pairing is a geometric structure, and only the maps preserving it see the identification as natural.
+
+The exceptional pairing on $\mathbb{F}_2^2$ is geometric too: $\det(v \; w)$ is the **area form** (a symplectic form), preserved exactly by the maps of determinant $1$, $\mathrm{SL}_2 = \mathrm{Sp}_2$. Over $\mathbb{F}_2$ every invertible matrix has determinant $1$, so area is preserved by everything.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Determinants, abelianisation and Morita equivalence">
+
+Algebra is full of natural transformations: the determinant $\mathrm{GL}_n \Rightarrow (-)^\times$; abelianisation $G \to G^{\mathrm{ab}}$; the canonical map $M \otimes_R N \to N \otimes_R M$ of modules; the inclusion of a module into its double dual. The test-object computation above shows that the natural endomorphisms of $\mathrm{id}_{\cat{Ab}}$ form the ring $\Z$, and more generally the natural endomorphisms of the identity functor of $R\text{-}\cat{Mod}$ form the centre $Z(R)$.
+
+Equivalence of categories gives algebra a coarser and more useful notion of sameness for rings. **Morita's theorem** (Kiiti Morita, 1958): for every ring $R$ and $n \ge 1$, the categories of left modules over $R$ and over the matrix ring $M_n(R)$ are equivalent, although the rings are not isomorphic. Properties that depend only on the module category — being semisimple, Noetherian, the centre, the lattice of two-sided ideals — are therefore shared by $R$ and $M_n(R)$.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Theorems for free">
+
+In a typed functional language, a function of type `∀ a. List a → List a` cannot inspect the elements it is given — it does not know their type — so it can only rearrange, copy or drop them by position. Reynolds' **parametricity** theorem (1983) makes this precise, and Wadler's "Theorems for free!" (1989) draws the consequence: every such function commutes with `map f`, i.e. it is a natural transformation of the list functor. A function of type `∀ a. (a, a) → a` must be `fst` or `snd` — the programming counterpart of Theorem 3(a). The two statements have different hypotheses (parametricity is a property of the terms of a language, naturality a property of a family of maps), but they express the same uniformity, and the first computation above shows that symmetry alone is not enough to obtain it.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="A 2-category, and the Yoneda lemma">
+
+Categories, functors and natural transformations form a **2-category** $\cat{Cat}$: besides vertical composition, transformations $\alpha : F \Rightarrow G$ (for $F, G : \mathcal{C} \to \mathcal{D}$) and $\beta : H \Rightarrow K$ (for $H, K : \mathcal{D} \to \mathcal{E}$) have a horizontal composite $\beta \ast \alpha : HF \Rightarrow KG$, $(\beta \ast \alpha)_A = \beta_{G A} \circ H(\alpha_A) = K(\alpha_A) \circ \beta_{F A}$, and the two compositions satisfy the interchange law. Equivalence is the notion of isomorphism appropriate to a 2-category. The "test object" proofs above are instances of the <TopicLink id="math.cat.yoneda">Yoneda lemma</TopicLink>: $\mathrm{Nat}(\Hom(A, -), F) \cong F(A)$, so $\mathrm{Nat}(\Hom(\{0,1\}, -), \mathrm{id}) \cong \{0, 1\}$ has exactly two elements, the two projections. Natural transformations are also the raw material of <TopicLink id="math.cat.adjunctions">adjunctions</TopicLink> and <TopicLink id="math.cat.limits-colimits">limits</TopicLink>: a cone is a natural transformation from a constant functor.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="arrows-that-compose" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Samuel Eilenberg** (born in Warsaw, trained in the Polish school of topology) and **Saunders Mac Lane** (USA) began collaborating in the early 1940s on group extensions and their role in the homology of spaces (the groups now called $\mathrm{Ext}$). Their 1942 note "Natural isomorphisms in group theory" and their 1945 paper "General theory of natural equivalences" introduced categories, functors and natural transformations, with the double dual as a leading example. Mac Lane later wrote that "category" was defined in order to define "functor", and "functor" in order to define "natural transformation".
+- Dualities that are now read as equivalences of categories predate the language: **Lev Pontryagin**'s duality for locally compact abelian groups (1934), **Marshall Stone**'s representation of Boolean algebras by spaces (1936), and **Israel Gelfand** and **Mark Naimark**'s theorem (1943) identifying commutative C*-algebras with algebras of functions on compact Hausdorff spaces.
+- In the 1950s equivalences became a working tool: **Kiiti Morita** (1958) characterised when module categories over two rings are equivalent, and **Alexander Grothendieck**'s work in homological algebra and algebraic geometry made "up to equivalence" the default way to compare categories. **Daniel Kan**'s 1958 paper on adjoint functors, the next lesson in this sequence, is built on natural transformations throughout.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Saunders Mac Lane, *Categories for the Working Mathematician* (1971; 2nd edition 1998), Chapters I and IV.3–4 — the classic, by one of the founders.
+- Emily Riehl, *Category Theory in Context* (2016), Sections 1.4–1.5 — natural transformations and equivalences, with many examples.
+- Tom Leinster, *Basic Category Theory* (2014), Chapter 1 — a gentle, precise first course.
+- Steve Awodey, *Category Theory* (2nd edition, 2010), Chapter 7.
+- Samuel Eilenberg and Saunders Mac Lane, "General theory of natural equivalences", *Transactions of the AMS* 58 (1945) — the founding paper, still readable.
+- Philip Wadler, "Theorems for free!", *Functional Programming Languages and Computer Architecture* (1989) — naturality from parametricity.
+- T. Y. Lam, *Lectures on Modules and Rings* (1999), Chapter 7 — Morita equivalence.
+
+</Section>

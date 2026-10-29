@@ -1,0 +1,467 @@
+---
+slug: categories
+topic: math.cat.categories
+title: Categories
+subtitle: Sets and functions, groups and homomorphisms, spaces and continuous maps, numbers ordered by $\le$ — one pattern of objects and composable arrows, and what it lets us see.
+level: ug1
+ages: Undergraduate
+minutes: 110
+order: 5016
+objectives:
+  - State the axioms of a category and verify them for $\cat{Set}$, $\cat{Grp}$, $\cat{Vect}_k$, $\cat{Top}$, a category of matrices and a poset regarded as a category
+  - Recognise a monoid as a category with one object and a preorder as a category with at most one morphism between any two objects
+  - Define isomorphisms in a category and prove that inverses are unique
+  - Prove that in $\cat{Set}$ the monomorphisms are the injections and the epimorphisms are the surjections, and that $\Z \to \Q$ is an epimorphism of rings that is not surjective
+  - Form the opposite category and use the duality principle to turn one theorem into two
+narrators: []
+lean:
+  - Lumenary.Categories.left_inv_eq_right_inv
+  - Lumenary.Categories.inverse_unique
+  - Lumenary.Categories.inv_eq_library
+  - Lumenary.Categories.Mat
+  - Lumenary.Categories.matCategory
+  - Lumenary.Categories.preorder_hom_unique
+  - Lumenary.Categories.preorder_iso_eq
+  - Lumenary.Categories.monoid_comp
+  - Lumenary.Categories.monoid_isIso_iff
+  - Lumenary.Categories.mono_iff_injective
+  - Lumenary.Categories.epi_iff_surjective
+  - Lumenary.Categories.types_mono_epi_library
+  - Lumenary.Categories.rat_hom_eq_of_eq_on_int
+  - Lumenary.Categories.int_to_rat_epi
+  - Lumenary.Categories.rat_hom_ext_library
+  - Lumenary.Categories.int_cast_not_surjective
+  - Lumenary.Categories.mono_comp
+  - Lumenary.Categories.epi_comp_library
+  - Lumenary.Categories.mono_iff_epi_op
+  - Lumenary.Categories.op_epi_iff_library
+compute: [categories_monos_epis]
+trails: [arrows-that-compose]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="The same pattern, again and again">
+
+Here are five facts from five different corners of mathematics.
+
+- If $f : A \to B$ and $g : B \to C$ are functions, then so is $g \circ f : A \to C$; composing is associative, and the identity function changes nothing.
+- If $f : G \to H$ and $g : H \to K$ are group homomorphisms, so is $g \circ f$; the identity of a group is a homomorphism.
+- If $f$ and $g$ are continuous maps of spaces, so is $g \circ f$; the identity map is continuous.
+- If $A$ is an $n \times m$ matrix and $B$ a $p \times n$ matrix, then $BA$ is a $p \times m$ matrix; $(CB)A = C(BA)$, and the identity matrix is neutral.
+- If $x \le y$ and $y \le z$ then $x \le z$; and $x \le x$.
+
+The last two involve no functions at all — yet they have the same shape: things, arrows between things, a way to chain arrows end to end that does not care about brackets, and arrows that do nothing. In the lesson on <TopicLink id="math.cat.composition">composition</TopicLink> you met this shape for sets and functions; in the lesson on <TopicLink id="math.cat.structure-preserving-maps">structure-preserving maps</TopicLink> you saw that homomorphisms compose too.
+
+A **category** is exactly this shape, made precise. Studying it pays twice. First, a theorem proved once for all categories is proved for sets, groups, spaces, matrices and orders at the same time. Second, it changes how we ask questions: instead of looking *inside* an object at its elements, we look at how it *relates* to everything else through arrows. Surprisingly much can be seen that way — even whether a function is injective.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Dots, arrows and paths">
+
+Picture a category as a diagram of dots (the **objects**) and arrows between them (the **morphisms**). Every path of arrows laid end to end can be shortened to a single arrow, its composite, and it does not matter in which order you do the shortening. Each dot has a loop that "stays put", which you can insert into or delete from any path.
+
+Two warnings, to be taken seriously from the start.
+
+1. **The arrows need not be functions.** In the category built from $(\Z, \le)$ there is one arrow $3 \to 7$ because $3 \le 7$, and no arrow $7 \to 3$. The arrow is not a rule that transforms anything; it is just the fact $3 \le 7$.
+2. **The objects need not have elements.** In the category of matrices below, the objects are the natural numbers $0, 1, 2, \dots$, and a morphism $m \to n$ is an $n \times m$ matrix. Asking for "the elements of the object $3$" makes no sense.
+
+So everything we say about a category must be said with objects, arrows, composition and identities alone. That restriction is the source of category theory's power: a definition phrased only with arrows can be applied in every category at once.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="category">
+
+A **category** $\cat{C}$ consists of
+
+- a collection of **objects** $A, B, C, \dots$;
+- for each pair of objects $A, B$, a collection $\Hom_{\cat{C}}(A, B)$ of **morphisms** (or arrows) from $A$ to $B$; we write $f : A \to B$;
+- for each object $A$, an **identity** morphism $\id_A : A \to A$;
+- for each pair $f : A \to B$, $g : B \to C$, a **composite** $g \circ f : A \to C$;
+
+such that for all $f : A \to B$, $g : B \to C$, $h : C \to D$:
+
+$$
+h \circ (g \circ f) = (h \circ g) \circ f \qquad \text{(associativity)}, \qquad f \circ \id_A = f = \id_B \circ f \qquad \text{(unit laws)}.
+$$
+
+</Definition>
+
+Only composable pairs have a composite: $g \circ f$ is defined when the target of $f$ is the source of $g$. A category is **small** if its objects and morphisms form sets, and **locally small** if each $\Hom(A, B)$ is a set. ($\cat{Set}$ itself is locally small but not small: there is no set of all sets.)
+
+<Definition term="isomorphism">
+
+A morphism $f : A \to B$ is an **isomorphism** if there is a morphism $g : B \to A$ with $g \circ f = \id_A$ and $f \circ g = \id_B$. Such a $g$ is called an **inverse** of $f$. Objects $A$ and $B$ are **isomorphic**, $A \cong B$, if there is an isomorphism between them.
+
+</Definition>
+
+<Definition term="monomorphism and epimorphism">
+
+A morphism $f : A \to B$ is a **monomorphism** (or is *monic*) if it can be cancelled on the left:
+
+$$
+f \circ g = f \circ h \implies g = h \qquad \text{for all objects } T \text{ and all } g, h : T \to A.
+$$
+
+It is an **epimorphism** (or is *epic*) if it can be cancelled on the right: $g \circ f = h \circ f \implies g = h$ for all $g, h : B \to T$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "T", tex: "T", row: 0, col: 0 },
+    { id: "A", tex: "A", row: 0, col: 1 },
+    { id: "B", tex: "B", row: 0, col: 2 },
+    { id: "S", tex: "S", row: 0, col: 3 },
+  ]}
+  arrows={[
+    { from: "T", to: "A", tex: "g" },
+    { from: "T", to: "A", tex: "h" },
+    { from: "A", to: "B", tex: "f" },
+    { from: "B", to: "S", tex: "k" },
+    { from: "B", to: "S", tex: "l" },
+  ]}
+  caption="$f$ is monic if $f \circ g = f \circ h$ forces $g = h$; epic if $k \circ f = l \circ f$ forces $k = l$."
+/>
+
+<Definition term="opposite category">
+
+The **opposite** $\cat{C}^{\mathrm{op}}$ of a category $\cat{C}$ has the same objects, and one morphism $f^{\mathrm{op}} : B \to A$ for each morphism $f : A \to B$ of $\cat{C}$. Composition is reversed: $f^{\mathrm{op}} \circ g^{\mathrm{op}} = (g \circ f)^{\mathrm{op}}$, and $\id_A^{\mathrm{op}}$ is the identity.
+
+</Definition>
+
+The axioms for $\cat{C}^{\mathrm{op}}$ are the axioms for $\cat{C}$ read backwards, so $\cat{C}^{\mathrm{op}}$ is a category, and $(\cat{C}^{\mathrm{op}})^{\mathrm{op}} = \cat{C}$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples, and some non-examples">
+
+<Example title="Categories of structured sets">
+
+| Category | Objects | Morphisms |
+| --- | --- | --- |
+| $\cat{Set}$ | sets | functions |
+| $\cat{Grp}$ | groups | group homomorphisms |
+| $\cat{Ring}$ | rings with $1$ | ring homomorphisms preserving $1$ |
+| $\cat{Vect}_k$ | vector spaces over a field $k$ | linear maps |
+| $\cat{Top}$ | topological spaces | continuous maps |
+
+In each case composition is composition of functions and the identities are identity functions. So associativity and the unit laws are inherited from $\cat{Set}$ (proved in the composition lesson); what must be checked is **closure**: that composites and identities are again morphisms. For $\cat{Grp}$: if $f, g$ are homomorphisms then $(g \circ f)(xy) = g(f(x) f(y)) = g(f(x))\, g(f(y))$, and $\id_G(xy) = xy = \id_G(x)\id_G(y)$. For $\cat{Top}$: if $U$ is open then $(g \circ f)^{-1}(U) = f^{-1}(g^{-1}(U))$ is open, and $\id^{-1}(U) = U$. For $\cat{Vect}_k$: composites and identities of linear maps are linear.
+
+</Example>
+
+<Example title="Matrices: objects without elements">
+
+Fix a field $k$. The category $\cat{Mat}_k$ has as objects the natural numbers. A morphism $m \to n$ is an $n \times m$ matrix over $k$ (it turns column vectors of length $m$ into column vectors of length $n$); composition is matrix multiplication, $B \circ A = BA$, and $\id_n = I_n$. The axioms are $C(BA) = (CB)A$ and $AI_m = A = I_n A$. An isomorphism $m \to n$ is an invertible matrix, which forces $m = n$ (rank–nullity). The objects are bare numbers: this category is not "sets with structure".
+
+</Example>
+
+<Example title="Preorders and posets">
+
+A **preorder** is a set $P$ with a reflexive, transitive relation $\le$. It becomes a category: the objects are the elements of $P$, and there is **exactly one** morphism $x \to y$ if $x \le y$, and none otherwise. Composition exists by transitivity, identities by reflexivity, and the laws hold automatically because between two objects there is at most one morphism, so any two parallel composites are equal.
+
+Conversely, a category with at most one morphism between any two objects *is* a preorder: put $x \le y$ when there is a morphism $x \to y$. Examples: $(\R, \le)$; the subsets of a set ordered by $\subseteq$; the positive integers ordered by divisibility, where $2 \to 6$ and $3 \to 6$ but neither $2 \to 3$ nor $3 \to 2$.
+
+In a preorder, $x \cong y$ exactly when $x \le y$ and $y \le x$. In a **poset** (antisymmetric preorder) isomorphic objects are therefore equal.
+
+</Example>
+
+<Example title="Monoids: categories with one object">
+
+A **monoid** $(M, \cdot, 1)$ — see <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink> — gives a category $\mathbf{B}M$ with a single object $\star$, morphisms $\star \to \star$ the elements of $M$, composition $y \circ x = y \cdot x$ and $\id_\star = 1$. Associativity and the unit laws of the category *are* the monoid axioms. Conversely, the morphisms $A \to A$ of any category form a monoid under composition, the **endomorphism monoid** $\mathrm{End}(A)$; so a category with one object is the same thing as a monoid.
+
+Examples: $(\N, +, 0)$ — morphisms are numbers, and "first $3$, then $5$" is $8$; the clock monoid $(\Z/12, +, 0)$; strings of letters under concatenation; the $2^2 = 4$ functions $\{0, 1\} \to \{0, 1\}$ under composition, a monoid that is not commutative. An isomorphism in $\mathbf{B}M$ is an element with a two-sided inverse — a **unit** of $M$. A **group** is a one-object category in which every morphism is an isomorphism.
+
+</Example>
+
+<Example title="Two very small categories">
+
+The category $\mathbf{1}$ has one object and only its identity. The category $\mathbf{2}$ has two objects $0, 1$ and, besides the identities, one morphism $0 \to 1$; it is the poset $\{0 < 1\}$. The morphism $0 \to 1$ is both monic and epic (there is nothing to cancel), but it is not an isomorphism. So "monic and epic" does *not* imply "isomorphism" in general — although in $\cat{Set}$ it does.
+
+</Example>
+
+<Example title="Non-examples">
+
+- The integers with an arrow $m \to n$ whenever $m < n$ (strictly): composites exist, but there is no identity $n \to n$. Not a category.
+- Sets, with morphisms the functions that are at most two-to-one. Identities qualify, but a composite of two two-to-one maps can be four-to-one. Composition is not closed. Not a category.
+- A directed graph by itself is not a category: it has arrows but no rule for composing them. (Every directed graph does generate a category, whose morphisms are the paths — the **free category** on the graph.)
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Isomorphisms, monos and epis">
+
+<Theorem name="Theorem 1 (inverses are unique)">
+
+Let $f : A \to B$. If $g : B \to A$ satisfies $g \circ f = \id_A$ (a **left inverse**) and $h : B \to A$ satisfies $f \circ h = \id_B$ (a **right inverse**), then $g = h$. In particular an isomorphism has exactly one inverse, written $f^{-1}$.
+
+</Theorem>
+
+<Proof>
+
+Using only the unit laws and associativity,
+
+$$
+g = g \circ \id_B = g \circ (f \circ h) = (g \circ f) \circ h = \id_A \circ h = h.
+$$
+
+If $g$ and $g'$ are both two-sided inverses of $f$, then $g$ is a left inverse and $g'$ a right inverse, so $g = g'$.
+
+</Proof>
+
+This is the same calculation that proves inverses in a monoid or group are unique — and now we see why: it uses nothing but the category axioms. The same goes for the next fact. If $f : A \to B$ and $g : B \to C$ are isomorphisms, so is $g \circ f$, with inverse $f^{-1} \circ g^{-1}$: indeed $(f^{-1} \circ g^{-1}) \circ (g \circ f) = f^{-1} \circ (g^{-1} \circ g) \circ f = f^{-1} \circ f = \id_A$, and similarly on the other side. Hence $\cong$ is an equivalence relation on objects.
+
+<Theorem name="Theorem 2 (monos and epis in Set)">
+
+In $\cat{Set}$, a function $f : A \to B$ is a monomorphism if and only if it is injective, and an epimorphism if and only if it is surjective.
+
+</Theorem>
+
+<Proof>
+
+*Mono $\Leftrightarrow$ injective.* Suppose $f$ is injective and $f \circ g = f \circ h$ for $g, h : T \to A$. For each $t \in T$, $f(g(t)) = f(h(t))$, so $g(t) = h(t)$; hence $g = h$. Conversely suppose $f$ is monic and $f(a) = f(a')$. Let $T = \{\ast\}$ be a one-element set and $g, h : T \to A$ the maps with $g(\ast) = a$, $h(\ast) = a'$. Then $f \circ g = f \circ h$, so $g = h$, so $a = a'$.
+
+*Epi $\Leftrightarrow$ surjective.* Suppose $f$ is surjective and $k \circ f = l \circ f$ for $k, l : B \to S$. Each $b \in B$ is $f(a)$ for some $a$, so $k(b) = k(f(a)) = l(f(a)) = l(b)$; hence $k = l$. Conversely suppose $f$ is epic. Let $S = \{0, 1\}$, let $k : B \to S$ be the indicator of the image, $k(b) = 1$ if $b = f(a)$ for some $a$ and $0$ otherwise, and let $l$ be constant at $1$. Then $k \circ f = l \circ f$ (both are constantly $1$), so $k = l$, so every $b$ is in the image.
+
+</Proof>
+
+The one-element set and the two-element set did all the work: elements of $A$ *are* maps $\{\ast\} \to A$, and subsets of $B$ *are* maps $B \to \{0, 1\}$. That is how arrows can see inside objects in $\cat{Set}$.
+
+In other categories, monos and epis can behave differently. In $\cat{Grp}$, $\cat{Vect}_k$ and $\cat{Top}$ the monomorphisms are again the injective morphisms. In $\cat{Grp}$ every epimorphism is surjective too, but the standard proof is a genuinely clever argument with permutations of the cosets of the image; we do not give it here. In rings, it fails:
+
+<Theorem name="Theorem 3 (an epimorphism that is not surjective)">
+
+In $\cat{Ring}$, the inclusion $\iota : \Z \to \Q$ is an epimorphism, but it is not surjective.
+
+</Theorem>
+
+<Proof>
+
+It is not surjective because $\tfrac12 \notin \Z$.
+
+Let $k, l : \Q \to R$ be ring homomorphisms with $k \circ \iota = l \circ \iota$, i.e. $k(n) = l(n)$ for every integer $n$. Take $q = a/b$ with $a, b \in \Z$, $b \neq 0$. In $\Q$, $\tfrac1b \cdot b = 1 = b \cdot \tfrac1b$, so in $R$ the element $k(\tfrac1b)$ is a two-sided inverse of $k(b)$, and $l(\tfrac1b)$ is a two-sided inverse of $l(b) = k(b)$. Inverses in the monoid $(R, \cdot)$ are unique (Theorem 1 for the one-object category $\mathbf{B}(R, \cdot)$), so $k(\tfrac1b) = l(\tfrac1b)$. Therefore $k(q) = k(a)\,k(\tfrac1b) = l(a)\,l(\tfrac1b) = l(q)$. So $k = l$.
+
+</Proof>
+
+The same argument shows that the inclusion of monoids $(\N, +) \to (\Z, +)$ is an epimorphism of monoids: a homomorphism out of $\Z$ is determined by its values on $\N$, because $-n$ must go to the inverse of the image of $n$.
+
+<Theorem name="Theorem 4 (isomorphisms in monoids and preorders)">
+
+(a) In the one-object category $\mathbf{B}M$ of a monoid, a morphism $x$ is an isomorphism exactly when $x$ is a unit of $M$. (b) In a poset regarded as a category, $x \cong y$ implies $x = y$.
+
+</Theorem>
+
+<Proof>
+
+(a) An inverse of the morphism $x$ is a morphism $y$ with $y \circ x = yx = 1$ and $x \circ y = xy = 1$: precisely a two-sided inverse in $M$. (b) An isomorphism $x \to y$ provides morphisms $x \to y$ and $y \to x$, that is $x \le y$ and $y \le x$; antisymmetry gives $x = y$.
+
+</Proof>
+
+So in $\mathbf{B}(\Z, \times)$ only $1$ and $-1$ are isomorphisms (compare the lesson on <TopicLink id="math.number.integers">integers</TopicLink>), and in $\mathbf{B}(\Z/n, \times)$ the isomorphisms are the residues coprime to $n$.
+
+### Duality
+
+Every statement about categories has a **dual**, obtained by reversing every arrow and every composite: "$f : A \to B$" becomes "$f : B \to A$", "$g \circ f$" becomes "$f \circ g$", and the rest of the statement is kept. For instance, the dual of "$f$ is a monomorphism" is "$f$ is an epimorphism", and the dual of "$A$ has exactly one morphism to every object" is "every object has exactly one morphism to $A$".
+
+<Theorem name="Theorem 5 (the duality principle)">
+
+If a statement about objects and morphisms holds in every category, so does its dual.
+
+</Theorem>
+
+<Proof>
+
+A statement $\Sigma$ holds of morphisms in $\cat{C}^{\mathrm{op}}$ exactly when its dual $\Sigma^{\mathrm{op}}$ holds of the corresponding morphisms in $\cat{C}$, because composition in $\cat{C}^{\mathrm{op}}$ is composition in $\cat{C}$ reversed. For example, $f^{\mathrm{op}}$ is monic in $\cat{C}^{\mathrm{op}}$ iff $f^{\mathrm{op}} \circ g^{\mathrm{op}} = f^{\mathrm{op}} \circ h^{\mathrm{op}} \Rightarrow g^{\mathrm{op}} = h^{\mathrm{op}}$, i.e. iff $g \circ f = h \circ f \Rightarrow g = h$, i.e. iff $f$ is epic in $\cat{C}$. Now suppose $\Sigma$ holds in every category, and let $\cat{C}$ be any category. Then $\Sigma$ holds in $\cat{C}^{\mathrm{op}}$, so $\Sigma^{\mathrm{op}}$ holds in $(\cat{C}^{\mathrm{op}})^{\mathrm{op}} = \cat{C}$.
+
+</Proof>
+
+<Example title="One proof, two theorems">
+
+*Claim:* a composite of monomorphisms is a monomorphism. If $f : A \to B$, $g : B \to C$ are monic and $(g \circ f) \circ x = (g \circ f) \circ y$, then $g \circ (f \circ x) = g \circ (f \circ y)$, so $f \circ x = f \circ y$ (cancel $g$), so $x = y$ (cancel $f$).
+
+*Dual claim, for free:* a composite of epimorphisms is an epimorphism. Likewise, "if $g \circ f$ is monic then $f$ is monic" dualises to "if $g \circ f$ is epic then $g$ is epic", and "every isomorphism is monic" dualises to "every isomorphism is epic".
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Categories in Lean and Mathlib">
+
+Mathlib has a large library of category theory built on the class `CategoryTheory.Category`. Two conventions to know before reading the code: composition is written in **diagrammatic order**, `f ≫ g` meaning "first `f`, then `g`" (our $g \circ f$), and the identity on `X` is `𝟙 X`.
+
+Theorem 1 is the calculation of the lesson, line by line, followed by its corollary and Mathlib's version:
+
+<Lean decl="Lumenary.Categories.left_inv_eq_right_inv" />
+
+<Lean decl="Lumenary.Categories.inverse_unique" />
+
+<Lean decl="Lumenary.Categories.inv_eq_library" />
+
+The category of matrices is a genuine instance of Mathlib's class. Its objects are natural numbers (wrapped in a structure so Lean does not confuse them with the order on $\N$); the proofs of the axioms are the laws of matrix multiplication:
+
+<Lean decl="Lumenary.Categories.Mat" />
+
+<Lean decl="Lumenary.Categories.matCategory" />
+
+Mathlib already regards every preorder as a category and every monoid as a one-object category (`SingleObj`). We use these to check two claims of the lesson: parallel morphisms in a preorder are equal, isomorphic elements of a poset are equal, and isomorphisms in $\mathbf{B}M$ are the units of $M$:
+
+<Lean decl="Lumenary.Categories.preorder_hom_unique" />
+
+<Lean decl="Lumenary.Categories.preorder_iso_eq" />
+
+<Lean decl="Lumenary.Categories.monoid_comp" />
+
+<Lean decl="Lumenary.Categories.monoid_isIso_iff" />
+
+Theorem 2, for Lean types and functions (the type-theoretic counterpart of $\cat{Set}$). The proofs use exactly the test objects of the lesson: the one-element type `PUnit`, and the type of propositions (truth values) in place of $\{0, 1\}$. Mathlib's category `Type u` wraps its morphisms in a structure, and it proves the same facts there:
+
+<Lean decl="Lumenary.Categories.mono_iff_injective" />
+
+<Lean decl="Lumenary.Categories.epi_iff_surjective" />
+
+<Lean decl="Lumenary.Categories.types_mono_epi_library" />
+
+Theorem 3: the independent proof follows the lesson (inverses are unique), then states the result as an epimorphism in Mathlib's category `RingCat`. Mathlib knows something stronger — any two ring homomorphisms out of $\Q$ are equal — because they automatically agree on $\Z$:
+
+<Lean decl="Lumenary.Categories.rat_hom_eq_of_eq_on_int" />
+
+<Lean decl="Lumenary.Categories.int_to_rat_epi" />
+
+<Lean decl="Lumenary.Categories.rat_hom_ext_library" />
+
+<Lean decl="Lumenary.Categories.int_cast_not_surjective" />
+
+Finally, composites of monos, and duality: `f.op` is the morphism of the opposite category `Cᵒᵖ` corresponding to `f`.
+
+<Lean decl="Lumenary.Categories.mono_comp" />
+
+<Lean decl="Lumenary.Categories.epi_comp_library" />
+
+<Lean decl="Lumenary.Categories.mono_iff_epi_op" />
+
+<Lean decl="Lumenary.Categories.op_epi_iff_library" />
+
+What is *not* formalised here: the duality principle as a single meta-theorem about all statements (it is a statement about the language we use, and Lean expresses each instance separately), and the theorem that epimorphisms of groups are surjective.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Deciding mono and epi by brute force">
+
+The definitions of monomorphism and epimorphism quantify over *every* test object $T$. For finite sets a computer can simply try them. The experiment below lists every function between sets with at most three elements, tests both cancellation properties against every map from or to a set with at most two elements, and compares the results with injectivity and surjectivity. It also asks which test sets are needed — and finds the one-element and two-element sets of the proof.
+
+<Python id="categories_monos_epis" />
+
+This is **exhaustive evidence** for small sets, not a proof for all sets. But notice what it suggests and what the proof confirms: one-element test sets suffice for monos, while epis need a two-element test set (against one-element test sets every function looks epic).
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: paths compose">
+
+Build composites along paths in a small diagram of finite sets. Choose arrows one after another; the widget refuses a step when the arrows do not line up (the target of one must be the source of the next). Compare the two bracketings of $h \circ g \circ f$, and insert identities anywhere in a path to see that nothing changes. Then ask yourself which of the arrows are monomorphisms or epimorphisms of $\cat{Set}$.
+
+<ArrowComposer />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Morphisms are functions."** In many categories they are, but not in general. In a poset regarded as a category, a morphism $x \to y$ is just the fact that $x \le y$; in $\cat{Mat}_k$ it is a matrix; in the category of a monoid it is an element. Definitions must use only composition and identities.
+
+</Misconception>
+
+<Misconception>
+
+**"Epimorphisms are surjective."** True in $\cat{Set}$ and $\cat{Grp}$, false in general: the inclusion $\Z \to \Q$ is an epimorphism of rings, and $\N \to \Z$ an epimorphism of monoids. Being epic means being cancellable on the right, nothing more.
+
+</Misconception>
+
+<Misconception>
+
+**"Objects have elements."** The objects of $\cat{Mat}_k$ are numbers and the single object of $\mathbf{B}M$ is a placeholder. Even in $\cat{Set}$, category theory recovers elements of $A$ only as morphisms $\{\ast\} \to A$.
+
+</Misconception>
+
+<Misconception>
+
+**"Monic and epic means isomorphism."** In $\cat{Set}$ yes (a bijection has an inverse function). But in the category $\mathbf{2} = \{0 \to 1\}$ the arrow $0 \to 1$ is monic and epic and not invertible, and in $\cat{Ring}$ the inclusion $\Z \to \Q$ is monic and epic and not an isomorphism.
+
+</Misconception>
+
+<Misconception>
+
+**"Being an isomorphism is a property of the underlying function."** It depends on the category. The identity map from $\R$ with the discrete topology to $\R$ with the usual topology is a continuous bijection — an isomorphism in $\cat{Set}$ — but not an isomorphism in $\cat{Top}$, because its inverse is not continuous.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Homeomorphisms, and paths as morphisms">
+
+In $\cat{Top}$ the isomorphisms are the **homeomorphisms**: continuous bijections whose inverses are continuous. The extra condition matters. The map $t \mapsto (\cos 2\pi t, \sin 2\pi t)$ from $[0, 1)$ to the circle $S^1$ is a continuous bijection, but $[0, 1)$ and $S^1$ are not homeomorphic: removing any point disconnects $[0, 1)$ unless it is the endpoint $0$, while removing any point of $S^1$ leaves it connected — and connectedness of complements is preserved by homeomorphisms. So "isomorphic" means "the same *as objects of this category*", and topology needs its own notion.
+
+Topology also supplies categories whose morphisms are not maps at all. In the **fundamental groupoid** $\Pi_1(X)$ of a space, the objects are the points of $X$ and a morphism $x \to y$ is a path from $x$ to $y$ up to homotopy with fixed ends; composition is "follow one path, then the other". Associativity holds only up to homotopy for actual paths — which is why one passes to homotopy classes — and every morphism is invertible (run the path backwards). The automorphisms of a point $x$ form the fundamental group $\pi_1(X, x)$: see <TopicLink id="math.geom.fundamental-group">homotopy and the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Groups are one-object categories of symmetries">
+
+A group is a category with one object in which every morphism is invertible. Geometrically, think of the object as a shape and the morphisms as its symmetries: for a square, the eight rotations and reflections of the dihedral group $D_4$, composed by doing one motion after another. Klein's Erlangen programme (1872) organised geometry by groups of transformations: Euclidean geometry studies what is invariant under isometries, affine geometry what is invariant under affine maps, projective geometry under projective maps. Category theory generalises this from one shape and its symmetries to many shapes and the structure-preserving maps *between* them — see <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Matrices are the category of finite-dimensional vector spaces">
+
+Choosing a basis of each finite-dimensional vector space identifies a linear map $k^m \to k^n$ with an $n \times m$ matrix and composition of linear maps with matrix multiplication. So the category $\cat{Mat}_k$, whose objects are mere numbers, captures all of finite-dimensional linear algebra: every finite-dimensional space is isomorphic to some $k^n$, and the isomorphisms $n \to n$ form the general linear group $\mathrm{GL}_n(k)$. (Making "captures" precise needs the notion of an *equivalence of categories*, a later topic.) Algebra is full of such recognitions: monoids are one-object categories, groups are one-object categories with inverses, and a ring is a one-object category whose hom-set is an abelian group with bilinear composition — a *preadditive* category with one object — which is the starting point of the categorical approach to <TopicLink id="math.cat.abelian-categories">homological algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Propositions and proofs">
+
+Logical propositions ordered by entailment form a preorder, hence a category: there is a morphism $P \to Q$ when $Q$ follows from $P$, identities are "$P$ entails $P$", and composition is chaining entailments. Refining this, one can keep track of *which* proof shows $Q$ from $P$: propositions as objects, proofs (up to a suitable equivalence) as morphisms, composition as substituting one proof into another. This is the beginning of **categorical logic** and of the Curry–Howard–Lambek correspondence between proofs, programs and morphisms of cartesian closed categories — see <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Types and programs compose">
+
+In a typed programming language, take the types as objects and the (total, side-effect-free) functions between them as morphisms; composition is running one function on the output of another, and the identity function returns its input. This is why many functional programming languages put composition (`.` in Haskell, `>>` in F#) at the centre, and why notions such as functors and monads moved from category theory into programming. The analogy has honest limits: real programs may loop forever or have side effects, so the actual category of a language must be defined with care.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="arrows-that-compose" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Samuel Eilenberg** (born in Warsaw, 1913) and **Saunders Mac Lane** (born in Connecticut, 1909) introduced categories, functors and natural transformations in "General theory of natural equivalences" (*Transactions of the AMS*, 1945). Their goal was to make precise the word "natural" in algebraic topology; categories were introduced, as they later said, to be able to define functors, and functors to define natural transformations.
+- In the 1950s category theory became a working language. Eilenberg and Norman Steenrod axiomatised homology theory with it (announced 1945, in book form 1952); **Alexander Grothendieck**'s "Tôhoku paper" (1957) introduced abelian categories to unify sheaf cohomology and homological algebra; **Daniel Kan** (1958) introduced adjoint functors.
+- **F. William Lawvere**'s thesis (1963) and later work used categories as a foundation for algebra and logic; topos theory followed (Lawvere and Myles Tierney, around 1970). Major schools developed in many places, among them the Sydney school of Max Kelly and Ross Street, and Montreal, Louvain-la-Neuve and Genoa.
+- Mac Lane's *Categories for the Working Mathematician* (1971) became the standard reference. Today categories are used across algebra, topology, logic, computer science and mathematical physics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Tom Leinster, *Basic Category Theory* (2014), chapter 1 — concise and friendly, with many examples; freely available from the author.
+- Steve Awodey, *Category Theory* (2006; 2nd ed. 2010) — written with logicians and computer scientists in mind.
+- Saunders Mac Lane, *Categories for the Working Mathematician* (1971; 2nd ed. 1998) — the classic.
+- Emily Riehl, *Category Theory in Context* (2016) — rich in examples from across mathematics.
+- F. William Lawvere and Stephen H. Schanuel, *Conceptual Mathematics* (2nd ed. 2009) — a gentle first introduction.
+
+</Section>

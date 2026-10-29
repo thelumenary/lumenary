@@ -1,0 +1,482 @@
+---
+slug: incompleteness
+topic: math.found.incompleteness
+title: Gödel's incompleteness theorems
+subtitle: Arithmetic can talk about its own proofs — and so no consistent, computably axiomatised theory of arithmetic proves every arithmetical truth, or its own consistency.
+level: grad
+ages: Graduate
+minutes: 130
+order: 7004
+objectives:
+  - Explain how formulas and proofs are coded by natural numbers, and why provability in a recursively axiomatised theory is expressed by a $\Sigma_1$ formula
+  - Prove the diagonal lemma and derive the first incompleteness theorem, in Rosser's form, for consistent recursively axiomatised theories extending Robinson arithmetic $\mathsf{Q}$
+  - State the second incompleteness theorem with the derivability conditions, and Tarski's undefinability theorem, and explain precisely what they do and do not say
+  - Derive incompleteness from the unsolvability of the halting problem
+  - Explain why complete decidable theories such as Presburger arithmetic and real closed fields escape the theorems
+narrators: []
+lean:
+  - Lumenary.Incompleteness.lawvere_fixed_point
+  - Lumenary.Incompleteness.cantor_from_lawvere
+  - Lumenary.Incompleteness.DiagSystem
+  - Lumenary.Incompleteness.DiagSystem.Expressible
+  - Lumenary.Incompleteness.DiagSystem.diagonal_lemma
+  - Lumenary.Incompleteness.DiagSystem.tarski_undefinability
+  - Lumenary.Incompleteness.DiagSystem.first_incompleteness
+  - Lumenary.Incompleteness.halting_undecidable
+  - Lumenary.Incompleteness.halting_incompleteness
+  - Lumenary.Incompleteness.formulas_countable
+  - Lumenary.Incompleteness.presburger_mul_not_definable
+compute: [incompleteness_diagonal_lemma, incompleteness_miu_enumeration]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Hilbert's question">
+
+In the 1920s David Hilbert proposed a programme for the foundations of mathematics: formalise each branch of mathematics in a precise axiomatic system, in which proofs are finite strings checkable by rule; show that the system is **complete** (every statement of its language is proved or refuted); and prove its **consistency** by "finitary" means that nobody could doubt. If it succeeded, mathematical truth would coincide with provability in a fixed, mechanically checkable system, and that system would certify its own reliability.
+
+In 1931 Kurt Gödel showed that both hopes fail for any system strong enough to do elementary arithmetic — and the reason is not a defect of a particular axiom system but a structural fact. A theory whose proofs can be checked mechanically can *talk about its own proofs*, because syntax can be coded in arithmetic. A diagonal argument, of the same shape as Cantor's, then produces a sentence that says, in effect, "I am not provable".
+
+Today every proof assistant, including the Lean system used throughout this curriculum, is a mechanical proof checker of exactly the kind Hilbert envisaged. The incompleteness theorems tell us what such systems can never do: there will always be true arithmetical statements that a given system does not prove, and a consistent system cannot prove its own consistency.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="The liar, tamed">
+
+The liar sentence "this sentence is false" is a paradox: it is true if and only if it is false. Gödel replaced *truth* by *provability*:
+
+$$
+G \quad\text{says}\quad \text{“}G \text{ is not provable in } T\text{.”}
+$$
+
+Now there is no paradox, only a dilemma. If $T$ proved $G$, then $T$ would prove a sentence asserting its own unprovability — so (if $T$ proves only truths) $G$ would be both provable and false. Hence $T$ does not prove $G$; and that is exactly what $G$ says, so $G$ is **true but unprovable in $T$**.
+
+Two ingredients make this rigorous, and both are mathematics rather than philosophy:
+
+1. **Arithmetisation.** Formulas and proofs are finite strings, so they can be coded by numbers. "$x$ is the code of a proof of the formula with code $y$" becomes an arithmetical relation between numbers, which the theory can express.
+2. **Diagonalisation.** A sentence cannot literally contain itself, but it can contain a *description* that evaluates to its own code — just as Cantor's diagonal sequence differs from the $n$-th listed sequence at place $n$.
+
+The common shape of these diagonal arguments was isolated by F. William Lawvere (1969): if every map $A \to B$ is of the form $e(a, -)$, then every map $f : B \to B$ has a fixed point. In the diagram, $\hat e(a, a') = e(a)(a')$ and the dashed map $g = f \circ \hat e \circ \Delta$ is the "diagonal"; if $g = e(a_0)$ then $b = e(a_0)(a_0)$ is a fixed point of $f$.
+
+<CommutativeDiagram
+  objects={[
+    { id: "AA", tex: "A \\times A", row: 0, col: 0 },
+    { id: "B1", tex: "B", row: 0, col: 1 },
+    { id: "A", tex: "A", row: 1, col: 0 },
+    { id: "B2", tex: "B", row: 1, col: 1 }
+  ]}
+  arrows={[
+    { from: "A", to: "AA", tex: "\\Delta" },
+    { from: "AA", to: "B1", tex: "\\hat e" },
+    { from: "B1", to: "B2", tex: "f" },
+    { from: "A", to: "B2", tex: "g", style: "dashed", labelSide: "right" }
+  ]}
+  caption="Lawvere's fixed-point theorem: if $e : A \to B^A$ is surjective, the diagonal map $g$ equals $e(a_0)$, and $e(a_0)(a_0)$ is a fixed point of $f$."
+/>
+
+Cantor's theorem is the case $B = \{0, 1\}$ with $f$ = negation, which has no fixed point, so no surjection $A \to 2^A$ exists. Tarski's theorem is the case where $B$ is the set of truth values of sentences and $f$ is negation. Gödel's theorem is the case where negation is replaced by "not provable", which *does* have a fixed point — the Gödel sentence.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Theories, codes and representability">
+
+We work in first-order logic (see <TopicLink id="math.found.completeness-theorem">the completeness theorem</TopicLink>) in the language $L_A = \{0, S, +, \times\}$ of arithmetic. The **numeral** of $n \in \N$ is the term $\overline{n} = S S \cdots S 0$ with $n$ copies of $S$.
+
+<Definition term="Robinson arithmetic and Peano arithmetic">
+
+**Robinson arithmetic** $\mathsf{Q}$ (R. M. Robinson, 1950) is the theory with the seven axioms
+
+$$
+\begin{aligned}
+&Sx \neq 0, \qquad Sx = Sy \to x = y, \qquad x \neq 0 \to \exists y\, (x = Sy),\\
+&x + 0 = x, \qquad x + Sy = S(x + y), \qquad x \times 0 = 0, \qquad x \times Sy = (x \times y) + x .
+\end{aligned}
+$$
+
+We write $x \le y$ for $\exists v\,(v + x = y)$. **Peano arithmetic** $\mathsf{PA}$ is $\mathsf{Q}$ together with the induction schema $\big(\varphi(0) \wedge \forall x\,(\varphi(x) \to \varphi(Sx))\big) \to \forall x\, \varphi(x)$ for every formula $\varphi$. $\mathsf{Q}$ has no induction at all; it cannot even prove $\forall x\,(0 + x = x)$.
+
+</Definition>
+
+<Definition term="consistent, complete, recursively axiomatised">
+
+A theory $T$ (a set of sentences, closed under consequence when convenient) is **consistent** if it proves no sentence together with its negation, and **complete** if for every sentence $\varphi$ of its language, $T \vdash \varphi$ or $T \vdash \neg\varphi$. It is **recursively axiomatised** if it has a decidable set of axioms (after coding sentences by numbers, below). Then the set of theorems of $T$ is computably enumerable: list all finite sequences of formulas and keep those that are proofs.
+
+</Definition>
+
+<Definition term="Gödel numbering">
+
+Fix an injective coding of the symbols by positive integers, $c(\cdot)$, and code a string $s_1 s_2 \cdots s_k$ by $\ulcorner s_1 \cdots s_k \urcorner = 2^{c(s_1)} 3^{c(s_2)} \cdots p_k^{c(s_k)}$, where $p_k$ is the $k$-th prime. A proof — a finite sequence of formulas — is coded by coding the sequence of the codes of its formulas the same way. The coding is injective and computable in both directions.
+
+</Definition>
+
+<Definition term="Δ₀ and Σ₁ formulas">
+
+A formula is $\Delta_0$ if all its quantifiers are bounded, $\forall x \le t$ or $\exists x \le t$; it is $\Sigma_1$ if it has the form $\exists \bar x\, \theta$ with $\theta$ in $\Delta_0$, and $\Pi_1$ if it has the form $\forall \bar x\, \theta$. The truth of a $\Delta_0$ sentence in $\N$ can be decided by a finite search.
+
+</Definition>
+
+<Definition term="representability">
+
+A relation $R \subseteq \N^k$ is **represented** in $T$ by a formula $\varphi(\bar x)$ if for all $\bar n$: when $R(\bar n)$ holds, $T \vdash \varphi(\overline{n_1}, \dots, \overline{n_k})$, and when it fails, $T \vdash \neg\varphi(\overline{n_1}, \dots, \overline{n_k})$. A function $f : \N^k \to \N$ is represented by $\varphi(\bar x, y)$ if for all $\bar n$: $T \vdash \forall y\, \big(\varphi(\bar{\overline{n}}, y) \leftrightarrow y = \overline{f(\bar n)}\big)$.
+
+</Definition>
+
+Three facts carry the technical weight. Their proofs are long but elementary; full treatments are in Smith (2013, chapters 11–20) and Boolos, Burgess and Jeffrey (2007, chapters 15–17).
+
+<Theorem name="Fact A (Σ₁-completeness of Q)">
+
+Every $\Sigma_1$ sentence that is true in $\N$ is provable in $\mathsf{Q}$. Moreover, for each $n$, $\mathsf{Q} \vdash \forall x\,\big(x \le \overline{n} \to x = \overline{0} \vee \cdots \vee x = \overline{n}\big)$ and $\mathsf{Q} \vdash \forall x\,(x \le \overline{n} \vee \overline{n} \le x)$.
+
+</Theorem>
+
+<Theorem name="Fact B (representability)">
+
+Every decidable relation and every computable total function on $\N$ is representable in $\mathsf{Q}$, hence in every consistent theory extending $\mathsf{Q}$.
+
+</Theorem>
+
+<Theorem name="Fact C (arithmetisation of proof)">
+
+If $T$ is recursively axiomatised, the relation "$m$ is the code of a $T$-proof of the formula with code $n$" is decidable (indeed primitive recursive, after replacing the axioms by an equivalent primitive recursive set — Craig's trick). Hence it is represented in $\mathsf{Q}$ by a formula $\mathrm{Prf}_T(x, y)$ that also defines it in $\N$ and can be chosen to be $\Sigma_1$. Then $\mathrm{Prov}_T(y) := \exists x\, \mathrm{Prf}_T(x, y)$ is a $\Sigma_1$ formula, true in $\N$ of exactly the codes of theorems of $T$.
+
+</Theorem>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Theories the theorems apply to">
+
+$\mathsf{Q}$, $\mathsf{PA}$, second-order arithmetic, and $\mathsf{ZFC}$ (which interprets $\mathsf{PA}$ by taking the finite von Neumann ordinals as numbers) are all recursively axiomatised and — we believe — consistent. Each is therefore incomplete, and none proves its own consistency. Adding the Gödel sentence as a new axiom does not help: $T + G_T$ is again recursively axiomatised and consistent, and has its own Gödel sentence.
+
+</Example>
+
+<Example title="Complete theories: not enough arithmetic">
+
+- **Presburger arithmetic**, the theory of $(\N, 0, 1, +)$, is complete and decidable (Presburger, 1929, by quantifier elimination). Multiplication is not definable in it — the formal section cites Mathlib's proof of this.
+- The theory of **real closed fields** — the first-order theory of $(\R, 0, 1, +, \times, <)$ — is complete and decidable (Tarski, published 1948 and 1951). The integers are not definable in $\R$ by a first-order formula, so arithmetic cannot be interpreted.
+- **True arithmetic** $\mathrm{Th}(\N)$, the set of all sentences true in $\N$, is complete and consistent — but by the first incompleteness theorem it is not recursively axiomatisable (indeed, by Tarski's theorem it is not even arithmetically definable).
+
+</Example>
+
+<Example title="A Gödel number">
+
+With symbol codes $c(0) = 1$, $c(S) = 3$ and $c(=) = 5$, the string "$S0$" has code $2^3 \cdot 3^1 = 24$, and "$0 = 0$" has code $2^1 \cdot 3^5 \cdot 5^1 = 2430$. Any injective computable coding would serve; the experiment below uses a bijective base-$k$ coding instead.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The diagonal lemma and the first theorem">
+
+Throughout, $T$ is a recursively axiomatised theory extending $\mathsf{Q}$.
+
+<Theorem name="Diagonal lemma (Gödel 1931; Carnap 1934)">
+
+For every formula $\varphi(y)$ with one free variable there is a sentence $G$ such that
+
+$$
+\mathsf{Q} \vdash G \leftrightarrow \varphi(\ulcorner G \urcorner),
+$$
+
+where $\ulcorner G \urcorner$ abbreviates the numeral of the code of $G$.
+
+</Theorem>
+
+<Proof>
+
+Let $\mathrm{diag} : \N \to \N$ send the code of a formula $\theta(x)$ to the code of the sentence $\theta(\overline{\ulcorner \theta \urcorner})$, and every other number to $0$. It is computable, so by Fact B some formula $D(x, y)$ represents it in $\mathsf{Q}$:
+
+$$
+\mathsf{Q} \vdash \forall y\,\big(D(\overline{n}, y) \leftrightarrow y = \overline{\mathrm{diag}(n)}\big) \quad\text{for every } n.
+$$
+
+Put $\psi(x) := \exists y\,\big(D(x, y) \wedge \varphi(y)\big)$, let $n = \ulcorner \psi \urcorner$ and let $G := \psi(\overline{n})$. By definition $\mathrm{diag}(n) = \ulcorner G \urcorner$. Reasoning in $\mathsf{Q}$,
+
+$$
+G \;\leftrightarrow\; \exists y\,\big(D(\overline{n}, y) \wedge \varphi(y)\big) \;\leftrightarrow\; \exists y\,\big(y = \ulcorner G \urcorner \wedge \varphi(y)\big) \;\leftrightarrow\; \varphi(\ulcorner G \urcorner). \qquad\blacksquare
+$$
+
+</Proof>
+
+Applying the lemma to $\neg\mathrm{Prov}_T(y)$ gives a **Gödel sentence** $G_T$ with $\mathsf{Q} \vdash G_T \leftrightarrow \neg\mathrm{Prov}_T(\ulcorner G_T \urcorner)$.
+
+<Theorem name="First incompleteness theorem, Gödel's form">
+
+(a) If $T$ is consistent, then $T \nvdash G_T$. (b) If moreover $T$ is $\Sigma_1$-sound (every $\Sigma_1$ sentence it proves is true in $\N$), then $T \nvdash \neg G_T$. Consequently $G_T$ is true in $\N$ but not provable in $T$.
+
+</Theorem>
+
+<Proof>
+
+(a) Suppose $m$ codes a $T$-proof of $G_T$. By Fact C, $\mathsf{Q} \vdash \mathrm{Prf}_T(\overline{m}, \ulcorner G_T \urcorner)$, so $T \vdash \mathrm{Prov}_T(\ulcorner G_T \urcorner)$, and by the diagonal equivalence $T \vdash \neg G_T$. Then $T$ is inconsistent.
+
+(b) If $T \vdash \neg G_T$, then $T \vdash \mathrm{Prov}_T(\ulcorner G_T \urcorner)$, a $\Sigma_1$ sentence; by $\Sigma_1$-soundness it is true, so $T \vdash G_T$, and $T$ is inconsistent, contradicting (a).
+
+Finally, $\mathsf{Q}$ is true in $\N$, so the diagonal equivalence holds in $\N$; since $T \nvdash G_T$, the sentence $\neg\mathrm{Prov}_T(\ulcorner G_T \urcorner)$ is true in $\N$, hence so is $G_T$.
+
+</Proof>
+
+Gödel's original hypothesis for (b) was $\omega$-consistency, which implies $\Sigma_1$-soundness. J. Barkley Rosser (1936) removed it with a cleverer sentence: "if I am provable, there is a *shorter* proof of my negation".
+
+<Theorem name="First incompleteness theorem, Rosser's form">
+
+If $T$ is a consistent, recursively axiomatised theory extending $\mathsf{Q}$, then $T$ is incomplete: there is a sentence $R$ with $T \nvdash R$ and $T \nvdash \neg R$.
+
+</Theorem>
+
+<Proof>
+
+Let $\mathrm{neg}$ be the computable function $\ulcorner \chi \urcorner \mapsto \ulcorner \neg\chi \urcorner$, and write $\mathrm{Prf}_T(z, \mathrm{neg}(y))$ for the formula expressing this via a representing formula (Fact B). By the diagonal lemma there is a sentence $R$ with
+
+$$
+T \vdash R \leftrightarrow \forall x\,\Big(\mathrm{Prf}_T(x, \ulcorner R \urcorner) \to \exists z \le x\; \mathrm{Prf}_T(z, \ulcorner \neg R \urcorner)\Big).
+$$
+
+*$T \nvdash R$.* Suppose $m$ codes a proof of $R$. As $T$ is consistent, no number codes a proof of $\neg R$, so by Fact C, $T \vdash \neg\mathrm{Prf}_T(\overline{k}, \ulcorner \neg R \urcorner)$ for each $k \le m$. By Fact A, every $z \le \overline{m}$ is one of $\overline{0}, \dots, \overline{m}$, so $T \vdash \neg\exists z \le \overline{m}\, \mathrm{Prf}_T(z, \ulcorner \neg R \urcorner)$. Together with $T \vdash \mathrm{Prf}_T(\overline{m}, \ulcorner R \urcorner)$ (take $x = \overline{m}$) this gives $T \vdash \neg R$, contradicting consistency.
+
+*$T \nvdash \neg R$.* Suppose $m$ codes a proof of $\neg R$, so $T \vdash \mathrm{Prf}_T(\overline{m}, \ulcorner \neg R \urcorner)$. As $T$ is consistent, $T \nvdash R$, so $T \vdash \neg\mathrm{Prf}_T(\overline{k}, \ulcorner R \urcorner)$ for each $k \le m$. Now argue inside $T$: let $x$ satisfy $\mathrm{Prf}_T(x, \ulcorner R \urcorner)$. By Fact A, $x \le \overline{m}$ or $\overline{m} \le x$. The first case is impossible, since then $x$ is one of $\overline{0}, \dots, \overline{m}$; so $\overline{m} \le x$, and $z = \overline{m}$ witnesses $\exists z \le x\; \mathrm{Prf}_T(z, \ulcorner \neg R \urcorner)$. Hence $T \vdash R$, again contradicting consistency.
+
+With more care in the choice of $\mathrm{Prf}_T$, the Rosser sentence can be taken to be (equivalent to) a $\Pi_1$ sentence, like the Gödel sentence.
+
+</Proof>
+
+</Section>
+
+<Section id="second" kind="proof" title="The second theorem, and Tarski">
+
+Let $\mathrm{Con}_T$ be the sentence $\neg\mathrm{Prov}_T(\ulcorner 0 = S0 \urcorner)$, with $\mathrm{Prov}_T$ the standard $\Sigma_1$ provability formula of Fact C. When $T$ extends $\mathsf{PA}$, it satisfies the **Hilbert–Bernays–Löb derivability conditions**: for all sentences $\varphi, \psi$,
+
+- **D1** if $T \vdash \varphi$ then $T \vdash \mathrm{Prov}_T(\ulcorner \varphi \urcorner)$;
+- **D2** $T \vdash \mathrm{Prov}_T(\ulcorner \varphi \to \psi \urcorner) \to \big(\mathrm{Prov}_T(\ulcorner \varphi \urcorner) \to \mathrm{Prov}_T(\ulcorner \psi \urcorner)\big)$;
+- **D3** $T \vdash \mathrm{Prov}_T(\ulcorner \varphi \urcorner) \to \mathrm{Prov}_T(\ulcorner \mathrm{Prov}_T(\ulcorner \varphi \urcorner) \urcorner)$.
+
+D1 is Fact A applied to a true $\Sigma_1$ sentence; D2 formalises modus ponens; D3, the hard one, is the formalisation inside $\mathsf{PA}$ of Fact A itself (it needs induction; see Boolos 1993, chapter 2).
+
+<Theorem name="Second incompleteness theorem (Gödel 1931; Hilbert–Bernays 1939)">
+
+If $T$ is consistent, recursively axiomatised and extends $\mathsf{PA}$, then $T \nvdash \mathrm{Con}_T$.
+
+</Theorem>
+
+<Proof>
+
+Write $\square\varphi$ for $\mathrm{Prov}_T(\ulcorner \varphi \urcorner)$, $\bot$ for $0 = S0$ and $G$ for $G_T$, so $T \vdash G \leftrightarrow \neg\square G$.
+
+1. From $T \vdash \square G \to \neg G$, by D1 and D2: $T \vdash \square\square G \to \square\neg G$.
+2. By D3: $T \vdash \square G \to \square\square G$; so $T \vdash \square G \to \square\neg G$.
+3. Since $T \vdash G \to (\neg G \to \bot)$, D1 and D2 (twice) give $T \vdash \square G \to (\square\neg G \to \square\bot)$.
+4. From 2 and 3: $T \vdash \square G \to \square\bot$; contrapositively $T \vdash \neg\square\bot \to \neg\square G$, that is, $T \vdash \mathrm{Con}_T \to G$.
+
+If $T \vdash \mathrm{Con}_T$, then $T \vdash G$, contradicting part (a) of the first theorem.
+
+</Proof>
+
+The proof shows more: $T \vdash \mathrm{Con}_T \to G_T$, and in fact $T \vdash \mathrm{Con}_T \leftrightarrow G_T$. Löb (1955) refined the argument to: if $T \vdash \square\varphi \to \varphi$ then $T \vdash \varphi$ — the second theorem is the case $\varphi = \bot$.
+
+<Theorem name="Tarski's undefinability theorem (1933)">
+
+There is no formula $\mathrm{True}(y)$ of $L_A$ such that, for every sentence $\varphi$, $\N \models \varphi \leftrightarrow \mathrm{True}(\ulcorner \varphi \urcorner)$. The set of codes of true arithmetical sentences is not arithmetically definable.
+
+</Theorem>
+
+<Proof>
+
+Apply the diagonal lemma to $\neg\mathrm{True}(y)$: some sentence $L$ satisfies $\mathsf{Q} \vdash L \leftrightarrow \neg\mathrm{True}(\ulcorner L \urcorner)$, so this holds in $\N$. If $\mathrm{True}$ defined truth, we would have $\N \models L \leftrightarrow \neg L$.
+
+</Proof>
+
+Since $\mathrm{Prov}_T$ *is* definable, Tarski's theorem gives another proof that for a sound $T$, provability and truth differ — without exhibiting the witness.
+
+</Section>
+
+<Section id="halting" kind="proof" title="Incompleteness from the halting problem">
+
+A computability-theoretic route, due essentially to Turing (1936) and Kleene, makes incompleteness look inevitable. Recall from <TopicLink id="math.comp.computability">computability</TopicLink> that the halting set $K = \{(c, n) : \text{program } c \text{ halts on input } n\}$ is computably enumerable but not decidable, so its complement is not computably enumerable.
+
+<Theorem name="Theorem (Turing–Kleene incompleteness)">
+
+Let $T \supseteq \mathsf{Q}$ be recursively axiomatised and sound (every theorem is true in $\N$). For each program $c$ and input $n$ let $H_{c,n}$ be the natural $\Sigma_1$ sentence "the computation of $c$ on $n$ halts". Then there are $c, n$ such that $\neg H_{c,n}$ is true but $T \nvdash \neg H_{c,n}$.
+
+</Theorem>
+
+<Proof>
+
+The set $\{(c, n) : T \vdash \neg H_{c,n}\}$ is computably enumerable (list the theorems of $T$). By soundness it is contained in the complement of $K$. If it contained every pair outside $K$ it would equal the complement of $K$, which would then be computably enumerable — so $K$ would be decidable, which it is not.
+
+</Proof>
+
+This version needs soundness. Using a pair of computably inseparable c.e. sets instead of $K$ recovers Rosser's version, which needs only consistency. The theorem also says something Gödel's construction hides: the unprovable sentences include very concrete ones — "this particular program never halts". By the MRDP theorem (see the viewpoints) they include "this particular polynomial equation has no solution in natural numbers".
+
+</Section>
+
+<Section id="formal" kind="formal" title="The diagonal argument in Lean">
+
+Mathlib does not contain Gödel's theorems for $\mathsf{PA}$: Facts A–C are long and not yet formalised there. The Lean module therefore proves the *logical skeleton* of the theorems in full, with the arithmetical facts as explicit hypotheses, and proves one genuine incompleteness theorem about programs from Mathlib's computability library.
+
+First, Lawvere's fixed-point theorem and Cantor's theorem as its corollary:
+
+<Lean decl="Lumenary.Incompleteness.lawvere_fixed_point" />
+
+<Lean decl="Lumenary.Incompleteness.cantor_from_lawvere" />
+
+Next, an abstract **diagonalisable system** in the sense of Smullyan (1992): formulas, sentences, Gödel numbers, substitution of numerals, negation, truth and provability. A set of numbers is *expressible* if some formula defines it.
+
+<Lean decl="Lumenary.Incompleteness.DiagSystem" />
+
+<Lean decl="Lumenary.Incompleteness.DiagSystem.Expressible" />
+
+The diagonal lemma is proved exactly as on paper, by a three-step `calc` chain. Its hypothesis `hdiag` — expressible sets are closed under taking preimages along `diag` — is the abstract counterpart of "the diagonal function is representable" (Fact B):
+
+<Lean decl="Lumenary.Incompleteness.DiagSystem.diagonal_lemma" />
+
+From it, Tarski's theorem and the semantic first incompleteness theorem. Here `hprov` ("the provable codes form an expressible set") stands for Fact C, and `sound` for soundness. In the arithmetical setting all four hypotheses are theorems; here they are assumptions, and the formal content is that the conclusions follow from them by the diagonal argument and nothing else.
+
+<Lean decl="Lumenary.Incompleteness.DiagSystem.tarski_undefinability" />
+
+<Lean decl="Lumenary.Incompleteness.DiagSystem.first_incompleteness" />
+
+The computability route needs no hypotheses about arithmetic at all. Mathlib codes programs as `Nat.Partrec.Code` and proves the halting problem undecidable and its complement not semi-decidable. The theorem `halting_incompleteness` is the Turing–Kleene theorem above: any computably enumerable set of sentences that is sound for non-halting statements misses some true one.
+
+<Lean decl="Lumenary.Incompleteness.halting_undecidable" />
+
+<Lean decl="Lumenary.Incompleteness.halting_incompleteness" />
+
+Finally two library facts: formulas over a countable language can be numbered (the first step of arithmetisation), and multiplication is not definable in Presburger arithmetic — which is why Presburger arithmetic can be complete.
+
+<Lean decl="Lumenary.Incompleteness.formulas_countable" />
+
+<Lean decl="Lumenary.Incompleteness.presburger_mul_not_definable" />
+
+**What is not formalised here:** the representability theorem (Fact B), the arithmetisation of $\mathsf{Q}$-provability (Fact C), Rosser's theorem for consistent theories, and the second incompleteness theorem with its derivability conditions. Complete formalisations of the incompleteness theorems exist outside Mathlib — for example Shankar's in the Boyer–Moore prover (1986), O'Connor's in Coq (2005) and Paulson's in Isabelle/HOL (2015, including the second theorem), and there are Lean 4 developments outside Mathlib.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing a self-referential sentence">
+
+The first experiment Gödel-numbers strings, computes the function $\mathrm{diag}$ and checks the fixed-point identity $\mathrm{diag}(\ulcorner\varphi\urcorner) = \ulcorner G \urcorner$ for $G = \varphi(\ulcorner\varphi\urcorner)$. With $\varphi(x) = $ "$P(\mathrm{diag}(x))$" for a *decidable* property $P$ of codes, it evaluates $G$ and confirms $G \leftrightarrow P(\ulcorner G \urcorner)$. With $P$ = "is true", the liar sentence has no consistent truth value. Notice that $G$ does not contain its own code (the code is far longer than $G$): it contains a term that *evaluates* to its code.
+
+<Python id="incompleteness_diagonal_lemma" />
+
+The second experiment makes the asymmetry between theorems and non-theorems tangible on a toy formal system, Hofstadter's MIU system. Its theorems can be listed mechanically, but no amount of listing shows that MU is *not* a theorem; an invariant (the number of I's is never divisible by 3) proves it. For a recursively axiomatised theory of arithmetic, the incompleteness theorems say that some truths of the second kind have no proof in the theory at all.
+
+<Python id="incompleteness_miu_enumeration" />
+
+Both are exact computations; neither computes provability in $\mathsf{PA}$, which is undecidable.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: the diagonal">
+
+Gödel's construction is a diagonal argument. In the widget, every list of binary sequences you write is defeated by the flipped diagonal. Change an entry on the diagonal and watch the new sequence change at exactly that place.
+
+<DiagonalBuilder />
+
+Compare with the diagonal lemma: the "list" is the list of formulas $\theta_0(x), \theta_1(x), \dots$ in one free variable, the entry in row $m$ and column $n$ is the sentence $\theta_m(\overline{n})$, and the diagonal is $n \mapsto \theta_n(\overline{n})$. Cantor *flips* the diagonal to escape the list; Gödel applies $\neg\mathrm{Prov}$ to the diagonal and finds that the result lies *on* the list — at the row of $\psi$ — which produces the fixed point.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Gödel showed that some truths can never be known."** The theorems concern provability in a *fixed* formal theory. The Gödel sentence of $\mathsf{PA}$ is provable in $\mathsf{PA} + \mathrm{Con}_{\mathsf{PA}}$, and we know it is true (given that $\mathsf{PA}$ is consistent). What is impossible is a single consistent, recursively axiomatised theory that proves all arithmetical truths.
+
+</Misconception>
+
+<Misconception>
+
+**"The theorems apply to every axiomatic system."** They need two hypotheses: the theory is recursively axiomatised (true arithmetic $\mathrm{Th}(\N)$ is complete but not), and it interprets enough arithmetic (Presburger arithmetic and the theory of real closed fields are complete and decidable). Group theory is incomplete for a different and much simpler reason: it has non-isomorphic models.
+
+</Misconception>
+
+<Misconception>
+
+**"The second theorem leaves the consistency of $\mathsf{PA}$ unsupported."** It says only that $\mathsf{PA}$ cannot prove its own (standard) consistency statement. $\mathrm{Con}_{\mathsf{PA}}$ is provable in stronger systems — in $\mathsf{ZFC}$, which has a model of $\mathsf{PA}$, and in primitive recursive arithmetic plus induction up to $\varepsilon_0$ (Gentzen 1936; see <TopicLink id="math.found.proof-theory">proof theory</TopicLink>). Whether those proofs add confidence is a philosophical question; that they exist is a theorem.
+
+</Misconception>
+
+<Misconception>
+
+**"Unprovable sentences are always artificial self-referential tricks."** Paris and Harrington (1977) found a natural strengthening of the finite Ramsey theorem that is true but unprovable in $\mathsf{PA}$; Goodstein's theorem (see the proof theory lesson) is another. By the MRDP theorem, for each such $T$ some Diophantine equation has no solutions but $T$ cannot prove it.
+
+</Misconception>
+
+<Misconception>
+
+**"Adding the Gödel sentence as an axiom completes the theory."** $T + G_T$ is still consistent and recursively axiomatised, so it has its own undecided sentence. Incompleteness is not a gap that can be filled; it regenerates.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="The space of completions is a Cantor set">
+
+Let $S(T)$ be the set of complete consistent theories extending $T$ (in the same language), with the topology whose basic open sets are $[\varphi] = \{\Gamma \in S(T) : \varphi \in \Gamma\}$. It is the Stone space of the Lindenbaum algebra of $T$: compact, Hausdorff and totally disconnected, and second countable because there are countably many sentences. A point $\Gamma$ is **isolated** exactly when $\{\Gamma\} = [\varphi]$ for some $\varphi$, that is, when $T + \varphi$ is consistent and complete. For $T = \mathsf{PA}$, Rosser's theorem says that no consistent $T + \varphi$ is complete — so $S(\mathsf{PA})$ has no isolated points. By Brouwer's characterisation (1910), a non-empty compact metrisable totally disconnected space without isolated points is homeomorphic to the Cantor set. Incompleteness, topologically: the completions of $\mathsf{PA}$ form a Cantor set, and its Lindenbaum algebra is the countable atomless Boolean algebra. (Compare <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.)
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Incompleteness as a shadow of undecidability">
+
+From the computer scientist's side, a recursively axiomatised theory is a program that enumerates theorems. If it were complete and consistent, it would decide every sentence — and so (by Fact A) would decide the halting problem. Chaitin (1974) gave a quantitative version: for each consistent recursively axiomatised $T$ extending $\mathsf{Q}$ there is a constant $L$ such that $T$ proves no sentence of the form "the Kolmogorov complexity of the string $s$ exceeds $L$", although all but finitely many strings have complexity above $L$. The proof is a formalised Berry paradox: a short program that searches $T$'s theorems for such a statement would itself describe $s$ in fewer than $L$ bits.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Unprovable Diophantine equations">
+
+The **MRDP theorem** (Matiyasevich 1970, completing work of Davis, Putnam and Julia Robinson) says that every computably enumerable set $A \subseteq \N$ is Diophantine: there is a polynomial $p(a, x_1, \dots, x_k)$ with integer coefficients such that $a \in A$ if and only if $p(a, \bar x) = 0$ has a solution in natural numbers. Taking $A$ to be the c.e. set of codes of theorems of $T$, one obtains, for each consistent recursively axiomatised $T \supseteq \mathsf{Q}$, a specific polynomial equation with no solution in $\N$ such that $T$ cannot prove that it has none. Hilbert's tenth problem — an algorithm deciding solvability of Diophantine equations — is unsolvable for the same reason.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Natural independence">
+
+Ramsey's theorem says that for all $n, k, m$ there is an $N$ such that every colouring of the $n$-element subsets of $\{0, \dots, N - 1\}$ with $k$ colours has a homogeneous set of size $m$. Paris and Harrington (1977) added one condition — the homogeneous set $H$ must be *relatively large*, $|H| \ge \min H$ — and showed that the resulting statement, a $\Pi_2$ sentence of arithmetic easily proved from the infinite Ramsey theorem, is unprovable in $\mathsf{PA}$; indeed it implies $\mathrm{Con}_{\mathsf{PA}}$ over $\mathsf{PA}$. The function giving the least $N$ grows faster than every function $\mathsf{PA}$ proves total.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Diagonal arguments as fixed points">
+
+Lawvere's theorem holds in any cartesian closed category: if $e : A \to B^A$ is *point-surjective*, every endomorphism of $B$ has a fixed point. Cantor, Russell, Tarski, Gödel and Turing are all instances (Lawvere 1969; Yanofsky 2003 surveys them). Read contrapositively, it says that a "truth-value object" with a fixed-point-free endomorphism such as negation cannot be the target of a universal family — which is the categorical heart of Tarski's theorem. See <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Provability logic">
+
+Treat $\square$ as a modal operator. Over $\mathsf{PA}$ the derivability conditions and Löb's theorem become the axioms of the modal logic $\mathsf{GL}$: $\square(p \to q) \to (\square p \to \square q)$ and $\square(\square p \to p) \to \square p$, with necessitation. Solovay (1976) proved that $\mathsf{GL}$ is *exactly* the set of modal principles that $\mathsf{PA}$ proves about its own provability predicate under all arithmetical interpretations. The second incompleteness theorem is the $\mathsf{GL}$-theorem $\neg\square\bot \to \neg\square\neg\square\bot$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Hilbert's programme** took shape in the 1920s, with Paul Bernays, Wilhelm Ackermann and John von Neumann working on finitary consistency proofs.
+- **Kurt Gödel**, then in Vienna, announced the first theorem at a conference in Königsberg in September 1930 and published both theorems in 1931 ("Über formal unentscheidbare Sätze der Principia Mathematica und verwandter Systeme I"). Von Neumann, on hearing the first theorem, independently found the second, but Gödel had already obtained it.
+- **Emil Post** had reached related ideas in the early 1920s but did not publish them at the time; he later gave an account of this anticipation.
+- **Alfred Tarski** proved the undefinability of truth in his 1933 monograph on the concept of truth (in Polish; German translation 1935).
+- **J. Barkley Rosser** (1936) weakened $\omega$-consistency to consistency. **Alonzo Church** and **Alan Turing** (1936) proved the undecidability of first-order logic, and Turing's halting problem gave incompleteness a computational form.
+- **Gerhard Gentzen** (1936) proved the consistency of $\mathsf{PA}$ by transfinite induction up to $\varepsilon_0$. Hilbert and Bernays (1939) and Löb (1955) isolated the derivability conditions.
+- **Tarski, Mostowski and Raphael Robinson** (1953) developed essential undecidability, with $\mathsf{Q}$ as a finitely axiomatised base. **Yuri Matiyasevich** (1970), building on Martin Davis, Hilary Putnam and Julia Robinson, settled Hilbert's tenth problem; **Jeff Paris** and **Leo Harrington** (1977) found the first natural mathematical statement independent of $\mathsf{PA}$.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Peter Smith, *An Introduction to Gödel's Theorems* (2007; 2nd edition 2013) — the best first course, with full proofs of Facts A–C.
+- George S. Boolos, John P. Burgess and Richard C. Jeffrey, *Computability and Logic* (5th edition, 2007) — the computability route and the representability theorem.
+- Herbert B. Enderton, *A Mathematical Introduction to Logic* (1972; 2nd edition 2001), chapter 3.
+- Raymond M. Smullyan, *Gödel's Incompleteness Theorems* (1992) — the abstract diagonal framework used in the Lean file.
+- George Boolos, *The Logic of Provability* (1993) — derivability conditions, Löb's theorem and Solovay's theorem.
+- Torkel Franzén, *Gödel's Theorem: An Incomplete Guide to Its Use and Abuse* (2005) — what the theorems do not say.
+- Petr Hájek and Pavel Pudlák, *Metamathematics of First-Order Arithmetic* (1993) — the research-level treatment.
+- Kurt Gödel's 1931 paper, in English in Jean van Heijenoort (ed.), *From Frege to Gödel* (1967).
+
+</Section>

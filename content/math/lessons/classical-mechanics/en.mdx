@@ -1,0 +1,511 @@
+---
+slug: classical-mechanics
+topic: math.applied.classical-mechanics
+title: Classical mechanics
+subtitle: Newton's law as a differential equation — and how conservation of energy and angular momentum turn it into Kepler's ellipses, the swing of a pendulum and the principle of stationary action.
+level: ug1
+ages: Undergraduate (first or second year)
+minutes: 120
+order: 5022
+objectives:
+  - Write Newton's laws as differential equations and solve the motion of projectiles and of harmonic oscillators, with and without damping and forcing
+  - Prove conservation of energy for conservative forces and of momentum and angular momentum, and use them to reduce problems to one dimension
+  - Derive Kepler's three laws from the inverse-square law of gravitation, including the conic-section orbit and the relation between energy and eccentricity
+  - Derive the Euler–Lagrange equations from the principle of stationary action and use a Lagrangian to obtain equations of motion
+  - Distinguish mass from weight, and explain why no force is needed to keep a body moving at constant velocity
+narrators: []
+lean:
+  - Lumenary.ClassicalMechanics.projectile
+  - Lumenary.ClassicalMechanics.energy_conservation
+  - Lumenary.ClassicalMechanics.cross_self_zero
+  - Lumenary.ClassicalMechanics.angular_momentum_conserved
+  - Lumenary.ClassicalMechanics.dot_self_cross_zero
+  - Lumenary.ClassicalMechanics.motion_in_plane
+  - Lumenary.ClassicalMechanics.binet_conic
+  - Lumenary.ClassicalMechanics.orbit_is_conic
+  - Lumenary.ClassicalMechanics.eccentricity_energy
+  - Lumenary.ClassicalMechanics.kepler_third_law
+  - Lumenary.ClassicalMechanics.damped_oscillator
+compute: [classical_mechanics_kepler_orbit, classical_mechanics_pendulum_period]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="From falling apples to elliptical orbits">
+
+Around 1600, Johannes Kepler, working from Tycho Brahe's careful naked-eye observations of Mars, found three empirical laws: planets move on **ellipses** with the Sun at a focus; the line from the Sun to a planet sweeps out **equal areas in equal times**; and the square of the period is proportional to the **cube** of the orbit's size. Two generations later Isaac Newton showed that all three follow from a single differential equation — his second law with a force varying as the inverse square of distance. It was the first great triumph of mathematical physics, and its methods are still the ones engineers use to put a satellite into orbit over Nairobi or to design a building in Santiago that survives earthquakes.
+
+This lesson develops classical mechanics as mathematics: Newton's laws as **ordinary differential equations**, **conservation laws** as the tool that makes them solvable, the **Kepler problem** solved completely, **oscillators** from the pendulum to resonance, and Lagrange's reformulation through the **principle of stationary action**. It assumes <TopicLink id="math.analysis.ordinary-differential-equations">ordinary differential equations</TopicLink> and <TopicLink id="math.analysis.multivariable-calculus">multivariable calculus</TopicLink> (gradients, the chain rule, line integrals); the orbits are the <TopicLink id="math.geom.conic-sections">conic sections</TopicLink> of school geometry.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="State, force and what stays the same">
+
+The **state** of a particle at an instant is its position *and* its velocity: knowing where a ball is does not tell you where it will be, but knowing where it is and how it is moving does — once you know the forces. Newton's second law $m\mathbf r'' = \mathbf F$ is a second-order ODE, so by the <TopicLink id="math.analysis.ordinary-differential-equations">Picard–Lindelöf theorem</TopicLink> position and velocity at one instant determine the motion (for Lipschitz forces).
+
+Solving such equations in closed form is usually impossible, but some combinations of position and velocity do not change along the motion — **conserved quantities**, such as energy and angular momentum. Each one confines the motion to a smaller set and lowers the effective dimension of the problem. For a ball rolling in a valley, conservation of energy alone tells you how high it will climb and how fast it moves at the bottom. For a planet, energy and angular momentum together are enough to find the orbit exactly.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+A particle of mass $m > 0$ has position $\mathbf r(t) \in \R^3$, velocity $\mathbf v = \mathbf r'$, acceleration $\mathbf a = \mathbf r''$ and momentum $\mathbf p = m\mathbf v$.
+
+<Definition term="Newton's laws">
+
+(1) In an inertial frame, a body on which no net force acts moves with constant velocity. (2) $\mathbf F = m\mathbf a$: the net force on a particle equals its mass times its acceleration (more generally $\mathbf F = \mathbf p'$). (3) If body 1 exerts a force $\mathbf F_{21}$ on body 2, then body 2 exerts $\mathbf F_{12} = -\mathbf F_{21}$ on body 1.
+
+</Definition>
+
+<Definition term="work, kinetic energy and conservative forces">
+
+The **kinetic energy** is $T = \tfrac12 m|\mathbf v|^2$. The **work** done by a force field $\mathbf F$ along a path is the line integral $W = \int \mathbf F \cdot d\mathbf r$. A force field is **conservative** if $\mathbf F = -\nabla V$ for a function $V$, the **potential energy**; the **total energy** is $E = T + V$.
+
+</Definition>
+
+<Definition term="angular momentum and central forces">
+
+The **angular momentum** about the origin is $\mathbf L = \mathbf r \times \mathbf p = m\,\mathbf r \times \mathbf v$, and the **torque** of a force is $\mathbf r \times \mathbf F$. A force is **central** if it always points along $\mathbf r$: $\mathbf F = f(\mathbf r, t)\,\hat{\mathbf r}$ with $\hat{\mathbf r} = \mathbf r/|\mathbf r|$ — for example gravity towards a fixed Sun.
+
+</Definition>
+
+<Definition term="Lagrangian and action">
+
+For a system described by **generalised coordinates** $q = (q_1, \dots, q_n)$ (angles, distances, …), the **Lagrangian** is $\mathcal L(q, q', t) = T - V$, and the **action** of a path $q(t)$, $t_1 \le t \le t_2$, is $S[q] = \int_{t_1}^{t_2} \mathcal L\big(q(t), q'(t), t\big)\,dt$.
+
+</Definition>
+
+The **weight** of a body is the gravitational force on it, $\mathbf W = m\mathbf g$ near the Earth's surface, where $|\mathbf g| \approx 9.8\ \mathrm{m/s^2}$. Mass is measured in kilograms; weight, a force, in newtons.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="A projectile">
+
+With constant gravity $\mathbf F = (0, -mg)$ and no air resistance, $x'' = 0$ and $y'' = -g$. Integrating twice from launch at the origin with speed $v_0$ at angle $\alpha$:
+
+$$
+x(t) = v_0\cos\alpha\;t, \qquad y(t) = v_0\sin\alpha\;t - \tfrac12 g t^2 .
+$$
+
+Eliminating $t$ gives a **parabola** $y = x\tan\alpha - \frac{g x^2}{2 v_0^2\cos^2\alpha}$ (Galileo). The projectile lands at $t = 2v_0\sin\alpha/g$, at distance $R = v_0^2\sin 2\alpha/g$, largest for $\alpha = 45^\circ$. The mass does not appear: in a vacuum, all bodies fall alike.
+
+With linear air resistance $-c\mathbf v$, the horizontal equation $x'' = -(c/m)x'$ is linear and gives $x(t) = \frac{m v_0 \cos\alpha}{c}\big(1 - e^{-ct/m}\big)$: the range is now bounded however long the flight.
+
+</Example>
+
+<Example title="Mass and weight on the Moon">
+
+An astronaut of mass $80$ kg weighs about $80 \times 9.8 \approx 784$ N on Earth and about $80 \times 1.62 \approx 130$ N on the Moon. Her mass — her resistance to acceleration — is the same $80$ kg in both places: pushing her sideways from rest to $1$ m/s in one second takes the same $80$ N horizontal force on the Moon as on Earth.
+
+</Example>
+
+<Example title="The harmonic oscillator">
+
+A mass on a spring obeys Hooke's law $F = -kx$, so $m x'' = -kx$, that is $x'' = -\omega^2 x$ with $\omega = \sqrt{k/m}$. The solutions are $x(t) = A\cos(\omega t) + B\sin(\omega t) = C\cos(\omega t - \varphi)$, with period $2\pi/\omega$ **independent of the amplitude**. The potential energy is $V = \tfrac12 k x^2$, and $E = \tfrac12 m x'^2 + \tfrac12 kx^2 = \tfrac12 kC^2$ is constant.
+
+The harmonic oscillator is universal: near any point $x^*$ where a smooth potential has a strict minimum ($V'(x^*) = 0 < V''(x^*)$), Taylor's theorem gives $V(x) \approx V(x^*) + \tfrac12 V''(x^*)(x - x^*)^2$, so small oscillations have angular frequency $\sqrt{V''(x^*)/m}$ — to first approximation, with an error controlled by the cubic remainder.
+
+</Example>
+
+</Section>
+
+<Section id="conservation" kind="proof" title="Conservation laws">
+
+<Theorem name="Theorem (work–energy theorem and conservation of energy)">
+
+Along any motion $m\mathbf r'' = \mathbf F$, the change in kinetic energy equals the work done: $T(t_2) - T(t_1) = \int_{t_1}^{t_2} \mathbf F \cdot \mathbf v\,dt$. If $\mathbf F = -\nabla V$ is conservative, the total energy $E = \tfrac12 m|\mathbf v|^2 + V(\mathbf r)$ is constant.
+
+</Theorem>
+
+<Proof>
+
+$T' = \tfrac12 m\,(\mathbf v \cdot \mathbf v)' = m\,\mathbf v \cdot \mathbf v' = \mathbf F \cdot \mathbf v$; integrate. If $\mathbf F = -\nabla V$, then by the chain rule $\frac{d}{dt}V(\mathbf r(t)) = \nabla V(\mathbf r) \cdot \mathbf r' = -\mathbf F \cdot \mathbf v$, so $(T + V)' = 0$, and a function with zero derivative on an interval is constant.
+
+</Proof>
+
+In one dimension, energy conservation reduces Newton's equation to a first-order one: $\tfrac12 m x'^2 + V(x) = E$ gives $x' = \pm\sqrt{2(E - V(x))/m}$. The motion is confined to $\{x : V(x) \le E\}$, reverses at **turning points** where $V(x) = E$, and between turning points $x_1 < x_2$ (with $V'(x_i) \ne 0$) it is periodic with period
+
+$$
+T = 2\int_{x_1}^{x_2} \frac{dx}{\sqrt{2(E - V(x))/m}} .
+$$
+
+For the pendulum $\theta'' = -(g/\ell)\sin\theta$ released from rest at angle $\theta_0$, this integral is an elliptic integral, $T = 4\sqrt{\ell/g}\,K\big(\sin\tfrac{\theta_0}{2}\big)$ — larger than the small-angle value $2\pi\sqrt{\ell/g}$, by about $18\%$ for $\theta_0 = 90^\circ$ (see the computation below).
+
+<VectorField mode="phase" preset="pendulum" title="The pendulum's phase plane (θ, θ′)" subtitle="Closed curves are swings (energy below the top); wavy curves are full rotations; the curves through (±π, 0) separate them. Each curve is a level set of the energy." />
+
+<Theorem name="Theorem (conservation of momentum)">
+
+For two particles interacting only with each other, with $m_1\mathbf r_1'' = \mathbf F_{12}$, $m_2\mathbf r_2'' = \mathbf F_{21}$ and $\mathbf F_{12} = -\mathbf F_{21}$, the total momentum $\mathbf P = m_1\mathbf v_1 + m_2\mathbf v_2$ is constant, and the centre of mass $\mathbf R = (m_1\mathbf r_1 + m_2\mathbf r_2)/(m_1 + m_2)$ moves with constant velocity.
+
+</Theorem>
+
+<Proof>
+
+$\mathbf P' = \mathbf F_{12} + \mathbf F_{21} = 0$ by the third law, and $\mathbf R' = \mathbf P/(m_1 + m_2)$.
+
+</Proof>
+
+The **relative position** $\mathbf r = \mathbf r_1 - \mathbf r_2$ satisfies $\mathbf r'' = \mathbf F_{12}/m_1 - \mathbf F_{21}/m_2 = \mathbf F_{12}\left(\frac1{m_1} + \frac1{m_2}\right)$, i.e. $\mu\mathbf r'' = \mathbf F_{12}$ with the **reduced mass** $\mu = \frac{m_1 m_2}{m_1 + m_2}$. So the two-body problem reduces to a one-body problem; for gravity, $\mathbf F_{12} = -Gm_1m_2\,\mathbf r/|\mathbf r|^3$ gives $\mathbf r'' = -G(m_1 + m_2)\,\mathbf r/|\mathbf r|^3$, exactly the problem of one body attracted to a fixed centre of "mass" $m_1 + m_2$.
+
+<Theorem name="Theorem (central forces: angular momentum and planar motion)">
+
+Under a central force, the angular momentum $\mathbf L = m\,\mathbf r \times \mathbf v$ is constant. If $\mathbf L \ne 0$, the motion stays in the plane through the origin perpendicular to $\mathbf L$; if $\mathbf L = 0$, it stays on a line through the origin.
+
+</Theorem>
+
+<Proof>
+
+$\mathbf L' = m\,\mathbf v \times \mathbf v + \mathbf r \times m\mathbf v' = 0 + \mathbf r \times f\,\hat{\mathbf r} = 0$, since the cross product of parallel vectors vanishes. For every $t$, $\mathbf r(t) \cdot \mathbf L = m\,\mathbf r \cdot (\mathbf r \times \mathbf v) = 0$, because $\mathbf r \times \mathbf v$ is perpendicular to $\mathbf r$; so $\mathbf r(t)$ lies in the plane $\mathbf L^\perp$. If $\mathbf L = 0$ then $\mathbf v \parallel \mathbf r$ at all times (where $\mathbf r \ne 0$), so the direction $\hat{\mathbf r}$ is constant (its derivative is the component of $\mathbf v/|\mathbf r|$ perpendicular to $\mathbf r$) and the motion is radial.
+
+</Proof>
+
+</Section>
+
+<Section id="kepler" kind="proof" title="The Kepler problem">
+
+Take the plane of motion with polar coordinates $(r, \theta)$, and unit vectors $\mathbf e_r = (\cos\theta, \sin\theta)$ and $\mathbf e_\theta = (-\sin\theta, \cos\theta)$. Differentiating $\mathbf r = r\,\mathbf e_r$ with $\mathbf e_r' = \theta'\mathbf e_\theta$ and $\mathbf e_\theta' = -\theta'\mathbf e_r$:
+
+$$
+\mathbf v = r'\,\mathbf e_r + r\theta'\,\mathbf e_\theta, \qquad \mathbf a = \big(r'' - r\theta'^2\big)\,\mathbf e_r + \frac1r\big(r^2\theta'\big)'\,\mathbf e_\theta .
+$$
+
+The angular momentum has magnitude $L = m r^2\theta'$.
+
+<Theorem name="Theorem (Kepler's second law)">
+
+Under any central force, the radius vector sweeps out area at the constant rate $\dfrac{dA}{dt} = \tfrac12 r^2\theta' = \dfrac{L}{2m}$.
+
+</Theorem>
+
+<Proof>
+
+In time $dt$ the radius sweeps a thin sector of angle $d\theta$ and area $\tfrac12 r^2\,d\theta$ (precisely: the area swept between angles $\theta_1$ and $\theta_2$ is $\int_{\theta_1}^{\theta_2}\tfrac12 r^2\,d\theta$, and we change variables to $t$). So $dA/dt = \tfrac12 r^2\theta' = L/2m$, constant by the previous theorem.
+
+</Proof>
+
+For a central force $\mathbf F = f(r)\,\mathbf e_r$, the radial component of Newton's law is $m(r'' - r\theta'^2) = f(r)$. Using $\theta' = L/(mr^2)$ to eliminate $\theta$:
+
+$$
+m r'' = f(r) + \frac{L^2}{m r^3}, \qquad E = \tfrac12 m r'^2 + \underbrace{\frac{L^2}{2mr^2} + V(r)}_{V_{\text{eff}}(r)} .
+$$
+
+The radial motion is one-dimensional motion in the **effective potential** $V_{\text{eff}}$; the term $L^2/2mr^2$ is a "centrifugal barrier" that keeps a body with $L \ne 0$ away from the centre.
+
+<FunctionPlot fns={["L^2/(2*x^2) - 1/x", "-1/x"]} labels={["effective potential", "gravitational potential −k/r"]} params={[{ name: "L", min: 0.3, max: 1.6, step: 0.05, value: 1 }]} x={[0.05, 6]} y={[-1.5, 1]} xLabel="r" yLabel="V" title="The effective potential for gravity (m = k = 1)" subtitle="An orbit with energy E between the minimum and 0 bounces between two turning radii: a bound orbit. With E ≥ 0 it escapes." />
+
+<Theorem name="Theorem (Kepler's first law: the orbits are conics)">
+
+Let $f(r) = -k/r^2$ with $k > 0$ (for gravity, $k = GMm$), and $L \ne 0$. Then the orbit is
+
+$$
+r(\theta) = \frac{p}{1 + e\cos(\theta - \theta_0)}, \qquad p = \frac{L^2}{mk}, \qquad e = \sqrt{1 + \frac{2EL^2}{mk^2}} \;\ge 0,
+$$
+
+a conic section with a focus at the centre of force: an ellipse if $E < 0$ (a circle if $e = 0$), a parabola if $E = 0$, and a branch of a hyperbola if $E > 0$.
+
+</Theorem>
+
+<Proof>
+
+*Binet's equation.* Since $\theta' = L/(mr^2) \ne 0$, we may use $\theta$ as the parameter. Put $u = 1/r$ and write $\dot u = du/d\theta$. Then $r' = \frac{dr}{d\theta}\theta' = -\frac{\dot u}{u^2}\cdot\frac{Lu^2}{m} = -\frac Lm\dot u$, and $r'' = -\frac Lm\ddot u\,\theta' = -\frac{L^2}{m^2}u^2\ddot u$. Substituting into $m(r'' - r\theta'^2) = f$, with $r\theta'^2 = L^2u^3/m^2$:
+
+$$
+-\frac{L^2}{m}u^2\left(\ddot u + u\right) = f(1/u) = -k u^2, \qquad\text{so}\qquad \ddot u + u = \frac{mk}{L^2} = \frac1p .
+$$
+
+*Solving it.* This is a harmonic oscillator in $\theta$ with a constant forcing term; its general solution is $u = \frac1p\big(1 + e\cos(\theta - \theta_0)\big)$ with constants $e \ge 0$ and $\theta_0$. So $r = p/(1 + e\cos(\theta - \theta_0))$.
+
+*It is a conic.* Take $\theta_0 = 0$. With $x = r\cos\theta$, $y = r\sin\theta$, the equation $r + e\,r\cos\theta = p$ says $r = p - ex$; squaring, $x^2 + y^2 = (p - ex)^2$, i.e. $(1 - e^2)x^2 + 2pex + y^2 = p^2$. For $0 \le e < 1$ this is an ellipse with one focus at the origin, for $e = 1$ a parabola, for $e > 1$ a hyperbola.
+
+*Eccentricity and energy.* At the point closest to the centre (perihelion), $r' = 0$ and $r = p/(1 + e)$, so $E = \frac{L^2}{2mr^2} - \frac kr$. Using $\frac{L^2}{m} = kp$, this is $E = \frac{k}{2p}(1 + e)^2 - \frac kp(1 + e) = \frac{k}{2p}(e^2 - 1)$. Hence $e^2 = 1 + \frac{2pE}{k} = 1 + \frac{2EL^2}{mk^2}$, and $e < 1$ exactly when $E < 0$.
+
+</Proof>
+
+<Theorem name="Theorem (Kepler's third law)">
+
+For an elliptic orbit with semi-major axis $a$, the period $T$ satisfies
+
+$$
+T^2 = \frac{4\pi^2 m}{k}\,a^3 = \frac{4\pi^2}{GM}\,a^3 .
+$$
+
+</Theorem>
+
+<Proof>
+
+The perihelion and aphelion distances are $p/(1 + e)$ and $p/(1 - e)$, so $2a = \frac{2p}{1 - e^2}$, $a = \frac{p}{1 - e^2}$, and the semi-minor axis is $b = a\sqrt{1 - e^2} = \sqrt{pa}$. By the second law the area $\pi ab$ is swept at rate $L/2m$, so $T = \frac{2m\pi ab}{L}$ and
+
+$$
+T^2 = \frac{4\pi^2 m^2 a^2 b^2}{L^2} = \frac{4\pi^2 m^2 a^3 p}{L^2} = \frac{4\pi^2 m}{k}\,a^3 ,
+$$
+
+using $p = L^2/(mk)$. For gravity $k = GMm$, and the planet's mass cancels.
+
+</Proof>
+
+For two bodies (a planet that is not negligibly light), replace $m$ by the reduced mass $\mu$ and $GM$ by $G(M + m)$; Kepler's third law then holds up to the factor $1 + m/M$, which is $1.001$ for Jupiter. The value $a = -k/(2E)$, obtained by combining $a = p/(1 - e^2)$ with $e^2 - 1 = 2pE/k$, shows that the size of an orbit depends only on its energy.
+
+<FunctionPlot mode="polar" fns={["p/(1 + e*cos(theta))"]} params={[{ name: "e", min: 0, max: 0.95, step: 0.01, value: 0.5 }, { name: "p", min: 0.5, max: 2, step: 0.1, value: 1 }]} points={[[0, 0, "Sun (focus)"]]} t={[0, "2*pi"]} x={[-12, 3]} y={[-6, 6]} title="Kepler orbits r = p / (1 + e cos θ)" subtitle="Slide the eccentricity e from a circle (e = 0) towards a long ellipse; the Sun stays at a focus. At e = 1 the orbit opens into a parabola." />
+
+</Section>
+
+<Section id="oscillators" kind="proof" title="Damped and driven oscillators">
+
+Add friction proportional to velocity: $m x'' + c\,x' + kx = 0$, or $x'' + 2\gamma x' + \omega_0^2 x = 0$ with $2\gamma = c/m$ and $\omega_0^2 = k/m$. The energy $E = \tfrac12 m x'^2 + \tfrac12 kx^2$ now satisfies $E' = x'(mx'' + kx) = -c\,x'^2 \le 0$: it decreases. The characteristic roots $-\gamma \pm \sqrt{\gamma^2 - \omega_0^2}$ give three regimes (see the <TopicLink id="math.analysis.ordinary-differential-equations">ODE lesson</TopicLink>):
+
+- **underdamped** ($\gamma < \omega_0$): $x(t) = Ce^{-\gamma t}\cos(\omega t - \varphi)$ with $\omega = \sqrt{\omega_0^2 - \gamma^2}$ — decaying oscillations;
+- **critically damped** ($\gamma = \omega_0$): $x(t) = (A + Bt)e^{-\gamma t}$ — the fastest return without oscillating, roughly what a car's shock absorbers aim for;
+- **overdamped** ($\gamma > \omega_0$): a sum of two decaying exponentials.
+
+<Theorem name="Proposition (forced oscillations and resonance)">
+
+For $\gamma > 0$, the equation $x'' + 2\gamma x' + \omega_0^2 x = \frac{F_0}{m}\cos\Omega t$ has the particular solution $x_p(t) = A\cos(\Omega t - \delta)$ with
+
+$$
+A(\Omega) = \frac{F_0/m}{\sqrt{(\omega_0^2 - \Omega^2)^2 + 4\gamma^2\Omega^2}}, \qquad \tan\delta = \frac{2\gamma\Omega}{\omega_0^2 - \Omega^2},
+$$
+
+and every solution approaches $x_p$ as $t \to \infty$.
+
+</Theorem>
+
+<Proof>
+
+Look for a complex solution $z = Ze^{i\Omega t}$ of $z'' + 2\gamma z' + \omega_0^2 z = \frac{F_0}{m}e^{i\Omega t}$: substituting gives $(\omega_0^2 - \Omega^2 + 2i\gamma\Omega)Z = F_0/m$. Write $\omega_0^2 - \Omega^2 + 2i\gamma\Omega = \rho e^{i\delta}$ with $\rho = \sqrt{(\omega_0^2 - \Omega^2)^2 + 4\gamma^2\Omega^2}$; then $Z = \frac{F_0}{m\rho}e^{-i\delta}$, and since the equation has real coefficients, $x_p = \operatorname{Re} z$ solves the real equation. Any other solution differs from $x_p$ by a solution of the damped homogeneous equation, which decays like $e^{-\gamma t}$ (or faster).
+
+</Proof>
+
+When the damping is small, the amplitude is largest for driving frequencies near the natural frequency $\omega_0$: at $\Omega = \omega_0$ it is $\frac{F_0}{2m\gamma\omega_0}$, which grows without bound as $\gamma \to 0$. This is **resonance** — useful in radio tuners and musical instruments, dangerous in machinery and structures.
+
+<FunctionPlot fns={["1/sqrt((1 - x^2)^2 + (2*z*x)^2)"]} labels={["amplitude A(Ω), in units of F₀/(mω₀²)"]} params={[{ name: "z", min: 0.02, max: 1, step: 0.01, value: 0.1, label: "damping ratio γ/ω₀" }]} x={[0, 3]} y={[0, 8]} xLabel="Ω/ω₀" yLabel="A" title="Resonance curves" subtitle="Lower the damping and the peak near Ω = ω₀ grows like 1/(2γ/ω₀)." />
+
+</Section>
+
+<Section id="lagrange" kind="proof" title="Lagrangian mechanics and stationary action">
+
+Newton's law needs Cartesian coordinates and forces, including the forces of constraint that keep a bead on its wire or a pendulum bob on its circle. Lagrange (1788) found a formulation in any coordinates, with constraints built in. Its modern form is **Hamilton's principle** (1834): *the motion between times $t_1$ and $t_2$ makes the action $S[q] = \int_{t_1}^{t_2}\mathcal L\,dt$ stationary among all paths with the same endpoints.*
+
+<Theorem name="Lemma (fundamental lemma of the calculus of variations)">
+
+If $g$ is continuous on $[t_1, t_2]$ and $\int_{t_1}^{t_2} g(t)\,\eta(t)\,dt = 0$ for every $C^2$ function $\eta$ with $\eta(t_1) = \eta(t_2) = 0$, then $g \equiv 0$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $g(s) > 0$ at some $s$ in the open interval (the case $g(s) < 0$ is symmetric, and the endpoints follow by continuity). By continuity $g > 0$ on some $(s - \delta, s + \delta) \subset (t_1, t_2)$. Let $\eta(t) = \big(\delta^2 - (t - s)^2\big)^3$ for $|t - s| < \delta$ and $0$ otherwise; it is $C^2$ (it vanishes to third order at $s \pm \delta$), non-negative, and positive at $s$. Then $\int g\eta > 0$, a contradiction.
+
+</Proof>
+
+<Theorem name="Theorem (Euler–Lagrange equations)">
+
+Let $\mathcal L(q, \dot q, t)$ be $C^2$, and let $q$ be a $C^2$ path such that, for every $C^2$ variation $\eta$ vanishing at $t_1$ and $t_2$, $\frac{d}{d\varepsilon}S[q + \varepsilon\eta]\big|_{\varepsilon = 0} = 0$. Then for each $i$,
+
+$$
+\frac{d}{dt}\frac{\partial\mathcal L}{\partial\dot q_i} - \frac{\partial\mathcal L}{\partial q_i} = 0 .
+$$
+
+</Theorem>
+
+<Proof>
+
+Differentiating under the integral sign (legitimate since the integrand is $C^1$ in $(\varepsilon, t)$ on a compact set) and integrating by parts,
+
+$$
+0 = \frac{d}{d\varepsilon}S[q + \varepsilon\eta]\Big|_{\varepsilon=0} = \int_{t_1}^{t_2}\sum_i\left(\frac{\partial\mathcal L}{\partial q_i}\eta_i + \frac{\partial\mathcal L}{\partial\dot q_i}\eta_i'\right)dt = \int_{t_1}^{t_2}\sum_i\left(\frac{\partial\mathcal L}{\partial q_i} - \frac{d}{dt}\frac{\partial\mathcal L}{\partial\dot q_i}\right)\eta_i\,dt ,
+$$
+
+the boundary terms $\big[\frac{\partial\mathcal L}{\partial\dot q_i}\eta_i\big]_{t_1}^{t_2}$ vanishing because $\eta(t_1) = \eta(t_2) = 0$. Taking $\eta$ with only the $i$-th component non-zero, the fundamental lemma gives the $i$-th equation.
+
+</Proof>
+
+<Example title="Three Lagrangians">
+
+- **A particle in a potential**, Cartesian coordinates: $\mathcal L = \tfrac12 m|\dot{\mathbf q}|^2 - V(\mathbf q)$. Then $\partial\mathcal L/\partial\dot q_i = m\dot q_i$ and $\partial\mathcal L/\partial q_i = -\partial V/\partial q_i$, so the Euler–Lagrange equations are $m\mathbf q'' = -\nabla V$: Newton's law.
+- **The pendulum**, with the angle $\theta$ as coordinate: $T = \tfrac12 m\ell^2\dot\theta^2$ and $V = -mg\ell\cos\theta$, so $m\ell^2\theta'' = -mg\ell\sin\theta$, i.e. $\theta'' = -\frac g\ell\sin\theta$. The tension in the rod never appears.
+- **A central force** in polar coordinates: $\mathcal L = \tfrac12 m(\dot r^2 + r^2\dot\theta^2) - V(r)$. The $\theta$-equation is $\frac{d}{dt}(mr^2\theta') = 0$ — conservation of angular momentum, because $\mathcal L$ does not depend on $\theta$ — and the $r$-equation is $mr'' - mr\theta'^2 + V'(r) = 0$, the radial equation used above.
+
+</Example>
+
+<Theorem name="Proposition (conserved quantities from the Lagrangian)">
+
+Along solutions of the Euler–Lagrange equations: (1) if $\mathcal L$ does not depend on $q_i$ (a **cyclic** coordinate), the conjugate momentum $p_i = \partial\mathcal L/\partial\dot q_i$ is constant; (2) if $\mathcal L$ does not depend explicitly on $t$, the **energy function** $h = \sum_i \dot q_i\,\partial\mathcal L/\partial\dot q_i - \mathcal L$ is constant. When $T$ is a quadratic form in the velocities and $V$ does not depend on them, $h = T + V$.
+
+</Theorem>
+
+<Proof>
+
+(1) is the $i$-th Euler–Lagrange equation. (2) By the chain rule,
+
+$$
+\frac{dh}{dt} = \sum_i\left(\ddot q_i\frac{\partial\mathcal L}{\partial\dot q_i} + \dot q_i\frac{d}{dt}\frac{\partial\mathcal L}{\partial\dot q_i}\right) - \sum_i\left(\frac{\partial\mathcal L}{\partial q_i}\dot q_i + \frac{\partial\mathcal L}{\partial\dot q_i}\ddot q_i\right) - \frac{\partial\mathcal L}{\partial t} = \sum_i\dot q_i\left(\frac{d}{dt}\frac{\partial\mathcal L}{\partial\dot q_i} - \frac{\partial\mathcal L}{\partial q_i}\right) - \frac{\partial\mathcal L}{\partial t},
+$$
+
+which is $0$. If $T = \tfrac12\sum a_{ij}(q)\dot q_i\dot q_j$, Euler's theorem on homogeneous functions gives $\sum\dot q_i\,\partial T/\partial\dot q_i = 2T$, so $h = 2T - (T - V) = T + V$.
+
+</Proof>
+
+These are the simplest cases of **Noether's theorem** (Emmy Noether, 1918): every continuous symmetry of the action gives a conserved quantity — translations give momentum, rotations angular momentum, time translations energy.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Mechanics in Lean">
+
+Mathlib has no physics, but it has the calculus to state Newton's law exactly: a motion is a pair $\mathbf r, \mathbf v : \R \to E$ with `HasDerivAt r (v t) t` and `HasDerivAt v (a t) t`. Each conservation law is then proved as in the lesson: differentiate the conserved quantity, get $0$, and conclude it is constant.
+
+First, uniform gravity — position, velocity and acceleration of a projectile:
+
+<Lean decl="Lumenary.ClassicalMechanics.projectile" />
+
+**Conservation of energy**, in any real inner product space (so in $\R^3$, but also for systems with many particles), for a force $-\nabla V$ given by Mathlib's `HasGradientAt`. The proof is the human one: $E' = m\langle \mathbf v, \mathbf v'\rangle + \langle\nabla V(\mathbf r), \mathbf r'\rangle = 0$.
+
+<Lean decl="Lumenary.ClassicalMechanics.energy_conservation" />
+
+**Angular momentum.** The library facts $\mathbf v \times \mathbf v = 0$ and $\mathbf r \cdot (\mathbf r \times \mathbf v) = 0$, then conservation of $\mathbf r \times \mathbf v$ under any force parallel to $\mathbf r$ (checked coordinate by coordinate), and its consequence that the motion is planar:
+
+<Lean decl="Lumenary.ClassicalMechanics.cross_self_zero" />
+
+<Lean decl="Lumenary.ClassicalMechanics.angular_momentum_conserved" />
+
+<Lean decl="Lumenary.ClassicalMechanics.dot_self_cross_zero" />
+
+<Lean decl="Lumenary.ClassicalMechanics.motion_in_plane" />
+
+**Kepler's first law**, in two formal pieces: the conic $u = (1 + e\cos\theta)/p$ solves Binet's equation $\ddot u + u = 1/p$, and a curve $r(1 + e\cos\theta) = p$ is the conic $(1 - e^2)x^2 + 2pex + y^2 = p^2$ in Cartesian coordinates:
+
+<Lean decl="Lumenary.ClassicalMechanics.binet_conic" />
+
+<Lean decl="Lumenary.ClassicalMechanics.orbit_is_conic" />
+
+The two algebraic computations behind the relation between energy and eccentricity, and behind the third law (the inputs — the perihelion distance, the area of the ellipse and the areal velocity — are taken from the human proofs):
+
+<Lean decl="Lumenary.ClassicalMechanics.eccentricity_energy" />
+
+<Lean decl="Lumenary.ClassicalMechanics.kepler_third_law" />
+
+**The damped oscillator**: $x = e^{-\gamma t}\cos\omega t$ solves $x'' + 2\gamma x' + (\gamma^2 + \omega^2)x = 0$:
+
+<Lean decl="Lumenary.ClassicalMechanics.damped_oscillator" />
+
+**What is and is not formalised.** Independently proved: the projectile, energy conservation for conservative forces, conservation of angular momentum and planarity under central forces, the Binet solution, the conic identity, the algebra of the energy–eccentricity relation and of the third law, and the damped oscillator. Cited from Mathlib: the two cross-product identities. Not formalised: the derivation of Binet's equation from Newton's law (the change of parameter from $t$ to $\theta$), the area of an ellipse and the areal-velocity argument of Kepler's second law, the reduction of the two-body problem, the resonance formula, and the Euler–Lagrange equations, whose proof needs differentiation under the integral sign and the fundamental lemma — all within reach of Mathlib, but not done here.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Simulating orbits and pendulums">
+
+Integrating Newton's equations numerically is how real orbits are computed. But the choice of method matters: the **velocity Verlet** (leapfrog) method, used in molecular dynamics and celestial mechanics, respects the geometry of mechanics — it is *symplectic* and conserves angular momentum exactly for central forces — while the explicit Euler method spirals outwards and gains energy. The first experiment checks Kepler's predictions (eccentricity, perihelion, aphelion and period) against a simulation:
+
+<Python id="classical_mechanics_kepler_orbit" />
+
+The second compares three answers to "how long does a pendulum take to swing?": the small-angle law, the exact formula from energy conservation (an elliptic integral, which Gauss's arithmetic–geometric mean evaluates with astonishing speed), and a simulation.
+
+<Python id="classical_mechanics_pendulum_period" />
+
+Both are **numerical**: the exact period formula is a theorem evaluated in floating point, and the simulations are evidence that agrees with the theory to many digits — not a substitute for the proofs above.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A force is needed to keep an object moving."** Newton's first law says the opposite: with no net force, velocity stays constant. Everyday experience misleads because friction and air resistance are forces that slow things down; a hockey puck on smooth ice, or a space probe coasting between planets, keeps moving with no push. A force is needed to *change* velocity — to speed up, slow down or turn.
+
+</Misconception>
+
+<Misconception>
+
+**"Mass and weight are the same thing."** Mass ($m$, in kg) measures resistance to acceleration and is the same everywhere; weight ($m\mathbf g$, in newtons) is the gravitational force and depends on where you are — about one sixth as much on the Moon. Bathroom scales measure a force and are calibrated to display kilograms for Earth's $g$. (That all bodies fall with the same acceleration, because gravitational and inertial mass are equal, is a deep experimental fact — the starting point of general relativity.)
+
+</Misconception>
+
+<Misconception>
+
+**"A planet in orbit feels an outward centrifugal force that balances gravity."** In an inertial frame the only force on the planet is gravity, which points inwards and supplies the centripetal acceleration $v^2/r$ of circular motion. "Centrifugal force" is a *fictitious* force that appears only when one describes the motion in a rotating frame of reference.
+
+</Misconception>
+
+<Misconception>
+
+**"Nature minimises the action."** The principle is that the action is *stationary*. For short time intervals the true path does minimise it, but not in general: for a harmonic oscillator of period $P$, the true path is not a minimum among paths over a time interval longer than $P/2$ (the first conjugate point, in Jacobi's theory).
+
+</Misconception>
+
+<Misconception>
+
+**"Heavier objects fall faster."** Without air resistance, all bodies near the Earth fall with the same acceleration $g$: the mass cancels in $m\mathbf a = m\mathbf g$. With air resistance the drag force depends on shape and speed, which is why a feather and a hammer fall differently on Earth — and identically on the Moon, as the Apollo 15 astronauts showed in 1971.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Configuration spaces, phase space and the hidden symmetry of Kepler orbits">
+
+The positions of a mechanical system form a **configuration space**, typically a manifold: a circle $S^1$ for a pendulum, a torus $S^1 \times S^1$ for a double pendulum, the rotation group $SO(3)$ for a rigid body. Positions and momenta together form **phase space**, the cotangent bundle $T^*Q$, which carries a canonical **symplectic** form; Hamilton's equations $\dot q = \partial H/\partial p$, $\dot p = -\partial H/\partial q$ say that the motion is the flow of the vector field determined by the energy $H$ and this form (see <TopicLink id="math.geom.symplectic-geometry">symplectic geometry</TopicLink>). The Kepler problem has a striking geometric feature: besides $\mathbf L$, the **Laplace–Runge–Lenz vector** $\mathbf A = \mathbf p \times \mathbf L - mk\,\hat{\mathbf r}$ is conserved. It points to the perihelion and has length $mke$, and $\mathbf r \cdot \mathbf A = L^2 - mkr$ gives the conic equation $r = p/(1 + e\cos\theta)$ in one line. Its conservation reflects a hidden four-dimensional rotational symmetry of the bound orbits (exploited by Fock in 1935 for the hydrogen atom) and explains why the orbits *close*.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Cylinders, tori and stability">
+
+The pendulum's phase space is a **cylinder** $S^1 \times \R$: the angle is periodic, the angular velocity is not. Its energy levels are circles (swings), curves winding round the cylinder (rotations), and two separatrices through the unstable top position. More generally, the **Liouville–Arnold theorem** says that if a system with $n$ degrees of freedom has $n$ independent conserved quantities in involution, every compact connected level set is an $n$-dimensional **torus**, on which the motion is quasi-periodic. Do these tori survive small perturbations, such as the pull of Jupiter on Earth? The **KAM theorem** (Kolmogorov 1954, Arnold 1963, Moser 1962) says that, under non-degeneracy conditions, most of them do — the ones whose frequencies are "sufficiently irrational" — while resonant tori break up, giving chaotic zones. Topology and number theory meet in the stability of the solar system. See <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Poisson brackets and the Lie algebra of conserved quantities">
+
+For functions $f, g$ on phase space, the **Poisson bracket** $\{f, g\} = \sum_i\left(\frac{\partial f}{\partial q_i}\frac{\partial g}{\partial p_i} - \frac{\partial f}{\partial p_i}\frac{\partial g}{\partial q_i}\right)$ makes them a Lie algebra, and Hamilton's equations become $\dot f = \{f, H\}$. So $f$ is conserved exactly when $\{f, H\} = 0$, and conserved quantities form a Lie subalgebra. The components of angular momentum satisfy $\{L_x, L_y\} = L_z$ and its cyclic permutations — the Lie algebra $\mathfrak{so}(3)$ of the rotation group — and, for negative energies, $\mathbf L$ together with a rescaled Runge–Lenz vector spans $\mathfrak{so}(4)$. Replacing Poisson brackets by commutators of operators is Dirac's route from classical to <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>, and Noether's theorem becomes a statement about Lie group actions (the moment map).
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="The calculus of variations">
+
+The Euler–Lagrange equations are the first-order condition of an optimisation problem in an infinite-dimensional space of paths. The same mathematics finds the **brachistochrone** (the curve of fastest descent, a cycloid — Johann Bernoulli's challenge of 1696), geodesics on surfaces, minimal surfaces such as soap films, and the shapes of hanging chains. Second-order conditions are subtler than in finite dimensions: the Legendre condition $\partial^2\mathcal L/\partial\dot q^2 > 0$ and the absence of **conjugate points** (Jacobi) are what make a stationary path a local minimum. Proving that minimisers *exist* — the "direct method", using compactness in function spaces — became a major theme of twentieth-century analysis, motivated by Hilbert's 20th problem.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Phase-space volume and statistical mechanics">
+
+**Liouville's theorem**: the flow of Hamilton's equations preserves volume in phase space (the vector field $(\partial H/\partial p, -\partial H/\partial q)$ has divergence $\sum_i(\partial^2 H/\partial q_i\partial p_i - \partial^2 H/\partial p_i\partial q_i) = 0$). For a gas of $10^{23}$ molecules we cannot follow trajectories, but we can ask how a probability distribution on phase space evolves — and Liouville's theorem says the uniform distribution on an energy level (the **microcanonical ensemble**) is invariant. Boltzmann's hope that time averages equal such ensemble averages (the ergodic hypothesis) led to <TopicLink id="math.analysis.ergodic-theory">ergodic theory</TopicLink>. Volume preservation alone already gives the Poincaré recurrence theorem: for a system confined to a bounded region of phase space, almost every initial state is revisited arbitrarily closely, again and again.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Why orbits close, and where Newton is not enough">
+
+**Bertrand's theorem** (1873): among central forces $f(r)$, only the inverse-square law and Hooke's law $f = -kr$ have the property that *every* bounded orbit is closed. For any other law, orbits precess. Mercury's perihelion does precess, by about $574''$ per century relative to the distant stars. About $531''$ of this is explained by the pull of the other planets, but $43''$ per century remained unexplained by Newtonian mechanics until Einstein's general relativity in 1915 (see <TopicLink id="math.applied.relativity">relativity</TopicLink>). Classical mechanics also fails at small scales, where quantum mechanics replaces trajectories by wave functions; yet the Lagrangian and Hamiltonian formalisms developed here survive both revolutions, in Feynman's sum over paths and in the Hamiltonian operator.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Before Newton.** The Mohist Canon (China, around the 4th–3rd centuries BCE) contains statements about force and motion that some historians read as anticipating inertia. Aristotle held that motion requires a continuing cause; John Philoponus in 6th-century Alexandria and Ibn Sīnā (Avicenna) in 11th-century Persia criticised this with theories of an "impetus" imparted to a moving body, developed further by Jean Buridan in 14th-century Paris. Galileo Galilei established the laws of falling bodies and the parabolic path of projectiles (*Two New Sciences*, 1638).
+- **Kepler.** Johannes Kepler published his first two laws in *Astronomia nova* (1609) and the third in *Harmonices mundi* (1619), working from Tycho Brahe's observations. Christiaan Huygens built the pendulum clock (1656) and found the formula $v^2/r$ for centripetal acceleration (*Horologium oscillatorium*, 1673).
+- **Newton.** Isaac Newton's *Philosophiæ Naturalis Principia Mathematica* (1687) stated the laws of motion and universal gravitation and derived Kepler's laws, largely in geometric language. Émilie du Châtelet's French translation of the *Principia* with her commentary (published posthumously in 1756 and 1759) remains the standard French edition, and her advocacy of *vis viva* (kinetic energy) helped shape the concept of energy.
+- **Analytical mechanics.** Leonhard Euler wrote Newton's law as differential equations in Cartesian components (1750s) and derived the equations of rigid-body motion. Jean le Rond d'Alembert stated his principle of virtual work for dynamics (1743). Joseph-Louis Lagrange's *Mécanique analytique* (1788) contained no figures, by design. William Rowan Hamilton (1834–35) reformulated mechanics with his principle and canonical equations, developed further by Carl Jacobi.
+- **Symmetry and chaos.** Emmy Noether proved her theorem connecting symmetries and conservation laws (1918). Henri Poincaré's study of the three-body problem (1890) revealed chaotic motion, and Andrey Kolmogorov, Vladimir Arnold and Jürgen Moser established the KAM theory of stability (1954–63).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- John R. Taylor, *Classical Mechanics* (2005) — a clear undergraduate text covering everything in this lesson, with Lagrangian mechanics and chaos.
+- Vladimir I. Arnold, *Mathematical Methods of Classical Mechanics* (1974; English 1978, 2nd edition 1989) — the classic mathematical treatment: variational principles, manifolds, symplectic geometry.
+- Lev D. Landau and Evgeny M. Lifshitz, *Mechanics* (1960; 3rd edition 1976) — concise, starting from the principle of least action.
+- Herbert Goldstein, *Classical Mechanics* (1950; 3rd edition with Poole and Safko, 2002).
+- Daniel Kleppner and Robert Kolenkow, *An Introduction to Mechanics* (1973; 2nd edition 2014) — Newtonian mechanics in depth.
+- Richard P. Feynman, Robert B. Leighton and Matthew Sands, *The Feynman Lectures on Physics*, Volume I (1963), and the chapter on the principle of least action in Volume II.
+
+Next in the Lumenary: <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>, <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink>, <TopicLink id="math.geom.symplectic-geometry">symplectic geometry</TopicLink>, <TopicLink id="math.applied.relativity">relativity</TopicLink> and <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>.
+
+</Section>

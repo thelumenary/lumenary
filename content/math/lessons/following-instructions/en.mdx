@@ -1,0 +1,393 @@
+---
+slug: following-instructions
+topic: math.comp.following-instructions
+title: Following and giving precise instructions
+subtitle: Arrow cards, a floor robot that does exactly what it is told, and the joy of finding and fixing a bug.
+level: k2
+ages: Ages 5–8
+minutes: 30
+order: 1009
+objectives:
+  - Follow a sequence of movement instructions on a grid and predict where it ends
+  - Write a sequence of instructions to reach a target, and test it
+  - Find and fix a mistake (a "bug") in a sequence of instructions
+  - Explain why the order of the steps can change the result
+  - Explain why instructions must be precise enough to follow without guessing, and that there is often more than one correct program
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.FollowingInstructions.Arrow
+  - Lumenary.FollowingInstructions.step
+  - Lumenary.FollowingInstructions.run
+  - Lumenary.FollowingInstructions.to_the_tree
+  - Lumenary.FollowingInstructions.two_programs
+  - Lumenary.FollowingInstructions.run_append
+  - Lumenary.FollowingInstructions.taxi
+  - Lumenary.FollowingInstructions.taxi_le_length
+  - Lumenary.FollowingInstructions.straight_route
+  - Lumenary.FollowingInstructions.exec
+  - Lumenary.FollowingInstructions.order_matters
+  - Lumenary.FollowingInstructions.left_then_right
+  - Lumenary.FollowingInstructions.debug
+compute: [following_instructions_shortest_routes]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Put the jam on the bread">
+
+In a classroom in Nairobi, Mr Otieno has a loaf of bread, a jar of jam and a spoon. "I am a robot," he says. "I will make a jam sandwich, but I will do **exactly** what you tell me — nothing more."
+
+"Put the jam on the bread!" calls Wanjiru.
+
+Mr Otieno picks up the whole jar and puts it on top of the loaf. Everybody laughs. That is not what Wanjiru meant! But it *is* what she said.
+
+"Open the jar," tries Baraka. "Take a slice of bread out of the bag. Put a spoonful of jam on the slice. Spread it with the spoon…" Step by step, the sandwich gets made.
+
+<Narrator who="chloe">
+
+Hello! I'm Chloe. Why did the first try go wrong? Wanjiru knew what she meant — but the "robot" couldn't read her mind. Good instructions say *exactly* what to do, one step at a time.
+
+</Narrator>
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Arrow cards on a grid">
+
+Here is a map drawn on a grid of squares. You start on the gold star. Each **arrow card** tells you to move **one square** in the direction of the arrow. Follow the cards in order, from left to right.
+
+<Figure caption="Start on the star. The program → → → ↑ ↑ means: three squares right, then two squares up. It ends at the mango tree.">
+<svg viewBox="0 0 570 240" role="img" aria-label="A grid five squares wide and four tall. A path goes from a star in the bottom-left square three squares right and two squares up to a tree. Beside the grid are five arrow cards: right, right, right, up, up.">
+  <line x1="20" y1="20" x2="20" y2="220" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="70" y1="20" x2="70" y2="220" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="120" y1="20" x2="120" y2="220" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="170" y1="20" x2="170" y2="220" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="220" y1="20" x2="220" y2="220" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="270" y1="20" x2="270" y2="220" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="20" x2="270" y2="20" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="70" x2="270" y2="70" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="120" x2="270" y2="120" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="170" x2="270" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="220" x2="270" y2="220" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <polyline points="45,195 95,195 145,195 195,195 195,145 195,95" fill="none" stroke="var(--human)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+  <polygon points="45.0,180.0 48.8,189.7 59.3,190.4 51.2,197.0 53.8,207.1 45.0,201.5 36.2,207.1 38.8,197.0 30.7,190.4 41.2,189.7" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="192" y="97" width="6" height="14" fill="var(--ink-2)" />
+  <circle cx="195" cy="91" r="14" fill="var(--compute)" fillOpacity="0.7" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="300" y="95" width="44" height="54" rx="6" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <text x="322" y="131" textAnchor="middle" fontSize="28" fill="var(--ink-2)">→</text>
+  <rect x="352" y="95" width="44" height="54" rx="6" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <text x="374" y="131" textAnchor="middle" fontSize="28" fill="var(--ink-2)">→</text>
+  <rect x="404" y="95" width="44" height="54" rx="6" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <text x="426" y="131" textAnchor="middle" fontSize="28" fill="var(--ink-2)">→</text>
+  <rect x="456" y="95" width="44" height="54" rx="6" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <text x="478" y="131" textAnchor="middle" fontSize="28" fill="var(--ink-2)">↑</text>
+  <rect x="508" y="95" width="44" height="54" rx="6" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <text x="530" y="131" textAnchor="middle" fontSize="28" fill="var(--ink-2)">↑</text>
+</svg>
+</Figure>
+
+A list of instructions like this is called a **program**, or an **algorithm**. The person (or robot) following it does not need to guess anything: each card says exactly what to do.
+
+<Narrator who="margaret">
+
+I'm Margaret. Before I follow a program, I like to *predict* where it will end. Count: three squares across, two squares up. Then follow it and check. Were you right?
+
+</Narrator>
+
+</Section>
+
+<Section id="ideas" kind="definitions" title="Big ideas">
+
+<Definition term="instruction">
+
+An **instruction** tells you to do one thing, such as "move one square up" or "turn left".
+
+</Definition>
+
+<Definition term="algorithm">
+
+An **algorithm** (or **program**) is a precise list of steps that can be followed to complete a task. You do the steps **one after another, in order**.
+
+</Definition>
+
+<Definition term="bug">
+
+A **bug** is a mistake in an algorithm that makes it do something we did not want. Finding and fixing bugs is called **debugging**. Every programmer in the world does it, every day!
+
+</Definition>
+
+<Narrator who="gideon">
+
+I'm Gideon. I like precision. "Go over there a bit" is not an instruction I can follow. Where is "there"? How much is "a bit"? "Move 2 squares right" — now *that* I can do.
+
+</Narrator>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Let's try together">
+
+<Example title="More than one right answer">
+
+To get from the star to the tree two squares right and one square up, you could use **↑ → →** or **→ → ↑** (or **→ ↑ →**). They are different programs, but they all reach the tree. There is often **more than one correct algorithm**.
+
+<Figure caption="Two different programs that reach the same tree: ↑ → → (solid) and → → ↑ (dashed).">
+<svg viewBox="0 0 380 190" role="img" aria-label="A grid four squares wide and three tall. Two paths go from a star in the bottom-left corner to a tree two squares right and one square up: one goes up first, the other goes right first.">
+  <line x1="20" y1="20" x2="20" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="70" y1="20" x2="70" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="120" y1="20" x2="120" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="170" y1="20" x2="170" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="220" y1="20" x2="220" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="20" x2="220" y2="20" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="70" x2="220" y2="70" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="120" x2="220" y2="120" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="170" x2="220" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <polyline points="45,145 45,95 95,95 145,95" fill="none" stroke="var(--human)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+  <polyline points="45,145 95,145 145,145 145,95" fill="none" stroke="var(--formal)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="8 6" />
+  <polygon points="45.0,130.0 48.8,139.7 59.3,140.4 51.2,147.0 53.8,157.1 45.0,151.5 36.2,157.1 38.8,147.0 30.7,140.4 41.2,139.7" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="142" y="97" width="6" height="14" fill="var(--ink-2)" />
+  <circle cx="145" cy="91" r="14" fill="var(--compute)" fillOpacity="0.7" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <text x="260" y="70" fontSize="22" fill="var(--human)">↑ → →</text>
+  <text x="260" y="120" fontSize="22" fill="var(--formal)">→ → ↑</text>
+</svg>
+</Figure>
+
+</Example>
+
+<Example title="A robot that turns">
+
+Some floor robots have only three buttons: **forward** (move one square the way you are facing), **turn left** and **turn right** (turn on the spot, a quarter turn). Now the robot's direction matters.
+
+Start facing up the page. Press **forward**, then **turn right**: the robot moves one square up and then turns to face right. Now start again and press **turn right**, then **forward**: the robot turns first, and then moves one square to the **right**. The same two buttons, in a different order, leave the robot in a different place.
+
+<Figure caption="The robot starts in the dashed circle, facing up. Left: forward, then turn right. Right: turn right, then forward. Same buttons, different order, different square.">
+<svg viewBox="0 0 430 215" role="img" aria-label="Two small grids. On the left the robot has moved one square up and faces right. On the right the robot has moved one square to the right and faces right.">
+  <line x1="20" y1="20" x2="20" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="70" y1="20" x2="70" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="120" y1="20" x2="120" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="170" y1="20" x2="170" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="20" x2="170" y2="20" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="70" x2="170" y2="70" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="120" x2="170" y2="120" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="20" y1="170" x2="170" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <circle cx="45" cy="145" r="18" fill="none" stroke="var(--ink-2)" strokeWidth="2" strokeDasharray="4 4" />
+  <polyline points="45,145 45,95" fill="none" stroke="var(--human)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  <polygon points="60.0,95.0 33.0,107.0 33.0,83.0" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="2" strokeLinejoin="round" />
+  <text x="95" y="200" textAnchor="middle" fontSize="16" fill="var(--ink-2)">F then R</text>
+  <line x1="260" y1="20" x2="260" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="310" y1="20" x2="310" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="360" y1="20" x2="360" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="410" y1="20" x2="410" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="260" y1="20" x2="410" y2="20" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="260" y1="70" x2="410" y2="70" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="260" y1="120" x2="410" y2="120" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <line x1="260" y1="170" x2="410" y2="170" stroke="var(--ink-2)" strokeOpacity="0.35" strokeWidth="1.5" />
+  <circle cx="285" cy="145" r="18" fill="none" stroke="var(--ink-2)" strokeWidth="2" strokeDasharray="4 4" />
+  <polyline points="285,145 335,145" fill="none" stroke="var(--human)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  <polygon points="350.0,145.0 323.0,157.0 323.0,133.0" fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="2" strokeLinejoin="round" />
+  <text x="335" y="200" textAnchor="middle" fontSize="16" fill="var(--ink-2)">R then F</text>
+</svg>
+</Figure>
+
+The order matters in everyday algorithms too. Put on your socks, then your shoes — fine. Shoes first, then socks? Try explaining that to your feet!
+
+</Example>
+
+<Example title="Finding a bug">
+
+Juma wants the robot to go **2 squares up and 1 square to the right**. He writes: *forward, forward, turn left, forward*. He tests it, and the robot ends up one square to the **left**. There is a bug!
+
+Which step is wrong? The first two steps go up correctly. The third step turns the wrong way. Changing **turn left** to **turn right** fixes the program: *forward, forward, turn right, forward*. Testing it again shows that it works.
+
+</Example>
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Plan a route through town">
+
+This map shows the streets of a small town. H is Home, L is the Library, S is the School, P is the Park and M is the Market; the numbers are other street corners. Plan a route from H to L by clicking the streets **one after another**, starting at H. Your route is a program: "go along this street, then this one, then this one…".
+
+<GraphExplorer
+  nodes={["H", "1", "M", "2", "P", "3", "S", "4", "L"]}
+  edges={[["H", "1"], ["1", "M"], ["2", "P"], ["P", "3"], ["S", "4"], ["4", "L"], ["H", "2"], ["2", "S"], ["1", "P"], ["P", "4"], ["M", "3"], ["3", "L"]]}
+  positions={[[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]}
+  modes={["walk"]}
+  title="From Home to the Library"
+  subtitle="Click a street that touches H, then keep going, one street at a time, until you reach L."
+/>
+
+What to try:
+
+- Find a route that uses only **4** streets. Then find a *different* route with 4 streets. How many can you find? (Margaret's computer says there are 6.)
+- Try clicking a street that does not touch the corner where you are. The map will not let you jump — every step must follow on from the last one.
+- Can you find a route that goes past the Park (P) and the Market (M)?
+
+</Section>
+
+<Section id="precise" kind="human" title="Why instructions must be precise">
+
+A robot or a computer **does not know what you mean**. It only does what you **say**. That is why the jam went on the loaf.
+
+- **Each step must be clear.** "Turn" is not enough: turn left or right? "Go forward" — how many squares?
+- **The steps must be in the right order.** Spreading the jam before opening the jar does not work.
+- **The same program always does the same thing.** If you follow a program twice from the same start, you end up in the same place twice. That is what makes programs so useful — and it is why, when a program has a bug, it does the wrong thing *every* time until you fix it.
+
+<Narrator who="chloe">
+
+Why is it good that a robot never guesses? Because then you can *trust* it. If the program is right, it works every single time. And if it is wrong, you can find exactly which step to change.
+
+</Narrator>
+
+<Note>
+
+Testing is part of writing a program. Write your steps, follow them carefully (or let a friend follow them), and see what happens. If something goes wrong, that is not a failure — it is a bug to find, and finding it is a little puzzle.
+
+</Note>
+
+</Section>
+
+<Section id="gideon-game" kind="formal" title="Gideon's yes-or-no game">
+
+Gideon reads a statement. Is it **true** or **false**?
+
+1. "The program → → ↑ takes you to the square 2 across and 1 up." — **True.**
+2. "There is only one correct program to reach a square." — **False!** ↑ → → and → → ↑ both reach the same square.
+3. "For the robot, *forward then turn right* does the same as *turn right then forward*." — **False.** The robot ends on different squares.
+4. "*Turn left, then turn right* leaves the robot exactly as it was." — **True.** The second turn undoes the first.
+5. "You can reach the square 3 across and 2 up with only 4 arrow cards." — **False.** Each card moves you only one square, and you need 3 across and 2 up: at least 5 cards.
+
+<ForGrownUps title="the same game in Lean, a proof checker">
+
+Arrow cards, one step, and following a whole program:
+
+<Lean decl="Lumenary.FollowingInstructions.Arrow" />
+
+<Lean decl="Lumenary.FollowingInstructions.step" />
+
+<Lean decl="Lumenary.FollowingInstructions.run" />
+
+<Lean decl="Lumenary.FollowingInstructions.to_the_tree" />
+
+<Lean decl="Lumenary.FollowingInstructions.two_programs" />
+
+Following one program and then another is the same as following the two joined together — the reason we can build long programs out of short ones:
+
+<Lean decl="Lumenary.FollowingInstructions.run_append" />
+
+Statement 5 is a theorem about **every** program. The "across plus up" distance changes by at most 1 with each card, so no program is shorter than the distance; and going straight across and then straight up shows a program of exactly that length always exists.
+
+<Lean decl="Lumenary.FollowingInstructions.taxi" />
+
+<Lean decl="Lumenary.FollowingInstructions.taxi_le_length" />
+
+<Lean decl="Lumenary.FollowingInstructions.straight_route" />
+
+The floor robot, with its three buttons. Order matters, a left turn is undone by a right turn, and the bug in Juma's program is fixed by changing one instruction:
+
+<Lean decl="Lumenary.FollowingInstructions.exec" />
+
+<Lean decl="Lumenary.FollowingInstructions.order_matters" />
+
+<Lean decl="Lumenary.FollowingInstructions.left_then_right" />
+
+<Lean decl="Lumenary.FollowingInstructions.debug" />
+
+Notice that Lean itself is a very precise instruction-follower: it runs `run` and `runRobot` exactly as written, which is why `decide` and `rfl` can check these facts. What is *not* formalised: what makes an everyday instruction like "spread the jam" clear enough. Precision in plain language is a human skill, not a theorem.
+
+</ForGrownUps>
+
+</Section>
+
+<Section id="margaret" kind="computation" title="Margaret runs every program">
+
+<Narrator who="margaret">
+
+My computer is a very fast, very obedient instruction-follower. I asked it to run **every** arrow program with up to 6 cards — there are 5,460 of them! — and to find the shortest programs to each square. Then I gave it Juma's buggy robot program and asked it to try every way of changing one instruction.
+
+</Narrator>
+
+Margaret's computer found that the shortest program to a square always has exactly "squares across plus squares up" cards, and that there are usually **many** shortest programs. To reach the square 2 across and 2 up there are 6 different shortest programs; to reach 3 across and 3 up there are 20!
+
+<ForGrownUps title="Margaret's program">
+
+The number of shortest programs to the square $a$ across and $b$ up is the binomial coefficient $\binom{a+b}{a}$: a shortest program has $a + b$ cards, and choosing which $a$ of them are "across" cards decides the whole program. The program checks this, and the distance rule, for every square reached by up to 6 cards; the Lean file proves the distance rule for all programs. On the town map above, H to L is 2 across and 2 down, so there are $\binom{4}{2} = 6$ shortest routes.
+
+<Python id="following_instructions_shortest_routes" />
+
+</ForGrownUps>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Your turn">
+
+Draw a grid on paper, or use the floor tiles, and act the programs out. You can ask for a hint whenever you like.
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Things that trip people up">
+
+<Misconception>
+
+**"The robot knows what I mean."** It doesn't. A robot or a computer follows the instructions exactly as they are written, with no guessing. If the program says "turn left" when you meant "turn right", it turns left.
+
+</Misconception>
+
+<Misconception>
+
+**"There is only one right answer."** Usually there are many correct programs for the same task, like the 6 different shortest routes from Home to the Library. Some may be shorter or easier to read, but they all work.
+
+</Misconception>
+
+<Misconception>
+
+**"The order doesn't matter, as long as all the steps are there."** Sometimes it doesn't (→ ↑ and ↑ → reach the same square), but often it does: *forward, turn right* and *turn right, forward* end in different places, and socks must go on before shoes.
+
+</Misconception>
+
+<Misconception>
+
+**"A bug means I'm bad at this."** Every programmer writes bugs. Testing and debugging are a normal, important part of writing any algorithm.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Two ways of looking at programs">
+
+<Viewpoint lens="computation" title="The computer scientist: programs are built from steps">
+
+A computer scientist builds big programs out of small ones: follow one program, then another. Instead of writing *forward, forward, forward, forward*, you can say "repeat 4 times: forward" — that is a **loop**, and "if there is a wall, turn right" is a **decision**. You will meet both in <TopicLink id="math.comp.loops-and-conditions">Repetition and decisions</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="The geometer: distance on a grid">
+
+On a grid where you can only move along the lines, the distance between two squares is not "as the crow flies". It is **squares across plus squares up**, because no program can be shorter than that. Grown-ups call this the *taxicab distance*, after taxis driving on a grid of streets. It is a real distance, with its own geometry: the squares that are 2 steps from the start make a diamond, not a circle!
+
+</Viewpoint>
+
+</Section>
+
+<Section id="where" kind="categories" title="Where instructions lead">
+
+A program is a chain of actions, done one after another. In <TopicLink id="math.cat.actions-and-undoing">Doing and undoing</TopicLink> you saw single actions and how to undo them; <TopicLink id="math.cat.chaining-actions">One thing after another</TopicLink> chains them together. (How would you undo a whole robot program? Hint: think about the order!)
+
+</Section>
+
+<Section id="history" kind="history" title="Instructions in history">
+
+- **The word "algorithm".** Around 820 CE, in Baghdad, Muḥammad ibn Mūsā al-Khwārizmī wrote a book explaining how to calculate with the Hindu–Arabic numerals 0 to 9. When it was translated into Latin, his name was written *Algoritmi* — and that gave us the word **algorithm**.
+- **A loom that follows instructions.** In 1804, Joseph-Marie Jacquard in France built a weaving loom controlled by a chain of punched cards. The holes in the cards told the loom which threads to lift, so the same pattern could be woven again and again.
+- **The first published computer program.** In 1843, Ada Lovelace published notes on Charles Babbage's planned Analytical Engine, including a step-by-step method for the machine to calculate a sequence of numbers called the Bernoulli numbers.
+- **The first "actual bug".** In 1947, the team working on the Harvard Mark II computer found a moth stuck in one of its switches, and taped it into their logbook as the "first actual case of bug being found". (Engineers had already called mistakes "bugs" for decades.) Grace Hopper, a member of the team, loved to tell the story.
+- **Turtles for children.** In the late 1960s, Seymour Papert, Cynthia Solomon and Wally Feurzeig created the Logo language, in which children give instructions like "forward" and "right" to a "turtle" — sometimes a little floor robot — to draw shapes.
+
+</Section>
+
+<Section id="reading" kind="reading" title="For grown-ups: further reading">
+
+- Tim Bell, Ian H. Witten and Mike Fellows, *Computer Science Unplugged* (1998; later editions) — classroom activities for computing ideas without computers.
+- Seymour Papert, *Mindstorms: Children, Computers, and Powerful Ideas* (1980) — the classic book on children programming turtles.
+- Linda Liukas, *Hello Ruby: Adventures in Coding* (2015) — a picture book about thinking like a programmer, with activities.
+
+</Section>

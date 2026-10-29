@@ -1,0 +1,516 @@
+---
+slug: adjunctions
+topic: math.cat.adjunctions
+title: Adjunctions
+subtitle: Free objects, currying, floors and ceilings, images and preimages, quantifiers — the pairs of functors that are “as close to inverse as possible”, and why right adjoints preserve limits.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6027
+objectives:
+  - Define an adjunction $F \dashv G$ by natural bijections $\Hom(FA, B) \cong \Hom(A, GB)$, and verify adjunctions such as free monoid $\dashv$ forgetful, $- \times B \dashv (-)^B$ in $\cat{Set}$ and the tensor–hom adjunction
+  - Pass between the hom-set and the unit–counit definitions of an adjunction using the triangle identities
+  - Recognise Galois connections as adjunctions between posets and use them (floor and ceiling, image and preimage)
+  - Prove that adjoints are unique up to unique isomorphism and that right adjoints preserve limits and left adjoints preserve colimits
+  - Use preservation of limits and colimits to show that some functors have no adjoint, and explain why an adjunction need not be an equivalence
+narrators: []
+lean:
+  - Lumenary.Adjunctions.curryEquiv
+  - Lumenary.Adjunctions.curry_natural
+  - Lumenary.Adjunctions.curryUnit
+  - Lumenary.Adjunctions.curryCounit
+  - Lumenary.Adjunctions.curry_triangles
+  - Lumenary.Adjunctions.free_monoid_lift
+  - Lumenary.Adjunctions.free_hom_ext
+  - Lumenary.Adjunctions.unit_not_surjective
+  - Lumenary.Adjunctions.image_preimage
+  - Lumenary.Adjunctions.floor_ceil
+  - Lumenary.Adjunctions.left_adjoint_sup
+  - Lumenary.Adjunctions.left_adjoint_bot
+  - Lumenary.Adjunctions.right_adjoint_unique
+  - Lumenary.Adjunctions.const_true_no_right_adjoint
+  - Lumenary.Adjunctions.adjoint_functor_theorem_lattices
+  - Lumenary.Adjunctions.triangle_identities
+  - Lumenary.Adjunctions.left_adjoint_unique
+  - Lumenary.Adjunctions.right_adjoint_preserves_limits
+  - Lumenary.Adjunctions.adjunctionMonad
+  - Lumenary.Adjunctions.freyd_adjoint_functor_theorem
+  - Lumenary.Adjunctions.tensorHom
+  - Lumenary.Adjunctions.option_no_left_adjoint
+  - Lumenary.Adjunctions.option_no_right_adjoint
+compute: [adjunctions_galois_finite, adjunctions_formal_concepts]
+trails: [products-by-maps]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="The best approximation from either side">
+
+The inclusion of the integers into the real numbers has no inverse: $\pi$ is not an integer. But it has two best approximations. The **floor** $\lfloor x \rfloor$ is the best integer approximation from below and the **ceiling** $\lceil x \rceil$ the best from above, and "best" has a crisp meaning: for every integer $n$,
+
+$$
+n \le \lfloor x \rfloor \iff n \le x, \qquad \lceil x \rceil \le n \iff x \le n .
+$$
+
+The forgetful functor from groups to sets has no inverse either: most sets carry many group structures, or none in any canonical way. But it has a best approximation from one side: the **free group** $F(S)$ on a set $S$, characterised by "a homomorphism $F(S) \to G$ is the same as a function $S \to G$".
+
+The same shape appears when a function of two variables is **curried** into a function of one variable returning functions, when the image of a set under a map is compared with a preimage, when a quantifier $\exists x$ is compared with a free variable, and when a tensor product is compared with bilinear maps. In each case two constructions $F$ and $G$ point in opposite directions and
+
+$$
+\Hom(F A, B) \;\cong\; \Hom(A, G B),
+$$
+
+naturally in $A$ and $B$. Daniel Kan named this relationship an **adjunction** in 1958. Saunders Mac Lane later summarised the experience of a generation: "adjoint functors arise everywhere".
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Galois connections first">
+
+A poset is a category with at most one arrow between two objects, so a hom-set is either empty or a single point and "naturally isomorphic hom-sets" just means "one inequality holds exactly when the other does". An adjunction between posets is therefore a pair of monotone maps $l : P \to Q$ and $u : Q \to P$ with
+
+$$
+l(a) \le b \iff a \le u(b) \qquad \text{for all } a \in P,\ b \in Q,
+$$
+
+a **Galois connection**. Floor and ceiling are the examples above, with the inclusion $\Z \to \R$ playing the role of $u$ for the ceiling and of $l$ for the floor: $\lceil - \rceil \dashv \iota \dashv \lfloor - \rfloor$. The direct image and preimage under a map $f : X \to Y$ are another: $f(S) \subseteq T \iff S \subseteq f^{-1}(T)$.
+
+Two things are visible already here. First, adjoints are **not inverses**: $\lfloor \iota(n) \rfloor = n$, but $\iota(\lfloor x \rfloor) \le x$ with equality only for integers. Second, a left adjoint is **pinned down** by its right adjoint: $\lceil x \rceil$ must be the least integer $n$ with $x \le n$ — there is no choice. Everything in this lesson is a categorified version of these two observations: the inequalities $a \le u(l(a))$ and $l(u(b)) \le b$ become the **unit** and **counit**, and "the least $n$ with…" becomes a universal property.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $\mathcal{C}$ and $\mathcal{D}$ are locally small categories and composition is written $g \circ f$.
+
+<Definition term="adjunction (hom-set form)">
+
+An **adjunction** between functors $F : \mathcal{C} \to \mathcal{D}$ and $G : \mathcal{D} \to \mathcal{C}$ is a family of bijections
+
+$$
+\varphi_{A,B} : \Hom_{\mathcal{D}}(FA, B) \xrightarrow{\;\cong\;} \Hom_{\mathcal{C}}(A, GB),
+$$
+
+natural in $A$ and $B$: for $a : A' \to A$ in $\mathcal{C}$, $b : B \to B'$ in $\mathcal{D}$ and $k : FA \to B$,
+
+$$
+\varphi(b \circ k \circ Fa) = Gb \circ \varphi(k) \circ a .
+$$
+
+$F$ is **left adjoint** to $G$ and $G$ **right adjoint** to $F$, written $F \dashv G$. The arrow $\varphi(k) : A \to GB$ is the **transpose** (or adjunct) of $k : FA \to B$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "C", tex: "\\mathcal{C}", row: 0, col: 0 },
+    { id: "D", tex: "\\mathcal{D}", row: 0, col: 1 },
+  ]}
+  arrows={[
+    { from: "C", to: "D", tex: "F" },
+    { from: "D", to: "C", tex: "G" },
+  ]}
+  caption="An adjunction $F \dashv G$: $F$ is the left adjoint (it appears on the left of the hom-set, $\operatorname{Hom}(FA, B)$)."
+/>
+
+<Definition term="unit, counit and the triangle identities">
+
+Given $F \dashv G$, the **unit** is the natural transformation $\eta : \mathrm{id}_{\mathcal{C}} \Rightarrow GF$ with $\eta_A = \varphi(\mathrm{id}_{FA})$, and the **counit** is $\varepsilon : FG \Rightarrow \mathrm{id}_{\mathcal{D}}$ with $\varepsilon_B = \varphi^{-1}(\mathrm{id}_{GB})$. They satisfy the **triangle identities**
+
+$$
+\varepsilon_{FA} \circ F\eta_A = \mathrm{id}_{FA}, \qquad G\varepsilon_B \circ \eta_{GB} = \mathrm{id}_{GB},
+$$
+
+written more compactly $\varepsilon F \circ F\eta = 1_F$ and $G\varepsilon \circ \eta G = 1_G$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "F1", tex: "FA", row: 0, col: 0 },
+    { id: "F2", tex: "FGFA", row: 0, col: 1 },
+    { id: "F3", tex: "FA", row: 1, col: 1 },
+    { id: "G1", tex: "GB", row: 0, col: 2.4 },
+    { id: "G2", tex: "GFGB", row: 0, col: 3.4 },
+    { id: "G3", tex: "GB", row: 1, col: 3.4 },
+  ]}
+  arrows={[
+    { from: "F1", to: "F2", tex: "F\\eta_A" },
+    { from: "F2", to: "F3", tex: "\\varepsilon_{FA}" },
+    { from: "F1", to: "F3", tex: "\\mathrm{id}", labelSide: "right" },
+    { from: "G1", to: "G2", tex: "\\eta_{GB}" },
+    { from: "G2", to: "G3", tex: "G\\varepsilon_B" },
+    { from: "G1", to: "G3", tex: "\\mathrm{id}", labelSide: "right" },
+  ]}
+  caption="The triangle identities."
+/>
+
+<Definition term="Galois connection">
+
+A **Galois connection** between posets $P$ and $Q$ is a pair of maps $l : P \to Q$, $u : Q \to P$ with $l(a) \le b \iff a \le u(b)$ for all $a, b$ — an adjunction $l \dashv u$ between the posets regarded as categories. (Both maps are then automatically monotone.) An **antitone** Galois connection is a Galois connection between $P$ and $Q^{\mathrm{op}}$.
+
+</Definition>
+
+<Definition term="universal arrow">
+
+For a functor $G : \mathcal{D} \to \mathcal{C}$ and an object $A$ of $\mathcal{C}$, a **universal arrow** from $A$ to $G$ is an object $FA$ of $\mathcal{D}$ with an arrow $\eta_A : A \to G(FA)$ such that every $f : A \to GB$ is $G(k) \circ \eta_A$ for a unique $k : FA \to B$. (This is the definition of a free object, made general.)
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Free ⊣ forgetful">
+
+Let $U : \cat{Mon} \to \cat{Set}$ forget the multiplication and let $F(S)$ be the free monoid of finite words in $S$. A monoid homomorphism $F(S) \to M$ is determined by, and can be chosen freely on, the generators: $\Hom_{\cat{Mon}}(FS, M) \cong \Hom_{\cat{Set}}(S, UM)$, $k \mapsto k \circ \eta_S$, where $\eta_S : S \to UFS$ sends $s$ to the one-letter word. The counit $\varepsilon_M : FUM \to M$ evaluates a word of elements of $M$ by multiplying it out. The same holds for free groups, free vector spaces ($\Hom_k(k^{(S)}, V) \cong \Hom_{\cat{Set}}(S, V)$: a linear map is determined freely by its values on a basis), free abelian groups, free modules and polynomial rings ($\Hom_{\cat{CRing}}(\Z[x_s : s \in S], R) \cong R^S$). In each case the **free** functor is the **left** adjoint.
+
+</Example>
+
+<Example title="Currying">
+
+In $\cat{Set}$ fix a set $B$. Then $- \times B \dashv (-)^B$, where $C^B$ is the set of functions $B \to C$:
+
+$$
+\Hom(A \times B, C) \cong \Hom(A, C^B), \qquad h \mapsto \big(a \mapsto (b \mapsto h(a, b))\big).
+$$
+
+The unit $\eta_A : A \to (A \times B)^B$ is $a \mapsto (b \mapsto (a, b))$ and the counit $\varepsilon_C : C^B \times B \to C$ is evaluation, $(\varphi, b) \mapsto \varphi(b)$. A category in which every $- \times B$ has a right adjoint is **cartesian closed**; $\cat{Set}$, $\cat{Cat}$ and the category of compactly generated spaces are examples, and cartesian closed categories model the typed λ-calculus.
+
+</Example>
+
+<Example title="Tensor and hom">
+
+For modules over a commutative ring $R$ and a fixed module $N$: $- \otimes_R N \dashv \Hom_R(N, -)$, i.e. $\Hom_R(M \otimes_R N, P) \cong \Hom_R(M, \Hom_R(N, P))$ — both sides are the $R$-bilinear maps $M \times N \to P$. This is currying for linear algebra.
+
+</Example>
+
+<Example title="Images, preimages and quantifiers">
+
+For $f : X \to Y$, regard the power sets as posets. Then
+
+$$
+f_!(S) \subseteq T \iff S \subseteq f^{-1}(T) \qquad\text{and}\qquad f^{-1}(T) \subseteq S \iff T \subseteq f_*(S),
+$$
+
+where $f_!(S) = f(S) = \{y : \exists x \in S,\ f(x) = y\}$ and $f_*(S) = \{y : \forall x,\ f(x) = y \Rightarrow x \in S\}$. So $f_! \dashv f^{-1} \dashv f_*$: the preimage has adjoints on both sides, an "existential" image and a "universal" image. For the projection $f : X \times Y \to Y$ these are the quantifiers $\exists x$ and $\forall x$.
+
+</Example>
+
+<Example title="Spaces, groups and pointed sets">
+
+- $U : \cat{Top} \to \cat{Set}$ has a left adjoint (discrete topology) and a right adjoint (indiscrete topology): $\mathrm{Disc} \dashv U \dashv \mathrm{Indisc}$.
+- The inclusion $\cat{Ab} \hookrightarrow \cat{Grp}$ has a left adjoint, abelianisation: $\Hom_{\cat{Grp}}(G, A) \cong \Hom_{\cat{Ab}}(G^{\mathrm{ab}}, A)$ for abelian $A$.
+- The forgetful functor from pointed sets to sets has the left adjoint $X \mapsto X \sqcup \{\ast\}$ ("adjoin a base point").
+- The inclusion of compact Hausdorff spaces into $\cat{Top}$ has a left adjoint, the **Stone–Čech compactification** $\beta$.
+- For a small category $\mathcal{J}$, the diagonal functor $\Delta : \mathcal{C} \to [\mathcal{J}, \mathcal{C}]$ has $\operatorname{colim} \dashv \Delta \dashv \lim$ whenever these exist (see <TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink>).
+
+</Example>
+
+<Example title="Non-examples">
+
+- The forgetful functor $U : \cat{Field} \to \cat{Set}$ has no left adjoint: there is no "free field". (Proof below: a left adjoint would send $\varnothing$ to an initial field.)
+- The functor $X \mapsto X \sqcup \{\ast\}$ on $\cat{Set}$ has neither a left nor a right adjoint — although it is a left adjoint when regarded as a functor to *pointed* sets. Which category a functor lands in matters.
+- $U : \cat{Grp} \to \cat{Set}$ has a left adjoint but no right adjoint (it does not preserve coproducts).
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems and proofs">
+
+<Theorem name="Theorem 1 (hom-sets versus unit and counit)">
+
+(a) Given an adjunction $\varphi$, the unit and counit defined above are natural and satisfy the triangle identities, and $\varphi(k) = Gk \circ \eta_A$, $\varphi^{-1}(f) = \varepsilon_B \circ Ff$.
+
+(b) Conversely, natural transformations $\eta : \mathrm{id} \Rightarrow GF$ and $\varepsilon : FG \Rightarrow \mathrm{id}$ satisfying the triangle identities define an adjunction by $\varphi(k) = Gk \circ \eta_A$, with inverse $f \mapsto \varepsilon_B \circ Ff$.
+
+</Theorem>
+
+<Proof>
+
+(a) Naturality of $\varphi$ in $B$ with $a = \mathrm{id}$ gives $\varphi(k) = \varphi(k \circ \mathrm{id}_{FA}) = Gk \circ \varphi(\mathrm{id}_{FA}) = Gk \circ \eta_A$; dually $\varphi^{-1}(f) = \varepsilon_B \circ Ff$. Naturality of $\eta$: for $a : A' \to A$, $GFa \circ \eta_{A'} = \varphi(Fa \circ \mathrm{id}_{FA'}) = \varphi(\mathrm{id}_{FA} \circ Fa) = \eta_A \circ a$, using naturality of $\varphi$ in each variable. Naturality of $\varepsilon$ is dual. Triangle identities: $\varepsilon_{FA} \circ F\eta_A = \varphi^{-1}(\eta_A) = \varphi^{-1}(\varphi(\mathrm{id}_{FA})) = \mathrm{id}_{FA}$, and $G\varepsilon_B \circ \eta_{GB} = \varphi(\varepsilon_B) = \varphi(\varphi^{-1}(\mathrm{id}_{GB})) = \mathrm{id}_{GB}$.
+
+(b) The two maps are mutually inverse: for $k : FA \to B$,
+
+$$
+\varepsilon_B \circ F(Gk \circ \eta_A) = \varepsilon_B \circ FGk \circ F\eta_A = k \circ \varepsilon_{FA} \circ F\eta_A = k,
+$$
+
+by naturality of $\varepsilon$ and the first triangle identity; symmetrically $G(\varepsilon_B \circ Ff) \circ \eta_A = G\varepsilon_B \circ \eta_{GB} \circ f = f$ by naturality of $\eta$ and the second identity. Naturality of $\varphi(k) = Gk \circ \eta_A$: $G(b \circ k \circ Fa) \circ \eta_{A'} = Gb \circ Gk \circ GFa \circ \eta_{A'} = Gb \circ Gk \circ \eta_A \circ a$.
+
+</Proof>
+
+Equivalently, $F \dashv G$ means that each $\eta_A : A \to GFA$ is a **universal arrow** from $A$ to $G$: every $f : A \to GB$ factors as $G(k) \circ \eta_A$ for a unique $k$, namely $k = \varphi^{-1}(f)$. Conversely, if every object $A$ has a universal arrow to $G$, the choices assemble into a left adjoint $F$ (define $F$ on arrows by the uniqueness clause). That is how free objects become free functors.
+
+<Theorem name="Theorem 2 (uniqueness of adjoints)">
+
+If $F \dashv G$ and $F' \dashv G$, then $F \cong F'$ by a unique natural isomorphism compatible with the units. Dually, right adjoints are unique up to unique isomorphism.
+
+</Theorem>
+
+<Proof>
+
+For each $A$, both $\eta_A : A \to GFA$ and $\eta'_A : A \to GF'A$ are universal arrows from $A$ to $G$. Universal arrows are initial objects of the category whose objects are pairs $(B, f : A \to GB)$ and whose morphisms $(B, f) \to (B', f')$ are arrows $k : B \to B'$ with $Gk \circ f = f'$. Initial objects are unique up to unique isomorphism, so there is a unique $\theta_A : FA \to F'A$ with $G\theta_A \circ \eta_A = \eta'_A$, and it is an isomorphism. For $a : A_1 \to A_2$, the arrows $\theta_{A_2} \circ Fa$ and $F'a \circ \theta_{A_1}$ both transpose (under $F \dashv G$) to $\eta'_{A_2} \circ a = GF'a \circ \eta'_{A_1}$, so they are equal: $\theta$ is natural.
+
+</Proof>
+
+For Galois connections uniqueness is visible directly: if $l \dashv u$ and $l \dashv u'$, then for every $a$, $a \le u(b) \iff l(a) \le b \iff a \le u'(b)$, so $u(b) = u'(b)$.
+
+<Theorem name="Theorem 3 (right adjoints preserve limits)">
+
+If $F \dashv G$, then $G$ preserves all limits that exist in $\mathcal{D}$, and $F$ preserves all colimits that exist in $\mathcal{C}$.
+
+</Theorem>
+
+<Proof>
+
+Let $(L, \pi)$ be a limit of $D : \mathcal{J} \to \mathcal{D}$. We show that $(GL, G\pi)$ is a limit of $GD$. Let $(X, \lambda)$ be a cone over $GD$, so $\lambda_j : X \to GD(j)$ with $GD(u) \circ \lambda_i = \lambda_j$. Transpose: $\varphi^{-1}(\lambda_j) : FX \to D(j)$, and by naturality of $\varphi^{-1}$ in the second variable,
+
+$$
+D(u) \circ \varphi^{-1}(\lambda_i) = \varphi^{-1}(GD(u) \circ \lambda_i) = \varphi^{-1}(\lambda_j),
+$$
+
+so these form a cone over $D$ with apex $FX$. It factors through $L$ by a unique $k : FX \to L$ with $\pi_j \circ k = \varphi^{-1}(\lambda_j)$. Transposing back, $h = \varphi(k) : X \to GL$ satisfies $G\pi_j \circ h = \varphi(\pi_j \circ k) = \lambda_j$. If also $G\pi_j \circ h' = \lambda_j$ for all $j$, then $\pi_j \circ \varphi^{-1}(h') = \varphi^{-1}(\lambda_j)$, so $\varphi^{-1}(h') = k$ and $h' = h$. The statement about $F$ is the dual (apply the first part to $G^{\mathrm{op}} \dashv F^{\mathrm{op}}$).
+
+</Proof>
+
+The proof is the slogan "maps into a limit are compatible families of maps", transported along the bijection $\varphi$. Its main use is **negative**: to show that a functor has no left adjoint, find a limit it does not preserve.
+
+<Theorem name="Corollary (functors without adjoints)">
+
+(a) $U : \cat{Field} \to \cat{Set}$ has no left adjoint. (b) $X \mapsto X \sqcup \{\ast\}$ on $\cat{Set}$ has neither a left nor a right adjoint. (c) $U : \cat{Grp} \to \cat{Set}$ has no right adjoint.
+
+</Theorem>
+
+<Proof>
+
+(a) A left adjoint $F$ preserves colimits, in particular initial objects: $F(\varnothing)$ would be an initial field. But a field has a characteristic, and ring homomorphisms between fields preserve it, so no field maps to fields of every characteristic. (b) A right adjoint preserves terminal objects, but $\{\ast\} \sqcup \{\ast\}$ has two elements and is not terminal; a left adjoint preserves initial objects, but $\varnothing \sqcup \{\ast\}$ is not empty. (c) A left adjoint preserves coproducts and the initial object, but $U(\Z * \Z) \neq U(\Z) \sqcup U(\Z)$ and the trivial group has a non-empty underlying set (see the previous lesson).
+
+</Proof>
+
+<Theorem name="Theorem 4 (an adjunction restricts to an equivalence)">
+
+Let $F \dashv G$. Let $\mathcal{C}_0 \subseteq \mathcal{C}$ be the full subcategory of objects $A$ with $\eta_A$ invertible and $\mathcal{D}_0 \subseteq \mathcal{D}$ the full subcategory of objects $B$ with $\varepsilon_B$ invertible. Then $F$ and $G$ restrict to an equivalence $\mathcal{C}_0 \simeq \mathcal{D}_0$. In particular, $F \dashv G$ is an adjoint equivalence exactly when all components of $\eta$ and $\varepsilon$ are isomorphisms.
+
+</Theorem>
+
+<Proof>
+
+If $\eta_A$ is invertible, the first triangle identity $\varepsilon_{FA} \circ F\eta_A = \mathrm{id}$ shows $\varepsilon_{FA} = (F\eta_A)^{-1}$ is invertible, so $F$ maps $\mathcal{C}_0$ into $\mathcal{D}_0$. Symmetrically, the second identity shows $G$ maps $\mathcal{D}_0$ into $\mathcal{C}_0$. On these subcategories $\eta$ and $\varepsilon$ are natural isomorphisms $\mathrm{id} \cong GF$ and $FG \cong \mathrm{id}$, which is the definition of an equivalence.
+
+</Proof>
+
+For a Galois connection, $\mathcal{C}_0$ and $\mathcal{D}_0$ are the **closed elements** $\{a : a = u(l(a))\}$ and $\{b : b = l(u(b))\}$, and Theorem 4 says $l$ and $u$ restrict to inverse order-isomorphisms between them. The fundamental theorem of Galois theory has exactly this shape (subgroups and intermediate fields are the closed elements of an antitone Galois connection), and so does the Nullstellensatz (see the geometry viewpoint). The second computation below shows it for a small relation.
+
+<Theorem name="Theorem 5 (the adjoint functor theorem for complete lattices)">
+
+Let $u : Q \to P$ be a map between complete lattices. Then $u$ has a left adjoint if and only if it preserves all infima: $u(\bigwedge S) = \bigwedge u(S)$ for every $S \subseteq Q$. The left adjoint is $l(a) = \bigwedge \{ b \in Q : a \le u(b) \}$.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) Infima are limits in a poset, and right adjoints preserve limits (Theorem 3). Directly: $a \le u(\bigwedge S) \iff l(a) \le \bigwedge S \iff l(a) \le b$ for all $b \in S \iff a \le u(b)$ for all $b \in S \iff a \le \bigwedge u(S)$.
+
+($\Leftarrow$) First, $u$ is monotone: if $b \le b'$ then $u(b) = u(b \wedge b') = u(b) \wedge u(b') \le u(b')$. If $a \le u(b)$, then $b$ belongs to the set defining $l(a)$, so $l(a) \le b$. Conversely $u(l(a)) = \bigwedge \{u(b) : a \le u(b)\} \ge a$, so $l(a) \le b$ implies $a \le u(l(a)) \le u(b)$.
+
+</Proof>
+
+For categories, the analogue is **Freyd's general adjoint functor theorem** (1964): if $\mathcal{D}$ is complete and locally small and $G : \mathcal{D} \to \mathcal{C}$ preserves limits, then $G$ has a left adjoint provided a "solution set condition" holds (for each $A$, a set of arrows $A \to GB_i$ through which every $A \to GB$ factors). The solution set condition replaces the infimum over the possibly proper class $\{b : a \le u(b)\}$ by a limit over a *set* of arrows. We do not prove the theorem here (see Mac Lane, Chapter V, or Riehl, Chapter 4); Mathlib has it, and we cite it in the formal section.
+
+<Theorem name="Theorem 6 (every adjunction gives a monad)">
+
+If $F \dashv G$ with unit $\eta$ and counit $\varepsilon$, then $T = GF$ with unit $\eta$ and multiplication $\mu = G\varepsilon F : GFGF \Rightarrow GF$ is a monad on $\mathcal{C}$.
+
+</Theorem>
+
+<Proof>
+
+The unit laws $\mu \circ T\eta = 1 = \mu \circ \eta T$ are $G(\varepsilon_{FA} \circ F\eta_A) = \mathrm{id}$ and $G\varepsilon_{FA} \circ \eta_{GFA} = \mathrm{id}$: the two triangle identities (whiskered). Associativity $\mu \circ T\mu = \mu \circ \mu T$ is $G$ applied to $\varepsilon_{FA} \circ FG\varepsilon_{FA} = \varepsilon_{FA} \circ \varepsilon_{FGFA}$, which is naturality of $\varepsilon$ at the arrow $\varepsilon_{FA}$.
+
+</Proof>
+
+The free–forgetful adjunction for monoids gives the list monad; see <TopicLink id="math.cat.monads">monads</TopicLink> for the converse — every monad comes from an adjunction.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Adjunctions in Lean and Mathlib">
+
+**Currying** with plain functions: the bijection, its naturality, the unit, the counit and the triangle identities — all hold by computation (`rfl`), exactly as in the hand calculation.
+
+<Lean decl="Lumenary.Adjunctions.curryEquiv" />
+
+<Lean decl="Lumenary.Adjunctions.curry_natural" />
+
+<Lean decl="Lumenary.Adjunctions.curryUnit" />
+
+<Lean decl="Lumenary.Adjunctions.curryCounit" />
+
+<Lean decl="Lumenary.Adjunctions.curry_triangles" />
+
+**Free monoids.** Mathlib's `FreeMonoid.lift` is the hom-set bijection; we prove the uniqueness half by induction on words, and that the unit is not an isomorphism.
+
+<Lean decl="Lumenary.Adjunctions.free_monoid_lift" />
+
+<Lean decl="Lumenary.Adjunctions.free_hom_ext" />
+
+<Lean decl="Lumenary.Adjunctions.unit_not_surjective" />
+
+**Galois connections.** Mathlib's `GaloisConnection l u` is literally `∀ a b, l a ≤ b ↔ a ≤ u b`. Image ⊣ preimage and ceiling ⊣ inclusion ⊣ floor are in Mathlib; the preservation and uniqueness results, the non-existence argument and Theorem 5 are proved here.
+
+<Lean decl="Lumenary.Adjunctions.image_preimage" />
+
+<Lean decl="Lumenary.Adjunctions.floor_ceil" />
+
+<Lean decl="Lumenary.Adjunctions.left_adjoint_sup" />
+
+<Lean decl="Lumenary.Adjunctions.left_adjoint_bot" />
+
+<Lean decl="Lumenary.Adjunctions.right_adjoint_unique" />
+
+<Lean decl="Lumenary.Adjunctions.const_true_no_right_adjoint" />
+
+<Lean decl="Lumenary.Adjunctions.adjoint_functor_theorem_lattices" />
+
+**General adjunctions.** Mathlib's `Adjunction F G` (notation `F ⊣ G`) is defined by unit, counit and the triangle identities, with the hom-set bijection `adj.homEquiv` derived from them (Theorem 1). Uniqueness of adjoints, RAPL, the induced monad and Freyd's adjoint functor theorem are library theorems; the tensor–hom adjunction is `TensorProduct.lift.equiv`. In diagrammatic order, `F.map (η.app X) ≫ ε.app (F.obj X)` is $\varepsilon_{FX} \circ F\eta_X$.
+
+<Lean decl="Lumenary.Adjunctions.triangle_identities" />
+
+<Lean decl="Lumenary.Adjunctions.left_adjoint_unique" />
+
+<Lean decl="Lumenary.Adjunctions.right_adjoint_preserves_limits" />
+
+<Lean decl="Lumenary.Adjunctions.adjunctionMonad" />
+
+<Lean decl="Lumenary.Adjunctions.freyd_adjoint_functor_theorem" />
+
+<Lean decl="Lumenary.Adjunctions.tensorHom" />
+
+Finally, part (b) of the Corollary, by the argument in the lesson: RAPL (and its dual) applied to the terminal and initial objects of the category of types.
+
+<Lean decl="Lumenary.Adjunctions.option_no_left_adjoint" />
+
+<Lean decl="Lumenary.Adjunctions.option_no_right_adjoint" />
+
+Not proved here, only cited or not formalised: Theorems 1–3 for general categories (Mathlib proves them; we cite Theorems 2 and 3 above), Freyd's theorem (cited above), Theorem 4 in general, and the non-existence of a free field.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: adjoints by exhaustion">
+
+The first experiment enumerates every monotone map between some small lattices and checks Theorem 5 in its finite form: a right adjoint exists exactly for the maps that preserve finite joins, and it is $u(b) = \max\{a : l(a) \le b\}$. It then checks that currying is a natural bijection on small finite sets.
+
+<Python id="adjunctions_galois_finite" />
+
+The second builds the antitone Galois connection of a relation ("number $n$ has property $p$"), checks the defining equivalence for all pairs of subsets, and lists the closed sets on both sides — the bijection of Theorem 4, known in data analysis as the lattice of **formal concepts**.
+
+<Python id="adjunctions_formal_concepts" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: ceiling ⊣ inclusion ⊣ floor">
+
+Move the slider to choose an integer $n$. The set of $x$ with $\lfloor x \rfloor \ge n$ is exactly the set with $x \ge n$, and the set with $\lceil x \rceil \le n$ is exactly the set with $x \le n$: read them off the staircase graphs. Notice the asymmetry: $\lfloor n \rfloor = \lceil n \rceil = n$ for integers, so one of the unit–counit inequalities of each adjunction is an equality; but $\lfloor x \rfloor \le x \le \lceil x \rceil$ are strict for non-integers, so the other one is not — an adjunction, not an inverse.
+
+<FunctionPlot fns={["floor(x)", "ceil(x)", "x"]} labels={["⌊x⌋", "⌈x⌉", "y = x"]} params={[{ name: "n", min: -3, max: 3, step: 1, value: 1 }]} points={[["n", "n", "(n, n)"]]} x={[-3.5, 3.5]} y={[-3.5, 3.5]} title="Best integer approximations from below and above" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every functor has an adjoint."** Most do not. A right adjoint must preserve all limits and a left adjoint all colimits, which rules out, for example, a free field ($\cat{Field}$ has no initial object), any adjoint of $X \mapsto X \sqcup \{\ast\}$ on $\cat{Set}$, and a right adjoint of the forgetful functor $\cat{Grp} \to \cat{Set}$.
+
+</Misconception>
+
+<Misconception>
+
+**Mixing up left and right.** In a free–forgetful adjunction the **free** functor is the **left** adjoint: maps *out of* a free object are easy ($\Hom(FS, M) \cong \Hom(S, UM)$). A useful check: the left adjoint is the one written on the left inside $\Hom$, it preserves colimits (the free group on a disjoint union is a free product), and its unit $A \to GFA$ ("insert generators") goes *from* the original object.
+
+</Misconception>
+
+<Misconception>
+
+**"An adjunction is an equivalence."** Its unit and counit need not be isomorphisms. The unit $S \to UF(S)$ of the free monoid adjunction is never surjective (the empty word is missing), and $\iota(\lfloor x \rfloor) \le x$ is strict for non-integers. By Theorem 4, an adjunction *is* an equivalence exactly on the objects where unit and counit are invertible.
+
+</Misconception>
+
+<Misconception>
+
+**"Adjoint" in category theory means the same as in linear algebra.** For an operator on an inner product space, $\langle T v, w \rangle = \langle v, T^* w \rangle$ is formally similar to $\Hom(FA, B) \cong \Hom(A, GB)$ — and the categorical name was chosen with this analogy in mind — but it is only an analogy: the linear adjoint is an equation between numbers, the categorical one a natural bijection between sets of arrows.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="logic" title="Quantifiers and implication are adjoints">
+
+Order formulas with free variables in a context by entailment. Weakening a formula $\psi(y)$ to a context with an extra variable $x$ is a monotone map $w$, and the quantifiers are its adjoints: $\exists x\,\varphi \vdash \psi$ iff $\varphi \vdash w(\psi)$, and $w(\psi) \vdash \varphi$ iff $\psi \vdash \forall x\,\varphi$ (for $x$ not free in $\psi$). So $\exists \dashv w \dashv \forall$ — Lawvere's observation (1969), and exactly the image–preimage triple $f_! \dashv f^{-1} \dashv f_*$ for a projection. Similarly, implication is right adjoint to conjunction: $\chi \wedge \varphi \vdash \psi$ iff $\chi \vdash \varphi \Rightarrow \psi$. A lattice in which every $- \wedge a$ has a right adjoint is a **Heyting algebra**, the algebra of intuitionistic logic, and this is the propositional shadow of currying. See <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Compactifications, mapping spaces and loops">
+
+The Stone–Čech compactification $\beta X$ is the left adjoint of the inclusion of compact Hausdorff spaces into all spaces: every continuous map from $X$ to a compact Hausdorff space extends uniquely over $\beta X$. For a locally compact Hausdorff space $Y$, the compact-open topology makes $- \times Y \dashv C(Y, -)$: continuous maps $X \times Y \to Z$ correspond to continuous maps $X \to C(Y, Z)$ — currying for spaces, and the reason homotopies $X \times [0,1] \to Z$ are paths in mapping spaces. In pointed spaces, reduced suspension is left adjoint to the loop space: $[\Sigma X, Y]_\ast \cong [X, \Omega Y]_\ast$. This adjunction underlies the definition of homotopy groups ($\pi_{n+1}(Y) \cong \pi_n(\Omega Y)$) and of spectra in stable homotopy theory. See <TopicLink id="math.geom.homotopy-theory">homotopy theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Free objects, scalars and Frobenius reciprocity">
+
+Every variety of algebras (groups, rings, modules, lattices…) has free objects, and "free ⊣ forgetful" is the categorical form of "a homomorphism is determined freely by its values on generators". For a ring homomorphism $R \to S$, extension of scalars $S \otimes_R -$, restriction of scalars, and coextension $\Hom_R(S, -)$ form an adjoint triple. For a subgroup $H \le G$ of a finite group, induction and restriction of representations are adjoint — **Frobenius reciprocity**, $\Hom_G(\mathrm{Ind}_H^G W, V) \cong \Hom_H(W, \mathrm{Res}_H^G V)$ — which in character theory becomes the equality of inner products $\langle \mathrm{Ind}\,\chi, \psi \rangle_G = \langle \chi, \mathrm{Res}\,\psi \rangle_H$. See <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Ideals and varieties">
+
+Let $k$ be a field and $X = k^n$. Sending a set of polynomials $T \subseteq k[x_1, \dots, x_n]$ to its zero set $V(T) \subseteq X$, and a set of points $S$ to the ideal $I(S)$ of polynomials vanishing on it, gives an antitone Galois connection: $S \subseteq V(T) \iff T \subseteq I(S)$. By Theorem 4 it restricts to a bijection between the closed sets on the two sides. On the geometric side the closed sets are the **algebraic sets** (Zariski-closed sets). When $k$ is algebraically closed, **Hilbert's Nullstellensatz** identifies the closed sets on the algebraic side as the **radical ideals**, giving the dictionary between algebra and geometry on which <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink> is built. Over $\R$ it fails: $x^2 + 1$ generates a radical ideal with empty zero set.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Completion as a best approximation">
+
+Every metric space $X$ has a completion $\widehat{X}$, and every uniformly continuous map from $X$ to a complete metric space extends uniquely to $\widehat{X}$. That is a universal arrow, so completion is left adjoint to the inclusion of complete metric spaces into metric spaces with uniformly continuous maps; $\R$ is the completion of $\Q$, and the unit $\Q \to \R$ is not surjective. The adjunction explains why limits computed in $\Q$ and in $\R$ can differ, and why every construction "by continuity" (extending $x \mapsto 2^x$ from $\Q$ to $\R$, defining integrals from step functions, $L^p$ from continuous functions) is well defined. On the order side, floor and ceiling are the simplest analytic adjunctions: $\lfloor x \rfloor \le x \le \lceil x \rceil$ are counit and unit, and an estimate such as $\lfloor x \rfloor > x - 1$ is the universal property in disguise (if $\lfloor x \rfloor + 1 \le x$, then $\lfloor x \rfloor + 1 \le \lfloor x \rfloor$).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Currying and closed categories">
+
+In typed functional programming, `curry : ((a, b) -> c) -> (a -> b -> c)` and `uncurry` are the two directions of the adjunction $- \times B \dashv (-)^B$; its counit is function application and its unit is pairing. Cartesian closed categories, where these adjoints exist for all objects, are the models of the simply typed λ-calculus (Lambek, 1980), and monads arising from adjunctions describe computational effects. See <TopicLink id="math.comp.lambda-calculus">the λ-calculus</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="products-by-maps" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Galois connections are named after **Évariste Galois**, whose correspondence between subgroups and fields (1830s) is the classical example. The abstract order-theoretic notion was isolated by **Garrett Birkhoff** (polarities, 1940) and **Øystein Ore**, who named "Galois connexions" in 1944.
+- **Daniel Kan**'s paper "Adjoint functors" (1958), written while he was developing simplicial homotopy theory, introduced the notion together with limits and colimits in general categories; the relation between tensor products and hom-groups of abelian groups was a guiding example.
+- **Peter Freyd** proved the general adjoint functor theorem (1964). **F. William Lawvere** showed that the quantifiers and many logical and set-theoretic constructions are adjoints ("Adjointness in foundations", 1969). **Eduard Čech** and **Marshall Stone** (1937) constructed the compactification now seen as a left adjoint; **Ferdinand Georg Frobenius** found his reciprocity law for characters in 1898.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Saunders Mac Lane, *Categories for the Working Mathematician* (2nd edition, 1998), Chapter IV — adjunctions, with the adjoint functor theorems in Chapter V.
+- Emily Riehl, *Category Theory in Context* (2016), Chapter 4 — adjunctions, RAPL and the adjoint functor theorems.
+- Tom Leinster, *Basic Category Theory* (2014), Chapter 2 and Section 6.3.
+- Steve Awodey, *Category Theory* (2nd edition, 2010), Chapter 9.
+- Daniel M. Kan, "Adjoint functors", *Transactions of the AMS* 87 (1958).
+- B. A. Davey and H. A. Priestley, *Introduction to Lattices and Order* (2nd edition, 2002), Chapter 7 — Galois connections and formal concept analysis.
+- F. William Lawvere, "Adjointness in foundations", *Dialectica* 23 (1969).
+
+</Section>

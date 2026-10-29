@@ -1,0 +1,371 @@
+---
+slug: axiomatic-set-theory
+topic: math.found.axiomatic-set-theory
+title: "Axiomatic set theory: hierarchy, cardinal arithmetic and L"
+subtitle: The universe of sets as a transfinite tower $V_\alpha$, what ZFC can and cannot decide about $2^\kappa$, and Gödel's constructible universe $L$, in which the continuum hypothesis holds.
+level: grad
+ages: Graduate
+minutes: 140
+order: 7001
+objectives:
+  - Define the cumulative hierarchy $V_\alpha$ by transfinite recursion and prove, using foundation and replacement, that every set lies in some $V_\alpha$
+  - Compute with cofinality and prove König's theorem $\operatorname{cf}(2^\kappa) > \kappa$, deducing $2^{\aleph_0} \neq \aleph_\omega$
+  - State and prove the reflection principle and use it to show that ZF is not finitely axiomatisable (if consistent)
+  - Outline Gödel's proof that if ZF is consistent then so is ZFC + GCH, using the constructible universe $L$
+  - Distinguish a relative consistency proof from an absolute one
+narrators: []
+lean:
+  - Lumenary.AxiomaticSetTheory.vonNeumann_succ
+  - Lumenary.AxiomaticSetTheory.vonNeumann_limit
+  - Lumenary.AxiomaticSetTheory.mem_vonNeumann_succ_rank
+  - Lumenary.AxiomaticSetTheory.exists_mem_vonNeumann
+  - Lumenary.AxiomaticSetTheory.not_mem_self
+  - Lumenary.AxiomaticSetTheory.no_mem_two_cycle
+  - Lumenary.AxiomaticSetTheory.card_vonNeumann
+  - Lumenary.AxiomaticSetTheory.koenig_power_cof
+  - Lumenary.AxiomaticSetTheory.koenig_cof_two_power
+  - Lumenary.AxiomaticSetTheory.koenig_cof_two_power_library
+  - Lumenary.AxiomaticSetTheory.two_power_aleph0_ne_aleph_omega
+  - Lumenary.AxiomaticSetTheory.GCH
+  - Lumenary.AxiomaticSetTheory.gch_continuum
+compute: [axiomatic_set_theory_hierarchy]
+trails: [boxes-in-boxes]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What does the universe of sets look like?">
+
+The axioms of <TopicLink id="math.found.zfc">ZFC</TopicLink> were written down to avoid paradoxes and to support ordinary mathematics. Two questions remain once they are in place. Is there a *picture* behind the axioms — a structure they describe? And which natural questions do they settle? The most famous is Cantor's **continuum problem**: is $2^{\aleph_0} = \aleph_1$? It was the first of Hilbert's problems in 1900.
+
+The answer to the first question is the **cumulative hierarchy**: start from nothing, form all subsets, and repeat transfinitely. The second question has a two-part answer. ZFC proves some striking restrictions on the function $\kappa \mapsto 2^\kappa$ — for instance $2^{\aleph_0} \neq \aleph_\omega$ — but Gödel (1938) built a model, the **constructible universe** $L$, in which $2^\kappa = \kappa^+$ for every infinite $\kappa$, and Cohen (1963) built models where $2^{\aleph_0}$ is as large as one likes, subject to König's restriction. This lesson develops the hierarchy, the cardinal arithmetic that ZFC does decide, the reflection principle, and Gödel's $L$; <TopicLink id="math.found.forcing">forcing</TopicLink> supplies the other half.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Building the universe in stages">
+
+At stage $0$ there is nothing. At each successor stage, form *every* subset of what exists so far. At limit stages, gather everything built so far. The sets are exactly the things that appear at some stage. Foundation says there is nothing else: no set is built from itself, and every chain $x_0 \ni x_1 \ni x_2 \ni \cdots$ ends.
+
+Gödel's $L$ is a thinner universe built the same way, except that at each successor stage we keep only the subsets that are **definable** from what exists so far. It contains every ordinal — the "spine" of $V$ — but as few subsets as possible.
+
+<Figure caption="The cumulative hierarchy $V = \bigcup_\alpha V_\alpha$ grows upwards along the ordinals; each level $V_{\alpha+1}$ is the power set of $V_\alpha$. The constructible universe $L$ (shaded) has the same ordinals but keeps only definable subsets at each stage. Whether $V = L$ is not decided by ZFC.">
+<svg viewBox="0 0 320 250" role="img" aria-label="A large V shape for the universe of sets with horizontal levels, and a narrower shaded V inside it for the constructible universe L; a dashed vertical axis marks the ordinals">
+  <path d="M160 235 L22 20 L298 20 Z" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <path d="M160 235 L112 20 L208 20 Z" fill="var(--gold)" fillOpacity="0.25" stroke="var(--gold)" strokeWidth="1.5" />
+  <line x1="160" y1="235" x2="160" y2="12" stroke="var(--ink-2)" strokeDasharray="4 3" />
+  <line x1="122" y1="176" x2="198" y2="176" stroke="var(--ink-2)" strokeWidth="1" />
+  <line x1="86" y1="120" x2="234" y2="120" stroke="var(--ink-2)" strokeWidth="1" />
+  <line x1="54" y1="70" x2="266" y2="70" stroke="var(--ink-2)" strokeWidth="1" />
+  <text x="204" y="173" fontSize="12" fill="var(--ink-2)">V_ω</text>
+  <text x="240" y="117" fontSize="12" fill="var(--ink-2)">V_α</text>
+  <text x="272" y="67" fontSize="12" fill="var(--ink-2)">V_α+1</text>
+  <text x="168" y="40" fontSize="13" fill="var(--ink-2)">L</text>
+  <text x="70" y="40" fontSize="13" fill="var(--ink-2)">V</text>
+  <text x="164" y="12" fontSize="11" fill="var(--ink-2)">Ord</text>
+  <text x="166" y="247" fontSize="11" fill="var(--ink-2)">∅</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+We work in ZF, adding choice where stated, and use von Neumann ordinals and cardinals as initial ordinals (see <TopicLink id="math.found.cardinals">ordinals and cardinals</TopicLink> and <TopicLink id="math.found.axiom-of-choice">the axiom of choice</TopicLink>). Recall **transfinite recursion**: for every class function $G$ there is a unique class function $F$ on the ordinals with $F(\alpha) = G(F \restriction \alpha)$ for all $\alpha$.
+
+<Definition term="cumulative hierarchy and rank">
+
+By transfinite recursion, $V_0 = \varnothing$, $V_{\alpha+1} = \mathcal{P}(V_\alpha)$, and $V_\lambda = \bigcup_{\alpha \lt \lambda} V_\alpha$ for limit $\lambda$. The **rank** of a set $x$ that lies in some $V_\beta$ is the least $\alpha$ with $x \subseteq V_\alpha$ (equivalently $x \in V_{\alpha+1}$). One checks that $\operatorname{rank}(x) = \sup\{\operatorname{rank}(y) + 1 : y \in x\}$.
+
+</Definition>
+
+<Definition term="cofinality; regular and singular">
+
+A subset $X$ of a limit ordinal $\alpha$ is **cofinal** if it is unbounded in $\alpha$. The **cofinality** $\operatorname{cf}(\alpha)$ is the least order type of a cofinal subset of $\alpha$; it is always a regular cardinal. An infinite cardinal $\kappa$ is **regular** if $\operatorname{cf}(\kappa) = \kappa$ and **singular** otherwise.
+
+</Definition>
+
+<Definition term="cardinal exponentiation, GCH">
+
+For cardinals, $\kappa^\lambda = |{}^\lambda\kappa|$, the number of functions $\lambda \to \kappa$; $\kappa^+$ is the least cardinal above $\kappa$. The **continuum hypothesis** CH says $2^{\aleph_0} = \aleph_1$; the **generalised continuum hypothesis** GCH says $2^\kappa = \kappa^+$ for every infinite cardinal $\kappa$.
+
+</Definition>
+
+<Definition term="relativisation and absoluteness">
+
+For a class $M$ and formula $\varphi$, the **relativisation** $\varphi^M$ is obtained by bounding every quantifier by $M$. A formula $\varphi(\bar x)$ is **absolute** for $M$ if $\varphi^M(\bar a) \leftrightarrow \varphi(\bar a)$ for all $\bar a \in M$. Every $\Delta_0$ formula (all quantifiers bounded, $\exists y \in z$) is absolute for every transitive class. "$x$ is an ordinal", "$x = \omega$", "$f$ is a function" are absolute for transitive models of ZF; "$x$ is uncountable" and "$y = \mathcal{P}(x)$" are not.
+
+</Definition>
+
+<Definition term="the constructible universe">
+
+For a set $A$, $\operatorname{Def}(A)$ is the set of $X \subseteq A$ definable over the structure $(A, \in)$ by a first-order formula with parameters from $A$. Then $L_0 = \varnothing$, $L_{\alpha+1} = \operatorname{Def}(L_\alpha)$, $L_\lambda = \bigcup_{\alpha \lt \lambda} L_\alpha$ for limit $\lambda$, and $L = \bigcup_\alpha L_\alpha$. The **axiom of constructibility** is the statement $V = L$, that is, $\forall x\, \exists \alpha\; x \in L_\alpha$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="The first stages">
+
+$|V_0|, |V_1|, |V_2|, |V_3|, |V_4|, |V_5| = 0, 1, 2, 4, 16, 65536$, since $|V_{n+1}| = 2^{|V_n|}$. The set $V_\omega$ consists of the **hereditarily finite** sets; with the inherited membership it satisfies every axiom of ZFC except infinity. $V_{\omega+\omega}$ satisfies Zermelo's axioms (ZC) but not replacement: the function $n \mapsto \omega + n$ on $\omega$ is definable there, but its range $\{\omega + n : n \in \omega\}$ has rank $\omega + \omega$, so it is not in $V_{\omega+\omega}$. All the usual objects of analysis — $\R$, $\C$, Lebesgue measure on $\R$ — have codings of rank below $\omega + \omega$. If $\kappa$ is strongly inaccessible, $V_\kappa \models \mathsf{ZFC}$ (see <TopicLink id="math.found.large-cardinals">large cardinals</TopicLink>).
+
+</Example>
+
+<Example title="Cofinalities">
+
+$\operatorname{cf}(\omega) = \operatorname{cf}(\omega + \omega) = \operatorname{cf}(\omega^2) = \omega$. With choice, every successor cardinal $\aleph_{\alpha+1}$ is regular, since a union of at most $\aleph_\alpha$ sets each of size at most $\aleph_\alpha$ has size at most $\aleph_\alpha$. But $\aleph_\omega = \sup_n \aleph_n$ is singular with $\operatorname{cf}(\aleph_\omega) = \omega$, and $\operatorname{cf}(\aleph_{\omega_1}) = \omega_1$. In general $\operatorname{cf}(\aleph_\lambda) = \operatorname{cf}(\lambda)$ for limit $\lambda$.
+
+</Example>
+
+<Example title="Ranks">
+
+Each ordinal has rank equal to itself; $\operatorname{rank}(\{\varnothing\}) = 1$; the Kuratowski pair $(a, b) = \{\{a\}, \{a, b\}\}$ has rank $\max(\operatorname{rank} a, \operatorname{rank} b) + 2$. $L_n = V_n$ for all finite $n$ (every subset of a finite set is definable with parameters) and $L_\omega = V_\omega$, but $L_{\omega+1}$ is countable — there are only countably many formulas and finite parameter lists — while $V_{\omega+1} = \mathcal{P}(V_\omega)$ is uncountable.
+
+</Example>
+
+</Section>
+
+<Section id="hierarchy" kind="proof" title="Every set has a rank">
+
+<Theorem name="Theorem 1">
+
+(a) Each $V_\alpha$ is transitive, and $\beta \le \alpha$ implies $V_\beta \subseteq V_\alpha$. (b) (ZF) Every set belongs to some $V_\alpha$.
+
+</Theorem>
+
+<Proof>
+
+(a) By induction on $\alpha$ we show that $V_\alpha$ is transitive and contains every $V_\beta$, $\beta \lt \alpha$, as a subset. Limits are clear, since unions of transitive sets are transitive. For $V_{\alpha+1} = \mathcal{P}(V_\alpha)$: transitivity of $V_\alpha$ means each $y \in V_\alpha$ satisfies $y \subseteq V_\alpha$, i.e. $y \in V_{\alpha+1}$; so $V_\alpha \subseteq V_{\alpha+1}$. And if $y \in x \in V_{\alpha+1}$ then $y \in V_\alpha \subseteq V_{\alpha+1}$, so $V_{\alpha+1}$ is transitive.
+
+(b) Suppose some set $x$ lies in no $V_\alpha$. Let $T$ be the transitive closure of $\{x\}$ (it exists by replacement and union: $T = \bigcup_n T_n$ with $T_0 = \{x\}$, $T_{n+1} = \bigcup T_n$). The set $B = \{y \in T : y \notin \bigcup_\alpha V_\alpha\}$ is non-empty, so by **foundation** it has an $\in$-minimal element $y$. Every $z \in y$ lies in $T$ (transitivity) and not in $B$ (minimality), so $z \in V_{\alpha_z}$ for a least ordinal $\alpha_z$. By **replacement**, $\{\alpha_z : z \in y\}$ is a set, so $\alpha = \sup\{\alpha_z + 1 : z \in y\}$ is an ordinal. By (a), every $z \in y$ lies in $V_\alpha$; so $y \subseteq V_\alpha$ and $y \in V_{\alpha+1}$ — a contradiction.
+
+</Proof>
+
+So $V = \bigcup_\alpha V_\alpha$, and the rank function is defined everywhere. Since $y \in x$ implies $\operatorname{rank}(y) \lt \operatorname{rank}(x)$, there are no $\in$-cycles. Over the other axioms, foundation is in fact *equivalent* to $V = \bigcup_\alpha V_\alpha$: (b) gives one direction, and for the other, an element of least rank in a non-empty set is $\in$-minimal. Rank is the standard tool for proofs by $\in$-induction and for cutting proper classes down to sets ("Scott's trick": replace an equivalence class by its elements of least rank).
+
+</Section>
+
+<Section id="koenig" kind="proof" title="Cofinality and König's theorem">
+
+What does ZFC decide about $2^\kappa$? Cantor: $2^\kappa \gt \kappa$. Monotonicity: $\kappa \le \lambda$ implies $2^\kappa \le 2^\lambda$. And one more restriction, due to Julius König (1905).
+
+<Theorem name="König's theorem">
+
+(ZFC) For every infinite cardinal $\kappa$: (i) $\kappa \lt \kappa^{\operatorname{cf}(\kappa)}$; (ii) $\operatorname{cf}(2^\kappa) \gt \kappa$. In particular $2^{\aleph_0} \neq \aleph_\omega$.
+
+</Theorem>
+
+<Proof>
+
+(i) Let $\mu = \operatorname{cf}(\kappa)$ and fix an increasing sequence $(\alpha_i)_{i \lt \mu}$ cofinal in $\kappa$. Then $\kappa = \bigcup_{i \lt \mu} \alpha_i$ with $|\alpha_i| \lt \kappa$. Let $(f_\beta)_{\beta \lt \kappa}$ be any $\kappa$-sequence of functions $\mu \to \kappa$; we find a function $g : \mu \to \kappa$ not in it. For each $i \lt \mu$, the set $\{f_\beta(i) : \beta \lt \alpha_i\}$ has size at most $|\alpha_i| \lt \kappa$, so let $g(i)$ be the least element of $\kappa$ not in it. If $\beta \lt \kappa$, choose $i$ with $\beta \lt \alpha_i$; then $g(i) \neq f_\beta(i)$. So no map $\kappa \to {}^\mu\kappa$ is onto, and $\kappa \lt \kappa^\mu$ (clearly $\kappa \le \kappa^\mu$).
+
+(ii) Let $\lambda = 2^\kappa$ and suppose $\operatorname{cf}(\lambda) \le \kappa$. By (i) applied to $\lambda$,
+
+$$
+\lambda \lt \lambda^{\operatorname{cf}(\lambda)} \le \lambda^\kappa = (2^\kappa)^\kappa = 2^{\kappa \cdot \kappa} = 2^\kappa = \lambda,
+$$
+
+a contradiction. Finally $\operatorname{cf}(\aleph_\omega) = \omega$, while $\operatorname{cf}(2^{\aleph_0}) \gt \aleph_0$.
+
+</Proof>
+
+Remarkably, this is essentially all that ZFC proves about $2^\kappa$ for *regular* $\kappa$: by Easton's theorem (1970), any class function $F$ on regular cardinals that is non-decreasing and satisfies $\operatorname{cf}(F(\kappa)) \gt \kappa$ can be the function $\kappa \mapsto 2^\kappa$ in some forcing extension. For *singular* cardinals ZFC proves much more — Silver's theorem (1974) that GCH cannot first fail at a singular cardinal of uncountable cofinality, and Shelah's pcf bound $2^{\aleph_\omega} \lt \aleph_{\omega_4}$ when $\aleph_\omega$ is a strong limit.
+
+</Section>
+
+<Section id="reflection" kind="proof" title="Reflection">
+
+<Theorem name="Reflection principle (Montague 1961; Lévy 1960)">
+
+For any finitely many formulas $\varphi_1, \dots, \varphi_n$, ZF proves: for every ordinal $\beta$ there is a limit ordinal $\alpha \gt \beta$ such that each $\varphi_i$ is absolute between $V_\alpha$ and $V$.
+
+</Theorem>
+
+<Proof>
+
+Close the list under subformulas; it suffices to handle formulas built from atomic ones by $\neg$, $\wedge$ and $\exists$. For each formula $\exists y\, \psi(\bar x, y)$ in the list define a class function $F_\psi$ on finite tuples: $F_\psi(\bar x)$ is the least ordinal $\gamma$ such that, if some $y$ satisfies $\psi(\bar x, y)$, then some $y \in V_\gamma$ does (it exists by Theorem 1). Put $\alpha_0 = \beta + 1$ and let $\alpha_{k+1}$ be greater than $\alpha_k$ and than every $F_\psi(\bar x)$ with $\bar x$ in $V_{\alpha_k}$ — a set of ordinals, by **replacement**. Let $\alpha = \sup_k \alpha_k$, a limit ordinal. Now show by induction on formulas that each one is absolute for $V_\alpha$: atomic formulas are absolute, the cases $\neg$ and $\wedge$ are immediate, and for $\exists y\, \psi$: if $\bar x \in V_\alpha$, then $\bar x \in V_{\alpha_k}$ for some $k$, so if some $y$ satisfies $\psi(\bar x, y)$ then one lies in $V_{\alpha_{k+1}} \subseteq V_\alpha$, and by the induction hypothesis $\psi^{V_\alpha}(\bar x, y)$; the converse direction is immediate from the induction hypothesis. (This is the Tarski–Vaught criterion.)
+
+</Proof>
+
+Since $\varphi^{V_\alpha}$ is equivalent to "$(V_\alpha, \in) \models \varphi$" for the formalised satisfaction relation of set-sized structures, reflection gives: for every finite set $\Phi$ of axioms of ZF, ZF proves "$\Phi$ has a model", hence $\mathrm{Con}(\Phi)$. If ZF were finitely axiomatisable, it would prove its own consistency, contradicting <TopicLink id="math.found.incompleteness">Gödel's second theorem</TopicLink>. So, if ZF is consistent, it is not finitely axiomatisable (Montague 1961). Reflection is also the key to showing that $L$ satisfies separation.
+
+</Section>
+
+<Section id="constructible" kind="proof" title="Gödel's constructible universe">
+
+<Theorem name="Gödel (1938)">
+
+(ZF) $L$ is a transitive proper class containing all ordinals, and $L$ satisfies $\mathsf{ZF} + (V = L)$. Moreover $\mathsf{ZF} + (V = L)$ proves AC and GCH. Consequently, if ZF is consistent, so is $\mathsf{ZFC} + \mathsf{GCH}$.
+
+</Theorem>
+
+We outline the proof; Jech (2003, chapter 13) and Kunen (1980, chapters V–VI) give it in full.
+
+1. **$L$ is a transitive class model.** Each $L_\alpha$ is transitive, $L_\alpha \cap \mathrm{Ord} = \alpha$, and $\alpha \in L_{\alpha+1}$ (the ordinals of $L_\alpha$ form a definable subset). Extensionality and foundation hold in any transitive class; pairing, union and infinity are routine.
+2. **Separation and replacement in $L$** use reflection: given $\varphi$ and $a \in L_\beta$, reflect $\varphi^L$ to some $L_\alpha$ with $\alpha \gt \beta$ (the reflection principle holds for the hierarchy $L_\alpha$ as for $V_\alpha$); then $\{x \in a : \varphi^L(x)\} = \{x \in a : \varphi^{L_\alpha}(x)\}$ is definable over $L_\alpha$, so it lies in $L_{\alpha+1}$. **Power set:** for $a \in L$, the set $\mathcal{P}(a) \cap L$ is contained in some $L_\gamma$ by replacement, and $\mathcal{P}(a) \cap L \in L_{\gamma+1}$ serves as the power set of $a$ inside $L$.
+3. **Absoluteness.** The operation $A \mapsto \operatorname{Def}(A)$, and hence $\alpha \mapsto L_\alpha$, is defined by a formula that is absolute for transitive models of ZF. So computing $L$ inside $L$ gives $L$ again: $L \models V = L$.
+4. **$V = L$ implies AC.** Define a well-order $\lt_L$: $x \lt_L y$ if $x$ appears at an earlier stage $L_\alpha$, or at the same stage via an earlier pair (formula, parameters), using the well-order of $L_\alpha$ already defined. It is a definable global well-order.
+5. **$V = L$ implies GCH.** The heart is the **condensation lemma**: if $X \prec (L_\delta, \in)$ with $\delta$ a limit ordinal, the transitive (Mostowski) collapse of $X$ is some $L_\gamma$ with $\gamma \le \delta$. Given $x \subseteq \kappa$, pick a limit $\delta$ with $x \in L_\delta$ and, by Löwenheim–Skolem, $X \prec L_\delta$ of size $\kappa$ with $\kappa \cup \{x\} \subseteq X$. The collapse fixes each element of $\kappa$, hence fixes $x$, and has the form $L_\gamma$ with $|\gamma| \le \kappa$. So $x \in L_{\kappa^+}$. Thus $\mathcal{P}(\kappa) \subseteq L_{\kappa^+}$, which has cardinality $\kappa^+$, and $2^\kappa = \kappa^+$.
+6. **Relative consistency.** Steps 1–5 are proofs in ZF of each axiom of $\mathsf{ZFC} + \mathsf{GCH}$ relativised to $L$. So a proof of a contradiction from $\mathsf{ZFC} + \mathsf{GCH}$ would relativise to a proof of a contradiction from ZF. This argument is purely syntactic: it needs no set model of ZF.
+
+<Note>
+
+**Relative versus absolute.** Gödel's theorem proves $\mathrm{Con}(\mathsf{ZF}) \to \mathrm{Con}(\mathsf{ZFC} + \mathsf{GCH})$, for instance in $\mathsf{PA}$. It does not prove $\mathrm{Con}(\mathsf{ZFC} + \mathsf{GCH})$ outright — and nothing formalisable in ZFC can (by Gödel's second theorem), unless ZFC is inconsistent.
+
+</Note>
+
+</Section>
+
+<Section id="formal" kind="formal" title="The hierarchy and König's theorem in Lean">
+
+Mathlib models ZFC sets as the type `ZFSet`, built from well-founded trees; foundation is therefore a theorem, and Mathlib defines the von Neumann hierarchy and the rank function. The recursion equations of the hierarchy:
+
+<Lean decl="Lumenary.AxiomaticSetTheory.vonNeumann_succ" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.vonNeumann_limit" />
+
+Every set appears in the hierarchy (Theorem 1(b)) — the one-line proof shows how much work the rank function does:
+
+<Lean decl="Lumenary.AxiomaticSetTheory.mem_vonNeumann_succ_rank" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.exists_mem_vonNeumann" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.not_mem_self" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.no_mem_two_cycle" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.card_vonNeumann" />
+
+König's inequality $\kappa \lt \kappa^{\operatorname{cf}\kappa}$ is in Mathlib; its corollary is proved here by the same `calc` chain as in part (ii) of the proof above. In Mathlib, `c.ord.cof` is the cofinality of the initial ordinal of the cardinal `c`.
+
+<Lean decl="Lumenary.AxiomaticSetTheory.koenig_power_cof" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.koenig_cof_two_power" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.koenig_cof_two_power_library" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.two_power_aleph0_ne_aleph_omega" />
+
+The statement of GCH, and the fact that it implies CH:
+
+<Lean decl="Lumenary.AxiomaticSetTheory.GCH" />
+
+<Lean decl="Lumenary.AxiomaticSetTheory.gch_continuum" />
+
+**Not formalised:** $L$, absoluteness, reflection and condensation — Mathlib has no formalised satisfaction relation for formulas of set theory inside `ZFSet`, and so neither Gödel's nor Cohen's theorem. A remark on foundations: Lean can *construct* a model of ZFC (the type `ZFSet`) without contradicting Gödel's second theorem because Lean's type theory, with its hierarchy of universes, is stronger than ZFC — its strength is roughly that of ZFC with inaccessible cardinals (Carneiro, 2019).
+
+</Section>
+
+<Section id="computation" kind="computation" title="The finite stages, computed">
+
+Ackermann's coding identifies hereditarily finite sets with natural numbers: $y \in x$ if and only if bit number $y$ of $x$ is $1$. In this coding $V_{k}$ is exactly the set of numbers below $|V_k|$, and the experiment checks the rank characterisation $x \in V_k \iff \operatorname{rank}(x) \lt k$, transitivity and foundation exhaustively for the $65536$ sets of $V_5$.
+
+<Python id="axiomatic_set_theory_hierarchy" />
+
+This is exact evidence about finite stages only: the transfinite stages, and the fact that every set appears at some stage, are the theorems proved above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: building sets from nothing">
+
+The widget builds hereditarily finite sets — the members of $V_\omega$ — as nested boxes. Start from the empty box and repeatedly form new sets from those on the shelf. Try to build all four elements of $V_3$: $\varnothing$, $\{\varnothing\}$, $\{\{\varnothing\}\}$ and $\{\varnothing, \{\varnothing\}\}$. What is the rank of each? Which of them are ordinals?
+
+<BoxesNesting />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"$L$ is the universe of all sets."** $L$ is an inner model. The axiom $V = L$ is consistent with ZFC (if ZF is) but not provable from it: by forcing, if ZF is consistent so is ZFC + $V \neq L$. Large cardinal axioms such as the existence of a measurable cardinal even imply $V \neq L$ (Scott, 1961).
+
+</Misconception>
+
+<Misconception>
+
+**"Gödel proved that GCH is consistent."** He proved it is consistent *relative to ZF*: $\mathrm{Con}(\mathsf{ZF}) \to \mathrm{Con}(\mathsf{ZFC} + \mathsf{GCH})$. An absolute consistency proof is impossible within ZFC, by the second incompleteness theorem.
+
+</Misconception>
+
+<Misconception>
+
+**"The continuum must be a regular cardinal."** König forbids only cofinality $\omega$. $2^{\aleph_0} = \aleph_{\omega_1}$, a singular cardinal of cofinality $\omega_1$, is consistent with ZFC.
+
+</Misconception>
+
+<Misconception>
+
+**"Foundation is needed for ordinary mathematics."** Almost nothing in ordinary mathematics uses it: one can work in ZFC without foundation, inside which the well-founded sets $\bigcup_\alpha V_\alpha$ form a model of full ZFC. Foundation's role is to make the universe exactly the cumulative hierarchy.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Cofinality as a topological invariant">
+
+Give an ordinal $\lambda + 1$ the order topology. A limit ordinal $\lambda$ is the limit of a sequence $(\alpha_n)_{n \in \omega}$ with $\alpha_n \lt \lambda$ exactly when $\operatorname{cf}(\lambda) = \omega$; more generally $\operatorname{cf}(\lambda)$ is the least cardinality of a set $S \subseteq \lambda$ with $\lambda$ in its closure. The space $[0, \omega_1)$ is sequentially compact but not compact, because $\operatorname{cf}(\omega_1) = \omega_1$: every countable subset is bounded. Closed unbounded ("club") subsets of a regular uncountable $\kappa$ are closed in this topology, and the club filter and stationary sets are basic tools of combinatorial set theory. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Where transfinite recursion came from">
+
+Cantor invented the transfinite ordinals in analysis. Studying sets of uniqueness for trigonometric series (1872), he iterated the **derived set** operation $P \mapsto P'$ (remove isolated points): $P', P'', \dots, P^{(\omega)} = \bigcap_n P^{(n)}, P^{(\omega+1)}, \dots$ — a transfinite recursion of exactly the kind that defines $V_\alpha$. For a closed set of reals the sequence stabilises at a countable ordinal (the Cantor–Bendixson rank), which leads to the perfect set theorem of <TopicLink id="math.found.descriptive-set-theory">descriptive set theory</TopicLink>. In the other direction, $V = L$ decides questions of analysis that ZFC leaves open: in $L$ there is a non-Lebesgue-measurable set of reals that is $\boldsymbol{\Delta}^1_2$, a projection of the complement of a projection of a closed set.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Whitehead's problem">
+
+An abelian group $A$ is a **Whitehead group** if every surjective homomorphism $B \to A$ with kernel $\Z$ splits ($\operatorname{Ext}(A, \Z) = 0$). Free abelian groups are Whitehead, and Stein showed that countable Whitehead groups are free. Is every Whitehead group free? Shelah (1974) proved that this is **independent** of ZFC: under $V = L$ every Whitehead group is free, while under Martin's axiom with $\neg\mathrm{CH}$ there is a non-free Whitehead group of cardinality $\aleph_1$. A question of pure algebra turned out to depend on the shape of the universe of sets (see <TopicLink id="math.algebra.homological-algebra">homological algebra</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Universes and structural set theory">
+
+Category theorists need "large" collections such as the category of all groups. Grothendieck's solution was a **universe**: a set closed under the ZFC operations. The uncountable Grothendieck universes are exactly the sets $V_\kappa$ with $\kappa$ strongly inaccessible, so "every set lies in a universe" is a large cardinal axiom. Lawvere's ETCS describes sets *structurally*, by the category of sets and functions (see <TopicLink id="math.cat.elementary-topoi">elementary topoi</TopicLink>); it captures much of ordinary mathematics but has no counterpart of the global membership tree, and is equiconsistent with a weak fragment of ZFC (bounded Zermelo set theory with choice). The cumulative hierarchy is a specifically *material* picture of sets.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Inner models">
+
+$L$ is the smallest inner model: any transitive proper class model of ZF contains it. **Inner model theory** builds larger canonical models, $L[U]$ for a measurable cardinal and beyond, that can accommodate large cardinals while keeping $L$'s fine structure (Jensen, 1972). In $L$ itself Jensen's principle $\diamondsuit$ holds, giving a Suslin line — so Suslin's hypothesis fails in $L$, another statement whose independence the forcing lesson completes.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trail">
+
+The same tower of sets, built from empty boxes, is explored for young learners in this trail — useful if you ever explain $V_\omega$ to a child.
+
+<Trail slug="boxes-in-boxes" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Georg Cantor** created the theory of ordinals and cardinals (1872–1897) and posed the continuum hypothesis (1878). **Julius König** (Hungary) presented his result on cofinality in 1904–05, in a lecture that also claimed — wrongly — that the continuum cannot be well-ordered.
+- **Felix Hausdorff** introduced cofinality and singular and regular cardinals (1908) and stated GCH in terms of alephs. **Ernst Zermelo** axiomatised set theory in 1908; **Abraham Fraenkel** and **Thoralf Skolem** added replacement (1922); **John von Neumann** formulated foundation and the rank hierarchy (1925–29), and Zermelo's 1930 paper described the cumulative hierarchy and its levels $V_\kappa$ as models.
+- **Kurt Gödel** announced the consistency of AC and GCH relative to ZF in 1938 and published the full proof in 1940. **Wacław Sierpiński** showed in 1947 that GCH implies AC over ZF.
+- **Azriel Lévy** (1960) and **Richard Montague** (1961) proved the reflection principle. **Paul Cohen** (1963) proved the independence of CH and AC; **William Easton** (1970) determined the possible behaviour of $2^\kappa$ at regular cardinals.
+- **Jack Silver** (1974) and **Saharon Shelah** (from the 1970s) proved deep ZFC theorems about singular cardinals; **Ronald Jensen** (1972) developed the fine structure of $L$.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Thomas Jech, *Set Theory* (Third Millennium Edition, 2003) — chapters 3, 5 and 12–13 for the hierarchy, cardinal arithmetic, reflection and $L$.
+- Kenneth Kunen, *Set Theory: An Introduction to Independence Proofs* (1980; revised edition *Set Theory*, 2011) — chapters III–VI.
+- Keith J. Devlin, *Constructibility* (1984) — $L$ and its fine structure.
+- Akihiro Kanamori, *The Higher Infinite* (1994; 2nd edition 2003) — the large cardinal and inner model landscape.
+- Karel Hrbacek and Thomas Jech, *Introduction to Set Theory* (3rd edition, 1999) — background on ordinals and cardinals.
+
+</Section>

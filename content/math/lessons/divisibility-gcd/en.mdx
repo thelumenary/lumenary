@@ -1,0 +1,517 @@
+---
+slug: divisibility-gcd
+topic: math.number.divisibility-gcd
+title: Divisibility, Euclid's algorithm and unique factorisation
+subtitle: The oldest algorithm still in daily use, the identity that falls out of it, and a proof that every whole number has exactly one prime factorisation — a fact that is far less obvious than it looks.
+level: g9-12
+ages: Ages 14–18
+minutes: 75
+order: 4004
+objectives:
+  - Use the definition of divisibility and division with remainder to prove basic facts about divisors
+  - Compute $\gcd(a, b)$ with Euclid's algorithm, prove that the algorithm works, and express the gcd as $ax + by$ (Bézout's identity)
+  - Prove Euclid's lemma — if a prime $p$ divides $ab$, then $p$ divides $a$ or $p$ divides $b$ — and see why primality is needed
+  - Prove the existence and uniqueness of prime factorisation, and explain why uniqueness needs a proof
+  - Deduce that a fraction in lowest terms has a terminating decimal exactly when its denominator has no prime factors other than 2 and 5
+  - Distinguish the greatest common divisor from the least common multiple, and compute both
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.DivisibilityGcd.dvd_linear_combination
+  - Lumenary.DivisibilityGcd.division_algorithm
+  - Lumenary.DivisibilityGcd.division_unique
+  - Lumenary.DivisibilityGcd.common_divisors_mod
+  - Lumenary.DivisibilityGcd.euclid
+  - Lumenary.DivisibilityGcd.euclid_spec
+  - Lumenary.DivisibilityGcd.euclid_eq_gcd
+  - Lumenary.DivisibilityGcd.gcd_1071_462
+  - Lumenary.DivisibilityGcd.xgcd
+  - Lumenary.DivisibilityGcd.bezout
+  - Lumenary.DivisibilityGcd.bezout_library
+  - Lumenary.DivisibilityGcd.euclid_lemma
+  - Lumenary.DivisibilityGcd.euclid_lemma_library
+  - Lumenary.DivisibilityGcd.four_counterexample
+  - Lumenary.DivisibilityGcd.exists_prime_factorization
+  - Lumenary.DivisibilityGcd.prime_dvd_prod
+  - Lumenary.DivisibilityGcd.factorization_unique
+  - Lumenary.DivisibilityGcd.factorization_unique_library
+  - Lumenary.DivisibilityGcd.prime_dvd_pow
+  - Lumenary.DivisibilityGcd.terminating_prime_factors
+  - Lumenary.DivisibilityGcd.two_five_dvd_ten_pow
+  - Lumenary.DivisibilityGcd.HilbertIrreducible
+  - Lumenary.DivisibilityGcd.hilbertIrreducible_iff
+  - Lumenary.DivisibilityGcd.hilbert_non_unique
+compute: [divisibility_gcd_euclid, divisibility_gcd_hilbert]
+trails: [remainder-families, clock-arithmetic]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Tiles, jugs and a suspicious certainty">
+
+A workshop floor in Nairobi measures $1071$ cm by $462$ cm. The carpenter wants to cover it with identical square tiles, as large as possible, without cutting any. How big can the tiles be?
+
+A tile of side $s$ fits exactly when $s$ divides both $1071$ and $462$. So we want the **greatest common divisor** of $1071$ and $462$. Listing all the divisors of both numbers would work, but slowly. Euclid, about $2300$ years ago, described a far faster method — and we will see that the answer is $21$ cm.
+
+A second puzzle: with a $5$-litre jug and a $3$-litre jug and a tap, can you measure exactly $1$ litre? (Yes: fill the $3$-litre jug twice and pour it into the $5$-litre jug; the second time, $1$ litre is left over. In symbols, $2 \cdot 3 - 1 \cdot 5 = 1$.) Which amounts can be measured with jugs of $a$ and $b$ litres? The answer is the same greatest common divisor.
+
+Finally, a certainty you have relied on since primary school: every whole number breaks into primes in **only one way**, $360 = 2^3 \cdot 3^2 \cdot 5$. It feels obvious. This lesson proves it — and shows a number system in which it is false.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Divisors, remainders and the gcd">
+
+<Definition term="divides">
+
+For integers $a$ and $b$, **$a$ divides $b$**, written $a \mid b$, if $b = ak$ for some integer $k$. We also say $a$ is a **divisor** of $b$ and $b$ is a **multiple** of $a$. If $a$ does not divide $b$ we write $a \nmid b$.
+
+</Definition>
+
+So $3 \mid 12$, $-3 \mid 12$, $5 \nmid 12$, and every integer divides $0$ (since $0 = a \cdot 0$).
+
+<Theorem name="Lemma 1 (rules for divisibility)">
+
+For integers $a, b, c, d, x, y$:
+(a) if $a \mid b$ and $b \mid c$, then $a \mid c$;
+(b) if $d \mid a$ and $d \mid b$, then $d \mid ax + by$;
+(c) if $a \mid b$ and $b \neq 0$, then $|a| \le |b|$.
+
+</Theorem>
+
+<Proof>
+
+(a) If $b = ak$ and $c = bl$, then $c = a(kl)$. (b) If $a = dk$ and $b = dl$, then $ax + by = d(kx + ly)$. (c) If $b = ak$ with $b \neq 0$, then $k \neq 0$, so $|k| \ge 1$ and $|b| = |a|\,|k| \ge |a|$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (division with remainder)">
+
+Let $a$ and $b$ be integers with $b > 0$. There are unique integers $q$ (the quotient) and $r$ (the remainder) with
+
+$$
+a = bq + r \quad\text{and}\quad 0 \le r < b .
+$$
+
+</Theorem>
+
+<Proof>
+
+*Existence.* The set $S = \{a - bq : q \in \Z\} \cap \{0, 1, 2, \dots\}$ is non-empty (take $q = -|a|$; then $a - bq = a + b|a| \ge a + |a| \ge 0$). By the well-ordering principle it has a least element $r = a - bq$. Then $r \ge 0$, and $r < b$: otherwise $r - b = a - b(q + 1)$ would be a smaller element of $S$.
+*Uniqueness.* If $bq + r = bq' + r'$ with $0 \le r, r' < b$, then $b(q - q') = r' - r$, a multiple of $b$ strictly between $-b$ and $b$. The only such multiple is $0$, so $q = q'$ and $r = r'$.
+
+</Proof>
+
+<Definition term="greatest common divisor, coprime, least common multiple">
+
+For integers $a, b$ not both zero, the **greatest common divisor** $\gcd(a, b)$ is the largest integer that divides both. (It exists: $1$ is a common divisor, and by Lemma 1(c) common divisors are at most $\max(|a|, |b|)$.) Integers with $\gcd(a, b) = 1$ are **coprime**. For non-zero $a, b$ the **least common multiple** $\operatorname{lcm}(a, b)$ is the smallest positive integer divisible by both.
+
+</Definition>
+
+<Definition term="prime">
+
+A **prime** is an integer $p > 1$ whose only positive divisors are $1$ and $p$. An integer $n > 1$ that is not prime is **composite**. (We met primes in <TopicLink id="math.number.factors-primes">factors, multiples and primes</TopicLink>.)
+
+</Definition>
+
+<Example title="gcd versus lcm">
+
+For $12$ and $18$: the common divisors are $1, 2, 3, 6$, so $\gcd(12, 18) = 6$; the common multiples are $36, 72, \dots$, so $\operatorname{lcm}(12, 18) = 36$. Notice $6 \cdot 36 = 216 = 12 \cdot 18$ — no accident, as we will prove. The gcd is at most the smaller number; the lcm is at least the larger one.
+
+</Example>
+
+</Section>
+
+<Section id="euclid" kind="proof" title="Euclid's algorithm">
+
+The whole algorithm rests on one observation.
+
+<Theorem name="Lemma 3">
+
+If $a = bq + r$, then the common divisors of $a$ and $b$ are exactly the common divisors of $b$ and $r$. In particular, if $b > 0$, then $\gcd(a, b) = \gcd(b, r)$.
+
+</Theorem>
+
+<Proof>
+
+If $d \mid a$ and $d \mid b$, then $d \mid a - bq = r$ by Lemma 1(b). Conversely, if $d \mid b$ and $d \mid r$, then $d \mid bq + r = a$. The two pairs have the same set of common divisors, hence the same greatest one.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Euclid's algorithm)">
+
+Let $a \ge b > 0$. Divide repeatedly, each time dividing the previous divisor by the previous remainder:
+
+$$
+\begin{aligned}
+a &= b q_1 + r_1, & 0 &\le r_1 < b,\\
+b &= r_1 q_2 + r_2, & 0 &\le r_2 < r_1,\\
+r_1 &= r_2 q_3 + r_3, & 0 &\le r_3 < r_2,\\
+&\;\;\vdots
+\end{aligned}
+$$
+
+The process stops with a remainder $0$, and the last non-zero remainder is $\gcd(a, b)$. (If $r_1 = 0$, then $\gcd(a, b) = b$.)
+
+</Theorem>
+
+<Proof>
+
+The remainders form a strictly decreasing sequence of natural numbers $b > r_1 > r_2 > \dots \ge 0$. Such a sequence cannot go on for ever (its terms would form a non-empty set of natural numbers with no least element, contradicting well-ordering), so some remainder $r_{k+1}$ is $0$. By Lemma 3,
+
+$$
+\gcd(a, b) = \gcd(b, r_1) = \gcd(r_1, r_2) = \dots = \gcd(r_k, 0) = r_k ,
+$$
+
+since the greatest divisor of $r_k > 0$ that also divides $0$ is $r_k$ itself.
+
+</Proof>
+
+<Example title="The tiles: gcd(1071, 462)">
+
+$$
+\begin{aligned}
+1071 &= 2 \cdot 462 + 147,\\
+462 &= 3 \cdot 147 + 21,\\
+147 &= 7 \cdot 21 + 0.
+\end{aligned}
+$$
+
+The last non-zero remainder is $21$, so $\gcd(1071, 462) = 21$: the largest tile is $21$ cm, and the floor takes $51 \times 22$ tiles. Three divisions instead of listing dozens of divisors.
+
+</Example>
+
+How fast is it? Each remainder is less than half of the number two steps before it ($r_{i+2} < r_i / 2$), so the number of steps grows only like the number of digits. **Lamé's theorem** (Gabriel Lamé, 1844) makes this precise: the number of division steps is at most five times the number of decimal digits of the smaller number, with consecutive Fibonacci numbers as the worst cases. The computation section tests this.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: Euclid's algorithm as cutting squares">
+
+Here is the algorithm as geometry. From a $252 \times 105$ rectangle, cut the largest possible squares; then do the same to the leftover strip, and so on. A square tile that fits both sides of the rectangle also fits the leftover — that is Lemma 3 — so the last square is the largest tile that fits exactly.
+
+<NumberGrid mode="gcd" a={252} b={105} title="Euclid's algorithm: cutting squares" subtitle="Step through the cuts. How many squares of each size do you cut, and how does that match the quotients 2, 2, 2?" />
+
+Things to try: change the sides to two consecutive Fibonacci numbers such as $89$ and $55$ (every cut removes just one square — the slowest case), and to two coprime numbers such as $100$ and $63$ (the last square has side $1$).
+
+</Section>
+
+<Section id="bezout" kind="proof" title="Bézout's identity and Euclid's lemma">
+
+Running Euclid's algorithm backwards writes the gcd in terms of $a$ and $b$. From the tiles example:
+
+$$
+21 = 462 - 3 \cdot 147 = 462 - 3\,(1071 - 2 \cdot 462) = 7 \cdot 462 - 3 \cdot 1071 .
+$$
+
+Check: $7 \cdot 462 = 3234$ and $3 \cdot 1071 = 3213$, which differ by $21$. This always works.
+
+<Theorem name="Theorem 5 (Bézout's identity)">
+
+If $a$ and $b$ are integers, not both zero, there are integers $x$ and $y$ with
+
+$$
+ax + by = \gcd(a, b).
+$$
+
+Moreover, $\gcd(a, b)$ is the smallest positive integer of the form $ax + by$, and every common divisor of $a$ and $b$ divides $\gcd(a, b)$.
+
+</Theorem>
+
+<Proof>
+
+Let $S$ be the set of positive integers of the form $ax + by$ with $x, y \in \Z$. It is non-empty ($a^2 + b^2 > 0$ is in it), so by well-ordering it has a least element $d = ax_0 + by_0$.
+
+*$d$ divides $a$.* Divide: $a = dq + r$ with $0 \le r < d$. Then $r = a - dq = a(1 - qx_0) + b(-qy_0)$ has the form $ax + by$. If $r$ were positive it would be an element of $S$ smaller than $d$, which is impossible; so $r = 0$ and $d \mid a$. In the same way $d \mid b$.
+
+*Every common divisor divides $d$.* If $c \mid a$ and $c \mid b$, then $c \mid ax_0 + by_0 = d$ by Lemma 1(b). In particular $c \le |c| \le d$.
+
+So $d$ is a common divisor and is at least as large as every common divisor: $d = \gcd(a, b)$.
+
+</Proof>
+
+The jug puzzle is now solved completely: with jugs of $a$ and $b$ litres one can measure exactly the multiples of $\gcd(a, b)$ (up to the size of the larger jug). And Bézout gives a useful test: **$a$ and $b$ are coprime exactly when $ax + by = 1$ has an integer solution.**
+
+<Theorem name="Theorem 6 (Euclid's lemma)">
+
+Let $p$ be a prime. If $p \mid ab$, then $p \mid a$ or $p \mid b$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $p \mid ab$ and $p \nmid a$. The only positive divisors of $p$ are $1$ and $p$, and $p$ does not divide $a$, so $\gcd(p, a) = 1$. By Bézout there are integers $x, y$ with $px + ay = 1$. Multiplying by $b$:
+
+$$
+b = p(bx) + (ab)\,y .
+$$
+
+Both terms on the right are divisible by $p$ (the second because $p \mid ab$), so $p \mid b$ by Lemma 1(b).
+
+</Proof>
+
+The same proof shows more generally: **if $d \mid ab$ and $\gcd(d, a) = 1$, then $d \mid b$.** But the hypothesis matters: $4 \mid 2 \cdot 2$, yet $4 \nmid 2$. And by induction on the number of factors, if a prime divides a product $a_1 a_2 \cdots a_k$, it divides at least one $a_i$.
+
+</Section>
+
+<Section id="fta" kind="proof" title="The fundamental theorem of arithmetic">
+
+<Theorem name="Theorem 7 (fundamental theorem of arithmetic)">
+
+Every integer $n > 1$ can be written as a product of primes, $n = p_1 p_2 \cdots p_k$, and this factorisation is unique apart from the order of the factors.
+
+</Theorem>
+
+<Proof>
+
+*Existence,* by strong induction on $n$. If $n$ is prime, it is a product of one prime. Otherwise $n = ab$ with $1 < a, b < n$; by the induction hypothesis $a$ and $b$ are products of primes, and so is $n$.
+
+*Uniqueness,* by strong induction on $n$. Suppose
+
+$$
+n = p_1 p_2 \cdots p_k = q_1 q_2 \cdots q_l
+$$
+
+with all $p_i$ and $q_j$ prime. Then $p_1$ divides $q_1 q_2 \cdots q_l$, so by Euclid's lemma (for several factors) $p_1 \mid q_j$ for some $j$. Since $q_j$ is prime and $p_1 > 1$, $p_1 = q_j$. Reorder the $q$'s so that $j = 1$ and cancel: $p_2 \cdots p_k = q_2 \cdots q_l$. If this number is $1$, both sides are empty products ($k = l = 1$). Otherwise it is smaller than $n$ and bigger than $1$, and by the induction hypothesis the remaining primes agree apart from order. So the two factorisations agree apart from order.
+
+</Proof>
+
+Collecting equal primes gives the familiar form $n = p_1^{e_1} p_2^{e_2} \cdots p_r^{e_r}$ with distinct primes $p_i$ and exponents $e_i \ge 1$. Uniqueness lets us read off divisors: the divisors of $n$ are exactly the numbers $p_1^{f_1} \cdots p_r^{f_r}$ with $0 \le f_i \le e_i$. Consequently, for $a = \prod p_i^{e_i}$ and $b = \prod p_i^{f_i}$ (allowing exponents $0$),
+
+$$
+\gcd(a, b) = \prod p_i^{\min(e_i, f_i)}, \qquad \operatorname{lcm}(a, b) = \prod p_i^{\max(e_i, f_i)},
+$$
+
+and since $\min(e, f) + \max(e, f) = e + f$, we get $\gcd(a, b) \cdot \operatorname{lcm}(a, b) = ab$ for positive $a, b$. For $12 = 2^2 \cdot 3$ and $18 = 2 \cdot 3^2$: $\gcd = 2 \cdot 3 = 6$ and $\operatorname{lcm} = 2^2 \cdot 3^2 = 36$.
+
+A second consequence answers a question from primary school: why do $\tfrac{7}{40} = 0.175$ and $\tfrac{3}{8} = 0.375$ stop, while $\tfrac{1}{3} = 0.333\ldots$ and $\tfrac{1}{12} = 0.08333\ldots$ go on for ever?
+
+<Theorem name="Theorem 8 (terminating decimals)">
+
+Let $a/b$ be a fraction in lowest terms, with $b > 0$. Its decimal expansion terminates if and only if $b$ has no prime factors other than $2$ and $5$, that is, $b = 2^s 5^t$ for some $s, t \ge 0$.
+
+</Theorem>
+
+<Proof>
+
+A decimal with $k$ digits after the point is a fraction $m/10^k$ with $m$ an integer. So $a/b$ terminates exactly when $a \cdot 10^k / b$ is an integer for some $k$, that is, when $b \mid a \cdot 10^k$ for some $k \ge 0$.
+
+*If $b = 2^s 5^t$:* let $k = \max(s, t)$. Then $10^k = 2^k 5^k = b \cdot 2^{k-s} 5^{k-t}$, so $b \mid 10^k$, and $a/b = a\,2^{k-s}5^{k-t}/10^k$ terminates after at most $k$ digits.
+
+*Conversely,* suppose $b \mid a \cdot 10^k$ and let $p$ be a prime factor of $b$. Then $p \mid a \cdot 10^k$. Since the fraction is in lowest terms, $p \nmid a$ (otherwise $p$ would divide $\gcd(a, b) = 1$). By Euclid's lemma (for several factors) $p$ divides one of the factors of $10^k = 10 \cdot 10 \cdots 10$, so $p \mid 10 = 2 \cdot 5$, and by Euclid's lemma once more $p \mid 2$ or $p \mid 5$, so $p = 2$ or $p = 5$. By unique factorisation, $b = 2^s 5^t$.
+
+</Proof>
+
+For example $\tfrac{7}{40}$ terminates because $40 = 2^3 \cdot 5$ (indeed $\tfrac{7}{40} = \tfrac{175}{1000}$); $\tfrac{1}{12}$ does not, because $12 = 2^2 \cdot 3$; and "lowest terms" matters: $\tfrac{3}{12} = \tfrac14 = 0.25$ terminates, although the denominator $12$ as written has the prime factor $3$. (The lesson on <TopicLink id="math.number.fractions">fractions and decimals</TopicLink> uses this rule.)
+
+</Section>
+
+<Section id="not-obvious" kind="human" title="Why uniqueness needs a proof">
+
+Imagine the only numbers you knew were the **Hilbert numbers** $1, 5, 9, 13, 17, 21, \dots$ — the numbers of the form $4k + 1$. The product of two of them is again one of them, since $(4k + 1)(4l + 1) = 4(4kl + k + l) + 1$. Call a Hilbert number bigger than $1$ *irreducible* if it is not a product of two smaller Hilbert numbers bigger than $1$. Then $9$, $21$ and $49$ are irreducible ($9 = 3 \cdot 3$, but $3$ is not a Hilbert number), and
+
+$$
+441 = 9 \cdot 49 = 21 \cdot 21 .
+$$
+
+Two different factorisations into irreducibles! Existence still holds (the same strong-induction proof works), but uniqueness fails. What breaks is **Euclid's lemma**: $9$ divides $21 \cdot 21$ but does not divide $21$ (in the Hilbert numbers). There is no Bézout identity to rescue it, because the Hilbert numbers are not closed under subtraction.
+
+So the proof of unique factorisation in $\Z$ really depends on Euclid's algorithm, through Bézout and Euclid's lemma. The same phenomenon appears in more serious number systems — see the algebraist's viewpoint below — and it shaped the history of number theory.
+
+<Narrator who="chloe">
+
+Two properties that coincide in $\Z$ are pulled apart here: being *irreducible* (no smaller factors) and being *prime* in the sense of Euclid's lemma. Unique factorisation holds exactly when the irreducibles are prime.
+
+</Narrator>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Euclid, Bézout and unique factorisation in Lean">
+
+**Divisibility and division.** Lemma 1(b), division with remainder from the library, and the uniqueness half proved here (`nlinarith` handles the inequalities).
+
+<Lean decl="Lumenary.DivisibilityGcd.dvd_linear_combination" />
+
+<Lean decl="Lumenary.DivisibilityGcd.division_algorithm" />
+
+<Lean decl="Lumenary.DivisibilityGcd.division_unique" />
+
+**Our own Euclid.** Lemma 3, then the algorithm as a recursive function. Lean only accepts the definition because it can check that the recursion terminates: the second argument decreases, $a \bmod (b + 1) < b + 1$. The correctness proof follows the recursion, using Lemma 3 at each step.
+
+<Lean decl="Lumenary.DivisibilityGcd.common_divisors_mod" />
+
+<Lean decl="Lumenary.DivisibilityGcd.euclid" />
+
+<Lean decl="Lumenary.DivisibilityGcd.euclid_spec" />
+
+<Lean decl="Lumenary.DivisibilityGcd.euclid_eq_gcd" />
+
+<Lean decl="Lumenary.DivisibilityGcd.gcd_1071_462" />
+
+**Bézout.** The extended algorithm keeps track of the coefficients, and the proof is the back-substitution of the text, checked by `linear_combination`. Mathlib has its own extended algorithm, `Nat.gcdA` and `Nat.gcdB`.
+
+<Lean decl="Lumenary.DivisibilityGcd.xgcd" />
+
+<Lean decl="Lumenary.DivisibilityGcd.bezout" />
+
+<Lean decl="Lumenary.DivisibilityGcd.bezout_library" />
+
+<Narrator who="gideon">
+
+Notice the chain of dependencies: Euclid's lemma below is proved from *our* Bézout identity, which is proved about *our* Euclid's algorithm. Nothing about primes or factorisation is borrowed from the library in these proofs — only basic arithmetic.
+
+</Narrator>
+
+<Lean decl="Lumenary.DivisibilityGcd.euclid_lemma" />
+
+<Lean decl="Lumenary.DivisibilityGcd.euclid_lemma_library" />
+
+<Lean decl="Lumenary.DivisibilityGcd.four_counterexample" />
+
+**The fundamental theorem.** Factorisations are lists of primes; "unique apart from order" means the two lists are permutations of each other (`List.Perm`, written `~`).
+
+<Lean decl="Lumenary.DivisibilityGcd.exists_prime_factorization" />
+
+<Lean decl="Lumenary.DivisibilityGcd.prime_dvd_prod" />
+
+<Lean decl="Lumenary.DivisibilityGcd.factorization_unique" />
+
+<Lean decl="Lumenary.DivisibilityGcd.factorization_unique_library" />
+
+**Terminating decimals** (Theorem 8). A fraction $a/b$ terminates when $b \mid a \cdot 10^k$ for some $k$; both directions of Theorem 8 are proved in that form.
+
+<Lean decl="Lumenary.DivisibilityGcd.prime_dvd_pow" />
+
+<Lean decl="Lumenary.DivisibilityGcd.terminating_prime_factors" />
+
+<Lean decl="Lumenary.DivisibilityGcd.two_five_dvd_ten_pow" />
+
+**Hilbert numbers.** Irreducibility is defined with an unbounded "for all", proved equivalent to a finite check, and the finite check is run by Lean's kernel.
+
+<Lean decl="Lumenary.DivisibilityGcd.HilbertIrreducible" />
+
+<Lean decl="Lumenary.DivisibilityGcd.hilbertIrreducible_iff" />
+
+<Lean decl="Lumenary.DivisibilityGcd.hilbert_non_unique" />
+
+What is formalised: every theorem of the lesson except Lamé's theorem and the gcd–lcm formula. Mathlib also has these facts in great generality — for instance unique factorisation in every *unique factorisation domain* (`UniqueFactorizationMonoid`), which includes every Euclidean domain.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Euclid by machine">
+
+<Narrator who="margaret">
+
+Let me trace the extended algorithm on $1071$ and $462$, hunt for the slowest inputs, and then look at the Hilbert numbers — and at a surprising probability.
+
+</Narrator>
+
+<Python id="divisibility_gcd_euclid" />
+
+The slowest pairs are consecutive Fibonacci numbers, where every quotient is $1$ — exactly the squares-widget picture in which each cut removes a single square.
+
+<Python id="divisibility_gcd_hilbert" />
+
+Part 3 counts, among all pairs of whole numbers up to $N$, the fraction that are coprime. It approaches $6/\pi^2 \approx 0.6079$ — a classical theorem, and a first meeting between number theory and $\pi$. The computation is exact counting, but a finite range can only illustrate the limit.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Unique factorisation is obvious."** It feels obvious because we have used it for years, but it is a theorem whose proof needs Euclid's lemma, and so Bézout's identity and Euclid's algorithm. In the Hilbert numbers $1, 5, 9, 13, \dots$ it fails: $441 = 9 \cdot 49 = 21 \cdot 21$.
+
+</Misconception>
+
+<Misconception>
+
+**"If $d \mid ab$, then $d \mid a$ or $d \mid b$."** True when $d$ is prime (Euclid's lemma), false in general: $4 \mid 2 \cdot 2$ but $4 \nmid 2$; $6 \mid 4 \cdot 9$ but $6$ divides neither.
+
+</Misconception>
+
+<Misconception>
+
+**Confusing gcd and lcm.** The greatest common divisor is the biggest number that goes **into** both ($\gcd(12, 18) = 6$); the least common multiple is the smallest number that both go **into** ($\operatorname{lcm}(12, 18) = 36$). A quick check: the gcd is never bigger than the smaller number, and the lcm never smaller than the larger.
+
+</Misconception>
+
+<Misconception>
+
+**"Coprime means at least one of the numbers is prime."** $8$ and $15$ are coprime, and neither is prime. Coprime means the two numbers share no prime factor.
+
+</Misconception>
+
+<Misconception>
+
+**"To find a gcd you must factorise first."** Euclid's algorithm needs no factorisation at all — which matters, because factorising large numbers is believed to be very hard, while Euclid's algorithm is fast even for numbers with hundreds of digits.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="ideals and unique factorisation domains">
+
+The set of all combinations $\{ax + by : x, y \in \Z\}$, written $a\Z + b\Z$, is closed under addition, subtraction and multiplication by integers — an **ideal** of $\Z$. Bézout's theorem says it equals $d\Z$ with $d = \gcd(a, b)$: every ideal of $\Z$ consists of the multiples of one number ($\Z$ is a *principal ideal domain*). The same proof works wherever there is division with a remainder that gets smaller — in a **Euclidean domain**, such as polynomials over $\Q$ or the Gaussian integers $\Z[i] = \{m + ni : m, n \in \Z\}$ — so these too have unique factorisation. But in $\Z[\sqrt{-5}] = \{m + n\sqrt{-5}\}$,
+
+$$
+6 = 2 \cdot 3 = (1 + \sqrt{-5})(1 - \sqrt{-5}),
+$$
+
+with all four factors irreducible: unique factorisation fails. Ernst Kummer's "ideal numbers" and Richard Dedekind's ideals were invented in the 19th century to repair this; see <TopicLink id="math.algebra.rings">rings, ideals and fields</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="lattice points and cutting squares">
+
+Draw the integer grid. The line $ax + by = c$ passes through a grid point exactly when $\gcd(a, b) \mid c$ — Bézout in geometric form. The segment from $(0, 0)$ to $(a, b)$, with $a, b > 0$, passes through exactly $\gcd(a, b) + 1$ grid points (counting both ends), because the points on it are $\big(ka/d, kb/d\big)$ for $k = 0, 1, \dots, d$ with $d = \gcd(a, b)$. And Euclid's algorithm is literally geometric: the Greeks thought of it as repeatedly subtracting the smaller length from the larger (*anthyphairesis*), the squares-cutting picture of the explorer. Applied to a diagonal and side of a square, the process never ends — one route to the irrationality of $\sqrt{2}$.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="the chance of being coprime">
+
+Pick two whole numbers "at random". The chance that both are even is about $\frac14$, that both are multiples of $3$ about $\frac19$, and so on for each prime. If these events behaved independently, the chance of sharing no prime factor would be $\prod_p \big(1 - \frac{1}{p^2}\big)$, and Euler showed this product equals $1/\zeta(2) = 6/\pi^2$, where $\zeta(2) = 1 + \frac14 + \frac19 + \dots = \pi^2/6$. The heuristic can be made rigorous (the limit statement is a classical theorem), and the computation section shows the proportions creeping towards $0.6079\ldots$
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="an algorithm for the ages">
+
+Euclid's algorithm is among the oldest algorithms still in everyday use. By Lamé's theorem it needs a number of steps proportional to the number of digits, so it handles numbers with hundreds of digits instantly. The extended version computes inverses in clock arithmetic: if $\gcd(a, n) = 1$ then $ax + ny = 1$ gives $ax \equiv 1 \pmod n$. That is how the RSA cryptosystem, which protects much of the world's online communication, computes its secret key. See <TopicLink id="math.comp.algorithms-and-efficiency">algorithms and efficiency</TopicLink> and <TopicLink id="math.number.congruences">congruences</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Remainders lead to the arithmetic of clocks — where Bézout's identity decides which numbers can be "divided by".
+
+<Trail slug="remainder-families" />
+
+<Trail slug="clock-arithmetic" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Euclid's *Elements*** (around 300 BCE), Book VII, opens with the algorithm (Propositions 1–2), phrased as repeatedly subtracting the smaller number from the larger, and proves Euclid's lemma as Proposition 30. Book IX, Proposition 14, comes close to the uniqueness of factorisation.
+- **China.** *The Nine Chapters on the Mathematical Art* (compiled by about the 1st century CE) reduces fractions using the "mutual subtraction" method (*gēng xiāng jiǎn sǔn*), which is Euclid's algorithm by repeated subtraction.
+- **India.** Āryabhaṭa (499 CE) gave the *kuṭṭaka* ("pulveriser") method for solving $ax + by = c$ in integers, essentially the extended Euclidean algorithm; Brahmagupta (628 CE) and later Indian mathematicians developed it further, including applications to astronomy and calendars.
+- **Bézout's identity** for integers appears in the work of Claude-Gaspard Bachet de Méziriac (1624); Étienne Bézout (1779) proved the analogous result for polynomials, and his name stuck.
+- **Unique factorisation.** Kamāl al-Dīn al-Fārisī (Persia, around 1300) proved the existence of prime factorisations and took steps towards uniqueness. The first clear statement and proof of uniqueness is in Carl Friedrich Gauss's *Disquisitiones Arithmeticae* (1801).
+- **Algorithms and ideals.** Gabriel Lamé's 1844 bound on Euclid's algorithm is often called the first analysis of the running time of an algorithm. In the 1840s Ernst Kummer discovered that unique factorisation fails in some number systems arising from Fermat's Last Theorem, and invented "ideal numbers" to restore it.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- G. H. Hardy and E. M. Wright, *An Introduction to the Theory of Numbers* (1938), chapters 1–2: primes, the fundamental theorem and its proofs.
+- Ivan Niven, Herbert S. Zuckerman and Hugh L. Montgomery, *An Introduction to the Theory of Numbers* (5th edition, 1991), chapter 1.
+- Harold Davenport, *The Higher Arithmetic* (1952) — a short, beautifully written introduction.
+- Donald E. Knuth, *The Art of Computer Programming*, volume 2: *Seminumerical Algorithms* (1969), section 4.5.2 on the analysis of Euclid's algorithm.
+
+</Section>

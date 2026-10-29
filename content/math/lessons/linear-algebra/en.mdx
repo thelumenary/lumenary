@@ -1,0 +1,716 @@
+---
+slug: linear-algebra
+topic: math.algebra.linear-algebra
+title: Linear algebra
+subtitle: Solving many equations at once, measuring what a map forgets, and finding the directions a matrix only stretches — the most widely used theory in mathematics.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 120
+order: 5006
+objectives:
+  - Solve linear systems by Gaussian elimination and describe every solution set as a translate of a null space
+  - Prove that all bases of a finite-dimensional vector space have the same size (the exchange lemma), and prove and apply the rank–nullity theorem
+  - Represent linear maps by matrices, prove that composition corresponds to matrix multiplication, and change basis
+  - Prove that a square matrix is invertible if and only if its determinant is non-zero, if and only if its columns are linearly independent
+  - Compute eigenvalues and eigenvectors, prove that eigenvectors for distinct eigenvalues are independent, and decide whether a matrix is diagonalisable
+narrators: []
+lean:
+  - Lumenary.LinearAlgebra.solutions_translate_ker
+  - Lumenary.LinearAlgebra.systemMatrix
+  - Lumenary.LinearAlgebra.worked_system
+  - Lumenary.LinearAlgebra.toLin_mul
+  - Lumenary.LinearAlgebra.mul_not_comm
+  - Lumenary.LinearAlgebra.rot
+  - Lumenary.LinearAlgebra.rot_mul_rot
+  - Lumenary.LinearAlgebra.bases_same_card
+  - Lumenary.LinearAlgebra.rank_nullity
+  - Lumenary.LinearAlgebra.exists_nonzero_solution
+  - Lumenary.LinearAlgebra.isUnit_iff_det_ne_zero
+  - Lumenary.LinearAlgebra.cols_independent_iff
+  - Lumenary.LinearAlgebra.eigen_pair_independent
+  - Lumenary.LinearAlgebra.eigenvectors_independent
+  - Lumenary.LinearAlgebra.nilpotent_not_diagonalisable
+compute: [linear_algebra_rank_nullity, linear_algebra_diagonalise]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Two puzzles with one theory behind them">
+
+**Balancing a reaction.** In photosynthesis, a leaf turns carbon dioxide and water into glucose and oxygen:
+
+$$
+a\,\mathrm{CO_2} + b\,\mathrm{H_2O} \longrightarrow c\,\mathrm{C_6H_{12}O_6} + d\,\mathrm{O_2}.
+$$
+
+Counting atoms of carbon, hydrogen and oxygen on both sides gives three equations in four unknowns:
+
+$$
+a - 6c = 0, \qquad 2b - 12c = 0, \qquad 2a + b - 6c - 2d = 0.
+$$
+
+Must there be a solution other than $a = b = c = d = 0$? Is it unique up to scaling? (Chemists find $6, 6, 1, 6$.) The answers — *yes*, and *yes* — come from a single theorem about dimensions, the **rank–nullity theorem**, which says that three equations can "use up" at most three of the four degrees of freedom.
+
+**Growth.** The Fibonacci numbers $0, 1, 1, 2, 3, 5, 8, 13, \dots$ satisfy $F_{n+1} = F_n + F_{n-1}$. In matrix form,
+
+$$
+\begin{pmatrix} F_{n+1} \\ F_n \end{pmatrix} = \begin{pmatrix} 1 & 1 \\ 1 & 0 \end{pmatrix} \begin{pmatrix} F_n \\ F_{n-1} \end{pmatrix},
+$$
+
+so computing $F_n$ means computing powers of a matrix. The ratios $F_{n+1}/F_n$ approach the golden ratio $\varphi = (1 + \sqrt5)/2 \approx 1.618$. Why *that* number? Because $\varphi$ is an **eigenvalue** of the matrix: there is a direction that the matrix only stretches, by the factor $\varphi$, and after many steps that direction wins.
+
+The same two questions — *solve a linear system*, *understand repeated application of a linear map* — appear in circuit analysis, economics, computer graphics, statistics, quantum mechanics, search engines and machine learning. Linear algebra is the theory that answers both. It starts where school algebra stops: from <TopicLink id="math.algebra.linear-relationships">simultaneous linear equations</TopicLink> in two or three unknowns, with scalars from the <TopicLink id="math.number.real-numbers">real numbers</TopicLink> (or any other field).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Linear maps as transformations of space">
+
+A $2 \times 2$ matrix $A$ moves every point $x$ of the plane to $Ax$. Because $A(x + y) = Ax + Ay$ and $A(cx) = c\,Ax$, the whole picture is determined by where the two basis vectors $e_1 = (1, 0)$ and $e_2 = (0, 1)$ go: they go to the **columns** of $A$. The square grid becomes a grid of parallelograms, the origin stays put, and straight lines stay straight (or collapse).
+
+Three numbers measure what happens:
+
+- the **determinant** is the factor by which areas are multiplied, with a minus sign if the map flips the plane over;
+- the **rank** is the dimension of the image: $2$ if the plane goes onto the plane, $1$ if it is squashed onto a line, $0$ if everything goes to the origin;
+- the **eigenvectors** are the directions that are not turned at all, only stretched (by the **eigenvalue**).
+
+<MatrixTransform title="A linear map of the plane" subtitle="Drag the entries or pick a preset. Watch the columns, the area of the unit square, the flag and the dashed invariant lines." />
+
+Try the "singular" preset: the whole plane collapses onto a line, the determinant is $0$, and some non-zero vectors are sent to $0$. That collapse is exactly what makes a system of equations fail to have a unique solution. Try "rotation": no real direction survives unturned, so there are no real eigenvectors.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $k$ is a **field**: $\Q$, $\R$, $\C$, or the two-element field $\mathbb F_2 = \{0, 1\}$ with $1 + 1 = 0$ (see <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink>). Elements of $k$ are called **scalars**.
+
+<Definition term="vector space">
+
+A **vector space** over $k$ is a set $V$ with an addition $V \times V \to V$ and a scalar multiplication $k \times V \to V$ such that $(V, +)$ is an abelian group (with zero vector $0$) and, for all $a, b \in k$ and $u, v \in V$,
+
+$$
+a(u + v) = au + av, \qquad (a + b)v = av + bv, \qquad (ab)v = a(bv), \qquad 1v = v.
+$$
+
+A **subspace** is a subset $U \subseteq V$ containing $0$ and closed under addition and scalar multiplication; it is a vector space in its own right.
+
+</Definition>
+
+<Definition term="span, linear independence, basis, dimension">
+
+A **linear combination** of $v_1, \dots, v_n \in V$ is a vector $a_1 v_1 + \cdots + a_n v_n$ with $a_i \in k$. Their **span** is the set of all linear combinations, the smallest subspace containing them. The list is **linearly independent** if
+
+$$
+a_1 v_1 + \cdots + a_n v_n = 0 \implies a_1 = \cdots = a_n = 0,
+$$
+
+and **dependent** otherwise. A **basis** of $V$ is a linearly independent list that spans $V$; then every $v \in V$ is $a_1 v_1 + \cdots + a_n v_n$ for *unique* scalars $a_i$, its **coordinates**. $V$ is **finite-dimensional** if some finite list spans it, and then $\dim V$ is the number of vectors in a basis — a definition that only makes sense once we prove that all bases have the same size (the exchange lemma, below).
+
+</Definition>
+
+<Definition term="linear map, kernel, image, rank">
+
+A map $T : V \to W$ between vector spaces over $k$ is **linear** if
+
+$$
+T(u + v) = T(u) + T(v) \quad\text{and}\quad T(cv) = c\,T(v) \qquad \text{for all } u, v \in V,\ c \in k.
+$$
+
+Then $T(0) = 0$. Its **kernel** $\ker T = \{v \in V : Tv = 0\}$ and **image** $\operatorname{im} T = \{Tv : v \in V\}$ are subspaces of $V$ and $W$. The **rank** of $T$ is $\dim \operatorname{im} T$ and its **nullity** is $\dim \ker T$. A linear map is injective if and only if $\ker T = \{0\}$, because $Tu = Tv \iff T(u - v) = 0$.
+
+</Definition>
+
+<Definition term="matrix of a linear map">
+
+Let $B = (v_1, \dots, v_n)$ be a basis of $V$ and $C = (w_1, \dots, w_m)$ a basis of $W$. The **matrix** of $T$ with respect to $B$ and $C$ is the $m \times n$ matrix $[T]$ whose $j$-th column holds the coordinates of $T v_j$:
+
+$$
+T v_j = \sum_{i=1}^m t_{ij}\, w_i .
+$$
+
+For $V = k^n$ and $W = k^m$ with their standard bases, $[T]$ is the matrix $A$ with $Tx = Ax$. The **product** of an $\ell \times m$ matrix $S$ and an $m \times n$ matrix $T$ is the $\ell \times n$ matrix with entries $(ST)_{ij} = \sum_{r} s_{ir} t_{rj}$.
+
+</Definition>
+
+<Definition term="determinant">
+
+The **determinant** of an $n \times n$ matrix $A = (a_{ij})$ is
+
+$$
+\det A = \sum_{\sigma \in S_n} \operatorname{sgn}(\sigma)\, a_{\sigma(1)1}\, a_{\sigma(2)2} \cdots a_{\sigma(n)n},
+$$
+
+the sum over all permutations $\sigma$ of $\{1, \dots, n\}$, where $\operatorname{sgn}(\sigma) = \pm 1$ according as $\sigma$ is a product of an even or odd number of swaps. For $n = 2$: $\det \begin{pmatrix} a & b \\ c & d \end{pmatrix} = ad - bc$.
+
+</Definition>
+
+<Definition term="eigenvalue, eigenvector, diagonalisable">
+
+Let $T : V \to V$ be linear. A scalar $\lambda \in k$ is an **eigenvalue** of $T$ if $Tv = \lambda v$ for some **non-zero** vector $v$, called an **eigenvector**. The **eigenspace** $E_\lambda = \ker(T - \lambda I)$ consists of the eigenvectors for $\lambda$ together with $0$; its dimension is the **geometric multiplicity** of $\lambda$. For a square matrix $A$, the **characteristic polynomial** is $p_A(t) = \det(tI - A)$, and the multiplicity of $\lambda$ as a root of $p_A$ is its **algebraic multiplicity**. $A$ is **diagonalisable** (over $k$) if $P^{-1} A P$ is diagonal for some invertible matrix $P$ with entries in $k$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Vector spaces you already know (and some you may not)">
+
+- $k^n$, lists of $n$ scalars; $\dim k^n = n$, with the standard basis $e_1, \dots, e_n$.
+- The polynomials of degree at most $d$, with basis $1, x, \dots, x^d$: dimension $d + 1$.
+- The solutions of the differential equation $y'' + y = 0$ on $\R$: a vector space of dimension $2$, with basis $\cos, \sin$.
+- $\mathbb F_2^7$: the seven-bit words used in error-correcting codes. Over $\mathbb F_2$ we have $v + v = 0$ for every $v$.
+- All functions $\R \to \R$: a vector space that is *not* finite-dimensional (the functions $1, x, x^2, \dots$ are independent).
+
+**Not** subspaces of $\R^3$: the plane $z = 1$ (it does not contain $0$); the octant $x, y, z \ge 0$ (not closed under multiplication by $-1$); the union of the $x$- and $y$-axes in $\R^2$ (closed under scaling, but $(1, 0) + (0, 1)$ is on neither axis).
+
+</Example>
+
+<Example title="Gaussian elimination, worked">
+
+Solve $x + 2y + z = 4$ and $2x + 4y + 3z = 9$. Row-reduce the augmented matrix: subtract twice row 1 from row 2, then subtract the new row 2 from row 1:
+
+$$
+\left(\begin{array}{ccc|c} 1 & 2 & 1 & 4 \\ 2 & 4 & 3 & 9 \end{array}\right)
+\to
+\left(\begin{array}{ccc|c} 1 & 2 & 1 & 4 \\ 0 & 0 & 1 & 1 \end{array}\right)
+\to
+\left(\begin{array}{ccc|c} 1 & 2 & 0 & 3 \\ 0 & 0 & 1 & 1 \end{array}\right).
+$$
+
+This is the **reduced row echelon form**: each non-zero row starts with a **pivot** $1$, which is the only non-zero entry in its column. The pivot columns belong to $x$ and $z$; the column of $y$ has no pivot, so $y = t$ is **free**. Reading off, $z = 1$ and $x = 3 - 2t$:
+
+$$
+(x, y, z) = (3, 0, 1) + t\,(-2, 1, 0), \qquad t \in \R.
+$$
+
+The solution set is a line: one particular solution $(3, 0, 1)$ plus every multiple of $(-2, 1, 0)$, which spans the null space of the coefficient matrix. A system is **inconsistent** exactly when elimination produces a row $(0 \ \cdots\ 0 \mid c)$ with $c \neq 0$, that is, the equation $0 = c$.
+
+</Example>
+
+<Example title="Differentiation as a matrix">
+
+Let $V$ be the polynomials of degree at most $3$ with basis $1, x, x^2, x^3$, and $D = d/dx : V \to V$. Since $D(1) = 0$, $D(x) = 1$, $D(x^2) = 2x$ and $D(x^3) = 3x^2$, the columns of $[D]$ are these coordinates:
+
+$$
+[D] = \begin{pmatrix} 0 & 1 & 0 & 0 \\ 0 & 0 & 2 & 0 \\ 0 & 0 & 0 & 3 \\ 0 & 0 & 0 & 0 \end{pmatrix}.
+$$
+
+$\ker D$ is the constants (dimension $1$) and $\operatorname{im} D$ is the polynomials of degree at most $2$ (dimension $3$); indeed $1 + 3 = 4 = \dim V$. Since $D^4 = 0$, any eigenvalue $\lambda$ satisfies $\lambda^4 v = D^4 v = 0$, so $\lambda = 0$, and $E_0 = \ker D$ has dimension $1$: $D$ has too few eigenvectors to be diagonalisable.
+
+</Example>
+
+<Example title="Maps that are not linear">
+
+$x \mapsto x + 1$ on $\R$ is not linear: it moves $0$. (It is *affine*: linear followed by a translation; see <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>.) $x \mapsto x^2$ is not linear: $(1 + 1)^2 \neq 1^2 + 1^2$. A linear map need not be injective: the projection $(x, y) \mapsto (x, 0)$ sends the whole $y$-axis — a line through the origin — to the single point $0$.
+
+</Example>
+
+</Section>
+
+<Section id="systems" kind="proof" title="Linear systems">
+
+A system of $m$ linear equations in $n$ unknowns is $Ax = b$ with $A$ an $m \times n$ matrix. The **elementary row operations** are: swap two rows; multiply a row by a non-zero scalar; add a multiple of one row to another.
+
+<Theorem name="Proposition (row operations do not change the solutions)">
+
+If an augmented matrix $(A \mid b)$ is turned into $(A' \mid b')$ by elementary row operations, then $Ax = b$ and $A'x = b'$ have exactly the same solutions.
+
+</Theorem>
+
+<Proof>
+
+Each new equation is a linear combination of the old ones, so every solution of the old system solves the new one. Each operation can be undone by an operation of the same kind (swap back; multiply by $c^{-1}$; subtract the multiple again), so by the same argument every solution of the new system solves the old one.
+
+</Proof>
+
+By repeatedly choosing a pivot, scaling it to $1$ and clearing its column, any matrix can be brought to reduced row echelon form; this is **Gaussian elimination**. Its output is read off as in the worked example: the system is consistent if and only if no pivot lies in the last column, and then the free variables can be chosen arbitrarily and determine the pivot variables uniquely.
+
+<Theorem name="Theorem (structure of the solution set)">
+
+Let $T : V \to W$ be linear and $b \in W$. If $x_0$ is one solution of $Tx = b$, then the set of all solutions is the translate
+
+$$
+\{x \in V : Tx = b\} = x_0 + \ker T = \{x_0 + z : z \in \ker T\}.
+$$
+
+In particular, a consistent system has a unique solution exactly when $\ker T = \{0\}$.
+
+</Theorem>
+
+<Proof>
+
+By linearity $Tx - Tx_0 = T(x - x_0)$, so $Tx = b = Tx_0$ holds if and only if $T(x - x_0) = 0$, that is, $x - x_0 \in \ker T$, that is, $x \in x_0 + \ker T$.
+
+</Proof>
+
+So the solution set of a linear system is empty, or a point, or a line, plane, … that need not pass through the origin, parallel to the null space. This is the shape of the solutions of *linear differential equations* too: general solution = particular solution + general solution of the homogeneous equation.
+
+</Section>
+
+<Section id="dimension" kind="proof" title="Bases and dimension">
+
+<Theorem name="Lemma (adding a vector outside the span)">
+
+If $u_1, \dots, u_m$ are linearly independent and $v \notin \operatorname{span}(u_1, \dots, u_m)$, then $u_1, \dots, u_m, v$ are linearly independent.
+
+</Theorem>
+
+<Proof>
+
+Suppose $a_1 u_1 + \cdots + a_m u_m + cv = 0$. If $c \neq 0$ then $v = -c^{-1}(a_1 u_1 + \cdots + a_m u_m)$ lies in the span, which is false; so $c = 0$, and then independence of the $u_i$ gives $a_1 = \cdots = a_m = 0$.
+
+</Proof>
+
+<Theorem name="Theorem (Steinitz exchange lemma)">
+
+If $u_1, \dots, u_m$ are linearly independent in $V$ and $w_1, \dots, w_n$ span $V$, then $m \le n$.
+
+</Theorem>
+
+<Proof>
+
+We replace the $w$'s by $u$'s one at a time, keeping a spanning list. We claim that for each $j = 0, 1, \dots, m$, after renumbering the $w$'s, $j \le n$ and the list $u_1, \dots, u_j, w_{j+1}, \dots, w_n$ spans $V$. For $j = 0$ this is the hypothesis.
+
+Suppose it holds for some $j < m$. Since the list spans, $u_{j+1} = b_1 u_1 + \cdots + b_j u_j + c_{j+1} w_{j+1} + \cdots + c_n w_n$ for some scalars. If every $c_i$ were $0$ — in particular, if no $w$'s were left, $j = n$ — then $u_{j+1}$ would be a combination of $u_1, \dots, u_j$, contradicting independence. So $j < n$, and after renumbering $c_{j+1} \neq 0$. Solving for $w_{j+1}$,
+
+$$
+w_{j+1} = c_{j+1}^{-1}\Big(u_{j+1} - \sum_{i \le j} b_i u_i - \sum_{i > j+1} c_i w_i\Big) \in \operatorname{span}(u_1, \dots, u_{j+1}, w_{j+2}, \dots, w_n),
+$$
+
+so this new list still spans everything the old one did, namely $V$. This proves the claim for $j + 1$, and with $j = m$ it gives $m \le n$.
+
+</Proof>
+
+<Theorem name="Corollary (invariance of dimension)">
+
+Any two bases of a finite-dimensional vector space have the same number of elements.
+
+</Theorem>
+
+<Proof>
+
+If $(u_1, \dots, u_m)$ and $(w_1, \dots, w_n)$ are bases, each is independent and each spans, so the exchange lemma gives $m \le n$ and $n \le m$.
+
+</Proof>
+
+<Theorem name="Corollary (extending to a basis)">
+
+In a vector space of dimension $n$, every linearly independent list has at most $n$ vectors and can be extended to a basis; every subspace $U$ is finite-dimensional with $\dim U \le n$.
+
+</Theorem>
+
+<Proof>
+
+An independent list has at most $n$ elements by the exchange lemma (a basis spans). If an independent list does not span, add a vector outside its span; by the lemma it stays independent. This must stop after at most $n$ additions, and it stops only at a spanning list, i.e. a basis. For a subspace $U$, start from the empty list and add vectors of $U$ outside the current span: the lists stay independent in $V$, so the process stops after at most $n$ steps, at a basis of $U$.
+
+</Proof>
+
+</Section>
+
+<Section id="rank-nullity" kind="proof" title="The rank–nullity theorem">
+
+<Theorem name="Theorem (rank–nullity)">
+
+Let $T : V \to W$ be linear with $V$ finite-dimensional. Then $\operatorname{im} T$ is finite-dimensional and
+
+$$
+\dim V = \dim \ker T + \dim \operatorname{im} T.
+$$
+
+</Theorem>
+
+<Proof>
+
+Choose a basis $u_1, \dots, u_s$ of $\ker T$ and extend it to a basis $u_1, \dots, u_s, v_1, \dots, v_r$ of $V$, so $\dim V = s + r$. We show that $Tv_1, \dots, Tv_r$ is a basis of $\operatorname{im} T$.
+
+*Spanning.* Any $x \in V$ is $\sum a_i u_i + \sum b_j v_j$, and $Tu_i = 0$, so $Tx = \sum b_j\, Tv_j$.
+
+*Independence.* If $\sum b_j\, Tv_j = 0$ then $T(\sum b_j v_j) = 0$, so $\sum b_j v_j \in \ker T$ and $\sum b_j v_j = \sum a_i u_i$ for some $a_i$. Then $\sum a_i u_i - \sum b_j v_j = 0$ is a relation among the vectors of a basis of $V$, so all $b_j$ (and $a_i$) are $0$.
+
+Hence $\dim \operatorname{im} T = r$ and $\dim V = s + r = \dim\ker T + \dim\operatorname{im} T$.
+
+</Proof>
+
+For a matrix $A$, Gaussian elimination makes this concrete: $\operatorname{rank} A$ is the number of pivots (the pivot columns of $A$ form a basis of its column space, because row operations preserve the linear relations between columns), and the nullity is the number of free variables (each free variable gives one basis vector of the null space, as in the worked example). Every column is either a pivot column or a free one.
+
+<Theorem name="Corollary (more unknowns than equations)">
+
+A homogeneous system $Ax = 0$ of $m$ equations in $n > m$ unknowns has a non-zero solution.
+
+</Theorem>
+
+<Proof>
+
+The image of $x \mapsto Ax$ lies in $k^m$, so has dimension at most $m$. By rank–nullity $\dim \ker A = n - \dim \operatorname{im} A \ge n - m > 0$, so $\ker A$ contains a non-zero vector.
+
+</Proof>
+
+For photosynthesis, $n = 4 > 3 = m$, so a non-zero balancing exists. Elimination shows the rank is exactly $3$, so the null space is a line: the balancing $(6, 6, 1, 6)$ is unique up to scaling.
+
+<Theorem name="Corollary (injective, surjective, bijective)">
+
+If $T : V \to V$ is linear and $V$ is finite-dimensional, then $T$ is injective $\iff$ $T$ is surjective $\iff$ $T$ is bijective.
+
+</Theorem>
+
+<Proof>
+
+$T$ is injective iff $\dim \ker T = 0$, iff (by rank–nullity) $\dim \operatorname{im} T = \dim V$, iff $\operatorname{im} T = V$ (a subspace of full dimension is the whole space: a basis of it is an independent list of $\dim V$ vectors, which cannot be extended, so it already spans $V$).
+
+</Proof>
+
+This fails in infinite dimensions: on sequences, the shift $(a_0, a_1, \dots) \mapsto (0, a_0, a_1, \dots)$ is injective but not surjective.
+
+</Section>
+
+<Section id="matrices" kind="proof" title="Matrices, composition and change of basis">
+
+<Theorem name="Theorem (composition is matrix multiplication)">
+
+Let $T : U \to V$ and $S : V \to W$ be linear, and fix bases $(u_j)$, $(v_r)$, $(w_i)$. Then $S \circ T$ is linear, and $[S \circ T] = [S]\,[T]$.
+
+</Theorem>
+
+<Proof>
+
+Linearity: $S(T(x + y)) = S(Tx + Ty) = S(Tx) + S(Ty)$, and similarly for scalars. For the matrix, with $[T] = (t_{rj})$ and $[S] = (s_{ir})$,
+
+$$
+(S \circ T)(u_j) = S\Big(\sum_r t_{rj} v_r\Big) = \sum_r t_{rj}\, S v_r = \sum_r t_{rj} \sum_i s_{ir} w_i = \sum_i \Big(\sum_r s_{ir} t_{rj}\Big) w_i,
+$$
+
+so the $(i, j)$ entry of $[S \circ T]$ is $\sum_r s_{ir} t_{rj} = ([S][T])_{ij}$.
+
+</Proof>
+
+This is *why* matrices are multiplied rows-into-columns. It also proves for free that matrix multiplication is associative, because composition of functions is. It is not commutative, because composition is not: with $A = \begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix}$ and $B = \begin{pmatrix} 0 & 0 \\ 1 & 0 \end{pmatrix}$, $AB = \begin{pmatrix} 1 & 0 \\ 0 & 0 \end{pmatrix}$ but $BA = \begin{pmatrix} 0 & 0 \\ 0 & 1 \end{pmatrix}$. Rotations of the plane do commute: multiplying the rotation matrices $R_\alpha R_\beta$ produces the addition formulas for sine and cosine and gives $R_{\alpha + \beta}$.
+
+<Theorem name="Proposition (change of basis)">
+
+Let $B$ and $B'$ be bases of $V$, and let $P$ be the matrix whose $j$-th column holds the $B$-coordinates of the $j$-th vector of $B'$. Then $P$ is invertible, $[x]_B = P\,[x]_{B'}$ for every $x$, and for every linear $T : V \to V$,
+
+$$
+[T]_{B'} = P^{-1}\, [T]_B\, P .
+$$
+
+</Theorem>
+
+<Proof>
+
+$P$ is the matrix of the identity map of $V$ from $B'$-coordinates to $B$-coordinates, so $[x]_B = P[x]_{B'}$; the matrix the other way is an inverse. Then $[Tx]_{B'} = P^{-1}[Tx]_B = P^{-1}[T]_B[x]_B = P^{-1}[T]_B P\,[x]_{B'}$ for all $x$, and a matrix is determined by what it does to all coordinate vectors.
+
+</Proof>
+
+Matrices $A$ and $P^{-1}AP$ are called **similar**: they describe the same linear map in two coordinate systems. Everything intrinsic to the map — rank, determinant, trace, eigenvalues, characteristic polynomial — is the same for similar matrices.
+
+</Section>
+
+<Section id="determinants" kind="proof" title="Determinants and invertibility">
+
+We use the following properties of the determinant, all derived from the permutation formula (see Axler, ch. 9, or Strang, ch. 5):
+
+1. $\det$ is **linear in each column** when the other columns are fixed;
+2. it is **alternating**: if two columns are equal, $\det A = 0$ (so swapping two columns changes the sign);
+3. $\det I = 1$;
+4. it is **multiplicative**: $\det(AB) = \det A \det B$.
+
+Properties 1 and 2 almost *characterise* the determinant. Let $D$ be any function of $n \times n$ matrices that is linear in each column and alternating. Expanding each column $b_j = \sum_i b_{ij} e_i$ of $B$ by multilinearity writes $D(B)$ as a sum, over all functions $f$ from $\{1, \dots, n\}$ to itself, of $b_{f(1)1} \cdots b_{f(n)n}\, D(e_{f(1)}, \dots, e_{f(n)})$. Alternation kills every term with $f$ not injective, and for a permutation $\sigma$ the swaps that sort $(e_{\sigma(1)}, \dots, e_{\sigma(n)})$ into $(e_1, \dots, e_n)$ give $D(e_{\sigma(1)}, \dots, e_{\sigma(n)}) = \operatorname{sgn}(\sigma)\, D(I)$. Comparing with the permutation formula: $D(B) = D(I) \det B$. Property 4 follows: for fixed $A$, the function $D(B) = \det(AB)$ is linear in each column of $B$ (the $j$-th column of $AB$ is $Ab_j$) and alternating (equal columns of $B$ give equal columns of $AB$), so $\det(AB) = D(I)\det B = \det A \det B$. Geometrically, $|\det A|$ is the factor by which $A$ multiplies areas ($n = 2$) or volumes ($n = 3$), and the sign records orientation.
+
+<Theorem name="Theorem (invertibility)">
+
+For an $n \times n$ matrix $A$ over a field, the following are equivalent:
+
+1. $A$ is invertible;
+2. $Ax = 0$ only for $x = 0$;
+3. the columns of $A$ are linearly independent;
+4. $\operatorname{rank} A = n$;
+5. $\det A \neq 0$.
+
+</Theorem>
+
+<Proof>
+
+(2 ⇔ 3) $Ax = x_1 a_1 + \cdots + x_n a_n$ where $a_j$ are the columns, so a non-zero solution of $Ax = 0$ is exactly a dependence relation among the columns.
+
+(2 ⇔ 4 ⇔ 1) By rank–nullity, $\dim\ker A = 0$ iff $\operatorname{rank} A = n$; and by the corollary on injective maps, this holds iff $x \mapsto Ax$ is bijective. The inverse of a linear bijection is linear (apply the bijection to $T^{-1}u + T^{-1}v$), and its matrix is an inverse of $A$. Conversely an invertible $A$ is injective.
+
+(1 ⇒ 5) $\det A \cdot \det A^{-1} = \det(AA^{-1}) = \det I = 1$, so $\det A \ne 0$.
+
+(5 ⇒ 3) Contrapositive. If the columns are dependent, some column is a combination of the others: $a_q = \sum_{j \ne q} c_j a_j$. By linearity in column $q$, $\det A = \sum_{j \neq q} c_j \det A_j$, where $A_j$ is $A$ with column $q$ replaced by $a_j$. Each $A_j$ has two equal columns, so $\det A_j = 0$ and $\det A = 0$.
+
+</Proof>
+
+For $2 \times 2$ matrices, $A^{-1} = \dfrac{1}{ad - bc}\begin{pmatrix} d & -b \\ -c & a \end{pmatrix}$, which visibly needs $ad - bc \ne 0$.
+
+</Section>
+
+<Section id="eigen" kind="proof" title="Eigenvalues and diagonalisation">
+
+<Theorem name="Proposition (eigenvalues are roots of the characteristic polynomial)">
+
+$\lambda$ is an eigenvalue of the square matrix $A$ if and only if $\det(\lambda I - A) = 0$. Hence an $n \times n$ matrix has at most $n$ eigenvalues.
+
+</Theorem>
+
+<Proof>
+
+$Av = \lambda v$ for some $v \ne 0$ iff $(\lambda I - A)v = 0$ has a non-zero solution, iff (invertibility theorem) $\det(\lambda I - A) = 0$. By the permutation formula, $\det(tI - A)$ is a monic polynomial of degree $n$ in $t$, so it has at most $n$ roots.
+
+</Proof>
+
+The rotation $\begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix}$ has $p(t) = t^2 + 1$: no real eigenvalues, but eigenvalues $\pm i$ over $\C$. Over $\C$ every square matrix has an eigenvalue, by the fundamental theorem of algebra; this is one reason complex scalars are so useful.
+
+<Theorem name="Theorem (eigenvectors for distinct eigenvalues are independent)">
+
+If $v_1, \dots, v_m$ are eigenvectors of $T : V \to V$ with pairwise distinct eigenvalues $\lambda_1, \dots, \lambda_m$, then $v_1, \dots, v_m$ are linearly independent.
+
+</Theorem>
+
+<Proof>
+
+Induction on $m$. For $m = 1$, $v_1 \ne 0$ is independent. Let $m \ge 2$, assume the result for $m - 1$, and suppose $c_1 v_1 + \cdots + c_m v_m = 0$. Applying $T$ gives $c_1 \lambda_1 v_1 + \cdots + c_m \lambda_m v_m = 0$. Subtracting $\lambda_m$ times the first relation,
+
+$$
+c_1(\lambda_1 - \lambda_m) v_1 + \cdots + c_{m-1}(\lambda_{m-1} - \lambda_m) v_{m-1} = 0 .
+$$
+
+By the induction hypothesis every $c_i(\lambda_i - \lambda_m) = 0$, and $\lambda_i \neq \lambda_m$, so $c_1 = \cdots = c_{m-1} = 0$. Then $c_m v_m = 0$ with $v_m \neq 0$, so $c_m = 0$.
+
+</Proof>
+
+<Theorem name="Theorem (diagonalisability)">
+
+An $n \times n$ matrix $A$ over $k$ is diagonalisable if and only if $k^n$ has a basis of eigenvectors of $A$; then $P^{-1}AP = D$ where the columns of $P$ are the eigenvectors and the diagonal of $D$ lists their eigenvalues. In particular, if $A$ has $n$ distinct eigenvalues in $k$, it is diagonalisable.
+
+</Theorem>
+
+<Proof>
+
+Write $p_1, \dots, p_n$ for the columns of $P$ and $D = \operatorname{diag}(d_1, \dots, d_n)$. The $j$-th column of $AP$ is $Ap_j$ and that of $PD$ is $d_j p_j$, so $AP = PD$ says exactly that $Ap_j = d_j p_j$ for each $j$. $P$ is invertible iff its columns form a basis (invertibility theorem), so "$P^{-1}AP = D$ with $P$ invertible" says exactly "the $p_j$ are a basis of eigenvectors". With $n$ distinct eigenvalues, choose one eigenvector for each; they are independent by the previous theorem, and $n$ independent vectors in $k^n$ form a basis.
+
+</Proof>
+
+More generally — by the same independence argument applied to eigenspaces — $A$ is diagonalisable if and only if the geometric multiplicities of its eigenvalues add up to $n$.
+
+<Theorem name="Proposition (a matrix that cannot be diagonalised)">
+
+$N = \begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix}$ is not diagonalisable over any field.
+
+</Theorem>
+
+<Proof>
+
+$p_N(t) = t^2$, so $0$ is the only eigenvalue, and $E_0 = \ker N = \operatorname{span}(e_1)$ is one-dimensional: there is no basis of eigenvectors. Here is a second proof, the one formalised in Lean, that avoids eigenvectors. Suppose $NP = PD$ with $P$ invertible and $D$ diagonal. Since $N^2 = 0$,
+
+$$
+PD^2 = (PD)D = NPD = N(PD) = N^2 P = 0,
+$$
+
+so $D^2 = 0$ (multiply by $P^{-1}$), so each diagonal entry $d_i$ satisfies $d_i^2 = 0$, i.e. $D = 0$. Then $NP = 0$, so $N = 0$ — false.
+
+</Proof>
+
+<Example title="Fibonacci numbers by diagonalisation">
+
+$A = \begin{pmatrix} 1 & 1 \\ 1 & 0 \end{pmatrix}$ has $p_A(t) = t^2 - t - 1$, with distinct roots $\varphi = \frac{1 + \sqrt5}{2}$ and $\psi = \frac{1 - \sqrt5}{2}$, so it is diagonalisable over $\R$. Since $\lambda^2 = \lambda + 1$ for both roots, $A\begin{pmatrix} \lambda \\ 1 \end{pmatrix} = \begin{pmatrix} \lambda + 1 \\ \lambda \end{pmatrix} = \lambda \begin{pmatrix} \lambda \\ 1 \end{pmatrix}$. Write $e_1 = \frac{1}{\sqrt5}\left(\begin{pmatrix} \varphi \\ 1 \end{pmatrix} - \begin{pmatrix} \psi \\ 1 \end{pmatrix}\right)$ (using $\varphi - \psi = \sqrt5$). Then
+
+$$
+\begin{pmatrix} F_{n+1} \\ F_n \end{pmatrix} = A^n e_1 = \frac{1}{\sqrt5}\left(\varphi^n \begin{pmatrix} \varphi \\ 1 \end{pmatrix} - \psi^n \begin{pmatrix} \psi \\ 1 \end{pmatrix}\right),
+\qquad\text{so}\qquad
+F_n = \frac{\varphi^n - \psi^n}{\sqrt5}.
+$$
+
+Since $|\psi| < 1$, $\psi^n \to 0$ and $F_{n+1}/F_n \to \varphi$: the eigenvector with the larger eigenvalue dominates. This is **Binet's formula**.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Linear algebra in Lean and Mathlib">
+
+Mathlib's linear algebra is written for modules over rings, and specialises to vector spaces over a field `K`: `Module K V` is the vector-space structure, `V →ₗ[K] W` the type of linear maps, `LinearMap.ker` and `LinearMap.range` the kernel and image, `Module.finrank K V` the dimension (as a natural number), and `Matrix m n K` the matrices, acting on vectors by `A *ᵥ x`. The lesson's module proves several results again from basic facts (*independent*) and cites the library for others.
+
+**Linear systems.** The structure theorem is a two-line rewrite, exactly the human proof $Tx - Tx_0 = T(x - x_0)$; the worked elimination is then checked in full: the solutions of $x + 2y + z = 4$, $2x + 4y + 3z = 9$ are precisely $(3, 0, 1) + t(-2, 1, 0)$, both directions of the "if and only if".
+
+<Lean decl="Lumenary.LinearAlgebra.solutions_translate_ker" />
+
+<Lean decl="Lumenary.LinearAlgebra.systemMatrix" />
+
+<Lean decl="Lumenary.LinearAlgebra.worked_system" />
+
+**Composition and matrices.** Mathlib's `Matrix.toLin'` turns a matrix into the linear map $x \mapsto Ax$; that it turns products into composites is the theorem of this lesson. Then two independent facts: the explicit non-commuting pair, and the rotation matrices composing by adding angles.
+
+<Lean decl="Lumenary.LinearAlgebra.toLin_mul" />
+
+<Lean decl="Lumenary.LinearAlgebra.mul_not_comm" />
+
+<Lean decl="Lumenary.LinearAlgebra.rot" />
+
+<Lean decl="Lumenary.LinearAlgebra.rot_mul_rot" />
+
+**Dimension and rank–nullity** come from the library, whose proofs follow the same route as ours (Mathlib proves rank–nullity via the isomorphism $V/\ker T \cong \operatorname{im} T$, an equivalent formulation). The "more unknowns than equations" corollary is proved here from rank–nullity, mirroring the human proof line by line: bound the image by $m$, subtract, and extract a non-zero vector from a subspace of positive dimension.
+
+<Lean decl="Lumenary.LinearAlgebra.bases_same_card" />
+
+<Lean decl="Lumenary.LinearAlgebra.rank_nullity" />
+
+<Lean decl="Lumenary.LinearAlgebra.exists_nonzero_solution" />
+
+**Invertibility.** Two of the equivalences of the invertibility theorem, from Mathlib. (`A.col` is the family of columns of `A`; `IsUnit A` means $A$ has a two-sided inverse.)
+
+<Lean decl="Lumenary.LinearAlgebra.isUnit_iff_det_ne_zero" />
+
+<Lean decl="Lumenary.LinearAlgebra.cols_independent_iff" />
+
+**Eigenvectors.** The two-eigenvector case of the independence theorem is proved exactly as on paper — apply $T$, subtract $\lambda$ times the relation, cancel — while the general statement is Mathlib's (proved there via the independence of the eigenspaces). Finally, the non-diagonalisability of $N$, by the second proof above: $PD^2 = N^2P = 0$, so $D = 0$, so $N = 0$.
+
+<Lean decl="Lumenary.LinearAlgebra.eigen_pair_independent" />
+
+<Lean decl="Lumenary.LinearAlgebra.eigenvectors_independent" />
+
+<Lean decl="Lumenary.LinearAlgebra.nilpotent_not_diagonalisable" />
+
+**Not formalised here:** the exchange lemma itself (it is inside Mathlib's proof that `finrank` is well defined), the permutation formula and multiplicativity of the determinant (Mathlib's `Matrix.det` and `Matrix.det_mul`), and Binet's formula (Mathlib has it as `Real.coe_fib_eq`).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Elimination by machine, and a census of matrices">
+
+Gaussian elimination is an algorithm, and computers run it billions of times a day. In floating-point arithmetic a tiny rounding error can turn a zero into $10^{-17}$ and create a spurious pivot, so the rank of a matrix is numerically delicate. The first experiment works with exact fractions instead: it row-reduces the worked example, reads off the null space, and checks rank–nullity on 300 random integer matrices whose rank is controlled by building them as products of an $m \times r$ and an $r \times n$ matrix.
+
+<Python id="linear_algebra_rank_nullity" />
+
+The second experiment asks how common diagonalisability is. For a real $2 \times 2$ matrix the answer is decided by the discriminant $(\operatorname{tr} A)^2 - 4\det A$ of $p_A$: positive gives two distinct real eigenvalues (diagonalisable over $\R$), negative gives a pair of complex conjugate eigenvalues (diagonalisable over $\C$ only), and zero gives a repeated eigenvalue $\lambda$, in which case $A$ is diagonalisable only if it already equals $\lambda I$ (if $P^{-1}AP = \lambda I$ then $A = P(\lambda I)P^{-1} = \lambda I$). It counts all 625 matrices with entries from $-2$ to $2$, then diagonalises the Fibonacci matrix symbolically.
+
+<Python id="linear_algebra_diagonalise" />
+
+Notice that the defective matrices are rare (56 of 625) — they satisfy the polynomial equation "discriminant $= 0$" — while the matrices with complex eigenvalues are not rare at all: they fill an open region. The topologist's viewpoint below explains why this is the expected picture.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: eigenvectors and the order of composition">
+
+The dashed lines are the eigenvector directions: the map slides points along them, stretching by the eigenvalue. Start from the symmetric matrix below (eigenvalues $3$ and $1$, eigenvectors along $y = x$ and $y = -x$), then try the shear (one invariant line only: defective) and the rotation (none).
+
+<MatrixTransform matrix={[[2, 1], [1, 2]]} mode="single" presets={["shear", "rotation", "scale", "projection", "singular"]} title="Eigenvectors are invariant lines" subtitle="Which presets have two invariant lines, one, or none?" />
+
+Composition: first a shear, then a quarter turn — or the other way round. The two results differ, which is the non-commutativity of matrix multiplication made visible.
+
+<MatrixTransform mode="compose" matrix={[[1, 1], [0, 1]]} matrix2={[["cos(pi/2)", "-sin(pi/2)"], ["sin(pi/2)", "cos(pi/2)"]]} title="AB is not BA" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Matrix multiplication is commutative, like multiplying numbers."** $AB$ means "first $B$, then $A$", and doing two transformations in the other order usually gives a different result: shear-then-rotate is not rotate-then-shear. Even when both $AB$ and $BA$ are defined they can differ, as $\begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix}$ and $\begin{pmatrix} 0 & 0 \\ 1 & 0 \end{pmatrix}$ show. Some special families commute (diagonal matrices; rotations of the plane), and that is worth noticing when it happens.
+
+</Misconception>
+
+<Misconception>
+
+**"Every square matrix is diagonalisable."** $\begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix}$ is not, over any field: its only eigenvalue is $0$ and its eigenvectors fill only a line. Over $\R$, rotations are not diagonalisable either, for a different reason — no real eigenvalues. What *is* true: over $\C$, every matrix is similar to an upper triangular one, and to a Jordan normal form (see <TopicLink id="math.algebra.advanced-linear-algebra">advanced linear algebra</TopicLink>); and matrices with distinct eigenvalues are diagonalisable.
+
+</Misconception>
+
+<Misconception>
+
+**"A linear map sends lines through the origin to lines."** It sends them to lines *or to the single point $0$*. The projection $(x, y) \mapsto (x, 0)$ collapses the $y$-axis. A linear map preserves lines exactly when it is injective, i.e. when its kernel is $\{0\}$.
+
+</Misconception>
+
+<Misconception>
+
+**"$\det(A + B) = \det A + \det B$."** The determinant is multiplicative, not additive: $\det I + \det I = 2$ but $\det(2I) = 2^n$ for $n \times n$ matrices. In general $\det(cA) = c^n \det A$.
+
+</Misconception>
+
+<Misconception>
+
+**"The zero vector is an eigenvector of every matrix."** $A0 = \lambda 0$ for every $\lambda$, which is exactly why eigenvectors are required to be non-zero — otherwise every scalar would be an "eigenvalue". (The eigen*space* $E_\lambda$ does contain $0$.)
+
+</Misconception>
+
+<Misconception>
+
+**"Vectors no two of which are parallel are independent."** In $\R^2$, the vectors $(1, 0)$, $(0, 1)$ and $(1, 1)$ are pairwise non-parallel but dependent: the third is the sum of the first two. Independence is about the whole list, not pairs.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Linear maps are geometry: area, orientation, principal axes">
+
+For a linear map $T$ of $\R^n$ and any region $R$ with a volume, $\operatorname{vol}(T(R)) = |\det T|\,\operatorname{vol}(R)$; the sign of $\det T$ says whether $T$ preserves or reverses orientation (the flag in the widget). The matrices preserving lengths are the **orthogonal** matrices, $Q^{\mathsf T} Q = I$; they have $\det Q = \pm 1$ and in the plane they are exactly the rotations and reflections in lines through the origin. A real **symmetric** matrix ($A^{\mathsf T} = A$) is always diagonalisable *by an orthogonal matrix* — the **spectral theorem**. Geometrically: the curve $x^{\mathsf T} A x = 1$ is a conic whose axes are the eigenvector directions of $A$; it is an ellipse when both eigenvalues are positive and a hyperbola when they have opposite signs. For instance $5x^2 + 4xy + 2y^2 = 1$ has eigenvalues $6$ and $1$, so it is an ellipse with semi-axes $1/\sqrt6$ and $1$ along the eigenvectors $(2, 1)$ and $(-1, 2)$. See <TopicLink id="math.geom.conic-sections">conic sections</TopicLink> and, for Klein's view of geometry through groups of matrices, <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Two kinds of invertible matrix, and why generic matrices are diagonalisable">
+
+The set $GL_n(\R)$ of invertible real matrices is an open subset of $\R^{n^2}$ (it is where the continuous function $\det$ is non-zero), and it has exactly **two path components**: $\det > 0$ and $\det < 0$. One cannot continuously deform a reflection into the identity through invertible matrices, because along the path $\det$ would have to pass through $0$ (intermediate value theorem). This is the topological meaning of *orientation*. By contrast $GL_n(\C)$ is connected: the complex numbers $\neq 0$ form a connected set, and one can always steer around the zeros of $\det$.
+
+Over $\C$, the matrices with $n$ distinct eigenvalues are those where the discriminant of $p_A$ — a polynomial in the entries — is non-zero; this set is open and dense, so every complex matrix is a limit of diagonalisable ones, and "being defective" is a closed condition of measure zero. The census in the computation section shows the shadow of this: defective matrices are rare. Over $\R$, however, the set with non-real eigenvalues is open too, so real diagonalisability is *not* generic. See <TopicLink id="math.geom.matrix-groups">matrix groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="The derivative is a linear map; infinite dimensions are different">
+
+Multivariable calculus is linear algebra applied locally: the derivative of $f : \R^n \to \R^m$ at a point is the linear map that best approximates $f$ nearby, its matrix is the Jacobian, and the chain rule $D(g \circ f) = Dg \cdot Df$ is the theorem "composition is matrix multiplication" (see <TopicLink id="math.analysis.multivariable-calculus">multivariable calculus</TopicLink>). The linear system $x' = Ax$ of differential equations is solved by $x(t) = e^{tA}x(0)$, and if $A = PDP^{-1}$ then $e^{tA} = P e^{tD} P^{-1}$, so the eigenvalues decide stability: all real parts negative means every solution decays.
+
+In infinite dimensions linear algebra becomes **functional analysis**, and some theorems change: the shift operator on sequences is injective but not surjective, so rank–nullity has no direct analogue, and an operator can have no eigenvalues at all while still having a "spectrum". Fourier series are coordinates with respect to the orthonormal basis $e^{inx}$ of a space of functions (see <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Vector spaces are modules over a field — and fields are what make bases exist">
+
+Replace the field $k$ by a ring $R$ and the same axioms define an **$R$-module**. Much of this lesson then breaks: the $\Z$-module $\Z/2\Z$ has no basis at all (every element $x$ satisfies $2x = 0$, a non-trivial relation), and in $\Z$ the list $(2)$ is linearly independent but cannot be extended to a basis — the only bases of $\Z$ are $(1)$ and $(-1)$. The proofs of the exchange lemma and of the extension corollary divided by non-zero scalars — that is where fields are essential. Over a principal ideal domain such as $\Z$ there is a substitute, the Smith normal form, which classifies finitely generated abelian groups (see <TopicLink id="math.algebra.modules">modules</TopicLink>).
+
+Algebra also asks which matrix identities hold universally. The **Cayley–Hamilton theorem** says $p_A(A) = 0$: for the Fibonacci matrix, $A^2 = A + I$. And a **representation** of a group $G$ is a homomorphism $G \to GL(V)$ — linear algebra used to study symmetry, which is the subject of <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Normal modes and quantum measurements are eigenvectors">
+
+Two equal masses $m$ joined to each other and to two walls by three equal springs (stiffness $\kappa$) obey $m\ddot x = -\kappa K x$ with $K = \begin{pmatrix} 2 & -1 \\ -1 & 2 \end{pmatrix}$. The eigenvectors of $K$ are $(1, 1)$ (eigenvalue $1$) and $(1, -1)$ (eigenvalue $3$): the **normal modes**, in which the masses swing together with frequency $\sqrt{\kappa/m}$ or against each other with frequency $\sqrt{3\kappa/m}$. Every motion is a superposition of the two — a change of basis to eigen-coordinates decouples the equations. The same mathematics describes molecular vibrations and the modes of a bridge.
+
+In quantum mechanics a state is a vector in a complex vector space, a measurable quantity is a self-adjoint operator, and the possible results of a measurement are its eigenvalues — real, by the spectral theorem. The word "eigen" entered physics through this route (see <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Vect, and matrices as morphisms">
+
+Vector spaces over $k$ and linear maps form a category $\cat{Vect}_k$: composites of linear maps are linear and identities are linear (see <TopicLink id="math.cat.categories">categories</TopicLink>). Choosing bases shows that the full subcategory of finite-dimensional spaces is *equivalent* to a strikingly simple category $\cat{Mat}_k$: its objects are the natural numbers $0, 1, 2, \dots$, a morphism $n \to m$ is an $m \times n$ matrix, and composition is matrix multiplication. The theorem "composition is matrix multiplication" is precisely the statement that this is a functor, and invariance of dimension says that isomorphic objects of $\cat{Vect}_k$ go to the same number. Change of basis is the freedom in choosing this equivalence.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **China.** Chapter 8 of *The Nine Chapters on the Mathematical Art* (compiled by about the 1st century CE), titled *fangcheng* ("rectangular arrays"), solves systems with as many as six unknowns by arranging the coefficients on a counting board and eliminating column by column — essentially Gaussian elimination, with negative numbers handled by coloured rods. Liu Hui's commentary (263 CE) explains the method.
+- **Japan and Europe, 1680s–1690s.** Determinants appear independently in the work of **Seki Takakazu** (1683), in the context of eliminating unknowns from polynomial equations, and of **Gottfried Wilhelm Leibniz** (1693). **Gabriel Cramer** published his rule for solving square systems in 1750.
+- **Gauss** used systematic elimination in his least-squares calculations of asteroid orbits in the early nineteenth century; the name "Gaussian elimination" is a later, Western attribution for a method known in China some 1,700 years earlier.
+- **The nineteenth century.** **Hermann Grassmann**'s *Ausdehnungslehre* (1844) developed linear combinations, independence and dimension in a geometric language that was decades ahead of its time. **James Joseph Sylvester** coined the word *matrix* (1850), and **Arthur Cayley**'s *Memoir on the theory of matrices* (1858) introduced matrix algebra, including the Cayley–Hamilton theorem. **Camille Jordan** gave his normal form in 1870.
+- **Axioms.** **Giuseppe Peano** gave an axiomatic definition of a vector space in 1888. The prefix *eigen-* ("own, characteristic") comes from **David Hilbert**'s work on integral equations around 1904.
+- **Computation.** Numerical linear algebra became a discipline with electronic computers; **Alan Turing** (1948) and **James Wilkinson** analysed rounding errors in elimination, and today large-scale eigenvector computations rank web pages and train machine-learning models.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Sheldon Axler, *Linear Algebra Done Right* (1996; 4th ed. 2024) — a clean, determinant-light treatment of vector spaces, linear maps and eigenvalues.
+- Gilbert Strang, *Introduction to Linear Algebra* (1993; 6th ed. 2023) — matrices, elimination and applications, with a strong geometric and computational flavour.
+- Paul R. Halmos, *Finite-Dimensional Vector Spaces* (1942; 2nd ed. 1958) — the classic coordinate-free account.
+- Kenneth Hoffman and Ray Kunze, *Linear Algebra* (1961; 2nd ed. 1971) — thorough, including determinants and canonical forms.
+- Lloyd N. Trefethen and David Bau, *Numerical Linear Algebra* (1997) — what happens to these algorithms on a real computer.
+
+</Section>

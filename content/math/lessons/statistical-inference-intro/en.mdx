@@ -1,0 +1,483 @@
+---
+slug: statistical-inference-intro
+topic: math.prob.statistical-inference-intro
+title: Sampling and statistical reasoning
+subtitle: How a few hundred well-chosen answers can describe millions of people, why a million badly chosen ones cannot, what a margin of error means — and why a strong correlation is not yet a cause.
+level: g9-12
+ages: Ages 14–18
+minutes: 75
+order: 4021
+objectives:
+  - Distinguish a population from a sample and a parameter from a statistic, and identify sources of bias in collecting data
+  - Use simulation to see how sample statistics vary, and explain why their spread shrinks in proportion to $1/\sqrt{n}$
+  - Interpret a margin of error and a $95\%$ confidence interval correctly
+  - Fit a least-squares line, interpret the correlation coefficient $r$, and prove that $-1 \le r \le 1$
+  - Explain why correlation alone does not establish causation, and how randomised experiments can provide evidence of it
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.StatisticalInferenceIntro.mean
+  - Lumenary.StatisticalInferenceIntro.sum_sub_mean
+  - Lumenary.StatisticalInferenceIntro.sum_sq_sub
+  - Lumenary.StatisticalInferenceIntro.mean_minimizes
+  - Lumenary.StatisticalInferenceIntro.cauchy_schwarz
+  - Lumenary.StatisticalInferenceIntro.cauchy_schwarz_library
+  - Lumenary.StatisticalInferenceIntro.Sxy
+  - Lumenary.StatisticalInferenceIntro.corr
+  - Lumenary.StatisticalInferenceIntro.abs_corr_le_one
+  - Lumenary.StatisticalInferenceIntro.sse
+  - Lumenary.StatisticalInferenceIntro.sse_eq
+  - Lumenary.StatisticalInferenceIntro.slope
+  - Lumenary.StatisticalInferenceIntro.intercept
+  - Lumenary.StatisticalInferenceIntro.least_squares
+  - Lumenary.StatisticalInferenceIntro.min_sse
+  - Lumenary.StatisticalInferenceIntro.variance_sample_mean
+  - Lumenary.StatisticalInferenceIntro.central_limit_theorem
+compute: [statistical_inference_intro_sampling, statistical_inference_intro_regression]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Two and a half million wrong answers">
+
+In 1936 the American magazine *The Literary Digest* mailed questionnaires to about ten million people, asking how they would vote in the presidential election. About $2.4$ million replied — one of the largest polls ever taken — and the magazine predicted a comfortable win for Alf Landon. Franklin Roosevelt won in a landslide, with about $61\%$ of the vote. The young pollster George Gallup, using a far smaller sample chosen to represent the voting public, correctly predicted Roosevelt's victory.
+
+How can a few thousand answers beat two million? Because **how** a sample is chosen matters far more than how big it is. The *Digest*'s names came largely from telephone directories and lists of car owners — in 1936, mostly better-off households — and the people who bothered to reply were not typical either.
+
+Today, statistical sampling measures unemployment, crop yields and public health in almost every country. India's National Sample Survey, set up in 1950 under the statistician Prasanta Chandra Mahalanobis, was one of the first to do this on a national scale. This lesson explains why careful sampling works, how to say **how far** to trust its answers, and how to think clearly about relationships between variables — including when a relationship is, and is not, evidence of a cause.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="One spoonful of soup">
+
+<Analogy>
+
+To check the salt in a big pot of soup, you do not drink the whole pot: you **stir it well** and taste one spoonful. Stirring makes every spoonful like every other, so one tells you about all of them — and a spoonful is enough for a large pot as well as a small one. But if you never stir, a spoonful from the top tells you nothing reliable, however large your spoon. Random sampling is the statistician's way of stirring. (This is an analogy: the mathematics behind it is the behaviour of random samples described below.)
+
+</Analogy>
+
+There are two very different kinds of error in a sample estimate.
+
+- **Chance error** (sampling variability): different random samples give different answers, scattered around the truth. Chance errors are as likely to be too high as too low, and they **shrink** as the sample grows.
+- **Bias** (systematic error): the method of collecting data pushes every answer in the same direction — towards households with telephones, towards people with strong opinions. Bias does **not** shrink with sample size. A bigger biased sample only gives a more precise wrong answer.
+
+<Narrator who="chloe">
+
+So random sampling doesn't make the error vanish — it turns it into a kind of error we can *measure*. That's a beautiful trade: we can't know exactly how wrong we are, but we can know how wrong we are likely to be.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="population, sample, parameter, statistic">
+
+The **population** is the whole group we want to know about; a **sample** is the part of it that we actually observe. A **parameter** is a number describing the population (the proportion $p$ of all households with a rainwater tank); a **statistic** is a number computed from the sample (the proportion $\hat p$ of sampled households with one), used to **estimate** the parameter.
+
+</Definition>
+
+<Definition term="simple random sample">
+
+In a **simple random sample** of size $n$, every subset of $n$ members of the population is equally likely to be the sample.
+
+</Definition>
+
+<Definition term="bias">
+
+A method of sampling or measuring is **biased** if it tends to give estimates that are systematically too high or too low. Common sources: **selection bias** (some members are less likely to be included — people without telephones), **non-response** (those chosen do not all answer, and those who answer differ from those who do not), **voluntary response** (people choose themselves, and strong opinions are over-represented), and **response bias** (leading questions, or answers people are embarrassed to give).
+
+</Definition>
+
+<Definition term="sampling distribution and standard error">
+
+The **sampling distribution** of a statistic is the pattern of values it takes over all possible random samples. Its standard deviation is the statistic's **standard error** (SE). For the proportion $\hat p$ in a simple random sample of size $n$, taken from a population much larger than $n$,
+$$
+\mathrm{SE}(\hat p) \approx \sqrt{\frac{p(1 - p)}{n}}.
+$$
+
+</Definition>
+
+<Definition term="margin of error and confidence interval">
+
+A **$95\%$ confidence interval** for a proportion is $\hat p \pm 1.96\,\sqrt{\hat p(1 - \hat p)/n}$; the half-width $1.96\sqrt{\hat p(1-\hat p)/n}$ is the **margin of error**. "$95\%$" describes the **method**: in the long run, about $95\%$ of intervals built this way from random samples contain the true $p$.
+
+</Definition>
+
+<Definition term="normal distribution">
+
+The **normal distribution** with mean $\mu$ and standard deviation $\sigma$ is the bell-shaped curve $y = \dfrac{1}{\sigma\sqrt{2\pi}} e^{-(x - \mu)^2/(2\sigma^2)}$. About $68\%$ of its area lies within $\sigma$ of $\mu$, about $95\%$ within $1.96\,\sigma$, and about $99.7\%$ within $3\sigma$. It is a **model**: many sampling distributions are close to normal, which is where the number $1.96$ comes from.
+
+</Definition>
+
+For paired data $(x_1, y_1), \dots, (x_n, y_n)$, write $\bar x, \bar y$ for the means and
+$$
+S_{xx} = \sum_i (x_i - \bar x)^2, \qquad S_{yy} = \sum_i (y_i - \bar y)^2, \qquad S_{xy} = \sum_i (x_i - \bar x)(y_i - \bar y).
+$$
+
+<Definition term="least-squares line and correlation coefficient">
+
+The **residual** of the point $(x_i, y_i)$ from the line $y = a + bx$ is $y_i - (a + bx_i)$. The **least-squares line** is the line that makes the sum of squared residuals as small as possible. The **correlation coefficient** is
+$$
+r = \frac{S_{xy}}{\sqrt{S_{xx}\,S_{yy}}}
+$$
+(defined when $S_{xx} > 0$ and $S_{yy} > 0$). It measures the strength and direction of a **linear** association.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Spotting bias">
+
+- A radio station asks listeners to text in whether they support a new stadium: **voluntary response** — people with strong feelings reply.
+- A survey about public transport is carried out at a car park: **selection bias** — people who take the bus are left out.
+- "Do you agree that the dangerous old bridge should be replaced?" — a **leading question** (response bias).
+- A health survey reaches only the people who are at home in the afternoon: **selection and non-response bias** — workers and students are missed.
+
+</Example>
+
+<Example title="A margin of error">
+
+A water agency surveys a simple random sample of $400$ households in a town of $20\,000$; $146$ of them, $\hat p = 0.365$, collect rainwater in a tank. The standard error is about $\sqrt{0.365 \times 0.635 / 400} \approx 0.024$, so the margin of error is $1.96 \times 0.024 \approx 0.047$, and the $95\%$ confidence interval runs from about $0.318$ to $0.412$. The agency can report "about $37\%$, give or take $5$ percentage points". (The sample is only $2\%$ of the town, so the approximation "population much larger than $n$" is reasonable.)
+
+</Example>
+
+<Example title="Fitting a line">
+
+Five students record the hours $x$ they spent revising and their quiz score $y$ out of $10$:
+
+| $x$ (hours) | 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- | --- |
+| $y$ (score) | 2 | 4 | 5 | 4 | 5 |
+
+Here $\bar x = 3$, $\bar y = 4$; the deviations are $-2, -1, 0, 1, 2$ and $-2, 0, 1, 0, 1$, so $S_{xx} = 10$, $S_{xy} = 4 + 0 + 0 + 0 + 2 = 6$ and $S_{yy} = 6$. As we prove below, the least-squares line has slope $\hat b = S_{xy}/S_{xx} = 0.6$ and intercept $\hat a = \bar y - \hat b \bar x = 2.2$:
+$$
+\hat y = 2.2 + 0.6x, \qquad r = \frac{6}{\sqrt{10 \times 6}} \approx 0.77.
+$$
+The residuals $-0.8, 0.6, 1.0, -0.6, -0.2$ add up to $0$, and their squares add up to $2.4$. With five students, of course, this describes these five and nothing more.
+
+</Example>
+
+<Example title="A non-example: r = 0, yet a perfect relationship">
+
+For the points $x = -3, -2, \dots, 3$ with $y = x^2$, $S_{xy} = \sum x_i^3 - \bar y \sum x_i = 0$, so $r = 0$. Yet $y$ is completely determined by $x$. The correlation coefficient detects only **linear** association; $r = 0$ means "no linear association", not "no relationship". Always plot the data.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="What can be proved, and how">
+
+Statistics rests on two kinds of argument: **probability**, which describes how random samples behave, and **algebra**, which describes the summaries we compute. Both can be proved. Whether a particular sample was really random, or a particular cause is real, is a question about the world, which no theorem can settle.
+
+<Theorem name="Theorem 1 (the mean is the least-squares centre)">
+
+For numbers $x_1, \dots, x_n$ with mean $\bar x$ and any number $c$,
+$$
+\sum_i (x_i - c)^2 = \sum_i (x_i - \bar x)^2 + n(\bar x - c)^2.
+$$
+In particular $\sum_i (x_i - c)^2$ is smallest exactly when $c = \bar x$.
+
+</Theorem>
+
+<Proof>
+
+First, the deviations from the mean add up to zero: $\sum_i (x_i - \bar x) = \sum_i x_i - n\bar x = 0$. Now write $x_i - c = (x_i - \bar x) + (\bar x - c)$ and expand the square:
+$$
+\sum_i (x_i - c)^2 = \sum_i (x_i - \bar x)^2 + 2(\bar x - c)\sum_i (x_i - \bar x) + n(\bar x - c)^2.
+$$
+The middle term is $0$. The last term is never negative, and it is $0$ only when $c = \bar x$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (the 1/√n law)">
+
+Suppose $X_1, \dots, X_n$ are independent measurements, each with mean $\mu$ and standard deviation $\sigma$ (for example, values drawn at random, with replacement, from a population). Then their average $\bar X = (X_1 + \cdots + X_n)/n$ has mean $\mu$ and standard deviation $\sigma / \sqrt{n}$.
+
+</Theorem>
+
+<Proof>
+
+This uses two facts proved in <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>: the **variance** (the square of the standard deviation) of a sum of independent random quantities is the sum of their variances, and multiplying a random quantity by a constant $c$ multiplies its variance by $c^2$ (and its mean by $c$). So $\operatorname{Var}(X_1 + \cdots + X_n) = n\sigma^2$, and
+$$
+\operatorname{Var}(\bar X) = \frac{1}{n^2} \cdot n\sigma^2 = \frac{\sigma^2}{n}, \qquad \text{so the standard deviation of } \bar X \text{ is } \frac{\sigma}{\sqrt n}.
+$$
+The mean of $\bar X$ is $\frac1n (\mu + \cdots + \mu) = \mu$, because means always add, independent or not.
+
+</Proof>
+
+A proportion is an average of $0$s and $1$s (one for each "yes"), with $\sigma = \sqrt{p(1-p)}$; this gives the standard error $\sqrt{p(1-p)/n}$ above. (Sampling **without** replacement makes the measurements slightly dependent and the spread slightly smaller; the difference is negligible when the sample is a small part of the population.) The law has a striking consequence: **to halve the margin of error you need four times as many observations.** And notice what is missing from the formula: the size of the population. A random sample of $1000$ is about as informative about a country of $50$ million as about a city of $500\,000$ — the spoonful of soup.
+
+Where does $1.96$ come from? The **central limit theorem**, which you will meet in probability theory, says that for large $n$ the sampling distribution of $\bar X$ is approximately normal — whatever the shape of the population. So about $95\%$ of samples give a $\bar X$ within $1.96$ standard errors of $\mu$; and $\mu$ is within $1.96$ standard errors of $\bar X$ in exactly those samples. We state this theorem here without proof (Mathlib has a formal proof, shown in the formal section).
+
+<Theorem name="Theorem 3 (the least-squares line)">
+
+Suppose the $x_i$ are not all equal, so $S_{xx} > 0$. For every line $y = a + bx$, the sum of squared residuals is
+$$
+\mathrm{SSE}(a, b) = S_{xx}\Big(b - \frac{S_{xy}}{S_{xx}}\Big)^2 + n\big(\bar y - a - b\bar x\big)^2 + \Big(S_{yy} - \frac{S_{xy}^2}{S_{xx}}\Big).
+$$
+Hence the least-squares line is $y = \hat a + \hat b x$ with
+$$
+\hat b = \frac{S_{xy}}{S_{xx}}, \qquad \hat a = \bar y - \hat b\,\bar x,
+$$
+it passes through the point of means $(\bar x, \bar y)$, and its sum of squared residuals is $S_{yy} - S_{xy}^2/S_{xx}$.
+
+</Theorem>
+
+<Proof>
+
+Centre the data: let $X_i = x_i - \bar x$ and $Y_i = y_i - \bar y$, so that $\sum X_i = \sum Y_i = 0$. Writing $d = \bar y - a - b\bar x$, each residual is
+$$
+y_i - (a + bx_i) = (Y_i - bX_i) + d.
+$$
+Squaring and adding, the cross term is $2d\sum_i (Y_i - bX_i) = 2d(0 - b \cdot 0) = 0$, so
+$$
+\mathrm{SSE}(a, b) = \sum_i (Y_i - bX_i)^2 + nd^2 = S_{yy} - 2bS_{xy} + b^2 S_{xx} + nd^2.
+$$
+Completing the square in $b$, $S_{yy} - 2bS_{xy} + b^2S_{xx} = S_{xx}\big(b - S_{xy}/S_{xx}\big)^2 + S_{yy} - S_{xy}^2/S_{xx}$, which is the formula. Since $S_{xx} > 0$ and $n > 0$, both squared terms are at least $0$, and both are $0$ exactly when $b = \hat b$ and $a = \bar y - \hat b \bar x$. Then $\bar y = \hat a + \hat b \bar x$: the line passes through $(\bar x, \bar y)$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (correlation lies between −1 and 1)">
+
+If $S_{xx} > 0$ and $S_{yy} > 0$, then $-1 \le r \le 1$. Moreover, $S_{yy}(1 - r^2)$ is the least sum of squared residuals, so $r = \pm 1$ exactly when all the points lie on one straight line.
+
+</Theorem>
+
+<Proof>
+
+The least sum of squared residuals is $S_{yy} - S_{xy}^2/S_{xx}$ (Theorem 3), and
+$$
+S_{yy} - \frac{S_{xy}^2}{S_{xx}} = S_{yy}\Big(1 - \frac{S_{xy}^2}{S_{xx}S_{yy}}\Big) = S_{yy}(1 - r^2).
+$$
+A sum of squares cannot be negative, so $1 - r^2 \ge 0$, that is $-1 \le r \le 1$. And $r^2 = 1$ exactly when this sum is $0$, that is, when every residual is $0$ and every point lies on the least-squares line. (Conversely, if all points lie on a line $y = a + bx$, that line has $\mathrm{SSE} = 0$, so the least possible value is $0$.)
+
+</Proof>
+
+The inequality $S_{xy}^2 \le S_{xx} S_{yy}$ hidden in this proof is the **Cauchy–Schwarz inequality** $\big(\sum f_i g_i\big)^2 \le \big(\sum f_i^2\big)\big(\sum g_i^2\big)$, applied to $f_i = x_i - \bar x$ and $g_i = y_i - \bar y$. The number $r^2$ is often described as "the fraction of the variation in $y$ explained by the line": the line reduces the sum of squares from $S_{yy}$ (using $\bar y$ alone, Theorem 1) to $S_{yy}(1 - r^2)$. In the revision example, $r^2 = 0.6$ and the sum of squares falls from $6$ to $2.4$.
+
+</Section>
+
+<Section id="causation" kind="human" title="Correlation and causation">
+
+Across many towns, ice-cream sales and the number of people rescued from the sea rise and fall together. Ice cream does not cause drowning: **hot weather** drives both. A third variable that influences both of the variables we are looking at is a **confounder**. Other ways for a correlation to arise without $x$ causing $y$:
+
+- **Reverse causation**: towns with more police officers may have more crime — perhaps because more officers are sent where there is crime.
+- **Chance**: search enough pairs of variables and some will be strongly correlated by coincidence.
+- **Selection**: if only some cases are observed (only successful companies, only patients who reached hospital), relationships can appear that do not exist in the whole population.
+
+The strongest evidence for causation comes from a **randomised experiment**: assign the treatment by chance — by lottery, not by choice — to some subjects and not to others. Randomisation balances confounders, **including those nobody thought of**, between the groups, so a clear difference in outcomes is evidence that the treatment caused it. Ronald Fisher made randomisation the foundation of experimental design in the 1920s and 1930s, and randomised controlled trials are now the standard test of new medicines.
+
+When experiments are impossible or unethical, careful **observational studies** can still build a strong case. The link between smoking and lung cancer, established by Richard Doll, Austin Bradford Hill and others from 1950 onwards, rested on many studies: a strong association, a dose–response relationship (more cigarettes, more risk), the right order in time, consistency across countries, and a plausible biological mechanism.
+
+</Section>
+
+<Section id="formal" kind="formal" title="The algebra of statistics, checked by Lean">
+
+Lean cannot check that a sample was random or that a cause is real. It can check the algebra on which the methods rest. Data are lists $x : \text{Fin } n \to \R$, that is $x_0, \dots, x_{n-1}$.
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.mean" />
+
+Theorem 1, in three steps:
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.sum_sub_mean" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.sum_sq_sub" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.mean_minimizes" />
+
+The Cauchy–Schwarz inequality, proved by the same least-squares idea (for every $t$, $\sum (f_i - t g_i)^2 \ge 0$; choose the best $t$), and Mathlib's version:
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.cauchy_schwarz" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.cauchy_schwarz_library" />
+
+The correlation coefficient and Theorem 4. (Lean defines $r$ even when $S_{xx}$ or $S_{yy}$ is zero, by its convention $a/0 = 0$, so the bound holds without hypotheses.)
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.Sxy" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.corr" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.abs_corr_le_one" />
+
+Theorem 3: the decomposition of the sum of squared residuals, and its consequences.
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.sse" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.sse_eq" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.slope" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.intercept" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.least_squares" />
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.min_sse" />
+
+<Narrator who="gideon">
+
+`sse_eq` was the hardest proof in this file — and it is exactly the human proof: centre the data, notice that the cross terms vanish because the deviations add up to zero, and complete the square. Lean insisted on one thing a quick reader might skip: the hypothesis `Sxy x x ≠ 0`. If all the $x$-values are equal, there is no best slope.
+
+</Narrator>
+
+Theorem 2 lives in probability theory, which Mathlib builds on measure theory. Here `X i` are random variables on a probability space, `MemLp (X i) 2 μ` says each has a finite variance, and `X i ⟂ᵢ[μ] X j` says they are independent:
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.variance_sample_mean" />
+
+The central limit theorem, which we used without proof, **is** in Mathlib — a substantial piece of formalised probability. In its statement, `iIndepFun X P` says that the measurements are independent, `IdentDistrib` that they all have the same distribution, `gaussianReal 0 v` is the normal distribution with mean $0$ and variance $v$, and `TendstoInDistribution` is convergence in distribution:
+
+<Lean decl="Lumenary.StatisticalInferenceIntro.central_limit_theorem" />
+
+What is **not** formalised here: the step from the central limit theorem to the approximate $95\%$ coverage of confidence intervals, and anything about bias or causation — those are not mathematical statements about numbers but claims about how data were produced.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Simulating samples, and testing summaries">
+
+<Narrator who="margaret">
+
+I'll build a town of $20\,000$ households where exactly $38\%$ have a rainwater tank, and draw thousands of random samples from it. We can see the $1/\sqrt n$ law, check that about $95\%$ of the intervals catch the truth, and watch a huge biased sample fail.
+
+</Narrator>
+
+<Python id="statistical_inference_intro_sampling" />
+
+Each row quadruples the sample size, and each time the spread of the estimates halves, matching the formula. The coverage column is close to $95\%$ — but any **single** interval either contains $0.38$ or it does not. And the voluntary-response sample of $5000$ is far less accurate than a random sample of $25$.
+
+<Narrator who="margaret">
+
+Next, summaries. I'll compute the statistics of Anscombe's famous quartet exactly, with fractions, then look at a perfect parabola, and finally a simulated town where temperature drives both ice-cream sales and sea rescues.
+
+</Narrator>
+
+<Python id="statistical_inference_intro_regression" />
+
+The four data sets of Anscombe's quartet have the same means, variances, correlation and least-squares line to two or three decimal places. Plotted, the first is a reasonable linear scatter, the second a smooth curve, the third a perfect line with one outlier, and the fourth a vertical stack of points with one far-off point that alone creates the correlation. Summaries are not a substitute for looking at the data.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: lines, bells and coins">
+
+<FunctionPlot
+  fns={["a + b*x"]}
+  labels={["y = a + b x"]}
+  params={[
+    { name: "a", min: -2, max: 8, step: 0.1, value: 1 },
+    { name: "b", min: -0.5, max: 1.5, step: 0.05, value: 0.8 },
+  ]}
+  points={[[10, 8.04], [8, 6.95], [13, 7.58], [9, 8.81], [11, 8.33], [14, 9.96], [6, 7.24], [4, 4.26], [12, 10.84], [7, 4.82], [5, 5.68]]}
+  x={[2, 16]}
+  y={[2, 12]}
+  editable={false}
+  title="Fit a line by eye"
+  subtitle="The first data set of Anscombe's quartet. Move a and b to make the line fit the points as well as you can."
+/>
+
+Adjust $a$ and $b$ until the line looks right, then compare with the least-squares line $y = 3.00 + 0.500x$. Did your line pass near the point of means $(9, 7.5)$? Theorem 3 says the best line always does.
+
+<FunctionPlot
+  fns={["exp(-x^2/2)/sqrt(2*pi)", "sqrt(n)*exp(-n*x^2/2)/sqrt(2*pi)"]}
+  labels={["one measurement (σ = 1)", "average of n measurements (σ/√n)"]}
+  params={[{ name: "n", min: 1, max: 25, step: 1, value: 4, label: "sample size n" }]}
+  shade={0}
+  shadeRange={[-1.96, 1.96]}
+  x={[-4, 4]}
+  y={[0, 2.1]}
+  editable={false}
+  title="The normal curve and the 1/√n law"
+/>
+
+The shaded area under the standard normal curve between $-1.96$ and $1.96$ is about $0.95$. The second curve is the normal model for the average of $n$ measurements: as you increase $n$ it becomes narrower and taller, with standard deviation $1/\sqrt{n}$. At $n = 4$ it is half as wide; at $n = 16$, a quarter.
+
+<ChanceLab experiment="coin" trials={1000} title="Sampling variability" />
+
+Each toss of a fair coin is a sample of size one from a population that is half heads. The running proportion of heads wanders, but mostly stays inside the band $\tfrac12 \pm \tfrac{1}{\sqrt n}$, which narrows as the number of tosses $n$ grows. Press "New run" a few times.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A large sample is always better than a small one."** Only if both are collected in the same, unbiased way. A biased method gives a precise wrong answer: the *Literary Digest*'s $2.4$ million replies lost to Gallup's much smaller sample. Size reduces chance error; it does nothing about bias.
+
+</Misconception>
+
+<Misconception>
+
+**"There is a 95% probability that the true value lies in this interval."** In the usual (frequentist) interpretation the true value is fixed and the interval is what varies: $95\%$ describes the long-run success rate of the **method**. A particular computed interval either contains the true value or it does not. (Bayesian statistics, which treats the unknown value itself as uncertain, makes probability statements of the first kind — but about a differently constructed interval.)
+
+</Misconception>
+
+<Misconception>
+
+**"The sample must be a large fraction of the population."** The standard error $\sqrt{p(1-p)/n}$ depends on the sample size $n$, not on the population size, as long as the sample is a small part of the population. What matters is how the sample is chosen.
+
+</Misconception>
+
+<Misconception>
+
+**"r = 0 means there is no relationship."** It means there is no **linear** relationship. Points on the parabola $y = x^2$, placed symmetrically, have $r = 0$.
+
+</Misconception>
+
+<Misconception>
+
+**"A strong correlation proves that one thing causes the other."** Correlation can come from a confounder, from reverse causation, from selection, or from chance. Causal claims need more: ideally a randomised experiment, or a carefully built case from many observational studies.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="geometry" title="Correlation is a cosine">
+
+Collect the centred data into two vectors in $\R^n$: $\mathbf u = (x_1 - \bar x, \dots, x_n - \bar x)$ and $\mathbf v = (y_1 - \bar y, \dots, y_n - \bar y)$. Then $S_{xy} = \mathbf u \cdot \mathbf v$, $S_{xx} = |\mathbf u|^2$ and $S_{yy} = |\mathbf v|^2$, so
+$$
+r = \frac{\mathbf u \cdot \mathbf v}{|\mathbf u|\,|\mathbf v|} = \cos\theta,
+$$
+where $\theta$ is the angle between the two vectors. That is why $-1 \le r \le 1$, and $r = \pm 1$ exactly when the vectors point along the same line. Least squares is **orthogonal projection**: the fitted values are the point of the plane spanned by $(1, \dots, 1)$ and $(x_1, \dots, x_n)$ closest to $(y_1, \dots, y_n)$, and the residual vector is perpendicular to that plane — Pythagoras in $n$ dimensions. See <TopicLink id="math.geom.vectors">vectors</TopicLink> and <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Why the bell curve appears">
+
+The **central limit theorem** says that the average of many independent measurements, each with finite variance, is approximately normally distributed, whatever the distribution of a single measurement — a coin toss, a die, a household's water use. That is why the same number $1.96$ appears in margins of error for very different surveys. Making "approximately" precise, and proving it, is a highlight of <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>; the Galton board in the Chance Lab is a physical picture of it.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Optimisation by completing the square">
+
+Every least-squares result in this lesson came from **completing the square**: a quadratic $Ab^2 - 2Bb + C$ with $A > 0$ equals $A(b - B/A)^2 + (C - B^2/A)$, so its minimum is at $b = B/A$. In calculus the same answers come from setting derivatives to zero: $\frac{d}{dc}\sum (x_i - c)^2 = -2\sum (x_i - c) = 0$ gives $c = \bar x$. With many variables, least squares becomes the **normal equations** $X^{\mathsf T}X\beta = X^{\mathsf T}y$ of <TopicLink id="math.prob.statistics">statistical inference</TopicLink>, and minimising other measures of error leads into <TopicLink id="math.applied.optimisation">optimisation</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Estimating from a sample.** In 1802 Pierre-Simon Laplace estimated the population of France by counting the people in a selection of communes, computing their ratio of inhabitants to registered births, and multiplying the number of births in the whole country by this ratio — and he estimated how far off the answer might be.
+- **Random sampling.** In the 1890s the Norwegian statistician Anders Kiær argued for "representative" samples in official statistics; Arthur Bowley used random sampling in a survey of working-class households in Reading, England, in 1912; and in 1934 Jerzy Neyman, working in Poland and then London, gave the theory of stratified random sampling, followed by confidence intervals in 1937.
+- **India.** Prasanta Chandra Mahalanobis founded the Indian Statistical Institute in Kolkata in 1931, ran large crop surveys in Bengal in the late 1930s, and led the creation of the National Sample Survey in 1950, a model for national surveys in many countries.
+- **Least squares and correlation.** Adrien-Marie Legendre published the method of least squares in 1805 to fit the orbits of comets; Carl Friedrich Gauss, who said he had used it since 1795, connected it with the normal distribution in 1809. Francis Galton introduced "regression" (1886), studying the heights of parents and their children, and Karl Pearson gave the correlation coefficient its standard form in 1896.
+- **Experiments and observation.** Ronald Fisher's *The Design of Experiments* (1935) made randomisation central. The British studies of smoking and lung cancer by Richard Doll and Austin Bradford Hill (from 1950) showed how observational evidence can, with care, support a causal conclusion. Francis Anscombe published his quartet in 1973 to show why data should be plotted.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- David Freedman, Robert Pisani and Roger Purves, *Statistics* (4th edition, 2007) — clear and wise about sampling, regression and causation.
+- David Spiegelhalter, *The Art of Statistics: Learning from Data* (2019).
+- Darrell Huff, *How to Lie with Statistics* (1954) — short, old and still useful.
+- F. J. Anscombe, "Graphs in statistical analysis", *The American Statistician* 27 (1973), 17–21.
+- David Salsburg, *The Lady Tasting Tea: How Statistics Revolutionized Science in the Twentieth Century* (2001) — the history, told through its people.
+
+</Section>

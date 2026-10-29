@@ -1,0 +1,594 @@
+---
+slug: knot-theory
+topic: math.geom.knot-theory
+title: Knot theory
+subtitle: How do you *prove* that a tangle cannot be untied — or that a knot differs from its mirror image? With diagrams, three local moves, and invariants that the moves cannot change.
+level: ug2
+ages: Undergraduate
+minutes: 110
+order: 6020
+objectives:
+  - Represent knots and links by diagrams, and state Reidemeister's theorem
+  - Prove that Fox colourings and the linking number are invariants, and use them to distinguish knots and links
+  - Compute the Kauffman bracket and the Jones polynomial of small knots, and show that the trefoil is not equivalent to its mirror image
+  - Construct a Seifert surface by Seifert's algorithm and compute its genus
+  - Separate what is known about knots from what is open, such as whether the Jones polynomial detects the unknot
+narrators: []
+lean:
+  - Lumenary.KnotTheory.ArcDiagram
+  - Lumenary.KnotTheory.IsFoxColouring
+  - Lumenary.KnotTheory.trefoilDiagram
+  - Lumenary.KnotTheory.figureEightDiagram
+  - Lumenary.KnotTheory.trefoil_tricolourable
+  - Lumenary.KnotTheory.unknot_not_tricolourable
+  - Lumenary.KnotTheory.trefoil_three_colourings
+  - Lumenary.KnotTheory.figure_eight_three_colourings
+  - Lumenary.KnotTheory.trefoil_five_colourings
+  - Lumenary.KnotTheory.figure_eight_five_colourings
+  - Lumenary.KnotTheory.reidemeister_one
+  - Lumenary.KnotTheory.reidemeister_two
+  - Lumenary.KnotTheory.reidemeister_three
+  - Lumenary.KnotTheory.dihedral_quandle_self_distrib
+  - Lumenary.KnotTheory.linkingNumber
+  - Lumenary.KnotTheory.hopf_linking_number
+  - Lumenary.KnotTheory.whitehead_linking_number
+  - Lumenary.KnotTheory.linking_sum_reidemeister_two
+  - Lumenary.KnotTheory.smoothing
+  - Lumenary.KnotTheory.bracketMonomials
+  - Lumenary.KnotTheory.crossingSign
+  - Lumenary.KnotTheory.jonesMonomials
+  - Lumenary.KnotTheory.trefoilPD
+  - Lumenary.KnotTheory.mirrorTrefoilPD
+  - Lumenary.KnotTheory.bracket_trefoil
+  - Lumenary.KnotTheory.bracket_mirror_trefoil
+  - Lumenary.KnotTheory.writhe_trefoils
+  - Lumenary.KnotTheory.jones_trefoil
+  - Lumenary.KnotTheory.jones_mirror_trefoil
+  - Lumenary.KnotTheory.jones_figure_eight
+  - Lumenary.KnotTheory.trefoil_jones_ne_mirror
+  - Lumenary.KnotTheory.kink_identity
+compute: [knot_theory_fox_colourings, knot_theory_jones_polynomial]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Can it be untied?">
+
+People have tied knots for as long as there have been ropes. In the Andes, Inca administrators kept census and tax records in **khipu**, cords whose knot types and positions encoded numbers. Chinese decorative knotting, Celtic interlace and Islamic geometric strapwork turned knots into art, and sailors everywhere developed knots for every task. Inside our cells, enzymes called topoisomerases cut and reseal DNA to undo the knots and links that form when long molecules are copied and packed. Biologists identify the products under the electron microscope by their knot type.
+
+The mathematical question is older than it looks and harder than it sounds. Take a piece of string, tie it in a tangle, and fuse the two ends, so that it can no longer slip off. **Is the result really knotted?** That is, is there any way to move it around in space, without cutting, so that it becomes a plain round loop? For the simplest knot, the trefoil, everyone is sure the answer is no — but sure is not proof. Wiggling the string for an hour and failing to untie it proves nothing about the next hour. A proof needs a quantity that **every** allowed motion preserves, and that differs between the trefoil and the plain loop.
+
+A second question is subtler. The trefoil comes in a left-handed and a right-handed version, mirror images of each other. Can one be turned into the other? Max Dehn proved in 1914 that it cannot. This lesson proves both facts, using diagrams, three local moves, and three generations of invariants: colourings (1950s), linking numbers (Gauss, 1833) and the Jones polynomial (1984).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Pictures of knots, and moves between them">
+
+A knot lives in three-dimensional space, but we draw it on paper: a closed curve with **crossings**, where a small gap in one strand shows that it passes *under* the other. The same knot has infinitely many diagrams. A round circle and a figure-eight-shaped loop with one crossing are both the unknot. So we need to know when two diagrams show the same knot.
+
+Kurt Reidemeister's answer (1927) is that three local moves suffice:
+
+- **Move I** puts in or takes out a **kink**: a small loop with one crossing.
+- **Move II** slides one strand over another, creating or removing **two** crossings.
+- **Move III** slides a strand over a crossing of two other strands.
+
+Two diagrams show the same knot exactly when one can be turned into the other by these moves (and by wiggling the drawing without changing its crossings). So to prove that two knots are *different*, it is enough to find a quantity, computed from a diagram, that none of the three moves can change, and that takes different values on the two diagrams. Such a quantity is a **knot invariant**. Each invariant in this lesson is proved invariant by checking three small pictures.
+
+<Figure caption="The three Reidemeister moves, each a change inside a small disc; outside the disc the diagram is untouched. I: a kink appears or disappears. II: one strand slides across another, creating two crossings. III: a strand slides across a crossing of two other strands, passing over both.">
+<svg viewBox="0 0 460 160" role="img" aria-label="Before and after pictures of Reidemeister moves one, two and three">
+  <line x1="25" y1="15" x2="25" y2="135" stroke="var(--ink-2)" strokeWidth="2.5" />
+  <text x="38" y="80" fontSize="16" fill="var(--ink-2)">↔</text>
+  <path d="M110,95 A20,20 0 0 0 110,55" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <path d="M110,55 L80,95 L80,135" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <path d="M80,15 L80,55 L110,95" fill="none" stroke="var(--card)" strokeWidth="9" />
+  <path d="M80,15 L80,55 L110,95" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <text x="70" y="155" fontSize="13" fill="var(--ink-2)">I</text>
+  <line x1="150" y1="15" x2="150" y2="135" stroke="var(--ink-2)" strokeWidth="2.5" />
+  <line x1="175" y1="15" x2="175" y2="135" stroke="var(--ink-2)" strokeWidth="2.5" />
+  <text x="186" y="80" fontSize="16" fill="var(--ink-2)">↔</text>
+  <line x1="245" y1="15" x2="245" y2="135" stroke="var(--formal)" strokeWidth="2.5" />
+  <path d="M215,15 C215,50 265,50 265,75 C265,100 215,100 215,135" fill="none" stroke="var(--card)" strokeWidth="9" />
+  <path d="M215,15 C215,50 265,50 265,75 C265,100 215,100 215,135" fill="none" stroke="var(--formal)" strokeWidth="2.5" />
+  <text x="200" y="155" fontSize="13" fill="var(--ink-2)">II</text>
+  <line x1="355" y1="30" x2="305" y2="130" stroke="var(--compute)" strokeWidth="2.5" />
+  <line x1="305" y1="30" x2="355" y2="130" stroke="var(--card)" strokeWidth="9" />
+  <line x1="305" y1="30" x2="355" y2="130" stroke="var(--compute)" strokeWidth="2.5" />
+  <line x1="296" y1="50" x2="364" y2="50" stroke="var(--card)" strokeWidth="9" />
+  <line x1="296" y1="50" x2="364" y2="50" stroke="var(--gold)" strokeWidth="2.5" />
+  <text x="368" y="80" fontSize="16" fill="var(--ink-2)">↔</text>
+  <line x1="445" y1="30" x2="395" y2="130" stroke="var(--compute)" strokeWidth="2.5" />
+  <line x1="395" y1="30" x2="445" y2="130" stroke="var(--card)" strokeWidth="9" />
+  <line x1="395" y1="30" x2="445" y2="130" stroke="var(--compute)" strokeWidth="2.5" />
+  <line x1="386" y1="110" x2="454" y2="110" stroke="var(--card)" strokeWidth="9" />
+  <line x1="386" y1="110" x2="454" y2="110" stroke="var(--gold)" strokeWidth="2.5" />
+  <text x="370" y="155" fontSize="13" fill="var(--ink-2)">III</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Knots, diagrams and invariants">
+
+<Definition term="knot, link, equivalence">
+
+A **knot** is a smooth embedding $K : S^1 \to \R^3$ (or into $S^3 = \R^3 \cup \{\infty\}$); a **link** with $m$ components is a smooth embedding of $m$ disjoint circles. Two knots or links are **equivalent** if there is an **ambient isotopy** between them: a continuous family of homeomorphisms $h_t : \R^3 \to \R^3$, $t \in [0, 1]$, with $h_0 = \mathrm{id}$ and $h_1$ carrying the first onto the second. The **unknot** is the round circle; a knot equivalent to it is **unknotted**.
+
+</Definition>
+
+Requiring smoothness (or, equivalently for our purposes, that knots be polygonal — **tame**) excludes **wild knots**, with infinitely many smaller and smaller knots tied in them. For wild knots, the theory below fails.
+
+<Definition term="diagram, Reidemeister moves">
+
+A **diagram** of a knot is a projection to a plane that is injective except at finitely many transverse double points, the **crossings**, each marked with which strand passes over. Every tame knot has diagrams. The **arcs** of a diagram are the unbroken strands between undercrossings. The **Reidemeister moves** I, II, III are the local changes pictured above.
+
+</Definition>
+
+<Definition term="knot invariant">
+
+A **knot invariant** is a function on knots that takes equal values on equivalent knots. In practice it is computed from a diagram and proved to be unchanged by the three Reidemeister moves. The **crossing number** $c(K)$, the least number of crossings in any diagram of $K$, is an invariant by definition — but it is hard to compute, since one must know about *all* diagrams.
+
+</Definition>
+
+<Definition term="Fox colouring, tricolourability">
+
+Let $p \ge 3$ be an integer. A **Fox $p$-colouring** of a diagram assigns to each arc a colour in $\Z/p$ such that at every crossing, with over-arc coloured $x$ and under-arcs coloured $y, z$,
+
+$$
+2x \equiv y + z \pmod p .
+$$
+
+Constant colourings always work. A diagram is **tricolourable** if it has a $3$-colouring using at least two colours. Since $2 \equiv -1 \pmod 3$, the condition $2x \equiv y + z$ says $x + y + z \equiv 0$: the three colours at a crossing are all equal or all different.
+
+</Definition>
+
+<Definition term="crossing sign, writhe, linking number">
+
+For an **oriented** diagram, a crossing is **positive** (right-handed) if, looking along the over-strand, the under-strand passes from right to left, and **negative** otherwise. The **writhe** $w(D)$ is the sum of the signs of all crossings. For a two-component oriented link, the **linking number** $\mathrm{lk}(L_1, L_2)$ is half the sum of the signs of the crossings *between* the two components.
+
+</Definition>
+
+<Definition term="Kauffman bracket, Jones polynomial">
+
+The **Kauffman bracket** $\langle D\rangle \in \Z[A, A^{-1}]$ of an unoriented diagram is defined by three rules: $\langle O\rangle = 1$ for the round circle; $\langle D \sqcup O\rangle = \delta \langle D\rangle$ with $\delta = -A^2 - A^{-2}$; and at any crossing,
+
+$$
+\langle D \rangle = A\,\langle D_A \rangle + A^{-1} \langle D_B \rangle ,
+$$
+
+where $D_A$ and $D_B$ are the diagrams with that crossing smoothed in the two possible ways. The **A-smoothing** opens a channel between the two regions swept out when the over-strand is turned anticlockwise; the **B-smoothing** joins the other two. Expanding every crossing gives the **state sum**
+
+$$
+\langle D \rangle = \sum_{\text{states } S} A^{a(S) - b(S)} \, \delta^{\,|S| - 1},
+$$
+
+over the $2^n$ choices of smoothings, where $a(S), b(S)$ count the A- and B-smoothings and $|S|$ is the number of resulting circles. For an oriented knot diagram, $f(D) = (-A^3)^{-w(D)} \langle D \rangle$, and the **Jones polynomial** is $V_K(t) = f(D)$ with $A = t^{-1/4}$.
+
+</Definition>
+
+<Definition term="Seifert surface, genus">
+
+A **Seifert surface** for a knot $K$ is a compact, connected, orientable surface $\Sigma \subset \R^3$ with boundary $\partial \Sigma = K$. The **genus** $g(K)$ is the least genus of a Seifert surface for $K$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="A small zoo">
+
+<Example title="Knots">
+
+The **trefoil** $3_1$ has a diagram with $3$ crossings and $3$ arcs, each passing over once; it comes in a right-handed and a left-handed form. The **figure-eight knot** $4_1$ has a $4$-crossing diagram. In the standard tables (Alexander–Briggs, Rolfsen), knots are named by crossing number and position, so $5_1$ and $5_2$ are the two knots with crossing number $5$. Mirror images are not listed separately. Up to $16$ crossings there are $1{,}701{,}936$ prime knots (Hoste, Thistlethwaite and Weeks, 1998).
+
+</Example>
+
+<Example title="Links">
+
+The **Hopf link** consists of two circles linked once; its standard diagram has two crossings, both between the components. The **Whitehead link** has five crossings, four of them between the components, with signs $+1, -1, +1, -1$, so its linking number is $0$ — yet it cannot be pulled apart. The **Borromean rings** are three circles, no two of which are linked (pairwise linking numbers $0$, and any two of them alone can be separated), but the three together cannot be separated.
+
+</Example>
+
+<Example title="A tricolouring of the trefoil">
+
+Colour the three arcs of the trefoil $0, 1, 2$. At each crossing the three arcs carry all three colours, and $0 + 1 + 2 = 3 \equiv 0 \pmod 3$. So the trefoil diagram is tricolourable. The round unknot diagram has one arc, so it is not. In total the trefoil diagram has $9$ tricolourings: $3$ constant and $6$ using all three colours (the colours of two arcs can be chosen freely, $3 \times 3 = 9$, and the third is forced).
+
+</Example>
+
+<Example title="The bracket of the trefoil, state by state">
+
+For the standard right-handed trefoil diagram, the $8$ states give $|S| = 2$ circles for AAA, $1$ circle for each state with two A's, $2$ circles for each state with one A, and $3$ circles for BBB. So
+
+$$
+\langle 3_1 \rangle = A^3 \delta + 3A + 3A^{-1}\delta + A^{-3}\delta^2 = -A^5 - A^{-3} + A^{-7}.
+$$
+
+All $3$ crossings are positive, so $w = 3$ and $f = (-A^3)^{-3}\langle 3_1\rangle = -A^{-16} + A^{-12} + A^{-4}$. With $A = t^{-1/4}$:
+
+$$
+V_{3_1}(t) = t + t^3 - t^4 .
+$$
+
+The same computation is carried out by the Lean file and the Python experiment below.
+
+</Example>
+
+</Section>
+
+<Section id="reidemeister" kind="proof" title="Reidemeister's theorem and colourings">
+
+<Theorem name="Theorem 1 (Reidemeister 1927; Alexander and Briggs 1926 — proof referenced)">
+
+Two diagrams represent equivalent tame knots (or links) if and only if they are related by a finite sequence of Reidemeister moves and planar isotopies.
+
+</Theorem>
+
+*Proof sketch.* One direction is clear: each move is realised by an isotopy in a neighbourhood of the small disc where it happens. For the other, replace the knots by polygons, and the isotopy by a sequence of **triangle moves**, each replacing one edge of the polygon by the other two sides of a triangle that meets the knot only in that edge (or the reverse). After a small perturbation into general position, the projection of each triangle move can be decomposed into Reidemeister moves. See Burde and Zieschang, *Knots*, chapter 1, or Lickorish (1997), chapter 1.
+
+<Theorem name="Theorem 2 (Fox colourings are invariants)">
+
+For every $p$, the number of Fox $p$-colourings of a diagram is unchanged by Reidemeister moves. Hence it is a knot invariant, and so is tricolourability.
+
+</Theorem>
+
+<Proof>
+
+A move changes the diagram only inside a small disc. We show that colourings of the diagram before and after correspond one to one, agreeing outside the disc. It suffices to show that the colours of the arcs leaving the disc determine those inside, and that the constraints on the outside colours are the same before and after. Write $x \triangleright y = 2x - y$ for the colour of an under-arc $y$ after it passes under an arc of colour $x$.
+
+*Move I.* At a kink the over-arc is also one of the two under-arcs: if it has colour $a$ and the other under-arc colour $b$, the rule says $2a = a + b$, i.e. $b = a$. So the strand keeps one colour through the kink, exactly as if there were no kink.
+
+*Move II.* A strand of colour $x$ passes over a strand that is cut into three arcs $a, m, b$. The two crossings say $2x = a + m$ and $2x = m + b$, which hold exactly when $m = 2x - a$ and $b = a$. So the middle colour is forced, and the outgoing colour equals the incoming one, as without the move.
+
+*Move III.* Let the incoming colours be $t$ (top strand), $m$ (middle) and $b$ (bottom). The top strand stays $t$ on both sides. The middle strand passes under the top one on both sides and leaves with colour $t \triangleright m$. The bottom strand passes under both. On one side it goes under the middle strand first, then under the top: it leaves with $t \triangleright (m \triangleright b)$. On the other side it goes under the top first, then under the middle strand, whose colour there is already $t \triangleright m$: it leaves with $(t \triangleright m) \triangleright (t \triangleright b)$. These agree:
+
+$$
+2t - (2m - b) = 2(2t - m) - (2t - b),
+$$
+
+as both sides equal $2t - 2m + b$. The interior colours are again forced.
+
+So the colourings correspond bijectively, and their number is unchanged. A colouring uses at least two colours exactly when its counterpart does, since the colours on the boundary of the disc (and outside it) are the same.
+
+</Proof>
+
+The identity in move III, $x \triangleright (y \triangleright z) = (x \triangleright y) \triangleright (x \triangleright z)$, is **self-distributivity**. Together with $x \triangleright x = x$ (move I) and the invertibility of $y \mapsto x \triangleright y$ (move II), it makes $\Z/p$ a **quandle** — the dihedral quandle.
+
+<Theorem name="Corollary 3">
+
+(a) The trefoil is knotted. (b) The figure-eight knot is knotted. (c) The trefoil and the figure-eight knot are different.
+
+</Theorem>
+
+<Proof>
+
+Count colourings (all counts are formalised in Lean below). The unknot's round diagram has one arc, so it has exactly $p$ colourings for every $p$. The trefoil diagram has $9$ three-colourings, while the unknot has $3$; this proves (a). The figure-eight diagram has only the $3$ constant three-colourings, so it is not tricolourable — that alone proves nothing! But it has $25$ five-colourings, against $5$ for the unknot, which proves (b). The trefoil has only $5$ five-colourings and $9$ three-colourings, versus $25$ and $3$ for the figure-eight knot, which proves (c).
+
+</Proof>
+
+More generally, the number of $p$-colourings, for $p$ prime, is $p^{1 + k}$, where $k$ is the dimension of the kernel of the reduced colouring matrix mod $p$. A non-constant $p$-colouring exists exactly when $p$ divides the **determinant** of the knot, $|\Delta_K(-1)|$, where $\Delta_K$ is the Alexander polynomial. The determinants of $3_1, 4_1, 5_1, 5_2, 6_1$ are $3, 5, 5, 7, 9$ (see the computation section).
+
+</Section>
+
+<Section id="linking" kind="proof" title="The linking number">
+
+<Theorem name="Theorem 4 (the linking number is an invariant)">
+
+The linking number of an oriented two-component link is an integer and is unchanged by Reidemeister moves.
+
+</Theorem>
+
+<Proof>
+
+For a two-component diagram, let $s_1$ be the sum of the signs of the crossings where $L_1$ passes over $L_2$, and $s_2$ the sum over the crossings where $L_1$ passes under $L_2$, so that $\mathrm{lk} = \tfrac12 (s_1 + s_2)$.
+
+*Invariance of $s_1$ and $s_2$.* Move I creates a crossing of a component with itself, which does not count. Move II creates two crossings between the same two strands, with the same strand on top and opposite signs; if the strands belong to different components, both crossings fall into the same sum, $s_1$ or $s_2$, and cancel. Move III moves strands past a crossing without changing any crossing's sign, or which strand is on top. So $s_1$, $s_2$ and $\mathrm{lk}$ are invariant.
+
+*$\mathrm{lk}$ is an integer.* We show $s_1 = s_2$. Switching a crossing between the components (exchanging over and under) reverses its sign and moves it from one sum to the other, so it leaves $s_1 - s_2$ unchanged. Switch every crossing where $L_1$ passes under $L_2$. In the resulting diagram $L_1$ is on top at every crossing between the components, so we can lift $L_1$ into a horizontal slab above $L_2$ and slide it sideways. The result is a diagram with no crossings between the components, where $s_1 = s_2 = 0$. By invariance $s_1 = s_2 = 0$ in the switched diagram too, so there $s_1 - s_2 = 0$, and therefore $s_1 = s_2$ in the original diagram. Hence $\mathrm{lk} = s_1$ is an integer.
+
+</Proof>
+
+The **Hopf link** has two crossings between its components, both of sign $+1$ (for one choice of orientations), so $\mathrm{lk} = 1 \ne 0$: it cannot be pulled apart. The Whitehead link has $\mathrm{lk} = 0$ but is still linked, and the Borromean rings have all pairwise linking numbers $0$. The linking number is a useful but incomplete invariant. Gauss found it in 1833 as an integral over the two curves, $\mathrm{lk} = \frac{1}{4\pi} \oint\oint \frac{(\mathbf{r}_1 - \mathbf{r}_2) \cdot (d\mathbf{r}_1 \times d\mathbf{r}_2)}{|\mathbf{r}_1 - \mathbf{r}_2|^3}$, while studying the orbits of asteroids and electromagnetism.
+
+</Section>
+
+<Section id="jones" kind="proof" title="The Kauffman bracket and the Jones polynomial">
+
+<Theorem name="Theorem 5 (Kauffman 1987)">
+
+(a) The bracket $\langle D\rangle$ is unchanged by moves II and III. (b) Move I multiplies it by $-A^{3}$ or $-A^{-3}$, according to the sign of the kink. (c) Consequently $f(D) = (-A^3)^{-w(D)}\langle D\rangle$ is an invariant of oriented knots, and so is the Jones polynomial $V_K(t)$.
+
+</Theorem>
+
+<Proof>
+
+(a) *Move II.* Expand both crossings of the two-crossing tangle with the bracket rule. The two states that smooth both crossings the same way contribute $A^2$ and $A^{-2}$ times the bracket of the "cup–cap" tangle $\asymp$. Of the two mixed states (each with coefficient $A \cdot A^{-1} = 1$), one gives two parallel strands, the tangle after the move, and the other gives $\asymp$ with an extra small circle, contributing $\delta$ times the cup–cap bracket. In total
+
+$$
+\langle \text{II-tangle} \rangle = (A^2 + A^{-2} + \delta)\,\langle \asymp \rangle + \langle \text{parallel strands} \rangle = \langle \text{parallel strands} \rangle ,
+$$
+
+because $\delta = -A^2 - A^{-2}$. *This is why $\delta$ must have that value.*
+
+*Move III.* Expand the crossing between the two lower strands (the one the moving strand does not touch) on both sides of the move. The two A-smoothings give tangles related by two moves II, and so do the two B-smoothings. By the case just proved their brackets agree, hence so do the brackets before and after move III.
+
+(b) *Move I.* Smoothing the crossing of a kink one way leaves the strand plus a small circle, and the other way leaves just the strand. For a positive kink (with the conventions above) the A-smoothing produces the circle:
+
+$$
+\langle \text{kink} \rangle = A\,\delta\,\langle | \rangle + A^{-1}\langle | \rangle = (-A^3 - A^{-1} + A^{-1})\langle | \rangle = -A^3 \langle | \rangle .
+$$
+
+For a negative kink the roles of the smoothings swap, giving $A + A^{-1}\delta = -A^{-3}$.
+
+(c) Moves II and III do not change the writhe (move II adds one positive and one negative crossing; move III preserves the signs). Move I changes $w$ by $\pm 1$ and $\langle D \rangle$ by $-A^{\pm 3}$, and these cancel in $f(D)$. For a knot, the exponents of $A$ in $f(D)$ are multiples of $4$, so the substitution $A = t^{-1/4}$ gives a Laurent polynomial in $t$.
+
+</Proof>
+
+<Theorem name="Corollary 6 (the trefoil is chiral; Dehn 1914)">
+
+The right-handed trefoil is not equivalent to its mirror image.
+
+</Theorem>
+
+<Proof>
+
+Reflecting a diagram switches every crossing. That exchanges A- and B-smoothings, so $\langle \bar D\rangle(A) = \langle D\rangle(A^{-1})$, and it negates every crossing sign, so $w(\bar D) = -w(D)$. Hence $V_{\bar K}(t) = V_K(t^{-1})$. For the trefoil, $V(t) = t + t^3 - t^4$, while its mirror has $V(t) = t^{-1} + t^{-3} - t^{-4}$. These differ, and $V$ is an invariant (Theorem 5), so the two knots are not equivalent.
+
+</Proof>
+
+The figure-eight knot has $V(t) = t^{-2} - t^{-1} + 1 - t + t^2 = V(t^{-1})$, consistent with the fact that it *is* equivalent to its mirror image (it is **amphichiral**; one sees this by an explicit isotopy). The symmetry of $V$ alone would not prove this: the knot $9_{42}$ is chiral but its Jones polynomial is symmetric.
+
+Dehn's original proof (1914) used the fundamental group of the knot complement. The Jones polynomial, discovered by Vaughan Jones in 1984, made the result a short computation.
+
+</Section>
+
+<Section id="seifert" kind="proof" title="Seifert surfaces and genus">
+
+<Theorem name="Theorem 7 (Seifert 1934)">
+
+Every knot bounds a Seifert surface. If a diagram of $K$ with $c$ crossings produces $s$ Seifert circles (see the proof), the resulting surface has genus $\tfrac12(c - s + 1)$.
+
+</Theorem>
+
+<Proof>
+
+**Seifert's algorithm.** Orient the knot and take a diagram. At each crossing, smooth in the way that respects the orientation: the two incoming strands are joined to the two outgoing ones without reversing direction. The result is a family of disjoint oriented circles in the plane, the **Seifert circles**. Fill each with a disc, placing nested discs at different heights. At each former crossing, attach a half-twisted band joining the two discs there, twisted according to the crossing. The boundary of this surface is the knot.
+
+The surface is orientable: give each disc the orientation from its circle (anticlockwise discs face up, clockwise ones down); the half-twisted bands join discs consistently, because the smoothing respected the orientation. It is connected if the diagram is connected. It deformation retracts onto a graph with $s$ vertices (the discs) and $c$ edges (the bands), so its Euler characteristic is $\chi = s - c$. A compact connected orientable surface of genus $g$ with one boundary circle has $\chi = 2 - 2g - 1 = 1 - 2g$. So $g = \tfrac12(1 - s + c)$.
+
+</Proof>
+
+<Figure caption="Seifert's algorithm on the standard trefoil diagram: smoothing the 3 crossings along the orientation gives 2 nested Seifert circles; the discs they bound are joined by 3 half-twisted bands. Then χ = 2 − 3 = −1 = 1 − 2g, so the surface has genus 1 — a punctured torus.">
+<svg viewBox="0 0 300 200" role="img" aria-label="Two nested ellipses joined by three short bands marked with half-twists">
+  <ellipse cx="150" cy="100" rx="120" ry="80" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="2.5" />
+  <ellipse cx="150" cy="100" rx="60" ry="38" fill="var(--paper-2)" stroke="var(--human)" strokeWidth="2.5" />
+  <rect x="140" y="24" width="20" height="40" fill="var(--gold)" opacity="0.6" />
+  <rect x="58" y="118" width="40" height="20" fill="var(--gold)" opacity="0.6" transform="rotate(-30 78 128)" />
+  <rect x="202" y="118" width="40" height="20" fill="var(--gold)" opacity="0.6" transform="rotate(30 222 128)" />
+  <text x="143" y="48" fontSize="14" fill="var(--ink-2)">×</text>
+  <text x="72" y="134" fontSize="14" fill="var(--ink-2)">×</text>
+  <text x="216" y="134" fontSize="14" fill="var(--ink-2)">×</text>
+  <text x="150" y="104" fontSize="12" textAnchor="middle" fill="var(--ink-2)">inner disc</text>
+  <text x="150" y="172" fontSize="12" textAnchor="middle" fill="var(--ink-2)">outer disc</text>
+</svg>
+</Figure>
+
+So the trefoil has genus at most $1$, and since it is knotted its genus is not $0$ (a knot of genus $0$ bounds an embedded disc, and so is unknotted). Hence $g(3_1) = 1$. Two further theorems, which we only state: the genus is **additive** under connected sum, $g(K_1 \# K_2) = g(K_1) + g(K_2)$ (Schubert, 1949). In particular no knot can be cancelled by tying another knot in the same string. And every knot decomposes uniquely into **prime** knots (Schubert, 1949).
+
+</Section>
+
+<Section id="known-open" kind="human" title="What is known, and what is open">
+
+**Known.** Knots are classified *algorithmically*: Wolfgang Haken (1961) gave an algorithm to decide whether a knot is unknotted, using normal surfaces, and later work (building on Haken, Thurston's geometrisation and the work of many others) gives an algorithm to decide whether any two knots are equivalent. Unknot recognition is in the complexity class NP (Hass, Lagarias and Pippenger, 1999) and in co-NP (Lackenby). Any diagram of the unknot with $c$ crossings can be untangled with at most $(236c)^{11}$ Reidemeister moves (Lackenby, 2015). Knots are determined by their complements, up to mirror image and orientation (Gordon and Luecke, 1989). Khovanov homology, a refinement of the Jones polynomial, detects the unknot (Kronheimer and Mrowka, 2011).
+
+**Open.** Does the Jones polynomial detect the unknot — is there a non-trivial knot $K$ with $V_K(t) = 1$? This is unknown, although the answer is known to be no for knots with few crossings, which have been checked by computer, and there *are* non-trivial links with the Jones polynomial of an unlink (Eliahou, Kauffman and Thistlethwaite, 2003). Also open: whether unknot recognition can be done in polynomial time (Marc Lackenby has announced a quasi-polynomial-time algorithm), and the **slice–ribbon conjecture** of Ralph Fox (1962): is every smoothly slice knot — one bounding a smooth disc in the four-ball — a ribbon knot? Such questions lie at the frontier of <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Knot diagrams in Lean">
+
+Mathlib does not (yet) contain knots as embeddings of the circle, ambient isotopy, or Reidemeister's theorem. So the Lean module works with **diagram codes**, finite data that Lean can compute with, and proves the algebra and the computations. It does not prove the topological step "a diagram invariant is a knot invariant"; that is Theorem 1 together with the invariance proofs above.
+
+A diagram is a list of arcs and crossings, and a Fox colouring is a function on arcs satisfying $2x = y + z$ at every crossing:
+
+<Lean decl="Lumenary.KnotTheory.ArcDiagram" />
+
+<Lean decl="Lumenary.KnotTheory.IsFoxColouring" />
+
+<Lean decl="Lumenary.KnotTheory.trefoilDiagram" />
+
+<Lean decl="Lumenary.KnotTheory.figureEightDiagram" />
+
+Tricolourability of the trefoil and its failure for the unknot, and the colouring counts used in Corollary 3, verified by checking all $3^3$, $3^4$, $5^3$ and $5^4$ colourings with `decide`:
+
+<Lean decl="Lumenary.KnotTheory.trefoil_tricolourable" />
+
+<Lean decl="Lumenary.KnotTheory.unknot_not_tricolourable" />
+
+<Lean decl="Lumenary.KnotTheory.trefoil_three_colourings" />
+
+<Lean decl="Lumenary.KnotTheory.figure_eight_three_colourings" />
+
+<Lean decl="Lumenary.KnotTheory.trefoil_five_colourings" />
+
+<Lean decl="Lumenary.KnotTheory.figure_eight_five_colourings" />
+
+The local algebra of Theorem 2, in any commutative ring, followed by Mathlib's dihedral quandle, whose self-distributivity is the general form of move III:
+
+<Lean decl="Lumenary.KnotTheory.reidemeister_one" />
+
+<Lean decl="Lumenary.KnotTheory.reidemeister_two" />
+
+<Lean decl="Lumenary.KnotTheory.reidemeister_three" />
+
+<Lean decl="Lumenary.KnotTheory.dihedral_quandle_self_distrib" />
+
+Linking numbers, the Hopf and Whitehead links, and the invariance under move II:
+
+<Lean decl="Lumenary.KnotTheory.linkingNumber" />
+
+<Lean decl="Lumenary.KnotTheory.hopf_linking_number" />
+
+<Lean decl="Lumenary.KnotTheory.whitehead_linking_number" />
+
+<Lean decl="Lumenary.KnotTheory.linking_sum_reidemeister_two" />
+
+The Kauffman bracket from **planar diagram (PD) codes**: one quadruple of edge labels per crossing, listed anticlockwise from the incoming under-edge. The state sum is computed literally — every state, its circles counted by merging edge labels — and collected into a normal form of the Laurent polynomial (a sorted list of exponents with non-zero coefficients). The main definitions:
+
+<Lean decl="Lumenary.KnotTheory.smoothing" />
+
+<Lean decl="Lumenary.KnotTheory.bracketMonomials" />
+
+<Lean decl="Lumenary.KnotTheory.crossingSign" />
+
+<Lean decl="Lumenary.KnotTheory.jonesMonomials" />
+
+<Lean decl="Lumenary.KnotTheory.trefoilPD" />
+
+<Lean decl="Lumenary.KnotTheory.mirrorTrefoilPD" />
+
+and the computations of the example and of Corollary 6, each checked by evaluation:
+
+<Lean decl="Lumenary.KnotTheory.bracket_trefoil" />
+
+<Lean decl="Lumenary.KnotTheory.bracket_mirror_trefoil" />
+
+<Lean decl="Lumenary.KnotTheory.writhe_trefoils" />
+
+<Lean decl="Lumenary.KnotTheory.jones_trefoil" />
+
+<Lean decl="Lumenary.KnotTheory.jones_mirror_trefoil" />
+
+<Lean decl="Lumenary.KnotTheory.jones_figure_eight" />
+
+<Lean decl="Lumenary.KnotTheory.trefoil_jones_ne_mirror" />
+
+Finally the kink identity of Theorem 5(b), in any commutative ring with $AB = 1$:
+
+<Lean decl="Lumenary.KnotTheory.kink_identity" />
+
+**What is and is not formalised.** Formalised: the definitions of colourings, linking numbers, the bracket state sum, writhe and Jones polynomial on diagram codes; the colouring counts; the local algebra of moves I–III for colourings and of move II for linking numbers; the kink identity; and the bracket and Jones polynomials of both trefoils and the figure-eight knot. Not formalised: knots as embeddings, ambient isotopy, Reidemeister's theorem, the invariance of the bracket under moves II and III on arbitrary PD codes, Seifert surfaces and genus.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Colourings, determinants and Jones polynomials by computer">
+
+The first program reads PD codes of six knots, builds the colouring equations, counts $p$-colourings by linear algebra mod $p$ (confirmed by brute force on small cases), and computes each knot's determinant exactly.
+
+<Python id="knot_theory_fox_colourings" />
+
+Notice the pair $4_1$ and $5_1$: same determinant, same colouring counts, different knots. An invariant that agrees on two knots tells you nothing.
+
+The second program evaluates the bracket state sum and the Jones polynomial for the same knots. It checks that a kink changes the bracket by $-A^{\pm 3}$ but leaves $V$ alone, and that $V(1) = 1$ for knots. It also compares each $V(t)$ with $V(t^{-1})$.
+
+<Python id="knot_theory_jones_polynomial" />
+
+Both programs are exact computations on particular diagrams. The state sum has $2^n$ terms, so this method is hopeless for large knots. Computing the Jones polynomial is #P-hard in general (Jaeger, Vertigan and Welsh, 1990).
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: colour the knots">
+
+Click the arcs to colour them, aiming for the rule "all three colours equal or all different at every crossing". Then press **Try every colouring**. The trefoil has $9$ valid colourings, $6$ of them non-constant; the unknot (drawn with one twist) and the figure-eight knot have only the $3$ constant ones. The Hopf link shows its linking number. Ask yourself, each time, what the result does and does not prove.
+
+<KnotColoring knot="trefoil" knots={["unknot", "trefoil", "figureEight", "hopf", "cinquefoil"]} title="Tricolouring knots and links" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"If an invariant agrees on two knots, they are the same knot."** The unknot and the figure-eight knot are both not tricolourable, yet the figure-eight knot is knotted (its $5$-colourings show it). $4_1$ and $5_1$ have the same determinant; $5_1$ and the ten-crossing knot $10_{132}$ have the same Jones polynomial. Invariants can only prove that knots are *different*.
+
+</Misconception>
+
+<Misconception>
+
+**"The crossing number can be read off a diagram."** A diagram only gives an upper bound: the unknot has diagrams with as many crossings as you like. Proving a lower bound needs an invariant. For reduced alternating diagrams the number of crossings *is* the crossing number — one of Tait's conjectures, proved with the Jones polynomial by Kauffman, Murasugi and Thistlethwaite (1987).
+
+</Misconception>
+
+<Misconception>
+
+**"The left- and right-handed trefoils are the same: just turn one over."** Turning a knot over is a rotation in space, which is an isotopy and cannot change handedness. Mirroring is a reflection, which is not. Corollary 6 shows the two trefoils are genuinely different.
+
+</Misconception>
+
+<Misconception>
+
+**"Linking number zero means the link comes apart."** The Whitehead link and the Borromean rings have all linking numbers $0$ but cannot be separated. The linking number only counts how often one component winds around the other, with signs.
+
+</Misconception>
+
+<Misconception>
+
+**"Reidemeister's theorem gives an easy algorithm for untying knots."** It says a sequence of moves *exists*, not how long it is or how to find it. Sometimes a diagram of the unknot must first get *more* complicated before it can be simplified. Lackenby's bound $(236c)^{11}$ is polynomial but huge, and general knot equivalence algorithms rely on deep 3-manifold theory.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="The knot complement and the knot group">
+
+A topologist studies a knot through its **complement** $S^3 \setminus K$. By Gordon and Luecke (1989), the complement determines the knot up to mirror image and orientation. Its <TopicLink id="math.geom.fundamental-group">fundamental group</TopicLink>, the **knot group**, has a presentation read from any diagram (Wirtinger): one generator for each arc, a loop going once under that arc, and one relation per crossing. For the trefoil it is $\langle x, y \mid x^2 = y^3 \rangle$, which is non-abelian; for the unknot it is $\Z$. Fox colourings are exactly the homomorphisms from the knot group to the dihedral group $D_p$ that send each Wirtinger generator to a reflection. That is why they are invariants, seen without Reidemeister moves. The Seifert surface leads to the Alexander polynomial (via a Seifert matrix) and to the four-dimensional questions of slice knots and concordance in <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Quandles: the algebra of crossings">
+
+The three conditions behind Theorem 2 — $x \triangleright x = x$, $y \mapsto x \triangleright y$ bijective, and self-distributivity — are the axioms of a **quandle** (David Joyce, 1982; Sergei Matveev, 1982, who called them distributive groupoids). Every knot has a fundamental quandle, generated by its arcs with one relation per crossing. Joyce and Matveev proved that it is almost a complete invariant: it determines an oriented knot up to taking the mirror image and reversing the orientation at the same time. Colourings by a quandle $Q$ are homomorphisms from the fundamental quandle to $Q$; Fox colourings use the dihedral quandle $\Z/p$, and Mathlib's `Quandle.Dihedral` is exactly that structure. The price of completeness is that quandles are hard to compare, so in practice one counts colourings by small quandles — invariants again.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Hyperbolic knots">
+
+William Thurston showed that every knot is a **torus knot** (lying on an unknotted torus, like $3_1$ and $5_1$), a **satellite knot** (tied inside a knotted solid torus), or **hyperbolic**: its complement carries a complete metric of constant curvature $-1$ with finite volume. The figure-eight knot is hyperbolic, and its complement is built from two regular ideal tetrahedra; its volume is $2.0298832\dots$ By Mostow–Prasad rigidity this metric is unique, so geometric quantities such as the **hyperbolic volume** are knot invariants. Most knots in the tables are hyperbolic, and programs such as SnapPea and SnapPy compute their geometry to identify them. See <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="From vortex atoms to quantum field theory">
+
+Knot tables began with physics. In 1867 William Thomson (Lord Kelvin) proposed that atoms are knotted vortices in the ether, and Peter Guthrie Tait set out to tabulate knots as a periodic table. The theory of atoms failed; the tables survived. A century later the Kauffman bracket appeared as a **state sum** like a partition function in statistical mechanics, and Edward Witten (1989) explained the Jones polynomial as an expectation value of a "Wilson loop" in **Chern–Simons quantum field theory**. Witten's path integral is a heuristic, not a rigorous definition. Nicolai Reshetikhin and Vladimir Turaev (1991) gave a rigorous construction of the resulting invariants of knots and 3-manifolds using quantum groups. See <TopicLink id="math.applied.quantum-mechanics">mathematical foundations of quantum mechanics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Tangles and categorification">
+
+Cutting a knot diagram by horizontal lines exhibits it as a composite of elementary pieces: caps, cups and crossings. **Tangles** — pieces of knots with ends on two horizontal lines — form a braided monoidal category. Its morphisms compose by stacking, and the Reidemeister moves are among its relations. The Jones polynomial comes from a functor from this category to representations of the quantum group $U_q(\mathfrak{sl}_2)$ (Reshetikhin–Turaev). Mikhail Khovanov (2000) **categorified** the Jones polynomial. He replaced it by a chain complex of graded vector spaces built from the states of the bracket, whose homology is a knot invariant and whose graded Euler characteristic is $V_K$. Khovanov homology is strictly stronger: it detects the unknot (Kronheimer and Mrowka, 2011), which the Jones polynomial is not known to do. See <TopicLink id="math.cat.monoidal-categories">monoidal categories</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="How hard is it to recognise the unknot?">
+
+Recognising the unknot is decidable (Haken, 1961) and lies in NP (Hass, Lagarias and Pippenger, 1999): a short certificate is a normal disc bounded by the knot. It also lies in co-NP (Lackenby), but no polynomial-time algorithm is known. Invariants have their own complexity. Fox colouring counts and the determinant are computed in polynomial time by linear algebra, as in the first experiment. The Jones polynomial is #P-hard to compute exactly in general (Jaeger, Vertigan and Welsh, 1990). Yet approximating it at certain roots of unity is something a quantum computer does efficiently (Aharonov, Jones and Landau, 2006). Knots sit at a meeting point of topology and complexity theory.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Knots as craft and record.** Knotted cords recorded numbers in the Andean khipu and in other cultures; decorative knotting has long traditions in China, Korea and Japan, in Celtic and Islamic art, and among sailors everywhere.
+- **First mathematics.** Alexandre-Théophile Vandermonde (1771) listed knot problems among questions of "geometry of position". Carl Friedrich Gauss (1833) wrote down the linking integral. His student Johann Benedict Listing coined the word *topology* in 1847 and studied knots.
+- **Tables.** Kelvin's vortex atoms (1867) inspired Peter Guthrie Tait, Thomas Kirkman and Charles Little to tabulate knots up to ten crossings (1876–1899), together with conjectures about alternating knots.
+- **Invariants.** Max Dehn (1914) proved that the two trefoils differ. James Waddell Alexander (1928) introduced the Alexander polynomial, and Kurt Reidemeister (1927), and independently Alexander and Garland Briggs (1926), the moves. Herbert Seifert (1934) constructed his surfaces. Ralph Fox (1950s–60s) popularised colourings.
+- **Algorithms and geometry.** Wolfgang Haken (1961) found an algorithm for recognising the unknot. William Thurston's hyperbolic geometry (late 1970s) transformed the subject.
+- **The Jones revolution.** Vaughan Jones, a New Zealand mathematician working on operator algebras, discovered his polynomial in 1984. Louis Kauffman found the bracket state sum (1987). Kauffman, Kunio Murasugi and Morwen Thistlethwaite used it to prove Tait's century-old conjectures on alternating knots (1987). Edward Witten connected it to quantum field theory (1989); Jones and Witten received Fields Medals in 1990. Mikhail Khovanov categorified it (2000).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Colin C. Adams, *The Knot Book* (1994) — an inviting first book, with many open problems and exercises.
+- W. B. Raymond Lickorish, *An Introduction to Knot Theory* (1997) — rigorous; Reidemeister moves, the Jones polynomial and Seifert surfaces.
+- Dale Rolfsen, *Knots and Links* (1976) — the classic, with the standard knot table.
+- Peter R. Cromwell, *Knots and Links* (2004).
+- Charles Livingston, *Knot Theory* (1993).
+
+</Section>

@@ -1,0 +1,500 @@
+---
+slug: number-system-constructions
+topic: math.number.number-system-constructions
+title: Constructing ℤ, ℚ and ℝ
+subtitle: Starting from nothing but the counting numbers, build the integers from pairs, the fractions from pairs of those, and the real line from cuts or from sequences — and prove that the result is the only complete ordered field there is.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 120
+order: 5005
+objectives:
+  - Construct $\Z$ as equivalence classes of pairs of natural numbers, prove that addition and multiplication are well defined, and identify the result with the integers
+  - Construct $\Q$ as the field of fractions of $\Z$, and explain exactly where the absence of zero divisors is needed
+  - Construct $\R$ from Dedekind cuts and prove the least-upper-bound property; describe the alternative construction from Cauchy sequences
+  - State the uniqueness of the complete ordered field, prove that such a field is Archimedean, and outline why any two are isomorphic
+  - Explain what the constructions prove (that structures with the required properties exist) and what they do not
+narrators: []
+lean:
+  - Lumenary.NumberSystemConstructions.intRel_trans
+  - Lumenary.NumberSystemConstructions.intSetoid
+  - Lumenary.NumberSystemConstructions.PairInt
+  - Lumenary.NumberSystemConstructions.add_respects
+  - Lumenary.NumberSystemConstructions.mul_respects_left
+  - Lumenary.NumberSystemConstructions.mul_respects_right
+  - Lumenary.NumberSystemConstructions.PairInt.add
+  - Lumenary.NumberSystemConstructions.PairInt.mul
+  - Lumenary.NumberSystemConstructions.PairInt.toInt
+  - Lumenary.NumberSystemConstructions.PairInt.toInt_add
+  - Lumenary.NumberSystemConstructions.PairInt.toInt_mul
+  - Lumenary.NumberSystemConstructions.PairInt.toInt_bijective
+  - Lumenary.NumberSystemConstructions.frac_trans
+  - Lumenary.NumberSystemConstructions.frac_trans_fails_zmod6
+  - Lumenary.NumberSystemConstructions.rat_isFractionRing
+  - Lumenary.NumberSystemConstructions.ringHom_rat_unique
+  - Lumenary.NumberSystemConstructions.Cut
+  - Lumenary.NumberSystemConstructions.Cut.instLE
+  - Lumenary.NumberSystemConstructions.Cut.ofRat
+  - Lumenary.NumberSystemConstructions.Cut.sqrtTwo
+  - Lumenary.NumberSystemConstructions.Cut.le_total
+  - Lumenary.NumberSystemConstructions.Cut.sup
+  - Lumenary.NumberSystemConstructions.Cut.sup_isLUB
+  - Lumenary.NumberSystemConstructions.real_complete
+  - Lumenary.NumberSystemConstructions.complete_ordered_field_unique
+compute: [number_system_constructions_well_defined, number_system_constructions_cauchy_sqrt2]
+trails: [remainder-families]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Do the numbers exist?">
+
+Since school you have calculated with $-3$, with $\tfrac25$ and with $\sqrt 2$, using rules such as $(-a)(-b) = ab$ and "every bounded increasing sequence has a limit". In the lessons on <TopicLink id="math.number.integers">integers</TopicLink> and <TopicLink id="math.number.real-numbers">real numbers</TopicLink> we *derived* consequences of such rules. But a list of rules can be contradictory, and nothing so far guarantees that some system actually obeys all of them at once. The axioms of a "complete ordered field", for instance, ask a great deal: a field, with an order compatible with $+$ and $\times$, in which every non-empty bounded set has a least upper bound. Is there such a thing?
+
+This lesson answers *yes*, by building one. Starting only from the natural numbers $0, 1, 2, \dots$ and the language of sets, we construct $\Z$, then $\Q$, then $\R$ — and at the end we prove that the result is essentially unique: any two complete ordered fields are the same field with the elements renamed. Leopold Kronecker is reported to have said that "God made the integers; all else is the work of man". The constructions show how much of that work can be done with the natural numbers alone.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="One idea, used three times">
+
+Each construction repairs a defect by adding *formal expressions* for the missing numbers, and then declaring when two expressions should name the same number.
+
+- $\N$ has no solution of $x + 3 = 1$. So we introduce formal differences "$a - b$" for pairs $(a, b)$ of naturals — and since $1 - 3$ and $5 - 7$ should be equal, we identify $(a, b)$ with $(c, d)$ when $a + d = c + b$.
+- $\Z$ has no solution of $3x = 1$. So we introduce formal quotients "$a/b$" with $b \neq 0$, identifying $(a, b)$ with $(c, d)$ when $ad = cb$.
+- $\Q$ has no number whose square is $2$: the rationals below $\sqrt 2$ have no least upper bound in $\Q$. So we introduce, for each "gap", the set of rationals below it (a **Dedekind cut**) — or a sequence of rationals crowding towards it (a **Cauchy sequence**), identifying sequences that crowd towards the same place.
+
+"Identifying" means passing to **equivalence classes** (see <TopicLink id="math.found.equivalence-relations">equivalence relations</TopicLink>). The price is that every operation must be checked to be **well defined**: the answer must not depend on which member of a class we compute with. The *Remainder families* Wonder Trail, linked below, shows the same phenomenon for remainders.
+
+The two sequences below are made of fractions only. The first iterates $x \mapsto \tfrac12\big(x + \tfrac2x\big)$ from above, the second $q \mapsto \tfrac{2q + 2}{q + 2}$ from below. Both crowd towards the same point — a point that is not a fraction.
+
+<SequenceLab mode="cobweb" fn="(x + 2/x)/2" x={[0.8, 2.2]} x0={2} N={6} editable={false} title="Babylonian iteration: fractions from above" subtitle="Every term is a fraction; the fixed point x = √2 is not." />
+
+<SequenceLab mode="cobweb" fn="(2*x + 2)/(x + 2)" x={[0.8, 1.6]} x0={1} N={12} editable={false} title="Climbing towards √2 from below" subtitle="Each step stays in the cut {q : q² < 2} and gets closer to its upper edge." />
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="well-defined operation on classes">
+
+Let $\sim$ be an equivalence relation on a set $X$ with classes $[x]$. A function $f : X \times X \to X$ **induces** an operation on classes, $[x] \ast [y] = [f(x, y)]$, if it is **compatible** with $\sim$: whenever $x \sim x'$ and $y \sim y'$, also $f(x, y) \sim f(x', y')$. We then say the operation is **well defined**.
+
+</Definition>
+
+<Definition term="ordered field">
+
+An **ordered field** is a field $F$ with a total order $\le$ such that $x \le y$ implies $x + z \le y + z$, and $0 \le x$, $0 \le y$ imply $0 \le xy$. An **upper bound** of $S \subseteq F$ is a $b$ with $s \le b$ for all $s \in S$; a **least upper bound** or **supremum** is an upper bound below every other upper bound (see <TopicLink id="math.found.order-theory">order theory</TopicLink>). $F$ is **complete** if every non-empty subset that is bounded above has a supremum in $F$, and **Archimedean** if for every $x \in F$ there is a natural number $n$ with $x < n$.
+
+</Definition>
+
+<Definition term="Dedekind cut">
+
+A **Dedekind cut** is a subset $A \subseteq \Q$ such that
+
+1. $A \neq \varnothing$ and $A \neq \Q$;
+2. $A$ is **closed downwards**: if $p \in A$ and $q < p$, then $q \in A$;
+3. $A$ has **no greatest element**: for every $p \in A$ there is $q \in A$ with $p < q$.
+
+</Definition>
+
+Picture a cut as "all the rationals strictly to the left of a point on the line". For a rational $r$ the cut $r^\ast = \{q \in \Q : q < r\}$ describes $r$ itself; condition 3 makes this the *only* cut describing $r$ (we do not allow $\{q \le r\}$).
+
+<Definition term="Cauchy sequence of rationals">
+
+A sequence $(q_n)$ of rationals is **Cauchy** if for every rational $\varepsilon > 0$ there is $N$ with $|q_m - q_n| < \varepsilon$ for all $m, n \geq N$. Two Cauchy sequences are **equivalent** if their difference tends to $0$: for every rational $\varepsilon > 0$, $|q_n - r_n| < \varepsilon$ for all large $n$.
+
+</Definition>
+
+</Section>
+
+<Section id="integers" kind="proof" title="The integers from pairs of naturals">
+
+On $\N \times \N$ define $(a, b) \sim (c, d)$ if $a + d = c + b$. Think of $(a, b)$ as "$a - b$"; the condition is $a - b = c - d$ rearranged so that it makes sense in $\N$, where subtraction is not always possible.
+
+<Theorem name="Proposition 1">
+
+$\sim$ is an equivalence relation on $\N \times \N$.
+
+</Theorem>
+
+<Proof>
+
+Reflexivity ($a + b = a + b$) and symmetry are clear. For transitivity, suppose $a + d = c + b$ and $c + f = e + d$. Adding,
+
+$$
+(a + f) + (c + d) = (a + d) + (c + f) = (c + b) + (e + d) = (e + b) + (c + d),
+$$
+
+and cancelling $c + d$ — legitimate in $\N$, where $x + k = y + k$ implies $x = y$ — gives $a + f = e + b$, i.e. $(a, b) \sim (e, f)$.
+
+</Proof>
+
+Define $\Z$ to be the set of equivalence classes. Guided by $(a - b) + (c - d) = (a + c) - (b + d)$ and $(a - b)(c - d) = (ac + bd) - (ad + bc)$, set
+
+$$
+[(a, b)] + [(c, d)] = [(a + c,\, b + d)], \qquad [(a, b)] \cdot [(c, d)] = [(ac + bd,\, ad + bc)].
+$$
+
+<Theorem name="Proposition 2 (well-definedness)">
+
+These formulas define operations on equivalence classes: equivalent inputs give equivalent outputs.
+
+</Theorem>
+
+<Proof>
+
+*Addition.* If $a + b' = a' + b$ and $c + d' = c' + d$, then adding the two equations gives $(a + c) + (b' + d') = (a' + c') + (b + d)$, which says $(a + c, b + d) \sim (a' + c', b' + d')$.
+
+*Multiplication.* It suffices to change one factor at a time, because $\sim$ is transitive. Suppose $a + b' = a' + b$; we show $(ac + bd, ad + bc) \sim (a'c + b'd, a'd + b'c)$, that is,
+
+$$
+(ac + bd) + (a'd + b'c) = (a'c + b'd) + (ad + bc).
+$$
+
+Group the left side as $(a + b')c + (a' + b)d$ and the right side as $(a' + b)c + (a + b')d$. Since $a + b' = a' + b$, these are equal. Changing the second factor is the same computation with the roles exchanged.
+
+</Proof>
+
+The ring axioms for $\Z$ now follow from those of $\N$ by computing with representatives; for example associativity of addition reduces to associativity in each coordinate. The class $0 = [(0, 0)]$ is the additive identity, $1 = [(1, 0)]$ the multiplicative identity, and $-[(a, b)] = [(b, a)]$, because $(a + b, b + a) \sim (0, 0)$. The map $n \mapsto [(n, 0)]$ embeds $\N$ in $\Z$ preserving $+$ and $\times$, and every class is $[(n, 0)]$ or $[(0, n)]$ for a unique $n$ (subtract the smaller coordinate from both), so $\Z$ consists of the natural numbers and their negatives — exactly the integers we know. The order is $[(a, b)] \le [(c, d)]$ if $a + d \le c + b$.
+
+<Example title="A rule that is not well defined">
+
+Why not multiply pairs componentwise, $[(a, b)] \star [(c, d)] = [(ac, bd)]$? Because $(0, 0) \sim (1, 1)$ (both stand for $0$) while $(0, 0) \star (0, 1) = (0, 0)$ and $(1, 1) \star (0, 1) = (0, 1)$, and $(0, 0) \not\sim (0, 1)$. The "product" of the number $0$ and the number $-1$ would depend on how $0$ was written. Well-definedness is never automatic.
+
+</Example>
+
+</Section>
+
+<Section id="rationals" kind="proof" title="The rationals as a field of fractions">
+
+The same recipe works over any **integral domain** $D$ — a commutative ring with $0 \neq 1$ and no zero divisors ($ab = 0$ implies $a = 0$ or $b = 0$). On pairs $(a, b) \in D \times (D \setminus \{0\})$ define $(a, b) \sim (c, d)$ if $ad = cb$.
+
+<Theorem name="Proposition 3">
+
+$\sim$ is an equivalence relation, and the operations
+
+$$
+[(a, b)] + [(c, d)] = [(ad + cb,\, bd)], \qquad [(a, b)] \cdot [(c, d)] = [(ac,\, bd)]
+$$
+
+are well defined. The classes form a field $\operatorname{Frac}(D)$, the **field of fractions** of $D$, and $a \mapsto [(a, 1)]$ is an injective ring homomorphism $D \to \operatorname{Frac}(D)$.
+
+</Theorem>
+
+<Proof>
+
+*Transitivity.* Suppose $ad = cb$ and $cf = ed$, with $b, d, f \neq 0$. Then
+
+$$
+(af)d = (ad)f = (cb)f = b(cf) = b(ed) = (eb)d,
+$$
+
+and since $d \neq 0$ and $D$ has no zero divisors, $(af - eb)d = 0$ forces $af = eb$.
+
+*The operations make sense:* $bd \neq 0$ because $b, d \neq 0$ — no zero divisors again.
+
+*Addition is well defined.* Let $ab' = a'b$. Then
+$(ad + cb)(b'd) = (ab')d^2 + cbb'd = (a'b)d^2 + cbb'd = (a'd + cb')(bd)$, so $(ad + cb, bd) \sim (a'd + cb', b'd)$; similarly in the second argument. *Multiplication:* $(ac)(b'd) = (ab')cd = (a'b)cd = (a'c)(bd)$.
+
+*Field axioms.* They follow from those of $D$ by computing with representatives; $[(0, 1)]$ and $[(1, 1)]$ are the zero and identity, and if $[(a, b)] \neq 0$ then $a \neq 0$ and $[(b, a)]$ is its inverse, since $(ab, ba) \sim (1, 1)$. Finally $[(a, 1)] = [(a', 1)]$ means $a = a'$, so $a \mapsto [(a, 1)]$ is injective.
+
+</Proof>
+
+Taking $D = \Z$ gives $\Q$. Writing $a/b$ for $[(a, b)]$, the definitions become the familiar rules for fractions. Every fraction has a representative with $b > 0$, and $a/b \le c/d$ (with $b, d > 0$) is defined by $ad \le cb$; this makes $\Q$ an ordered field.
+
+<Example title="Where zero divisors break the construction">
+
+Over $\Z/6\Z$, which has zero divisors ($2 \cdot 3 = 0$), the same definition is not even transitive: $3/1 \sim 0/2$ (as $3 \cdot 2 = 0 = 0 \cdot 1$) and $0/2 \sim 0/1$, but $3/1 \not\sim 0/1$ (as $3 \cdot 1 \neq 0$). One would be forced to declare $3 = 0$. Rings with zero divisors can still be "localised", but only by inverting carefully chosen elements, and information is lost.
+
+</Example>
+
+**Universal property.** $\operatorname{Frac}(D)$ is the smallest field containing $D$, in a precise sense: every injective ring homomorphism $g : D \to K$ into a field extends to exactly one ring homomorphism $\operatorname{Frac}(D) \to K$, namely $a/b \mapsto g(a)g(b)^{-1}$. For $D = \Z$ there is even less freedom: there is at most one ring homomorphism from $\Q$ to *any* ring.
+
+</Section>
+
+<Section id="reals" kind="proof" title="The real numbers from Dedekind cuts">
+
+Let $\R$ be the set of Dedekind cuts, ordered by inclusion: $A \le B$ means $A \subseteq B$. Each rational $r$ gives the cut $r^\ast = \{q : q < r\}$, and $r \le s$ if and only if $r^\ast \subseteq s^\ast$, so $\Q$ sits inside $\R$ with its order. But there are new cuts too:
+
+<Theorem name="Proposition 4 (a cut for √2)">
+
+$S = \{q \in \Q : q < 0 \text{ or } q^2 < 2\}$ is a Dedekind cut, and it is not of the form $r^\ast$ for any rational $r$.
+
+</Theorem>
+
+<Proof>
+
+$0 \in S$ and $2 \notin S$. If $p \in S$ and $q < p$: either $q < 0$, or $0 \le q < p$, in which case $p \geq 0$, so $p^2 < 2$ and $q^2 < p^2 < 2$. For no greatest element, let $p \in S$. If $p < 0$, then $0 \in S$ is larger. If $p \geq 0$, then $p^2 < 2$; put $q = \frac{2p + 2}{p + 2}$. Then
+
+$$
+q - p = \frac{2 - p^2}{p + 2} > 0, \qquad q^2 - 2 = \frac{(2p + 2)^2 - 2(p + 2)^2}{(p + 2)^2} = \frac{2(p^2 - 2)}{(p + 2)^2} < 0,
+$$
+
+so $q \in S$ and $q > p$. Finally, if $S = r^\ast$, then $r \notin S$ but every rational below $r$ is in $S$; as $1 \in S$, $r > 1 > 0$, and $r^2 \geq 2$. If $r^2 > 2$, the same map gives $q = \frac{2r + 2}{r + 2}$ with $0 < q < r$ and $q^2 - 2 = \frac{2(r^2 - 2)}{(r + 2)^2} > 0$, so $q \in r^\ast \setminus S$ — impossible. Hence $r^2 = 2$, contradicting the irrationality of $\sqrt 2$ (proved in the lesson on real numbers).
+
+</Proof>
+
+<Theorem name="Proposition 5 (cuts are totally ordered)">
+
+For any cuts $A, B$, either $A \subseteq B$ or $B \subseteq A$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $A \not\subseteq B$, and pick $p \in A \setminus B$. Let $q \in B$. If $q \geq p$, then $p \in B$ (as $p = q$ or $p < q$ and $B$ is closed downwards) — a contradiction. So $q < p$, and $q \in A$ because $A$ is closed downwards. Thus $B \subseteq A$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (least-upper-bound property)">
+
+Let $\mathcal{S}$ be a non-empty set of cuts that is bounded above by some cut $B$. Then the union $U = \bigcup_{A \in \mathcal{S}} A$ is a cut, and it is the least upper bound of $\mathcal{S}$.
+
+</Theorem>
+
+<Proof>
+
+*$U$ is a cut.* It is non-empty, because $\mathcal{S}$ contains some cut, which is non-empty. It is not all of $\Q$: every $A \in \mathcal{S}$ is contained in $B$, so $U \subseteq B \neq \Q$. It is closed downwards: if $p \in U$, then $p \in A$ for some $A \in \mathcal{S}$, and every $q < p$ lies in $A \subseteq U$. It has no greatest element: if $p \in A \in \mathcal{S}$, then $A$ contains some $q > p$, and $q \in U$.
+
+*$U$ is an upper bound*, since $A \subseteq U$ for every $A \in \mathcal{S}$. *It is the least one:* if $C$ is a cut with $A \subseteq C$ for every $A \in \mathcal{S}$, then $U \subseteq C$.
+
+</Proof>
+
+The lattice-theoretic content is striking: in the ordered set of cuts, suprema are simply unions. Everything else is work. Addition is defined by $A + B = \{a + b : a \in A, b \in B\}$ (with $0^\ast$ as identity), and multiplication first for positive cuts by $A \cdot B = \{q : q \le ab \text{ for some } a \in A, b \in B \text{ with } a, b > 0\}$, then extended by the sign rules. Checking that this gives an ordered field takes several pages of routine verification; see Rudin's *Principles of Mathematical Analysis*, appendix to chapter 1. The result:
+
+<Theorem name="Theorem 7 (Dedekind)">
+
+The Dedekind cuts, with these operations and the inclusion order, form a complete ordered field, and $r \mapsto r^\ast$ embeds $\Q$ in it as an ordered subfield.
+
+</Theorem>
+
+*Proof:* completeness is Theorem 6; the field and order axioms are a long verification, which we do not reproduce (see the reading list).
+
+</Section>
+
+<Section id="cauchy" kind="human" title="The real numbers from Cauchy sequences">
+
+Cantor and Méray proposed a different construction, closer to how we *compute* with real numbers. Let $\mathcal{C}$ be the set of Cauchy sequences of rationals, and identify equivalent ones. The sequences
+
+$$
+1,\ 1.4,\ 1.41,\ 1.414,\ \dots \qquad\text{and}\qquad 2,\ \tfrac32,\ \tfrac{17}{12},\ \tfrac{577}{408},\ \dots
+$$
+
+(the decimal truncations of $\sqrt 2$ and the Babylonian iteration) are equivalent, and their class is the real number $\sqrt 2$. Similarly $0.9, 0.99, 0.999, \dots$ is equivalent to the constant sequence $1, 1, 1, \dots$, which is the precise meaning of $0.999\ldots = 1$.
+
+Sums and products are computed termwise: $[(q_n)] + [(r_n)] = [(q_n + r_n)]$ and $[(q_n)][(r_n)] = [(q_n r_n)]$. One checks that sums and products of Cauchy sequences are Cauchy (for products one uses that Cauchy sequences are bounded) and that the operations are well defined. A sequence not equivalent to $0$ is eventually bounded away from $0$, so it can be inverted termwise from some point on; a class is **positive** if its terms are eventually at least some fixed rational $\varepsilon > 0$. The result is again a complete ordered field: completeness is proved by approximating each term of a Cauchy sequence of *real* numbers $x_n$ by a rational $q_n$ with $|x_n - q_n| < 1/n$, and showing that $(q_n)$ is Cauchy and its class is the limit. This is how Mathlib builds $\R$ (as `Real.ofCauchy`), and the same construction, with a different notion of distance, produces the $p$-adic numbers.
+
+Why are there two constructions? Cuts make the order and completeness easy and the algebra laborious; Cauchy sequences make the algebra easy and the order laborious. The next theorem says it does not matter which one we choose.
+
+</Section>
+
+<Section id="uniqueness" kind="proof" title="There is only one complete ordered field">
+
+<Theorem name="Theorem 8 (complete ordered fields are Archimedean)">
+
+In a complete ordered field $F$, the natural numbers $1, 1 + 1, 1 + 1 + 1, \dots$ are not bounded above. Consequently, between any two elements $x < y$ of $F$ there is a rational number.
+
+</Theorem>
+
+<Proof>
+
+Suppose $\N \subseteq F$ were bounded above, with supremum $s$. Then $s - 1$ is not an upper bound, so $s - 1 < n$ for some natural number $n$. But then $s < n + 1$, and $n + 1$ is a natural number — contradicting that $s$ is an upper bound.
+
+For density: choose a natural number $m > 1/(y - x)$, so that $1/m < y - x$. The multiples $k/m$, $k \in \Z$, are spaced $1/m$ apart, and there is a least integer $k$ with $k/m > x$ (by the Archimedean property, the set of such $k$ is non-empty and bounded below). Then $(k - 1)/m \le x$, so $k/m \le x + 1/m < y$.
+
+</Proof>
+
+<Theorem name="Theorem 9 (uniqueness of the reals)">
+
+If $F$ and $G$ are complete ordered fields, there is exactly one order-preserving field isomorphism $F \to G$.
+
+</Theorem>
+
+*Proof sketch.* Every ordered field contains a copy of $\Q$ (the multiples of $1$ and their quotients), and any field homomorphism must be the identity on it. Define $\phi : F \to G$ by
+
+$$
+\phi(x) = \sup{}_G \{ q \in \Q : q < x \}.
+$$
+
+The set is non-empty and bounded above in $G$ by the Archimedean property, so the supremum exists by completeness of $G$. Density of $\Q$ (Theorem 8) shows that $\phi$ is strictly increasing and is the identity on $\Q$, that it has the inverse $y \mapsto \sup_F\{q \in \Q : q < y\}$, and, with more work, that it preserves sums and products. Any order-preserving isomorphism must send $x$ to this supremum, which gives uniqueness. Mathlib contains a complete formal proof (cited in the formal section). $\square$
+
+So the Dedekind reals and the Cauchy reals are isomorphic, and so is any other model of the axioms. "The real numbers" is a meaningful phrase: up to unique isomorphism there is only one complete ordered field.
+
+</Section>
+
+<Section id="formal" kind="formal" title="The constructions in Lean">
+
+Lean's quotient types make the constructions literal: `Quotient s` is the type of equivalence classes of a `Setoid` (a type with an equivalence relation), and a function on representatives descends to classes — via `Quotient.lift` or `Quotient.map₂` — only when given a proof that it respects the relation. In Lean, **well-definedness cannot be forgotten**: the definition does not compile without the proof.
+
+**The integers.** Transitivity (Proposition 1), with the cancellation step made explicit; the setoid and the type of classes; the well-definedness lemmas of Proposition 2, each a `calc` following the human grouping; and the operations themselves, whose definitions consume those proofs.
+
+<Lean decl="Lumenary.NumberSystemConstructions.intRel_trans" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.intSetoid" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.PairInt" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.add_respects" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.mul_respects_left" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.mul_respects_right" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.PairInt.add" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.PairInt.mul" />
+
+To check that the construction really produces the integers, we compare it with Mathlib's `ℤ` (which is built differently, as an inductive type). The map $[(a, b)] \mapsto a - b$ is well defined, turns the constructed operations into the usual ones, and is a bijection — so it is a ring isomorphism.
+
+<Lean decl="Lumenary.NumberSystemConstructions.PairInt.toInt" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.PairInt.toInt_add" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.PairInt.toInt_mul" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.PairInt.toInt_bijective" />
+
+**Fractions.** Transitivity of $ad = cb$ in any commutative ring without zero divisors, with the cancellation of $d$ as the crucial last line; the $\Z/6\Z$ counterexample, checked by `decide`; and Mathlib's statements that $\Q$ is the field of fractions of $\Z$ and that ring homomorphisms out of $\Q$ are unique.
+
+<Lean decl="Lumenary.NumberSystemConstructions.frac_trans" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.frac_trans_fails_zmod6" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.rat_isFractionRing" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.ringHom_rat_unique" />
+
+**Dedekind cuts.** A cut is a structure carrying a set of rationals together with proofs of the three conditions. The rational cuts and the cut for $\sqrt 2$ (Proposition 4, including the step $p \mapsto \frac{2p + 2}{p + 2}$) are constructed; cuts are totally ordered (Proposition 5); and the union of a bounded non-empty family is a cut and its least upper bound (Theorem 6).
+
+<Lean decl="Lumenary.NumberSystemConstructions.Cut" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.Cut.instLE" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.Cut.ofRat" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.Cut.sqrtTwo" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.Cut.le_total" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.Cut.sup" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.Cut.sup_isLUB" />
+
+**What Mathlib provides.** Completeness of Mathlib's $\R$ (built from Cauchy sequences), and the isomorphism between any two conditionally complete linearly ordered fields — Theorem 9, formalised in full in Mathlib with exactly the map $x \mapsto \sup\{q \in \Q : q < x\}$.
+
+<Lean decl="Lumenary.NumberSystemConstructions.real_complete" />
+
+<Lean decl="Lumenary.NumberSystemConstructions.complete_ordered_field_unique" />
+
+**Not formalised here:** the ring axioms for the constructed integers (they follow by transport along the bijection `toInt`, but we do not build the `CommRing` instance), the field structure on cuts (addition and multiplication of cuts), the fact that the √2 cut is not rational, and the Cauchy construction itself (Mathlib's `Real` is that construction).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Testing well-definedness, and approaching a gap">
+
+An operation on classes is well defined if *every* choice of representatives gives equivalent answers. A computer can try all small choices. The correct rules pass; the tempting wrong ones — multiplying integer pairs componentwise, or adding fractions by adding numerators and denominators (the **mediant**) — fail, and the search returns explicit counterexamples. A counterexample is a proof of failure; a pass is only evidence.
+
+<Python id="number_system_constructions_well_defined" />
+
+The second experiment works entirely inside $\Q$, with exact fractions. The climbing sequence stays inside the $\sqrt 2$ cut and the Babylonian sequence outside it, and the gap between them shrinks rapidly — two equivalent Cauchy sequences of rationals, crowding towards a point that $\Q$ does not contain.
+
+<Python id="number_system_constructions_cauchy_sqrt2" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Operations on equivalence classes are automatically well defined."** They are not. Componentwise multiplication of integer pairs, and the mediant $\frac{a + c}{b + d}$ of fractions, are perfectly good operations on *pairs* that do not respect the equivalence: $\tfrac12 = \tfrac24$ but the mediants of these with $\tfrac13$ are $\tfrac25 \neq \tfrac37$. Every operation on classes needs a proof that it does not depend on the representatives.
+
+</Misconception>
+
+<Misconception>
+
+**"The constructions tell us what numbers really are."** They show that structures with the required properties *exist* (given $\N$ and set theory), not that $-3$ "is" a set of pairs or $\sqrt 2$ "is" a set of rationals. The Dedekind and Cauchy constructions produce different sets, yet Theorem 9 says they are isomorphic; what matters is the structure, which is unique up to unique isomorphism.
+
+</Misconception>
+
+<Misconception>
+
+**"$\Q$ is complete because between any two rationals there is another."** Density is not completeness. The rationals are dense, yet $\{q : q^2 < 2\}$ is bounded above with no least upper bound in $\Q$, and the Babylonian sequence is Cauchy with no rational limit.
+
+</Misconception>
+
+<Misconception>
+
+**"$0.999\ldots$ is slightly less than $1$."** In the Cauchy construction $0.999\ldots$ is the class of $0.9, 0.99, 0.999, \dots$, which differs from the constant sequence $1$ by $10^{-n} \to 0$: the two sequences are equivalent, so they are the same real number. With cuts: the rationals below $0.999\ldots$ are exactly the rationals below $1$.
+
+</Misconception>
+
+<Misconception>
+
+**"A cut is the same as its supremum, so $\{q \le r\}$ is also a cut."** Condition 3 (no greatest element) rules out $\{q \le r\}$; without it, every rational would be described by two different cuts. Conventions differ between books (some use upper sets, or allow a greatest element and exclude the other one), but each makes the correspondence one-to-one.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="analysis" title="Completion of a metric space, and other completions of Q">
+
+The Cauchy construction works in any metric space $X$: the **completion** $\hat X$ is the set of Cauchy sequences up to equivalence, and $X$ sits densely inside the complete space $\hat X$; every uniformly continuous map from $X$ to a complete space extends uniquely to $\hat X$. Completing $\Q$ for the usual distance gives $\R$. But $\Q$ has other distances: for a prime $p$, $|x|_p = p^{-k}$ when $x = p^k a/b$ with $p \nmid ab$. Completing $\Q$ for $|\cdot|_p$ gives the field $\Q_p$ of **$p$-adic numbers**, in which $1 + p + p^2 + \cdots$ converges (to $1/(1 - p)$). **Ostrowski's theorem** (1916) says that up to equivalence these are all the non-trivial absolute values on $\Q$: so $\R$ and the $\Q_p$ are *all* the completions of $\Q$ (see <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink> and <TopicLink id="math.number.congruences">congruences</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Completeness is connectedness">
+
+Give an ordered set its order topology. A densely ordered set without endpoints is **connected** if and only if it is **Dedekind complete** (every non-empty bounded-above subset has a supremum). So the completeness of $\R$ is the same thing as its connectedness — the intermediate value theorem in disguise — while $\Q$ is **totally disconnected**: for any irrational $\alpha$, the sets $\{q < \alpha\}$ and $\{q > \alpha\}$ split $\Q$ into two disjoint open pieces. The Dedekind construction is an instance of a general order-theoretic completion, the **Dedekind–MacNeille completion**, which embeds any partially ordered set into a complete lattice (see <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Group completion and localisation">
+
+The construction of $\Z$ works for any commutative monoid $M$: pairs $(a, b)$ modulo $(a, b) \sim (c, d)$ iff $a + d + k = c + b + k$ for some $k$ give an abelian group $K(M)$, the **Grothendieck group**, with a universal property — every monoid homomorphism from $M$ to an abelian group factors uniquely through $K(M)$. (The extra $k$ is needed when $M$ lacks cancellation; for $\N$ it can be dropped.) Applied to isomorphism classes of vector bundles, this is the starting point of topological K-theory. The construction of $\Q$ is **localisation**: for a multiplicative subset $S$ of a commutative ring $R$, the ring $S^{-1}R$ of fractions $r/s$ — used constantly in <TopicLink id="math.algebra.commutative-algebra">commutative algebra</TopicLink> and algebraic geometry.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Categorical in second-order logic, not in first-order logic">
+
+The axioms of a complete ordered field are **categorical**: by Theorem 9 they have exactly one model up to isomorphism. But the completeness axiom quantifies over all *subsets* — it is a second-order statement. If we keep only first-order consequences (statements about elements), uniqueness fails: by the compactness theorem there are non-Archimedean ordered fields — such as the hyperreals of non-standard analysis — that satisfy exactly the same first-order sentences as $\R$, and by the Löwenheim–Skolem theorem there are countable ones, such as the field of real algebraic numbers. Tarski proved (1948) that this first-order theory, the theory of **real closed fields**, is decidable (see <TopicLink id="math.found.model-theory">model theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Eudoxus, Euclid and the continuous line">
+
+Book V of Euclid's *Elements* (about 300 BCE), usually credited to Eudoxus, defines when two ratios of magnitudes are equal: $a : b = c : d$ if, for all whole numbers $m, n$, $ma > nb$ exactly when $mc > nd$, and likewise with $=$ and $<$. In modern terms, a ratio is determined by the set of fractions $n/m$ below it — a Dedekind cut, more than two thousand years early. Dedekind discussed the relationship with Euclid's definition in letters to Rudolf Lipschitz (1876). Geometry also motivated completeness: Euclid's very first construction assumes that two circles cross where they ought to, a continuity assumption that rational coordinates do not satisfy. Hilbert's axioms for geometry (1899) acquired, in later editions, an axiom of completeness for exactly this reason, so that the points of a line correspond to the real numbers (see <TopicLink id="math.geom.euclidean-geometry">Euclidean geometry</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="remainder-families" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ancient ratios.** Greek mathematicians discovered incommensurable magnitudes (the side and diagonal of a square), and Eudoxus's theory of proportion, preserved in Book V of Euclid's *Elements*, handled them rigorously without numbers. Negative quantities and zero were treated as numbers in Chinese and Indian mathematics many centuries before Europe (see the <TopicLink id="math.number.integers">integers</TopicLink> lesson).
+- **Decimals.** Decimal fractions were used by al-Uqlīdisī (952–953 CE, Damascus) and al-Kāshī (1427, Samarkand), and popularised in Europe by Simon Stevin's *De Thiende* (1585). An infinite decimal is, implicitly, a Cauchy sequence.
+- **Arithmetisation.** In the nineteenth century, analysts wanted the foundations of calculus to rest on arithmetic rather than geometric intuition. William Rowan Hamilton (1837) defined complex numbers as pairs of reals. Karl Weierstrass lectured on a construction of the reals in Berlin in the 1860s. In 1872 three constructions appeared: Charles Méray's and Georg Cantor's by sequences (Méray's dated from 1869), and Richard Dedekind's by cuts, in *Stetigkeit und irrationale Zahlen*, an idea he said he had conceived in 1858 while teaching calculus in Zürich.
+- **Foundations of the naturals.** Dedekind's *Was sind und was sollen die Zahlen?* (1888) and Giuseppe Peano's axioms (1889) characterised the natural numbers themselves. David Hilbert (1900) described the reals axiomatically as a complete ordered field, and Edmund Landau's *Grundlagen der Analysis* (1930) carried out the whole chain of constructions in full detail.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Edmund Landau, *Foundations of Analysis* (1930; English translation 1951) — every step from the Peano axioms to the complex numbers, in full.
+- Walter Rudin, *Principles of Mathematical Analysis* (1953; 3rd ed. 1976) — the appendix to chapter 1 constructs $\R$ from Dedekind cuts.
+- Terence Tao, *Analysis I* (2006) — constructs $\Z$, $\Q$ and $\R$ (by Cauchy sequences) with careful attention to well-definedness.
+- Richard Dedekind, *Essays on the Theory of Numbers* (English translation by W. W. Beman, 1901) — Dedekind's own accounts of cuts and of the natural numbers.
+- Heinz-Dieter Ebbinghaus and others, *Numbers* (German 1983; English 1990) — the number systems, their constructions and their history, from $\N$ to the octonions and beyond.
+
+</Section>

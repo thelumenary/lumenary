@@ -1,0 +1,613 @@
+---
+slug: rings
+topic: math.algebra.rings
+title: Rings, ideals and fields
+subtitle: Where addition and multiplication live together. Integers and polynomials share a division algorithm and unique factorisation, $6 = 2 \cdot 3 = (1+\sqrt{-5})(1-\sqrt{-5})$ shows that unique factorisation can fail, and ideals were invented to repair it.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6009
+objectives:
+  - Verify the ring axioms and find units, zero divisors and ideals in examples such as $\Z$, $\Z/n\Z$, $\Z[i]$, $\Z[\sqrt{-5}]$ and $k[x]$
+  - Prove that every finite integral domain is a field, and that kernels of ring homomorphisms are ideals
+  - Distinguish irreducible and prime elements, and subrings and ideals
+  - Prove that Euclidean domains are principal ideal domains and that principal ideal domains are unique factorisation domains
+  - Show that $\Z[\sqrt{-5}]$ is not a unique factorisation domain, and that neither implication of the hierarchy reverses
+narrators: []
+lean:
+  - Lumenary.Rings.unit_mul_eq_zero
+  - Lumenary.Rings.zmod_six_zero_divisors
+  - Lumenary.Rings.finite_domain_inverse
+  - Lumenary.Rings.finite_domain_is_field
+  - Lumenary.Rings.kerIdeal
+  - Lumenary.Rings.kerIdeal_eq
+  - Lumenary.Rings.eq_top_of_unit_mem
+  - Lumenary.Rings.field_ideals
+  - Lumenary.Rings.prime_irreducible
+  - Lumenary.Rings.pid_irreducible_prime
+  - Lumenary.Rings.ed_is_pid
+  - Lumenary.Rings.pid_is_ufd
+  - Lumenary.Rings.polynomial_pid
+  - Lumenary.Rings.gaussian_pid
+  - Lumenary.Rings.int_poly_ufd
+  - Lumenary.Rings.int_poly_not_pid
+  - Lumenary.Rings.norm_formula
+  - Lumenary.Rings.norm_eq_zero
+  - Lumenary.Rings.isDomain
+  - Lumenary.Rings.norm_ne_two
+  - Lumenary.Rings.two_mul_three
+  - Lumenary.Rings.two_irreducible
+  - Lumenary.Rings.two_not_prime
+  - Lumenary.Rings.not_ufd
+compute: [rings_zmod_census, rings_factorisation_norms]
+trails: [inverses-and-structure, clock-arithmetic]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="When factorisation stops being unique">
+
+Every whole number greater than $1$ factors into primes in essentially one way. Polynomials over a field behave the same way: $x^4 - 1 = (x - 1)(x + 1)(x^2 + 1)$ over $\Q$, and there is no other factorisation into irreducibles. The reason is the same in both cases: **division with remainder**, which gives Euclid's algorithm, then Bézout's identity, then *Euclid's lemma* ($p \mid ab \Rightarrow p \mid a$ or $p \mid b$), and finally uniqueness.
+
+Mathematicians soon found they wanted to factor other kinds of numbers. In his *Algebra* (1770), Leonhard Euler solved $y^3 = x^2 + 2$ in integers by factoring $x^2 + 2 = (x + \sqrt{-2})(x - \sqrt{-2})$ and arguing as if unique factorisation held for numbers $a + b\sqrt{-2}$. (It does, but Euler did not prove it.) In 1847 Gabriel Lamé announced a proof of Fermat's Last Theorem that factored $x^p + y^p$ over the complex $p$-th roots of unity, and it rested on the same unproved assumption. Joseph Liouville pointed out the gap at once. Ernst Kummer had already discovered that unique factorisation **fails** for some of these number systems. The simplest failure is in the numbers $a + b\sqrt{-5}$, $a, b \in \Z$:
+
+$$
+6 = 2 \cdot 3 = (1 + \sqrt{-5})(1 - \sqrt{-5}),
+$$
+
+where none of the four factors can be broken down further, and $2$ is not a unit multiple of either $1 \pm \sqrt{-5}$.
+
+Kummer's response was to invent "ideal numbers" that restore uniqueness, and Richard Dedekind turned them into the **ideals** of this lesson. We define rings and their ideals, find their units and zero divisors, and prove the chain
+
+$$
+\text{Euclidean domain} \;\Longrightarrow\; \text{principal ideal domain} \;\Longrightarrow\; \text{unique factorisation domain},
+$$
+
+with examples showing that neither arrow reverses and that $\Z[\sqrt{-5}]$ is not even a UFD.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Two operations, and the multiples of a number">
+
+A **group** has one operation (see <TopicLink id="math.algebra.groups">groups</TopicLink>). Numbers, polynomials, matrices and functions have two, addition and multiplication, linked by the distributive law. A **ring** is the structure they share.
+
+The ring axioms say nothing about division, and the interesting questions are about it. Which elements can be inverted? Can a product of non-zero elements be zero? Is there a division algorithm? Does factorisation into "atoms" exist, and is it unique?
+
+The key new notion is the set of all multiples of an element. In $\Z$ the multiples of $6$ form $6\Z$. This set is closed under addition, and it **absorbs** multiplication: any integer times a multiple of $6$ is again a multiple of $6$. Divisibility is containment: $2 \mid 6$ exactly when $6\Z \subseteq 2\Z$. A gcd is a generator of a sum: $4\Z + 6\Z = 2\Z$. Sets of this kind are called **ideals**. In $\Z[\sqrt{-5}]$ the set $(2, 1 + \sqrt{-5})$ of all combinations $2\alpha + (1 + \sqrt{-5})\beta$ is an ideal, but it consists of the multiples of no single element: it behaves like a "gcd of $2$ and $1 + \sqrt{-5}$" that does not exist as a number. Kummer's ideal numbers were exactly such missing gcds.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Rings, ideals and the factorisation hierarchy">
+
+**Convention.** In this lesson (and the following ones) a *ring* has a multiplicative identity $1$, and ring homomorphisms preserve it. Some books (for example in analysis) allow rings without $1$; then $2\Z$ is a ring. Commutativity is not assumed unless stated. Integral domains and fields are commutative and have $0 \ne 1$.
+
+<Definition term="ring">
+
+A **ring** is a set $R$ with two operations $+$ and $\cdot$ such that $(R, +)$ is an abelian group with identity $0$, multiplication is associative with identity $1$, and the **distributive laws** $a(b + c) = ab + ac$ and $(a + b)c = ac + bc$ hold. $R$ is **commutative** if $ab = ba$ for all $a, b$. A **subring** is a subset containing $1$ and closed under $+$, $-$ and $\cdot$.
+
+</Definition>
+
+<Definition term="units, zero divisors, domains and fields">
+
+A **unit** is an element $u$ with some $v$ such that $uv = vu = 1$; the units form a group $R^\times$. A **zero divisor** is a non-zero $a$ with $ab = 0$ or $ba = 0$ for some non-zero $b$. An **integral domain** is a commutative ring with $0 \ne 1$ and no zero divisors. A **field** is a commutative ring with $0 \ne 1$ in which every non-zero element is a unit. (A **division ring** drops commutativity.)
+
+</Definition>
+
+<Definition term="ring homomorphism, kernel">
+
+A **ring homomorphism** $f : R \to S$ satisfies $f(a + b) = f(a) + f(b)$, $f(ab) = f(a)f(b)$ and $f(1) = 1$. Its **kernel** is $\ker f = \{a \mid f(a) = 0\}$.
+
+</Definition>
+
+<Definition term="ideal">
+
+A **left ideal** of $R$ is an additive subgroup $I$ with $ra \in I$ for all $r \in R$, $a \in I$; a **two-sided ideal** also has $ar \in I$. In a commutative ring the notions coincide and we just say **ideal**. The ideal **generated** by $a_1, \dots, a_n$ in a commutative ring is $(a_1, \dots, a_n) = \{r_1a_1 + \dots + r_na_n\}$. An ideal is **principal** if it equals $(a)$ for one element $a$.
+
+</Definition>
+
+<Definition term="prime and maximal ideals">
+
+In a commutative ring $R$, an ideal $P \ne R$ is **prime** if $ab \in P$ implies $a \in P$ or $b \in P$, and an ideal $M \ne R$ is **maximal** if there is no ideal strictly between $M$ and $R$. (In <TopicLink id="math.algebra.quotients">quotients</TopicLink> we prove that $R/P$ is a domain and $R/M$ a field exactly in these cases.)
+
+</Definition>
+
+<Definition term="divisibility, irreducible and prime elements">
+
+Let $R$ be an integral domain. Then $a \mid b$ if $b = ac$ for some $c$; $a$ and $b$ are **associates** if $b = ua$ for a unit $u$. A non-zero non-unit $p$ is **irreducible** if $p = ab$ forces $a$ or $b$ to be a unit, and **prime** if $p \mid ab$ forces $p \mid a$ or $p \mid b$.
+
+</Definition>
+
+<Definition term="Euclidean domain, PID, UFD">
+
+An integral domain $R$ is
+
+- a **Euclidean domain** if there is a function $\delta : R \setminus \{0\} \to \N$ such that for all $a$ and all $b \ne 0$ there are $q, r$ with $a = qb + r$ and either $r = 0$ or $\delta(r) \lt \delta(b)$;
+- a **principal ideal domain (PID)** if every ideal is principal;
+- a **unique factorisation domain (UFD)** if every non-zero non-unit is a product of irreducibles, uniquely up to the order of the factors and replacing factors by associates.
+
+</Definition>
+
+<Figure caption="The hierarchy proved in this lesson, with an example in each layer that is not in the next one inside. Fields are Euclidean (with δ constant). ℤ[(1+√−19)/2] is a PID that is not Euclidean, ℤ[x] and k[x, y] are UFDs that are not PIDs, ℤ[√−5] is a domain that is not a UFD, and ℤ/6ℤ is not a domain.">
+<svg viewBox="0 0 340 262" role="img" aria-label="Six nested rectangles labelled, from outside in, commutative rings, integral domains, UFDs, PIDs, Euclidean domains and fields, each with example rings">
+  <rect x="4" y="4" width="332" height="254" rx="10" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="14" y="32" width="312" height="220" rx="10" fill="none" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <rect x="24" y="60" width="292" height="186" rx="10" fill="none" stroke="var(--formal)" strokeWidth="1.5" />
+  <rect x="34" y="88" width="272" height="152" rx="10" fill="none" stroke="var(--formal)" strokeWidth="1.5" />
+  <rect x="44" y="116" width="252" height="118" rx="10" fill="none" stroke="var(--human)" strokeWidth="1.5" />
+  <rect x="54" y="144" width="232" height="84" rx="10" fill="var(--sky-soft)" stroke="var(--gold)" strokeWidth="2" />
+  <text x="12" y="22" fontSize="12" fill="var(--ink)">commutative rings</text>
+  <text x="328" y="22" fontSize="12" textAnchor="end" fill="var(--ink-2)">ℤ/6ℤ, ℤ × ℤ</text>
+  <text x="22" y="50" fontSize="12" fill="var(--ink)">integral domains</text>
+  <text x="318" y="50" fontSize="12" textAnchor="end" fill="var(--ink-2)">ℤ[√−5]</text>
+  <text x="32" y="78" fontSize="12" fill="var(--ink)">UFDs</text>
+  <text x="308" y="78" fontSize="12" textAnchor="end" fill="var(--ink-2)">ℤ[x], k[x, y]</text>
+  <text x="42" y="106" fontSize="12" fill="var(--ink)">PIDs</text>
+  <text x="298" y="106" fontSize="12" textAnchor="end" fill="var(--ink-2)">ℤ[(1+√−19)/2]</text>
+  <text x="52" y="134" fontSize="12" fill="var(--ink)">Euclidean domains</text>
+  <text x="288" y="134" fontSize="12" textAnchor="end" fill="var(--ink-2)">ℤ, k[x], ℤ[i]</text>
+  <text x="62" y="164" fontSize="12" fill="var(--ink)">fields</text>
+  <text x="170" y="196" fontSize="13" textAnchor="middle" fill="var(--ink-2)">ℚ, ℝ, ℂ, 𝔽ₚ = ℤ/pℤ</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="examples" kind="examples" title="A gallery of rings">
+
+<Example title="Numbers">
+
+$\Z \subset \Q \subset \R \subset \C$ are commutative rings. $\Q$, $\R$, $\C$ are fields; $\Z$ is a domain whose only units are $\pm 1$. The **Gaussian integers** $\Z[i] = \{a + bi \mid a, b \in \Z\}$ and $\Z[\sqrt{-5}] = \{a + b\sqrt{-5}\}$ are subrings of $\C$, hence domains. Each has a multiplicative **norm** $N(a + b\sqrt{d}) = (a + b\sqrt d)(a - b\sqrt d) = a^2 - db^2$: so $N(a + bi) = a^2 + b^2$ and $N(a + b\sqrt{-5}) = a^2 + 5b^2$. If $uv = 1$ then $N(u)N(v) = 1$, so units have norm $1$. The units of $\Z[i]$ are therefore $\pm 1, \pm i$, and those of $\Z[\sqrt{-5}]$ are $\pm 1$.
+
+</Example>
+
+<Example title="Remainders">
+
+In $\Z/n\Z$, a residue $a$ is a unit iff $\gcd(a, n) = 1$. Otherwise, if $a \ne 0$, it is a zero divisor: with $d = \gcd(a, n) \gt 1$, we have $a \cdot \frac{n}{d} = \frac{a}{d}\, n \equiv 0$. In $\Z/12\Z$ the units are $1, 5, 7, 11$, and the other seven non-zero residues are zero divisors. Some elements are **nilpotent** ($6^2 = 36 \equiv 0$ in $\Z/12\Z$) and some are **idempotent** ($4^2 = 16 \equiv 4$). So $\Z/n\Z$ is a domain iff it is a field iff $n$ is prime. The field $\Z/p\Z$ is also written $\mathbb{F}_p$.
+
+</Example>
+
+<Example title="Polynomials">
+
+For a commutative ring $R$, $R[x]$ is the ring of polynomials with coefficients in $R$. If $R$ is a domain, then $\deg(fg) = \deg f + \deg g$ for non-zero $f, g$, because the leading coefficients multiply. So $R[x]$ is a domain and its units are the units of $R$ (constants). For a field $k$, $k[x]$ behaves remarkably like $\Z$: there is long division, and its irreducible elements play the role of primes (see <TopicLink id="math.algebra.polynomials">polynomials</TopicLink>). Over a non-domain strange things happen: in $(\Z/4\Z)[x]$, $(1 + 2x)^2 = 1 + 4x + 4x^2 = 1$, so the non-constant polynomial $1 + 2x$ is a unit.
+
+</Example>
+
+<Example title="Non-commutative rings">
+
+The matrix ring $M_n(k)$ ($n \ge 2$) is not commutative and has zero divisors and nilpotents: $\left(\begin{smallmatrix} 0 & 1 \\ 0 & 0 \end{smallmatrix}\right)^2 = 0$. Its two-sided ideals are only $0$ and $M_n(k)$, although it has many left ideals. The **quaternions** $\mathbb{H} = \{a + bi + cj + dk\}$ with $i^2 = j^2 = k^2 = ijk = -1$ form a division ring that is not a field, since $ij = k = -ji$.
+
+</Example>
+
+<Example title="Products and functions">
+
+$\Z \times \Z$ with componentwise operations is a commutative ring with zero divisors: $(1, 0)(0, 1) = (0, 0)$. The continuous functions $C([0, 1])$ form a commutative ring. It has zero divisors (two non-zero functions with disjoint supports multiply to $0$), and for each $c \in [0, 1]$ the functions vanishing at $c$ form a maximal ideal.
+
+</Example>
+
+<Example title="Ideals, subrings and generators">
+
+- The ideals of $\Z$ are the $n\Z = (n)$. Every ideal of $\Z$ is an additive subgroup, and these are the $n\Z$ (see groups, Theorem 1). Similarly the ideals of $\Z/n\Z$ are the $(d)$ for divisors $d$ of $n$.
+- $\Z$ is a subring of $\Q$ but not an ideal: $\frac12 \cdot 1 \notin \Z$. In the other direction, $2\Z$ is an ideal of $\Z$ but not a subring (it does not contain $1$). A proper ideal never contains a unit.
+- In $\Z[x]$: $(x)$, the polynomials with constant term $0$, is a prime ideal but not maximal, since $(x) \subsetneq (2, x) \subsetneq \Z[x]$. The ideal $(2, x)$, the polynomials with even constant term, is maximal and not principal (Theorem 12).
+- In $\Z$, $(p)$ is maximal for $p$ prime, and $(0)$ is prime but not maximal. In $\C[x, y]$, $(x)$ is prime and $(x, y)$ is maximal.
+
+</Example>
+
+</Section>
+
+<Section id="basics" kind="proof" title="Units, zero divisors and ideals">
+
+<Theorem name="Proposition 1 (first consequences of the axioms)">
+
+In every ring: (a) $0 \cdot a = a \cdot 0 = 0$ and $(-a)b = -(ab)$; (b) if $0 = 1$ then $R = \{0\}$; (c) $R^\times$ is a group under multiplication; (d) a unit is not a zero divisor.
+
+</Theorem>
+
+<Proof>
+
+(a) $0a = (0 + 0)a = 0a + 0a$; subtract $0a$. Then $ab + (-a)b = (a + (-a))b = 0b = 0$. (b) $a = a \cdot 1 = a \cdot 0 = 0$. (c) $1$ is a unit, $(uv)(v^{-1}u^{-1}) = 1 = (v^{-1}u^{-1})(uv)$, and $u^{-1}$ is a unit with inverse $u$. (d) If $u$ is a unit and $ua = 0$, then $a = u^{-1}(ua) = u^{-1} \cdot 0 = 0$; similarly if $au = 0$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (finite domains are fields)">
+
+Every finite integral domain is a field.
+
+</Theorem>
+
+<Proof>
+
+Let $a \ne 0$ in the finite domain $R$. The map $m_a : R \to R$, $x \mapsto ax$, is injective: $ax = ay$ gives $a(x - y) = 0$, so $x = y$, since there are no zero divisors. An injective map from a finite set to itself is surjective, so $ab = 1$ for some $b$.
+
+</Proof>
+
+The same argument shows that in a finite commutative ring every non-zero element is either a unit or a zero divisor: if $m_a$ is not injective, then $a(x - y) = 0$ with $x \ne y$. (Wedderburn's little theorem, 1905, says more: a finite *division* ring is commutative, hence a field.) The first experiment checks the unit/zero-divisor dichotomy in every $\Z/n\Z$ with $n \le 60$.
+
+<Theorem name="Proposition 3 (kernels, units in ideals, fields)">
+
+Let $R$ and $S$ be rings.
+
+1. If $f : R \to S$ is a ring homomorphism, then $\ker f$ is a two-sided ideal of $R$ and $f(R)$ is a subring of $S$.
+2. An ideal containing a unit is all of $R$.
+3. A commutative ring $R$ with $0 \ne 1$ is a field iff its only ideals are $(0)$ and $R$.
+4. Every ring homomorphism from a field to a non-zero ring is injective.
+
+</Theorem>
+
+<Proof>
+
+(1) $\ker f$ is an additive subgroup. If $f(a) = 0$ then $f(ra) = f(r) \cdot 0 = 0$ and $f(ar) = 0$. The image contains $f(1) = 1$ and is closed under the operations. (2) If $u \in I$ is a unit, then $1 = u^{-1}u \in I$ and $r = r \cdot 1 \in I$ for all $r$. (3) If $R$ is a field and $I \ne 0$, then $I$ contains a non-zero element, which is a unit, so $I = R$ by (2). Conversely, if the only ideals are $0$ and $R$ and $a \ne 0$, then $(a) = R \ni 1$, so $a$ is a unit. (4) $\ker f$ is an ideal of the field and does not contain $1$, since $f(1) = 1 \ne 0$. So $\ker f = 0$ by (3).
+
+</Proof>
+
+Conversely, every two-sided ideal is the kernel of some homomorphism, namely the quotient map $R \to R/I$. That construction belongs to <TopicLink id="math.algebra.quotients">quotient rings</TopicLink>. Together they give the key result: *the kernels of ring homomorphisms are exactly the two-sided ideals*, just as the kernels of group homomorphisms are exactly the normal subgroups.
+
+<Theorem name="Proposition 4 (divisibility is containment)">
+
+In an integral domain $R$: (a) $a \mid b \iff (b) \subseteq (a)$; (b) $(a) = (b) \iff a, b$ are associates; (c) $(u) = R \iff u$ is a unit; (d) a non-zero $p$ is prime iff $(p)$ is a prime ideal.
+
+</Theorem>
+
+<Proof>
+
+(a) $b = ac \iff b \in (a) \iff (b) \subseteq (a)$. (b) If $(a) = (b)$ with $a \ne 0$, write $b = ac$ and $a = bd$. Then $a = acd$, so $a(1 - cd) = 0$, and $cd = 1$ since $R$ is a domain: $c$ is a unit. (If $a = 0$ then $b = 0$.) The converse is clear. (c) is the case $b = 1$ of (b). (d) This is a restatement: $p \mid x \iff x \in (p)$, and $(p) \ne R$ iff $p$ is not a unit.
+
+</Proof>
+
+<Theorem name="Proposition 5 (prime implies irreducible)">
+
+In an integral domain every prime element is irreducible.
+
+</Theorem>
+
+<Proof>
+
+Let $p$ be prime and $p = ab$. Then $p \mid ab$, so (say) $p \mid a$: $a = pc$. Then $p = pcb$, so $p(1 - cb) = 0$, and $cb = 1$ because $p \ne 0$. Hence $b$ is a unit.
+
+</Proof>
+
+The converse fails in general, and it is exactly what fails in $\Z[\sqrt{-5}]$ (Theorem 11). In a UFD the converse holds. If $p$ is irreducible and $p \mid ab$, factor $a$, $b$ and $ab/p$ into irreducibles. By uniqueness, $p$ is associate to an irreducible factor of $a$ or of $b$.
+
+</Section>
+
+<Section id="hierarchy" kind="proof" title="Euclidean domain ⇒ PID ⇒ UFD">
+
+<Theorem name="Theorem 6 (three Euclidean domains)">
+
+$\Z$ with $\delta(a) = |a|$, $k[x]$ for a field $k$ with $\delta(f) = \deg f$, and $\Z[i]$ with $\delta = N$ are Euclidean domains.
+
+</Theorem>
+
+<Proof>
+
+For $\Z$ this is the division algorithm, and for $k[x]$ it is polynomial long division: if $\deg a \ge \deg b$, subtract $\frac{\text{lead}(a)}{\text{lead}(b)}x^{\deg a - \deg b}\,b$ to lower the degree of $a$, and repeat. This uses that the leading coefficient of $b$ is invertible, which is why $k$ must be a field.
+
+For $\Z[i]$, let $a, b \in \Z[i]$ with $b \ne 0$, and compute the exact quotient $a/b = s + ti \in \Q(i)$. Choose integers $m, n$ with $|s - m| \le \frac12$ and $|t - n| \le \frac12$, and set $q = m + ni$, $r = a - qb$. Then $r \in \Z[i]$ and, with $N$ extended to $\Q(i)$ (still multiplicative),
+
+$$
+N(r) = N(b)\, N\!\left(\tfrac{a}{b} - q\right) = N(b)\big((s - m)^2 + (t - n)^2\big) \le N(b)\left(\tfrac14 + \tfrac14\right) \lt N(b).
+$$
+
+</Proof>
+
+<Figure caption="Euclidean division in ℤ[i]: the exact quotient a/b (gold) lies in some unit square of the lattice ℤ[i], within distance √2/2 of a corner q. The remainder r = a − qb then has N(r) ≤ N(b)/2. For ℤ[√−5] the lattice is stretched vertically by √5 and the same argument fails: the centre of a box is too far from every corner.">
+<svg viewBox="0 0 260 200" role="img" aria-label="A square grid of lattice points with a gold point inside one square, and a dashed line to the nearest corner">
+  <g stroke="var(--line-2)" strokeWidth="1">
+    <line x1="30" y1="20" x2="30" y2="180" />
+    <line x1="90" y1="20" x2="90" y2="180" />
+    <line x1="150" y1="20" x2="150" y2="180" />
+    <line x1="210" y1="20" x2="210" y2="180" />
+    <line x1="10" y1="40" x2="240" y2="40" />
+    <line x1="10" y1="100" x2="240" y2="100" />
+    <line x1="10" y1="160" x2="240" y2="160" />
+  </g>
+  <g fill="var(--ink-2)">
+    <circle cx="30" cy="40" r="3.5" /><circle cx="90" cy="40" r="3.5" /><circle cx="150" cy="40" r="3.5" /><circle cx="210" cy="40" r="3.5" />
+    <circle cx="30" cy="100" r="3.5" /><circle cx="90" cy="100" r="3.5" /><circle cx="150" cy="100" r="3.5" /><circle cx="210" cy="100" r="3.5" />
+    <circle cx="30" cy="160" r="3.5" /><circle cx="90" cy="160" r="3.5" /><circle cx="150" cy="160" r="3.5" /><circle cx="210" cy="160" r="3.5" />
+  </g>
+  <rect x="90" y="40" width="60" height="60" fill="var(--sky-soft)" opacity="0.6" />
+  <line x1="132" y1="84" x2="150" y2="100" stroke="var(--human)" strokeWidth="2" strokeDasharray="4 3" />
+  <circle cx="132" cy="84" r="5" fill="var(--gold)" />
+  <circle cx="150" cy="100" r="5" fill="var(--human)" />
+  <text x="112" y="76" fontSize="13" fill="var(--ink)">a/b</text>
+  <text x="156" y="118" fontSize="13" fill="var(--ink)">q</text>
+</svg>
+</Figure>
+
+<Theorem name="Theorem 7 (Euclidean domains are PIDs)">
+
+Every ideal of a Euclidean domain is principal.
+
+</Theorem>
+
+<Proof>
+
+Let $I$ be an ideal. If $I = 0$ then $I = (0)$. Otherwise choose $b \in I \setminus \{0\}$ with $\delta(b)$ least, by well-ordering of $\N$. For $a \in I$ write $a = qb + r$ with $r = 0$ or $\delta(r) \lt \delta(b)$. Then $r = a - qb \in I$, so minimality forces $r = 0$. Hence $a \in (b)$, and $I = (b)$.
+
+</Proof>
+
+<Theorem name="Theorem 8 (arithmetic in a PID)">
+
+Let $R$ be a PID. (a) Any $a, b$ have a gcd $d$, with $(a, b) = (d)$, and $d = ra + sb$ for some $r, s$ (Bézout). (b) Every irreducible element is prime (Euclid's lemma). (c) Every non-zero prime ideal is maximal.
+
+</Theorem>
+
+<Proof>
+
+(a) $(a, b)$ is principal, say $(d)$. Since $a, b \in (d)$, $d$ is a common divisor. Since $d \in (a, b)$, $d = ra + sb$, so every common divisor of $a$ and $b$ divides $d$.
+
+(b) Let $p$ be irreducible, $p \mid ab$ and $p \nmid a$. Write $(p, a) = (d)$. Then $p = dx$, so $d$ or $x$ is a unit. If $x$ were a unit, $(d) = (p)$ would contain $a$, giving $p \mid a$. So $d$ is a unit, $(p, a) = R$, and $1 = rp + sa$. Multiplying by $b$ gives $b = rpb + s(ab)$, a sum of two multiples of $p$, so $p \mid b$.
+
+(c) Let $(p) \ne 0$ be prime, and $(p) \subseteq (m) \ne R$. By Proposition 4(d) and Proposition 5, $p$ is irreducible. From $p = mx$ with $m$ not a unit, $x$ is a unit, so $(m) = (p)$.
+
+</Proof>
+
+<Theorem name="Theorem 9 (PIDs are UFDs)">
+
+Every principal ideal domain is a unique factorisation domain.
+
+</Theorem>
+
+<Proof>
+
+*Chains stabilise.* Let $I_1 \subseteq I_2 \subseteq \cdots$ be ideals. Their union $I$ is an ideal (any two elements lie in a common $I_n$), so $I = (d)$. Then $d \in I_n$ for some $n$, and $I \subseteq I_n \subseteq I_m \subseteq I$ for all $m \ge n$.
+
+*Existence.* Suppose a non-zero non-unit $a$ is not a product of irreducibles. Then $a$ is not irreducible, so $a = a_1b_1$ with neither factor a unit. If both $a_1$ and $b_1$ were products of irreducibles, so would $a$ be; say $a_1$ is not. Moreover $(a) \subsetneq (a_1)$: equality would make $b_1$ a unit, by Proposition 4(b). Repeating with $a_1$ gives a strictly increasing chain $(a) \subsetneq (a_1) \subsetneq (a_2) \subsetneq \cdots$, which contradicts the first step.
+
+*Uniqueness.* Suppose $p_1 \cdots p_m = u\,q_1 \cdots q_n$ with all $p_i, q_j$ irreducible and $u$ a unit. We use induction on $m$. If $m = 0$, the right side is a unit, so it has no irreducible factors and $n = 0$. If $m \ge 1$: $p_1$ is prime by Theorem 8(b), so it divides some $q_j$. Since $q_j$ is irreducible and $p_1$ is not a unit, $q_j = vp_1$ with $v$ a unit. Cancel $p_1$ (we are in a domain) and apply the induction hypothesis to $p_2 \cdots p_m = (uv)\,q_1 \cdots \widehat{q_j} \cdots q_n$.
+
+</Proof>
+
+So $\Z$, $k[x]$ and $\Z[i]$ have unique factorisation. In $\Z[i]$ the prime $5 = (2 + i)(2 - i)$ splits, while $3$ stays prime. Which primes split is the question behind Fermat's theorem on sums of two squares, treated in <TopicLink id="math.number.elementary-number-theory">number theory</TopicLink>.
+
+</Section>
+
+<Section id="failure" kind="proof" title="Where the hierarchy breaks">
+
+<Theorem name="Theorem 10 (the norm on ℤ[√−5])">
+
+In $\Z[\sqrt{-5}]$, $N(x + y\sqrt{-5}) = x^2 + 5y^2$ is multiplicative, $N(z) = 0$ only for $z = 0$, the units are $\pm 1$, and no element has norm $2$ or $3$.
+
+</Theorem>
+
+<Proof>
+
+$N(z) = z\bar z$, and complex conjugation is multiplicative, so $N(zw) = N(z)N(w)$. A sum $x^2 + 5y^2$ of non-negative terms is $0$ only if $x = y = 0$, and it is $1$ only if $y = 0$ and $x = \pm 1$. If $x^2 + 5y^2 \in \{2, 3\}$, then $y = 0$ (else the sum is at least $5$), and $x^2 \in \{2, 3\}$ is impossible.
+
+</Proof>
+
+<Theorem name="Theorem 11 (ℤ[√−5] is not a UFD, and not a PID)">
+
+In $\Z[\sqrt{-5}]$: (a) $2$, $3$, $1 + \sqrt{-5}$ and $1 - \sqrt{-5}$ are irreducible, and $2$ is associate to neither $1 \pm \sqrt{-5}$, so $6 = 2 \cdot 3 = (1 + \sqrt{-5})(1 - \sqrt{-5})$ are two genuinely different factorisations; (b) $2$ is irreducible but not prime; (c) the ideal $(2, 1 + \sqrt{-5})$ is not principal.
+
+</Theorem>
+
+<Proof>
+
+(a) The norms are $4, 9, 6, 6$. A factorisation $z = ab$ into non-units would need $N(a)$ to be a proper divisor of $N(z)$ greater than $1$, that is $2$ or $3$, which is impossible by Theorem 10. The units are $\pm 1$, and $\pm 2 \ne 1 \pm \sqrt{-5}$.
+
+(b) $2 \mid 6 = (1 + \sqrt{-5})(1 - \sqrt{-5})$. But $2 \mid x + y\sqrt{-5}$ requires $x, y$ even, so $2$ divides neither factor.
+
+(c) Let $J = \{x + y\sqrt{-5} \mid x \equiv y \pmod 2\}$. It is closed under addition, and under multiplication by $\sqrt{-5}$, since $\sqrt{-5}(x + y\sqrt{-5}) = -5y + x\sqrt{-5}$ and $-5y \equiv y \equiv x$. So $J$ is an ideal. It contains $2$ and $1 + \sqrt{-5}$ but not $1$, so $(2, 1 + \sqrt{-5}) \subseteq J \ne R$. If $(2, 1 + \sqrt{-5}) = (g)$, then $g \mid 2$ and $g \mid 1 + \sqrt{-5}$, so $N(g)$ divides $\gcd(4, 6) = 2$. Thus $N(g) = 1$, since no norm is $2$, and $g$ is a unit — contradicting $(g) \subseteq J \ne R$. (Alternatively: a PID is a UFD, and (a) shows $\Z[\sqrt{-5}]$ is not.)
+
+</Proof>
+
+Ideals restore uniqueness here. With $P = (2, 1 + \sqrt{-5})$, $Q = (3, 1 + \sqrt{-5})$ and $\bar Q = (3, 1 - \sqrt{-5})$, one checks that $P^2 = (2)$, $Q\bar Q = (3)$, $PQ = (1 + \sqrt{-5})$ and $P\bar Q = (1 - \sqrt{-5})$. So both factorisations of $6$ refine to the *same* factorisation into prime ideals, $(6) = P^2 Q \bar Q$. Dedekind proved that in the ring of integers of any number field, every non-zero ideal factors uniquely into prime ideals (see <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>).
+
+<Theorem name="Theorem 12 (neither implication reverses)">
+
+(a) $\Z[x]$ is a UFD but not a PID: the ideal $(2, x)$ is not principal. (b) $\Z\big[\frac{1 + \sqrt{-19}}{2}\big]$ is a PID but not a Euclidean domain (for any function $\delta$).
+
+</Theorem>
+
+<Proof>
+
+(a) That $\Z[x]$ is a UFD is Gauss's lemma: if $R$ is a UFD, so is $R[x]$ (Dummit and Foote, §9.3). Suppose $(2, x) = (f)$. Since $f \mid 2$, degrees give $\deg f = 0$, so $f = c \in \Z$. Since $c \mid x$, $c = \pm 1$. But every element $2g + xh$ of $(2, x)$ has even constant term, and $f$ is such an element, so $c$ is even. Contradiction.
+
+(b) We only sketch this; full proofs are in Dummit and Foote, §8.1–8.2. The ring is not Euclidean (Motzkin, 1949): in a Euclidean domain that is not a field, an element $u$ of least size among non-zero non-units has the property that every element is congruent modulo $u$ to $0$ or a unit, and in this ring (whose units are $\pm 1$) no such $u$ exists. It is a PID because it has a weaker "Dedekind–Hasse" norm property, and because the class number of $\Q(\sqrt{-19})$ is $1$.
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Rings in Lean and Mathlib">
+
+Mathlib's `Ring`, `CommRing`, `IsDomain` and `Field` classes match the lesson's conventions: rings have a $1$, and ring homomorphisms `R →+* S` preserve it. `Ideal R` is defined as a submodule of $R$ over itself, which is exactly "an additive subgroup that absorbs multiplication". `Prime p` and `Irreducible p` are the lesson's definitions. `IsPrincipalIdealRing R`, `EuclideanDomain R` and `UniqueFactorizationMonoid R` are the three layers of the hierarchy.
+
+Units and zero divisors (Proposition 1(d), the $\Z/6\Z$ example and Theorem 2):
+
+<Lean decl="Lumenary.Rings.unit_mul_eq_zero" />
+
+<Lean decl="Lumenary.Rings.zmod_six_zero_divisors" />
+
+<Lean decl="Lumenary.Rings.finite_domain_inverse" />
+
+<Lean decl="Lumenary.Rings.finite_domain_is_field" />
+
+Kernels and ideals (Proposition 3). The kernel is built by hand and then identified with Mathlib's `RingHom.ker`:
+
+<Lean decl="Lumenary.Rings.kerIdeal" />
+
+<Lean decl="Lumenary.Rings.kerIdeal_eq" />
+
+<Lean decl="Lumenary.Rings.eq_top_of_unit_mem" />
+
+<Lean decl="Lumenary.Rings.field_ideals" />
+
+Prime and irreducible elements: Proposition 5, and Theorem 8(b), which is the heart of "PID ⇒ UFD". The Lean proof follows the human one line by line, using `Ideal.mem_span_pair` for the Bézout step:
+
+<Lean decl="Lumenary.Rings.prime_irreducible" />
+
+<Lean decl="Lumenary.Rings.pid_irreducible_prime" />
+
+The hierarchy itself (Theorems 6, 7 and 9) is in Mathlib as instances, so these proofs are just `inferInstance`. The real content is in the cited library proofs:
+
+<Lean decl="Lumenary.Rings.ed_is_pid" />
+
+<Lean decl="Lumenary.Rings.pid_is_ufd" />
+
+<Lean decl="Lumenary.Rings.polynomial_pid" />
+
+<Lean decl="Lumenary.Rings.gaussian_pid" />
+
+<Lean decl="Lumenary.Rings.int_poly_ufd" />
+
+Theorem 12(a), proved here: $(2, x)$ is not principal in $\Z[x]$. The proof compares degrees, then the coefficient of $x$, then constant terms, exactly as in the lesson:
+
+<Lean decl="Lumenary.Rings.int_poly_not_pid" />
+
+Finally $\Z[\sqrt{-5}]$, which Mathlib writes `ℤ√(-5)`, with elements `⟨x, y⟩` meaning $x + y\sqrt{-5}$. Mathlib provides the multiplicative norm but no domain instance for negative $d$, so we prove one ourselves from the norm. We then prove Theorems 10 and 11(a, b) and conclude that $\Z[\sqrt{-5}]$ is not a UFD:
+
+<Lean decl="Lumenary.Rings.norm_formula" />
+
+<Lean decl="Lumenary.Rings.norm_eq_zero" />
+
+<Lean decl="Lumenary.Rings.isDomain" />
+
+<Lean decl="Lumenary.Rings.norm_ne_two" />
+
+<Lean decl="Lumenary.Rings.two_mul_three" />
+
+<Lean decl="Lumenary.Rings.two_irreducible" />
+
+<Lean decl="Lumenary.Rings.two_not_prime" />
+
+<Lean decl="Lumenary.Rings.not_ufd" />
+
+**What is and is not formalised.** Proved independently here: Proposition 1(d), Theorem 2, Proposition 3(2, 3) and the kernel ideal, Proposition 5, Theorem 8(b), Theorem 12(a) (non-principality of $(2, x)$), and Theorems 10 and 11(a, b) — that $\Z[\sqrt{-5}]$ is a domain but not a UFD. Cited from Mathlib: Theorems 6, 7 and 9, Gauss's lemma for $\Z[x]$, and the finite-domain theorem in its non-commutative (Wedderburn) form. Not formalised: Theorem 11(c) and the ideal factorisation of $(6)$, and Theorem 12(b). As far as we know, Mathlib does not contain the fact that $\Z\big[\frac{1+\sqrt{-19}}{2}\big]$ is a non-Euclidean PID.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Census and factorisation by computer">
+
+The first program sorts every residue of $\Z/n\Z$ into units, zero divisors and $0$, counts nilpotents, idempotents and ideals, and checks the general statements of the lesson for every $n \le 60$.
+
+<Python id="rings_zmod_census" />
+
+Notice the patterns. Nilpotents appear exactly when $n$ has a repeated prime factor. There are $2^{\omega(n)}$ idempotents, where $\omega(n)$ is the number of distinct prime factors; this reflects the Chinese remainder theorem $\Z/n\Z \cong \prod \Z/p^k\Z$ of the next lesson. The table is exact evidence for these $n$. The statements that hold for all $n$ are the theorems proved above.
+
+The norm makes factorisation in $\Z[i]$ and $\Z[\sqrt{-5}]$ a *finite* search. A factor of $z$ has norm dividing $N(z)$, and there are finitely many elements of each norm. The second program lists every factorisation into irreducibles of the integers $2, \dots, 30$ in both rings.
+
+<Python id="rings_factorisation_norms" />
+
+In $\Z[i]$ every factorisation is unique, as Theorem 9 guarantees. In $\Z[\sqrt{-5}]$ ten of the integers up to $30$ factor in more than one way, and $18$ factors in five different ways. The searches are exact, and the failure of Euclidean division by $2$ is a proved counterexample: $(1 - 2s) + (1 - 2t)\sqrt{-5}$ has norm at least $1 + 5 = 6 \gt 4$ for all integers $s, t$, because odd numbers have odd squares.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: units and zero divisors on a clock">
+
+Switch the clock to the multiplication tab and search for multiplicative partners. For a prime number of hours, every non-zero residue has a partner, so $\Z/p\Z$ is a field. For $k = 12$, only $1, 5, 7, 11$ do. Each of the others times some non-zero residue lands on $0$, so those are zero divisors. Try $k = 8$, $9$, $10$ and $15$, and predict which residues will have partners before you look: exactly those coprime to $k$.
+
+<ClockLab />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every ring is commutative and has a $1$."** Matrix rings and the quaternions are not commutative, and some authors do not require a $1$ (then $2\Z$ is a ring and homomorphisms need not preserve $1$). State your conventions. In this lesson rings have $1$, homomorphisms preserve it, and commutativity is assumed only when said.
+
+</Misconception>
+
+<Misconception>
+
+**"Ideals are subrings" (or the reverse).** A subring contains $1$; a proper ideal never does, since an ideal containing a unit is everything. $\Z \subset \Q$ is a subring that is not an ideal, and $2\Z \subset \Z$ is an ideal that is not a subring. Ideals are the kernels of homomorphisms; subrings are their images.
+
+</Misconception>
+
+<Misconception>
+
+**"Irreducible and prime mean the same thing."** In $\Z$, in $k[x]$ and in every UFD they coincide. In general, prime implies irreducible (Proposition 5) but not conversely: $2$ is irreducible in $\Z[\sqrt{-5}]$ and divides $(1 + \sqrt{-5})(1 - \sqrt{-5})$ without dividing either factor.
+
+</Misconception>
+
+<Misconception>
+
+**"A domain in which every element factors into irreducibles has unique factorisation."** Existence and uniqueness are separate. In $\Z[\sqrt{-5}]$ every non-zero non-unit does factor into irreducibles (induct on the norm), but not uniquely. Uniqueness needs Euclid's lemma, that is, irreducibles must be prime.
+
+</Misconception>
+
+<Misconception>
+
+**"Every PID is Euclidean"** and **"every UFD is a PID".** $\Z\big[\frac{1 + \sqrt{-19}}{2}\big]$ is a PID that is not Euclidean, and $\Z[x]$ and $k[x, y]$ are UFDs that are not PIDs. The hierarchy is strict.
+
+</Misconception>
+
+<Misconception>
+
+**"$\Z/n\Z$ is always a field" or "a ring without zero divisors is a field".** $\Z/6\Z$ has zero divisors. $\Z$ has none and is not a field. Finiteness is what turns "no zero divisors" into "every non-zero element is a unit" (Theorem 2).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Ideals are shapes">
+
+In the polynomial ring $\C[x_1, \dots, x_n]$, an ideal $I$ cuts out a shape, the **variety** $V(I) = \{p \in \C^n \mid f(p) = 0 \text{ for all } f \in I\}$. Bigger ideals give smaller shapes: $(x^2 + y^2 - 1)$ is the circle, $(x^2 + y^2 - 1, y)$ is the two points $(\pm 1, 0)$, and $(x - a, y - b)$ is the single point $(a, b)$. **Hilbert's Nullstellensatz** (1893) makes the dictionary exact. The maximal ideals of $\C[x_1, \dots, x_n]$ are exactly the ideals $(x_1 - a_1, \dots, x_n - a_n)$ of points. Prime ideals correspond to irreducible varieties, and $V(I) = V(J)$ iff $I$ and $J$ have the same radical. Ring theory becomes geometry: this is the starting point of <TopicLink id="math.algebra.commutative-algebra">commutative algebra</TopicLink> and <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>. Unique factorisation also has a geometric meaning: in a UFD, every hypersurface is cut out by a single equation.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="The space of primes">
+
+Grothendieck made every commutative ring $R$ into a space. Its points are the prime ideals, forming $\operatorname{Spec} R$. Its closed sets are the sets $V(I) = \{P \mid P \supseteq I\}$; this is the **Zariski topology**. $\operatorname{Spec} \Z$ has a closed point for each prime $p$, and one **generic point** $(0)$, whose closure is the whole space. Its proper closed sets are the finite sets of primes. The space is connected, and that is the topological form of the fact that $\Z$ has no idempotents other than $0$ and $1$. In general $\operatorname{Spec} R$ is disconnected iff $R \cong R_1 \times R_2$ with both factors non-zero. This explains the idempotents counted by the first experiment: $\operatorname{Spec}(\Z/n\Z)$ is a finite discrete set with one point for each prime dividing $n$.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Ideal numbers and the class group">
+
+For a number field $K$, its ring of integers $\mathcal{O}_K$ need not be a UFD. It is always a **Dedekind domain**: non-zero ideals factor uniquely into prime ideals. The failure of unique factorisation of elements is measured by the **class group**, the group of ideals modulo principal ideals. It is finite, and its order is the *class number*. For $\Q(\sqrt{-5})$ the class number is $2$: the non-principal ideal $P = (2, 1 + \sqrt{-5})$ has $P^2 = (2)$ principal. By the Baker–Heegner–Stark theorem (1952–1967), the imaginary quadratic fields with class number $1$ are exactly $\Q(\sqrt{-d})$ for $d = 1, 2, 3, 7, 11, 19, 43, 67, 163$. Kummer proved Fermat's Last Theorem for every prime $p$ that does not divide the class number of $\Q(e^{2\pi i/p})$ (the *regular* primes). See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Rings of functions">
+
+Analysts meet rings of functions everywhere. For a compact Hausdorff space $X$, the maximal ideals of $C(X, \R)$ are exactly the ideals $M_x = \{f \mid f(x) = 0\}$ of points (Gelfand–Kolmogorov, 1939). So $X$ can be recovered from the ring. For commutative C*-algebras, Gelfand duality makes this an equivalence between compact Hausdorff spaces and rings with extra analytic structure. Locally, the ring of convergent power series $\C\{z\}$ (germs of holomorphic functions at $0$) is a PID with essentially one prime, $z$. Every non-zero germ is $z^k$ times a unit, where $k$ is its order of vanishing, so it is a **discrete valuation ring**. In several variables the ring of germs is still a UFD (a consequence of the Weierstrass preparation theorem), but no longer a PID.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="The category of rings">
+
+Rings and homomorphisms form a category $\mathbf{Ring}$, with commutative rings forming $\mathbf{CRing}$. $\Z$ is **initial**: every ring receives exactly one homomorphism from $\Z$, determined by $1 \mapsto 1$. The zero ring is **terminal**. Kernels in the categorical sense are subtle, because $\mathbf{Ring}$ is not additive; ideals are best seen as the kernel *pairs* of homomorphisms, and quotients as coequalisers (<TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink>). $\operatorname{Spec}$ is a contravariant functor: a homomorphism $f : R \to S$ pulls prime ideals back to prime ideals, giving a continuous map $\operatorname{Spec} S \to \operatorname{Spec} R$. The category of Grothendieck's affine schemes is equivalent to $\mathbf{CRing}^{\mathrm{op}}$ — algebra read backwards as geometry.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Rings grow out of clock arithmetic and the search for inverses. These optional trails start there.
+
+<Trail slug="inverses-and-structure" />
+
+<Trail slug="clock-arithmetic" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Division and Euclid's lemma.** Euclid's *Elements* (Book VII, c. 300 BCE) contains the Euclidean algorithm and the lemma that a prime dividing a product divides a factor (VII.30). Unique factorisation of integers was first stated and proved explicitly by Carl Friedrich Gauss in the *Disquisitiones Arithmeticae* (1801).
+- **Arithmetic with $\sqrt{N}$.** Brahmagupta (628 CE) discovered the composition identity $(x^2 - Ny^2)(z^2 - Nw^2) = (xz + Nyw)^2 - N(xw + yz)^2$, which is the multiplicativity of the norm on $\Z[\sqrt N]$. Bhāskara II (12th century) used it in the *chakravāla* method for $x^2 - Ny^2 = 1$. In Baghdad, al-Samawʾal (12th century) developed the arithmetic of polynomials, including long division.
+- **New integers.** Euler (1770) worked with numbers $a + b\sqrt{-2}$ and $a + b\sqrt{-3}$, assuming unique factorisation. Gauss (1832) introduced the Gaussian integers to state biquadratic reciprocity and proved that they factor uniquely.
+- **Failure and repair.** Lamé's 1847 attempt on Fermat's Last Theorem assumed unique factorisation in cyclotomic integers, and Liouville objected at once. Ernst Kummer had found failures in 1844 and introduced "ideal complex numbers" (1847), which let him prove the theorem for regular primes. Richard Dedekind (1871) replaced ideal numbers by *ideals*, sets of actual numbers, and proved unique factorisation of ideals. Leopold Kronecker developed a parallel theory of divisors.
+- **Abstraction.** David Hilbert's *Zahlbericht* (1897) used the word *Zahlring*. Abraham Fraenkel gave axioms for rings in 1914. Emmy Noether's *Idealtheorie in Ringbereichen* (1921) founded modern ring theory, with chain conditions (Noetherian rings) like the one in the proof of Theorem 9. Wolfgang Krull, Emil Artin, B. L. van der Waerden's *Moderne Algebra* (1930–31) and later Alexander Grothendieck's schemes (1960s) shaped the subject as it is taught today.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- David S. Dummit and Richard M. Foote, *Abstract Algebra* (3rd edition, 2004), chapters 7–9 — rings, ideals, EDs, PIDs and UFDs, including $\Z\big[\frac{1+\sqrt{-19}}{2}\big]$.
+- Michael Artin, *Algebra* (2nd edition, 2011), the chapters on rings and factorisation, including quadratic integers and ideal factorisation.
+- Kenneth Ireland and Michael Rosen, *A Classical Introduction to Modern Number Theory* (2nd edition, 1990), chapter 1 — unique factorisation in $\Z$, $k[x]$, $\Z[i]$ and $\Z[\omega]$.
+- Ian Stewart and David Tall, *Algebraic Number Theory and Fermat's Last Theorem* (4th edition, 2015) — the story of Kummer, ideals and class groups.
+- M. F. Atiyah and I. G. Macdonald, *Introduction to Commutative Algebra* (1969) — the next step: localisation, Noetherian rings, Spec.
+
+</Section>

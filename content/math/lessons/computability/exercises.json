@@ -1,0 +1,165 @@
+{
+  "lesson": "computability",
+  "exercises": [
+    {
+      "id": "computability-incrementer-steps",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "The one-state binary incrementer of the lesson starts on the least significant bit of $10111$ (twenty-three). How many steps does it take before it halts?",
+      "answer": 4,
+      "feedback": [
+        { "match": "3", "message": "Three steps turn the three trailing $1$s into $0$s — but the machine still has to turn the $0$ into a $1$ and halt. That is one more step." },
+        { "match": "5", "message": "The machine stops as soon as it writes a $1$ over a $0$; it never visits the leading $1$." }
+      ],
+      "hints": [
+        "Each trailing $1$ costs one step (write $0$, move left).",
+        "$10111$ has three trailing $1$s; the first $0$ then costs one more step."
+      ],
+      "solution": "The machine takes $t + 1$ steps, where $t$ is the number of trailing $1$s. Here $t = 3$: three steps turn $10111$ into $10000$ with the head on the $0$, and a fourth step writes $1$ and halts, giving $11000$ (twenty-four). Answer: $4$."
+    },
+    {
+      "id": "computability-count-machines",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "A Turing machine has $3$ states and the two symbols $0, 1$. Each of its $3 \\times 2 = 6$ table entries chooses a symbol to write, a direction (L or R) and a next state, which is one of the $3$ states or halt. How many different tables are there?",
+      "answer": 16777216,
+      "feedback": [
+        { "match": "4096", "message": "That is $4^6$: you have counted the next-state choices but not the symbol and the direction. Each entry has $2 \\times 2 \\times 4$ options." },
+        { "match": "2985984", "message": "That is $12^6$, which allows only $3$ next-state choices per entry. Halt is a fourth option." }
+      ],
+      "hints": [
+        "Count the options for one entry first: symbol, direction, next state.",
+        "One entry has $2 \\times 2 \\times 4 = 16$ options, and the entries are chosen independently."
+      ],
+      "solution": "Each entry has $2$ (symbol) $\\times 2$ (direction) $\\times 4$ (three states or halt) $= 16$ options, and there are $6$ entries, so there are $16^6 = 2^{24} = 16\\,777\\,216$ tables. For two states the same count gives $12^4 = 20\\,736$, the number the busy-beaver experiment classifies. Exhaustive search grows very fast — and the undecidability of halting says that for large enough $n$ no finite set of certificate methods can settle all machines."
+    },
+    {
+      "id": "computability-which-re",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which of these sets are recursively enumerable? (Select all that apply.)",
+      "options": [
+        { "id": "k", "label": "$K = \\{e \\mid \\varphi_e(e)\\!\\downarrow\\}$", "correct": true, "feedback": "Yes: run $M_e$ on $e$ with the universal machine and halt when it does." },
+        { "id": "kbar", "label": "$\\overline{K} = \\{e \\mid \\varphi_e(e)\\!\\uparrow\\}$", "correct": false, "feedback": "If $\\overline{K}$ were r.e., then $K$ would be r.e. and co-r.e., hence decidable by Post's theorem — contradicting the halting theorem." },
+        { "id": "seven", "label": "$\\{e \\mid \\varphi_e(0) = 7\\}$", "correct": true, "feedback": "Yes: run $M_e$ on $0$; if it halts with output $7$, halt. Membership has a finite certificate (the halting computation)." },
+        { "id": "small", "label": "$\\{e \\mid M_e \\text{ has at most } 10 \\text{ states}\\}$", "correct": true, "feedback": "Yes — it is even decidable, by reading the table. Every decidable set is r.e." },
+        { "id": "tot", "label": "$\\mathrm{Tot} = \\{e \\mid \\varphi_e \\text{ is total}\\}$", "correct": false, "feedback": "Totality is a statement about infinitely many inputs, and no finite observation certifies it. By the Rice–Shapiro theorem (or a reduction from $\\overline{K}$) it is not r.e." }
+      ],
+      "hints": [
+        "A set is r.e. when membership has a finite certificate that a machine can check.",
+        "Two of the five are not r.e. — for one of them use Post's theorem, for the other think about what a finite run can and cannot show."
+      ],
+      "solution": "$K$, $\\{e \\mid \\varphi_e(0) = 7\\}$ and $\\{e \\mid M_e \\text{ has at most } 10 \\text{ states}\\}$ are r.e. (the last is decidable). $\\overline{K}$ is not r.e. (Corollary 5). $\\mathrm{Tot}$ is not r.e.: given $e$, let $M_{f(e)}$ on input $n$ simulate $M_e$ on $e$ for $n$ steps, loop forever if that simulation has halted, and halt otherwise. Then $\\varphi_{f(e)}$ is total iff $e \\in \\overline{K}$, so $\\overline{K} \\le_m \\mathrm{Tot}$ and $\\mathrm{Tot}$ is not r.e. by Lemma 7."
+    },
+    {
+      "id": "computability-semidecider-diagonal",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In the proof that $K$ is undecidable we assumed a machine computing the **total** function $h$. Suppose instead we only had a semi-decider $s$ for $K$: it halts with output $1$ when $\\varphi_e(e)\\!\\downarrow$ and runs forever otherwise. Build $D$ as before (on input $x$: run $s(x)$; if it outputs $1$, loop forever; otherwise halt). What happens?",
+      "options": [
+        { "id": "a", "label": "No contradiction: $D$ loops on every input, so $\\varphi_d(d)\\!\\uparrow$, which is consistent.", "correct": true, "feedback": "Exactly. If $x \\in K$, $D$ loops by construction; if $x \\notin K$, $s$ never answers, so $D$ loops too. $D$ is the nowhere-defined function and $d \\notin K$ — no paradox. Semi-deciders for $K$ exist (Theorem 3)." },
+        { "id": "b", "label": "The same contradiction arises, so $K$ is not even r.e.", "correct": false, "feedback": "That cannot be right: $K$ *is* r.e., via the universal machine. Follow $D$ on an input $x \\notin K$ — does it ever reach the \"otherwise halt\" branch?" },
+        { "id": "c", "label": "$D$ is not a Turing machine, because it uses $s$ as a subroutine.", "correct": false, "feedback": "Using a machine as a subroutine is perfectly legitimate. The problem lies elsewhere: what does $D$ do while $s$ is still running?" },
+        { "id": "d", "label": "$D$ halts on its own index, so $d \\in K$.", "correct": false, "feedback": "To halt, $D$ would need $s(d)$ to return something other than $1$ — but $s$ never returns anything other than $1$." }
+      ],
+      "hints": [
+        "Trace $D$ separately on an input in $K$ and on an input not in $K$.",
+        "Where did the original proof use that $h$ always halts?"
+      ],
+      "solution": "With a semi-decider, $D$ never reaches its \"halt\" branch: on $x \\in K$ it loops by design, and on $x \\notin K$ it waits forever for $s$. So $D$ computes the nowhere-defined function, $\\varphi_d(d)\\!\\uparrow$, and the case analysis gives no contradiction. The original proof used totality of $h$ exactly once — in the step \"if $h(x) = 0$, halt\". This is why $K$ is r.e. but not decidable."
+    },
+    {
+      "id": "computability-reduction-direction",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "You want to prove that a new set $B$ is undecidable, using the undecidability of $K$. Which do you need to show?",
+      "options": [
+        { "id": "kb", "label": "$K \\le_m B$: a computable $f$ with $e \\in K \\iff f(e) \\in B$.", "correct": true, "feedback": "Right. Then a decider for $B$, composed with $f$, would decide $K$ — impossible." },
+        { "id": "bk", "label": "$B \\le_m K$: a computable $f$ with $x \\in B \\iff f(x) \\in K$.", "correct": false, "feedback": "This shows $B$ is *no harder* than $K$ (for instance that $B$ is r.e.). Every decidable set reduces to $K$, so it proves nothing about undecidability." },
+        { "id": "sub", "label": "$K \\subseteq B$.", "correct": false, "feedback": "Containment says nothing about decidability: $K \\subseteq \\N$, and $\\N$ is decidable." },
+        { "id": "inf", "label": "$B$ is infinite and not equal to $\\N$.", "correct": false, "feedback": "The even numbers are infinite, not all of $\\N$, and decidable." }
+      ],
+      "hints": [
+        "Lemma 7: if $A \\le_m B$ and $B$ is decidable, then $A$ is decidable.",
+        "Which set must play the role of $A$ so that the conclusion contradicts something you know?"
+      ],
+      "solution": "Show $K \\le_m B$. By Lemma 7, if $B$ were decidable then $K$ would be decidable, contradicting Theorem 2. Reductions go **from** the known hard problem **to** the new one."
+    },
+    {
+      "id": "computability-rice-scope",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "For which of these properties of an index $e$ does **Rice's theorem** show that the set of $e$ with the property is undecidable? (Select all that apply.)",
+      "options": [
+        { "id": "total", "label": "$\\varphi_e$ is total.", "correct": true, "feedback": "Semantic (depends only on $\\varphi_e$) and non-trivial (some functions are total, some are not). Rice applies." },
+        { "id": "fixed", "label": "$\\varphi_e(3) = 3$.", "correct": true, "feedback": "Semantic and non-trivial: the identity function has it, the nowhere-defined function does not." },
+        { "id": "even", "label": "$M_e$ has an even number of states.", "correct": false, "feedback": "Not semantic: two machines with different numbers of states can compute the same function. This set is in fact decidable — just read the table." },
+        { "id": "fast", "label": "$M_e$ halts on input $0$ within $100$ steps.", "correct": false, "feedback": "Not semantic (it depends on running time, not on the function), and decidable: simulate $100$ steps." },
+        { "id": "partial", "label": "$\\varphi_e$ is a partial computable function.", "correct": false, "feedback": "Semantic but trivial: every $\\varphi_e$ is partial computable, so the set is all of $\\N$, which is decidable." }
+      ],
+      "hints": [
+        "Rice needs two things: the property depends only on the function $\\varphi_e$, and some but not all partial computable functions have it.",
+        "Ask of each property: could two machines computing the same function disagree about it?"
+      ],
+      "solution": "Rice's theorem applies to the first two: they depend only on $\\varphi_e$ and are non-trivial. \"Even number of states\" and \"halts within 100 steps\" are not semantic (and are decidable). \"Partial computable\" is semantic but trivial. Rice's theorem is a statement about *functions computed*, never about program text or running time."
+    },
+    {
+      "id": "computability-lean-statement",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "In Mathlib, `c.eval n` is the (partial) result of running program `c : Nat.Partrec.Code` on input `n`, and `(c.eval n).Dom` says that it halts. Which Lean statement says that **halting on input `n` is undecidable**?",
+      "options": [
+        { "id": "a", "label": "`¬ ComputablePred fun c : Code => (c.eval n).Dom`", "correct": true, "feedback": "Yes. This is `ComputablePred.halting_problem n`: there is no computable decision procedure for the predicate \"`c` halts on `n`\"." },
+        { "id": "b", "label": "`¬ ∃ c : Code, (c.eval n).Dom`", "correct": false, "feedback": "This says that *no program halts* on `n` — false (the constant program halts everywhere). Undecidability is about deciding the predicate, not about whether it is ever true." },
+        { "id": "c", "label": "`¬ REPred fun c : Code => (c.eval n).Dom`", "correct": false, "feedback": "This is false: the halting set is recursively enumerable (`ComputablePred.halting_problem_re`). It is its *complement* that is not r.e." },
+        { "id": "d", "label": "`∀ c : Code, ¬ Decidable ((c.eval n).Dom)`", "correct": false, "feedback": "In classical logic every single proposition is decidable (`Classical.dec`). Undecidability concerns a *computable* procedure working for all `c` at once, which is what `ComputablePred` expresses." }
+      ],
+      "hints": [
+        "Two options state things that are false; one confuses a single instance with the uniform question.",
+        "`ComputablePred p` means: `p` has a decision procedure that is a computable function."
+      ],
+      "solution": "`¬ ComputablePred fun c : Code => (c.eval n).Dom` is Mathlib's halting theorem. Option b is false, option c is false (the halting set is r.e.), and option d confuses the logical notion of a decidable proposition (true classically for every proposition) with the computational notion of a decidable *predicate*."
+    },
+    {
+      "id": "computability-busy-beaver-sim",
+      "type": "python",
+      "difficulty": "core",
+      "mode": "C",
+      "prompt": "Write `run(machine, max_steps)` that simulates a two-symbol Turing machine started in state `0` on a blank tape. `machine` is a dict mapping `(state, symbol)` to `(write, move, next_state)`, with `move` in `(-1, 1)` and `next_state` equal to `None` for halt. Return `(\"halt\", steps, ones)` if it halts within `max_steps` steps (counting the halting step) and `(\"running\", max_steps, ones)` otherwise, where `ones` is the number of 1s on the tape at that moment.",
+      "starter": "def run(machine, max_steps):\n    tape = {}\n    pos, state = 0, 0\n    # simulate here\n    return (\"running\", max_steps, 0)\n",
+      "tests": "bb2 = {(0, 0): (1, 1, 1), (0, 1): (1, -1, 1), (1, 0): (1, -1, 0), (1, 1): (1, 1, None)}\nassert run(bb2, 100) == (\"halt\", 6, 4)\nassert run(bb2, 5)[0] == \"running\"\nmarch = {(0, 0): (1, 1, 0), (0, 1): (1, 1, None)}\nassert run(march, 50) == (\"running\", 50, 50), 'this machine writes a 1 at every step and never halts'\nstop = {(0, 0): (0, 1, None), (0, 1): (0, 1, None)}\nassert run(stop, 10) == (\"halt\", 1, 0)\nprint('All tests passed!')\n",
+      "hints": [
+        "Loop `for steps in range(1, max_steps + 1):` and read the scanned symbol with `tape.get(pos, 0)`.",
+        "Write, move, update the state; if the new state is `None`, return `(\"halt\", steps, sum(tape.values()))`."
+      ],
+      "solution": "```python\ndef run(machine, max_steps):\n    tape = {}\n    pos, state = 0, 0\n    for steps in range(1, max_steps + 1):\n        write, move, state = machine[(state, tape.get(pos, 0))]\n        tape[pos] = write\n        pos += move\n        if state is None:\n            return (\"halt\", steps, sum(tape.values()))\n    return (\"running\", max_steps, sum(tape.values()))\n```\n\nNote the asymmetry: `\"halt\"` is a proof that the machine halts, while `\"running\"` proves nothing about the future. The busy beaver `bb2` is still running after 5 steps and halts at step 6."
+    },
+    {
+      "id": "computability-incrementer-proof",
+      "type": "choice",
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "We want to prove for **all** $n \\ge 0$ that the incrementer, started on the binary expansion of $n$ with the head on the last bit, halts with $n + 1$ on the tape after $t(n) + 1$ steps, where $t(n)$ is the number of trailing $1$s. Which induction works?",
+      "options": [
+        { "id": "a", "label": "Strong induction on $n$: if $n$ is even, one step suffices; if $n = 2m + 1$, the first step writes $0$ and moves left, leaving the machine in exactly the starting situation for $m$.", "correct": true, "feedback": "Yes. For odd $n = 2m + 1$, after one step the bits to the left spell $m$, the head is on its last bit, and the state is again `carry`. By induction it halts with $m + 1$ in $t(m) + 1$ more steps, and the tape spells $2(m + 1) = n + 1$; since $t(n) = t(m) + 1$ the total is $t(n) + 1$." },
+        { "id": "b", "label": "Ordinary induction from $n$ to $n + 1$, using that the machine on $n + 1$ starts where the machine on $n$ stopped.", "correct": false, "feedback": "The run on $n + 1$ starts from a fresh tape with the head on the last bit, not where the previous run stopped (the head ended further left). The structure of the computation follows the binary expansion, not the successor." },
+        { "id": "c", "label": "No induction is needed: checking all $n < 256$ is enough because larger numbers behave the same way.", "correct": false, "feedback": "\"Behave the same way\" is exactly what needs proof. The exhaustive check is evidence; the induction is the proof." },
+        { "id": "d", "label": "Induction on the number of states.", "correct": false, "feedback": "The machine has a single state; the induction must be on the input." }
+      ],
+      "hints": [
+        "What does the tape look like after the first step when the last bit is $1$?",
+        "Write $n = 2m + b$ with $b$ the last bit, and induct on $n$ (or on the length of the binary expansion)."
+      ],
+      "solution": "Strong induction on $n$. If the last bit is $0$ (or $n = 0$, a blank), the machine writes $1$ and halts after $1 = t(n) + 1$ step, and the tape spells $n + 1$. If $n = 2m + 1$, the first step writes $0$ and moves left; now the head is on the last bit of $m$ in state `carry`, so by the induction hypothesis the machine halts after $t(m) + 1$ further steps with $m + 1$ written to the left of the $0$. The tape spells $2(m + 1) + 0 = n + 1$, and the step count is $1 + t(m) + 1 = t(n) + 1$ because $t(2m + 1) = t(m) + 1$."
+    }
+  ]
+}

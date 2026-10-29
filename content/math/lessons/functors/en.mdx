@@ -1,0 +1,414 @@
+---
+slug: functors
+topic: math.cat.functors
+title: Functors
+subtitle: Maps between categories that respect composition — the power set, free monoids, hom-sets and the fundamental group — and why they are the right tool for proving that two things are *different*, or that something is impossible.
+level: ug1
+ages: Undergraduate
+minutes: 105
+order: 5017
+objectives:
+  - Define covariant and contravariant functors and show that a contravariant functor from $\cat{C}$ to $\cat{D}$ is the same as a functor $\cat{C}^{\mathrm{op}} \to \cat{D}$
+  - Verify that the power-set, forgetful and hom functors are functors, and describe the free monoid (finite lists) and the free vector space on a set as functors
+  - Prove that functors preserve isomorphisms, and use this to show that objects are not isomorphic
+  - Use functoriality of the fundamental group to show that the disc does not retract onto its boundary circle
+  - Recognise that functors need not be injective and need not reflect isomorphisms
+narrators: []
+lean:
+  - Lumenary.Functors.map_inverse
+  - Lumenary.Functors.iso_of_iso
+  - Lumenary.Functors.map_isIso_library
+  - Lumenary.Functors.zmod4_not_iso_klein
+  - Lumenary.Functors.powerset
+  - Lumenary.Functors.powersetContra
+  - Lumenary.Functors.listFunctor
+  - Lumenary.Functors.list_map_append
+  - Lumenary.Functors.free_monoid_library
+  - Lumenary.Functors.homFunctor
+  - Lumenary.Functors.homFunctorContra
+  - Lumenary.Functors.comp_assoc_library
+  - Lumenary.Functors.map_injective_of_retraction
+  - Lumenary.Functors.no_retraction
+  - Lumenary.Functors.not_reflects_iso
+compute: [functors_hom_counts]
+trails: [arrows-that-compose]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="How do you prove two things are different?">
+
+Are the groups $\Z/4$ and $\Z/2 \times \Z/2$ the same? Both have four elements, both are abelian. To show they are *not* isomorphic, checking that one particular bijection fails to be a homomorphism is not enough — we must rule out all $24$ bijections at once. Is the surface of a doughnut the same as the surface of a ball? Can a drum skin be continuously squashed onto its rim while every point of the rim stays where it is?
+
+The common strategy is to find an **invariant**: something computable — a number, a set, a group — attached to each object in such a way that isomorphic objects get isomorphic invariants. Then different invariants prove that the objects are different.
+
+A **functor** is an invariant done properly. It assigns to each object of one <TopicLink id="math.cat.categories">category</TopicLink> an object of another, and — this is the crucial extra — to each *morphism* a morphism, compatibly with composition and identities. That compatibility is what makes isomorphic objects go to isomorphic objects, and, as we will see, it can prove much more than non-isomorphism: it can prove that certain maps cannot exist at all.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="functor">
+
+A **functor** $F : \cat{C} \to \cat{D}$ between categories assigns
+
+- to each object $A$ of $\cat{C}$ an object $F(A)$ of $\cat{D}$, and
+- to each morphism $f : A \to B$ of $\cat{C}$ a morphism $F(f) : F(A) \to F(B)$ of $\cat{D}$,
+
+such that $F(g \circ f) = F(g) \circ F(f)$ for all composable $f, g$, and $F(\id_A) = \id_{F(A)}$ for all $A$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "A", tex: "A", row: 0, col: 0 },
+    { id: "B", tex: "B", row: 0, col: 1 },
+    { id: "C", tex: "C", row: 1, col: 1 },
+    { id: "FA", tex: "F(A)", row: 0, col: 2.5 },
+    { id: "FB", tex: "F(B)", row: 0, col: 3.5 },
+    { id: "FC", tex: "F(C)", row: 1, col: 3.5 },
+  ]}
+  arrows={[
+    { from: "A", to: "B", tex: "f" },
+    { from: "B", to: "C", tex: "g" },
+    { from: "A", to: "C", tex: "g \\circ f", labelSide: "right" },
+    { from: "FA", to: "FB", tex: "F(f)" },
+    { from: "FB", to: "FC", tex: "F(g)" },
+    { from: "FA", to: "FC", tex: "F(g \\circ f)", labelSide: "right" },
+  ]}
+  caption="A functor carries every commuting triangle in $\mathcal{C}$ to a commuting triangle in $\mathcal{D}$."
+/>
+
+So a functor carries commutative diagrams to commutative diagrams. Functors compose: if $F : \cat{C} \to \cat{D}$ and $G : \cat{D} \to \cat{E}$, then $G \circ F$, defined by $(G \circ F)(A) = G(F(A))$ and $(G \circ F)(f) = G(F(f))$, is a functor, because $G(F(g \circ f)) = G(F(g) \circ F(f)) = G(F(g)) \circ G(F(f))$. Composition of functors is associative and the identity functors are neutral, so **small categories and functors form a category**, called $\cat{Cat}$.
+
+<Definition term="contravariant functor">
+
+A **contravariant functor** $F$ from $\cat{C}$ to $\cat{D}$ assigns to each object $A$ an object $F(A)$ and to each $f : A \to B$ a morphism $F(f) : F(B) \to F(A)$ *in the opposite direction*, with $F(g \circ f) = F(f) \circ F(g)$ and $F(\id_A) = \id_{F(A)}$. Ordinary functors are then called **covariant**.
+
+</Definition>
+
+<Theorem name="Proposition (contravariant = functor out of the opposite)">
+
+A contravariant functor from $\cat{C}$ to $\cat{D}$ is the same thing as a (covariant) functor $\cat{C}^{\mathrm{op}} \to \cat{D}$.
+
+</Theorem>
+
+<Proof>
+
+A morphism $f^{\mathrm{op}} : B \to A$ of $\cat{C}^{\mathrm{op}}$ is a morphism $f : A \to B$ of $\cat{C}$, so in both cases the data are: an object $F(A)$ for each $A$, and a morphism $F(B) \to F(A)$ for each $f : A \to B$. The conditions agree too: composition in $\cat{C}^{\mathrm{op}}$ is $f^{\mathrm{op}} \circ g^{\mathrm{op}} = (g \circ f)^{\mathrm{op}}$, so the covariant law $F(f^{\mathrm{op}} \circ g^{\mathrm{op}}) = F(f^{\mathrm{op}}) \circ F(g^{\mathrm{op}})$ says exactly $F(g \circ f) = F(f) \circ F(g)$; and identities of $\cat{C}^{\mathrm{op}}$ are those of $\cat{C}$.
+
+</Proof>
+
+<Definition term="hom functors">
+
+Let $\cat{C}$ be locally small and $A$ an object. The **hom functor** $\Hom(A, -) : \cat{C} \to \cat{Set}$ sends an object $B$ to the set $\Hom(A, B)$ and a morphism $f : B \to B'$ to the function "compose with $f$": $\Hom(A, f)(g) = f \circ g$. The **contravariant hom functor** $\Hom(-, A) : \cat{C}^{\mathrm{op}} \to \cat{Set}$ sends $f : B' \to B$ to "precompose with $f$": $g \mapsto g \circ f$.
+
+</Definition>
+
+Two adjectives are useful. A functor is **faithful** if each map $\Hom(A, B) \to \Hom(F(A), F(B))$ is injective, and **full** if each is surjective. Nothing in the definition of a functor requires either, nor injectivity on objects.
+
+</Section>
+
+<Section id="examples" kind="examples" title="A gallery of functors">
+
+<Example title="The power set, two ways">
+
+**Covariant.** $\mathcal{P} : \cat{Set} \to \cat{Set}$ sends a set $X$ to its power set and $f : X \to Y$ to the direct-image map $\mathcal{P}(f)(S) = f(S) = \{ f(s) \mid s \in S \}$. Check: $\mathcal{P}(\id)(S) = S$, and $\mathcal{P}(g \circ f)(S) = \{ g(f(s)) \} = g(f(S)) = (\mathcal{P}(g) \circ \mathcal{P}(f))(S)$.
+
+**Contravariant.** $\mathcal{P}^\ast : \cat{Set}^{\mathrm{op}} \to \cat{Set}$ sends $X$ to its power set and $f : X \to Y$ to the preimage map $\mathcal{P}^\ast(f)(T) = f^{-1}(T)$, which goes from subsets of $Y$ to subsets of $X$. Check: $(g \circ f)^{-1}(T) = f^{-1}(g^{-1}(T))$, so $\mathcal{P}^\ast(g \circ f) = \mathcal{P}^\ast(f) \circ \mathcal{P}^\ast(g)$ — the order reverses.
+
+Preimages are better behaved than images: $f^{-1}$ preserves unions, intersections and complements, while $f(S \cap S')$ can be smaller than $f(S) \cap f(S')$.
+
+</Example>
+
+<Example title="Forgetful functors">
+
+$U : \cat{Grp} \to \cat{Set}$ sends a group to its underlying set and a homomorphism to its underlying function. The functor laws hold because composition and identities in $\cat{Grp}$ *are* composition and identities of functions. Likewise $\cat{Top} \to \cat{Set}$, $\cat{Vect}_k \to \cat{Set}$, $\cat{Ring} \to \cat{Grp}$ (keep only addition) and $\cat{Ring} \to \cat{Mon}$ (keep only multiplication). Forgetful functors are faithful but rarely full: not every function between groups is a homomorphism.
+
+</Example>
+
+<Example title="Free functors">
+
+**The free monoid.** For a set $X$, let $X^\ast$ be the set of finite words $x_1 x_2 \cdots x_k$ in the letters of $X$, a monoid under concatenation with the empty word as unit. A function $f : X \to Y$ induces $f^\ast : X^\ast \to Y^\ast$, "apply $f$ letter by letter": $f^\ast(x_1 \cdots x_k) = f(x_1) \cdots f(x_k)$. It is a monoid homomorphism ($f^\ast(vw) = f^\ast(v) f^\ast(w)$), and $(g \circ f)^\ast = g^\ast \circ f^\ast$, $\id^\ast = \id$. So $X \mapsto X^\ast$ is a functor $\cat{Set} \to \cat{Mon}$. Why "free" is the right word is the subject of the lesson on <TopicLink id="math.cat.universal-properties">universal properties</TopicLink>.
+
+**The free vector space.** For a set $X$ and a field $k$, let $k[X]$ be the vector space of formal finite linear combinations $\sum_{x} a_x\, x$ (equivalently, functions $X \to k$ that vanish outside a finite set); $X$ is a basis. A function $f : X \to Y$ induces the linear map $k[f]\big(\sum a_x\, x\big) = \sum a_x\, f(x)$ — on basis vectors it is just $f$. Then $k[g \circ f] = k[g] \circ k[f]$ because both agree on the basis. So $X \mapsto k[X]$ is a functor $\cat{Set} \to \cat{Vect}_k$.
+
+</Example>
+
+<Example title="Functors between small categories you already know">
+
+- A functor between **preorders** regarded as categories is exactly a **monotone map**: it must send $x \le y$ (a morphism) to $F(x) \le F(y)$; the laws are automatic.
+- A functor between **monoids** regarded as one-object categories is exactly a **monoid homomorphism**: $F(y \circ x) = F(y) \circ F(x)$ says $F(yx) = F(y) F(x)$, and $F(\id) = \id$ says $F(1) = 1$. For instance $\det : \mathrm{GL}_n(\R) \to \R^{\times}$.
+- A functor from a **group** $G$ (a one-object category) to $\cat{Set}$ is a set $X = F(\star)$ with a bijection $F(g) : X \to X$ for each $g$, such that $F(gh) = F(g) \circ F(h)$ and $F(1) = \id$: a **group action** of $G$ on $X$.
+
+</Example>
+
+<Example title="Functors from algebra and topology">
+
+- **Abelianisation.** $G \mapsto G^{\mathrm{ab}} = G/[G, G]$ is a functor $\cat{Grp} \to \cat{Ab}$: a homomorphism $f$ sends commutators to commutators, so it induces $G^{\mathrm{ab}} \to H^{\mathrm{ab}}$.
+- **Units.** $R \mapsto R^{\times}$ is a functor $\cat{Ring} \to \cat{Grp}$: a ring homomorphism preserving $1$ sends units to units.
+- **The fundamental group.** $\pi_1$ is a functor from pointed spaces $(X, x_0)$ and base-point-preserving continuous maps to groups: a map $f$ sends a loop $\gamma$ at $x_0$ to the loop $f \circ \gamma$ at $f(x_0)$, and $\pi_1(f)[\gamma] = [f \circ \gamma]$ is a homomorphism with $\pi_1(g \circ f) = \pi_1(g) \circ \pi_1(f)$ — see <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>. Homology groups are functors in the same way.
+
+</Example>
+
+<Example title="A non-example: the centre">
+
+Sending a group $G$ to its centre $Z(G) = \{ z \mid zg = gz \text{ for all } g \}$ is a perfectly good assignment on objects, but there is no way to make it a functor by *restricting* homomorphisms. Let $f : \Z/2 \to S_3$ send the generator to the transposition $(1\,2)$. Then $Z(\Z/2) = \Z/2$, but $Z(S_3)$ is trivial, and $f$ maps the non-identity element of the centre outside the centre. The restriction of $f$ is not a map $Z(\Z/2) \to Z(S_3)$ at all.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Functoriality proves impossibility">
+
+<Theorem name="Theorem 1 (functors preserve isomorphisms)">
+
+If $f : A \to B$ is an isomorphism in $\cat{C}$ and $F : \cat{C} \to \cat{D}$ is a functor, then $F(f)$ is an isomorphism, with inverse $F(f^{-1})$. Consequently, if $A \cong B$ then $F(A) \cong F(B)$.
+
+</Theorem>
+
+<Proof>
+
+$F(f^{-1}) \circ F(f) = F(f^{-1} \circ f) = F(\id_A) = \id_{F(A)}$, and similarly $F(f) \circ F(f^{-1}) = F(\id_B) = \id_{F(B)}$.
+
+</Proof>
+
+Read contrapositively: **if $F(A) \not\cong F(B)$ for some functor $F$, then $A \not\cong B$.** That is how invariants work. (For a contravariant functor the same proof applies in $\cat{C}^{\mathrm{op}}$.)
+
+<Example title="Z/4 is not Z/2 × Z/2">
+
+Apply the hom functor $\Hom(\Z/2, -) : \cat{Grp} \to \cat{Set}$. A homomorphism $\Z/2 \to G$ is determined by the image $g$ of the generator, which can be any element with $g^2 = e$. So $|\Hom(\Z/2, G)| = \#\{ g \in G \mid g^2 = e \}$. For $\Z/4$ this is $2$ (the elements $0, 2$); for $\Z/2 \times \Z/2$ it is $4$. Isomorphic groups would give sets of the same size (bijections are the isomorphisms of $\cat{Set}$), so $\Z/4 \not\cong \Z/2 \times \Z/2$. No bijection had to be checked.
+
+</Example>
+
+<Example title="Z[i] is not Z[√2]">
+
+Apply the units functor $R \mapsto R^{\times}$. In the Gaussian integers $\Z[i]$, $u = a + bi$ is a unit only if $|u|^2 = a^2 + b^2 = 1$ (because $|u|^2|u^{-1}|^2 = 1$ with both factors positive integers), so $\Z[i]^{\times} = \{\pm 1, \pm i\}$ is cyclic of order $4$. In $\Z[\sqrt 2]$, $(1 + \sqrt 2)(-1 + \sqrt 2) = 1$, so $1 + \sqrt 2$ is a unit, and its powers $(1 + \sqrt 2)^n$ are all different (they grow without bound), so $\Z[\sqrt 2]^{\times}$ is infinite. Hence the rings are not isomorphic — even though both are free abelian groups of rank $2$ under addition.
+
+</Example>
+
+The next theorem shows functoriality doing more than distinguishing objects. A **retraction** of $i : S \to D$ is a morphism $r : D \to S$ with $r \circ i = \id_S$.
+
+<Theorem name="Theorem 2 (functors preserve retractions)">
+
+If $r \circ i = \id_S$, then $F(r) \circ F(i) = \id_{F(S)}$ for every functor $F$. In particular, if $F$ takes values in $\cat{Set}$, then $F(i)$ is injective; if $F$ takes values in $\cat{Grp}$, then $F(i)$ is an injective homomorphism and $F(S)$ is isomorphic to a subgroup of $F(D)$.
+
+</Theorem>
+
+<Proof>
+
+$F(r) \circ F(i) = F(r \circ i) = F(\id_S) = \id_{F(S)}$. A function (or homomorphism) with a left inverse is injective: if $F(i)(a) = F(i)(b)$ then $a = F(r)(F(i)(a)) = F(r)(F(i)(b)) = b$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (no retraction of the disc onto its boundary)">
+
+Let $D^2 = \{ x \in \R^2 \mid |x| \le 1 \}$ and $S^1 = \{ x \mid |x| = 1 \}$, with inclusion $i : S^1 \to D^2$. There is no continuous map $r : D^2 \to S^1$ with $r(x) = x$ for all $x \in S^1$.
+
+</Theorem>
+
+<Proof>
+
+We use two facts proved in the lesson on <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>: $\pi_1(D^2, p)$ is trivial (every loop in the convex set $D^2$ shrinks to a point along straight lines), and $\pi_1(S^1, p) \cong \Z$ (loops are classified by their winding number). Fix $p \in S^1$. A retraction $r$ would satisfy $r \circ i = \id_{S^1}$ as maps of pointed spaces, since $r(p) = p$. By Theorem 2, $\pi_1(i) : \pi_1(S^1, p) \to \pi_1(D^2, p)$ would be injective. But it is a map from a group isomorphic to $\Z$ into the trivial group, which is not injective. Contradiction.
+
+</Proof>
+
+<Theorem name="Corollary (Brouwer's fixed-point theorem, dimension 2)">
+
+Every continuous map $f : D^2 \to D^2$ has a fixed point.
+
+</Theorem>
+
+<Proof>
+
+*Sketch.* Suppose $f(x) \neq x$ for all $x$. For each $x$, follow the ray that starts at $f(x)$ and passes through $x$ until it meets $S^1$, and call that point $r(x)$. If $x \in S^1$, then $r(x) = x$. Solving the quadratic equation for where the ray meets the circle gives an explicit formula for $r(x)$ that depends continuously on $x$ and $f(x)$, so $r$ is a continuous retraction of $D^2$ onto $S^1$, contradicting Theorem 3. (The details of the continuity are in Hatcher, *Algebraic Topology*, §1.1.)
+
+</Proof>
+
+Notice the shape of the argument: a question about continuous maps (hard: there are uncountably many) became a question about group homomorphisms $\Z \to 0 \to \Z$ (easy: there is only one). That is the purpose of functors in algebraic topology — and, as Eilenberg and Mac Lane realised, the reason category theory was invented.
+
+<Theorem name="Theorem 4 (functors need not reflect isomorphisms)">
+
+There are functors $F$ and morphisms $f$ such that $F(f)$ is an isomorphism but $f$ is not.
+
+</Theorem>
+
+<Proof>
+
+(i) In the category $\mathbf{2}$ (the poset $0 < 1$), the morphism $0 \to 1$ is not an isomorphism, since there is no morphism $1 \to 0$. The functor from $\mathbf{2}$ to $\cat{Set}$ sending both objects to a one-element set and every morphism to the identity is a functor, and it sends $0 \to 1$ to an isomorphism.
+(ii) A natural example: the forgetful functor $\cat{Top} \to \cat{Set}$ sends the identity map from $\R$ with the discrete topology to $\R$ with the usual topology — a continuous bijection whose inverse is not continuous — to a bijection.
+
+</Proof>
+
+Similarly, $F(A) \cong F(B)$ does not imply $A \cong B$: an invariant that says "same" proves nothing. The computation below finds two groups of order 16 that *every* functor $\Hom(\Z/n, -)$ fails to tell apart.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Functors in Lean and Mathlib">
+
+Mathlib's functors `F : C ⥤ D` have fields `obj`, `map`, `map_id` and `map_comp`. Since Mathlib composes diagrammatically (`f ≫ g` is "first `f`, then `g`"), the law $F(g \circ f) = F(g) \circ F(f)$ appears as `F.map (f ≫ g) = F.map f ≫ F.map g`.
+
+Theorem 1, proved from the two functor laws, then packaged as an isomorphism of objects, and Mathlib's version:
+
+<Lean decl="Lumenary.Functors.map_inverse" />
+
+<Lean decl="Lumenary.Functors.iso_of_iso" />
+
+<Lean decl="Lumenary.Functors.map_isIso_library" />
+
+The non-isomorphism of $\Z/4$ and $\Z/2 \times \Z/2$, with the functorial argument unwound to elements (every element $y$ of $\Z/2 \times \Z/2$ has $y + y = 0$, checked by `decide`):
+
+<Lean decl="Lumenary.Functors.zmod4_not_iso_klein" />
+
+The functors of the gallery, with the functor laws proved. In this version of Mathlib a morphism in the category `Type u` wraps a function, and `↾f` makes a morphism out of the function `f`:
+
+<Lean decl="Lumenary.Functors.powerset" />
+
+<Lean decl="Lumenary.Functors.powersetContra" />
+
+<Lean decl="Lumenary.Functors.listFunctor" />
+
+<Lean decl="Lumenary.Functors.list_map_append" />
+
+<Lean decl="Lumenary.Functors.free_monoid_library" />
+
+<Lean decl="Lumenary.Functors.homFunctor" />
+
+<Lean decl="Lumenary.Functors.homFunctorContra" />
+
+<Lean decl="Lumenary.Functors.comp_assoc_library" />
+
+Theorems 2 and 3 in abstract form: a functor to sets turns a retraction into an injective map, so no retraction exists when the functor sends $D$ to a set with at most one element and $S$ to a set with two. The topological instance needs $\pi_1(D^2) = 0$ and $\pi_1(S^1) \cong \Z$; Mathlib has the fundamental group (`FundamentalGroup`) and, recently, the isomorphism $\pi_1(\R/\Z) \cong \Z$ (`AddCircle.windingNumberIso`), which the Lumenary lesson on the fundamental group uses. Here we formalise the categorical core:
+
+<Lean decl="Lumenary.Functors.map_injective_of_retraction" />
+
+<Lean decl="Lumenary.Functors.no_retraction" />
+
+Theorem 4(i):
+
+<Lean decl="Lumenary.Functors.not_reflects_iso" />
+
+Not formalised here: the free vector space functor (Mathlib has it as `Finsupp` and `ModuleCat.free`), abelianisation and the units functor (Mathlib's `Abelianization` and `Units.map`), and Brouwer's theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting homomorphisms to tell groups apart">
+
+The functor $\Hom(\Z/n, -)$ turns a group $G$ into the set of elements with $g^n = e$. Counting these sets for every $n$ gives a list of invariants. The experiment computes them for the five groups of order 8 — which they separate completely — and for two groups of order 16, $\Z/4 \times \Z/4$ and $\Z/2 \times Q_8$ (where $Q_8 = \{\pm 1, \pm i, \pm j, \pm k\}$ is the quaternion group), which they cannot separate. A different hom functor, $\Hom(\Z \times \Z, -)$, whose values are the pairs of commuting elements, then does the job.
+
+<Python id="functors_hom_counts" />
+
+The counts are **exact**, and different counts are a **proof** of non-isomorphism, because functors preserve isomorphisms. Equal counts are no evidence of isomorphism at all — which is the lesson of the last two rows.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: invariants that see shape">
+
+**The fundamental group of the punctured plane.** The functor $\pi_1$ turns loops into elements of a group. For the plane with one hole the group is $\Z$, and the integer attached to a loop is its *winding number*. Play the loop and watch the radius vector from the hole: it turns once for the circle, twice for "twice", and zero times for the crescent that curls around the hole without enclosing it. Try drawing your own loop. A continuous deformation of the loop that never crosses the hole cannot change the winding number — this is what makes it an invariant, and what powers the proof of Theorem 3.
+
+<WindingNumber loop="circle" loops={["circle", "twice", "miss"]} title="Winding numbers: π₁ of the punctured plane is ℤ" />
+
+**Counting homomorphisms distinguishes knots.** A valid 3-colouring of a knot diagram (at each crossing the three arcs are all the same colour or all different) is the same as a homomorphism from the knot's *fundamental quandle* — an algebraic object built from the diagram — to the three-element "dihedral quandle". Isotopic knots have isomorphic quandles (Joyce and Matveev, 1982), so the number of colourings is an invariant, exactly like $|\Hom(\Z/2, G)|$ for groups. Count the colourings of the unknot and the trefoil: $3$ and $9$. They are different, so the trefoil is knotted. The figure-eight knot also has only $3$, yet it is knotted: one invariant saying "same" proves nothing.
+
+<KnotColoring knot="trefoil" knots={["unknot", "trefoil", "figureEight"]} />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A functor must be injective on objects or on morphisms."** Not at all. The forgetful functor $\cat{Grp} \to \cat{Set}$ sends the many different groups with underlying set $\{0, 1, 2, 3\}$ to the same set. The functor from any category to $\mathbf{1}$ collapses everything. A functor only has to respect composition and identities.
+
+</Misconception>
+
+<Misconception>
+
+**"If $F(f)$ is invertible then $f$ is invertible."** Functors *preserve* isomorphisms; they need not *reflect* them. The forgetful functor $\cat{Top} \to \cat{Set}$ sends a continuous bijection with discontinuous inverse to a bijection, and a constant functor sends every morphism to an identity. (Functors that do reflect isomorphisms are called *conservative*; the forgetful functor $\cat{Grp} \to \cat{Set}$ is one, because the inverse of a bijective homomorphism is a homomorphism.)
+
+</Misconception>
+
+<Misconception>
+
+**"If $F(A) \cong F(B)$ then $A \cong B$."** Only the converse holds. $\Z/4 \times \Z/4$ and $\Z/2 \times Q_8$ have the same number of homomorphisms from every $\Z/n$, yet one is abelian and the other is not; the unknot and the figure-eight knot have the same number of 3-colourings.
+
+</Misconception>
+
+<Misconception>
+
+**"Contravariant functors are a different kind of object."** A contravariant functor from $\cat{C}$ to $\cat{D}$ is just a functor $\cat{C}^{\mathrm{op}} \to \cat{D}$; every theorem about functors applies to it.
+
+</Misconception>
+
+<Misconception>
+
+**"Any natural-looking construction on objects is a functor."** The centre of a group is not functorial for arbitrary homomorphisms (see the gallery). Being a functor requires a rule on morphisms satisfying the laws, and that is a genuine condition.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Algebraic topology is the study of functors from spaces to algebra">
+
+The fundamental group, homology $H_n$, cohomology $H^n$ and homotopy groups $\pi_n$ are functors from (pointed) spaces to groups. Each turns topological questions into algebraic ones. Theorem 3 generalises with homology: $H_{n-1}(S^{n-1}) \cong \Z$ while $H_{n-1}(D^n) = 0$ for $n \ge 2$, so the ball $D^n$ does not retract onto its boundary sphere, and Brouwer's fixed-point theorem holds in every dimension. Functoriality also explains *homotopy invariance*: homotopic maps induce the same homomorphism, so homotopy-equivalent spaces have isomorphic invariants. Eilenberg and Steenrod characterised homology by a handful of functorial axioms. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="The chain rule is functoriality">
+
+Consider the category whose objects are pointed open sets $(U, a)$ with $U \subseteq \R^n$ open and $a \in U$, and whose morphisms $(U, a) \to (V, b)$ are differentiable maps $f$ with $f(a) = b$. Sending $(U, a)$ to the vector space $\R^n$ and $f$ to its derivative $Df(a)$, a linear map, is a functor to $\cat{Vect}_\R$: the identity has derivative the identity, and the **chain rule** $D(g \circ f)(a) = Dg(f(a)) \circ Df(a)$ is precisely the functor law. Theorem 1 then gives at once: if $f$ is a diffeomorphism near $a$ (with a differentiable inverse), then $Df(a)$ is invertible — so $\R^m$ and $\R^n$ are not diffeomorphic for $m \neq n$, since an invertible linear map needs $m = n$. See <TopicLink id="math.analysis.multivariable-calculus">multivariable calculus</TopicLink>. On smooth manifolds the same idea is the **tangent functor** $M \mapsto TM$.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Units, and counting solutions">
+
+The units functor $R \mapsto R^\times$ distinguishes rings of integers, as with $\Z[i]$ and $\Z[\sqrt 2]$ above; Dirichlet's unit theorem describes $\mathcal{O}_K^\times$ for every number field $K$. Hom functors appear in number theory as **solution sets**: for a polynomial equation such as $x^2 + y^2 = 1$, the set of solutions in a commutative ring $R$ is $\Hom(\Z[x, y]/(x^2 + y^2 - 1), R)$, and a ring homomorphism $R \to R'$ (for instance reduction $\Z \to \Z/p$) sends solutions to solutions functorially. This "functor of points" view is the starting point of modern algebraic geometry.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Functors in programming">
+
+In Haskell, a type constructor `f` is a `Functor` if it comes with `fmap :: (a -> b) -> f a -> f b` satisfying `fmap id = id` and `fmap (g . f) = fmap g . fmap f` — exactly the functor laws for an endofunctor of the category of types. Lists (`fmap = map`, our free monoid functor), optional values (`Maybe`) and trees are examples. The laws are not checked by the compiler; programmers prove them, or test them on examples, because optimisers rely on them (for instance to fuse two passes `map g . map f` into one pass `map (g . f)`).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Topological quantum field theories">
+
+Michael Atiyah (1988), building on work of Edward Witten and Graeme Segal, axiomatised a *topological quantum field theory* in dimension $n$ as a functor $Z$ from a category of **cobordisms** — objects are closed $(n-1)$-dimensional manifolds ("space"), morphisms are $n$-dimensional manifolds whose boundary is split into an incoming and an outgoing part ("spacetime") — to the category of finite-dimensional vector spaces ("state spaces"). Gluing spacetimes end to end is composition, and $Z(\text{glued}) = Z(\text{second}) \circ Z(\text{first})$ is the functor law; physically it says that evolving in two steps is the same as evolving at once. (A TQFT is moreover required to respect disjoint unions and tensor products — a *symmetric monoidal* functor.) This is a mathematical framework inspired by physics, not a derivation of physical law; it has produced knot and 3-manifold invariants such as those of Reshetikhin and Turaev.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="arrows-that-compose" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Henri Poincaré** introduced the fundamental group in *Analysis Situs* (1895). In the 1920s, prompted by **Emmy Noether**, topologists began to treat Betti numbers as ranks of homology *groups*, and to study the homomorphisms induced by continuous maps — functors in all but name.
+- **L. E. J. Brouwer** proved his fixed-point theorem in all dimensions around 1911 (the three-dimensional case is due to Piers Bohl, 1904, and Jacques Hadamard gave a proof in 1910).
+- **Samuel Eilenberg** and **Saunders Mac Lane** defined functors and natural transformations in 1945. Mac Lane later recalled that the word "functor" was borrowed from the philosopher Rudolf Carnap, and "category" from Aristotle and Kant.
+- Units like those of $\Z[\sqrt 2]$ are much older than categories. They correspond to solutions of Pell-type equations $x^2 - 2y^2 = \pm 1$, studied in India by **Brahmagupta** (628), whose composition rule (*bhāvanā*) multiplies solutions, and by the *chakravala* method described by **Jayadeva** (11th century) and **Bhāskara II** (12th century). **Dirichlet**'s unit theorem (1846) describes the units of every ring of algebraic integers.
+- Atiyah's axioms for topological quantum field theories (1988) and the Reshetikhin–Turaev invariants (1991) brought functors into mathematical physics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Tom Leinster, *Basic Category Theory* (2014), chapter 1.2–1.3.
+- Emily Riehl, *Category Theory in Context* (2016), chapter 1.3.
+- Saunders Mac Lane, *Categories for the Working Mathematician* (1971; 2nd ed. 1998), chapter I.
+- Allen Hatcher, *Algebraic Topology* (2002), §1.1 — the fundamental group of the circle and Brouwer's theorem.
+- Colin Adams, *The Knot Book* (1994) — colourings and knot invariants for beginners.
+
+</Section>

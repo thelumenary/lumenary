@@ -1,0 +1,520 @@
+---
+slug: information-theory
+topic: math.applied.information-theory
+title: Information theory
+subtitle: How many bits does it take to describe a random message, and how fast can you send it through a noisy wire? Shannon's two answers — entropy and capacity — and the theorems that make them exact.
+level: ug2
+ages: Undergraduate (second or third year)
+minutes: 120
+order: 6037
+objectives:
+  - Compute entropy, joint and conditional entropy, relative entropy and mutual information, and prove their basic inequalities from Gibbs' inequality
+  - Prove Kraft's inequality, construct Huffman codes and prove that the optimal expected length $L^*$ of a prefix code satisfies $H \le L^* < H + 1$
+  - Explain the asymptotic equipartition property and state Shannon's source coding theorem
+  - Compute the capacity of the binary symmetric and erasure channels, and state the noisy-channel coding theorem and its converse
+  - Distinguish Shannon information from meaning, and prove that no compressor can shorten every file
+narrators: []
+lean:
+  - Lumenary.InformationTheory.entropy
+  - Lumenary.InformationTheory.entropy_nonneg
+  - Lumenary.InformationTheory.gibbs
+  - Lumenary.InformationTheory.entropy_le_log_card
+  - Lumenary.InformationTheory.binEntropy_le_log_two'
+  - Lumenary.InformationTheory.binEntropy_eq_log_two_iff
+  - Lumenary.InformationTheory.bscInfo
+  - Lumenary.InformationTheory.bsc_info_le
+  - Lumenary.InformationTheory.bsc_capacity
+  - Lumenary.InformationTheory.PrefixFree
+  - Lumenary.InformationTheory.kraft
+  - Lumenary.InformationTheory.source_coding_lower
+  - Lumenary.InformationTheory.shannon_lengths_kraft
+  - Lumenary.InformationTheory.shannon_lengths_bound
+  - Lumenary.InformationTheory.no_universal_compression
+compute: [information_theory_huffman, information_theory_typical_sets, information_theory_channel_codes]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Bits, noise and two questions">
+
+Morse code gives the most frequent letter of English, E, the shortest signal: a single dot. A text message sent from Lagos to Jakarta is compressed before it travels and protected against errors as it crosses radio links and cables; deep-space probes such as Voyager send their pictures home through extraordinary noise, protected by error-correcting codes; every QR code can be read even when part of it is torn off. Behind all of these is a 1948 paper by Claude Shannon, *A Mathematical Theory of Communication*, which asked two questions and answered both with numbers:
+
+1. **Compression.** A source emits random symbols. How many bits per symbol are needed, on average, to describe its output without loss? *Answer: the entropy $H$.*
+2. **Transmission.** A channel corrupts what it carries. How many bits per use can be sent with arbitrarily small probability of error? *Answer: the capacity $C$.*
+
+Both answers are limits that can be approached but not beaten — theorems, not engineering rules of thumb. Shannon deliberately set meaning aside: "These semantic aspects of communication are irrelevant to the engineering problem." Information, in his sense, is resolved **uncertainty**. This lesson builds on <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>, in particular expectation and the weak law of large numbers.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Twenty questions and surprise">
+
+Someone picks a whole number from $1$ to $64$. Each yes/no question can at best halve the remaining possibilities, so $6 = \log_2 64$ questions are needed and enough. More generally, singling out one of $N$ equally likely possibilities takes $\log_2 N$ bits. If an outcome has probability $p$, it is "one of $1/p$" possibilities, and learning that it happened gives
+
+$$
+\log_2\frac1p \text{ bits of information (its **surprisal**)}.
+$$
+
+Rare events are surprising and informative; certain events tell us nothing. The **entropy** of a random variable is its average surprisal. For a coin with $P(\text{heads}) = p$ it is the binary entropy $H_2(p) = -p\log_2 p - (1 - p)\log_2(1 - p)$: one full bit for a fair coin, less for a biased one, and zero for a coin that always lands heads.
+
+<FunctionPlot
+  fns={["-(x*log2(x) + (1 - x)*log2(1 - x))", "1 + x*log2(x) + (1 - x)*log2(1 - x)"]}
+  labels={["binary entropy H₂(p)", "capacity 1 − H₂(p) of a channel flipping bits with probability p"]}
+  x={[0, 1]}
+  y={[-0.05, 1.15]}
+  points={[[0.5, 1, "fair coin: 1 bit"], [0.11, 0.5, "p ≈ 0.11: C ≈ 1/2"]]}
+  xLabel="p"
+  yLabel="bits"
+  title="Uncertainty and capacity"
+  subtitle="The entropy of a coin is largest when it is fair. A channel that flips each bit with probability p can carry 1 − H₂(p) bits per use: nothing at p = 1/2, and a full bit at p = 1, since a channel that always flips is as good as one that never does."
+/>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+All random variables here take finitely many values. Logarithms are to base $2$ (units: **bits**) unless stated; with natural logarithms the unit is the **nat**, and $1$ nat $= \log_2 e \approx 1.443$ bits. We use the convention $0\log 0 = 0$ (justified by $p\log p \to 0$ as $p \to 0$).
+
+<Definition term="entropy, joint and conditional entropy">
+
+The **entropy** of $X$ with mass function $p$ is $H(X) = -\sum_x p(x)\log p(x) = E[-\log p(X)]$. For a pair $(X, Y)$ with joint mass function $p(x, y)$, the **joint entropy** is $H(X, Y) = -\sum_{x,y}p(x, y)\log p(x, y)$, and the **conditional entropy** is
+
+$$
+H(Y \mid X) = \sum_x p(x)\,H(Y \mid X = x) = -\sum_{x,y}p(x, y)\log p(y \mid x).
+$$
+
+</Definition>
+
+<Definition term="relative entropy and mutual information">
+
+For distributions $p, q$ on the same finite set, the **relative entropy** (Kullback–Leibler divergence) is $D(p \,\|\, q) = \sum_x p(x)\log\frac{p(x)}{q(x)}$ (infinite if $q(x) = 0 < p(x)$ for some $x$). The **mutual information** of $X$ and $Y$ is
+
+$$
+I(X; Y) = H(X) - H(X \mid Y),
+$$
+
+the reduction in uncertainty about $X$ from learning $Y$.
+
+</Definition>
+
+<Definition term="prefix code">
+
+A binary **code** for a set $\mathcal X$ assigns to each symbol $x$ a codeword $c(x) \in \{0, 1\}^*$ of length $\ell(x)$. It is a **prefix code** (prefix-free) if no codeword is a prefix of another; then a concatenation of codewords can be decoded on the fly, without separators. Its **expected length** for a source with distribution $p$ is $L = \sum_x p(x)\ell(x)$.
+
+</Definition>
+
+<Definition term="channel, rate and capacity">
+
+A **discrete memoryless channel** has input alphabet $\mathcal X$, output alphabet $\mathcal Y$ and transition probabilities $W(y \mid x)$; each use is independent of the others. A **code** of block length $n$ and rate $R$ consists of $M = 2^{nR}$ codewords in $\mathcal X^n$ and a decoding rule $\mathcal Y^n \to \{1, \dots, M\}$. The **capacity** of the channel is
+
+$$
+C = \max_{p(x)} I(X; Y),
+$$
+
+the maximum over input distributions of the mutual information between one input and its output.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Dice, coins and text">
+
+A fair die has $H = \log_2 6 \approx 2.585$ bits; a coin with $P(\text{heads}) = 0.2$ has $H_2(0.2) \approx 0.722$ bits. A source emitting $A, B, C, D$ with probabilities $\tfrac12, \tfrac14, \tfrac18, \tfrac18$ has $H = \tfrac12\cdot 1 + \tfrac14\cdot 2 + \tfrac18\cdot 3 + \tfrac18 \cdot 3 = 1.75$ bits, and the prefix code $A \mapsto 0$, $B \mapsto 10$, $C \mapsto 110$, $D \mapsto 111$ achieves exactly $1.75$ bits per symbol on average. The single-letter frequencies of English give about $4.1$ bits per letter, but letters depend on their neighbours, and Shannon's 1951 experiments with human predictors suggested roughly $1$ bit per letter once context is used.
+
+</Example>
+
+<Figure caption="The prefix code 0, 10, 110, 111 as a binary tree: left branches are 0, right branches 1, and codewords are leaves. No codeword lies on the path to another, so the code is prefix-free; the leaf at depth $\ell$ takes up $2^{-\ell}$ of the tree, and the four leaves fill it exactly — Kraft's equality $\tfrac12 + \tfrac14 + \tfrac18 + \tfrac18 = 1$.">
+<svg viewBox="0 0 360 230" role="img" aria-label="A binary code tree with leaves A at depth 1, B at depth 2, C and D at depth 3">
+  <g stroke="var(--ink-2)" strokeWidth="2" fill="none">
+    <line x1="180" y1="25" x2="90" y2="80" />
+    <line x1="180" y1="25" x2="250" y2="80" />
+    <line x1="250" y1="80" x2="200" y2="140" />
+    <line x1="250" y1="80" x2="300" y2="140" />
+    <line x1="300" y1="140" x2="260" y2="200" />
+    <line x1="300" y1="140" x2="340" y2="200" />
+  </g>
+  <g fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5">
+    <circle cx="180" cy="25" r="8" />
+    <circle cx="250" cy="80" r="8" />
+    <circle cx="300" cy="140" r="8" />
+  </g>
+  <g fill="var(--gold)" stroke="var(--ink-2)" strokeWidth="1.5">
+    <rect x="76" y="70" width="28" height="22" rx="4" />
+    <rect x="186" y="130" width="28" height="22" rx="4" />
+    <rect x="246" y="190" width="28" height="22" rx="4" />
+    <rect x="326" y="190" width="28" height="22" rx="4" />
+  </g>
+  <g fill="var(--ink-2)" fontSize="14" textAnchor="middle">
+    <text x="90" y="86">A</text>
+    <text x="200" y="146">B</text>
+    <text x="260" y="206">C</text>
+    <text x="340" y="206">D</text>
+    <text x="125" y="45">0</text>
+    <text x="225" y="45">1</text>
+    <text x="215" y="105">0</text>
+    <text x="285" y="105">1</text>
+    <text x="270" y="165">0</text>
+    <text x="330" y="165">1</text>
+  </g>
+</svg>
+</Figure>
+
+<Example title="Mutual information of a noisy bit">
+
+Let $X$ be a fair bit and $Y$ the same bit sent through a channel that flips it with probability $\tfrac14$. Then $Y$ is also a fair bit, $H(X) = 1$, and given $Y$ the remaining uncertainty about $X$ is that of the flip: $H(X \mid Y) = H_2(\tfrac14) \approx 0.811$. So $I(X; Y) \approx 0.189$ bits: each received bit tells us less than a fifth of a bit about what was sent. Repeating the transmission helps, at a cost in rate — the trade-off the channel coding theorem resolves.
+
+</Example>
+
+</Section>
+
+<Section id="inequalities" kind="proof" title="Gibbs' inequality and its consequences">
+
+Everything rests on one inequality, which comes from $\ln t \le t - 1$ (with equality only at $t = 1$): the tangent line at $t = 1$ lies above the concave function $\ln$.
+
+<Theorem name="Theorem (Gibbs' inequality)">
+
+For distributions $p$ and $q$ on a finite set, $D(p \,\|\, q) \ge 0$, with equality if and only if $p = q$. More generally, if $q \ge 0$ with $\sum_x q(x) \le 1$, then $\sum_x p(x)\log\frac{q(x)}{p(x)} \le 0$.
+
+</Theorem>
+
+<Proof>
+
+We may assume $q(x) > 0$ whenever $p(x) > 0$ (otherwise $D = \infty$). Working in nats, for each $x$ with $p(x) > 0$, $\;p(x)\ln\frac{q(x)}{p(x)} \le p(x)\Big(\frac{q(x)}{p(x)} - 1\Big) = q(x) - p(x)$, and terms with $p(x) = 0$ contribute $0 \le q(x)$. Summing,
+
+$$
+\sum_x p(x)\ln\frac{q(x)}{p(x)} \le \sum_x q(x) - \sum_x p(x) \le 1 - 1 = 0 .
+$$
+
+Equality forces $\frac{q(x)}{p(x)} = 1$ wherever $p(x) > 0$ and $\sum_x q(x) = 1$, hence $p = q$. Changing the base of the logarithm multiplies everything by a positive constant.
+
+</Proof>
+
+<Theorem name="Corollary (bounds and chain rule)">
+
+1. $0 \le H(X) \le \log|\mathcal X|$, with $H(X) = 0$ iff $X$ is constant and $H(X) = \log|\mathcal X|$ iff $X$ is uniform.
+2. **Chain rule:** $H(X, Y) = H(X) + H(Y \mid X)$.
+3. $I(X; Y) = H(X) + H(Y) - H(X, Y) = D\big(p_{XY} \,\big\|\, p_Xp_Y\big)$. Hence $I(X; Y) = I(Y; X) \ge 0$, with equality iff $X$ and $Y$ are independent; equivalently $H(X \mid Y) \le H(X)$ — **conditioning reduces entropy** on average.
+
+</Theorem>
+
+<Proof>
+
+(1) Each term $-p\log p$ is $\ge 0$ for $0 \le p \le 1$, and vanishes only at $p \in \{0, 1\}$. For the upper bound apply Gibbs with $q$ uniform: $0 \ge \sum_x p(x)\log\frac{1}{|\mathcal X|p(x)} = H(X) - \log|\mathcal X|$, with equality iff $p$ is uniform.
+
+(2) Write $p(x, y) = p(x)p(y \mid x)$ and take $-E[\log(\cdot)]$: $H(X, Y) = E[-\log p(X)] + E[-\log p(Y \mid X)] = H(X) + H(Y \mid X)$.
+
+(3) By the chain rule (with the roles of $X$ and $Y$ swapped), $H(X \mid Y) = H(X, Y) - H(Y)$, so $I(X; Y) = H(X) + H(Y) - H(X, Y)$, which is symmetric. Writing the three entropies as expectations, $I(X; Y) = E\Big[\log\frac{p(X, Y)}{p(X)p(Y)}\Big] = D(p_{XY} \,\|\, p_Xp_Y)$, and Gibbs' inequality finishes the proof.
+
+</Proof>
+
+<Theorem name="Theorem (data-processing inequality)">
+
+If $X \to Y \to Z$ is a Markov chain ($Z$ depends on $X$ only through $Y$), then $I(X; Z) \le I(X; Y)$: no processing of $Y$, deterministic or random, can increase the information it carries about $X$.
+
+</Theorem>
+
+<Proof>
+
+Define conditional mutual information $I(X; Y \mid Z) = H(X \mid Z) - H(X \mid Y, Z) \ge 0$ (Gibbs again, conditionally on each value of $Z$). The chain rule gives $I(X; Y, Z) = I(X; Z) + I(X; Y \mid Z) = I(X; Y) + I(X; Z \mid Y)$. The Markov property makes $X$ and $Z$ conditionally independent given $Y$, so $I(X; Z \mid Y) = 0$, and therefore $I(X; Z) \le I(X; Y)$.
+
+</Proof>
+
+Why this formula for entropy, and not another? Shannon showed, and Khinchin (1953) made rigorous, that any function of probability vectors that is continuous, maximal at the uniform distribution, unchanged by adding impossible outcomes, and additive in the sense of the chain rule must be a positive multiple of $-\sum p\log p$. The choice of base is the choice of unit.
+
+</Section>
+
+<Section id="source-coding" kind="proof" title="Prefix codes, Kraft and Huffman">
+
+A binary word $w$ of length $\ell$ corresponds to the dyadic interval $J(w) = [0.w,\ 0.w + 2^{-\ell})$ of $[0, 1)$, where $0.w$ is the binary fraction with digits $w$; and $u$ is a prefix of $v$ exactly when $J(v) \subseteq J(u)$. Two dyadic intervals are either nested or disjoint, so a code is prefix-free exactly when its intervals are pairwise disjoint.
+
+<Theorem name="Theorem (Kraft's inequality, 1949)">
+
+A binary prefix code with codeword lengths $\ell_1, \dots, \ell_k$ exists if and only if $\sum_{i=1}^k 2^{-\ell_i} \le 1$.
+
+</Theorem>
+
+<Proof>
+
+*Necessity.* The intervals $J(c_i)$ of a prefix code are disjoint subsets of $[0, 1)$ with lengths $2^{-\ell_i}$, so their total length is at most $1$. (The Lean proof argues instead by induction on the maximal length, splitting the code by its first bit.)
+
+*Sufficiency.* Order the lengths $\ell_1 \le \cdots \le \ell_k$ and put $a_i = \sum_{j < i}2^{-\ell_j}$. Since $\ell_j \le \ell_i$ for $j < i$, $a_i$ is a multiple of $2^{-\ell_i}$, and $a_i + 2^{-\ell_i} \le \sum_j 2^{-\ell_j} \le 1$; so $a_i = 0.c_i$ for a word $c_i$ of exactly $\ell_i$ digits, and $J(c_i) = [a_i, a_{i+1})$. These intervals are disjoint, so the code is prefix-free.
+
+</Proof>
+
+McMillan (1956) showed that the same inequality holds for every **uniquely decodable** code, so nothing is lost by insisting on prefix codes.
+
+<Theorem name="Theorem (source coding bounds)">
+
+The minimal expected length $L^*$ of a binary prefix code for a source $X$ satisfies $H(X) \le L^* < H(X) + 1$.
+
+</Theorem>
+
+<Proof>
+
+*Lower bound.* Given a prefix code, put $q(x) = 2^{-\ell(x)}$, so $\sum_x q(x) \le 1$ by Kraft. Gibbs' inequality gives $\sum_x p(x)\log_2\frac{2^{-\ell(x)}}{p(x)} \le 0$, that is, $H(X) - L \le 0$.
+
+*Upper bound.* Take **Shannon's lengths** $\ell(x) = \lceil -\log_2 p(x)\rceil$ (for $p(x) > 0$). Then $2^{-\ell(x)} \le p(x)$, so $\sum_x 2^{-\ell(x)} \le 1$ and by Kraft a prefix code with these lengths exists; and $\ell(x) < -\log_2 p(x) + 1$, so $L < H(X) + 1$.
+
+</Proof>
+
+Coding blocks of $n$ symbols at once spreads the "$+1$" over $n$ symbols: for an i.i.d. source, $H(X^n) = nH(X)$, so the optimal code for blocks has $H(X) \le L^*_n/n < H(X) + \frac1n$. **The entropy is the exact price of lossless description.** Shannon's lengths are not optimal, though; the optimal code comes from a simple greedy algorithm.
+
+**Huffman's algorithm (1952).** Take the two least probable symbols, make them siblings — their codewords will differ only in the last bit — and replace them by a single symbol whose probability is their sum. Repeat until one symbol remains; reading the merges backwards builds the code tree.
+
+<Theorem name="Theorem (Huffman codes are optimal)">
+
+A Huffman code has the smallest expected length among all binary prefix codes for the given distribution.
+
+</Theorem>
+
+<Proof>
+
+Induction on the number $k$ of symbols; $k = 2$ is clear (lengths $1, 1$). Let $x, y$ be the two least probable symbols.
+
+*Step 1: some optimal code has $x$ and $y$ as sibling leaves at maximal depth.* In an optimal code, if $p(a) > p(b)$ then $\ell(a) \le \ell(b)$ (otherwise swapping their codewords lowers $L$). The code tree of an optimal code is full — every internal node has two children — since otherwise a codeword could be shortened. So a deepest leaf has a sibling leaf; exchanging codewords so that $x$ and $y$ occupy these two leaves does not increase $L$, because they are the least probable.
+
+*Step 2: merging.* Replace $x, y$ by one symbol $z$ with $p(z) = p(x) + p(y)$. Codes for the original source in which $x, y$ are siblings correspond to codes for the merged source (delete the last bit of their codewords to get $z$'s), and $L = L' + p(x) + p(y)$. So an optimal code for the merged source, extended by one bit, is optimal among codes with $x, y$ siblings — hence, by Step 1, optimal. Huffman's algorithm does exactly this, and by induction it produces an optimal code for the merged source.
+
+</Proof>
+
+A Huffman tree is full, so its lengths satisfy Kraft with equality. The first experiment below builds one for a real sentence and checks every bound.
+
+</Section>
+
+<Section id="aep" kind="human" title="Typical sequences and Shannon's source coding theorem">
+
+For an i.i.d. source, $-\log_2 p(X_1, \dots, X_n) = \sum_{i=1}^n -\log_2 p(X_i)$ is a sum of i.i.d. terms with mean $H(X)$, so by the weak law of large numbers:
+
+<Theorem name="Theorem (asymptotic equipartition property)">
+
+If $X_1, X_2, \dots$ are i.i.d. with entropy $H$, then $-\frac1n\log_2 p(X_1, \dots, X_n) \to H$ in probability.
+
+</Theorem>
+
+So with high probability the sequence that occurs has probability close to $2^{-nH}$. Fix $\varepsilon > 0$ and let the **typical set** $T_\varepsilon^{(n)}$ consist of the sequences with $2^{-n(H + \varepsilon)} \le p(x_1, \dots, x_n) \le 2^{-n(H - \varepsilon)}$. Then (i) $P(T_\varepsilon^{(n)}) \to 1$; (ii) $|T_\varepsilon^{(n)}| \le 2^{n(H + \varepsilon)}$, because each of its elements has probability at least $2^{-n(H+\varepsilon)}$ and the total is at most $1$; and (iii) $|T_\varepsilon^{(n)}| \ge (1 - \varepsilon)2^{n(H - \varepsilon)}$ for large $n$. Almost all the probability sits on about $2^{nH}$ roughly equiprobable sequences — a vanishing fraction of all $|\mathcal X|^n$ sequences when $H < \log|\mathcal X|$.
+
+<Theorem name="Theorem (Shannon's source coding theorem)">
+
+For an i.i.d. source with entropy $H$: for every $R > H$ there are codes mapping blocks of $n$ symbols to $nR$ bits whose probability of decoding error tends to $0$ as $n \to \infty$; for every $R < H$, the probability of error of any such codes tends to $1$.
+
+</Theorem>
+
+*Sketch.* Index the typical set with $n(H + \varepsilon) + 1$ bits and give up on the rest; the error probability is $1 - P(T_\varepsilon^{(n)}) \to 0$. Conversely, $2^{nR}$ codewords with $R < H$ can cover at most $2^{nR}$ typical sequences, whose total probability is at most $2^{nR}2^{-n(H - \varepsilon)} \to 0$, plus the vanishing probability outside the typical set. The second experiment below measures typical sets exactly for a biased coin.
+
+</Section>
+
+<Section id="channels" kind="proof" title="Channels and capacity">
+
+<Theorem name="Theorem (capacity of the binary symmetric channel)">
+
+The binary symmetric channel with crossover probability $p$ (each bit flipped independently with probability $p$) has capacity $C = 1 - H_2(p)$ bits per use, attained by the uniform input.
+
+</Theorem>
+
+<Proof>
+
+Let $P(X = 1) = s$. Given $X = x$, the output is $x$ or $1 - x$ with probabilities $1 - p$ and $p$, so $H(Y \mid X = x) = H_2(p)$ for both $x$, and $H(Y \mid X) = H_2(p)$. The output is $1$ with probability $s(1 - p) + (1 - s)p$, so
+
+$$
+I(X; Y) = H(Y) - H(Y \mid X) = H_2\big(s(1-p) + (1-s)p\big) - H_2(p) \le 1 - H_2(p),
+$$
+
+since a binary variable has entropy at most $1$ bit. For $s = \frac12$ the output probability is $\frac12$ and equality holds.
+
+</Proof>
+
+Similarly, the **binary erasure channel**, which delivers each bit correctly with probability $1 - \varepsilon$ and otherwise replaces it by "?", has capacity $1 - \varepsilon$: an erasure is known to the receiver, and with feedback one could simply resend; Shannon's theorem says the same rate is achievable without feedback.
+
+<CommutativeDiagram
+  size="sm"
+  objects={[
+    { id: "W", tex: "W", row: 0, col: 0 },
+    { id: "X", tex: "X^n", row: 0, col: 1 },
+    { id: "Y", tex: "Y^n", row: 0, col: 2 },
+    { id: "V", tex: "\\hat W", row: 0, col: 3 },
+  ]}
+  arrows={[
+    { from: "W", to: "X", tex: "\\text{encoder}" },
+    { from: "X", to: "Y", tex: "\\text{channel } W(y \\mid x)", style: "dashed" },
+    { from: "Y", to: "V", tex: "\\text{decoder}" },
+  ]}
+  caption="A message $W$ (one of $2^{nR}$) is encoded as $n$ channel inputs, corrupted by the channel (dashed: random), and decoded as $\hat W$. The chain $W \to X^n \to Y^n \to \hat W$ is a Markov chain, so the data-processing inequality applies."
+/>
+
+<Theorem name="Theorem (noisy-channel coding theorem, Shannon 1948)">
+
+Let $C$ be the capacity of a discrete memoryless channel.
+
+- **Achievability.** For every $R < C$ and $\varepsilon > 0$, for all sufficiently large $n$ there is a code of block length $n$ and rate at least $R$ whose maximal probability of decoding error is at most $\varepsilon$.
+- **Converse.** For every sequence of codes with rate $R > C$, the average probability of error is bounded away from $0$ (indeed $P_e^{(n)} \ge 1 - \frac CR - \frac{1}{nR}$).
+
+</Theorem>
+
+*Sketch of the proof.* **Converse:** for a uniformly random message $W$ of $nR$ bits, Fano's inequality bounds the leftover uncertainty, $H(W \mid \hat W) \le 1 + P_e\,nR$; the data-processing inequality and memorylessness give $I(W; \hat W) \le I(X^n; Y^n) \le nC$; and $nR = H(W) = H(W \mid \hat W) + I(W; \hat W) \le 1 + P_e\,nR + nC$, which rearranges to the stated bound. **Achievability:** Shannon's astonishing idea was to choose the codebook *at random* — $2^{nR}$ codewords drawn independently from the capacity-achieving input distribution — and to decode by looking for the unique codeword jointly typical with the output. The AEP shows that the true codeword is jointly typical with high probability, while any particular wrong codeword is jointly typical with probability about $2^{-nI(X;Y)}$; with $2^{nR}$ wrong codewords and $R < I(X; Y)$, the union bound makes a confusion unlikely. Since the *average* over random codebooks has small error, *some* codebook does too, and discarding its worst half bounds the maximal error. Full proofs: Cover and Thomas, Chapter 7.
+
+The theorem is an existence theorem. Repetition codes achieve small error only by letting the rate $1/n$ go to zero; the Hamming $(7, 4)$ code (1950) sends $4$ bits in $7$ and corrects any single error. Codes that approach capacity with practical decoding took decades: low-density parity-check codes (Gallager, 1962; rediscovered in the 1990s), turbo codes (Berrou, Glavieux and Thitimajshima, 1993) and polar codes (Arıkan, 2009), now used in mobile networks. The third experiment compares repetition codes and the Hamming code with the capacity.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Information theory in Lean and Mathlib">
+
+Mathlib works in nats: `Real.negMulLog x = −x log x` and the binary entropy `Real.binEntropy p` use natural logarithms, so `log 2` nats is one bit. The module defines entropy for distributions on a finite type and proves the lesson's core inequalities.
+
+**Entropy and Gibbs' inequality**, proved as in the lesson from `log t ≤ t − 1`, and the bound $H \le \log|\mathcal X|$:
+
+<Lean decl="Lumenary.InformationTheory.entropy" />
+
+<Lean decl="Lumenary.InformationTheory.entropy_nonneg" />
+
+<Lean decl="Lumenary.InformationTheory.gibbs" />
+
+<Lean decl="Lumenary.InformationTheory.entropy_le_log_card" />
+
+**Binary entropy** from Mathlib: at most one bit, with equality exactly for a fair coin.
+
+<Lean decl="Lumenary.InformationTheory.binEntropy_le_log_two'" />
+
+<Lean decl="Lumenary.InformationTheory.binEntropy_eq_log_two_iff" />
+
+**The binary symmetric channel.** The mutual information as a function of the input distribution (its formula is derived in the lesson and taken as the definition), its upper bound, and the input that attains it:
+
+<Lean decl="Lumenary.InformationTheory.bscInfo" />
+
+<Lean decl="Lumenary.InformationTheory.bsc_info_le" />
+
+<Lean decl="Lumenary.InformationTheory.bsc_capacity" />
+
+**Prefix codes.** Kraft's inequality for every finite prefix-free set of binary words, by induction on the maximal length:
+
+<Lean decl="Lumenary.InformationTheory.PrefixFree" />
+
+<Lean decl="Lumenary.InformationTheory.kraft" />
+
+**Source coding bounds.** Any lengths satisfying Kraft have expected length at least $H$; Shannon's lengths satisfy Kraft and come within one bit of $H$:
+
+<Lean decl="Lumenary.InformationTheory.source_coding_lower" />
+
+<Lean decl="Lumenary.InformationTheory.shannon_lengths_kraft" />
+
+<Lean decl="Lumenary.InformationTheory.shannon_lengths_bound" />
+
+**No free compression**, by counting:
+
+<Lean decl="Lumenary.InformationTheory.no_universal_compression" />
+
+**What is and is not formalised.** Proved here: non-negativity of entropy, Gibbs' inequality, $H \le \log|\mathcal X|$, the capacity of the binary symmetric channel (given the formula for its mutual information), Kraft's inequality (the necessity direction), both source-coding bounds, and the counting argument. Cited from Mathlib: the maximum of the binary entropy. Not formalised: the converse of Kraft (constructing a code from lengths, though Shannon's lengths are shown to satisfy the inequality), conditional entropy, mutual information in general and the data-processing inequality, Huffman's algorithm, the AEP and the coding theorems. Mathlib does not yet contain Shannon's coding theorems.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Codes, typical sets and channels, computed">
+
+First, Huffman coding on a real sentence — Article 1 of the Universal Declaration of Human Rights — compared with its entropy, a fixed-length code and Shannon's lengths, and the gain from coding pairs of characters.
+
+<Python id="information_theory_huffman" />
+
+Next, the asymptotic equipartition property: for a biased coin, the exact probability and size of the typical set as $n$ grows.
+
+<Python id="information_theory_typical_sets" />
+
+Finally, channel coding: exact error probabilities of repetition codes and the Hamming code on a binary symmetric channel, a simulation of syndrome decoding, and the capacity for several noise levels.
+
+<Python id="information_theory_channel_codes" />
+
+The Huffman and typical-set computations are **exact** (up to floating-point display); the channel experiment combines exact formulas with a **statistical** simulation. None of them proves the asymptotic theorems; they show their content in concrete cases.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Information means meaning."** Shannon information measures how much uncertainty a message resolves, relative to a probability model of possible messages. A page of random letters has *more* Shannon information per character than a page of a novel, because it is less predictable; whether a message is true, important or meaningful is outside the theory. The same message can carry different amounts of information to receivers with different models.
+
+</Misconception>
+
+<Misconception>
+
+**"A clever enough compression method can shrink every file."** There are $2^n$ files of $n$ bits but only $2^n - 1$ shorter files, so any lossless compressor that shortens some files must lengthen others (formalised above). Compressors work because real data are far from uniformly random; on random data they cannot gain on average, by the source coding theorem.
+
+</Misconception>
+
+<Misconception>
+
+**"Entropy is a property of a single message."** Entropy is a property of a probability distribution — of a source — not of one string. The string 0101010101 is neither high- nor low-entropy by itself; it is very probable under one model and improbable under another. (The algorithmic notion of complexity of an individual string is Kolmogorov complexity; see the viewpoints.)
+
+</Misconception>
+
+<Misconception>
+
+**"Relative entropy is a distance."** $D(p \,\|\, q) \ge 0$ with equality only for $p = q$, but it is not symmetric and does not satisfy the triangle inequality: for $p = (\tfrac12, \tfrac12)$ and $q = (\tfrac14, \tfrac34)$, $D(p\|q) \approx 0.208$ bits but $D(q\|p) \approx 0.189$ bits, and $D(p\|q)$ is infinite if $q$ rules out something $p$ allows.
+
+</Misconception>
+
+<Misconception>
+
+**"More noise always means lower capacity."** A binary channel that flips every bit ($p = 1$) has capacity $1$: the receiver flips them back. Capacity measures how much the output reveals about the input; it is smallest, zero, at $p = \frac12$, where output and input are independent.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="physics" title="Entropy in thermodynamics, and the cost of erasing a bit">
+
+Shannon's formula is Gibbs's entropy $S = -k_B\sum_i p_i\ln p_i$ of statistical mechanics (with Boltzmann's $S = k_B\ln W$ for $W$ equally likely microstates), and von Neumann reportedly advised Shannon to call his quantity entropy. The connection is more than notation. Leo Szilard (1929) analysed Maxwell's demon with a one-molecule engine and argued that acquiring one bit of information has a thermodynamic cost; Rolf Landauer (1961) located the cost in **erasure**: resetting a bit in an environment at temperature $T$ dissipates at least $k_BT\ln 2$ of heat, and Charles Bennett (1982) used this to exorcise the demon. Landauer's bound has since been approached experimentally. Maximum-entropy reasoning (Jaynes, 1957) derives the Boltzmann distribution as the distribution of largest entropy with a given mean energy. These are physical claims resting on physical models, not theorems of the mathematics above. See <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink> for von Neumann's quantum entropy.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Information geometry and packing spheres">
+
+Relative entropy behaves like a squared distance without being one. Infinitesimally it is: for a smooth family $p_\theta$, $D(p_\theta \,\|\, p_{\theta + d\theta}) \approx \frac12\,d\theta^\top I(\theta)\,d\theta$, where $I(\theta)$ is the Fisher information matrix — a Riemannian metric on the space of distributions, the starting point of **information geometry** (Rao, 1945; Chentsov; Amari). Relative entropy also obeys a Pythagorean theorem: if $p^*$ minimises $D(p \,\|\, q)$ over a convex set $E$ of distributions, then $D(p \,\|\, q) \ge D(p \,\|\, p^*) + D(p^* \,\|\, q)$ for all $p \in E$ (Csiszár, 1975). Channel coding has a geometric picture too: codewords are points of the Hamming cube $\{0, 1\}^n$, noise moves a codeword to a random point at distance about $pn$, and decoding works if the "noise balls" around codewords do not overlap. Each ball holds about $2^{nH_2(p)}$ points, so at most $2^n/2^{nH_2(p)} = 2^{n(1 - H_2(p))}$ codewords fit — the capacity, as a sphere-packing bound. See <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Counting sequences: the method of types">
+
+Entropy is the exponent of a binomial coefficient: $\binom{n}{k} = 2^{nH_2(k/n) + O(\log n)}$, and more generally the number of sequences of length $n$ with a given **type** (empirical distribution) $q$ is $2^{nH(q) + O(\log n)}$, while each such sequence has probability $2^{-n(H(q) + D(q\|p))}$ under an i.i.d. source $p$. Multiplying, the probability of seeing type $q$ is $2^{-nD(q\|p) + O(\log n)}$ — Sanov's theorem, the basic result of large deviations. The source and channel coding theorems can be proved entirely by this counting (Csiszár and Körner). Entropy also gives combinatorial inequalities: **Shearer's lemma**, $\sum_i H(X_{S_i}) \ge k\,H(X)$ when every coordinate lies in at least $k$ of the sets $S_i$, bounds the number of triangles in a graph with a given number of edges and proves the Loomis–Whitney inequality. See <TopicLink id="math.discrete.enumerative-combinatorics">enumerative combinatorics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Kolmogorov complexity: information of a single string">
+
+Shannon entropy belongs to sources. Kolmogorov (1965), Solomonoff (1964) and Chaitin (1966) defined the information content of an individual string $x$ as the length $K(x)$ of the shortest program that prints it, on a fixed universal machine (changing the machine changes $K$ by at most a constant). Most strings are incompressible: fewer than $2^{n - c}$ programs are shorter than $n - c$ bits, the same counting as above. For a computable i.i.d. source, $E[K(X_1 \dots X_n)]/n \to H$, so the two notions agree on average. But $K$ is **not computable**: a program computing it could search for the first string of complexity above $N$ and print it, using only about $\log N$ bits — a version of Berry's paradox. Practical compressors (Lempel–Ziv, 1977–78, which underlies ZIP and PNG) are universal: for every stationary ergodic source their compression rate tends to the entropy rate. See <TopicLink id="math.comp.computability">computability</TopicLink> and, for the use of entropy in secrecy, <TopicLink id="math.applied.cryptography">cryptography</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Entropy along Markov chains">
+
+For a stationary <TopicLink id="math.prob.markov-chains">Markov chain</TopicLink> with transition matrix $P$ and stationary distribution $\pi$, the **entropy rate** $\lim_n H(X_1, \dots, X_n)/n$ is $-\sum_i \pi_i\sum_j p_{ij}\log p_{ij}$, the average uncertainty of the next step; a source with memory is more compressible than its single-letter frequencies suggest, as Shannon's English experiments showed. Information also measures convergence: for any initial distribution $\lambda$, the relative entropy $D(\lambda P^n \,\|\, \pi)$ is non-increasing in $n$ (a consequence of the data-processing inequality for relative entropy) — a "second law" for Markov chains. And in <TopicLink id="math.prob.statistics">statistics</TopicLink>, maximum likelihood is minimum relative entropy: maximising the average log-likelihood over a model is minimising $D(\hat p \,\|\, p_\theta)$ from the empirical distribution $\hat p$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Before Shannon.** Telegraph engineers knew that frequent letters deserve short codes: Alfred Vail and Samuel Morse's code (1830s–40s) gave E a single dot. Harry Nyquist (1924) and Ralph Hartley (1928) at Bell Laboratories measured information by the logarithm of the number of possible messages.
+- **1948.** Claude Shannon's *A Mathematical Theory of Communication* introduced entropy, mutual information and capacity, and stated and sketched proofs of the source and channel coding theorems. Norbert Wiener's *Cybernetics* appeared the same year with related ideas. Leon Kraft's inequality (1949) and Robert Fano's coding method followed, and David Huffman found his optimal algorithm in 1952 as a student in Fano's course at MIT.
+- **Rigour and codes.** Aleksandr Khinchin (1953) and Amiel Feinstein (1954) gave rigorous proofs of Shannon's theorems, and Jacob Wolfowitz (1957) proved the strong converse; Solomon Kullback and Richard Leibler introduced their divergence in 1951; Brockway McMillan's inequality dates from 1956. Richard Hamming (1950) and Marcel Golay (1949) built the first error-correcting codes, Irving Reed and Gustave Solomon theirs in 1960, and Robert Gallager his low-density parity-check codes in 1962.
+- **Computation and capacity-achieving codes.** Andrei Kolmogorov (1965), Ray Solomonoff (1964) and Gregory Chaitin (1966) founded algorithmic information theory; Abraham Lempel and Jacob Ziv's compression algorithms (1977–78) are used in everyday file formats; Richard Blahut and Suguru Arimoto (1972) gave an algorithm for computing capacity. Claude Berrou, Alain Glavieux and Punya Thitimajshima's turbo codes (1993) and Erdal Arıkan's polar codes (2009) finally approached Shannon's limit in practice.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Thomas M. Cover and Joy A. Thomas, *Elements of Information Theory* (1991; 2nd edition 2006) — the standard text, with complete proofs of the coding theorems.
+- David J. C. MacKay, *Information Theory, Inference, and Learning Algorithms* (2003) — information theory together with coding, Bayesian inference and neural networks, full of exercises.
+- Claude E. Shannon and Warren Weaver, *The Mathematical Theory of Communication* (1949) — Shannon's paper, still very readable, with Weaver's essay on its broader meaning.
+- Imre Csiszár and János Körner, *Information Theory: Coding Theorems for Discrete Memoryless Systems* (1981; 2nd edition 2011) — the method of types.
+- Ming Li and Paul Vitányi, *An Introduction to Kolmogorov Complexity and Its Applications* (1993; 4th edition 2019).
+- Robert M. Gray, *Entropy and Information Theory* (1990; 2nd edition 2011) — the measure-theoretic foundations.
+
+</Section>

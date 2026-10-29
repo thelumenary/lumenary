@@ -1,0 +1,504 @@
+---
+slug: algebraic-number-theory
+topic: math.number.algebraic-number-theory
+title: Algebraic number theory
+subtitle: When unique factorisation fails — and how ideals, the class group and the units of a number field measure and repair the failure.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7011
+objectives:
+  - Compute rings of integers and discriminants of quadratic and cyclotomic fields
+  - Prove unique factorisation of ideals in Dedekind domains, and use the Dedekind–Kummer theorem to factor rational primes in quadratic fields
+  - Prove that a Dedekind domain is a unique factorisation domain exactly when it is a principal ideal domain, and show that $\Z[\sqrt{-5}]$ is neither
+  - State the finiteness of the class number and Dirichlet's unit theorem, and compute class groups and units in small examples
+narrators: []
+lean:
+  - Lumenary.AlgebraicNumberTheory.norm_sqrt_neg_five
+  - Lumenary.AlgebraicNumberTheory.isDomain_sqrt_neg_five
+  - Lumenary.AlgebraicNumberTheory.norm_ne_two
+  - Lumenary.AlgebraicNumberTheory.two_irreducible
+  - Lumenary.AlgebraicNumberTheory.two_not_prime
+  - Lumenary.AlgebraicNumberTheory.not_ufd
+  - Lumenary.AlgebraicNumberTheory.units_sqrt_neg_five
+  - Lumenary.AlgebraicNumberTheory.one_add_sqrt_two_unit
+  - Lumenary.AlgebraicNumberTheory.one_add_sqrt_two_infinite_order
+  - Lumenary.AlgebraicNumberTheory.ring_of_integers_dedekind
+  - Lumenary.AlgebraicNumberTheory.ideals_factor_uniquely
+  - Lumenary.AlgebraicNumberTheory.class_group_finite
+  - Lumenary.AlgebraicNumberTheory.class_number_one_iff
+  - Lumenary.AlgebraicNumberTheory.dirichlet_unit_theorem
+  - Lumenary.AlgebraicNumberTheory.unit_rank
+  - Lumenary.AlgebraicNumberTheory.cyclotomic_integers
+  - Lumenary.AlgebraicNumberTheory.sum_of_two_squares
+compute: [algebraic_number_theory_splitting, algebraic_number_theory_class_numbers]
+trails: [clock-arithmetic]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Six is two times three — and something else">
+
+Fermat claimed in 1640 that an odd prime is a sum of two squares exactly when it leaves remainder $1$ on division by $4$: $5 = 1^2 + 2^2$, $13 = 2^2 + 3^2$, but $7$ and $11$ are not sums of two squares. In the **Gaussian integers** $\Z[i] = \{a + bi : a, b \in \Z\}$ the statement becomes a statement about factorisation: $p = a^2 + b^2 = (a + bi)(a - bi)$, so the primes $p \equiv 1 \pmod 4$ *split* in $\Z[i]$ while those $\equiv 3 \pmod 4$ stay prime. Since $\Z[i]$ has unique factorisation, this can be proved by arithmetic in $\Z[i]$.
+
+The method seems to promise a proof of much more. In 1847 Gabriel Lamé announced to the Paris Academy a proof of Fermat's Last Theorem, factoring
+$$
+x^p + y^p = (x + y)(x + \zeta y)(x + \zeta^2 y) \cdots (x + \zeta^{p-1} y), \qquad \zeta = e^{2\pi i/p},
+$$
+in $\Z[\zeta]$. Joseph Liouville immediately asked whether $\Z[\zeta]$ has unique factorisation; Ernst Kummer had already shown that for $p = 23$ it does not. The simplest failure is in $\Z[\sqrt{-5}]$:
+$$
+6 = 2 \cdot 3 = (1 + \sqrt{-5})(1 - \sqrt{-5}),
+$$
+and $2$, $3$, $1 \pm \sqrt{-5}$ are all irreducible (proved below, and in Lean). Kummer's response was to invent "ideal numbers" — the missing common factors — and Dedekind turned them into **ideals**. With ideals, factorisation is unique again; the **class group** measures how far ideals are from being numbers, and the **unit group** measures the other ambiguity in factorisation.
+
+**Algebraic number theory** studies number fields — finite extensions of $\Q$ — through their rings of integers. This lesson assumes <TopicLink id="math.number.elementary-number-theory">elementary number theory</TopicLink> (quadratic residues), <TopicLink id="math.algebra.fields-galois">field extensions</TopicLink> and <TopicLink id="math.algebra.commutative-algebra">commutative algebra</TopicLink> (integral extensions, Noetherian rings, localisation).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Ideal numbers">
+
+In $\Z[\sqrt{-5}]$, the numbers $2$ and $1 + \sqrt{-5}$ "ought" to have a common factor $\mathfrak{p}$ with $\mathfrak{p}^2 = 2$ — but no element has norm $2$ (the norm of $a + b\sqrt{-5}$ is $a^2 + 5b^2$), so no such element exists. Kummer and Dedekind replace the missing gcd by the set of all its "multiples", which does exist:
+$$
+\mathfrak{p} = (2, 1 + \sqrt{-5}), \qquad \mathfrak{q} = (3, 1 + \sqrt{-5}), \qquad \mathfrak{q}' = (3, 1 - \sqrt{-5}).
+$$
+These ideals are prime, not principal, and
+$$
+(2) = \mathfrak{p}^2, \quad (3) = \mathfrak{q}\mathfrak{q}', \quad (1 + \sqrt{-5}) = \mathfrak{p}\mathfrak{q}, \quad (1 - \sqrt{-5}) = \mathfrak{p}\mathfrak{q}'.
+$$
+So both factorisations of $6$ are regroupings of the single ideal factorisation $(6) = \mathfrak{p}^2\mathfrak{q}\mathfrak{q}'$, exactly as $6 = 2 \cdot 3$ regroups $2 \cdot 3$ in $\Z$. The non-principal ideals are the ghosts of the missing numbers. Since $\mathfrak{p}^2 = (2)$ is principal, the ghost $\mathfrak{p}$ has order $2$ in the class group, which here is $\Z/2$: every non-principal ideal of $\Z[\sqrt{-5}]$ becomes principal when multiplied by $\mathfrak{p}$.
+
+Geometrically, a ring of integers is a **lattice**: $\Z[\sqrt{-5}]$ is the lattice spanned by $1$ and $\sqrt{-5}$ in $\C$, and its non-zero ideals are sublattices of finite index (the index is the **norm** of the ideal).
+
+<Figure caption="The lattice ℤ[√−5] in the complex plane (all dots) and the ideal 𝔭 = (2, 1 + √−5) (filled dots), the sublattice of a + b√−5 with a ≡ b (mod 2). It has index 2, so N(𝔭) = 2 — but no lattice point has a² + 5b² = 2, so 𝔭 is not principal.">
+<svg viewBox="0 0 400 220" role="img" aria-label="A rectangular lattice of dots in rows at heights minus one, zero and one times root five; every other dot is filled, forming a sublattice of index two">
+  <line x1="10" y1="110" x2="390" y2="110" stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="3 3" />
+  <line x1="200" y1="10" x2="200" y2="210" stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="3 3" />
+  <circle cx="20" cy="29.5" r="5" fill="var(--gold)" /><circle cx="56" cy="29.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="92" cy="29.5" r="5" fill="var(--gold)" /><circle cx="128" cy="29.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="164" cy="29.5" r="5" fill="var(--gold)" /><circle cx="200" cy="29.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="236" cy="29.5" r="5" fill="var(--gold)" /><circle cx="272" cy="29.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="308" cy="29.5" r="5" fill="var(--gold)" /><circle cx="344" cy="29.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="380" cy="29.5" r="5" fill="var(--gold)" />
+  <circle cx="20" cy="110" r="5" fill="none" stroke="var(--ink-2)" /><circle cx="56" cy="110" r="5" fill="var(--gold)" />
+  <circle cx="92" cy="110" r="5" fill="none" stroke="var(--ink-2)" /><circle cx="128" cy="110" r="5" fill="var(--gold)" />
+  <circle cx="164" cy="110" r="5" fill="none" stroke="var(--ink-2)" /><circle cx="200" cy="110" r="5" fill="var(--gold)" />
+  <circle cx="236" cy="110" r="5" fill="none" stroke="var(--ink-2)" /><circle cx="272" cy="110" r="5" fill="var(--gold)" />
+  <circle cx="308" cy="110" r="5" fill="none" stroke="var(--ink-2)" /><circle cx="344" cy="110" r="5" fill="var(--gold)" />
+  <circle cx="380" cy="110" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="20" cy="190.5" r="5" fill="var(--gold)" /><circle cx="56" cy="190.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="92" cy="190.5" r="5" fill="var(--gold)" /><circle cx="128" cy="190.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="164" cy="190.5" r="5" fill="var(--gold)" /><circle cx="200" cy="190.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="236" cy="190.5" r="5" fill="var(--gold)" /><circle cx="272" cy="190.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="308" cy="190.5" r="5" fill="var(--gold)" /><circle cx="344" cy="190.5" r="5" fill="none" stroke="var(--ink-2)" />
+  <circle cx="380" cy="190.5" r="5" fill="var(--gold)" />
+  <text x="206" y="104" fontSize="11" fill="var(--ink-2)">0</text>
+  <text x="242" y="24" fontSize="11" fill="var(--ink-2)">1+√−5</text>
+  <text x="278" y="104" fontSize="11" fill="var(--ink-2)">2</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="number field, algebraic integers, ring of integers">
+
+A **number field** is a field $K \supseteq \Q$ with $n = [K : \Q] < \infty$. An element $\alpha \in K$ is an **algebraic integer** if it is a root of a monic polynomial with coefficients in $\Z$. The algebraic integers of $K$ form a subring $\mathcal{O}_K$, the **ring of integers** (Proposition 1). For $K = \Q$, $\mathcal{O}_K = \Z$: a rational root of a monic integer polynomial is an integer.
+
+</Definition>
+
+<Definition term="embeddings, norm, trace">
+
+A number field of degree $n$ has exactly $n$ field embeddings $\sigma_1, \dots, \sigma_n : K \to \C$; $r_1$ of them are real ($\sigma(K) \subseteq \R$) and the others come in $r_2$ complex-conjugate pairs, so $n = r_1 + 2r_2$. The **norm** and **trace** of $\alpha \in K$ are $N(\alpha) = \prod_i \sigma_i(\alpha)$ and $\operatorname{Tr}(\alpha) = \sum_i \sigma_i(\alpha)$ — the determinant and trace of multiplication by $\alpha$ on the $\Q$-vector space $K$. Both are rational, the norm is multiplicative, and both are integers when $\alpha \in \mathcal{O}_K$. For $K = \Q(\sqrt d)$, $N(a + b\sqrt d) = a^2 - db^2$ and $\operatorname{Tr}(a + b\sqrt d) = 2a$.
+
+</Definition>
+
+<Definition term="integral basis and discriminant">
+
+An **integral basis** is a $\Z$-basis $\omega_1, \dots, \omega_n$ of $\mathcal{O}_K$ (one exists: $\mathcal{O}_K \cong \Z^n$, Proposition 3). The **discriminant** of $K$ is $d_K = \det\big(\sigma_i(\omega_j)\big)^2 = \det\big(\operatorname{Tr}(\omega_i\omega_j)\big)$, a non-zero integer independent of the choice of integral basis. Its sign is $(-1)^{r_2}$, and the primes that ramify in $K$ are exactly those dividing $d_K$.
+
+</Definition>
+
+<Definition term="Dedekind domain; fractional ideals; class group">
+
+A **Dedekind domain** is a Noetherian, integrally closed domain in which every non-zero prime ideal is maximal. For a domain $R$ with fraction field $K$, a **fractional ideal** is a non-zero $R$-submodule $\mathfrak{a} \subseteq K$ with $d\mathfrak{a} \subseteq R$ for some non-zero $d \in R$; products are defined as for ideals. The **principal** fractional ideals are $xR$, $x \in K^\times$. The **ideal class group** $\operatorname{Cl}(K)$ of a number field is the group of fractional ideals of $\mathcal{O}_K$ modulo the principal ones (a group by Theorem 4), and the **class number** is $h_K = \#\operatorname{Cl}(K)$.
+
+</Definition>
+
+<Definition term="norm of an ideal; splitting of primes">
+
+The **norm** of a non-zero ideal is $N(\mathfrak{a}) = \#(\mathcal{O}_K/\mathfrak{a})$; it is multiplicative, and $N(\alpha\mathcal{O}_K) = |N(\alpha)|$. For a rational prime $p$, write $p\mathcal{O}_K = \mathfrak{p}_1^{e_1} \cdots \mathfrak{p}_g^{e_g}$ (Theorem 4). The exponent $e_i$ is the **ramification index** and $f_i = [\mathcal{O}_K/\mathfrak{p}_i : \mathbb{F}_p]$ the **residue degree**; comparing norms gives $\sum_i e_i f_i = n$. In a quadratic field there are three possibilities: $p$ **splits** ($p\mathcal{O}_K = \mathfrak{p}\mathfrak{p}'$ with $\mathfrak{p} \neq \mathfrak{p}'$), is **inert** ($p\mathcal{O}_K$ is prime), or **ramifies** ($p\mathcal{O}_K = \mathfrak{p}^2$).
+
+</Definition>
+
+<Definition term="units">
+
+The **unit group** $\mathcal{O}_K^\times$ consists of the elements with inverses in $\mathcal{O}_K$, equivalently those of norm $\pm 1$. Its torsion subgroup $\mu_K$ is the finite cyclic group of roots of unity in $K$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Quadratic fields">
+
+For squarefree $d \neq 0, 1$ and $K = \Q(\sqrt d)$ (Theorem 2):
+
+| $d$ | $\mathcal{O}_K$ | $d_K$ | $r_1, r_2$ | units |
+| --- | --- | --- | --- | --- |
+| $-1$ | $\Z[i]$ | $-4$ | $0, 1$ | $\pm 1, \pm i$ |
+| $-3$ | $\Z[\zeta_3]$, $\zeta_3 = \frac{-1 + \sqrt{-3}}{2}$ | $-3$ | $0, 1$ | the six roots of unity $\pm\zeta_3^j$ |
+| $-5$ | $\Z[\sqrt{-5}]$ | $-20$ | $0, 1$ | $\pm 1$ |
+| $2$ | $\Z[\sqrt 2]$ | $8$ | $2, 0$ | $\pm(1 + \sqrt 2)^n$, $n \in \Z$ |
+| $5$ | $\Z\big[\frac{1 + \sqrt 5}{2}\big]$ | $5$ | $2, 0$ | $\pm\varphi^n$, $\varphi = \frac{1 + \sqrt 5}{2}$ |
+
+The golden ratio $\varphi$ is an algebraic integer ($\varphi^2 = \varphi + 1$) although its coordinates are halves: $\Z[\sqrt 5]$ is *not* the whole ring of integers of $\Q(\sqrt 5)$.
+
+</Example>
+
+<Example title="Factorisations in the Gaussian integers">
+
+$\Z[i]$ is Euclidean for the norm $a^2 + b^2$, hence a PID and a UFD, with $h = 1$. Its primes lie over rational primes as follows: $2 = -i(1 + i)^2$ ramifies; $p \equiv 1 \pmod 4$ splits, e.g. $5 = (2 + i)(2 - i)$ and $13 = (3 + 2i)(3 - 2i)$; $p \equiv 3 \pmod 4$ is inert, e.g. $3$ and $7$ stay prime. Fermat's two-squares theorem is exactly the statement that $p \equiv 1 \pmod 4$ splits.
+
+</Example>
+
+<Example title="Factorisations in ℤ[√−5]">
+
+Using the Dedekind–Kummer theorem (Theorem 5) with $f = x^2 + 5$:
+
+- $p = 2$: $x^2 + 5 \equiv (x + 1)^2 \pmod 2$, so $(2) = \mathfrak{p}^2$ with $\mathfrak{p} = (2, 1 + \sqrt{-5})$ — ramified.
+- $p = 5$: $x^2 + 5 \equiv x^2$, so $(5) = (\sqrt{-5})^2$ — ramified, with a principal prime.
+- $p = 3$: $x^2 + 5 \equiv (x - 1)(x + 1) \pmod 3$, so $(3) = (3, \sqrt{-5} - 1)(3, \sqrt{-5} + 1)$ — split into non-principal primes (no element has norm $3$).
+- $p = 29$: $-5 \equiv 24 \equiv 13^2 \pmod{29}$, so $29$ splits, and here the primes are principal: $29 = 3^2 + 5 \cdot 2^2 = (3 + 2\sqrt{-5})(3 - 2\sqrt{-5})$.
+- $p = 11$: $-5$ is not a square mod $11$, so $11$ is inert.
+
+The first experiment shows the pattern: an odd prime $p \neq 5$ splits when $p \equiv 1, 3, 7, 9 \pmod{20}$ and is inert when $p \equiv 11, 13, 17, 19 \pmod{20}$; among the split primes, the factors are principal exactly for $p \equiv 1, 9 \pmod{20}$.
+
+</Example>
+
+<Example title="Cyclotomic fields">
+
+For a prime $p$ and $\zeta = e^{2\pi i/p}$, $K = \Q(\zeta)$ has degree $p - 1$ (the cyclotomic polynomial $\Phi_p = x^{p-1} + \cdots + 1$ is irreducible by Eisenstein's criterion applied to $\Phi_p(x + 1)$), $r_1 = 0$, $r_2 = (p - 1)/2$, ring of integers $\Z[\zeta]$ and discriminant $(-1)^{(p-1)/2} p^{p-2}$ (both formalised in Mathlib). The prime $p$ is totally ramified: $(p) = (1 - \zeta)^{p-1}$. A prime $q \neq p$ splits into $(p - 1)/f$ primes, where $f$ is the order of $q$ modulo $p$. Kummer proved Fermat's Last Theorem for exponent $p$ whenever $p$ does not divide the class number of $\Q(\zeta_p)$ (a **regular** prime); $h(\Q(\zeta_p)) = 1$ exactly for $p \leq 19$ (Montgomery and Uchida, 1971), and $37$ is the first irregular prime.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The main theorems">
+
+<Theorem name="Proposition 1 (integrality)">
+
+For $\alpha$ in a field $K \supseteq \Q$ the following are equivalent: (a) $\alpha$ is an algebraic integer; (b) $\Z[\alpha]$ is a finitely generated $\Z$-module; (c) $\alpha$ lies in a subring of $K$ that is a finitely generated $\Z$-module. Consequently the algebraic integers of $K$ form a ring. Moreover, an algebraic number is an algebraic integer exactly when its minimal polynomial over $\Q$ has integer coefficients.
+
+</Theorem>
+
+<Proof>
+
+(a ⇒ b) If $\alpha^m = -(c_{m-1}\alpha^{m-1} + \cdots + c_0)$ with $c_i \in \Z$, every power of $\alpha$ is a $\Z$-combination of $1, \alpha, \dots, \alpha^{m-1}$. (b ⇒ c) is clear. (c ⇒ a) Let $M = \Z m_1 + \cdots + \Z m_r$ be a subring containing $\alpha$. Then $\alpha m_i = \sum_j a_{ij} m_j$ with $a_{ij} \in \Z$, so $(\alpha I - A)\mathbf{m} = 0$; multiplying by the adjugate gives $\det(\alpha I - A)\, m_i = 0$ for all $i$, and since $1 \in M$, $\det(\alpha I - A) = 0$ — a monic integer equation for $\alpha$. If $\alpha, \beta$ are algebraic integers, $\Z[\alpha, \beta]$ is generated by the finitely many $\alpha^i \beta^j$ with $i, j$ below the degrees of their equations, and contains $\alpha \pm \beta$ and $\alpha\beta$, which are therefore integral by (c). For the last statement: if $\alpha$ is integral with monic integer equation $g$, its minimal polynomial $f$ divides $g$; the roots of $f$ are roots of $g$, hence algebraic integers, so the coefficients of $f$ (symmetric functions of the roots) are algebraic integers and rational, hence integers. The converse is the definition.
+
+</Proof>
+
+<Theorem name="Theorem 2 (rings of integers of quadratic fields)">
+
+Let $d \neq 0, 1$ be squarefree and $K = \Q(\sqrt d)$. Then
+$$
+\mathcal{O}_K = \begin{cases} \Z[\sqrt d], & d \equiv 2, 3 \pmod 4, \\[2pt] \Z\big[\tfrac{1 + \sqrt d}{2}\big], & d \equiv 1 \pmod 4, \end{cases} \qquad d_K = \begin{cases} 4d, & d \equiv 2, 3 \pmod 4, \\ d, & d \equiv 1 \pmod 4. \end{cases}
+$$
+
+</Theorem>
+
+<Proof>
+
+Let $\alpha = a + b\sqrt d$ with $a, b \in \Q$ and $b \neq 0$ (rationals are integral only if integers). Its minimal polynomial is $x^2 - 2a x + (a^2 - db^2)$, so by Proposition 1, $\alpha \in \mathcal{O}_K$ iff $A = 2a \in \Z$ and $a^2 - db^2 \in \Z$. Then $4(a^2 - db^2) = A^2 - d(2b)^2 \in 4\Z$, so $d(2b)^2 \in \Z$. Writing $2b = u/v$ in lowest terms, $v^2 \mid du^2$ with $\gcd(u, v) = 1$, so $v^2 \mid d$, and $v = 1$ because $d$ is squarefree: $B = 2b \in \Z$. The condition is now $A^2 \equiv dB^2 \pmod 4$. Squares are $0$ or $1$ mod $4$. If $d \equiv 2$ or $3 \pmod 4$, then $A^2 - dB^2 \equiv 0$ forces $A, B$ both even, i.e. $a, b \in \Z$. If $d \equiv 1 \pmod 4$, the condition is $A^2 \equiv B^2 \pmod 4$, i.e. $A \equiv B \pmod 2$: $\alpha = \frac{A - B}{2} + B\cdot\frac{1 + \sqrt d}{2}$ with $\frac{A - B}{2} \in \Z$. In both cases the ring is $\Z[\omega]$ with $\omega = \sqrt d$ or $\frac{1 + \sqrt d}{2}$, and $d_K = \det\begin{pmatrix} 1 & \omega \\ 1 & \omega' \end{pmatrix}^2 = (\omega - \omega')^2$, which is $(2\sqrt d)^2 = 4d$ or $(\sqrt d)^2 = d$.
+
+</Proof>
+
+<Theorem name="Proposition 3 (rings of integers are Dedekind domains)">
+
+$\mathcal{O}_K$ is a free $\Z$-module of rank $n = [K : \Q]$, and it is a Dedekind domain. For every non-zero ideal $\mathfrak{a}$, $\mathcal{O}_K/\mathfrak{a}$ is finite.
+
+</Theorem>
+
+<Proof>
+
+*Every non-zero ideal meets $\Z$.* If $0 \neq \alpha \in \mathfrak{a}$, then $N(\alpha) = \alpha \cdot \prod_{i \geq 2}\sigma_i(\alpha)$; the second factor $N(\alpha)/\alpha$ lies in $K$ and is an algebraic integer (a product of conjugates of $\alpha$), hence in $\mathcal{O}_K$. So $N(\alpha) \in \mathfrak{a} \cap \Z \setminus \{0\}$.
+
+*Freeness* (sketch). Choose a $\Q$-basis $\beta_1, \dots, \beta_n$ of $K$ inside $\mathcal{O}_K$ (multiply any basis by integers) and let $D = \det(\operatorname{Tr}(\beta_i\beta_j)) \neq 0$ (the trace form is non-degenerate in characteristic zero). If $\alpha = \sum c_j \beta_j \in \mathcal{O}_K$ with $c_j \in \Q$, then $\operatorname{Tr}(\alpha\beta_i) = \sum_j c_j \operatorname{Tr}(\beta_i\beta_j) \in \Z$, and Cramer's rule gives $c_j \in \frac{1}{D}\Z$. So $\bigoplus \Z\beta_j \subseteq \mathcal{O}_K \subseteq \frac{1}{D}\bigoplus\Z\beta_j$, and a subgroup of a free abelian group of rank $n$ containing a free subgroup of rank $n$ is free of rank $n$.
+
+*Dedekind.* $\mathcal{O}_K$ is Noetherian, since every ideal is a subgroup of $\Z^n$, hence finitely generated. It is integrally closed in $K$: an element of $K$ integral over $\mathcal{O}_K$ is integral over $\Z$ (transitivity of integrality, via Proposition 1(c)), so lies in $\mathcal{O}_K$. If $\mathfrak{a} \ni m \neq 0$ with $m \in \Z$, then $\mathcal{O}_K/\mathfrak{a}$ is a quotient of $\mathcal{O}_K/m\mathcal{O}_K \cong (\Z/m)^n$, so it is finite. Finally, for a non-zero prime $\mathfrak{p}$, $\mathcal{O}_K/\mathfrak{p}$ is a finite integral domain, hence a field (multiplication by a non-zero element is injective, hence surjective), so $\mathfrak{p}$ is maximal.
+
+</Proof>
+
+<Theorem name="Theorem 4 (unique factorisation of ideals)">
+
+Let $R$ be a Dedekind domain. Every non-zero proper ideal of $R$ is a product of non-zero prime ideals, uniquely up to order. The fractional ideals form a free abelian group on the non-zero primes, and for ideals, $\mathfrak{a} \supseteq \mathfrak{b}$ if and only if $\mathfrak{a}$ divides $\mathfrak{b}$ ("to contain is to divide").
+
+</Theorem>
+
+<Proof>
+
+Let $K$ be the fraction field. For a non-zero prime $\mathfrak{p}$ put $\mathfrak{p}^{-1} = \{x \in K : x\mathfrak{p} \subseteq R\}$, an $R$-module containing $R$.
+
+*Lemma A: every non-zero ideal contains a product of non-zero primes.* If not, since $R$ is Noetherian there is a maximal counterexample $\mathfrak{a}$. It is not prime (a prime contains itself) and not $R$, so there are $b, c \notin \mathfrak{a}$ with $bc \in \mathfrak{a}$. The ideals $\mathfrak{a} + (b)$ and $\mathfrak{a} + (c)$ are strictly larger, so contain products of primes, and their product, contained in $\mathfrak{a} + (bc) = \mathfrak{a}$, does too — a contradiction.
+
+*Lemma B: for every non-zero ideal $\mathfrak{a}$, $\mathfrak{a}\mathfrak{p}^{-1} \supsetneq \mathfrak{a}$.* First, $\mathfrak{p}^{-1} \neq R$: pick $0 \neq a \in \mathfrak{p}$ and, by Lemma A, primes with $\mathfrak{p}_1 \cdots \mathfrak{p}_r \subseteq (a)$ and $r$ minimal. Since $\mathfrak{p} \supseteq \mathfrak{p}_1 \cdots \mathfrak{p}_r$ is prime, it contains some $\mathfrak{p}_i$, say $\mathfrak{p}_1$, and then $\mathfrak{p}_1 = \mathfrak{p}$ because non-zero primes are maximal. By minimality $\mathfrak{p}_2 \cdots \mathfrak{p}_r \not\subseteq (a)$ (for $r = 1$ read this product as $R$, and note $a$ is not a unit), so there is $b \in \mathfrak{p}_2 \cdots \mathfrak{p}_r \setminus (a)$. Then $b\mathfrak{p} \subseteq (a)$, i.e. $b/a \in \mathfrak{p}^{-1}$, but $b/a \notin R$. Now let $\mathfrak{a} = (\alpha_1, \dots, \alpha_m)$ and suppose $\mathfrak{a}\mathfrak{p}^{-1} = \mathfrak{a}$. For $x \in \mathfrak{p}^{-1}$ write $x\alpha_i = \sum_j a_{ij}\alpha_j$ with $a_{ij} \in R$; the determinant trick gives $\det(xI - A) = 0$, so $x$ is integral over $R$, hence $x \in R$ because $R$ is integrally closed. Thus $\mathfrak{p}^{-1} = R$, a contradiction.
+
+*Lemma C: $\mathfrak{p}\mathfrak{p}^{-1} = R$.* Indeed $\mathfrak{p} \subseteq \mathfrak{p}\mathfrak{p}^{-1} \subseteq R$, the first inclusion is strict by Lemma B, and $\mathfrak{p}$ is maximal.
+
+*Existence.* Suppose some non-zero proper ideal has no factorisation, and let $\mathfrak{a}$ be a maximal one. Choose a maximal ideal $\mathfrak{p} \supseteq \mathfrak{a}$. Then $\mathfrak{a} \subsetneq \mathfrak{a}\mathfrak{p}^{-1} \subseteq \mathfrak{p}\mathfrak{p}^{-1} = R$. If $\mathfrak{a}\mathfrak{p}^{-1} = R$ then $\mathfrak{a} = \mathfrak{a}\mathfrak{p}^{-1}\mathfrak{p} = \mathfrak{p}$, which factors; otherwise $\mathfrak{a}\mathfrak{p}^{-1}$ factors by maximality, $\mathfrak{a}\mathfrak{p}^{-1} = \mathfrak{p}_1 \cdots \mathfrak{p}_r$, and then $\mathfrak{a} = \mathfrak{p}_1 \cdots \mathfrak{p}_r\mathfrak{p}$. Either way a contradiction.
+
+*Uniqueness.* If $\mathfrak{p}_1 \cdots \mathfrak{p}_r = \mathfrak{q}_1 \cdots \mathfrak{q}_s$, then the prime $\mathfrak{p}_1$ contains some $\mathfrak{q}_j$, hence equals it; multiplying by $\mathfrak{p}_1^{-1}$ (Lemma C) cancels it, and induction finishes.
+
+*Group and divisibility.* A fractional ideal $\mathfrak{a}$ has $d\mathfrak{a} \subseteq R$, so $\mathfrak{a} = (d)^{-1}(d\mathfrak{a})$ is a quotient of products of primes, each invertible by Lemma C. If $\mathfrak{a} \supseteq \mathfrak{b}$ then $\mathfrak{c} = \mathfrak{a}^{-1}\mathfrak{b} \subseteq \mathfrak{a}^{-1}\mathfrak{a} = R$ is an ideal with $\mathfrak{b} = \mathfrak{a}\mathfrak{c}$; the converse is clear.
+
+</Proof>
+
+The hypothesis "integrally closed" is used exactly once, in Lemma B, and it is necessary: in the non-integrally-closed ring $\Z[\sqrt{-3}]$, the ideal $\mathfrak{p} = (2, 1 + \sqrt{-3})$ satisfies $\mathfrak{p}^2 = 2\mathfrak{p}$ but $\mathfrak{p} \neq (2)$, so $\mathfrak{p}$ is not invertible and factorisation is not unique; passing to $\mathcal{O}_K = \Z[\zeta_3]$ repairs this.
+
+<Theorem name="Theorem 5 (Dedekind–Kummer)">
+
+Suppose $\mathcal{O}_K = \Z[\omega]$, let $f \in \Z[x]$ be the minimal polynomial of $\omega$, and let $p$ be prime. If $\bar f = \bar g_1^{e_1} \cdots \bar g_r^{e_r}$ in $\mathbb{F}_p[x]$ with distinct monic irreducible $\bar g_i$, and $g_i \in \Z[x]$ are any monic lifts, then
+$$
+p\mathcal{O}_K = \mathfrak{p}_1^{e_1} \cdots \mathfrak{p}_r^{e_r}, \qquad \mathfrak{p}_i = (p, g_i(\omega)), \qquad N(\mathfrak{p}_i) = p^{\deg g_i},
+$$
+with the $\mathfrak{p}_i$ distinct primes. In particular, for a quadratic field and an odd prime $p \nmid d$, $p$ splits if $\left(\frac{d}{p}\right) = 1$ and is inert if $\left(\frac{d}{p}\right) = -1$; the ramified primes are those dividing $d_K$.
+
+</Theorem>
+
+<Proof>
+
+Reduction of coefficients gives $\mathcal{O}_K/p\mathcal{O}_K = \Z[x]/(f, p) \cong \mathbb{F}_p[x]/(\bar f)$. The primes of $\mathcal{O}_K$ containing $p$ correspond to the primes of this ring, i.e. to the ideals $(\bar g_i)$; explicitly, $\mathfrak{p}_i$ is the kernel of $\mathcal{O}_K \to \mathbb{F}_p[x]/(\bar g_i)$, $\omega \mapsto x$, which is $(p, g_i(\omega))$, with residue field of degree $\deg g_i$, so $N(\mathfrak{p}_i) = p^{\deg g_i}$. Next, $\prod_i \mathfrak{p}_i^{e_i} \subseteq (p) + \big(\prod_i g_i(\omega)^{e_i}\big)$, and $\prod_i g_i^{e_i} \equiv f \pmod p$ with $f(\omega) = 0$, so $\prod_i g_i(\omega)^{e_i} \in (p)$. Hence $\prod \mathfrak{p}_i^{e_i} \subseteq (p)$, i.e. $(p)$ divides $\prod\mathfrak{p}_i^{e_i}$ (Theorem 4). Comparing norms, $N(p\mathcal{O}_K) = p^n$ and $N(\prod \mathfrak{p}_i^{e_i}) = p^{\sum e_i \deg g_i} = p^{\deg f} = p^n$, so the two ideals are equal. For a quadratic field with $\omega = \sqrt d$ (or $\frac{1 + \sqrt d}{2}$, whose minimal polynomial has discriminant $d$), $\bar f$ has two distinct roots, no roots or a double root according as its discriminant is a non-zero square, a non-square or zero modulo $p$.
+
+</Proof>
+
+(The theorem holds more generally when $p$ does not divide the index $[\mathcal{O}_K : \Z[\omega]]$; Mathlib proves this form.) So in $\Q(\sqrt{-5})$: $p$ splits iff $-5$ is a non-zero square mod $p$, and by quadratic reciprocity this depends only on $p \bmod 20$ — the residues found by the first experiment.
+
+<Theorem name="Theorem 6 (UFD ⇔ PID for Dedekind domains)">
+
+A Dedekind domain is a unique factorisation domain if and only if it is a principal ideal domain. Hence $\mathcal{O}_K$ has unique factorisation of elements if and only if $h_K = 1$.
+
+</Theorem>
+
+<Proof>
+
+A PID is a UFD (standard). Conversely let $R$ be a Dedekind UFD and $\mathfrak{p}$ a non-zero prime ideal. Pick $0 \neq a \in \mathfrak{p}$; $a$ is not a unit, so it factors into irreducibles, and since $\mathfrak{p}$ is prime one irreducible factor $\pi$ lies in $\mathfrak{p}$. In a UFD irreducibles are prime, so $(\pi)$ is a non-zero prime ideal; being non-zero it is maximal, and $(\pi) \subseteq \mathfrak{p} \neq R$ forces $(\pi) = \mathfrak{p}$. So every non-zero prime is principal, and by Theorem 4 so is every non-zero ideal, a product of primes.
+
+</Proof>
+
+In $\Z[\sqrt{-5}]$ the element $2$ is irreducible but not prime (formalised below), so $\Z[\sqrt{-5}]$ is not a UFD and $h_{\Q(\sqrt{-5})} > 1$.
+
+<Theorem name="Theorem 7 (Minkowski's bound; finiteness of the class group)">
+
+Every ideal class of a number field $K$ of degree $n$ contains an integral ideal of norm at most
+$$
+M_K = \frac{n!}{n^n}\left(\frac{4}{\pi}\right)^{r_2}\sqrt{|d_K|}.
+$$
+Since there are only finitely many ideals of bounded norm, the class group is finite. Moreover $|d_K| > 1$ for $K \neq \Q$.
+
+</Theorem>
+
+*Proof sketch.* The embeddings map $\mathcal{O}_K$ to a lattice in $\R^{r_1} \times \C^{r_2} \cong \R^n$ of covolume $2^{-r_2}\sqrt{|d_K|}$, and an ideal $\mathfrak{a}$ to a sublattice of covolume $2^{-r_2}\sqrt{|d_K|}\,N(\mathfrak{a})$. **Minkowski's convex body theorem** — a convex, centrally symmetric region of volume greater than $2^n$ times the covolume contains a non-zero lattice point — applied to a suitably scaled region $\{\sum|x_i| \leq t\}$ yields $0 \neq \alpha \in \mathfrak{a}$ with $|N(\alpha)| \leq M_K N(\mathfrak{a})$ (using the AM–GM inequality). Given a class, choose $\mathfrak{a}$ in the inverse class with $\mathfrak{a}$ integral; then $\alpha\mathfrak{a}^{-1}$ is an integral ideal in the original class with norm $|N(\alpha)|/N(\mathfrak{a}) \leq M_K$. An ideal of norm $m$ contains $m$, and $\mathcal{O}_K/m\mathcal{O}_K$ is finite, so there are finitely many such ideals. Since $M_K \geq 1$ (every class contains an ideal of norm $\geq 1$), $\sqrt{|d_K|} \geq \frac{n^n}{n!}(\pi/4)^{n/2} > 1$ for $n \geq 2$. Full proofs: Neukirch, Chapter I, §5–6; Marcus, Chapter 5. $\square$
+
+<Example title="Computing class groups with the Minkowski bound">
+
+- $\Q(i)$: $M = \frac{2}{4}\cdot\frac{4}{\pi}\cdot 2 = \frac{4}{\pi} < 2$, so every class contains the ideal $(1)$: $h = 1$.
+- $\Q(\sqrt{-3})$: $M = \frac{1}{2}\cdot\frac{4}{\pi}\sqrt 3 \approx 1.10$: $h = 1$. (Mathlib proves exactly this, as `IsCyclotomicExtension.Rat.three_pid`.)
+- $\Q(\sqrt 2)$: $M = \frac{1}{2}\sqrt 8 \approx 1.41$: $h = 1$.
+- $\Q(\sqrt{-5})$: $M = \frac{1}{2}\cdot\frac{4}{\pi}\sqrt{20} \approx 2.85$, so every class contains an ideal of norm $1$ or $2$. The only ideal of norm $2$ is $\mathfrak{p} = (2, 1 + \sqrt{-5})$ (since $(2) = \mathfrak{p}^2$), which is not principal because $a^2 + 5b^2 = 2$ has no solution. So $\operatorname{Cl} = \{[(1)], [\mathfrak{p}]\} \cong \Z/2$, and $h = 2$.
+
+</Example>
+
+<Theorem name="Theorem 8 (Dirichlet's unit theorem)">
+
+$\mathcal{O}_K^\times \cong \mu_K \times \Z^{r_1 + r_2 - 1}$: there are **fundamental units** $\varepsilon_1, \dots, \varepsilon_r$, $r = r_1 + r_2 - 1$, such that every unit is uniquely $\zeta\varepsilon_1^{n_1} \cdots \varepsilon_r^{n_r}$ with $\zeta \in \mu_K$ and $n_i \in \Z$.
+
+</Theorem>
+
+*Proof for quadratic fields.* If $K$ is imaginary quadratic ($r_1 = 0$, $r_2 = 1$, $r = 0$), a unit $a + b\omega$ has norm $1$, and $N$ is a positive definite quadratic form, so there are finitely many units: they are roots of unity, $\pm 1$ except for $\Q(i)$ and $\Q(\sqrt{-3})$. If $K = \Q(\sqrt d)$ is real ($r = 1$), view $K \subseteq \R$. For $C > 1$, a unit $u$ with $1 < u < C$ has conjugate $u' = \pm 1/u$, so $|u'| < 1$; then $u + u'$ and $u - u'$ are bounded, which bounds the coordinates of $u$ in the lattice $\mathcal{O}_K$, so there are finitely many such units. If there is at least one unit $> 1$ (below), let $\varepsilon$ be the smallest. Any unit $u > 0$ satisfies $\varepsilon^n \leq u < \varepsilon^{n+1}$ for some $n \in \Z$, and $u\varepsilon^{-n}$ is a unit in $[1, \varepsilon)$, hence equal to $1$. So the units are $\pm\varepsilon^n$. That a unit $> 1$ exists is the solvability of Pell's equation $x^2 - dy^2 = 1$ in positive integers (Lagrange, 1768; proved in Mathlib as `Pell.exists_of_not_isSquare`); for $d = 2$, $1 + \sqrt 2$ is a unit of infinite order (formalised below). $\square$
+
+*The general case* (sketch): the **logarithmic embedding** $\ell(u) = (\log|\sigma(u)|)_\sigma \in \R^{r_1 + r_2}$ (one coordinate per real embedding and per pair of complex ones, the latter doubled) is a homomorphism into the hyperplane $\sum = 0$ (because $|N(u)| = 1$). Its kernel is finite — algebraic integers all of whose conjugates have absolute value $1$ are roots of unity (Kronecker) — and its image is discrete, because a bounded region contains finitely many algebraic integers with bounded conjugates. The hard step is that the image spans the hyperplane, again by Minkowski's theorem. See Neukirch, Chapter I, §7. Mathlib formalises the full theorem (below).
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: units on hyperbolas, roots of unity on circles">
+
+**Units of $\Z[\sqrt 2]$.** A unit $a + b\sqrt 2$ has norm $a^2 - 2b^2 = \pm 1$, so the points $(a, b)$ lie on the two hyperbolas below. Multiplying by the fundamental unit $1 + \sqrt 2$ sends $(a, b) \mapsto (a + 2b, a + b)$, hopping between the hyperbolas: $(1, 0) \to (1, 1) \to (3, 2) \to (7, 5) \to (17, 12) \to \cdots$, with norms alternating $+1, -1$. On the logarithmic scale these powers are evenly spaced — a rank-one lattice, as Dirichlet's theorem says. The points $(3, 2)$, $(17, 12)$, … also give the best rational approximations $3/2$, $17/12$, $99/70$ to $\sqrt 2$.
+
+<FunctionPlot
+  fns={["sqrt((x^2 - 1)/2)", "sqrt((x^2 + 1)/2)", "x/sqrt(2)"]}
+  labels={["a² − 2b² = 1", "a² − 2b² = −1", "b = a/√2"]}
+  points={[[1, 0, "1"], [1, 1, "1+√2"], [3, 2, "(1+√2)²"], [7, 5, "(1+√2)³"], [17, 12, "(1+√2)⁴"]]}
+  x={[0, 18]}
+  y={[0, 13]}
+  xLabel="a"
+  yLabel="b"
+  title="The units a + b√2 of ℤ[√2] (a, b ≥ 0)"
+  subtitle="Every unit is ±(1 + √2)ⁿ: the powers alternate between norm +1 and norm −1 and approach the asymptote b = a/√2."
+/>
+
+**Cyclotomic integers.** The $p$-th roots of unity are the vertices of a regular $p$-gon; $\Z[\zeta_p]$ is the ring of integer combinations of them. Change $n$: for $n = 3$ you get $\Z[\zeta_3]$ (class number $1$), for $n = 5$ the ring $\Z[\zeta_5]$ (class number $1$, also proved in Mathlib), and Kummer's theory says what happens for larger primes: the class number of $\Q(\zeta_{23})$ is $3$.
+
+<ComplexPlane mode="roots" z={[1, 0]} n={5} title="The fifth roots of unity" subtitle="ℤ[ζ₅] has ζ = e^{2πi/5} as a generator; its four embeddings into ℂ send ζ to the four non-trivial vertices." />
+
+</Section>
+
+<Section id="formal" kind="formal" title="Algebraic number theory in Lean and Mathlib">
+
+We first prove, from scratch, everything about $\Z[\sqrt{-5}]$ used in the lesson, working in Mathlib's `Zsqrtd (-5)` (written `ℤ√(-5)`), whose norm is multiplicative. The norm, the fact that the ring is a domain (needed to talk about unique factorisation at all), and the key arithmetic fact that nothing has norm $2$:
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.norm_sqrt_neg_five" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.isDomain_sqrt_neg_five" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.norm_ne_two" />
+
+Then $2$ is irreducible but not prime, so $\Z[\sqrt{-5}]$ is not a UFD:
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.two_irreducible" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.two_not_prime" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.not_ufd" />
+
+The two cases of Dirichlet's unit theorem for quadratic rings: finitely many units for $\Z[\sqrt{-5}]$, infinitely many for $\Z[\sqrt 2]$:
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.units_sqrt_neg_five" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.one_add_sqrt_two_unit" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.one_add_sqrt_two_infinite_order" />
+
+Mathlib's number field library proves the general theory. Proposition 3 and Theorem 4:
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.ring_of_integers_dedekind" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.ideals_factor_uniquely" />
+
+Theorem 7 and Theorem 6 (in the form "class number one ⇔ PID"):
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.class_group_finite" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.class_number_one_iff" />
+
+Theorem 8, with the rank:
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.dirichlet_unit_theorem" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.unit_rank" />
+
+Cyclotomic integers, and Fermat's two-squares theorem (the splitting of $p \equiv 1 \pmod 4$ in $\Z[i]$):
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.cyclotomic_integers" />
+
+<Lean decl="Lumenary.AlgebraicNumberTheory.sum_of_two_squares" />
+
+**What is and is not formalised.** Proved here: all the arithmetic of $\Z[\sqrt{-5}]$ in the lesson (domain, irreducibility and non-primality of $2$, not a UFD, units $\pm 1$) and the infinitude of the units of $\Z[\sqrt 2]$. From Mathlib: rings of integers are Dedekind, unique factorisation of ideals, finiteness of the class group, $h = 1 \Leftrightarrow$ PID, Dirichlet's unit theorem with rank $r_1 + r_2 - 1$, $\mathcal{O}_{\Q(\zeta_p)} = \Z[\zeta_p]$, and the two-squares theorem. Not formalised here: Theorem 2 (Mathlib does not yet have a packaged computation of the rings of integers of all quadratic fields), the computation $h(\Q(\sqrt{-5})) = 2$ (we prove $h > 1$ via "not a UFD", but not $h = 2$), and the Dedekind–Kummer theorem, which Mathlib proves as `KummerDedekind.normalizedFactors_ideal_map_eq_normalizedFactors_min_poly_mk_map` but which we do not restate.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Splitting primes and counting classes">
+
+The first experiment factors every prime below $200$ in $\Q(i)$, $\Q(\sqrt{-5})$, $\Q(\sqrt 2)$ and $\Q(\sqrt 5)$ by Theorem 5, checks the answer against the Kronecker symbol $\left(\frac{d_K}{p}\right)$, and then looks at the split primes of $\Q(\sqrt{-5})$: the prime factors are principal exactly when $p = a^2 + 5b^2$, which happens for $p \equiv 1, 9 \pmod{20}$ — the class group made visible. About half the primes split in each field, an instance of the Chebotarev density theorem.
+
+<Python id="algebraic_number_theory_splitting" />
+
+The second experiment computes class numbers of imaginary quadratic fields in two independent ways — counting Gauss's reduced binary quadratic forms, and Dirichlet's analytic class number formula $h(D) = -\frac{w}{2|D|}\sum_{a=1}^{|D|-1}\chi_D(a)\,a$ — finds the nine discriminants with class number one, and computes fundamental units of real quadratic rings from continued fractions. Notice how erratically the units grow: the unit theorem says one generator exists, not how big it is.
+
+<Python id="algebraic_number_theory_class_numbers" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every ring of integers has unique factorisation, like $\Z$."** It fails already in $\Z[\sqrt{-5}]$: $6 = 2 \cdot 3 = (1 + \sqrt{-5})(1 - \sqrt{-5})$ with all four factors irreducible and no two associate. What survives is unique factorisation of **ideals** (Theorem 4): $(6) = \mathfrak{p}^2\mathfrak{q}\mathfrak{q}'$, and both element factorisations are regroupings of it. Element factorisation is unique exactly when every ideal is principal, $h_K = 1$ (Theorem 6).
+
+</Misconception>
+
+<Misconception>
+
+**"The ring of integers of $\Q(\sqrt d)$ is $\Z[\sqrt d]$."** Only when $d \equiv 2, 3 \pmod 4$. For $d \equiv 1 \pmod 4$ the element $\frac{1 + \sqrt d}{2}$ is a root of $x^2 - x - \frac{d - 1}{4}$, an integer polynomial: the golden ratio $\frac{1 + \sqrt 5}{2}$ and $\zeta_3 = \frac{-1 + \sqrt{-3}}{2}$ are algebraic integers. Working in the too-small ring $\Z[\sqrt{-3}]$ even destroys unique factorisation of ideals, because it is not integrally closed.
+
+</Misconception>
+
+<Misconception>
+
+**"A prime number stays prime in any ring of integers"** — or the opposite, **"every prime splits."** All three behaviours occur, governed by the reduction of a minimal polynomial (Theorem 5): in $\Z[i]$, $2$ ramifies, $5$ splits and $3$ stays prime. Whether $p$ splits in $\Q(\sqrt d)$ depends only on $p$ modulo $4|d|$, by quadratic reciprocity.
+
+</Misconception>
+
+<Misconception>
+
+**"Units are just $\pm 1$."** That is true for $\Z$ and for imaginary quadratic fields other than $\Q(i)$ and $\Q(\sqrt{-3})$, but real quadratic fields have infinitely many units, $\pm\varepsilon^n$, and the fundamental unit can be enormous: for $d = 94$ it is $2143295 + 221064\sqrt{94}$. In general the unit group has rank $r_1 + r_2 - 1$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="The geometry of numbers">
+
+Minkowski's insight (*Geometrie der Zahlen*, 1896) was that $\mathcal{O}_K$ embedded by $(\sigma_1, \dots, \sigma_{r_1}, \sigma_{r_1+1}, \dots)$ is a lattice in $\R^n$, and that arithmetic questions become questions about lattice points in convex bodies. His convex body theorem proves the finiteness of the class group (Theorem 7), the inequality $|d_K| > 1$ for $K \neq \Q$, and — applied to the logarithmic embedding — Dirichlet's unit theorem, where the units form a lattice of covolume related to the **regulator** in the hyperplane $\sum x_i = 0$. The same technique gives Lagrange's four-squares theorem (via a lattice in $\R^4$) and Fermat's two-squares theorem (a lattice of covolume $p$ in $\R^2$ must contain a non-zero point in the disc of area $2\pi p > 4p$). The picture in the intuition section — an ideal as a sublattice of index $N(\mathfrak{a})$ — is this viewpoint in miniature.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Primes as points, extensions as coverings (an analogy)">
+
+Think of $\operatorname{Spec}\mathcal{O}_K$ as a curve whose points are the non-zero primes (see <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>). A finite extension $L/K$ gives a map $\operatorname{Spec}\mathcal{O}_L \to \operatorname{Spec}\mathcal{O}_K$ that behaves like a **branched covering** of degree $[L : K]$: over most points there are $\sum e_i f_i = [L : K]$ "sheets", and the finitely many ramified primes (those dividing the relative discriminant) are the **branch points**. For Galois extensions the Galois group acts on the fibres like deck transformations, and the **decomposition group** and **Frobenius element** of a prime mirror the local monodromy around a point. The analogy predicts true theorems: the **Hilbert class field** of $K$ — its maximal unramified abelian extension — has Galois group isomorphic to $\operatorname{Cl}(K)$, as the maximal abelian unramified cover of a space has deck group $H_1$, the abelianised fundamental group; and Minkowski's theorem that every extension of $\Q$ ramifies somewhere says "$\operatorname{Spec}\Z$ is simply connected". This is an analogy, not an identity — étale fundamental groups (Grothendieck) make it precise.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Dedekind zeta functions and the class number formula">
+
+The **Dedekind zeta function** $\zeta_K(s) = \sum_{\mathfrak{a}} N(\mathfrak{a})^{-s} = \prod_{\mathfrak{p}}(1 - N(\mathfrak{p})^{-s})^{-1}$ ($\operatorname{Re} s > 1$) encodes the splitting of all primes at once — its Euler product is Theorem 4 read analytically. It continues meromorphically to $\C$ with a simple pole at $s = 1$ whose residue is given by the **analytic class number formula**:
+$$
+\operatorname{Res}_{s=1}\zeta_K(s) = \frac{2^{r_1}(2\pi)^{r_2}\, h_K\, R_K}{w_K\sqrt{|d_K|}},
+$$
+where $R_K$ is the regulator (the covolume of the unit lattice) and $w_K = \#\mu_K$. So the class number and the units, the two measures of failure of unique factorisation, appear together in an analytic invariant. For a quadratic field $\zeta_K(s) = \zeta(s)L(s, \chi_{d_K})$, which turns the formula into Dirichlet's finite sum used in the second experiment. This is the bridge to <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink>; Siegel's theorem $h(d) = |d|^{1/2 + o(1)}$ for imaginary quadratic fields comes from it.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Galois theory of primes">
+
+If $L/\Q$ is Galois with group $G$, then $G$ permutes the primes above $p$ transitively, so $e$ and $f$ are the same for all of them and $efg = [L : \Q]$. For unramified $p$ there is a well-defined **Frobenius** conjugacy class $\mathrm{Frob}_p \subseteq G$, the elements acting as $x \mapsto x^p$ on a residue field. For abelian $G$, $\mathrm{Frob}_p$ is an element, and for cyclotomic fields it is simply $p \bmod n$ in $(\Z/n)^\times \cong \operatorname{Gal}(\Q(\zeta_n)/\Q)$ — this is why the splitting of $q$ in $\Q(\zeta_p)$ depends on the order of $q$ mod $p$, and why quadratic reciprocity follows from the inclusion $\Q(\sqrt{\pm p}) \subseteq \Q(\zeta_p)$. **Class field theory** (Takagi, Artin) describes all abelian extensions of $K$ in terms of ideals of $K$; the **Chebotarev density theorem** says each conjugacy class $C$ occurs as $\mathrm{Frob}_p$ for a proportion $|C|/|G|$ of primes — half of all primes split in each quadratic field, as the first experiment shows. Non-abelian generalisations are the subject of the <TopicLink id="math.number.langlands-programme">Langlands programme</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trail">
+
+Clock arithmetic is the arithmetic of $\Z/n$ — the residue rings $\mathcal{O}_K/\mathfrak{a}$ of this lesson generalise it, and the Dedekind–Kummer theorem reduces the factorisation of primes to factoring polynomials on a "clock" $\mathbb{F}_p$.
+
+<Trail slug="clock-arithmetic" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Brahmagupta** (*Brāhmasphuṭasiddhānta*, 628) found the composition identity $(a^2 - Nb^2)(c^2 - Nd^2) = (ac + Nbd)^2 - N(ad + bc)^2$ — multiplicativity of the norm in $\Z[\sqrt N]$ — and used it to generate solutions of $x^2 - Ny^2 = 1$. Jayadeva and **Bhāskara II** (*Bījagaṇita*, 1150) developed the cyclic *chakravāla* method, solving $x^2 - 61y^2 = 1$ with $x = 1766319049$, $y = 226153980$.
+- **Fermat** stated the two-squares theorem (1640) and posed Pell's equation as a challenge (1657); **Euler** proved the two-squares theorem (1749) and used numbers $a + b\sqrt{-3}$ in work on $x^3 + y^3 = z^3$; **Lagrange** proved that Pell's equation always has a non-trivial solution (1768) and began the theory of binary quadratic forms.
+- **Gauss** (*Disquisitiones Arithmeticae*, 1801) developed composition of forms and class numbers — a class group before groups had a name — and conjectured that only finitely many imaginary quadratic fields have class number one; he introduced $\Z[i]$ for biquadratic reciprocity (1832). **Dirichlet** proved the unit theorem (1846) and his class number formula (1839).
+- **Kummer** found the failure of unique factorisation in cyclotomic integers and introduced ideal numbers (1844–47), proving Fermat's Last Theorem for regular primes. **Dedekind** replaced ideal numbers by ideals in his supplements to Dirichlet's lectures (1871), proving Theorem 4; **Kronecker** developed a parallel theory of divisors. **Hilbert**'s *Zahlbericht* (1897) unified the subject, and **Minkowski** (1896) brought in the geometry of numbers.
+- **Teiji Takagi** (1920) and **Emil Artin** (1927) established class field theory. **Kurt Heegner** (1952), **Alan Baker** and **Harold Stark** (1966–67) proved that exactly nine imaginary quadratic fields have class number one ($d = -3, -4, -7, -8, -11, -19, -43, -67, -163$), settling Gauss's problem. Andrew Wiles's proof of Fermat's Last Theorem (1995) used far more than Kummer's methods, but ideals, class groups and Galois actions on primes remain its language.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Daniel A. Marcus, *Number Fields* (1977; 2nd ed. 2018) — the friendliest first course, with excellent exercises on quadratic and cyclotomic fields.
+- Jürgen Neukirch, *Algebraic Number Theory* (1999) — the standard graduate text: Dedekind domains, Minkowski theory, units, local fields and class field theory.
+- Kenneth Ireland and Michael Rosen, *A Classical Introduction to Modern Number Theory* (2nd ed., 1990) — Gaussian and Eisenstein integers, cyclotomy, and Fermat's Last Theorem for small exponents.
+- Ian Stewart and David Tall, *Algebraic Number Theory and Fermat's Last Theorem* (4th ed., 2015) — from Kummer's ideals to an outline of Wiles's proof.
+- Pierre Samuel, *Algebraic Theory of Numbers* (1970) — short and elegant.
+- David A. Cox, *Primes of the Form $x^2 + ny^2$* (1989) — forms, class field theory and complex multiplication, starting from exactly the question of which $p$ are $a^2 + 5b^2$.
+
+</Section>

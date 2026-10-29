@@ -1,0 +1,519 @@
+---
+slug: sequences-series
+topic: math.analysis.sequences-series
+title: Sequences and series
+subtitle: Adding up infinitely many numbers can give a finite answer — $1 + \tfrac12 + \tfrac14 + \cdots = 2$ — or no answer at all, even when the numbers being added shrink to nothing.
+level: g9-12
+ages: Ages 15–18
+minutes: 75
+order: 4017
+objectives:
+  - Find formulas for the $n$-th term and the partial sums of arithmetic and geometric sequences, and prove them by induction
+  - Define sequences recursively and use summation notation
+  - Explain why $1 + \tfrac12 + \tfrac14 + \cdots = 2$ and why $0.999\ldots = 1$, and decide when an infinite geometric series converges
+  - Use the term test, and prove that the harmonic series diverges although its terms tend to $0$
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.SequencesSeries.arith_sum
+  - Lumenary.SequencesSeries.geom_telescope
+  - Lumenary.SequencesSeries.geom_sum
+  - Lumenary.SequencesSeries.geom_sum_library
+  - Lumenary.SequencesSeries.hanoi
+  - Lumenary.SequencesSeries.hanoi_formula
+  - Lumenary.SequencesSeries.geom_series_tendsto
+  - Lumenary.SequencesSeries.geom_series_hasSum
+  - Lumenary.SequencesSeries.halves
+  - Lumenary.SequencesSeries.point_nine_recurring
+  - Lumenary.SequencesSeries.term_test
+  - Lumenary.SequencesSeries.geom_diverges
+  - Lumenary.SequencesSeries.harmonic_two_pow
+  - Lumenary.SequencesSeries.harmonic_tendsto_atTop
+  - Lumenary.SequencesSeries.harmonic_terms_tend_to_zero_but_diverges
+  - Lumenary.SequencesSeries.harmonic_not_summable_library
+compute: [sequences_series_geometric, sequences_series_harmonic]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Can you add forever?">
+
+The Greek philosopher Zeno of Elea (5th century BCE) posed a puzzle. To walk across a room 2 metres wide, you must first walk 1 metre, then half of the remaining metre, then half of what remains, and so on — infinitely many steps:
+
+$$
+1 + \frac12 + \frac14 + \frac18 + \cdots
+$$
+
+Infinitely many positive distances: surely they add up to an infinite distance, and you never arrive? Yet people cross rooms every day.
+
+Adding long lists of numbers is much older than Zeno. Problem 79 of the Egyptian *Rhind papyrus* (about 1550 BCE) adds $7 + 49 + 343 + 2401 + 16807$ — seven houses, each with seven cats, each catching seven mice, and so on. Today the same arithmetic appears in savings that earn interest, in medicine doses that decay in the body, and in the decimal expansion of every number.
+
+In this lesson we learn to add such lists — finite ones exactly, infinite ones by a limit — and find out when an infinite sum makes sense. Zeno's sum, we will prove, is exactly $2$.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Running totals that settle down">
+
+A **sequence** is an infinite list of numbers, $a_1, a_2, a_3, \dots$. A **series** is what you get by adding the terms one by one and keeping a running total. For Zeno's walk the running totals are
+
+$$
+1, \quad 1\tfrac12, \quad 1\tfrac34, \quad 1\tfrac78, \quad 1\tfrac{15}{16}, \quad \dots
+$$
+
+Each is short of $2$ by exactly the last step taken: $1, \tfrac12, \tfrac14, \tfrac18, \dots$ The gap halves every time. It never becomes zero, but it becomes smaller than any distance you care to name — smaller than a millimetre after $11$ steps, smaller than the width of an atom after about $35$. That is what we will mean by "the infinite sum is $2$": not that someone finishes infinitely many additions, but that the running totals **close in on** $2$ and on nothing else.
+
+<Figure caption="Half of a unit square, then a quarter, then an eighth, … Every piece is half of what is left, and the pieces fill the whole square: $\tfrac12 + \tfrac14 + \tfrac18 + \cdots = 1$. Adding the first step of Zeno's walk gives $1 + \tfrac12 + \tfrac14 + \cdots = 2$.">
+<svg viewBox="0 0 220 220" role="img" aria-label="A unit square divided into a half, a quarter, an eighth, a sixteenth and smaller pieces">
+  <rect x="10" y="10" width="100" height="200" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <rect x="110" y="10" width="100" height="100" fill="var(--gold)" fillOpacity="0.35" stroke="var(--ink-2)" strokeWidth="2" />
+  <rect x="110" y="110" width="50" height="100" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <rect x="160" y="110" width="50" height="50" fill="var(--gold)" fillOpacity="0.35" stroke="var(--ink-2)" strokeWidth="2" />
+  <rect x="160" y="160" width="25" height="50" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <rect x="185" y="160" width="25" height="25" fill="var(--gold)" fillOpacity="0.35" stroke="var(--ink-2)" strokeWidth="2" />
+  <rect x="185" y="185" width="12.5" height="25" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1" />
+  <rect x="197.5" y="185" width="12.5" height="12.5" fill="var(--gold)" fillOpacity="0.35" stroke="var(--ink-2)" strokeWidth="1" />
+  <text x="60" y="115" textAnchor="middle" fontSize="18" fill="var(--ink-2)">1/2</text>
+  <text x="160" y="65" textAnchor="middle" fontSize="16" fill="var(--ink-2)">1/4</text>
+  <text x="135" y="165" textAnchor="middle" fontSize="13" fill="var(--ink-2)">1/8</text>
+  <text x="185" y="140" textAnchor="middle" fontSize="10" fill="var(--ink-2)">1/16</text>
+</svg>
+</Figure>
+
+<Narrator who="chloe">
+
+Not every infinite sum settles down. $1 + 1 + 1 + \cdots$ obviously grows forever. But what about $1 + \tfrac12 + \tfrac13 + \tfrac14 + \cdots$? The terms shrink to nothing, just like Zeno's. Make a guess now — we will prove the answer later, and many people find it surprising.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="sequence">
+
+A **sequence** of real numbers is a function that assigns a real number $a_n$ to each positive integer $n$ (sometimes to each $n \ge 0$). We write it $(a_n)$ or $a_1, a_2, a_3, \dots$ A sequence may be given by a **formula**, such as $a_n = \tfrac1n$, or **recursively**, by giving the first term(s) and a rule for each term in terms of earlier ones, such as $a_1 = 1$, $a_{n+1} = 2a_n + 1$.
+
+</Definition>
+
+<Definition term="arithmetic and geometric sequences">
+
+A sequence is **arithmetic** if consecutive terms have a constant difference $d$: $a_{n+1} = a_n + d$, so $a_n = a + (n - 1)d$ with $a = a_1$. It is **geometric** if consecutive terms have a constant ratio $r$: $a_{n+1} = r\,a_n$, so $a_n = a\,r^{n-1}$.
+
+</Definition>
+
+<Definition term="summation notation">
+
+$\displaystyle\sum_{k=1}^{n} a_k = a_1 + a_2 + \dots + a_n$. The letter $k$ is a "dummy" index: $\sum_{k=1}^{n} k^2$ and $\sum_{j=1}^{n} j^2$ mean the same thing. For example $\sum_{k=1}^{5} k^2 = 1 + 4 + 9 + 16 + 25 = 55$.
+
+</Definition>
+
+<Definition term="limit of a sequence">
+
+A sequence $(s_n)$ **converges** to $L$ (or **tends** to $L$), written $s_n \to L$ or $\lim_{n\to\infty} s_n = L$, if for every tolerance $\varepsilon > 0$ there is an index $N$ such that $|s_n - L| < \varepsilon$ for all $n \ge N$. In words: eventually every term is within $\varepsilon$ of $L$, however small $\varepsilon$ is. Otherwise the sequence **diverges**.
+
+</Definition>
+
+<Definition term="series and partial sums">
+
+Given a sequence $(a_k)$, its **partial sums** are $S_n = a_1 + \dots + a_n$. The **series** $\sum_{k=1}^{\infty} a_k$ **converges** to $S$, and we write $\sum_{k=1}^{\infty} a_k = S$, if $S_n \to S$. If the partial sums have no limit, the series **diverges**.
+
+</Definition>
+
+So an infinite sum is not an infinite act of adding; it is the limit of finite sums. The limit laws you may know from <TopicLink id="math.analysis.intro-calculus">Introductory calculus</TopicLink> hold for sequences too: limits of sums, products and constant multiples are the sums, products and multiples of the limits.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Arithmetic sequences">
+
+The seats in a stadium in Lagos are arranged so that the first row has $30$ seats and each row has $4$ more than the one in front: $a_n = 30 + 4(n - 1)$. Row $25$ has $a_{25} = 126$ seats. By the formula proved below, the first $25$ rows hold $\tfrac{25(30 + 126)}{2} = 1950$ seats: number of rows times the average of the first and last row.
+
+</Example>
+
+<Example title="Geometric sequences">
+
+- A medicine with a half-life of one day: if $80$ mg are in the body today, then $80 \cdot (\tfrac12)^{n}$ mg remain after $n$ days — a geometric sequence with ratio $\tfrac12$.
+- Savings of $1000$ rupees earning $5\%$ a year grow to $1000 \cdot 1.05^{n}$ rupees after $n$ years: ratio $1.05$.
+- $3, -6, 12, -24, \dots$ has ratio $-2$: the signs alternate and the sizes double.
+
+</Example>
+
+<Example title="A recursive sequence">
+
+The Tower of Hanoi puzzle has discs of different sizes on one of three pegs; you must move the whole stack to another peg, one disc at a time, never putting a larger disc on a smaller one. To move $n + 1$ discs, you must move the top $n$ out of the way, move the largest disc, and move the $n$ back on top. So the least number of moves $h_n$ satisfies
+
+$$
+h_0 = 0, \qquad h_{n+1} = 2h_n + 1,
+$$
+
+giving $0, 1, 3, 7, 15, 31, \dots$ The pattern suggests $h_n = 2^n - 1$, and induction proves it: $h_{n+1} + 1 = 2h_n + 2 = 2(h_n + 1) = 2 \cdot 2^n$. Another famous recursion, $F_{n+2} = F_{n+1} + F_n$, gives the sequence $1, 1, 2, 3, 5, 8, \dots$, studied by Indian scholars of poetic metre (Virahāṅka, Hemachandra) centuries before Fibonacci's rabbits (1202).
+
+</Example>
+
+<Example title="Limits of sequences">
+
+- $\tfrac1n \to 0$: given $\varepsilon > 0$, choose $N > \tfrac1\varepsilon$; then $\tfrac1n \le \tfrac1N < \varepsilon$ for $n \ge N$.
+- $\tfrac{2n + 1}{n} = 2 + \tfrac1n \to 2$.
+- $(-1)^n$ diverges: its terms jump between $-1$ and $1$ and stay $2$ apart, so they cannot all be within $\varepsilon = \tfrac12$ of a single number.
+
+</Example>
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: watching partial sums">
+
+The partial sums of Zeno's series $\sum (\tfrac12)^{n-1}$, with the limit $2$ drawn as a dashed line:
+
+<SequenceLab mode="series" term="(1/2)^(n-1)" limit="2" N={20} title="1 + 1/2 + 1/4 + ⋯" subtitle="How many terms until the partial sums are within 0.001 of 2?" />
+
+Now move the ratio $r$. For which values do the partial sums of $1 + r + r^2 + \cdots$ settle down? Try $r = 0.9$, $r = -0.9$, $r = 1$ and $r = -1$.
+
+<SequenceLab mode="series" term="r^(n-1)" params={[{"name":"r","min":-1.2,"max":1.2,"step":0.05,"value":0.5}]} N={60} title="The geometric series 1 + r + r² + ⋯" />
+
+Finally the harmonic series $1 + \tfrac12 + \tfrac13 + \cdots$. Switch on the logarithmic axis: the partial sums keep climbing, by about the same amount each time $n$ is multiplied by $10$.
+
+<SequenceLab mode="series" term="1/n" N={1000} title="The harmonic series" subtitle="The terms shrink to 0. Do the partial sums settle down?" />
+
+Recursive sequences can be explored with a cobweb diagram. Iterating $x \mapsto \tfrac{x}{2} + 1$ from any start gives a sequence converging to $2$, the solution of $x = \tfrac x2 + 1$. Iterating the logistic map $x \mapsto r x(1 - x)$ instead can converge, oscillate or behave chaotically depending on $r$ — the start of the theory of <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>.
+
+<SequenceLab mode="cobweb" modes={["cobweb"]} params={[{"name":"r","min":2.5,"max":4,"step":0.01,"value":3.2}]} x0={0.2} N={60} title="Iterating the logistic map x ↦ r x (1 − x)" subtitle="Try r = 2.8, 3.2, 3.5 and 3.9." />
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Finite sums">
+
+<Theorem name="Theorem 1 (arithmetic series)">
+
+The sum of the first $n$ terms of the arithmetic sequence $a, a + d, a + 2d, \dots$ is
+
+$$
+S_n = \sum_{k=0}^{n-1} (a + kd) = \frac{n\big(2a + (n - 1)d\big)}{2} = \frac{n\,(\text{first} + \text{last})}{2}.
+$$
+
+</Theorem>
+
+<Proof>
+
+Write the sum forwards and backwards and add the two lines term by term:
+
+$$
+\begin{aligned}
+S_n &= a + (a + d) + \dots + \big(a + (n - 1)d\big), \\
+S_n &= \big(a + (n - 1)d\big) + \big(a + (n - 2)d\big) + \dots + a.
+\end{aligned}
+$$
+
+Each of the $n$ columns adds up to $2a + (n - 1)d$, so $2S_n = n\big(2a + (n - 1)d\big)$.
+
+</Proof>
+
+With $a = d = 1$ this gives $1 + 2 + \dots + n = \tfrac{n(n + 1)}{2}$. A famous story — probably embellished — tells that the young Gauss found $1 + 2 + \dots + 100 = 5050$ this way in seconds.
+
+<Theorem name="Theorem 2 (geometric series, finite)">
+
+If $r \ne 1$, then for every $n \ge 0$
+
+$$
+a + ar + ar^2 + \dots + ar^{n-1} = \frac{a(1 - r^n)}{1 - r}.
+$$
+
+</Theorem>
+
+<Proof>
+
+Let $S = 1 + r + \dots + r^{n-1}$. Then $rS = r + r^2 + \dots + r^n$, and subtracting, every term except the first of $S$ and the last of $rS$ cancels:
+
+$$
+(1 - r)S = 1 - r^n.
+$$
+
+(This "telescoping" can also be proved by induction on $n$: $(1 - r)\big(S + r^n\big) = 1 - r^n + r^n - r^{n+1} = 1 - r^{n+1}$.) Divide by $1 - r \ne 0$ and multiply by $a$.
+
+</Proof>
+
+For $r = 1$ the sum is simply $na$.
+
+</Section>
+
+<Section id="infinite" kind="proof" title="Infinite series">
+
+To let $n \to \infty$ in Theorem 2 we need to know what happens to $r^n$.
+
+<Theorem name="Lemma 3 (Bernoulli's inequality)">
+
+If $t \ge 0$, then $(1 + t)^n \ge 1 + nt$ for every $n \ge 0$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $n$. For $n = 0$: $1 \ge 1$. If $(1 + t)^n \ge 1 + nt$, then
+
+$$
+(1 + t)^{n+1} = (1 + t)^n(1 + t) \ge (1 + nt)(1 + t) = 1 + (n + 1)t + nt^2 \ge 1 + (n + 1)t.
+$$
+
+</Proof>
+
+<Theorem name="Theorem 4 (powers of a small ratio)">
+
+If $|r| < 1$, then $r^n \to 0$ as $n \to \infty$.
+
+</Theorem>
+
+<Proof>
+
+If $r = 0$ there is nothing to prove. Otherwise $\tfrac{1}{|r|} > 1$; write $\tfrac{1}{|r|} = 1 + t$ with $t > 0$. By Lemma 3, $\tfrac{1}{|r|^n} = (1 + t)^n \ge 1 + nt > nt$, so
+
+$$
+|r^n - 0| = |r|^n < \frac{1}{nt}.
+$$
+
+Given $\varepsilon > 0$, choose $N > \tfrac{1}{t\varepsilon}$; then $|r^n| < \tfrac{1}{nt} \le \tfrac{1}{Nt} < \varepsilon$ for all $n \ge N$.
+
+</Proof>
+
+<Theorem name="Theorem 5 (infinite geometric series)">
+
+Let $a \ne 0$. If $|r| < 1$, then
+
+$$
+\sum_{k=0}^{\infty} a r^k = a + ar + ar^2 + \cdots = \frac{a}{1 - r}.
+$$
+
+If $|r| \ge 1$, the series diverges.
+
+</Theorem>
+
+<Proof>
+
+*Case $|r| < 1$.* By Theorem 2 the $n$-th partial sum is $S_n = \tfrac{a(1 - r^n)}{1 - r} = \tfrac{a}{1 - r} - \tfrac{a}{1 - r}\,r^n$. By Theorem 4, $r^n \to 0$, so $S_n \to \tfrac{a}{1 - r}$.
+
+*Case $|r| \ge 1$.* Then $|ar^k| = |a|\,|r|^k \ge |a| > 0$ for every $k$, so the terms do not tend to $0$, and the series diverges by the term test (Theorem 6 below).
+
+</Proof>
+
+<Example title="Zeno, 0.999… and repeating decimals">
+
+- $1 + \tfrac12 + \tfrac14 + \cdots$: $a = 1$, $r = \tfrac12$, sum $\tfrac{1}{1 - 1/2} = 2$. Zeno's walker arrives.
+- $0.999\ldots$ *means* $\tfrac{9}{10} + \tfrac{9}{100} + \tfrac{9}{1000} + \cdots$: $a = \tfrac{9}{10}$, $r = \tfrac{1}{10}$, sum $\tfrac{9/10}{9/10} = 1$. So $0.999\ldots = 1$ **exactly**: the partial sums $0.9, 0.99, \dots$ fall short of $1$ by $10^{-n}$, which tends to $0$.
+- $0.272727\ldots = \tfrac{27}{100} + \tfrac{27}{100^2} + \cdots = \tfrac{27/100}{1 - 1/100} = \tfrac{27}{99} = \tfrac{3}{11}$. Every repeating decimal is a geometric series, which is why it is a fraction (compare <TopicLink id="math.number.real-numbers">Real numbers and irrationality</TopicLink>).
+- $1 - \tfrac12 + \tfrac14 - \tfrac18 + \cdots$: $r = -\tfrac12$, sum $\tfrac{1}{3/2} = \tfrac23$.
+
+</Example>
+
+<Theorem name="Theorem 6 (term test)">
+
+If $\sum a_k$ converges, then $a_k \to 0$. Equivalently: if the terms do not tend to $0$, the series diverges.
+
+</Theorem>
+
+<Proof>
+
+Let $S_n \to S$. Then also $S_{n-1} \to S$ (it is the same sequence, shifted by one place), so $a_n = S_n - S_{n-1} \to S - S = 0$.
+
+</Proof>
+
+The term test can only prove *divergence*. Terms tending to $0$ is necessary for convergence, but not sufficient — as the most famous series of all shows.
+
+<Theorem name="Theorem 7 (the harmonic series diverges)">
+
+The partial sums $H_n = 1 + \tfrac12 + \tfrac13 + \dots + \tfrac1n$ satisfy $H_{2^m} \ge 1 + \tfrac m2$ for every $m \ge 0$. Hence $H_n$ grows without bound, and $\sum_{k=1}^{\infty} \tfrac1k$ diverges, although $\tfrac1k \to 0$.
+
+</Theorem>
+
+<Proof>
+
+Group the terms after the first into blocks that end at powers of $2$:
+
+$$
+1 + \tfrac12 + \Big(\tfrac13 + \tfrac14\Big) + \Big(\tfrac15 + \tfrac16 + \tfrac17 + \tfrac18\Big) + \Big(\tfrac19 + \dots + \tfrac1{16}\Big) + \cdots
+$$
+
+The block $\tfrac{1}{2^j + 1} + \dots + \tfrac{1}{2^{j+1}}$ has $2^j$ terms, each at least $\tfrac{1}{2^{j+1}}$, so it adds up to at least $2^j \cdot \tfrac{1}{2^{j+1}} = \tfrac12$. The first $2^m$ terms consist of the term $1$ and the $m$ blocks $j = 0, \dots, m - 1$, so $H_{2^m} \ge 1 + \tfrac m2$.
+
+Given any number $B$, choose $m > 2B$; then $H_n \ge H_{2^m} > B$ for all $n \ge 2^m$, because the partial sums increase. So $(H_n)$ is unbounded and cannot converge.
+
+</Proof>
+
+The divergence is extraordinarily slow: $H_n$ first exceeds $10$ at $n = 12\,367$ and first exceeds $100$ only after more than $10^{43}$ terms. (In fact $H_n$ is close to $\ln n + 0.5772\ldots$; see <TopicLink id="math.analysis.exponential-logarithmic-functions">Exponential and logarithmic functions</TopicLink>.) By contrast, squaring the denominators makes the series converge:
+
+<Theorem name="Proposition 8 (the sum of 1/k² is less than 2)">
+
+For every $n \ge 1$: $\;1 + \tfrac14 + \tfrac19 + \dots + \tfrac1{n^2} < 2$.
+
+</Theorem>
+
+<Proof>
+
+For $k \ge 2$, $\tfrac{1}{k^2} < \tfrac{1}{k(k - 1)} = \tfrac{1}{k - 1} - \tfrac1k$. Adding these for $k = 2, \dots, n$, the right-hand sides telescope:
+
+$$
+\sum_{k=1}^{n}\frac{1}{k^2} < 1 + \Big(1 - \tfrac12\Big) + \Big(\tfrac12 - \tfrac13\Big) + \dots + \Big(\tfrac1{n-1} - \tfrac1n\Big) = 2 - \tfrac1n < 2.
+$$
+
+(For $n = 1$ the sum is $1 < 2$.)
+
+</Proof>
+
+The partial sums of $\sum \tfrac{1}{k^2}$ increase and stay below $2$; the **completeness** of the real numbers (an increasing sequence that is bounded above converges) then guarantees that the series converges. Its sum, $\tfrac{\pi^2}{6} \approx 1.6449$, was found by Euler in 1734 — the "Basel problem".
+
+</Section>
+
+<Section id="formal" kind="formal" title="Series in Lean">
+
+In Mathlib a sequence is a function `ℕ → ℝ`, starting at index $0$, and `∑ k ∈ range n, f k` is $f(0) + \dots + f(n - 1)$ — the first $n$ terms. `HasSum f S` means the series $\sum f(k)$ converges to $S$, and `Summable f` that it converges to something.
+
+First the finite sums: Theorem 1 and the telescoping of Theorem 2, both by induction, and the closed form (with Mathlib's version for comparison):
+
+<Lean decl="Lumenary.SequencesSeries.arith_sum" />
+
+<Lean decl="Lumenary.SequencesSeries.geom_telescope" />
+
+<Lean decl="Lumenary.SequencesSeries.geom_sum" />
+
+<Lean decl="Lumenary.SequencesSeries.geom_sum_library" />
+
+The Tower of Hanoi recursion, as a Lean definition by pattern matching, and its closed form:
+
+<Lean decl="Lumenary.SequencesSeries.hanoi" />
+
+<Lean decl="Lumenary.SequencesSeries.hanoi_formula" />
+
+Theorem 5 for $|r| < 1$. Our proof combines the closed form with Mathlib's lemma that $r^n \to 0$ (Theorem 4, which we proved by hand above but do not re-prove in Lean):
+
+<Lean decl="Lumenary.SequencesSeries.geom_series_tendsto" />
+
+<Lean decl="Lumenary.SequencesSeries.geom_series_hasSum" />
+
+<Lean decl="Lumenary.SequencesSeries.halves" />
+
+<Narrator who="gideon">
+
+Here is $0.999\ldots = 1$ as a machine-checked theorem. No appeal to "it feels like it should be just below $1$" survives contact with the definition: the decimal is the series, and the series converges to $1$.
+
+</Narrator>
+
+<Lean decl="Lumenary.SequencesSeries.point_nine_recurring" />
+
+The term test (from Mathlib), divergence for $|r| \ge 1$, and the harmonic series: Oresme's estimate, the unbounded growth of the partial sums, and the conclusion that terms tending to $0$ do not force convergence:
+
+<Lean decl="Lumenary.SequencesSeries.term_test" />
+
+<Lean decl="Lumenary.SequencesSeries.geom_diverges" />
+
+<Lean decl="Lumenary.SequencesSeries.harmonic_two_pow" />
+
+<Lean decl="Lumenary.SequencesSeries.harmonic_tendsto_atTop" />
+
+<Lean decl="Lumenary.SequencesSeries.harmonic_terms_tend_to_zero_but_diverges" />
+
+<Lean decl="Lumenary.SequencesSeries.harmonic_not_summable_library" />
+
+A remark for the curious: Mathlib's `HasSum` asks for *unconditional* convergence (the sum must not depend on the order of the terms). For the series in this lesson — with terms of one sign, or geometric with $|r| < 1$ — that agrees with the definition by partial sums used above. For a series like $1 - \tfrac12 + \tfrac13 - \tfrac14 + \cdots$, whose partial sums converge (to $\ln 2$) but which can be rearranged to converge to anything, the two notions differ. Proposition 8 is not formalised here.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Partial sums, exactly and numerically">
+
+<Narrator who="margaret">
+
+With Python's fractions I can add geometric series with no rounding at all, so the gap between a partial sum and the limit comes out exactly. Then I'll chase the harmonic series as far as the computer can easily go.
+
+</Narrator>
+
+<Python id="sequences_series_geometric" />
+
+The exact gaps $\tfrac{1}{2^{n-1}}$ and $\tfrac{1}{10^n}$ are the "error terms" $\tfrac{a\,r^n}{1 - r}$ of Theorem 5's proof, made visible. But a table of finitely many partial sums never proves convergence: it is the formula, valid for every $n$, together with $r^n \to 0$, that does.
+
+<Python id="sequences_series_harmonic" />
+
+The harmonic experiment shows why evidence can mislead in both directions. After $12\,367$ terms the sum has only just passed $10$, and it creeps upward so slowly that a computer adding a billion terms a second would need longer than the age of the universe to pass $100$. A computer alone could never show that the series diverges; Oresme's grouping argument does it in four lines.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"If the terms tend to $0$, the series converges."** The harmonic series $1 + \tfrac12 + \tfrac13 + \cdots$ has terms tending to $0$ and diverges. Terms tending to $0$ is *necessary* for convergence (Theorem 6), but not *sufficient*.
+
+</Misconception>
+
+<Misconception>
+
+**"An infinite sum of positive numbers must be infinite."** $1 + \tfrac12 + \tfrac14 + \cdots = 2$. What matters is how fast the terms shrink: geometrically shrinking terms add up to a finite total.
+
+</Misconception>
+
+<Misconception>
+
+**"$0.999\ldots$ is slightly less than $1$."** $0.999\ldots$ is the geometric series $\tfrac{9}{10} + \tfrac{9}{100} + \cdots$, whose sum is exactly $1$. There is no real number strictly between $0.999\ldots$ and $1$: any gap would have to be smaller than $10^{-n}$ for every $n$, hence $0$.
+
+</Misconception>
+
+<Misconception>
+
+**"$1 + r + r^2 + \cdots = \tfrac{1}{1 - r}$ for every $r \ne 1$."** Only for $|r| < 1$. For $r = 2$ the formula would give $1 + 2 + 4 + \cdots = -1$, which is nonsense for real numbers: the partial sums $2^n - 1$ grow without bound. The finite formula $\tfrac{1 - r^n}{1 - r}$ is valid for all $r \ne 1$; the infinite one needs $r^n \to 0$.
+
+</Misconception>
+
+<Misconception>
+
+**"A sequence converges if its terms get closer together."** $\sqrt n$ has consecutive differences $\sqrt{n + 1} - \sqrt n = \tfrac{1}{\sqrt{n + 1} + \sqrt n} \to 0$, yet $\sqrt n \to \infty$. Convergence is about getting close to a fixed limit, not just to the next term.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="geometry" title="Self-similar pictures">
+
+Geometric series describe self-similar shapes. In the figure above, the square minus its left half is a half-size copy of a familiar shape, and the series records the copies. The **Koch snowflake** — repeatedly add an equilateral bump to the middle third of every edge — has perimeter multiplied by $\tfrac43$ at every stage, so its perimeter is infinite ($r = \tfrac43 > 1$), while the areas of the bumps form a geometric series with ratio $\tfrac49$, so its area is finite: $\tfrac85$ of the starting triangle.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Waiting for heads">
+
+Toss a fair coin until it lands heads. The probability that the first head comes on toss $n$ is $\big(\tfrac12\big)^{n-1}\cdot\tfrac12 = \tfrac{1}{2^n}$, and these probabilities add up to $\tfrac12 + \tfrac14 + \cdots = 1$ — as total probability must. The *expected* number of tosses is $\sum_{n \ge 1} \tfrac{n}{2^n} = 2$, a sum one can find by differentiating the geometric series $\sum x^n = \tfrac{1}{1 - x}$ term by term. Infinite series are the language of probability with infinitely many outcomes.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Decimals, and a world where 1 + 2 + 4 + ⋯ = −1">
+
+Every decimal $0.d_1d_2d_3\ldots$ is the series $\sum d_k\,10^{-k}$, and the theory of geometric series is exactly why repeating decimals are fractions. Number theorists also measure size differently: in the **$2$-adic** numbers a number is "small" when it is divisible by a high power of $2$, so $2^n \to 0$! There the geometric series formula holds for $r = 2$ and $1 + 2 + 4 + 8 + \cdots = \tfrac{1}{1 - 2} = -1$ is a genuine theorem. This is not a trick about real numbers — in $\R$ that series diverges — but a different notion of distance, and $p$-adic numbers are central in modern number theory.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Convergence without knowing the limit">
+
+The definition of convergence needs the limit $L$ in advance. Cauchy found a test that does not: a sequence converges if and only if its terms eventually stay arbitrarily close **to each other** ($|s_m - s_n| < \varepsilon$ for all large $m, n$). That this works is equivalent to the completeness of $\R$, the property that also makes increasing bounded sequences converge, as used for $\sum \tfrac1{k^2}$. Series whose signs alternate bring new subtleties: $1 - \tfrac12 + \tfrac13 - \cdots$ converges to $\ln 2$, but Riemann proved that its terms can be rearranged to converge to *any* number you like. See <TopicLink id="math.analysis.real-analysis">Real analysis</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ancient sums.** The Egyptian Rhind papyrus (about 1550 BCE) adds the geometric sequence $7, 49, 343, 2401, 16807$. Zeno of Elea's paradoxes (5th century BCE) raised the question of infinite sums. Archimedes (3rd century BCE) summed $1 + \tfrac14 + \tfrac1{16} + \cdots = \tfrac43$ to find the area of a parabolic segment, by an argument that avoided the infinite through a double reductio ad absurdum.
+- **India.** Āryabhaṭa (499 CE) gave rules for arithmetic series and for the sums of squares and cubes. Writers on Sanskrit prosody, from Virahāṅka to Hemachandra (about 1150), counted poetic metres with the recursion now called Fibonacci's. In the 14th century, Mādhava of Saṅgamagrāma and the Kerala school found infinite series such as $\tfrac\pi4 = 1 - \tfrac13 + \tfrac15 - \cdots$.
+- **Europe.** Nicole Oresme proved the divergence of the harmonic series around 1350, by the grouping in Theorem 7. Pietro Mengoli asked for the sum of $\sum \tfrac{1}{k^2}$ in 1650, and Leonhard Euler found $\tfrac{\pi^2}{6}$ in 1734. Augustin-Louis Cauchy's *Cours d'analyse* (1821) gave the modern definition of convergence through limits of partial sums.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Richard Courant and Herbert Robbins, *What Is Mathematics?* (1941), chapter VI, on functions and limits.
+- William Dunham, *Journey Through Genius* (1990) — chapters on the harmonic series and Euler's solution of the Basel problem.
+- Julian Havil, *Gamma: Exploring Euler's Constant* (2003) — everything about $1 + \tfrac12 + \dots + \tfrac1n - \ln n$.
+- Stephen Abbott, *Understanding Analysis* (2001), chapter 2 — the rigorous next step on sequences and series.
+- Konrad Knopp, *Theory and Application of Infinite Series* (1922; English translation 1928) — the classic reference.
+
+</Section>

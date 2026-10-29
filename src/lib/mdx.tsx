@@ -6,6 +6,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import type { ComponentType } from "react";
 import { katexOptions } from "./markdown";
+import { rehypeKatexHtml } from "./rehype-katex-html";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type MdxComponents = Record<string, ComponentType<any>>;
@@ -15,7 +16,7 @@ export async function renderMdx(source: string, components: MdxComponents) {
   const { default: Content } = await evaluate(source, {
     ...runtime,
     remarkPlugins: [remarkGfm, remarkMath],
-    rehypePlugins: [[rehypeKatex, katexOptions]],
+    rehypePlugins: [[rehypeKatex, katexOptions], rehypeKatexHtml],
     development: false,
   });
   return <Content components={components} />;

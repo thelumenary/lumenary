@@ -1,0 +1,164 @@
+{
+  "lesson": "lambda-calculus",
+  "exercises": [
+    {
+      "id": "lambda-calculus-free-variables",
+      "type": "set",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "List the **free** variables of the term $\\lambda x.\\, x\\, y\\, (\\lambda y.\\, y\\, z)$. Enter each variable name once.",
+      "answer": ["y", "z"],
+      "feedback": [
+        { "match": "z", "message": "$z$ is free, but there is another free variable: the first $y$ is outside the scope of $\\lambda y$." },
+        { "match": "y", "message": "The first $y$ is free; what about $z$? No $\\lambda z$ binds it." },
+        { "match": "x,y,z", "message": "$x$ is bound by the outer $\\lambda x$, whose body is the whole rest of the term." }
+      ],
+      "hints": [
+        "$\\mathrm{FV}(\\lambda x.\\, M) = \\mathrm{FV}(M) \\setminus \\{x\\}$, and the body of $\\lambda x$ extends to the end.",
+        "The occurrence of $y$ inside $\\lambda y.\\, y\\, z$ is bound, but the one before it is not."
+      ],
+      "solution": "$\\mathrm{FV}(\\lambda y.\\, y\\, z) = \\{z\\}$, so $\\mathrm{FV}(x\\, y\\, (\\lambda y.\\, y\\, z)) = \\{x, y, z\\}$, and removing the variable bound by the outer $\\lambda x$ leaves $\\{y, z\\}$. The variable $y$ is free at its first occurrence and bound at its second: the same name can play both roles."
+    },
+    {
+      "id": "lambda-calculus-capture",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "What does $(\\lambda x.\\, \\lambda y.\\, x)\\, y$ reduce to in one β-step (with $y$ free)?",
+      "options": [
+        { "id": "a", "label": "$\\lambda z.\\, y$", "correct": true, "feedback": "Yes. The bound $y$ must be renamed before substituting, so that the free $y$ is not captured: the result is a constant function returning $y$." },
+        { "id": "b", "label": "$\\lambda y.\\, y$", "correct": false, "feedback": "This is the capture error: the free $y$ has been caught by the inner $\\lambda y$, turning a constant function into the identity." },
+        { "id": "c", "label": "$y$", "correct": false, "feedback": "Only one $\\lambda$ is consumed by one argument; the result is still an abstraction waiting for its second argument." },
+        { "id": "d", "label": "$\\lambda y.\\, x$", "correct": false, "feedback": "The argument $y$ must replace $x$; here nothing was substituted." }
+      ],
+      "hints": [
+        "The body $\\lambda y.\\, x$ binds $y$, and the argument is the free variable $y$.",
+        "Rename the bound variable first: $\\lambda y.\\, x$ is the same as $\\lambda z.\\, x$."
+      ],
+      "solution": "Rename to $(\\lambda x.\\, \\lambda z.\\, x)\\, y$, then substitute: $(\\lambda z.\\, x)[y/x] = \\lambda z.\\, y$. In de Bruijn notation the term is $(\\lambda\\, \\lambda\\, 1)\\, y$ and the result is $\\lambda\\, (y \\text{ shifted})$; no renaming is ever needed."
+    },
+    {
+      "id": "lambda-calculus-exp",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "With Church numerals $\\bar n = \\lambda f\\, x.\\, f^n\\, x$, the term $\\bar 3\\, \\bar 2$ (the numeral $3$ applied to the numeral $2$) β-reduces to a Church numeral $\\bar k$. What is $k$?",
+      "answer": 8,
+      "feedback": [
+        { "match": "9", "message": "That would be $3^2$. Here $\\bar 3$ is the function that *iterates its argument three times*, and its argument is $\\bar 2$." },
+        { "match": "6", "message": "Multiplication is $\\lambda f.\\, \\bar m\\, (\\bar n\\, f)$. Applying one numeral to another composes the doubling map with itself." },
+        { "match": "5", "message": "Addition would need both numerals applied to the same $f$; here one numeral is applied to the other." }
+      ],
+      "hints": [
+        "$\\bar 3\\, g = \\lambda x.\\, g\\,(g\\,(g\\, x))$: it composes $g$ with itself three times.",
+        "$\\bar 2$ is 'apply twice', and composing 'apply twice' with itself three times gives 'apply $2 \\cdot 2 \\cdot 2$ times'."
+      ],
+      "solution": "$\\bar 3\\, \\bar 2 \\twoheadrightarrow \\lambda x.\\, \\bar 2\\,(\\bar 2\\,(\\bar 2\\, x))$. As functions, $\\bar 2\\, f = f \\circ f$, so $\\bar 2 \\circ \\bar 2 \\circ \\bar 2$ sends $f$ to $f^{2^3} = f^8$, and the normal form is $\\bar 8$. In general $\\bar n\\, \\bar m \\twoheadrightarrow \\overline{m^n}$, which is why $\\mathsf{EXP} = \\lambda m\\, n.\\, n\\, m$."
+    },
+    {
+      "id": "lambda-calculus-no-normal-form",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which of these terms have **no** normal form? Here $\\Omega = (\\lambda x.\\, x\\, x)(\\lambda x.\\, x\\, x)$, $K = \\lambda x\\, y.\\, x$, $I = \\lambda x.\\, x$. Choose all that apply.",
+      "options": [
+        { "id": "a", "label": "$\\Omega$", "correct": true, "feedback": "Right: $\\Omega$ reduces only to itself (proved in Lean)." },
+        { "id": "b", "label": "$\\lambda z.\\, \\Omega$", "correct": true, "feedback": "Right: β-reduction also happens under $\\lambda$, and the redex $\\Omega$ inside never disappears." },
+        { "id": "c", "label": "$K\\, I\\, \\Omega$", "correct": false, "feedback": "It has the normal form $I$, reached in two steps by contracting the outer redexes first. It also has an infinite reduction — but having a normal form only needs *some* finite route." },
+        { "id": "d", "label": "$(\\lambda x.\\, x\\, x)(\\lambda y.\\, y)$", "correct": false, "feedback": "$(\\lambda x.\\, x\\, x)\\, I \\to I\\, I \\to I$: self-application of the identity terminates." }
+      ],
+      "hints": [
+        "A term has a normal form if *some* reduction sequence reaches a term without redexes.",
+        "Reduction is allowed inside the body of a $\\lambda$."
+      ],
+      "solution": "$\\Omega$ and $\\lambda z.\\, \\Omega$ have no normal form: every reduct still contains $\\Omega$ (and by Church–Rosser no other route could reach a normal form). $K\\, I\\, \\Omega \\to (\\lambda y.\\, I)\\, \\Omega \\to I$ and $(\\lambda x.\\, x\\, x)\\, I \\to I\\, I \\to I$ do have normal forms."
+    },
+    {
+      "id": "lambda-calculus-why-parallel",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Why does the proof of the Church–Rosser theorem go through parallel reduction $\\Rightarrow$ instead of showing directly that one-step reduction $\\to$ has the diamond property?",
+      "options": [
+        { "id": "a", "label": "Because $\\to$ does not have the diamond property: contracting a redex can duplicate another redex, so joining may need several steps on one side.", "correct": true, "feedback": "Exactly. From $(\\lambda x.\\, x\\, x)(I\\, z)$, the reducts $(I\\, z)(I\\, z)$ and $(\\lambda x.\\, x\\, x)\\, z$ can only be joined at $z\\, z$, which takes two steps from the first. Parallel reduction contracts both copies at once." },
+        { "id": "b", "label": "Because $\\to$ is not terminating.", "correct": false, "feedback": "Termination is irrelevant to confluence: the proof works for $\\Omega$ too. The issue is duplication of redexes." },
+        { "id": "c", "label": "Because $\\Rightarrow$ is terminating while $\\to$ is not.", "correct": false, "feedback": "$\\Rightarrow$ is not terminating either: $\\Omega \\Rightarrow \\Omega$. What it has is the diamond property." },
+        { "id": "d", "label": "Because the diamond property for $\\to$ is true but too hard to prove.", "correct": false, "feedback": "It is false, not just hard: the example $(\\lambda x.\\, x\\, x)(I\\, z)$ is a counterexample." }
+      ],
+      "hints": [
+        "Look at the reduction graph of $(\\lambda x.\\, x\\, x)(I\\, z)$ in the lesson.",
+        "How many steps does it take to get from $(I\\, z)(I\\, z)$ to $z\\, z$?"
+      ],
+      "solution": "One-step reduction fails the diamond property because a β-step can copy a redex: $(\\lambda x.\\, x\\, x)(I\\, z) \\to (I\\, z)(I\\, z)$ makes two copies of $I\\, z$. The other reduct $(\\lambda x.\\, x\\, x)\\, z$ reaches $z\\, z$ in one step, but $(I\\, z)(I\\, z)$ needs two. Parallel reduction contracts any set of existing redexes at once, so $(I\\, z)(I\\, z) \\Rightarrow z\\, z$ in one parallel step, and the triangle property gives the diamond."
+    },
+    {
+      "id": "lambda-calculus-turing-proof",
+      "type": "choice",
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "In Turing's proof of weak normalisation we contract a redex $R = (\\lambda x{:}A.\\, P)\\, Q$ of maximal degree $d$ chosen so that $Q$ contains no redex of degree $d$. Which part of the argument needs this choice?",
+      "options": [
+        { "id": "a", "label": "Redexes inside $Q$ may be copied many times by the substitution $P[Q/x]$; the choice ensures all the copies have degree less than $d$.", "correct": true, "feedback": "Yes. Without it, contracting $R$ could multiply redexes of degree $d$, and the count $n$ might go up." },
+        { "id": "b", "label": "It ensures that no new redexes are created.", "correct": false, "feedback": "New redexes can still be created (for example when $Q$ is an abstraction applied inside $P$). The argument shows they have smaller degree, using the types, not the choice of $R$." },
+        { "id": "c", "label": "It ensures that the redexes inside $P$ survive.", "correct": false, "feedback": "Redexes of $P$ survive exactly once whatever $Q$ is: substitution does not duplicate $P$." },
+        { "id": "d", "label": "It ensures the term is typable after the step.", "correct": false, "feedback": "Typability is preserved by every β-step (subject reduction); it does not depend on which redex is chosen." }
+      ],
+      "hints": [
+        "Which subterm of $R$ can be duplicated when $R$ is contracted?",
+        "Think about $x$ occurring several times in $P$."
+      ],
+      "solution": "Contracting $R$ replaces each occurrence of $x$ in $P$ by a copy of $Q$, so redexes inside $Q$ are duplicated. If $Q$ contained a redex of degree $d$, the number of degree-$d$ redexes could increase. Choosing the rightmost redex of maximal degree guarantees $Q$ has none, so after the step the redex $R$ is gone, copies and created redexes all have degree $< d$, and the measure (maximal degree, number of redexes of that degree) decreases."
+    },
+    {
+      "id": "lambda-calculus-typable",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which of these terms has a type in the simply typed λ-calculus (for suitable types on the bound variables)?",
+      "options": [
+        { "id": "a", "label": "$\\lambda f\\, x.\\, f\\,(f\\, x)$", "correct": true, "feedback": "Yes: with $f : A \\to A$ and $x : A$ it has type $(A \\to A) \\to A \\to A$, the type of Church numerals." },
+        { "id": "b", "label": "$\\lambda x.\\, x\\, x$", "correct": false, "feedback": "Self-application needs $x : A \\to B$ and $x : A$, i.e. $A = A \\to B$, impossible." },
+        { "id": "c", "label": "$Y = \\lambda f.\\, (\\lambda x.\\, f\\,(x\\, x))\\,(\\lambda x.\\, f\\,(x\\, x))$", "correct": false, "feedback": "$Y$ contains the self-application $x\\, x$, so it has no simple type — consistent with strong normalisation, since $Y\\, I$ has no normal form." },
+        { "id": "d", "label": "$\\Omega$", "correct": false, "feedback": "$\\Omega$ has no normal form, and every typed term has one (Theorem 6), so $\\Omega$ cannot be typed." }
+      ],
+      "hints": [
+        "Any term containing $x\\, x$ for a bound variable $x$ fails to type.",
+        "Typed terms always have normal forms."
+      ],
+      "solution": "$\\lambda f\\, x.\\, f\\,(f\\, x)$ has type $(A \\to A) \\to A \\to A$. The other three contain the self-application $x\\, x$, which would force a type $A$ with $A = A \\to B$. Alternatively: typed terms are (strongly) normalising, while $Y\\, I$ and $\\Omega$ are not."
+    },
+    {
+      "id": "lambda-calculus-lean-church-rosser",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "In the lesson's Lean file, `Step t u` is one β-step and `ReflTransGen Step t u` is $t \\twoheadrightarrow u$. Which statement is the Church–Rosser theorem, as proved there?",
+      "options": [
+        { "id": "a", "label": "`∀ {t u v}, ReflTransGen Step t u → ReflTransGen Step t v → ∃ w, ReflTransGen Step u w ∧ ReflTransGen Step v w`", "correct": true, "feedback": "Yes: confluence of many-step reduction (`church_rosser`)." },
+        { "id": "b", "label": "`Diamond Step`", "correct": false, "feedback": "This is false: one-step β-reduction does not have the diamond property (redexes can be duplicated). The file proves `Diamond Par` for parallel reduction instead." },
+        { "id": "c", "label": "`∀ t, ∃ u, ReflTransGen Step t u ∧ Normal u`", "correct": false, "feedback": "This says every term has a normal form — false, as `bigOmega_no_normal_form` shows." },
+        { "id": "d", "label": "`∀ {t u v}, Step t u → Step t v → u = v`", "correct": false, "feedback": "This says reduction is deterministic, which is false: a term with two redexes has two different one-step reducts." }
+      ],
+      "hints": [
+        "Church–Rosser is about many-step reductions from a common term.",
+        "Two of the options are refuted by examples in the lesson."
+      ],
+      "solution": "Church–Rosser is confluence of $\\twoheadrightarrow$: option (a), `Lumenary.LambdaCalculus.church_rosser`. It is proved by `diamond_confluent par_diamond` and the fact that `ReflTransGen Step` and `ReflTransGen Par` coincide. Option (b) is false (duplication), (c) is false ($\\Omega$) and (d) is false (any term with two redexes)."
+    },
+    {
+      "id": "lambda-calculus-python-church",
+      "type": "python",
+      "difficulty": "core",
+      "mode": "C",
+      "prompt": "Python's `lambda` can run Church numerals directly. With `church(n)` and `to_int` below, define `times(m, n)` and `exp(m, n)` returning the Church numerals for $m \\cdot n$ and $m^n$, **using only application and `lambda`** (no conversion to `int` inside them).",
+      "starter": "def church(n):\n    return lambda f: (lambda x: x) if n == 0 else (lambda x: f(church(n - 1)(f)(x)))\n\ndef to_int(c):\n    return c(lambda k: k + 1)(0)\n\ndef times(m, n):\n    return m\n\ndef exp(m, n):\n    return m\n",
+      "tests": "assert to_int(times(church(2), church(3))) == 6\nassert to_int(times(church(0), church(5))) == 0\nassert to_int(times(church(4), church(4))) == 16\nassert to_int(exp(church(2), church(3))) == 8\nassert to_int(exp(church(3), church(2))) == 9\nassert to_int(exp(church(5), church(0))) == 1\nprint('All tests passed!')\n",
+      "hints": [
+        "`times(m, n)` should iterate 'apply f n times', m times: `lambda f: m(n(f))`.",
+        "Applying the numeral `n` to the numeral `m` iterates `m` (as a function on functions) `n` times: `exp = n(m)`."
+      ],
+      "solution": "```python\ndef church(n):\n    return lambda f: (lambda x: x) if n == 0 else (lambda x: f(church(n - 1)(f)(x)))\n\ndef to_int(c):\n    return c(lambda k: k + 1)(0)\n\ndef times(m, n):\n    return lambda f: m(n(f))\n\ndef exp(m, n):\n    return n(m)\n```\n\nThese are $\\mathsf{TIMES} = \\lambda m\\, n\\, f.\\, m\\,(n\\, f)$ and $\\mathsf{EXP} = \\lambda m\\, n.\\, n\\, m$. Python evaluates arguments first (call-by-value), which is harmless here because every numeral is a normalising function."
+    }
+  ]
+}

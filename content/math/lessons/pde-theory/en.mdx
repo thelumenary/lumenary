@@ -1,0 +1,402 @@
+---
+slug: pde-theory
+topic: math.analysis.pde-theory
+title: "Partial differential equations: modern theory"
+subtitle: Solve first, ask about smoothness later — weak derivatives, Sobolev spaces and the Lax–Milgram theorem turn boundary value problems into linear algebra in Hilbert space.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7029
+objectives:
+  - Work with test functions, distributions and weak derivatives, and with the Sobolev spaces $H^1(\Omega)$ and $H^1_0(\Omega)$
+  - Prove the Lax–Milgram theorem and use it with the Poincaré inequality to prove existence, uniqueness and stability of weak solutions of elliptic boundary value problems
+  - Prove the weak maximum principle and use energy methods for the heat and wave equations
+  - Explain elliptic regularity (weak solutions with smooth data are smooth) and Hadamard's notion of well-posedness, with his example of an ill-posed problem
+  - Explain why the finite element method converges, via Galerkin orthogonality and Céa's lemma
+narrators: []
+lean:
+  - Lumenary.PdeTheory.lax_milgram
+  - Lumenary.PdeTheory.lax_milgram_unique
+  - Lumenary.PdeTheory.lax_milgram_bound
+  - Lumenary.PdeTheory.classical_is_weak
+  - Lumenary.PdeTheory.max_principle_1d
+  - Lumenary.PdeTheory.mean_value_property
+  - Lumenary.PdeTheory.hadamard_blowup
+compute: [pde_theory_galerkin_fem]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Dirichlet's principle and its rescue">
+
+To find the equilibrium temperature $u$ in a region $\Omega$ with prescribed boundary values, nineteenth-century physicists minimised the **Dirichlet energy** $E(u) = \frac12 \int_\Omega |\nabla u|^2$: a minimiser satisfies Laplace's equation $\Delta u = 0$. Riemann (1851) built his theory of Riemann surfaces on this "Dirichlet principle". In 1870 Weierstrass pointed out that an energy bounded below need not attain its infimum: he exhibited a similar functional whose infimum over smooth functions is never achieved. Existence was not a formality, and the principle fell from favour until Hilbert (1900) rescued it.
+
+The rescue, completed by Sobolev, Leray, Schwartz and others in the 1930s and 1940s, is the modern theory. Its strategy has two steps. First, **enlarge the space of candidates** to a complete space — a Sobolev space of functions with square-integrable *weak* derivatives — so that minimising sequences have limits and existence follows from functional analysis. Second, prove **regularity**: show that the weak solution is in fact smooth. Many problems stop at the first step, because their natural solutions are not smooth: shock waves in gas dynamics, the bending of a plate with a corner, the turbulent velocity fields of the Navier–Stokes equations.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Move the derivatives onto the test function">
+
+If $u \in C^2(\overline\Omega)$ solves $-\Delta u = f$ with $u = 0$ on $\partial\Omega$, multiply by any smooth $v$ vanishing near $\partial\Omega$ and integrate by parts:
+
+$$
+\int_\Omega \nabla u \cdot \nabla v \, dx = \int_\Omega f v \, dx.
+$$
+
+This **weak formulation** makes sense when $u$ has only one derivative, and only in $L^2$. Conversely, a $C^2$ function satisfying it for all $v$ solves the equation classically. So we may *define* a solution by the integral identity, look for it in the space where both sides are continuous in $u$ and $v$, and recognise the left side as an inner product. The equation becomes: find $u$ with $\langle u, v \rangle_{\text{energy}} = \ell(v)$ for all $v$ — and the Riesz representation theorem solves that instantly. Every quantitative estimate (stability, convergence of numerical schemes) comes from this Hilbert-space picture, with **coercivity** (here the Poincaré inequality) as the key input.
+
+The same move — test against smooth functions, put derivatives on the test functions — defines derivatives of objects that are not functions at all: the Dirac delta, the derivative of a jump. That is the theory of **distributions**.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Distributions, weak derivatives and Sobolev spaces">
+
+Let $\Omega \subseteq \R^n$ be open. Multi-indices $\alpha = (\alpha_1, \ldots, \alpha_n)$ index derivatives $\partial^\alpha = \partial_1^{\alpha_1} \cdots \partial_n^{\alpha_n}$, of order $|\alpha| = \sum \alpha_i$.
+
+<Definition term="test functions and distributions">
+
+The **test functions** $C_c^\infty(\Omega)$ are the smooth functions with compact support in $\Omega$. A sequence $\varphi_k \to \varphi$ in $C_c^\infty(\Omega)$ if all supports lie in one compact $K \subset \Omega$ and $\partial^\alpha \varphi_k \to \partial^\alpha \varphi$ uniformly for every $\alpha$. A **distribution** is a linear functional $T$ on $C_c^\infty(\Omega)$ that is continuous for this convergence. Every $f \in L^1_{\mathrm{loc}}(\Omega)$ defines one, $\langle T_f, \varphi \rangle = \int f \varphi$. The **derivative** of a distribution is defined by $\langle \partial^\alpha T, \varphi \rangle = (-1)^{|\alpha|} \langle T, \partial^\alpha \varphi \rangle$, so every distribution is infinitely differentiable.
+
+</Definition>
+
+<Definition term="weak derivative">
+
+$u, g \in L^1_{\mathrm{loc}}(\Omega)$. Then $g$ is the **weak derivative** $\partial^\alpha u$ if $\int_\Omega u \, \partial^\alpha \varphi = (-1)^{|\alpha|} \int_\Omega g \, \varphi$ for every $\varphi \in C_c^\infty(\Omega)$ — that is, if the distributional derivative of $u$ is a function. Weak derivatives are unique up to null sets.
+
+</Definition>
+
+<Definition term="Sobolev spaces">
+
+$H^1(\Omega) = W^{1,2}(\Omega)$ is the space of $u \in L^2(\Omega)$ whose weak first partial derivatives $\partial_i u$ lie in $L^2(\Omega)$, with inner product $\langle u, v \rangle_{H^1} = \int_\Omega (uv + \nabla u \cdot \nabla v)$. More generally $W^{k,p}(\Omega)$ requires $\partial^\alpha u \in L^p$ for $|\alpha| \le k$, and $H^k = W^{k,2}$. The space $H^1_0(\Omega)$ is the closure of $C_c^\infty(\Omega)$ in $H^1(\Omega)$: the functions "vanishing on $\partial\Omega$".
+
+</Definition>
+
+$H^1(\Omega)$ is a Hilbert space: if $(u_k)$ is Cauchy in $H^1$, then $u_k \to u$ and $\partial_i u_k \to g_i$ in $L^2$ by Riesz–Fischer, and passing to the limit in $\int u_k \partial_i \varphi = -\int \partial_i u_k \varphi$ shows $g_i = \partial_i u$. Its dual space $H^{-1}(\Omega) = (H^1_0(\Omega))^*$ contains every $L^2$ function and also distributions such as $\partial_i f$ with $f \in L^2$.
+
+<Definition term="weak solution and well-posedness">
+
+For $f \in L^2(\Omega)$ (or $f \in H^{-1}(\Omega)$), a **weak solution** of $-\Delta u = f$ in $\Omega$, $u = 0$ on $\partial\Omega$, is a $u \in H^1_0(\Omega)$ with $\int_\Omega \nabla u \cdot \nabla v = \int_\Omega f v$ for every $v \in H^1_0(\Omega)$. A problem is **well-posed** in the sense of Hadamard (1902) if a solution exists, is unique, and depends continuously on the data in suitable norms.
+
+</Definition>
+
+<Definition term="bounded and coercive bilinear forms">
+
+A bilinear form $B$ on a real Hilbert space $V$ is **bounded** if $|B(u, v)| \le M \|u\| \|v\|$ and **coercive** if $B(u, u) \ge c\|u\|^2$ for some $c > 0$ and all $u$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples: deltas, kinks and unbounded Sobolev functions">
+
+<Example title="The Heaviside function and the Dirac delta">
+
+Let $H = \mathbf 1_{(0, \infty)}$ on $\R$. For $\varphi \in C_c^\infty(\R)$, $\langle H', \varphi \rangle = -\int_0^\infty \varphi' = \varphi(0)$. So $H' = \delta$, the Dirac delta $\langle \delta, \varphi \rangle = \varphi(0)$, which is a distribution but not a function: $H$ has no weak derivative. Likewise $\langle \delta', \varphi \rangle = -\varphi'(0)$.
+
+</Example>
+
+<Example title="A kink is fine, a jump is not">
+
+$u(x) = |x|$ on $(-1, 1)$ has weak derivative $\operatorname{sign}(x)$: split $\int_{-1}^1 |x| \varphi' \, dx$ at $0$ and integrate by parts on each half; the boundary terms at $0$ vanish because $|x|$ is continuous. So $|x| \in H^1(-1, 1)$. But $\operatorname{sign}(x)$ has distributional derivative $2\delta$, so it is not in $H^1$. In one dimension $H^1$ functions are (after modification on a null set) absolutely continuous, with $u(y) - u(x) = \int_x^y u'$ and $|u(y) - u(x)| \le |y - x|^{1/2} \|u'\|_{L^2}$: Hölder continuous of exponent $\frac12$.
+
+</Example>
+
+<Example title="In two dimensions, H¹ functions can be unbounded">
+
+On the disc $\Omega = \{|x| < \frac12\} \subset \R^2$ let $u(x) = \log\log(1/|x|)$. Then $|\nabla u| = \frac{1}{|x| \log(1/|x|)}$ and, in polar coordinates, $\int_\Omega |\nabla u|^2 = 2\pi \int_0^{1/2} \frac{dr}{r \log^2(1/r)} < \infty$. So $u \in H^1(\Omega)$, yet $u$ is unbounded near $0$. The **Sobolev embedding theorem** says exactly when this cannot happen: $H^k(\Omega) \subseteq C(\Omega)$ when $k > n/2$; here $k = 1 = n/2$ is the borderline case.
+
+</Example>
+
+<Example title="The fundamental solution">
+
+In $\R^3$, $\Phi(x) = \frac{1}{4\pi|x|}$ is locally integrable and satisfies $-\Delta \Phi = \delta$ in the sense of distributions (Green's identity on the region $\varepsilon < |x| < R$, letting $\varepsilon \to 0$). Hence $u = \Phi * f$ solves $-\Delta u = f$ on $\R^3$ for $f \in C_c^2$: Newton's gravitational potential of a mass density $f$.
+
+</Example>
+
+</Section>
+
+<Section id="elliptic" kind="proof" title="Weak solutions of elliptic problems">
+
+<Theorem name="Lax–Milgram theorem (1954)">
+
+Let $V$ be a real Hilbert space and $B$ a bounded, coercive bilinear form on $V$ with constants $M$ and $c$. For every $\ell \in V^*$ there is a unique $u \in V$ with $B(u, v) = \ell(v)$ for all $v \in V$, and $\|u\| \le \|\ell\|/c$.
+
+</Theorem>
+
+<Proof>
+
+For fixed $u$, $v \mapsto B(u, v)$ is a bounded linear functional, so by the Riesz representation theorem there is a unique $Au \in V$ with $B(u, v) = \langle Au, v \rangle$ for all $v$. The map $A$ is linear and bounded, $\|Au\| \le M\|u\|$. Coercivity gives
+
+$$
+c\|u\|^2 \le B(u, u) = \langle Au, u \rangle \le \|Au\| \, \|u\|, \qquad \text{so} \qquad \|Au\| \ge c\|u\|.
+$$
+
+Hence $A$ is injective, and its range is closed: if $Au_k \to w$, then $(u_k)$ is Cauchy by the last inequality, so $u_k \to u$ and $w = Au$. The range is also dense: if $w \perp \operatorname{ran} A$, then $0 = \langle Aw, w \rangle \ge c\|w\|^2$, so $w = 0$. So $A$ is a bijection. Given $\ell$, write $\ell = \langle f, \cdot \rangle$ (Riesz) and set $u = A^{-1} f$; then $B(u, v) = \langle f, v \rangle = \ell(v)$. Uniqueness: if $B(u_1 - u_2, v) = 0$ for all $v$, take $v = u_1 - u_2$ and use coercivity. Stability: $c\|u\|^2 \le B(u, u) = \ell(u) \le \|\ell\| \|u\|$.
+
+</Proof>
+
+If $B$ is also symmetric, it is an inner product equivalent to the original one and Lax–Milgram is just the Riesz theorem; moreover $u$ is the unique minimiser of $J(v) = \frac12 B(v, v) - \ell(v)$, since $J(u + w) = J(u) + \frac12 B(w, w)$. That is Dirichlet's principle, now with a proof. The force of Lax–Milgram is that it also covers non-symmetric forms, such as those of convection–diffusion equations $-\Delta u + b \cdot \nabla u = f$.
+
+<Theorem name="Poincaré inequality">
+
+Let $\Omega$ lie in a slab $\{x : 0 < x_1 < L\}$. Then $\int_\Omega |u|^2 \le L^2 \int_\Omega |\nabla u|^2$ for every $u \in H^1_0(\Omega)$.
+
+</Theorem>
+
+<Proof>
+
+First let $u \in C_c^\infty(\Omega)$, extended by $0$. Writing $x = (x_1, x')$, the fundamental theorem of calculus and the Cauchy–Schwarz inequality give
+
+$$
+|u(x)|^2 = \left| \int_0^{x_1} \partial_1 u(t, x') \, dt \right|^2 \le L \int_0^L |\partial_1 u(t, x')|^2 \, dt.
+$$
+
+Integrating over $x_1 \in (0, L)$ and then over $x'$ gives $\int |u|^2 \le L^2 \int |\partial_1 u|^2 \le L^2 \int |\nabla u|^2$. Both sides are continuous in the $H^1$ norm, and $C_c^\infty(\Omega)$ is dense in $H^1_0(\Omega)$ by definition, so the inequality extends.
+
+</Proof>
+
+The inequality fails in $H^1(\Omega)$ (constants have $\nabla u = 0$) and on unbounded domains such as $\R^n$: the boundary condition and the boundedness both matter.
+
+<Theorem name="Theorem (the Dirichlet problem is well-posed)">
+
+Let $\Omega$ be bounded and $f \in L^2(\Omega)$. There is a unique weak solution $u \in H^1_0(\Omega)$ of $-\Delta u = f$, $u = 0$ on $\partial\Omega$, and $\|u\|_{H^1} \le C \|f\|_{L^2}$ with $C$ depending only on $\Omega$.
+
+</Theorem>
+
+<Proof>
+
+Apply Lax–Milgram on $V = H^1_0(\Omega)$ with $B(u, v) = \int \nabla u \cdot \nabla v$ and $\ell(v) = \int f v$. $B$ is bounded by Cauchy–Schwarz. By Poincaré (with $L$ the width of a slab containing $\Omega$), $\|u\|_{H^1}^2 = \int |u|^2 + \int |\nabla u|^2 \le (1 + L^2) B(u, u)$, so $B$ is coercive with $c = (1 + L^2)^{-1}$. Finally $|\ell(v)| \le \|f\|_{L^2} \|v\|_{L^2} \le \|f\|_{L^2} \|v\|_{H^1}$. Lax–Milgram gives existence, uniqueness and $\|u\|_{H^1} \le (1 + L^2) \|f\|_{L^2}$.
+
+</Proof>
+
+The same argument handles $-\operatorname{div}(a(x) \nabla u) + b(x) \cdot \nabla u + c(x) u = f$ whenever the coefficients are bounded and the form is coercive (e.g. $a \ge a_0 > 0$, $b = 0$, $c \ge 0$), with no smoothness of $a$ at all — the setting of composite materials, where classical solutions do not exist. Combined with the **Rellich–Kondrachov theorem** (the embedding $H^1_0(\Omega) \hookrightarrow L^2(\Omega)$ is compact for bounded $\Omega$), it makes the solution operator $f \mapsto u$ a compact self-adjoint operator on $L^2(\Omega)$, and the spectral theorem of <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink> yields an orthonormal basis of Dirichlet eigenfunctions $-\Delta \varphi_k = \lambda_k \varphi_k$ with $0 < \lambda_1 \le \lambda_2 \le \cdots \to \infty$.
+
+<Theorem name="Céa's lemma (1964)">
+
+Let $u$ be the Lax–Milgram solution and $V_h \subseteq V$ a closed subspace (e.g. finite elements). The **Galerkin solution** $u_h \in V_h$ with $B(u_h, v_h) = \ell(v_h)$ for all $v_h \in V_h$ exists, is unique, and satisfies $\|u - u_h\| \le \frac{M}{c} \inf_{v_h \in V_h} \|u - v_h\|$.
+
+</Theorem>
+
+<Proof>
+
+Existence and uniqueness: Lax–Milgram on $V_h$. Subtracting the two equations gives **Galerkin orthogonality** $B(u - u_h, w_h) = 0$ for all $w_h \in V_h$. For any $v_h \in V_h$, taking $w_h = u_h - v_h$,
+
+$$
+c\|u - u_h\|^2 \le B(u - u_h, u - u_h) = B(u - u_h, u - v_h) \le M \|u - u_h\| \, \|u - v_h\|.
+$$
+
+Divide by $\|u - u_h\|$ and take the infimum over $v_h$.
+
+</Proof>
+
+So the finite element error is, up to the factor $M/c$, the best approximation error of the finite element space — a question of approximation theory (for piecewise linear elements of size $h$, of order $h \|u\|_{H^2}$).
+
+</Section>
+
+<Section id="maximum-energy" kind="proof" title="Maximum principles and energy methods">
+
+<Theorem name="Weak maximum principle">
+
+Let $\Omega \subset \R^n$ be bounded and $u \in C^2(\Omega) \cap C(\overline\Omega)$ with $\Delta u \ge 0$ in $\Omega$ ($u$ is **subharmonic**). Then $\max_{\overline\Omega} u = \max_{\partial\Omega} u$. In particular a harmonic function attains its maximum and minimum on the boundary.
+
+</Theorem>
+
+<Proof>
+
+First suppose $\Delta v > 0$ in $\Omega$. If $v$ had a maximum at an interior point $x_0$, the Hessian of $v$ at $x_0$ would be negative semidefinite, so $\Delta v(x_0) = \operatorname{tr} D^2 v(x_0) \le 0$, a contradiction. Since $\overline\Omega$ is compact, the maximum of $v$ is attained, hence on $\partial\Omega$. For general $u$, let $v_\varepsilon = u + \varepsilon |x|^2$, so $\Delta v_\varepsilon = \Delta u + 2n\varepsilon > 0$. With $R = \max_{\overline\Omega} |x|$,
+
+$$
+\max_{\overline\Omega} u \le \max_{\overline\Omega} v_\varepsilon = \max_{\partial\Omega} v_\varepsilon \le \max_{\partial\Omega} u + \varepsilon R^2.
+$$
+
+Let $\varepsilon \to 0$. For harmonic $u$, apply this to $u$ and $-u$.
+
+</Proof>
+
+Consequences: the classical Dirichlet problem has at most one solution (the difference of two solutions is harmonic with zero boundary values), and solutions depend continuously on the boundary data in the sup norm, $\max_{\overline\Omega} |u_1 - u_2| = \max_{\partial\Omega} |u_1 - u_2|$. The same argument proves the weak maximum principle for the heat equation on space–time cylinders. In one dimension "subharmonic" means $u'' \ge 0$, i.e. convex, and the principle says a convex function on an interval lies below the larger of its endpoint values — the version formalised below.
+
+<Theorem name="Energy estimates for the heat and wave equations">
+
+Let $\Omega$ be bounded and $u$ smooth on $\overline\Omega \times [0, \infty)$ with $u = 0$ on $\partial\Omega$.
+
+1. If $u_t = \Delta u$, then $E(t) = \int_\Omega u(x, t)^2 \, dx$ satisfies $E(t) \le e^{-2t/L^2} E(0)$, with $L$ the Poincaré constant. In particular the initial–boundary value problem has at most one smooth solution.
+2. If $u_{tt} = \Delta u$, then the energy $\mathcal E(t) = \frac12 \int_\Omega \big(u_t^2 + |\nabla u|^2\big) \, dx$ is constant in time; again solutions are unique.
+
+</Theorem>
+
+<Proof>
+
+(1) Differentiating under the integral and integrating by parts (the boundary term vanishes since $u = 0$ on $\partial\Omega$),
+
+$$
+E'(t) = 2\int_\Omega u \, u_t = 2\int_\Omega u \, \Delta u = -2\int_\Omega |\nabla u|^2 \le -\frac{2}{L^2} \int_\Omega u^2 = -\frac{2}{L^2} E(t),
+$$
+
+by Poincaré. So $\frac{d}{dt}\big(e^{2t/L^2} E(t)\big) \le 0$. If $u_1, u_2$ solve the same problem, $u_1 - u_2$ solves it with zero initial data, so $E \equiv 0$. (2) Similarly $\mathcal E'(t) = \int_\Omega (u_t u_{tt} + \nabla u \cdot \nabla u_t) = \int_\Omega u_t (u_{tt} - \Delta u) = 0$, using $u_t = 0$ on $\partial\Omega$. The difference of two solutions with the same data has zero energy at $t = 0$, hence for all $t$, so it is constant in space and time, and zero by the boundary condition.
+
+</Proof>
+
+Energy methods are robust: they extend to variable coefficients and nonlinear problems, and localised versions prove **finite speed of propagation** for the wave equation (a disturbance supported in a ball of radius $r$ at time $0$ stays in the ball of radius $r + t$), in contrast with the heat equation, whose kernel is positive everywhere for $t > 0$.
+
+</Section>
+
+<Section id="regularity" kind="human" title="Regularity and well-posedness">
+
+**Elliptic regularity.** Weak solutions of elliptic equations are as smooth as the data allow. If $u \in H^1(\Omega)$ is a weak solution of $-\Delta u = f$ and $f \in H^k_{\mathrm{loc}}(\Omega)$, then $u \in H^{k+2}_{\mathrm{loc}}(\Omega)$; by Sobolev embedding ($H^m_{\mathrm{loc}} \subseteq C^j$ when $m > j + n/2$), $f \in C^\infty$ implies $u \in C^\infty(\Omega)$. Weyl's lemma (1940) is the case $f = 0$: a distribution with $\Delta T = 0$ is a smooth harmonic function. The proof (Evans, §6.3) differentiates the equation weakly using Nirenberg's **difference quotients** $\frac{u(x + he_i) - u(x)}{h}$, which are bounded in $H^1$ by the energy estimate and therefore converge weakly to $\partial_i u \in H^1$; iterating gains one derivative at a time. Up to the boundary the same holds if $\partial\Omega$ is smooth. For *nonlinear* elliptic equations regularity is much harder: Hilbert's nineteenth problem, on the regularity of minimisers of variational integrals, was solved independently by De Giorgi (1957) and Nash (1958).
+
+**Well-posedness can fail.** Hadamard's example: $u_n(x, y) = \frac{\sin(nx) \sinh(ny)}{n^2}$ solves $\Delta u_n = 0$ with Cauchy data $u_n(x, 0) = 0$ and $\partial_y u_n(x, 0) = \frac{\sin(nx)}{n}$. The data tend to $0$ uniformly, yet $u_n\big(\frac{\pi}{2n}, 1\big) = \frac{\sinh n}{n^2} \to \infty$. The zero data have the solution $u = 0$, so the Cauchy problem for Laplace's equation does not depend continuously on its data: it is ill-posed, although (by Cauchy–Kovalevskaya) it is uniquely solvable for analytic data. The right problems for elliptic equations are boundary value problems; Cauchy problems belong to hyperbolic equations such as the wave equation. Ill-posed problems are not useless — inverse problems in imaging are ill-posed — but they require regularisation.
+
+**Weak solutions can be the only solutions.** For Burgers' equation $u_t + (u^2/2)_x = 0$, smooth initial data develop shocks in finite time, after which only weak (integral) solutions exist; an extra **entropy condition** restores uniqueness (Oleinik, Kružkov). And for the three-dimensional Navier–Stokes equations, Leray (1934) proved that global weak solutions exist; whether smooth data always lead to global smooth solutions is one of the Clay Millennium Prize problems, and is **open**.
+
+</Section>
+
+<Section id="formal" kind="formal" title="The weak theory in Lean and Mathlib">
+
+Mathlib has the Lax–Milgram theorem in the form "the operator $A$ of the proof is a continuous linear equivalence". Combined with the Riesz representation it gives the statement of the lesson:
+
+<Lean decl="Lumenary.PdeTheory.lax_milgram" />
+
+Uniqueness and the stability estimate $c\|u\| \le \|\ell\|$, proved from coercivity exactly as above:
+
+<Lean decl="Lumenary.PdeTheory.lax_milgram_unique" />
+
+<Lean decl="Lumenary.PdeTheory.lax_milgram_bound" />
+
+The bridge between classical and weak derivatives — integration by parts against a test function vanishing at the endpoints:
+
+<Lean decl="Lumenary.PdeTheory.classical_is_weak" />
+
+The one-dimensional maximum principle (subharmonic = convex), and Mathlib's mean value property for harmonic functions in the plane, from which the strong maximum principle follows:
+
+<Lean decl="Lumenary.PdeTheory.max_principle_1d" />
+
+<Lean decl="Lumenary.PdeTheory.mean_value_property" />
+
+The blow-up in Hadamard's example — the quantitative heart of ill-posedness:
+
+<Lean decl="Lumenary.PdeTheory.hadamard_blowup" />
+
+**What is and is not formalised.** Mathlib does not yet have Sobolev spaces $H^1_0(\Omega)$ on domains, the Poincaré inequality, Rellich–Kondrachov or elliptic regularity (it does have distributions in development, Schwartz functions and tempered distributions, and harmonic functions). So our formalisation covers the *abstract* Hilbert-space core of the weak theory — which is all that Lax–Milgram and Céa's lemma use — and one-dimensional or planar instances of the other ideas. The application to $-\Delta u = f$ on a domain is proved in the text, not in Lean. We also do not formalise that Hadamard's $u_n$ are harmonic (a two-line computation with $\sin'' = -\sin$, $\sinh'' = \sinh$).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Finite elements: Galerkin's method in action">
+
+The experiment solves the weak form of $-u'' = \pi^2 \sin(\pi x)$ on $(0, 1)$ with zero boundary values, using continuous piecewise-linear "hat" functions on $N$ equal elements. The Galerkin equations are the tridiagonal system $\frac1h \operatorname{tridiag}(-1, 2, -1) U = F$. As $h = 1/N$ halves, the energy error halves and the $L^2$ error quarters, as Céa's lemma plus interpolation estimates (and a duality argument for $L^2$) predict. In one dimension something special happens: the nodal values are exact, because the Green's function of $-d^2/dx^2$ with pole at a node is itself piecewise linear. Indeed the inverse of the stiffness matrix *is* the Green's function sampled at the nodes, and its positivity is a discrete maximum principle.
+
+<Python id="pde_theory_galerkin_fem" />
+
+This is evidence for one problem on a few meshes. The theorems — Lax–Milgram for existence and stability of both $u$ and $u_h$, Céa for the error — are what make the method trustworthy for problems where no exact solution is known.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Smoothing and blow-up">
+
+The heat kernel $\frac{1}{\sqrt{4\pi t}} e^{-x^2/4t}$ is the solution of $u_t = u_{xx}$ starting from a unit point mass, the Dirac delta. Move $t$ towards $0$ and watch it concentrate (integral always $1$); move it up and watch it spread. For every $t > 0$ it is positive everywhere — infinite speed of propagation — and infinitely smooth: the heat equation smooths instantly.
+
+<FunctionPlot
+  fns={["exp(-x^2/(4*t))/sqrt(4*pi*t)"]}
+  labels={["heat kernel at time t"]}
+  params={[{ name: "t", min: 0.01, max: 2, step: 0.01, value: 0.25 }]}
+  x={[-5, 5]}
+  y={[-0.2, 3]}
+  shade={0}
+  shadeRange={[-5, 5]}
+  title="The heat kernel: a delta smoothed out"
+/>
+
+Hadamard's example, along the line $y = 1$: the Cauchy data $\partial_y u_n(x, 0) = \sin(nx)/n$ shrink as $n$ grows, while the solution $u_n(x, 1) = \sin(nx)\sinh(n)/n^2$ explodes.
+
+<FunctionPlot
+  fns={["sin(n*x)/n", "sin(n*x)*sinh(n)/n^2"]}
+  labels={["data ∂y u(x, 0) = sin(nx)/n", "solution u(x, 1)"]}
+  params={[{ name: "n", min: 1, max: 12, step: 1, value: 2 }]}
+  x={["-pi", "pi"]}
+  y={[-10, 10]}
+  title="Ill-posedness: small data, huge solutions"
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every reasonable PDE has classical solutions."** Burgers' equation develops shocks from smooth data; elliptic problems with rough coefficients or non-smooth domains have solutions without second derivatives; and for 3D Navier–Stokes only weak solutions are known to exist globally. The modern order is: find a weak solution, then prove as much regularity as is true.
+
+</Misconception>
+
+<Misconception>
+
+**"If a solution exists and is unique, the problem is well-posed."** Hadamard's third condition — continuous dependence on the data — can fail independently: the Cauchy problem for Laplace's equation has unique (analytic) solutions, but tiny data produce enormous solutions. Without stability, solutions cannot be computed or measured reliably.
+
+</Misconception>
+
+<Misconception>
+
+**"A weak derivative is just the derivative almost everywhere."** The Cantor function is differentiable almost everywhere with derivative $0$, but its weak derivative is not $0$ — it is not even a function (its distributional derivative is the Cantor measure). A function has a weak derivative in $L^1_{\mathrm{loc}}$ exactly when it is (locally) absolutely continuous in one dimension, and the pointwise a.e. derivative then agrees with it.
+
+</Misconception>
+
+<Misconception>
+
+**"Functions in a Sobolev space are continuous."** Only above the critical exponent: $H^k(\R^n) \subseteq C(\R^n)$ for $k > n/2$. In two dimensions $\log\log(1/|x|)$ is in $H^1$ near $0$ and unbounded; in three dimensions $|x|^{-1/4}$ is in $H^1$ near $0$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Harmonic forms and geometric analysis">
+
+On a compact Riemannian manifold, elliptic theory proves the **Hodge theorem**: every de Rham cohomology class has a unique harmonic representative, $\Delta \omega = 0$, so the dimension of the space of harmonic $k$-forms is the Betti number $b_k$ — a topological invariant computed by solving a PDE. The existence proof is the one above in disguise: minimise the energy $\int |\omega|^2$ in a cohomology class (a closed affine subspace of a Sobolev space), then apply elliptic regularity. Nonlinear versions drive <TopicLink id="math.analysis.geometric-analysis">geometric analysis</TopicLink>: minimal surfaces (Plateau's problem, solved by Douglas and Radó around 1930), harmonic maps, the Yamabe problem of conformally deforming a metric to constant scalar curvature, and Ricci flow, a nonlinear heat equation for the metric that Perelman used to prove the Poincaré conjecture.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="The index of an elliptic operator">
+
+By elliptic regularity and Rellich compactness, an elliptic operator $D$ on a compact manifold is **Fredholm**: its kernel and cokernel are finite-dimensional, and the **index** $\dim\ker D - \dim\operatorname{coker} D$ is unchanged under continuous deformations of $D$. So the index is a topological invariant, and the **Atiyah–Singer index theorem** (1963) computes it from characteristic classes. For the operator $d + d^*$ on forms of even degree it gives the Euler characteristic; for the Dolbeault operator on a Riemann surface it gives the Riemann–Roch theorem $\dim H^0(L) - \dim H^1(L) = \deg L + 1 - g$. Analysis (solving equations) and topology (counting holes) meet exactly at elliptic PDE.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Brownian motion solves the Dirichlet problem">
+
+Let $B_t$ be Brownian motion started at $x \in \Omega$ and $\tau$ its first exit time from $\Omega$. Kakutani (1944) observed that $u(x) = \mathbb E_x[g(B_\tau)]$ solves the Dirichlet problem $\Delta u = 0$ in $\Omega$, $u = g$ on $\partial\Omega$ (where the boundary is regular). The mean value property becomes the statement that Brownian motion started at the centre of a sphere exits it uniformly distributed; the maximum principle becomes the triviality that an average cannot exceed a maximum. More generally the heat equation $u_t = \frac12 \Delta u$ is solved by $u(x, t) = \mathbb E_x[f(B_t)]$ — the heat kernel is the transition density of Brownian motion — and the Feynman–Kac formula adds potentials. These formulas also give Monte Carlo methods for PDEs in high dimension, where meshes are hopeless. See <TopicLink id="math.prob.stochastic-processes">stochastic processes</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Energy, causality and turbulence">
+
+The energy identities of the wave and heat equations are conservation of energy and the second law in mathematical form, and the weak formulation is the principle of virtual work: $\int \nabla u \cdot \nabla v = \int f v$ says the internal work of the displacement $u$ against every admissible virtual displacement $v$ equals the external work. Finite speed of propagation for the wave equation is causality; the infinite speed of the heat equation is a known defect of Fourier's model, harmless at everyday scales. Shocks in gas dynamics are physical weak solutions, selected by an entropy condition that encodes the second law. And whether the Navier–Stokes equations of fluid flow can develop singularities from smooth data — whether the mathematics of turbulence can break down — is open.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Carl Friedrich Gauss**, **William Thomson (Kelvin)** and **Peter Gustav Lejeune Dirichlet** used energy minimisation for potential problems; **Bernhard Riemann** (1851, 1857) named and used Dirichlet's principle; **Karl Weierstrass** (1870) showed that minimisers need not exist; **David Hilbert** (1900, 1904) gave the first rescue.
+- **Walther Ritz** (1908) and **Boris Galerkin** (1915) introduced the approximation methods named after them; **Richard Courant**, **Kurt Friedrichs** and **Hans Lewy** (1928) analysed finite differences; **Jacques Hadamard** (1902; lectures of 1923) formulated well-posedness.
+- **Sergei Sobolev** (1935–1938) introduced generalised functions and the spaces that bear his name; **Jean Leray** (1934) constructed weak solutions of Navier–Stokes; **Laurent Schwartz** (1945–1950) created the theory of distributions; **Hermann Weyl** (1940) proved his lemma.
+- **Peter Lax** and **Arthur Milgram** (1954) proved their theorem; **Ennio De Giorgi** (1957) and **John Nash** (1958) solved Hilbert's nineteenth problem, with **Jürgen Moser** (1960) giving a new proof; **Olga Ladyzhenskaya** proved global regularity for 2D Navier–Stokes and developed the theory of nonlinear elliptic and parabolic equations; **Lars Hörmander** transformed linear PDE theory.
+- The **finite element method** was developed by engineers (M. J. Turner, Ray Clough, John Argyris) in the 1950s–60s, building on Courant's 1943 paper, and independently by **Feng Kang** and colleagues in China in the 1960s; **Jean Céa** (1964) proved his lemma, and the mathematical theory was developed by Ivo Babuška, Philippe Ciarlet, Gilbert Strang, George Fix and many others.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Lawrence C. Evans, *Partial Differential Equations* (1998; 2nd ed. 2010) — the standard graduate text; Chapters 5–7 cover Sobolev spaces, elliptic regularity and energy methods.
+- Haim Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations* (2011) — Chapters 8–10 do the weak theory with full functional-analytic proofs.
+- David Gilbarg and Neil S. Trudinger, *Elliptic Partial Differential Equations of Second Order* (1977; reprinted 2001) — maximum principles, Schauder theory and De Giorgi–Nash–Moser.
+- Jürgen Jost, *Partial Differential Equations* (2002; 3rd ed. 2013) — a concise modern course linking the classical and weak theories.
+- Robert S. Strichartz, *A Guide to Distribution Theory and Fourier Transforms* (1994) — distributions for the working analyst.
+- Susanne C. Brenner and L. Ridgway Scott, *The Mathematical Theory of Finite Element Methods* (3rd ed., 2008) — Céa's lemma and beyond.
+
+</Section>

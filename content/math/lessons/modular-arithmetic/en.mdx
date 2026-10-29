@@ -1,0 +1,485 @@
+---
+slug: modular-arithmetic
+topic: math.number.modular-arithmetic
+title: "Clock arithmetic: remainders and modular arithmetic"
+subtitle: On a clock, 9 + 5 = 2. This is not a mistake. It is a whole new arithmetic, and it is the arithmetic of weekdays, calendars, barcodes and secret codes.
+level: g6-8
+ages: Ages 11–14
+minutes: 60
+order: 3003
+objectives:
+  - Compute sums and products modulo $n$ using remainders, on 12- and 24-hour clocks and in a 7-day week
+  - Build addition and multiplication tables modulo $n$ and find which remainders have a multiplicative partner
+  - Prove that the remainder of a sum or a product depends only on the remainders of its parts
+  - Prove that a number sharing a factor greater than 1 with $n$ has no partner modulo $n$, and explain why every non-zero remainder has a partner modulo a prime
+  - Use repeating cycles of remainders to answer questions about huge powers and calendars
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.ModularArithmetic.div_add_mod
+  - Lumenary.ModularArithmetic.mod_lt
+  - Lumenary.ModularArithmetic.clock_example
+  - Lumenary.ModularArithmetic.week_example
+  - Lumenary.ModularArithmetic.add_mod_of_division
+  - Lumenary.ModularArithmetic.mul_mod_of_division
+  - Lumenary.ModularArithmetic.add_mod_library
+  - Lumenary.ModularArithmetic.zero_product_mod_twelve
+  - Lumenary.ModularArithmetic.no_partner_of_common_factor
+  - Lumenary.ModularArithmetic.four_no_partner_mod_ten
+  - Lumenary.ModularArithmetic.partners_mod_twelve
+  - Lumenary.ModularArithmetic.partners_mod_seven
+  - Lumenary.ModularArithmetic.row_is_shuffle_mod_seven
+  - Lumenary.ModularArithmetic.pow_three_mod_seven
+  - Lumenary.ModularArithmetic.last_digit_seven_pow
+  - Lumenary.ModularArithmetic.ten_pow_mod_nine
+compute: [modular_arithmetic_partners, modular_arithmetic_cycles]
+trails: [clock-arithmetic, remainder-families]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What time will it be?">
+
+Four questions that look unrelated:
+
+1. The overnight train from Mumbai leaves at 21:00 and the journey takes 30 hours. At what time does it arrive?
+2. 1 January 2026 was a Thursday. What day of the week was it 100 days later?
+3. In Dar es Salaam, a friend says she will meet you at *saa moja asubuhi* — “hour one in the morning”. When should you be there?
+4. What is the last digit of $7^{2026}$, a number with more than 1700 digits?
+
+Every one of them is answered the same way: **throw away whole cycles and keep the remainder**. A day has 24 hours, a week has 7 days, a clock face has 12 hours, and last digits repeat every 10. This lesson turns that trick into an arithmetic of its own, proves why it works, and finds something surprising hiding in its multiplication tables.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Wrapping the number line around a clock">
+
+Take the number line $0, 1, 2, 3, \dots$ and wind it around a circle with 12 equally spaced marks. The numbers $0, 1, \dots, 11$ go once around; then $12$ lands on top of $0$, $13$ on top of $1$, and so on.
+
+<Figure caption="The number line wound around a 12-hour clock. Numbers that land on the same mark leave the same remainder on division by 12: 2, 14, 26, 38, … all land on 2.">
+<svg viewBox="0 0 320 240" role="img" aria-label="A clock face with marks 0 to 11. Next to mark 0 are the numbers 12, 24, 36; next to mark 2 are 14, 26, 38; next to mark 9 are 21, 33, 45.">
+  <circle cx="160" cy="120" r="80" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <g fontSize="13" textAnchor="middle" fill="var(--ink)">
+    <circle cx="160" cy="40" r="12" fill="var(--gold)" /><text x="160" y="45">0</text>
+    <circle cx="200" cy="50.7" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="200" y="55.7">1</text>
+    <circle cx="229.3" cy="80" r="12" fill="var(--gold)" /><text x="229.3" y="85">2</text>
+    <circle cx="240" cy="120" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="240" y="125">3</text>
+    <circle cx="229.3" cy="160" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="229.3" y="165">4</text>
+    <circle cx="200" cy="189.3" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="200" y="194.3">5</text>
+    <circle cx="160" cy="200" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="160" y="205">6</text>
+    <circle cx="120" cy="189.3" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="120" y="194.3">7</text>
+    <circle cx="90.7" cy="160" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="90.7" y="165">8</text>
+    <circle cx="80" cy="120" r="12" fill="var(--gold)" /><text x="80" y="125">9</text>
+    <circle cx="90.7" cy="80" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="90.7" y="85">10</text>
+    <circle cx="120" cy="50.7" r="12" fill="var(--paper)" stroke="var(--ink-2)" /><text x="120" y="55.7">11</text>
+  </g>
+  <g fontSize="12" fill="var(--human)">
+    <text x="160" y="16" textAnchor="middle">12, 24, 36, …</text>
+    <text x="250" y="62" textAnchor="start">14, 26, 38, …</text>
+    <text x="62" y="124" textAnchor="end">21, 33, 45, …</text>
+  </g>
+</svg>
+</Figure>
+
+Two numbers land on the same mark exactly when they differ by a whole number of trips around — a multiple of 12. So to find where a number lands, divide by 12 and keep the **remainder**. Adding means walking forwards around the circle. Nothing else about the number matters.
+
+<Narrator who="chloe">
+
+So on this clock $9 + 5$ “is” $2$, and $9 + 29$ is also $2$. It looks as if we are allowed to throw information away whenever we like. Is that really safe — for multiplication too? We will have to prove it.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Remainders and arithmetic modulo n">
+
+You know division with remainder: for whole numbers $a$ and $n \ge 1$ there is exactly one way to write
+
+$$
+a = q \cdot n + r \qquad \text{with } 0 \le r \le n - 1.
+$$
+
+<Definition term="a mod n">
+
+The remainder $r$ above is called **$a$ modulo $n$**, written $a \bmod n$. The number $n$ is the **modulus**. It is always one of $0, 1, \dots, n - 1$.
+
+</Definition>
+
+For example $38 \bmod 12 = 2$ because $38 = 3 \cdot 12 + 2$, and $100 \bmod 7 = 2$ because $100 = 14 \cdot 7 + 2$.
+
+<Definition term="addition and multiplication modulo n">
+
+To **add modulo $n$**, add as usual and take the remainder on division by $n$. To **multiply modulo $n$**, multiply as usual and take the remainder. The numbers $0, 1, \dots, n - 1$ with these two operations are called the **integers modulo $n$**.
+
+</Definition>
+
+When $a$ and $b$ leave the same remainder on division by $n$, mathematicians write $a \equiv b \pmod n$ and say “$a$ is **congruent** to $b$ modulo $n$”. So $38 \equiv 2 \pmod{12}$ and $9 + 29 \equiv 2 \pmod{12}$. It is the notation of the clock: “lands on the same mark”.
+
+Here are two complete multiplication tables. Look along each row.
+
+| × mod 6 | 0 | 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **0** | 0 | 0 | 0 | 0 | 0 | 0 |
+| **1** | 0 | 1 | 2 | 3 | 4 | 5 |
+| **2** | 0 | 2 | 4 | 0 | 2 | 4 |
+| **3** | 0 | 3 | 0 | 3 | 0 | 3 |
+| **4** | 0 | 4 | 2 | 0 | 4 | 2 |
+| **5** | 0 | 5 | 4 | 3 | 2 | 1 |
+
+| × mod 5 | 0 | 1 | 2 | 3 | 4 |
+| --- | --- | --- | --- | --- | --- |
+| **0** | 0 | 0 | 0 | 0 | 0 |
+| **1** | 0 | 1 | 2 | 3 | 4 |
+| **2** | 0 | 2 | 4 | 1 | 3 |
+| **3** | 0 | 3 | 1 | 4 | 2 |
+| **4** | 0 | 4 | 3 | 2 | 1 |
+
+Modulo 5, every non-zero row is a **shuffle** of $0, 1, 2, 3, 4$: each remainder appears exactly once. Modulo 6 the rows of $2$, $3$ and $4$ repeat themselves, and strange things happen: $2 \cdot 3 \equiv 0$ although neither factor is $0$.
+
+<Definition term="multiplicative partner">
+
+A remainder $a$ has a **partner** modulo $n$ if some $b$ satisfies $a \cdot b \equiv 1 \pmod n$. Then multiplying by $b$ undoes multiplying by $a$, just as multiplying by $\tfrac{1}{3}$ undoes multiplying by $3$.
+
+</Definition>
+
+Modulo 5: $2 \cdot 3 = 6 \equiv 1$, so $2$ and $3$ are partners, and $4 \cdot 4 = 16 \equiv 1$. Modulo 6, only $1$ and $5$ have partners — the rows of $2, 3, 4$ never contain a $1$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="The overnight train">
+
+Leave at 21:00, travel 30 hours. On a 24-hour clock: $21 + 30 = 51 = 2 \cdot 24 + 3$, so $51 \bmod 24 = 3$. The train arrives at **03:00**. The quotient $2$ is useful too: it is two days later.
+
+</Example>
+
+<Example title="One hundred days after a Thursday">
+
+A week has 7 days, so only $100 \bmod 7$ matters: $100 = 14 \cdot 7 + 2$. Fourteen whole weeks change nothing; the extra $2$ days move Thursday to **Saturday**. (1 January 2026 was a Thursday, so 11 April 2026 was a Saturday.)
+
+</Example>
+
+<Example title="Swahili time">
+
+In much of East Africa the hours of the day are traditionally counted from about sunrise, which near the equator is close to 6 a.m. all year round. So 7 a.m. is *saa moja* (“hour one”), noon is *saa sita* (“hour six”) and 1 p.m. is *saa saba* (“hour seven”). To convert a time on a 12-hour clock, add $6$ modulo $12$: $7 + 6 = 13 \equiv 1$, and $1 + 6 = 7$. So *saa moja asubuhi* is 7 a.m. (A clock face writes $12$ where we write $0$, but it is the same mark.)
+
+</Example>
+
+<Example title="Reduce first, then calculate">
+
+What is $38 \cdot 47 \bmod 9$? Instead of multiplying, reduce first: $38 = 4 \cdot 9 + 2$ and $47 = 5 \cdot 9 + 2$, so the answer is $2 \cdot 2 = 4$. Check: $38 \cdot 47 = 1786 = 198 \cdot 9 + 4$. ✓ The next section proves this shortcut is always allowed.
+
+</Example>
+
+<Example title="Negative numbers on the clock">
+
+Going back $7$ hours from $0$ on a 5-hour clock lands on $3$. In symbols, $-7 = (-2) \cdot 5 + 3$, so $-7 \bmod 5 = 3$. The remainder must be one of $0, \dots, 4$, so the answer is **not** $-2$.
+
+</Example>
+
+<Example title="Non-example: mod is not division">
+
+$17 \bmod 5$ is $2$ (the remainder), not $3.4$ (the quotient as a decimal) and not $3$ (the whole-number quotient).
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Why reducing first always works">
+
+The shortcut “throw away multiples of $n$ whenever you like” rests on two theorems.
+
+<Theorem name="Theorem 1 (sums)">
+
+For all whole numbers $a$, $b$ and $n \ge 1$:
+$$
+(a + b) \bmod n = \big((a \bmod n) + (b \bmod n)\big) \bmod n.
+$$
+
+</Theorem>
+
+<Proof>
+
+Divide with remainder: $a = q_1 n + r_1$ and $b = q_2 n + r_2$, where $r_1 = a \bmod n$ and $r_2 = b \bmod n$. Adding,
+$$
+a + b = (q_1 + q_2)\, n + (r_1 + r_2).
+$$
+So $a + b$ is a multiple of $n$ plus $r_1 + r_2$. Adding a multiple of $n$ means walking a whole number of times around the clock, which does not change where you land: if $r_1 + r_2 = q n + r$ with $0 \le r \le n - 1$, then $a + b = (q_1 + q_2 + q)\,n + r$, and by the uniqueness of division with remainder, $(a + b) \bmod n = r = (r_1 + r_2) \bmod n$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (products)">
+
+For all whole numbers $a$, $b$ and $n \ge 1$:
+$$
+(a \cdot b) \bmod n = \big((a \bmod n) \cdot (b \bmod n)\big) \bmod n.
+$$
+
+</Theorem>
+
+<Proof>
+
+With the same notation, multiply out:
+$$
+a \cdot b = (q_1 n + r_1)(q_2 n + r_2) = \big(q_1 q_2 n + q_1 r_2 + r_1 q_2\big)\, n + r_1 r_2.
+$$
+So $a \cdot b$ is a multiple of $n$ plus $r_1 r_2$, and as before its remainder is the remainder of $r_1 r_2$.
+
+</Proof>
+
+Together these say: **the remainder of a sum or product depends only on the remainders of its parts**. That is exactly why the clock arithmetic of the last section is consistent — and why you may reduce at any moment in a long calculation.
+
+<Theorem name="Theorem 3 (remainders of powers repeat)">
+
+For any whole numbers $a$ and $n \ge 1$, the sequence $a^0 \bmod n,\ a^1 \bmod n,\ a^2 \bmod n, \dots$ eventually repeats in a cycle.
+
+</Theorem>
+
+<Proof>
+
+By Theorem 2, $a^{k+1} \bmod n = \big((a^k \bmod n) \cdot a\big) \bmod n$: each remainder is determined by the one before. There are only $n$ possible remainders, so among the first $n + 1$ terms two must be equal (the **pigeonhole principle**). From the first repeat on, the sequence must go round the same loop for ever, because each term determines the next.
+
+</Proof>
+
+<Example title="The last digit of a huge power">
+
+Last digits are remainders modulo 10. The powers of 7 end in $7, 9, 3, 1, 7, 9, 3, 1, \dots$ because $7^4 = 2401 \equiv 1 \pmod{10}$. Then $7^{4k} = (7^4)^k \equiv 1^k = 1$ by Theorem 2, and
+$$
+7^{2026} = 7^{4 \cdot 506 + 2} = (7^4)^{506} \cdot 7^2 \equiv 1 \cdot 49 \equiv 9 \pmod{10}.
+$$
+So $7^{2026}$ ends in **9** — found without computing a 1713-digit number.
+
+</Example>
+
+<Example title="Casting out nines">
+
+Since $10 = 9 + 1$, we have $10 \equiv 1 \pmod 9$, so $10^k \equiv 1^k = 1 \pmod 9$ for every $k$ (Theorem 2 again). A number such as $5678 = 5 \cdot 10^3 + 6 \cdot 10^2 + 7 \cdot 10 + 8$ therefore leaves the same remainder on division by 9 as its digit sum $5 + 6 + 7 + 8 = 26$, and $26 \bmod 9 = 8$. Accountants and merchants used this for centuries to catch mistakes: $1234 \cdot 5678 = 7006652$ is plausible because the digit sums give $1 \cdot 8 = 8$ and $7 + 0 + 0 + 6 + 6 + 5 + 2 = 26 \equiv 8$. (A check like this can catch an error but never prove an answer right — see <TopicLink id="math.applied.check-digits">check digits</TopicLink>.)
+
+</Example>
+
+</Section>
+
+<Section id="partners" kind="proof" title="Which multiplications can be undone?">
+
+Look again at the tables. Modulo 6, only $1$ and $5$ have partners; modulo 5, every non-zero remainder does. Modulo 12 (try it in the explorer below) only $1, 5, 7, 11$ do. What decides?
+
+<Theorem name="Theorem 4 (a common factor blocks a partner)">
+
+If $a$ and $n$ have a common factor $d > 1$, then $a$ has no partner modulo $n$: there is no $b$ with $a \cdot b \bmod n = 1$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $a \cdot b = q n + 1$ for some whole numbers $b$ and $q$. Then $1 = a \cdot b - q n$. Now $d$ divides $a$, so it divides $a \cdot b$; and $d$ divides $n$, so it divides $q n$. Hence $d$ divides their difference, which is $1$. But no whole number greater than $1$ divides $1$. This contradiction shows no such $b$ exists.
+
+</Proof>
+
+So $2, 3, 4, 6, 8, 9, 10$ have no partners modulo $12$, and $2, 4, 5, 6, 8$ have none modulo $10$. The converse is also true — **if $a$ and $n$ have no common factor greater than 1, then $a$ has a partner modulo $n$** — but its proof needs Euclid's algorithm, which you will meet in <TopicLink id="math.number.divisibility-gcd">divisibility and the gcd</TopicLink>. Here we prove the most important case.
+
+<Theorem name="Theorem 5 (prime clocks)">
+
+If $p$ is a prime number, every remainder $a \in \{1, 2, \dots, p - 1\}$ has a partner modulo $p$.
+
+</Theorem>
+
+<Proof>
+
+We use **Euclid's lemma**: *if a prime divides a product of two whole numbers, it divides one of them* (proved in <TopicLink id="math.number.divisibility-gcd">divisibility and the gcd</TopicLink>).
+
+Look at the row of $a$ in the multiplication table: the remainders of $a \cdot 1, a \cdot 2, \dots, a \cdot (p - 1)$.
+
+- None of them is $0$: if $p$ divided $a \cdot x$ with $1 \le x \le p - 1$, it would divide $a$ or $x$, but both lie strictly between $0$ and $p$.
+- No two of them are equal: if $a \cdot x$ and $a \cdot y$ left the same remainder with $x > y$, then $p$ would divide the difference $a \cdot (x - y)$, so $p$ would divide $a$ or $x - y$; but $1 \le x - y \le p - 2$.
+
+So the row contains $p - 1$ different non-zero remainders. There are only $p - 1$ non-zero remainders, so every one of them appears — in particular $1$. The $x$ with $a \cdot x \bmod p = 1$ is the partner.
+
+</Proof>
+
+<Narrator who="chloe">
+
+Did you notice the trick? We never *found* the partner. We counted: $p - 1$ different things squeezed into $p - 1$ boxes must fill every box. Proofs by counting can tell you something exists without telling you where it is.
+
+</Narrator>
+
+The same reasoning explains the zero products. If $n = r \cdot s$ with $1 \lt r, s \lt n$, then $r \cdot s \equiv 0 \pmod n$ although $r, s \not\equiv 0$. Modulo a prime that cannot happen, by Euclid's lemma. Prime clocks behave like ordinary fractions: you can divide by anything except $0$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Clock arithmetic in Lean">
+
+In Lean, `a % n` is the remainder of `a` on division by `n`. First, division with remainder and the range of a remainder (both quoted from Lean's library), and the train and weekday examples, which Lean checks by computing:
+
+<Lean decl="Lumenary.ModularArithmetic.div_add_mod" />
+
+<Lean decl="Lumenary.ModularArithmetic.mod_lt" />
+
+<Lean decl="Lumenary.ModularArithmetic.clock_example" />
+
+<Lean decl="Lumenary.ModularArithmetic.week_example" />
+
+Theorems 1 and 2 are proved exactly as in the human proofs: split `a` and `b` into quotient and remainder, regroup, and use the fact that adding a multiple of `n` does not change a remainder (`Nat.mul_add_mod`). The `calc` blocks are the displayed equations of the proofs.
+
+<Lean decl="Lumenary.ModularArithmetic.add_mod_of_division" />
+
+<Lean decl="Lumenary.ModularArithmetic.mul_mod_of_division" />
+
+<Narrator who="gideon">
+
+Lean's library already knows Theorem 1 as `Nat.add_mod`. Quoting it is a one-liner. Both versions are machine-checked; the difference is honesty about *who did the work*. We label the first “independent” and this one “library”.
+
+</Narrator>
+
+<Lean decl="Lumenary.ModularArithmetic.add_mod_library" />
+
+Zero products, Theorem 4, and a use of it:
+
+<Lean decl="Lumenary.ModularArithmetic.zero_product_mod_twelve" />
+
+<Lean decl="Lumenary.ModularArithmetic.no_partner_of_common_factor" />
+
+<Lean decl="Lumenary.ModularArithmetic.four_no_partner_mod_ten" />
+
+Lean has clock arithmetic built in: `Fin 12` is the set of numbers $0, \dots, 11$, and its `*` multiplies and then takes the remainder on division by 12. For one particular clock, `decide` can simply try every case — 144 products for the 12-hour clock:
+
+<Lean decl="Lumenary.ModularArithmetic.partners_mod_twelve" />
+
+<Lean decl="Lumenary.ModularArithmetic.partners_mod_seven" />
+
+<Lean decl="Lumenary.ModularArithmetic.row_is_shuffle_mod_seven" />
+
+These three are checked case by case for one modulus each; Theorem 5 for *every* prime is not formalised here (it needs Euclid's lemma, which is formalised in the lesson on divisibility). Finally, the repeating patterns, proved for **all** $k$ by induction — the formal version of “and so on for ever”:
+
+<Lean decl="Lumenary.ModularArithmetic.pow_three_mod_seven" />
+
+<Lean decl="Lumenary.ModularArithmetic.last_digit_seven_pow" />
+
+<Lean decl="Lumenary.ModularArithmetic.ten_pow_mod_nine" />
+
+In Mathlib, the integers modulo $n$ form the ring `ZMod n`, congruence is `Nat.ModEq`, and the partner of a number coprime to $n$ is built by `ZMod.unitOfCoprime`.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Every clock up to 30">
+
+<Narrator who="margaret">
+
+Let me build every multiplication table from mod 2 to mod 30 and check who has a partner. Then I will test the reduce-first rules on hundreds of thousands of cases — not because I doubt the proofs, but because a computer is very good at catching a mistake in a *statement*.
+
+</Narrator>
+
+<Python id="modular_arithmetic_partners" />
+
+The output agrees with Theorems 4 and 5 and with the converse we have not proved yet: the remainders with partners are exactly those sharing no factor with $n$, and the moduli with no zero products are exactly the primes. For $n \le 30$ that is **exhaustive evidence**; for larger $n$ it is the theorems that do the work.
+
+<Narrator who="margaret">
+
+And now cycles: last digits of powers, weekdays, and two calendars running side by side.
+
+</Narrator>
+
+<Python id="modular_arithmetic_cycles" />
+
+The Chinese calendar names years by pairing one of 10 *heavenly stems* with one of 12 *earthly branches*, both advancing each year; the pairs repeat after $60$ years, not $120$, because $60$ is the first number that is a multiple of both $10$ and $12$. The Maya ran a 260-day count and a 365-day count side by side; the pair of dates repeats only after $18\,980$ days, about 52 years — the *Calendar Round*.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: clocks and calendars">
+
+In the **Add** tab, choose the number of hours $k$, a starting time and an amount to add; the hand jumps to the remainder. Try $k = 24$ and add $30$ (the overnight train), then $k = 7$ (a week) and add $16$. In the **Multiply** tab, look for a $1$ in each row. Which rows have one for $k = 7$, $k = 11$ and $k = 13$? For $k = 10$ and $k = 12$? Press the button to reveal the pattern, then check it against Theorems 4 and 5.
+
+<ClockLab />
+
+A calendar is a number grid with 7 columns. Every number in one column leaves the same remainder on division by 7. Mark the multiples of 7 and the multiples of 3: which columns do the multiples of 3 visit, and when does the pattern repeat?
+
+<NumberGrid mode="multiples" k={3} k2={7} columns={7} size={84} title="A calendar is clock arithmetic" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**“Modular arithmetic is only about 12-hour clocks.”** Any modulus works: 24 for hours, 7 for weekdays, 10 for last digits, 9 for casting out nines, 11 for book numbers, 60 for minutes and for the Chinese calendar, 2 for even and odd. The 12-hour clock is just the most familiar picture.
+
+</Misconception>
+
+<Misconception>
+
+**“If $a \cdot b \bmod n = 0$, then $a$ or $b$ must be $0 \bmod n$.”** False in general: $3 \cdot 4 = 12 \equiv 0 \pmod{12}$, but neither $3$ nor $4$ is $0$ modulo 12. The statement *is* true when $n$ is prime — that is Euclid's lemma.
+
+</Misconception>
+
+<Misconception>
+
+**“A remainder can be any number.”** A remainder on division by $n$ is always one of $0, 1, \dots, n - 1$. So $25 \bmod 12$ is $1$, not $13$, and $-7 \bmod 5$ is $3$, not $-2$. (Some calculators and programming languages give $-2$ for $-7 \bmod 5$; they use a different convention for negative numbers. Python gives $3$.)
+
+</Misconception>
+
+<Misconception>
+
+**“Every number has a partner, like fractions.”** Only remainders with no common factor with $n$ have partners. Modulo 12, $2$ has none: $2 \cdot b$ is always even, and an even number never leaves remainder $1$ on division by $12$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="algebra" title="A clock is a group">
+
+The hours of a 12-hour clock under addition form a **cyclic group** of order 12: adding is associative, $0$ does nothing, every hour $a$ has an opposite $12 - a$ that undoes it, and everything is generated by repeatedly adding $1$. The remainders with multiplicative partners form a group under multiplication too: modulo 12 it is $\{1, 5, 7, 11\}$, in which every element is its own partner. Modulo a prime $p$, all $p - 1$ non-zero remainders form a group, and the integers modulo $p$ are a **field** — a number system in which you can add, subtract, multiply and divide by anything non-zero. See <TopicLink id="math.algebra.groups">groups</TopicLink> and <TopicLink id="math.number.congruences">congruences</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Turning a regular polygon">
+
+Turn a regular 12-sided polygon about its centre by $30^\circ$. Turning by $a \cdot 30^\circ$ and then by $b \cdot 30^\circ$ is turning by $(a + b) \cdot 30^\circ$, and a turn by $12 \cdot 30^\circ = 360^\circ$ is no turn at all. So the rotations of the polygon *are* the 12-hour clock: addition modulo $n$ is the geometry of rotating a regular $n$-gon. Winding the number line around a circle, as in our picture, is the same idea: every whole number becomes an angle, and numbers differing by a multiple of $n$ give the same angle. See <TopicLink id="math.geom.symmetry-transformations">symmetry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Secrets and fast powers">
+
+Computers do arithmetic modulo $n$ all the time, because the numbers never grow larger than $n$. Theorem 2 lets a computer find $a^k \bmod n$ for enormous $k$ by repeated squaring, reducing after every step — a few thousand multiplications for a number with hundreds of digits. That fast calculation is the engine of the public-key systems that protect online banking, such as RSA (published in 1977) and Diffie–Hellman key exchange (1976). See <TopicLink id="math.applied.cryptography">cryptography</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="sets" kind="sets" title="Remainder families as sets">
+
+Dividing by $n$ sorts every whole number — and every integer — into exactly $n$ **families**: the set of numbers with remainder $0$, the set with remainder $1$, and so on up to remainder $n - 1$. Modulo 2 the families are the even and the odd numbers. These sets do not overlap and together they contain every integer: they form a **partition**. Theorems 1 and 2 say something remarkable about them: if you add a member of one family to a member of another, the family of the answer does not depend on which members you picked. That is why we can add and multiply the families themselves. The *Remainder families* trail explores this; at university it becomes the idea of an **equivalence relation** and a **quotient** (see <TopicLink id="math.found.equivalence-relations">equivalence relations</TopicLink>).
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="clock-arithmetic" />
+
+<Trail slug="remainder-families" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **China.** The *Sunzi Suanjing* (*Master Sun's Mathematical Manual*, between the 3rd and 5th centuries CE) asks for a number of things that leaves remainder 2 when counted by threes, 3 when counted by fives and 2 when counted by sevens (answer: 23). In 1247 **Qin Jiushao**'s *Mathematical Treatise in Nine Sections* gave a general method for such problems, today called the Chinese remainder theorem. Calendar-makers needed exactly this kind of calculation to find when several astronomical cycles line up.
+- **India.** **Āryabhaṭa** (499 CE) described the *kuṭṭaka* (“pulveriser”), a method for solving equations such as $a x + c = b y$ in whole numbers — in modern terms, finding partners modulo $b$. Brahmagupta (628 CE) and later Indian astronomers refined it.
+- **Mesoamerica.** The Maya combined a 260-day ritual count (13 numbers × 20 day-names) with a 365-day year; the same combination of dates recurs after 18,980 days, about 52 years.
+- **East Asia.** The 60-fold cycle of heavenly stems and earthly branches was used to count days in Shang-dynasty China more than 3000 years ago, and later to name years.
+- **Europe.** **Carl Friedrich Gauss** introduced the notation $a \equiv b \pmod n$ and the word *modulus* in his *Disquisitiones Arithmeticae* (1801), turning a collection of tricks into a theory.
+- **East Africa.** Swahili timekeeping, counting hours from sunrise, is a living example of shifting a clock by a constant modulo 12.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Joseph H. Silverman, *A Friendly Introduction to Number Theory* (1997; 4th edition 2012), chapters on congruences — very readable for a strong secondary-school student.
+- Øystein Ore, *Number Theory and Its History* (1948), for the history from Sunzi to Gauss.
+- George Gheverghese Joseph, *The Crest of the Peacock: Non-European Roots of Mathematics* (1991; 3rd edition 2011), on Chinese remainder problems, the Indian kuṭṭaka and Maya calendars.
+- Carl Friedrich Gauss, *Disquisitiones Arithmeticae* (1801; English translation by Arthur A. Clarke, 1966), where congruences began as a theory.
+
+</Section>

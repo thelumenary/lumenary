@@ -1,0 +1,480 @@
+---
+slug: intro-calculus
+topic: math.analysis.intro-calculus
+title: Introductory calculus
+subtitle: Speed at an instant and the area under a curve look like two unrelated problems. Limits solve both — and the fundamental theorem of calculus shows that they undo each other.
+level: g9-12
+ages: Ages 16–18
+minutes: 90
+order: 4016
+objectives:
+  - Estimate limits from tables and graphs, compute simple limits algebraically, and explain why a limit need not equal the value of the function
+  - Define the derivative as a limit of difference quotients, and differentiate polynomials from the definition and with the power rule
+  - Use derivatives to find tangent lines, rates of change and extrema — knowing that $f'(a) = 0$ does not guarantee a maximum or minimum
+  - Approximate areas with Riemann sums, find the area under $y = x^2$ as a limit, and interpret integrals as signed areas
+  - Evaluate integrals with antiderivatives using the fundamental theorem of calculus
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.IntroCalculus.diff_quotient_sq
+  - Lumenary.IntroCalculus.tendsto_diff_quotient_sq
+  - Lumenary.IntroCalculus.hasDerivAt_sq
+  - Lumenary.IntroCalculus.power_rule
+  - Lumenary.IntroCalculus.power_rule_library
+  - Lumenary.IntroCalculus.fermat
+  - Lumenary.IntroCalculus.cube_deriv_zero
+  - Lumenary.IntroCalculus.cube_not_extremum
+  - Lumenary.IntroCalculus.limit_not_value
+  - Lumenary.IntroCalculus.sum_squares
+  - Lumenary.IntroCalculus.rightSum
+  - Lumenary.IntroCalculus.rightSum_formula
+  - Lumenary.IntroCalculus.rightSum_tendsto
+  - Lumenary.IntroCalculus.ftc_square
+  - Lumenary.IntroCalculus.integral_sq_unit
+  - Lumenary.IntroCalculus.integral_sin_signed
+compute: [intro_calculus_difference_quotients, intro_calculus_riemann_sums]
+trails: [bending-roads]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Two questions about motion">
+
+A stone is dropped from a bridge. Ignoring air resistance, after $t$ seconds it has fallen about $s(t) = 4.9\,t^2$ metres. **How fast is it falling at exactly $t = 1$?**
+
+Speed is distance divided by time — but at a single instant no time passes and no distance is covered, so "distance ÷ time" reads $\tfrac00$. What we *can* compute is the average speed over a short interval from $t = 1$ to $t = 1 + h$:
+
+$$
+\frac{s(1 + h) - s(1)}{h} = \frac{4.9(1 + 2h + h^2) - 4.9}{h} = \frac{9.8h + 4.9h^2}{h} = 9.8 + 4.9h \qquad (h \ne 0).
+$$
+
+Over $0.1$ s this is $10.29$ m/s; over $0.001$ s it is $9.8049$ m/s. As $h$ shrinks, the averages close in on $9.8$ m/s. That number — the value the averages approach — is the speed at the instant $t = 1$.
+
+The opposite question is just as old: a car's speedometer is recorded every moment of a journey from Accra to Kumasi. **How far did the car travel?** If the speed were constant, distance would be speed × time, the area of a rectangle under the speed–time graph. When the speed varies, the distance is the **area under the graph** — and computing areas under curves again means adding up more and more, thinner and thinner pieces.
+
+Calculus is the mathematics of these two limits: the **derivative** (instantaneous rate of change) and the **integral** (accumulated total). Its central surprise, the fundamental theorem of calculus, is that each undoes the other.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Zooming in and slicing up">
+
+Zoom in on the graph of a smooth function, such as $y = x^2$ near the point $(1, 1)$. The more you magnify, the straighter the curve looks; under a strong enough microscope it is indistinguishable from a straight line, the **tangent line**. The slope of that line is the **derivative**: how fast $y$ changes per unit change of $x$, right at that point.
+
+To find an area, do the opposite: cut the region under the curve into thin vertical strips, replace each strip by a rectangle, and add up the rectangles. Thinner strips give better approximations, and the area is what these sums approach.
+
+Both ideas rest on a single notion: the **limit**, the value that approximations approach as some quantity ($h$, or the strip width) shrinks to $0$ — without ever being $0$.
+
+<Narrator who="chloe">
+
+Notice the trick in the motivation: we simplified $\tfrac{9.8h + 4.9h^2}{h}$ to $9.8 + 4.9h$ *while $h$ was still not zero*, and only then let $h$ approach $0$. You may never divide by zero — but you can ask what happens as you get close to it.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="limit (informal)">
+
+We write $\displaystyle\lim_{x \to a} f(x) = L$ ("the limit of $f(x)$ as $x$ tends to $a$ is $L$") if $f(x)$ can be made as close to $L$ as we like by taking $x$ close enough to $a$, **but not equal to $a$**. The value $f(a)$ — if it exists at all — plays no part.
+
+</Definition>
+
+The precise version ("for every $\varepsilon > 0$ there is a $\delta > 0$ such that $0 < |x - a| < \delta$ implies $|f(x) - L| < \varepsilon$") took mathematicians until the 19th century to find; it is the starting point of <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink>. In this lesson we use the following **limit laws**, which can be proved from that definition: if $\lim_{x \to a} f(x) = L$ and $\lim_{x \to a} g(x) = M$, then $f + g \to L + M$, $f g \to L M$, $cf \to cL$, and $f/g \to L/M$ provided $M \ne 0$; also $\lim_{x \to a} c = c$ and $\lim_{x \to a} x = a$. Consequently $\lim_{x \to a} p(x) = p(a)$ for every polynomial $p$. Limits also respect inequalities: if $f(x) \le g(x)$ near $a$, then $L \le M$.
+
+A function is **continuous** at $a$ if $\lim_{x \to a} f(x) = f(a)$: the value is what the nearby values predict.
+
+<Definition term="derivative">
+
+The **derivative** of $f$ at $a$ is
+
+$$
+f'(a) = \lim_{h \to 0} \frac{f(a + h) - f(a)}{h},
+$$
+
+when this limit exists; then $f$ is **differentiable** at $a$. The fraction is the slope of the **secant line** through $(a, f(a))$ and $(a + h, f(a + h))$, and $f'(a)$ is the slope of the **tangent line** $y = f(a) + f'(a)(x - a)$. The function $x \mapsto f'(x)$ is the derivative function $f'$, also written $\dfrac{dy}{dx}$ or $\dfrac{d}{dx} f(x)$.
+
+</Definition>
+
+<Definition term="Riemann sum and definite integral">
+
+Divide $[a, b]$ into $n$ strips of width $\Delta x = \tfrac{b - a}{n}$ and choose a point $x_k^*$ in the $k$-th strip (its left end, right end or midpoint). The **Riemann sum** is $\sum_{k} f(x_k^*)\,\Delta x$. If these sums approach a single number as $n \to \infty$ (for every way of choosing the points), that number is the **definite integral** $\displaystyle\int_a^b f(x)\,dx$. Strips where $f < 0$ contribute negatively: the integral is a **signed area**. Continuous functions on $[a, b]$ always have integrals (a theorem of real analysis).
+
+</Definition>
+
+<Definition term="antiderivative">
+
+A function $F$ is an **antiderivative** of $f$ on an interval if $F'(x) = f(x)$ for every $x$ in it. For example $\tfrac{x^3}{3}$, and also $\tfrac{x^3}{3} + 7$, are antiderivatives of $x^2$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Limits from tables, and limits by algebra">
+
+- **A table.** For $f(x) = \tfrac{\sin x}{x}$ (with $x$ in radians): $f(0.1) \approx 0.99833$, $f(0.01) \approx 0.9999833$, $f(-0.01) \approx 0.9999833$. The table *suggests* $\lim_{x \to 0} \tfrac{\sin x}{x} = 1$, which is true — but a table is evidence, not proof (a table can be fooled by a function that misbehaves between the sample points).
+- **Algebra.** $\displaystyle\lim_{x \to 1}\frac{x^2 - 1}{x - 1}$: for $x \ne 1$, $\tfrac{x^2 - 1}{x - 1} = \tfrac{(x - 1)(x + 1)}{x - 1} = x + 1$, so the limit is $1 + 1 = 2$. The function is not even defined at $x = 1$; the limit exists anyway.
+- **No limit.** $\tfrac1x$ has no limit at $0$ (it grows without bound), and the sign function, $-1$ for $x < 0$ and $1$ for $x > 0$, has none either: from the left it is near $-1$, from the right near $1$.
+
+</Example>
+
+<Example title="Derivatives from the definition">
+
+For $f(x) = x^2$ and $h \ne 0$: $\;\dfrac{(a + h)^2 - a^2}{h} = \dfrac{2ah + h^2}{h} = 2a + h \to 2a$. So $f'(a) = 2a$: the slope of the parabola doubles as $a$ doubles.
+
+For $f(x) = \tfrac1x$ and $a \ne 0$: $\;\dfrac{\frac{1}{a + h} - \frac1a}{h} = \dfrac{a - (a + h)}{h\,a(a + h)} = \dfrac{-1}{a(a + h)} \to -\dfrac{1}{a^2}$.
+
+The tangent line to $y = x^2$ at $a = 3$ has slope $6$ and passes through $(3, 9)$: $y = 9 + 6(x - 3) = 6x - 9$.
+
+</Example>
+
+<Example title="Finding the turning points">
+
+Let $f(x) = x^3 - 3x$. Then $f'(x) = 3x^2 - 3 = 3(x - 1)(x + 1)$, which is $0$ at $x = \pm 1$. For $x < -1$, $f' > 0$ (rising); for $-1 < x < 1$, $f' < 0$ (falling); for $x > 1$, $f' > 0$ again. So $f$ has a **local maximum** $f(-1) = 2$ and a **local minimum** $f(1) = -2$.
+
+</Example>
+
+<Example title="An optimisation">
+
+A farmer in Malawi has $20$ m of fencing for a rectangular goat pen. With sides $x$ and $10 - x$, the area is $A(x) = x(10 - x) = 10x - x^2$ for $0 \le x \le 10$. Then $A'(x) = 10 - 2x = 0$ at $x = 5$, where $A = 25$; at the ends $A(0) = A(10) = 0$. The best pen is a $5 \times 5$ square.
+
+</Example>
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: secants, tangents and strips">
+
+Shrink $h$ and watch the secant through $P$ and $Q$ turn into the tangent. For $f(x) = x^2$ at $x_0 = 1$ the table of slopes should approach $2$ — and you know exactly why, since the slope is $2 + h$.
+
+<CalculusLab mode="tangent" fn="x^2" x0={1} x={[-1, 3]} title="From secant to tangent" subtitle="The slope of the secant is exactly 2 + h. What happens as h shrinks? Then try fn = abs(x - 1)." />
+
+Now the area under $y = x^2$ from $0$ to $1$, which we will prove is exactly $\tfrac13$. Compare left, right and midpoint sums, and watch the errors shrink as the strips multiply.
+
+<CalculusLab mode="riemann" fn="x^2" interval={[0, 1]} exact="1/3" n={8} method="right" title="Riemann sums for the parabola" subtitle="Right sums overestimate and left sums underestimate an increasing function. Which rule is most accurate?" />
+
+Finally, $x^3$ at $0$: the tangent is horizontal, yet the graph keeps climbing through it.
+
+<FunctionPlot fns={["x^3", "0", "x^3 - 3*x"]} labels={["y = x³", "tangent to x³ at 0", "y = x³ − 3x"]} x={[-2.5, 2.5]} y={[-4, 4]} points={[[0, 0, "f′(0) = 0, no extremum"], [-1, 2, "local max"], [1, -2, "local min"]]} title="Horizontal tangents" />
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The rules of differentiation">
+
+<Theorem name="Theorem 1 (differentiable implies continuous)">
+
+If $f$ is differentiable at $a$, then $\lim_{h \to 0} f(a + h) = f(a)$.
+
+</Theorem>
+
+<Proof>
+
+For $h \ne 0$, $\;f(a + h) - f(a) = \dfrac{f(a + h) - f(a)}{h}\cdot h$. As $h \to 0$ the first factor tends to $f'(a)$ and the second to $0$, so by the product law the difference tends to $f'(a)\cdot 0 = 0$.
+
+</Proof>
+
+The converse is false: $|x|$ is continuous at $0$, but its difference quotient $\tfrac{|h|}{h}$ is $1$ for $h > 0$ and $-1$ for $h < 0$, so it has no limit. A graph with a corner has no tangent there.
+
+<Theorem name="Theorem 2 (sums and constant multiples)">
+
+If $f$ and $g$ are differentiable at $a$ and $c$ is a constant, then $(f + g)'(a) = f'(a) + g'(a)$ and $(cf)'(a) = c f'(a)$.
+
+</Theorem>
+
+<Proof>
+
+The difference quotient of $f + g$ is the sum of the difference quotients of $f$ and $g$, and that of $cf$ is $c$ times that of $f$; apply the limit laws.
+
+</Proof>
+
+<Theorem name="Theorem 3 (product rule)">
+
+If $f$ and $g$ are differentiable at $a$, then $(fg)'(a) = f'(a)g(a) + f(a)g'(a)$.
+
+</Theorem>
+
+<Proof>
+
+Add and subtract $f(a + h)g(a)$:
+
+$$
+\frac{f(a + h)g(a + h) - f(a)g(a)}{h} = f(a + h)\,\frac{g(a + h) - g(a)}{h} + g(a)\,\frac{f(a + h) - f(a)}{h}.
+$$
+
+As $h \to 0$: $f(a + h) \to f(a)$ by Theorem 1, and the two quotients tend to $g'(a)$ and $f'(a)$. By the limit laws the whole expression tends to $f(a)g'(a) + g(a)f'(a)$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (power rule)">
+
+For every integer $n \ge 1$: $\;\dfrac{d}{dx} x^n = n x^{n-1}$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $n$. For $n = 1$, the difference quotient of $x$ is $\tfrac{(a + h) - a}{h} = 1$, so the derivative is $1 = 1 \cdot x^0$. Suppose $\tfrac{d}{dx}x^n = nx^{n-1}$. Writing $x^{n+1} = x^n \cdot x$, the product rule gives
+
+$$
+\frac{d}{dx}x^{n+1} = nx^{n-1}\cdot x + x^n \cdot 1 = (n + 1)x^n.
+$$
+
+</Proof>
+
+With Theorem 2, every polynomial can now be differentiated term by term: $\tfrac{d}{dx}(4x^3 - 5x + 2) = 12x^2 - 5$. (The constant $2$ has derivative $0$: its difference quotient is $\tfrac{2 - 2}{h} = 0$.)
+
+<Theorem name="Theorem 5 (Fermat's theorem on interior extrema)">
+
+Suppose $f$ is defined on an open interval containing $a$, has a local maximum or minimum at $a$, and is differentiable at $a$. Then $f'(a) = 0$.
+
+</Theorem>
+
+<Proof>
+
+Take a local maximum: $f(a + h) \le f(a)$ for all small $h$. For small $h > 0$ the difference quotient $\tfrac{f(a + h) - f(a)}{h}$ has numerator $\le 0$ and denominator $> 0$, so it is $\le 0$; since limits respect inequalities, $f'(a) \le 0$. For small $h < 0$ the numerator is $\le 0$ and the denominator $< 0$, so the quotient is $\ge 0$, giving $f'(a) \ge 0$. Hence $f'(a) = 0$. For a minimum, apply this to $-f$.
+
+</Proof>
+
+The converse is **false**. For $f(x) = x^3$, $f'(0) = 3 \cdot 0^2 = 0$, but $0$ is neither a maximum nor a minimum: $t^3 > 0$ for every $t > 0$ and $(-t)^3 < 0$, however small $t$ is. A zero derivative only marks a *candidate*; to decide, look at the sign of $f'$ on each side (as in the worked example) or compare values.
+
+</Section>
+
+<Section id="integrals" kind="proof" title="Area under a parabola, and the fundamental theorem">
+
+Archimedes found the area of a parabolic segment more than 2,200 years ago. Here is the modern version of that result, by Riemann sums.
+
+<Theorem name="Lemma 6 (sum of squares)">
+
+For every $n \ge 0$: $\;0^2 + 1^2 + 2^2 + \dots + n^2 = \dfrac{n(n + 1)(2n + 1)}{6}$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $n$. For $n = 0$ both sides are $0$. If the formula holds for $n$, then
+
+$$
+\frac{n(n + 1)(2n + 1)}{6} + (n + 1)^2 = \frac{(n + 1)\big(2n^2 + n + 6n + 6\big)}{6} = \frac{(n + 1)(n + 2)(2n + 3)}{6},
+$$
+
+which is the formula for $n + 1$, because $2n^2 + 7n + 6 = (n + 2)(2n + 3)$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (the area under y = x² on [0, 1] is 1/3)">
+
+The right and left Riemann sums of $f(x) = x^2$ on $[0, 1]$ with $n$ strips are
+
+$$
+R_n = \frac{(n + 1)(2n + 1)}{6n^2}, \qquad L_n = \frac{(n - 1)(2n - 1)}{6n^2},
+$$
+
+and both tend to $\tfrac13$ as $n \to \infty$. Hence $\displaystyle\int_0^1 x^2\,dx = \frac13$.
+
+</Theorem>
+
+<Proof>
+
+The $k$-th strip is $\big[\tfrac{k - 1}{n}, \tfrac kn\big]$, of width $\tfrac1n$. Using right endpoints and Lemma 6,
+
+$$
+R_n = \sum_{k=1}^{n} \Big(\frac kn\Big)^2 \frac1n = \frac{1^2 + \dots + n^2}{n^3} = \frac{n(n + 1)(2n + 1)}{6n^3} = \frac{(n + 1)(2n + 1)}{6n^2}.
+$$
+
+With left endpoints we get $\tfrac{0^2 + \dots + (n - 1)^2}{n^3} = \tfrac{(n - 1)(2n - 1)}{6n^2}$ in the same way. Dividing top and bottom by $n^2$,
+
+$$
+R_n = \frac{\big(1 + \frac1n\big)\big(2 + \frac1n\big)}{6} \to \frac{1 \cdot 2}{6} = \frac13, \qquad L_n = \frac{\big(1 - \frac1n\big)\big(2 - \frac1n\big)}{6} \to \frac13.
+$$
+
+Since $x^2$ is increasing on $[0, 1]$, every Riemann sum with $n$ strips lies between $L_n$ and $R_n$ (each strip's height lies between the heights at its two ends), so every Riemann sum tends to $\tfrac13$.
+
+</Proof>
+
+Computing every area this way would be exhausting. The fundamental theorem gives a shortcut.
+
+<Theorem name="Fundamental theorem of calculus">
+
+If $f$ is continuous on $[a, b]$ and $F$ is an antiderivative of $f$ there, then
+
+$$
+\int_a^b f(x)\,dx = F(b) - F(a).
+$$
+
+</Theorem>
+
+We give the idea rather than a complete proof (which belongs to <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink>). Let $A(x) = \int_a^x f(t)\,dt$ be the area accumulated from $a$ up to $x$. Increasing $x$ by a small $h$ adds a thin strip of width $h$ and height about $f(x)$, so $A(x + h) - A(x) \approx f(x)\,h$, and dividing by $h$ suggests $A'(x) = f(x)$ — making this precise uses the continuity of $f$. So $A$ and $F$ have the same derivative, and two functions with the same derivative on an interval differ by a constant (a consequence of the mean value theorem). Hence $A(x) = F(x) + C$; putting $x = a$ gives $0 = F(a) + C$, and putting $x = b$ gives $\int_a^b f = F(b) - F(a)$.
+
+<Example title="Integrals by antiderivatives">
+
+- $\displaystyle\int_0^1 x^2\,dx = \Big[\tfrac{x^3}{3}\Big]_0^1 = \tfrac13$, matching Theorem 7 — two very different routes to the same number.
+- $\displaystyle\int_0^2 x^2\,dx = \tfrac83 - 0 = \tfrac83$.
+- $\displaystyle\int_0^{\pi} \sin x\,dx = \big[-\cos x\big]_0^{\pi} = 1 + 1 = 2$, but $\displaystyle\int_0^{2\pi} \sin x\,dx = -\cos 2\pi + \cos 0 = 0$: the area below the axis on $[\pi, 2\pi]$ counts negatively and cancels the area above.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Calculus in Lean">
+
+Mathlib states that $f$ has derivative $f'$ at $a$ as `HasDerivAt f f' a`, and writes limits with *filters*: `Tendsto g (𝓝[≠] 0) (𝓝 L)` says "$g(h) \to L$ as $h \to 0$ with $h \ne 0$". First the derivative of $x^2$ straight from the definition, in three steps that mirror the human computation:
+
+<Lean decl="Lumenary.IntroCalculus.diff_quotient_sq" />
+
+<Lean decl="Lumenary.IntroCalculus.tendsto_diff_quotient_sq" />
+
+<Lean decl="Lumenary.IntroCalculus.hasDerivAt_sq" />
+
+The power rule, by induction with Mathlib's product rule `HasDerivAt.mul` — the proof of Theorem 4 — and Mathlib's own version:
+
+<Lean decl="Lumenary.IntroCalculus.power_rule" />
+
+<Lean decl="Lumenary.IntroCalculus.power_rule_library" />
+
+Fermat's theorem from Mathlib, and the counterexample to its converse, proved here:
+
+<Lean decl="Lumenary.IntroCalculus.fermat" />
+
+<Lean decl="Lumenary.IntroCalculus.cube_deriv_zero" />
+
+<Lean decl="Lumenary.IntroCalculus.cube_not_extremum" />
+
+<Narrator who="gideon">
+
+The next theorem has a twist. Lean must give *every* expression a value, so it defines $x / 0 = 0$. Then $\tfrac{x^2 - 1}{x - 1}$ at $x = 1$ is $\tfrac00 = 0$ in Lean — while its limit is $2$. This is not a contradiction; it is the clearest possible demonstration that a limit does not look at the value at the point.
+
+</Narrator>
+
+<Lean decl="Lumenary.IntroCalculus.limit_not_value" />
+
+Theorem 7, with the right Riemann sums as a Lean definition:
+
+<Lean decl="Lumenary.IntroCalculus.sum_squares" />
+
+<Lean decl="Lumenary.IntroCalculus.rightSum" />
+
+<Lean decl="Lumenary.IntroCalculus.rightSum_formula" />
+
+<Lean decl="Lumenary.IntroCalculus.rightSum_tendsto" />
+
+Mathlib's integral is not defined by Riemann sums but by a more general construction (the Lebesgue, or Bochner, integral), which agrees with the Riemann integral for continuous functions. We did not formalise that agreement for this example; instead we compute the integral with Mathlib's fundamental theorem of calculus and with its table of integrals:
+
+<Lean decl="Lumenary.IntroCalculus.ftc_square" />
+
+<Lean decl="Lumenary.IntroCalculus.integral_sq_unit" />
+
+<Lean decl="Lumenary.IntroCalculus.integral_sin_signed" />
+
+</Section>
+
+<Section id="computation" kind="computation" title="Exact, numerical and symbolic calculus">
+
+<Narrator who="margaret">
+
+Computers can do calculus three ways: exactly with fractions, approximately with floating-point numbers, and symbolically with algebra systems like SymPy. Let me show you all three — including where floating point goes wrong.
+
+</Narrator>
+
+<Python id="intro_calculus_difference_quotients" />
+
+The float table holds a lesson. Making $h$ smaller first improves the estimate of $\cos 1$, as the mathematics predicts; but below about $h = 10^{-8}$ the error grows again. The computer stores $\sin(1 + h)$ and $\sin 1$ with about 16 significant digits, and subtracting two nearly equal numbers wipes out most of them. A limit is an idea about exact numbers; numerical methods must balance the two kinds of error (see <TopicLink id="math.comp.numerical-methods">Numerical methods</TopicLink>).
+
+<Python id="intro_calculus_riemann_sums" />
+
+With fractions there is no rounding at all, and the experiment confirms the closed form of Theorem 7 for every $n$ up to $200$ — evidence for those cases, while the induction proves it for all $n$. It also measures the errors exactly: the right sum is off by $\tfrac{1}{2n} + \tfrac{1}{6n^2}$, the midpoint sum by only $\tfrac{1}{12n^2}$.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"If $f'(a) = 0$, then $f$ has a maximum or minimum at $a$."** Fermat's theorem only goes one way. $f(x) = x^3$ has $f'(0) = 0$ and no extremum at $0$. Conversely, an extremum can occur where $f'$ does not exist ($|x|$ at $0$) or at an endpoint of the interval.
+
+</Misconception>
+
+<Misconception>
+
+**"The limit at a point is the value there."** Only for continuous functions. $\tfrac{x^2 - 1}{x - 1}$ has limit $2$ at $1$ but no value there; a function that is $0$ everywhere except $f(0) = 5$ has limit $0$ at $0$ but value $5$. The definition of $\lim_{x \to a}$ explicitly ignores $x = a$.
+
+</Misconception>
+
+<Misconception>
+
+**"An integral always gives a (positive) area."** Integrals are **signed**: $\int_0^{2\pi}\sin x\,dx = 0$. To get the total geometric area between a graph and the axis, integrate $|f|$ — in practice, split the interval where $f$ changes sign.
+
+</Misconception>
+
+<Misconception>
+
+**"To find the derivative, put $h = 0$ in the difference quotient."** At $h = 0$ the quotient is $\tfrac00$, which is meaningless. You must first simplify for $h \ne 0$ (as in $\tfrac{2ah + h^2}{h} = 2a + h$) and then take the limit.
+
+</Misconception>
+
+<Misconception>
+
+**"$\tfrac{d}{dx}x^n = x^{n-1}$."** The exponent comes down as a factor: $\tfrac{d}{dx}x^n = nx^{n-1}$. Check with $x^2$: the slope at $3$ is $6$, not $3$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="geometry" title="The best straight-line approximation">
+
+The derivative is the slope of the line that fits the graph best near $a$: $f(a + h) = f(a) + f'(a)h + E(h)$, where the error $E(h)$ is small *compared with $h$* ($E(h)/h \to 0$). For $x^2$, $E(h) = h^2$ exactly. This "linearisation" view is the one that generalises: in several variables the derivative becomes a linear map (a matrix), and on curved spaces it becomes a map between tangent planes. See <TopicLink id="math.analysis.multivariable-calculus">Multivariable and vector calculus</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Velocity, acceleration and Newton">
+
+Newton invented his "method of fluxions" to describe motion: velocity is the derivative of position, acceleration the derivative of velocity, and his second law $F = ma$ says force determines the *second* derivative of position. For the falling stone, $s(t) = 4.9t^2$ gives $v(t) = 9.8t$ and $a(t) = 9.8$ m/s², the constant acceleration due to gravity near the Earth's surface. Reading the integral backwards, the distance travelled is the area under the velocity graph: $\int_0^2 9.8t\,dt = 19.6$ m in the first two seconds. (The model ignores air resistance — physics, not mathematics, decides when that is acceptable.)
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Making 'close' precise">
+
+Newton and Leibniz could compute brilliantly but could not say exactly what a limit is; Bishop Berkeley mocked their vanishing increments as "ghosts of departed quantities". Cauchy (1821) and Weierstrass made it precise with inequalities ($\varepsilon$ and $\delta$), and the subject became rigorous enough to handle shocks: Weierstrass (1872) published a function that is continuous everywhere and differentiable **nowhere**, and the theorems quoted here — limit laws, the integrability of continuous functions, the mean value theorem — all rest on the completeness of the real numbers (see <TopicLink id="math.number.real-numbers">Real numbers</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="When there is no formula">
+
+Most integrals cannot be written with familiar functions — $\int_0^1 e^{-x^2}\,dx$ is a famous example — so they are computed numerically. The midpoint and trapezoid rules have errors proportional to $\tfrac{1}{n^2}$ for smooth functions, and Simpson's rule to $\tfrac{1}{n^4}$; derivatives are estimated by difference quotients whose step $h$ must balance truncation error against rounding error, as the experiment shows. See <TopicLink id="math.comp.numerical-methods">Numerical methods</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Optional, and never graded: a question that leads somewhere further.
+
+<Trail slug="bending-roads" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ancient areas and volumes.** Archimedes (3rd century BCE) proved in *Quadrature of the Parabola* that a parabolic segment has $\tfrac43$ the area of an inscribed triangle, by the "method of exhaustion". In China, Liu Hui (3rd century CE) approximated the circle by polygons with ever more sides, and Zu Chongzhi and his son Zu Geng (5th–6th centuries) found the volume of a sphere using a principle of comparing cross-sections later rediscovered by Cavalieri.
+- **Medieval advances.** Ibn al-Haytham (about 1000 CE, in Cairo) found formulas for sums of fourth powers and used them to compute the volume of a solid of revolution of a parabola. In Kerala, Mādhava of Saṅgamagrāma (14th century) and his school found infinite series for sine, cosine and the arctangent, centuries before they appeared in Europe.
+- **The invention of calculus.** Pierre de Fermat (1630s) found tangents and maxima with methods close to our difference quotients. Isaac Newton (from the 1660s) and Gottfried Wilhelm Leibniz (published from 1684) independently created calculus and recognised the fundamental theorem; Leibniz's notations $\tfrac{dy}{dx}$ and $\int$ are still used. A bitter priority dispute followed. Maria Gaetana Agnesi's *Instituzioni analitiche* (1748) was one of the first comprehensive calculus textbooks and was widely translated.
+- **Rigour.** Augustin-Louis Cauchy (1821) based calculus on limits, Bernhard Riemann (1854) defined the integral by the sums named after him, and Karl Weierstrass gave limits their $\varepsilon$–$\delta$ form.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Silvanus P. Thompson, *Calculus Made Easy* (1910) — still a friendly first read ("what one fool can do, another can").
+- Gilbert Strang, *Calculus* (1991) — a complete course with many applications.
+- Michael Spivak, *Calculus* (1967) — the rigorous next step, proving everything this lesson states.
+- Tom M. Apostol, *Calculus*, Volume 1 (1961) — integration before differentiation, as in history.
+- C. H. Edwards, *The Historical Development of the Calculus* (1979).
+
+</Section>

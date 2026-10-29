@@ -1,0 +1,614 @@
+---
+slug: geometric-group-theory
+topic: math.geom.geometric-group-theory
+title: Geometric group theory
+subtitle: Look at a group from far away and it becomes a space — a line, a plane, a tree or the hyperbolic plane — and the shape of that space knows deep algebraic facts about the group.
+level: research
+ages: Research (graduate background)
+minutes: 120
+order: 8008
+objectives:
+  - Draw Cayley graphs, compute word metrics and balls, and prove that changing the finite generating set changes the word metric only by a bi-Lipschitz map
+  - Define quasi-isometries and decide, with invariants such as growth and hyperbolicity, when two groups are or are not quasi-isometric
+  - State and prove the Švarc–Milnor lemma, and apply it to fundamental groups of closed manifolds and their universal covers
+  - Prove Sanov's theorem by ping-pong, and define δ-hyperbolic and amenable groups, proving that free groups are paradoxical and hence non-amenable
+  - Describe Gromov's polynomial growth theorem and the Banach–Tarski paradox, and separate established results from open problems
+narrators: []
+lean:
+  - Lumenary.GeometricGroupTheory.word_length_mul_le
+  - Lumenary.GeometricGroupTheory.wordLength_le_mul_of_generators
+  - Lumenary.GeometricGroupTheory.IsQIEmbedding
+  - Lumenary.GeometricGroupTheory.IsQuasiIsometry
+  - Lumenary.GeometricGroupTheory.isometry_isQIEmbedding
+  - Lumenary.GeometricGroupTheory.IsQIEmbedding.comp
+  - Lumenary.GeometricGroupTheory.IsQuasiIsometry.comp
+  - Lumenary.GeometricGroupTheory.int_cast_isQuasiIsometry
+  - Lumenary.GeometricGroupTheory.growth_at_least_linear
+  - Lumenary.GeometricGroupTheory.upperHom
+  - Lumenary.GeometricGroupTheory.lowerHom
+  - Lumenary.GeometricGroupTheory.upper_ping
+  - Lumenary.GeometricGroupTheory.lower_pong
+  - Lumenary.GeometricGroupTheory.sanov_free
+compute: [geometric_group_theory_growth, geometric_group_theory_random_walks]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What does a group look like from far away?">
+
+In 1911 and 1912 Max Dehn posed three questions about a group given by generators and relations: can we decide whether a word in the generators equals the identity (the **word problem**), whether two words are conjugate, and whether two presentations give isomorphic groups? For the fundamental groups of closed surfaces of genus $g \ge 2$ he solved the first two — and his solution was **geometric**. Such a group acts on the hyperbolic plane, tiling it by $4g$-gons, and a word that represents the identity traces a closed path in that tiling; negative curvature forces any such path to contain more than half of the boundary of some tile, which can then be shortcut. This is "Dehn's algorithm".
+
+Geometric group theory takes Dehn's idea as a programme. A finitely generated group $G$ becomes a metric space, its **Cayley graph**, and we ask what the large-scale shape of that space says about the algebra of $G$:
+
+- $\Z^2$ looks like the Euclidean plane, the free group $F_2$ like a tree branching four ways, and the fundamental group of a genus-2 surface like the hyperbolic plane.
+- How fast balls grow — polynomially or exponentially — detects whether $G$ is virtually nilpotent (Gromov's theorem).
+- Whether triangles are thin detects **hyperbolic groups**, for which the word problem is solvable by Dehn's algorithm.
+- Whether $G$ can be cut into pieces that reassemble into two copies of itself — the phenomenon behind the **Banach–Tarski paradox** — is a property of the group, **non-amenability**, and random walks on $G$ can detect it.
+
+The key move is to forget small-scale detail: two spaces that agree "up to bounded distortion" are treated as the same. This lesson builds that language — word metrics, quasi-isometries, growth, hyperbolicity and amenability — and proves its first theorems: the Švarc–Milnor lemma, Sanov's free subgroup of $\mathrm{SL}(2, \Z)$ and the paradoxical decomposition of $F_2$.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Zooming out">
+
+Draw $\Z^2$ with generators $(1,0)$ and $(0,1)$: the Cayley graph is the square grid. Walk to a point $(m, n)$ and the shortest path has length $|m| + |n|$; the ball of radius $r$ is a diamond with $2r^2 + 2r + 1$ points. Now zoom out by a factor of a thousand: the grid becomes a plane with the $\ell^1$ metric. Change the generators to $(1,0), (0,1), (1,1)$ and the diamond becomes a hexagon — a different metric, but only by a bounded factor, and from far away still a plane.
+
+Draw $F_2 = \langle a, b \rangle$ instead: every vertex has four edges ($a^{\pm1}, b^{\pm1}$) and there are no cycles, because no non-trivial reduced word is the identity. The Cayley graph is the 4-regular tree, and the ball of radius $r$ has $2 \cdot 3^r - 1$ elements: exponential growth, like area in the hyperbolic plane.
+
+<Figure caption="Balls of radius 3 in two Cayley graphs, centred at the identity (gold). Left: the free group $F_2$ with generators $a^{\pm 1}, b^{\pm 1}$ — a tree, with $1 + 4 + 12 + 36 = 53$ elements. Right: $\Z^2$ with the standard generators — a grid, with $25 = 2 \cdot 3^2 + 2 \cdot 3 + 1$ elements. Edge lengths in the tree are drawn halving at each step only to fit it on the page; every edge has length 1.">
+<svg viewBox="0 0 620 300" role="img" aria-label="Left: a fractal-looking tree with four branches from a central gold point, each splitting into three, then three again. Right: a square grid with the points at grid distance at most three from a central gold point marked, forming a diamond.">
+  <line x1="150" y1="150" x2="222" y2="150" stroke="var(--ink-2)" strokeWidth="2.2" />
+  <line x1="222" y1="150" x2="258" y2="150" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="258" y1="150" x2="276" y2="150" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="258" y1="150" x2="258" y2="168" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="258" y1="150" x2="258" y2="132" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="222" y1="150" x2="222" y2="186" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="222" y1="186" x2="240" y2="186" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="222" y1="186" x2="204" y2="186" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="222" y1="186" x2="222" y2="204" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="222" y1="150" x2="222" y2="114" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="222" y1="114" x2="240" y2="114" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="222" y1="114" x2="204" y2="114" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="222" y1="114" x2="222" y2="96" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="150" x2="78" y2="150" stroke="var(--ink-2)" strokeWidth="2.2" />
+  <line x1="78" y1="150" x2="42" y2="150" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="42" y1="150" x2="24" y2="150" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="42" y1="150" x2="42" y2="168" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="42" y1="150" x2="42" y2="132" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="78" y1="150" x2="78" y2="186" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="78" y1="186" x2="96" y2="186" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="78" y1="186" x2="60" y2="186" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="78" y1="186" x2="78" y2="204" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="78" y1="150" x2="78" y2="114" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="78" y1="114" x2="96" y2="114" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="78" y1="114" x2="60" y2="114" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="78" y1="114" x2="78" y2="96" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="150" x2="150" y2="222" stroke="var(--ink-2)" strokeWidth="2.2" />
+  <line x1="150" y1="222" x2="186" y2="222" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="186" y1="222" x2="204" y2="222" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="186" y1="222" x2="186" y2="240" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="186" y1="222" x2="186" y2="204" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="222" x2="114" y2="222" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="114" y1="222" x2="96" y2="222" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="114" y1="222" x2="114" y2="240" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="114" y1="222" x2="114" y2="204" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="222" x2="150" y2="258" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="150" y1="258" x2="168" y2="258" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="258" x2="132" y2="258" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="258" x2="150" y2="276" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="150" x2="150" y2="78" stroke="var(--ink-2)" strokeWidth="2.2" />
+  <line x1="150" y1="78" x2="186" y2="78" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="186" y1="78" x2="204" y2="78" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="186" y1="78" x2="186" y2="96" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="186" y1="78" x2="186" y2="60" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="78" x2="114" y2="78" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="114" y1="78" x2="96" y2="78" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="114" y1="78" x2="114" y2="96" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="114" y1="78" x2="114" y2="60" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="78" x2="150" y2="42" stroke="var(--ink-2)" strokeWidth="1.6" />
+  <line x1="150" y1="42" x2="168" y2="42" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="42" x2="132" y2="42" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="150" y1="42" x2="150" y2="24" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <circle cx="150" cy="150" r="4.5" fill="var(--gold)" />
+  <circle cx="222" cy="150" r="3" fill="var(--formal)" />
+  <circle cx="258" cy="150" r="2.3" fill="var(--formal)" />
+  <circle cx="276" cy="150" r="1.6" fill="var(--formal)" />
+  <circle cx="258" cy="168" r="1.6" fill="var(--formal)" />
+  <circle cx="258" cy="132" r="1.6" fill="var(--formal)" />
+  <circle cx="222" cy="186" r="2.3" fill="var(--formal)" />
+  <circle cx="240" cy="186" r="1.6" fill="var(--formal)" />
+  <circle cx="204" cy="186" r="1.6" fill="var(--formal)" />
+  <circle cx="222" cy="204" r="1.6" fill="var(--formal)" />
+  <circle cx="222" cy="114" r="2.3" fill="var(--formal)" />
+  <circle cx="240" cy="114" r="1.6" fill="var(--formal)" />
+  <circle cx="204" cy="114" r="1.6" fill="var(--formal)" />
+  <circle cx="222" cy="96" r="1.6" fill="var(--formal)" />
+  <circle cx="78" cy="150" r="3" fill="var(--formal)" />
+  <circle cx="42" cy="150" r="2.3" fill="var(--formal)" />
+  <circle cx="24" cy="150" r="1.6" fill="var(--formal)" />
+  <circle cx="42" cy="168" r="1.6" fill="var(--formal)" />
+  <circle cx="42" cy="132" r="1.6" fill="var(--formal)" />
+  <circle cx="78" cy="186" r="2.3" fill="var(--formal)" />
+  <circle cx="96" cy="186" r="1.6" fill="var(--formal)" />
+  <circle cx="60" cy="186" r="1.6" fill="var(--formal)" />
+  <circle cx="78" cy="204" r="1.6" fill="var(--formal)" />
+  <circle cx="78" cy="114" r="2.3" fill="var(--formal)" />
+  <circle cx="96" cy="114" r="1.6" fill="var(--formal)" />
+  <circle cx="60" cy="114" r="1.6" fill="var(--formal)" />
+  <circle cx="78" cy="96" r="1.6" fill="var(--formal)" />
+  <circle cx="150" cy="222" r="3" fill="var(--formal)" />
+  <circle cx="186" cy="222" r="2.3" fill="var(--formal)" />
+  <circle cx="204" cy="222" r="1.6" fill="var(--formal)" />
+  <circle cx="186" cy="240" r="1.6" fill="var(--formal)" />
+  <circle cx="186" cy="204" r="1.6" fill="var(--formal)" />
+  <circle cx="114" cy="222" r="2.3" fill="var(--formal)" />
+  <circle cx="96" cy="222" r="1.6" fill="var(--formal)" />
+  <circle cx="114" cy="240" r="1.6" fill="var(--formal)" />
+  <circle cx="114" cy="204" r="1.6" fill="var(--formal)" />
+  <circle cx="150" cy="258" r="2.3" fill="var(--formal)" />
+  <circle cx="168" cy="258" r="1.6" fill="var(--formal)" />
+  <circle cx="132" cy="258" r="1.6" fill="var(--formal)" />
+  <circle cx="150" cy="276" r="1.6" fill="var(--formal)" />
+  <circle cx="150" cy="78" r="3" fill="var(--formal)" />
+  <circle cx="186" cy="78" r="2.3" fill="var(--formal)" />
+  <circle cx="204" cy="78" r="1.6" fill="var(--formal)" />
+  <circle cx="186" cy="96" r="1.6" fill="var(--formal)" />
+  <circle cx="186" cy="60" r="1.6" fill="var(--formal)" />
+  <circle cx="114" cy="78" r="2.3" fill="var(--formal)" />
+  <circle cx="96" cy="78" r="1.6" fill="var(--formal)" />
+  <circle cx="114" cy="96" r="1.6" fill="var(--formal)" />
+  <circle cx="114" cy="60" r="1.6" fill="var(--formal)" />
+  <circle cx="150" cy="42" r="2.3" fill="var(--formal)" />
+  <circle cx="168" cy="42" r="1.6" fill="var(--formal)" />
+  <circle cx="132" cy="42" r="1.6" fill="var(--formal)" />
+  <circle cx="150" cy="24" r="1.6" fill="var(--formal)" />
+  <line x1="348" y1="42" x2="592" y2="42" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="362" y1="28" x2="362" y2="272" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="348" y1="78" x2="592" y2="78" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="398" y1="28" x2="398" y2="272" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="348" y1="114" x2="592" y2="114" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="434" y1="28" x2="434" y2="272" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="348" y1="150" x2="592" y2="150" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="470" y1="28" x2="470" y2="272" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="348" y1="186" x2="592" y2="186" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="506" y1="28" x2="506" y2="272" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="348" y1="222" x2="592" y2="222" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="542" y1="28" x2="542" y2="272" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="348" y1="258" x2="592" y2="258" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <line x1="578" y1="28" x2="578" y2="272" stroke="var(--ink-2)" strokeWidth="1.1" />
+  <circle cx="362" cy="150" r="3" fill="var(--formal)" />
+  <circle cx="398" cy="114" r="3" fill="var(--formal)" />
+  <circle cx="398" cy="150" r="3" fill="var(--formal)" />
+  <circle cx="398" cy="186" r="3" fill="var(--formal)" />
+  <circle cx="434" cy="78" r="3" fill="var(--formal)" />
+  <circle cx="434" cy="114" r="3" fill="var(--formal)" />
+  <circle cx="434" cy="150" r="3" fill="var(--formal)" />
+  <circle cx="434" cy="186" r="3" fill="var(--formal)" />
+  <circle cx="434" cy="222" r="3" fill="var(--formal)" />
+  <circle cx="470" cy="42" r="3" fill="var(--formal)" />
+  <circle cx="470" cy="78" r="3" fill="var(--formal)" />
+  <circle cx="470" cy="114" r="3" fill="var(--formal)" />
+  <circle cx="470" cy="186" r="3" fill="var(--formal)" />
+  <circle cx="470" cy="222" r="3" fill="var(--formal)" />
+  <circle cx="470" cy="258" r="3" fill="var(--formal)" />
+  <circle cx="506" cy="78" r="3" fill="var(--formal)" />
+  <circle cx="506" cy="114" r="3" fill="var(--formal)" />
+  <circle cx="506" cy="150" r="3" fill="var(--formal)" />
+  <circle cx="506" cy="186" r="3" fill="var(--formal)" />
+  <circle cx="506" cy="222" r="3" fill="var(--formal)" />
+  <circle cx="542" cy="114" r="3" fill="var(--formal)" />
+  <circle cx="542" cy="150" r="3" fill="var(--formal)" />
+  <circle cx="542" cy="186" r="3" fill="var(--formal)" />
+  <circle cx="578" cy="150" r="3" fill="var(--formal)" />
+  <circle cx="470" cy="150" r="4.5" fill="var(--gold)" />
+</svg>
+</Figure>
+
+The guiding questions are coarse ones. Which properties survive replacing a space by one at bounded distortion from it? A **quasi-isometry** allows a multiplicative error and an additive error in distances; it can crush a finite group to a point and inflate $\Z$ to $\R$. What survives is exactly the large-scale geometry: the number of ends, growth type, hyperbolicity, amenability, and (for finitely generated groups) finite presentability. What does not survive is local algebra such as torsion or commutativity: $\Z$ and $\Z \times S_3$ are quasi-isometric.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Word metrics, quasi-isometries, growth, hyperbolicity, amenability">
+
+Throughout, $G$ is a group with a finite generating set $S$, which we may assume symmetric ($S = S^{-1}$) and not containing $1$.
+
+<Definition term="Cayley graph and word metric">
+
+The **Cayley graph** $\mathrm{Cay}(G, S)$ has vertex set $G$ and an edge from $g$ to $gs$ for each $g \in G$ and $s \in S$. The **word length** $|g|_S$ is the length of a shortest word in $S$ representing $g$, and the **word metric** is $d_S(g, h) = |g^{-1} h|_S$, the path metric of the Cayley graph restricted to its vertices. The group acts on its Cayley graph by left multiplication, by isometries: $d_S(kg, kh) = d_S(g, h)$.
+
+</Definition>
+
+<Definition term="quasi-isometry">
+
+A map $f : X \to Y$ of metric spaces is an **$(L, C)$-quasi-isometric embedding** ($L \ge 1$, $C \ge 0$) if
+$$
+\tfrac{1}{L}\, d(x, x') - C \;\le\; d(f(x), f(x')) \;\le\; L\, d(x, x') + C \quad \text{for all } x, x' \in X.
+$$
+It is a **quasi-isometry** if moreover every point of $Y$ lies within $C$ of $f(X)$. Being quasi-isometric is an equivalence relation (a quasi-isometry has a quasi-inverse, and quasi-isometries compose).
+
+</Definition>
+
+<Definition term="growth function">
+
+The **growth function** of $(G, S)$ is $\beta_S(r) = |B_S(r)|$, the number of elements of word length at most $r$. Write $\beta \preceq \gamma$ if $\beta(r) \le C\gamma(Cr + C) + C$ for some $C$, and $\beta \sim \gamma$ if $\beta \preceq \gamma \preceq \beta$. The **growth type** of $G$ is the $\sim$-class of $\beta_S$; it does not depend on $S$ and is a quasi-isometry invariant. $G$ has **polynomial growth** if $\beta_S(r) \le C r^d$, **exponential growth** if $\beta_S(r) \ge c^r$ for some $c > 1$, and **intermediate growth** otherwise.
+
+</Definition>
+
+<Definition term="δ-hyperbolic space and hyperbolic group">
+
+A geodesic metric space is **$\delta$-hyperbolic** (in the sense of Rips) if every geodesic triangle is **$\delta$-slim**: each side lies in the closed $\delta$-neighbourhood of the union of the other two. A finitely generated group is **hyperbolic** (word-hyperbolic, Gromov-hyperbolic) if its Cayley graph, with edges of length 1, is $\delta$-hyperbolic for some $\delta \ge 0$.
+
+</Definition>
+
+<Definition term="amenable group">
+
+A group $G$ is **amenable** if there is a finitely additive, left-invariant probability measure $\mu$ defined on *all* subsets of $G$: $\mu(G) = 1$, $\mu(A \sqcup B) = \mu(A) + \mu(B)$ and $\mu(gA) = \mu(A)$. For finitely generated $G$ this is equivalent to the **Følner condition** (Følner, 1955): for every $\varepsilon > 0$ there is a finite non-empty $F \subseteq G$ with $|Fs \,\triangle\, F| \le \varepsilon |F|$ for all $s \in S$ — sets whose boundary is small compared with their size.
+
+</Definition>
+
+A group action $G \curvearrowright X$ on a metric space is **proper** if for every compact $K \subseteq X$ the set $\{g \in G : gK \cap K \ne \varnothing\}$ is finite, and **cocompact** if $X = GK$ for some compact $K$. A metric space is **proper** if its closed balls are compact, and **geodesic** if any two points are joined by a path whose length is their distance.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Finite groups, and $\Z$ with different generators">
+
+A finite group is quasi-isometric to a point: the map to a point is a $(1, \operatorname{diam})$-quasi-isometry. For $G = \Z$ and $S = \{\pm 1\}$ the Cayley graph is a line; for $S' = \{\pm 2, \pm 3\}$ it is a "thick" line with $|n|_{S'} = \lceil |n|/3 \rceil$ for $|n| \ge 2$ (and $|1|_{S'} = 2$, since $1 = 3 - 2$). The two word metrics satisfy $\tfrac13 |n|_S \le |n|_{S'} \le 2|n|_S$, as Theorem 1 below predicts, and both are quasi-isometric to $\R$.
+
+</Example>
+
+<Example title="Fundamental groups and universal covers">
+
+$\Z^n$ acts on $\R^n$ by translations, properly and cocompactly, so by the Švarc–Milnor lemma $\Z^n$ is quasi-isometric to $\R^n$. The fundamental group $\pi_1(\Sigma_g)$ of a closed surface of genus $g \ge 2$ acts by deck transformations on the universal cover, the hyperbolic plane $\mathbb{H}^2$ with a metric of curvature $-1$, so $\pi_1(\Sigma_g)$ is quasi-isometric to $\mathbb{H}^2$; all these surface groups are quasi-isometric to one another. $\mathrm{SL}(2, \Z)$ contains a free subgroup of index 12 — the subgroup generated by Sanov's matrices in Theorem 4 below, which together with $-I$ generate the congruence subgroup of matrices congruent to $I$ modulo 2 — so $\mathrm{SL}(2, \Z)$ is quasi-isometric to a tree (a finite-index subgroup is always quasi-isometric to the whole group).
+
+</Example>
+
+<Example title="Distinguishing groups up to quasi-isometry">
+
+$\Z^2$ and $\Z^3$ are not quasi-isometric: their growth functions are $\sim r^2$ and $\sim r^3$, and growth type is a quasi-isometry invariant. $\Z^2$ and $F_2$ are not quasi-isometric: polynomial versus exponential growth. $F_2$ and $F_3$ **are** quasi-isometric (all regular trees of degree at least 3 are quasi-isometric to one another), although they are not isomorphic. $F_2$ and $\pi_1(\Sigma_2)$ both have exponential growth and are hyperbolic, yet they are not quasi-isometric: the tree has infinitely many ends, the hyperbolic plane only one.
+
+</Example>
+
+<Example title="The Heisenberg group: polynomial growth of degree 4">
+
+The integer Heisenberg group $H_3(\Z)$ of upper unitriangular $3 \times 3$ integer matrices, written as triples with $(a, b, c)(a', b', c') = (a + a', b + b', c + c' + ab')$, is generated by $x = (1, 0, 0)$ and $y = (0, 1, 0)$, with central commutator $[x, y] = (0, 0, 1)$. Since $[x^n, y^n] = (0, 0, n^2)$, the central coordinate grows quadratically along words of linear length, and $|B(r)| \sim r^4$, not $r^3$. The Bass–Guivarc'h formula gives the degree $d = \sum_k k \cdot \operatorname{rank}(G_k / G_{k+1})$ for the lower central series of a nilpotent group: here $1 \cdot 2 + 2 \cdot 1 = 4$. The experiment below estimates it.
+
+</Example>
+
+<Example title="A non-example of hyperbolicity: the grid">
+
+In $\mathrm{Cay}(\Z^2, \{(\pm1, 0), (0, \pm1)\})$ take the geodesic triangle with vertices $(0,0)$, $(n,0)$, $(n,n)$: sides along the $x$-axis and the line $x = n$, and as third side the staircase path $(0,0) \to (0, n) \to (n, n)$, which has length $2n$ and is a geodesic. The point $(0, n)$ on the third side has distance $n$ from the union of the other two. So no $\delta$ works: $\Z^2$ is not hyperbolic. By contrast, a tree is $0$-hyperbolic (every geodesic triangle is a tripod), and $\mathbb{H}^2$ is $\delta$-hyperbolic with $\delta = \log(1 + \sqrt2)$.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central theorems">
+
+<Theorem name="Theorem 1 (the word metric is well defined up to bi-Lipschitz maps)">
+
+Let $S$ and $S'$ be finite generating sets of $G$, and let $L = \max_{s \in S} |s|_{S'}$. Then $|g|_{S'} \le L\, |g|_S$ for all $g \in G$. Consequently the identity map $(G, d_S) \to (G, d_{S'})$ is bi-Lipschitz, and $\mathrm{Cay}(G, S)$ and $\mathrm{Cay}(G, S')$ are quasi-isometric.
+
+</Theorem>
+
+<Proof>
+
+Write $g = s_1^{\varepsilon_1} \cdots s_n^{\varepsilon_n}$ with $n = |g|_S$, $s_i \in S$, $\varepsilon_i = \pm 1$. Each $s_i^{\pm1}$ is a product of at most $L$ letters of $S'$ (inverting a word does not change its length). Concatenating gives a word in $S'$ of length at most $Ln$ representing $g$. Applying this to $g^{-1}h$ gives $d_{S'}(g, h) \le L\, d_S(g, h)$, and exchanging the roles of $S$ and $S'$ gives the reverse inequality with $L' = \max_{s' \in S'} |s'|_S$. Every point of the Cayley graph lies within $\tfrac12$ of a vertex, so each Cayley graph is quasi-isometric to its vertex set.
+
+</Proof>
+
+<Theorem name="Theorem 2 (Švarc–Milnor lemma; Švarc 1955, Milnor 1968)">
+
+Let a group $G$ act properly and cocompactly by isometries on a proper geodesic metric space $X$. Then $G$ is finitely generated, and for every $x_0 \in X$ the orbit map $G \to X$, $g \mapsto g x_0$, is a quasi-isometry (for any word metric on $G$).
+
+</Theorem>
+
+<Proof>
+
+By cocompactness $X = GK$ for a compact $K$; choose $R$ with $K \subseteq \bar B(x_0, R)$, so the translates $g\,\bar B(x_0, R)$ cover $X$. Let
+$$
+S = \{ s \in G : d(x_0, s x_0) \le 2R + 1 \}.
+$$
+**$S$ is finite and symmetric.** The ball $K' = \bar B(x_0, 2R + 1)$ is compact because $X$ is proper, and $s x_0 \in sK' \cap K'$ for every $s \in S$, so $S$ is finite by properness. It is symmetric because $d(x_0, s^{-1} x_0) = d(s x_0, x_0)$.
+
+**$S$ generates $G$, and $|g|_S \le d(x_0, g x_0) + 1$.** Let $g \in G$, $D = d(x_0, g x_0)$ and $n = \lfloor D \rfloor + 1$. Choose a geodesic from $x_0$ to $g x_0$ and points $x_0 = y_0, y_1, \dots, y_n = g x_0$ on it with $d(y_i, y_{i+1}) = D/n < 1$. For each $i$ choose $h_i \in G$ with $d(y_i, h_i x_0) \le R$, taking $h_0 = 1$ and $h_n = g$. Then
+$$
+d(x_0, h_i^{-1} h_{i+1} x_0) = d(h_i x_0, h_{i+1} x_0) \le R + 1 + R,
+$$
+so $s_i := h_i^{-1} h_{i+1} \in S$, and $g = h_n = s_0 s_1 \cdots s_{n-1}$ by telescoping. Hence $|g|_S \le n \le D + 1$.
+
+**$d(x_0, g x_0) \le \lambda |g|_S$**, where $\lambda = \max_{s \in S} d(x_0, s x_0)$. If $g = t_1 \cdots t_k$ with $t_j \in S$, then by the triangle inequality and because $G$ acts by isometries,
+$$
+d(x_0, g x_0) \le \sum_{j=1}^{k} d(t_1 \cdots t_{j-1} x_0,\, t_1 \cdots t_j x_0) = \sum_{j=1}^{k} d(x_0, t_j x_0) \le \lambda k.
+$$
+Apply both bounds to $g^{-1}h$, using $d(g x_0, h x_0) = d(x_0, g^{-1} h x_0)$ and $d_S(g, h) = |g^{-1}h|_S$:
+$$
+d_S(g, h) - 1 \;\le\; d(g x_0, h x_0) \;\le\; \lambda\, d_S(g, h).
+$$
+So the orbit map is a quasi-isometric embedding with $L = \max(\lambda, 1)$ and $C = 1$, and every point of $X$ lies within $R$ of the orbit. By Theorem 1 the conclusion holds for every finite generating set.
+
+</Proof>
+
+<Theorem name="Corollary">
+
+If $M$ is a closed Riemannian manifold, then $\pi_1(M)$ is finitely generated and quasi-isometric to the universal cover $\tilde M$ with the lifted metric. In particular, closed manifolds with quasi-isometrically different universal covers have non-isomorphic fundamental groups.
+
+</Theorem>
+
+<Proof>
+
+$\tilde M$ with the pulled-back metric is complete, hence proper and geodesic by the Hopf–Rinow theorem; deck transformations act by isometries, properly (the action is a covering action) and cocompactly ($\tilde M = \pi_1(M) \cdot K$ for a compact $K$ mapping onto $M$, such as the closure of a lift of a fundamental domain). Apply Theorem 2.
+
+</Proof>
+
+<Theorem name="Theorem 3 (ping-pong lemma, two players)">
+
+Let $G$ act on a set $X$, and let $a, b \in G$. Suppose $X_1, X_2 \subseteq X$ are disjoint and non-empty, and for every integer $n \ne 0$
+$$
+a^n(X_2) \subseteq X_1 \qquad\text{and}\qquad b^n(X_1) \subseteq X_2.
+$$
+Then $a$ and $b$ generate a free group of rank 2: no non-trivial reduced word in $a^{\pm1}, b^{\pm1}$ is the identity.
+
+</Theorem>
+
+<Proof>
+
+A non-trivial reduced word is a product of non-zero powers of $a$ and $b$ that alternate. First let $w = a^{n_1} b^{m_1} a^{n_2} \cdots b^{m_{k-1}} a^{n_k}$ begin and end with a power of $a$. Reading right to left, $a^{n_k}$ sends $X_2$ into $X_1$, then $b^{m_{k-1}}$ sends that into $X_2$, and so on, until $a^{n_1}$ lands in $X_1$. So $w(X_2) \subseteq X_1$. Since $X_2$ is non-empty and disjoint from $X_1$, $w$ moves some point, so $w \ne 1$. Any other non-trivial reduced word $w$ can be conjugated into this form: if $w = b^{m_1} \cdots b^{m_k}$, then $a w a^{-1}$ has it; if $w$ begins with $a^{n_1}$ and ends with a power of $b$, choose $n \ne 0, -n_1$ and use $a^{n} w a^{-n}$; if it begins with a power of $b$ and ends with $a^{n_k}$, use $a^{-n} w a^{n}$ with $n \ne 0, -n_k$. A conjugate of $w$ is $\ne 1$ only if $w \ne 1$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Sanov, 1947)">
+
+The matrices $A = \begin{pmatrix} 1 & 2 \\ 0 & 1 \end{pmatrix}$ and $B = \begin{pmatrix} 1 & 0 \\ 2 & 1 \end{pmatrix}$ generate a free subgroup of rank 2 of $\mathrm{SL}(2, \Z)$.
+
+</Theorem>
+
+<Proof>
+
+Let $\mathrm{SL}(2, \Z)$ act on $\Z^2$ and put $X_1 = \{(x, y) : |x| > |y|\}$, $X_2 = \{(x, y) : |x| < |y|\}$: disjoint, non-empty. For $n \ne 0$, $A^n(x, y) = (x + 2ny, y)$. If $|x| < |y|$ then
+$$
+|x + 2ny| \ge 2|n|\,|y| - |x| \ge 2|y| - |x| > |y|,
+$$
+so $A^n(X_2) \subseteq X_1$. Symmetrically $B^n(x, y) = (x, y + 2nx)$ and $B^n(X_1) \subseteq X_2$. Apply Theorem 3.
+
+</Proof>
+
+The same strategy, with rotations of $\mathbb{R}^3$ acting on the sphere, produces a free subgroup of $\mathrm{SO}(3)$ — for example the rotations through $\arccos \tfrac13$ about two perpendicular axes — which is the group-theoretic heart of the Banach–Tarski paradox. More generally, **Tits' alternative** (1972) says that a finitely generated linear group over a field is either virtually solvable or contains a free subgroup of rank 2.
+
+<Theorem name="Theorem 5 (free groups are paradoxical, hence not amenable)">
+
+For $x \in \{a^{\pm1}, b^{\pm1}\}$ let $W(x) \subseteq F_2$ be the set of reduced words beginning with $x$. Then
+$$
+F_2 = \{1\} \sqcup W(a) \sqcup W(a^{-1}) \sqcup W(b) \sqcup W(b^{-1}), \qquad F_2 = W(a) \sqcup a W(a^{-1}) = W(b) \sqcup b W(b^{-1}).
+$$
+Consequently $F_2$, and every group containing $F_2$, is not amenable.
+
+</Theorem>
+
+<Proof>
+
+The first decomposition sorts reduced words by their first letter. For the second: if $w \notin W(a)$, then $a^{-1}w$ is reduced (no cancellation, since $w$ does not begin with $a$) and begins with $a^{-1}$, so $w = a(a^{-1}w) \in aW(a^{-1})$. Conversely, if $u = a^{-1}u' \in W(a^{-1})$ is reduced, then $u'$ does not begin with $a$, so $au = u' \notin W(a)$. Thus $F_2 = W(a) \sqcup aW(a^{-1})$, and likewise for $b$.
+
+Suppose $\mu$ is a finitely additive left-invariant probability measure on all subsets of $F_2$. Then $1 = \mu(W(a)) + \mu(aW(a^{-1})) = \mu(W(a)) + \mu(W(a^{-1}))$ and likewise $1 = \mu(W(b)) + \mu(W(b^{-1}))$, so the four disjoint sets $W(a^{\pm1}), W(b^{\pm1})$ have total measure $2 > 1 = \mu(F_2)$, a contradiction. If $F_2 \le G$ and $\mu$ were an invariant mean on $G$, choose a set $T$ of representatives of the right cosets $F_2 g$; then $\nu(A) = \mu(A T)$ is an invariant mean on $F_2$ (the sets $AT$, $A \subseteq F_2$, are disjoint for disjoint $A$ and $(hA)T = h(AT)$), which is impossible.
+
+</Proof>
+
+<Theorem name="Banach–Tarski paradox (1924), statement">
+
+Assuming the axiom of choice, a solid ball in $\R^3$ can be partitioned into finitely many pieces (five suffice, and fewer do not — Robinson, 1947) which can be moved by rigid motions to form two balls of the same radius.
+
+</Theorem>
+
+The proof combines Theorem 5 for a free subgroup of $\mathrm{SO}(3)$ with the axiom of choice: choose one point in each orbit of the free group on the sphere (minus the countably many fixed points of its non-trivial elements), and transport the decomposition of $F_2$ to the sphere and then to the ball. The pieces are not Lebesgue measurable, so there is no conflict with measure theory: the paradox shows that no finitely additive, rotation-invariant measure can be defined on *all* subsets of $\R^3$ (von Neumann's insight was that this is a property of the group of motions; in the plane the motion group is amenable, and no such paradox with rigid motions exists). See <TopicLink id="math.found.axiom-of-choice">the axiom of choice</TopicLink> and <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink>.
+
+<Theorem name="Theorem 6 (growth: Gromov 1981; Milnor–Wolf 1968; Grigorchuk 1984), statements">
+
+1. **Gromov's polynomial growth theorem.** A finitely generated group has polynomial growth if and only if it has a nilpotent subgroup of finite index. The easy direction: a finitely generated nilpotent group has growth $\sim r^d$ with $d = \sum_k k \cdot \operatorname{rank}(G_k/G_{k+1})$ (Bass 1972, Guivarc'h 1973). The hard direction is Gromov's; a proof using harmonic functions was given by Kleiner (2010).
+2. **Milnor–Wolf.** A finitely generated solvable group has either polynomial or exponential growth.
+3. **Milnor (1968).** The fundamental group of a closed Riemannian manifold of negative sectional curvature has exponential growth.
+4. **Grigorchuk (1984).** There are finitely generated groups of intermediate growth, answering a question of Milnor.
+
+</Theorem>
+
+<Theorem name="Theorem 7 (hyperbolic groups; Gromov 1987), statements">
+
+1. Hyperbolicity of geodesic spaces is invariant under quasi-isometry (by the Morse lemma: quasi-geodesics stay close to geodesics). Hence hyperbolicity of a group does not depend on the generating set.
+2. Free groups, finite groups, surface groups $\pi_1(\Sigma_g)$ with $g \ge 2$, and fundamental groups of closed manifolds of negative sectional curvature are hyperbolic (the last by the Švarc–Milnor lemma, since the universal cover is $\mathrm{CAT}(-1)$ after rescaling, hence $\delta$-hyperbolic).
+3. A finitely presented group is hyperbolic if and only if it satisfies a linear isoperimetric inequality; then it has a Dehn presentation, and its word problem is solved by Dehn's algorithm in linear time. Hyperbolic groups are finitely presented and contain no subgroup isomorphic to $\Z^2$.
+
+</Theorem>
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: what is known and what is open">
+
+**Established.** Beyond the theorems above: Stallings' theorem (1968–71) that a finitely generated group has more than one end exactly when it splits over a finite subgroup; quasi-isometric rigidity results such as "every finitely generated group quasi-isometric to $\Z^n$ is virtually $\Z^n$" (from Gromov's theorem) and "every finitely generated group quasi-isometric to $\mathbb{H}^2$ is virtually a closed surface group" (Tukia 1988, Gabai 1992, Casson–Jungreis 1994); Kesten's criterion (1959) that a finitely generated group is amenable exactly when the return probability of simple random walk does not decay exponentially; Ol'shanskii's counterexample (1980) to von Neumann's conjecture — a non-amenable group with no free subgroup; and the theory of special cube complexes of Haglund and Wise, which Agol used to prove the virtual Haken conjecture for hyperbolic 3-manifolds (2013).
+
+**Open problems.**
+
+- Is every hyperbolic group residually finite?
+- Gromov's surface subgroup question: does every one-ended hyperbolic group contain a subgroup isomorphic to the fundamental group of a closed surface of genus at least 2? (Yes for fundamental groups of closed hyperbolic 3-manifolds, by Kahn and Markovic, 2012.)
+- Cannon's conjecture: a hyperbolic group whose Gromov boundary is a 2-sphere acts properly and cocompactly by isometries on $\mathbb{H}^3$.
+- Is Richard Thompson's group $F$ amenable?
+- Grigorchuk's gap conjecture: is there a gap between polynomial growth and growth $e^{\sqrt r}$? (Shalom and Tao proved a smaller gap, 2010.)
+
+</Section>
+
+<Section id="formal" kind="formal" title="What Lean can say: word metrics, quasi-isometries and ping-pong">
+
+Mathlib has recently gained a geometric group theory folder: generating families (`Group.Generators`), the word length and word metric, and the linear lower bound on growth. It also has the ping-pong lemma for free products. We use all three.
+
+The word metric is a metric because word length is subadditive, and Theorem 1 — the reason the subject is about groups and not about generating sets — is proved here by induction on a shortest word:
+
+<Lean decl="Lumenary.GeometricGroupTheory.word_length_mul_le" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.wordLength_le_mul_of_generators" />
+
+Quasi-isometries are not (yet) in Mathlib, so we define them, prove that they compose (the transitivity of "quasi-isometric"), and check the prototype example $\Z \hookrightarrow \R$:
+
+<Lean decl="Lumenary.GeometricGroupTheory.IsQIEmbedding" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.IsQuasiIsometry" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.isometry_isQIEmbedding" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.IsQIEmbedding.comp" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.IsQuasiIsometry.comp" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.int_cast_isQuasiIsometry" />
+
+Mathlib's growth result, restated:
+
+<Lean decl="Lumenary.GeometricGroupTheory.growth_at_least_linear" />
+
+Sanov's theorem (Theorem 4). The powers $A^n$ and $B^n$ are packaged as homomorphisms from $\Z$; the two ping-pong estimates are the inequalities of the human proof; Mathlib's ping-pong lemma does the bookkeeping of Theorem 3 (for free products, via $F_2 \cong \Z * \Z$):
+
+<Lean decl="Lumenary.GeometricGroupTheory.upperHom" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.lowerHom" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.upper_ping" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.lower_pong" />
+
+<Lean decl="Lumenary.GeometricGroupTheory.sanov_free" />
+
+**What is not formalised.** The Švarc–Milnor lemma (Mathlib lacks proper cocompact actions on geodesic spaces in usable form), that quasi-isometry is symmetric (it needs a quasi-inverse), the relation between the word metric and the Cayley graph, hyperbolic groups, amenability and the Følner condition, Gromov's theorem and Banach–Tarski. The paradoxical decomposition of $F_2$ (Theorem 5) would be a good next formalisation project.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting balls and returning random walks">
+
+The first experiment counts balls in three Cayley graphs by breadth-first search. For Sanov's matrices it multiplies integer matrices and finds exactly $2 \cdot 3^r - 1$ distinct elements up to radius 8 — as in a free group. That is exhaustive evidence for words of length at most 16, and no more; the theorem covers all lengths. For the Heisenberg group it estimates the growth degree, which approaches 4.
+
+<Python id="geometric_group_theory_growth" />
+
+The second experiment computes exact return probabilities of simple random walk on $\Z^2$ and on the 4-regular tree. On the tree the walk escapes at linear speed and returns exponentially rarely: $p(2n)^{1/2n} \to \sqrt3/2$, the spectral radius, which is less than 1 — Kesten's signature of non-amenability.
+
+<Python id="geometric_group_theory_random_walks" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: covers, thin triangles and free groups">
+
+**Švarc–Milnor in a picture.** $\Z^2 = \pi_1(T^2)$ acts on the plane, the universal cover of the torus; switch on the tiling view and every tile is one group element. Walking in the plane and walking in the Cayley graph of $\Z^2$ are the same thing up to bounded error.
+
+<SurfaceGluing surface="torus" surfaces={["torus", "klein"]} showTiling title="The plane above the torus" subtitle="Each copy of the square is a translate by an element of ℤ² (the Klein bottle gives a different group acting on the same plane)." />
+
+**Thin triangles.** In the hyperbolic plane, drag the vertices as far towards the boundary as you can: the area never exceeds $\pi$, and every side stays close to the union of the other two. That is $\delta$-hyperbolicity, and it is what makes surface groups hyperbolic groups.
+
+<CurvedTriangles mode="hyperbolic" modes={["plane", "hyperbolic"]} vertices={{ hyperbolic: [[-0.85, -0.3], [0.8, -0.35], [0.05, 0.85]] }} title="Thin triangles in the hyperbolic plane" subtitle="Compare with the flat plane, where triangles can be as fat as you like." />
+
+**A free group you can draw.** The plane with two punctures has fundamental group $F_2$, generated by loops around the two holes. The commutator loop winds zero times around each hole yet cannot be shrunk — a non-trivial element invisible to abelian invariants.
+
+<WindingNumber punctures={[[-1.6, 0], [1.6, 0]]} loop="figureEight" title="Loops around two holes" subtitle="The fundamental group is free on the two loops; winding numbers only see its abelianisation ℤ²." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The Cayley graph is determined by the group."** It depends on the generating set: $\Z$ with $\{\pm1\}$ is a line, with $\{\pm2, \pm3\}$ a graph with triangles. What depends only on the group is its **quasi-isometry class** (Theorem 1). Geometric group theory studies properties that do not see the choice.
+
+</Misconception>
+
+<Misconception>
+
+**"Banach–Tarski contradicts measure theory."** Lebesgue measure is countably additive and rotation-invariant on the *measurable* sets; the pieces in the Banach–Tarski decomposition are not measurable. What the paradox does show is that no finitely additive, isometry-invariant measure extends volume to *all* subsets of $\R^3$ — because the isometry group contains $F_2$ (Theorem 5).
+
+</Misconception>
+
+<Misconception>
+
+**"Quasi-isometric groups are nearly isomorphic."** Quasi-isometries ignore finite data: $\Z$ and $\Z \times S_3$ are quasi-isometric, though one is abelian and torsion-free and the other is neither; $F_2$ and $F_3$ are quasi-isometric; all finite groups are quasi-isometric to the trivial group. Even virtual solvability is not a quasi-isometry invariant (Dyubina, now Erschler, 2000).
+
+</Misconception>
+
+<Misconception>
+
+**"A group without free subgroups is amenable."** This was von Neumann's question (often called the von Neumann conjecture). It is false: Ol'shanskii (1980) constructed non-amenable groups without free subgroups, Adyan (1982) showed the free Burnside groups $B(m, n)$ of large odd exponent are examples, and Ol'shanskii and Sapir (2003) found finitely presented ones.
+
+</Misconception>
+
+<Misconception>
+
+**"Amenable means subexponential growth."** Subexponential growth implies amenability (balls are Følner sets along a subsequence), but not conversely: the lamplighter group $\Z/2 \wr \Z$ and the solvable Baumslag–Solitar groups $BS(1, n)$, $n \ge 2$, are amenable with exponential growth.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Groups as symmetries of spaces">
+
+For a geometer the Švarc–Milnor lemma turns the algebra of a group into the geometry of any space it acts on nicely. Mostow rigidity (1968) is the extreme case: for $n \ge 3$, a closed hyperbolic $n$-manifold is determined up to isometry by its fundamental group, so the group *is* the geometry. In the other direction, the Cayley graph supplies a geometry when no manifold is in sight, and one can then ask whether it is negatively curved (hyperbolic groups), non-positively curved (CAT(0) groups, which act geometrically on CAT(0) spaces), or flat (virtually abelian groups). See <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink> and <TopicLink id="math.geom.non-euclidean-geometry">non-Euclidean geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Fundamental groups, ends and boundaries">
+
+Every finitely presented group is the fundamental group of a closed 4-manifold, and geometric group theory is in large part the study of fundamental groups (see <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>). Topological invariants of the Cayley graph at infinity become group invariants: the number of **ends** is 0, 1, 2 or infinite (Freudenthal, Hopf), and is infinite exactly for groups that split non-trivially over finite subgroups, other than virtually-$\Z$ ones (Stallings). A hyperbolic group has a **Gromov boundary**, a compact space on which it acts: a Cantor set for $F_2$, a circle for surface groups, a 2-sphere for closed hyperbolic 3-manifold groups — which is where Cannon's conjecture lives. The fundamental groups of 3-manifolds tie the subject to <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random walks hear the shape of a group">
+
+Run simple random walk on a Cayley graph. On $\Z^d$ it returns with probability $p(2n) \sim c\, n^{-d/2}$, recurrent exactly for $d \le 2$ (Pólya, 1921); by a theorem of Varopoulos (1980s, using Gromov's theorem), the only finitely generated groups on which it is recurrent are the finite extensions of $\{0\}$, $\Z$ and $\Z^2$. On a non-amenable group the walk returns exponentially rarely (Kesten, 1959) and escapes at linear speed; its exit behaviour at infinity is described by the Poisson boundary, which for hyperbolic groups is the Gromov boundary with harmonic measure. The second experiment shows the two regimes side by side. See <TopicLink id="math.prob.random-geometry">random structures</TopicLink> and <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Invariant means and the analysis of amenability">
+
+Amenability is an analytic property with many faces: an invariant mean on $\ell^\infty(G)$; Følner sets with small boundary; almost invariant vectors in $\ell^2(G)$ for the regular representation; the spectral radius of the random-walk operator being 1 (Kesten). Its opposite extreme is **Kazhdan's property (T)** — every unitary representation with almost invariant vectors has invariant vectors — enjoyed by $\mathrm{SL}(n, \Z)$ for $n \ge 3$, and used by Margulis to build the first explicit expander graphs. The Banach–Tarski paradox is the analyst's way of saying "$\mathrm{SO}(3)$ is not amenable as a discrete group". See <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="What can be decided about a group?">
+
+Dehn's word problem is undecidable in general: Novikov (1955) and Boone (1958) constructed finitely presented groups with unsolvable word problem, and by the Adyan–Rabin theorem (1955–58) almost every non-trivial property of finitely presented groups — being trivial, finite, abelian, free — is undecidable from a presentation. Geometry restores decidability: hyperbolic groups have word problems solvable in linear time by Dehn's algorithm, and their isomorphism problem is decidable (Sela for torsion-free groups, 1995; Dahmani and Guirardel in general, 2011). See <TopicLink id="math.comp.computability">computability</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Linear groups and the Tits alternative">
+
+The algebraist's free subgroups come from matrices. Sanov's theorem is the simplest case of the Tits alternative (1972): a finitely generated subgroup of $\mathrm{GL}(n, k)$, $k$ a field, either contains $F_2$ or has a solvable subgroup of finite index. Combined with Milnor–Wolf, it gives a growth dichotomy for linear groups: finitely generated linear groups have polynomial or exponential growth, never intermediate. Nilpotent groups, whose growth degree is read off from the ranks of their lower central series (Bass–Guivarc'h), are exactly the algebraic structure that Gromov's theorem finds inside groups of polynomial growth. See <TopicLink id="math.algebra.groups">groups</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1878–1912: pictures of groups and Dehn's problems.** Arthur Cayley (England) drew the graphs now named after him, as "colour groups", in 1878. Max Dehn (Germany) posed the word, conjugacy and isomorphism problems (1911–12) and solved the first two for surface groups using hyperbolic geometry.
+- **1914–1929: paradoxes.** Felix Hausdorff found a paradoxical decomposition of the sphere (1914); Stefan Banach and Alfred Tarski, in Lwów (now Lviv), proved the ball paradox (1924); John von Neumann identified the role of the group and introduced amenable groups (1929). The word "amenable" is due to Mahlon Day (1949).
+- **1940s–1960s: free subgroups, undecidability, growth.** Ivan Sanov (USSR) proved his theorem in 1947; Pyotr Novikov (USSR, 1955) and William Boone (USA, 1958) proved the word problem undecidable; Erling Følner (Denmark) gave his criterion (1955); Harry Kesten (Netherlands–USA) connected random walks and amenability (1959); Albert Švarc (USSR, 1955) and John Milnor (USA, 1968) related groups to the geometry of universal covers, and Milnor and Joseph Wolf (1968) launched the study of growth.
+- **1970s–1980s: the subject takes shape.** Jacques Tits (Belgium–France) proved his alternative (1972); Hyman Bass and Yves Guivarc'h computed the growth of nilpotent groups; Mikhael Gromov (USSR–France) proved the polynomial growth theorem (1981) and introduced hyperbolic groups (1987), with ideas also due to Eliyahu Rips (Israel); Rostislav Grigorchuk (USSR) constructed groups of intermediate growth (1984); Alexander Ol'shanskii and Sergei Adyan (USSR) built monsters disproving the von Neumann conjecture.
+- **2000s–present.** Daniel Wise, Frédéric Haglund and Ian Agol developed cube complexes and proved the virtual Haken conjecture (2013); Bruce Kleiner gave a new proof of Gromov's theorem (2010); Emmanuel Breuillard, Ben Green and Terence Tao classified approximate groups (2012). The field now spans topology, geometry, probability, logic and dynamics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+A suggested path: Clay and Margalit for the pictures and the spirit; Löh for a careful first course; Bridson and Haefliger for non-positive curvature and hyperbolic groups; Druțu and Kapovich or de la Harpe for the full landscape.
+
+- Matt Clay and Dan Margalit (editors), *Office Hours with a Geometric Group Theorist* (2017).
+- Clara Löh, *Geometric Group Theory: An Introduction* (2017).
+- Martin R. Bridson and André Haefliger, *Metric Spaces of Non-Positive Curvature* (1999).
+- Pierre de la Harpe, *Topics in Geometric Group Theory* (2000).
+- Cornelia Druțu and Michael Kapovich, *Geometric Group Theory* (2018).
+- Étienne Ghys and Pierre de la Harpe (editors), *Sur les groupes hyperboliques d'après Mikhael Gromov* (1990).
+- Mikhael Gromov, "Groups of polynomial growth and expanding maps", *Publications Mathématiques de l'IHÉS* 53 (1981); "Hyperbolic groups", in *Essays in Group Theory* (1987).
+- Grzegorz Tomkowicz and Stan Wagon, *The Banach–Tarski Paradox* (2nd edition, 2016).
+- Roger C. Lyndon and Paul E. Schupp, *Combinatorial Group Theory* (1977).
+
+</Section>

@@ -1,0 +1,440 @@
+---
+slug: axiom-of-choice
+topic: math.found.axiom-of-choice
+title: The axiom of choice and its equivalents
+subtitle: Picking one sock from each of infinitely many pairs — why it needs an axiom, what it buys (bases, maximal ideals, well-orders) and what it costs (sets of reals with no sensible length).
+level: ug2
+ages: Undergraduate
+minutes: 110
+order: 6005
+objectives:
+  - State the axiom of choice in several forms and prove, over ZF, that it is equivalent to Zorn's lemma and to the well-ordering theorem
+  - Use Zorn's lemma to prove that every vector space has a basis and that every non-zero commutative ring with identity has a maximal ideal
+  - Explain why choosing from countably many two-element sets already needs an axiom, and where countable and dependent choice suffice
+  - Construct a set of reals that is not Lebesgue measurable, and describe what is known when choice is dropped (Gödel, Cohen, Solovay)
+  - Prove Diaconescu's theorem that choice implies the law of excluded middle, and relate it to the foundations of Lean
+narrators: []
+lean:
+  - Lumenary.AxiomOfChoice.ChoiceFunctions
+  - Lumenary.AxiomOfChoice.SurjectionsSplit
+  - Lumenary.AxiomOfChoice.split_of_choice
+  - Lumenary.AxiomOfChoice.choice_of_split
+  - Lumenary.AxiomOfChoice.choice_holds
+  - Lumenary.AxiomOfChoice.surj_inv
+  - Lumenary.AxiomOfChoice.well_ordering
+  - Lumenary.AxiomOfChoice.exists_maximal_ideal
+  - Lumenary.AxiomOfChoice.exists_maximal_ideal_library
+  - Lumenary.AxiomOfChoice.exists_basis
+  - Lumenary.AxiomOfChoice.diaconescu
+  - Lumenary.AxiomOfChoice.em_library
+compute: [axiom_of_choice_finite_zorn]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Shoes and socks">
+
+Bertrand Russell put it this way. Given infinitely many pairs of shoes, you can pick one shoe from each pair without any special principle: take the left one. Given infinitely many pairs of socks, where the two socks of a pair are indistinguishable, there is no rule to follow. To pick one sock from each pair you must make infinitely many arbitrary choices at once — and nothing in the other axioms of set theory says that this is possible.
+
+Arguments that make such choices are everywhere. "For each $n$, choose $x_n$ with $|f(x_n) - f(a)| \ge \varepsilon$" is a standard step in analysis; "choose an enumeration of each of the countably many countable sets $A_n$" is the heart of the proof that $\bigcup_n A_n$ is countable. Ernst Zermelo made the principle explicit in 1904, when he used it to prove that every set can be well-ordered, and stated it as an axiom in 1908. It provoked one of the great debates of modern mathematics, among Baire, Borel, Hadamard, Lebesgue and others.
+
+The **axiom of choice** (AC) is now part of the standard foundation, <TopicLink id="math.found.zfc">ZFC</TopicLink> — the C. This lesson proves that it is equivalent to two other principles that look nothing like it, **Zorn's lemma** and the **well-ordering theorem**; uses Zorn's lemma for two central existence theorems of algebra; and maps what choice gives and what it takes away. It builds on <TopicLink id="math.found.cardinals">ordinals and cardinals</TopicLink>, in particular on transfinite recursion and Hartogs' theorem.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="When is choosing a problem?">
+
+Choice is **not** needed when:
+
+- **There are finitely many sets.** If $A_1, \dots, A_n$ are non-empty, "pick $a_1 \in A_1$, …, pick $a_n \in A_n$" is $n$ uses of ordinary logic (from $\exists x\, (x \in A_i)$ we may name such an $x$). Induction on $n$ shows that finite choice is a theorem of ZF.
+- **There is a rule.** From each non-empty set of natural numbers choose its least element; from each non-empty closed interval $[a, b]$ choose its midpoint; from each pair of shoes the left one. A rule *defines* a choice function, and Separation then proves that it exists.
+
+Choice is needed when there are infinitely many sets and no definable way of picking from them. The axiom says that a choice function exists anyway. Here is the same idea in a form that will matter later: a surjection $p : E \to B$ has, over each point $b$, a non-empty **fibre** $p^{-1}(b)$, and choosing one point in each fibre is the same as finding a **section** $s$ with $p \circ s = \mathrm{id}_B$.
+
+<CommutativeDiagram
+  objects={[
+    { id: "B1", tex: "B", row: 1, col: 0 },
+    { id: "E", tex: "E", row: 0, col: 1 },
+    { id: "B2", tex: "B", row: 1, col: 2 }
+  ]}
+  arrows={[
+    { from: "B1", to: "E", tex: "s", style: "dashed" },
+    { from: "E", to: "B2", tex: "p", style: "epi" },
+    { from: "B1", to: "B2", tex: "\\mathrm{id}_B", labelSide: "right" }
+  ]}
+  caption="A section $s$ of a surjection $p$: the triangle commutes, $p \circ s = \mathrm{id}_B$. The axiom of choice says every surjection has one."
+/>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="axiom of choice (AC)">
+
+Every family $(A_i)_{i \in I}$ of non-empty sets has a **choice function**: a function $c$ on $I$ with $c(i) \in A_i$ for every $i$. Equivalently, the Cartesian product $\prod_{i \in I} A_i$ of non-empty sets is non-empty.
+
+</Definition>
+
+<Definition term="well-ordering theorem (WO)">
+
+Every set admits a well-order.
+
+</Definition>
+
+<Definition term="chains and Zorn's lemma">
+
+In a partially ordered set $(P, \le)$, a **chain** is a subset that is linearly ordered by $\le$; an **upper bound** of $C \subseteq P$ is some $u \in P$ with $c \le u$ for all $c \in C$; and $m \in P$ is **maximal** if there is no $p \in P$ with $m < p$. **Zorn's lemma** (ZL): if every chain in $P$ has an upper bound, then $P$ has a maximal element. (The empty chain is a chain, so the hypothesis includes $P \neq \varnothing$.)
+
+</Definition>
+
+<Definition term="weaker choice principles">
+
+**Countable choice** ($\mathrm{AC}_\omega$): every *countable* family of non-empty sets has a choice function. **Dependent choice** (DC): if $R$ is a relation on a non-empty set $X$ such that every $x$ has some $y$ with $x \mathrel{R} y$, then there is a sequence $x_0, x_1, x_2, \dots$ with $x_n \mathrel{R} x_{n+1}$ for all $n$. Over ZF, AC implies DC, and DC implies $\mathrm{AC}_\omega$; neither implication reverses.
+
+</Definition>
+
+Note the difference from a well-order of order theory: Zorn's lemma talks about *maximal* elements, which need not be greatest (see <TopicLink id="math.found.order-theory">orders and lattices</TopicLink>), and chains, which need not be well-ordered.
+
+</Section>
+
+<Section id="equivalences" kind="proof" title="AC, the well-ordering theorem and Zorn's lemma are equivalent">
+
+Throughout, we work in ZF: no form of choice is assumed unless stated.
+
+<Theorem name="Theorem 1">
+
+The following are equivalent: (a) AC; (b) every surjection $p : E \to B$ has a section, a map $s : B \to E$ with $p \circ s = \mathrm{id}_B$.
+
+</Theorem>
+
+<Proof>
+
+(a) $\Rightarrow$ (b): the fibres $p^{-1}(b)$, $b \in B$, are non-empty because $p$ is surjective; a choice function $c$ for this family is a section, since $c(b) \in p^{-1}(b)$ means $p(c(b)) = b$.
+
+(b) $\Rightarrow$ (a): given non-empty sets $A_i$ ($i \in I$), let $E = \{(i, a) \mid i \in I,\ a \in A_i\}$, the disjoint union, and $p(i, a) = i$. Then $p$ is surjective because each $A_i$ is non-empty. A section $s$ picks, for each $i$, a pair $s(i) = (i, a_i)$ with $a_i \in A_i$, and $c(i) = a_i$ is a choice function.
+
+</Proof>
+
+<Theorem name="Theorem 2 (WO implies AC)">
+
+If every set can be well-ordered, then AC holds.
+
+</Theorem>
+
+<Proof>
+
+Given non-empty sets $A_i$, well-order $\bigcup_i A_i$ and let $c(i)$ be the least element of $A_i$ in that order. This is a rule, so Separation shows that $c$ exists.
+
+</Proof>
+
+<Theorem name="Theorem 3 (Zermelo, 1904: AC implies WO)">
+
+If AC holds, every set can be well-ordered.
+
+</Theorem>
+
+<Proof>
+
+Let $A$ be a set and $f$ a choice function on the non-empty subsets of $A$. Let $\theta$ be the Hartogs ordinal of $A$, an ordinal that does not inject into $A$. Fix an object $\ast \notin A$. By transfinite recursion define, for $\alpha < \theta$,
+
+$$
+a_\alpha = \begin{cases} f\big(A \setminus \{a_\beta \mid \beta < \alpha\}\big) & \text{if this set is non-empty,} \\ \ast & \text{otherwise.} \end{cases}
+$$
+
+By induction, as long as $a_\alpha \neq \ast$ it is an element of $A$ different from all earlier $a_\beta$. If every $a_\alpha$ were in $A$, then $\alpha \mapsto a_\alpha$ would be an injection $\theta \to A$, which is impossible. So there is a least $\alpha_0 < \theta$ with $a_{\alpha_0} = \ast$, that is, $\{a_\beta \mid \beta < \alpha_0\} = A$. Then $\beta \mapsto a_\beta$ is a bijection $\alpha_0 \to A$, and "$a_\beta$ before $a_\gamma$ iff $\beta < \gamma$" well-orders $A$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (AC implies Zorn's lemma)">
+
+If AC holds, then every partially ordered set in which every chain has an upper bound has a maximal element.
+
+</Theorem>
+
+<Proof>
+
+Let $(P, \le)$ satisfy the hypothesis and suppose, for a contradiction, that $P$ has no maximal element. Then every chain $C$ has a **strict** upper bound: it has an upper bound $u$, and $u$ is not maximal, so some $v > u$. By AC choose a function $g$ assigning to each chain $C$ a strict upper bound $g(C)$. Let $\theta$ be the Hartogs ordinal of $P$, and define by transfinite recursion $p_\alpha = g(\{p_\beta \mid \beta < \alpha\})$ for $\alpha < \theta$. By induction, $\{p_\beta \mid \beta < \alpha\}$ is a chain — indeed $\beta < \gamma < \alpha$ implies $p_\beta < p_\gamma$ — so the recursion makes sense, and $\alpha \mapsto p_\alpha$ is strictly increasing, hence injective. This is an injection $\theta \to P$, contradicting the choice of $\theta$.
+
+</Proof>
+
+<Theorem name="Theorem 5 (Zorn's lemma implies AC)">
+
+If Zorn's lemma holds, then every family of non-empty sets has a choice function.
+
+</Theorem>
+
+<Proof>
+
+Let $(A_i)_{i \in I}$ be non-empty sets. Let $P$ be the set of **partial choice functions**: functions $c$ with $\mathrm{dom}(c) \subseteq I$ and $c(i) \in A_i$ for $i \in \mathrm{dom}(c)$, ordered by inclusion (extension). The empty function is in $P$. If $C \subseteq P$ is a chain, then $\bigcup C$ is again a function — two members of the chain agree where both are defined, because one extends the other — and it is a partial choice function, so it is an upper bound (for the empty chain, the empty function is one). By Zorn's lemma there is a maximal $c \in P$. If some $i \in I$ were outside $\mathrm{dom}(c)$, pick one $a \in A_i$ (a single choice, which is ordinary logic) and extend $c$ by $i \mapsto a$; this contradicts maximality. So $\mathrm{dom}(c) = I$ and $c$ is a choice function.
+
+</Proof>
+
+Putting Theorems 2–5 together: **over ZF, AC, the well-ordering theorem and Zorn's lemma are equivalent.** The direction AC $\Rightarrow$ ZL is the one used in practice, and its proof shows what Zorn's lemma really packages: a transfinite recursion that keeps climbing, with choice used to pick each next step, and Hartogs' theorem guaranteeing that the climb cannot go on for ever.
+
+</Section>
+
+<Section id="zorn-at-work" kind="proof" title="Zorn's lemma at work">
+
+<Theorem name="Theorem 6 (every vector space has a basis)">
+
+Let $V$ be a vector space over a field (or a division ring) $K$. Every linearly independent subset of $V$ is contained in a basis; in particular $V$ has a basis.
+
+</Theorem>
+
+<Proof>
+
+Let $S_0 \subseteq V$ be linearly independent, and let $P$ be the set of linearly independent sets $S$ with $S_0 \subseteq S \subseteq V$, ordered by inclusion. A chain $C \subseteq P$ has the upper bound $\bigcup C$ (or $S_0$, if $C$ is empty): a linear dependence $\lambda_1 v_1 + \cdots + \lambda_n v_n = 0$ among elements of $\bigcup C$ involves only finitely many vectors, each in some member of the chain, and since $C$ is a chain they all lie in one member — which is independent, so all $\lambda_k = 0$. By Zorn's lemma $P$ has a maximal element $B$. If some $v \in V$ were not in the span of $B$, then $B \cup \{v\}$ would still be independent (a dependence would have to involve $v$ with a non-zero coefficient, and then $v$ would lie in the span of $B$), contradicting maximality. So $B$ spans $V$ and is a basis.
+
+</Proof>
+
+For $V = \R$ over $K = \Q$ the theorem gives a **Hamel basis**: a set $H \subseteq \R$ such that every real number is uniquely a finite rational combination of elements of $H$. Nobody can write one down. Andreas Blass (1984) showed that this is no accident: over ZF, "every vector space has a basis" is *equivalent* to AC.
+
+<Theorem name="Theorem 7 (Krull, 1929)">
+
+Every non-zero commutative ring $R$ with identity has a maximal ideal. More generally, every proper ideal $I_0$ of $R$ is contained in a maximal ideal.
+
+</Theorem>
+
+<Proof>
+
+Let $P$ be the set of proper ideals $J \supseteq I_0$, ordered by inclusion; it contains $I_0$ (take $I_0 = 0$ for the first statement, which is proper since $1 \neq 0$). Let $C$ be a non-empty chain in $P$ and $U = \bigcup C$. Then $U$ is an ideal: if $x, y \in U$, they lie in members $J_1, J_2$ of the chain, and one of these contains the other, so $x + y$ and $rx$ ($r \in R$) lie in the larger one. And $U$ is proper: an ideal is proper exactly when it does not contain $1$, and $1$ lies in no member of $C$, hence not in $U$. So every chain has an upper bound (the empty chain has $I_0$), and Zorn's lemma gives a maximal element $M$ of $P$. If $J \supsetneq M$ is any ideal, then $J \notin P$ by maximality, so $J = R$: $M$ is a maximal ideal.
+
+</Proof>
+
+The same pattern proves many of the basic existence theorems of mathematics: every field has an algebraic closure; every partial order extends to a linear order (Szpilrajn); every filter extends to an ultrafilter; every connected graph has a spanning tree; and, in analysis and topology, the Hahn–Banach and Tychonoff theorems. Wilfrid Hodges (1979) showed that Krull's theorem, too, is equivalent to AC over ZF.
+
+</Section>
+
+<Section id="how-much" kind="human" title="How much choice, and what it costs">
+
+**Countable choice is already an axiom.** One might hope that choosing from countably many two-element sets — Russell's socks — is provable. It is not: Abraham Fraenkel (1922) built models of set theory with atoms in which a countable family of pairs has no choice function, and Cohen's methods (1963) give models of ZF itself with the same property. The proof that a countable union of countable sets is countable uses countable choice to pick an enumeration of each set, and Solomon Feferman and Azriel Lévy (1963) showed that it is consistent with ZF that $\R$ is a countable union of countable sets.
+
+**Dependent choice suffices for most of analysis.** DC is exactly what is needed to make a sequence of choices in which each depends on the last, as in "pick $x_{n+1}$ with …" arguments. The equivalence of sequential and $\varepsilon$–$\delta$ continuity for functions on $\R$ uses countable choice; the Baire category theorem for complete metric spaces is equivalent to DC (Charles Blair, 1977). Working analysts rarely need more.
+
+**Full choice has strange consequences.**
+
+<Theorem name="Theorem 8 (Vitali, 1905)">
+
+Assuming AC, there is a subset of $[0, 1]$ that is not Lebesgue measurable.
+
+</Theorem>
+
+<Proof>
+
+Call $x, y \in [0, 1]$ equivalent if $x - y \in \Q$; this is an equivalence relation. By AC choose a set $V \subseteq [0, 1]$ containing exactly one element of each equivalence class. For $q \in Q = \Q \cap [-1, 1]$ let $V_q = V + q$.
+
+- The sets $V_q$ are pairwise disjoint: if $v + q = v' + q'$ with $v, v' \in V$, then $v - v' \in \Q$, so $v$ and $v'$ are equivalent, hence equal, and then $q = q'$.
+- $[0, 1] \subseteq \bigcup_{q \in Q} V_q \subseteq [-1, 2]$: each $x \in [0, 1]$ is equivalent to some $v \in V$, and $q = x - v \in Q$, so $x \in V_q$.
+
+Suppose $V$ were measurable, with measure $m$. Lebesgue measure is translation invariant and countably additive, and $Q$ is countable, so $\lambda\big(\bigcup_q V_q\big) = \sum_{q \in Q} m$. By the second point this sum lies between $1$ and $3$. But a countably infinite sum of copies of $m$ is $0$ if $m = 0$ and $\infty$ if $m > 0$. Contradiction.
+
+</Proof>
+
+Vitali's set is one reason why <TopicLink id="math.analysis.measure-theory">Lebesgue measure</TopicLink> is defined on a σ-algebra rather than on all subsets of $\R$. A far more dramatic consequence is the **Banach–Tarski paradox** (1924): with AC, a solid ball in $\R^3$ can be cut into five pieces that can be moved by rotations and translations and reassembled into two balls of the same size. The pieces are not measurable, so no volume is created; the paradox shows that some sets cannot be assigned a volume invariant under rigid motions, not that mathematics is inconsistent.
+
+**Is choice consistent? Is it necessary?** Both questions were settled by relative consistency proofs. Gödel (1938) showed that if ZF is consistent, so is ZFC: the constructible universe $L$ satisfies AC. Cohen (1963) showed that if ZF is consistent, so is ZF $+ \neg$AC. Between the extremes: Robert Solovay (1970) showed that if ZFC + "there is an inaccessible cardinal" is consistent, then so is ZF + DC + "every set of reals is Lebesgue measurable", and Saharon Shelah (1984) showed that the inaccessible cannot be avoided. So in a world with DC but not full AC, Vitali's set need not exist. Some consequences of AC need much less: the **ultrafilter lemma** (equivalently, the Boolean prime ideal theorem), which suffices for the compactness theorem of logic and for the Hahn–Banach theorem, is strictly weaker than AC (James Halpern and Azriel Lévy, 1971).
+
+</Section>
+
+<Section id="diaconescu" kind="proof" title="Choice implies excluded middle">
+
+In classical logic every statement $p$ satisfies $p \lor \neg p$, and Diaconescu's theorem is invisible. In **constructive** settings — intuitionistic logic, toposes, type theories such as Lean's core — excluded middle is not assumed, and there the axiom of choice turns out to imply it.
+
+<Theorem name="Theorem 9 (Diaconescu, 1975; Goodman and Myhill, 1978)">
+
+Assume extensionality and that the two-element family $\{U, V\}$ below has a choice function. Then for any proposition $p$, $\ p \lor \neg p$.
+
+</Theorem>
+
+<Proof>
+
+Let $U = \{x \in \{0, 1\} \mid x = 0 \lor p\}$ and $V = \{x \in \{0, 1\} \mid x = 1 \lor p\}$. Both are non-empty ($0 \in U$, $1 \in V$), so let $f$ choose $f(U) \in U$ and $f(V) \in V$. Each of $f(U), f(V)$ is $0$ or $1$, and equality of $0$ and $1$ is decidable, so we may split into cases.
+
+- If $f(U) = 1$, then $1 \in U$ says $1 = 0 \lor p$, so $p$. Likewise if $f(V) = 0$, then $p$.
+- Otherwise $f(U) = 0$ and $f(V) = 1$. Then $\neg p$: if $p$ held, $U$ and $V$ would both be $\{0, 1\}$, hence equal by extensionality, so $f(U) = f(V)$, i.e. $0 = 1$.
+
+In every case $p \lor \neg p$. No use of excluded middle was made.
+
+</Proof>
+
+In topos theory the same argument shows that a topos satisfying the (internal) axiom of choice is Boolean. Lean takes the hint: its logic has a choice axiom, `Classical.choice`, and the law of excluded middle is not an axiom but a theorem, `Classical.em`, proved by exactly this argument.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Choice in Lean">
+
+Lean's kernel has three axioms beyond its type theory: propositional extensionality (`propext`), the soundness of quotients (`Quot.sound`, from which function extensionality follows) and `Classical.choice`, which produces an element of any type known to be non-empty. So in Lean the axiom of choice is a theorem:
+
+<Lean decl="Lumenary.AxiomOfChoice.ChoiceFunctions" />
+
+<Lean decl="Lumenary.AxiomOfChoice.choice_holds" />
+
+To study choice rather than use it, we state a second form, "every surjection splits", and prove the two equivalent, as in Theorem 1:
+
+<Lean decl="Lumenary.AxiomOfChoice.SurjectionsSplit" />
+
+<Lean decl="Lumenary.AxiomOfChoice.split_of_choice" />
+
+<Lean decl="Lumenary.AxiomOfChoice.choice_of_split" />
+
+Running `#print axioms` on these two theorems reports that they **depend on no axioms at all** — in particular not on `Classical.choice`. They are genuine implications between two choice principles, checked by the kernel. (In the second, the element `(s i).2` of `X (s i).1` is transported along the equation `(s i).1 = i`; this is where the disjoint union of the lesson's proof appears.) Mathlib's everyday version of "surjections split" is built with choice:
+
+<Lean decl="Lumenary.AxiomOfChoice.surj_inv" />
+
+The well-ordering theorem, from Mathlib:
+
+<Lean decl="Lumenary.AxiomOfChoice.well_ordering" />
+
+Krull's theorem by Zorn's lemma, following the proof of Theorem 7: proper ideals, the supremum of a chain (which for a directed family of ideals is its union, `Submodule.mem_sSup_of_directed`), and $1 \notin$ that supremum:
+
+<Lean decl="Lumenary.AxiomOfChoice.exists_maximal_ideal" />
+
+<Lean decl="Lumenary.AxiomOfChoice.exists_maximal_ideal_library" />
+
+<Lean decl="Lumenary.AxiomOfChoice.exists_basis" />
+
+Finally Diaconescu's theorem, with the choice function given as a hypothesis `ε` on collections of propositions. `#print axioms` reports only `propext` and `Quot.sound` (for `funext`): extensionality and a choice operator give excluded middle, with no classical axiom used. Core Lean's `Classical.em` is the same argument applied to `Classical.choice`:
+
+<Lean decl="Lumenary.AxiomOfChoice.diaconescu" />
+
+<Lean decl="Lumenary.AxiomOfChoice.em_library" />
+
+**What is and is not formalised.** Formalised: Theorem 1 as an implication-free equivalence; Krull's theorem by Zorn (Theorem 7); Diaconescu's theorem (Theorem 9). From Mathlib: Zorn's lemma itself (`zorn_le_nonempty₀`, proved there from choice), the well-ordering theorem and the existence of bases. Not formalised: the equivalences AC $\Leftrightarrow$ ZL $\Leftrightarrow$ WO *over ZF* (Lean's ambient logic already contains choice, so such equivalences would have to be stated inside a formal model of ZF), Vitali's theorem, and the independence results.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Where choice is not needed">
+
+A computer can only ever make finitely many choices, and finite choice needs no axiom. So the experiment below runs the "climb until you cannot" arguments of this lesson in finite settings, where they are theorems of ZF: it extends random linearly independent sets of vectors in $(\Z/2)^4$ until they are maximal — always reaching a basis of size $4$ — and counts all $840$ bases; it finds the maximal ideals of $\Z/n$ by searching the partial order of ideals, and checks that they are generated by the primes dividing $n$; and it well-orders the positive rationals **explicitly**, by the Calkin–Wilf sequence $1, \tfrac12, 2, \tfrac13, \tfrac32, \tfrac23, 3, \dots$, generated by $x \mapsto 1/(2\lfloor x \rfloor - x + 1)$.
+
+<Python id="axiom_of_choice_finite_zorn" />
+
+The last part makes a point worth remembering: a *countable* set such as $\Q$ can be well-ordered by a formula, with no choice at all. The well-ordering theorem has teeth for sets such as $\R$, where (if ZF is consistent) no proof in ZF can produce a well-order. These are exact, exhaustive computations of finite cases; they say nothing about infinite-dimensional spaces or arbitrary rings, which is exactly where Zorn's lemma is needed.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: a poset of ideals">
+
+Zorn's lemma is about maximal elements of partial orders. Here is the poset of ideals of $\Z/12$, ordered by inclusion (arrows point from smaller to larger ideals); $(d)$ denotes the ideal generated by $d$.
+
+<CommutativeDiagram
+  objects={[
+    { id: "R", tex: "\\Z/12", row: 0, col: 1 },
+    { id: "d2", tex: "(2)", row: 1, col: 0 },
+    { id: "d3", tex: "(3)", row: 1, col: 2 },
+    { id: "d4", tex: "(4)", row: 2, col: 0 },
+    { id: "d6", tex: "(6)", row: 2, col: 2 },
+    { id: "z", tex: "(0)", row: 3, col: 1 }
+  ]}
+  arrows={[
+    { from: "d2", to: "R", tex: "", style: "hook" },
+    { from: "d3", to: "R", tex: "", style: "hook" },
+    { from: "d4", to: "d2", tex: "", style: "hook" },
+    { from: "d6", to: "d2", tex: "", style: "hook" },
+    { from: "d6", to: "d3", tex: "", style: "hook" },
+    { from: "z", to: "d4", tex: "", style: "hook" },
+    { from: "z", to: "d6", tex: "", style: "hook" }
+  ]}
+  caption="The ideals of $\Z/12$ under inclusion. The maximal proper ideals are $(2)$ and $(3)$, one for each prime dividing $12$."
+/>
+
+Find a chain in this poset and an upper bound for it among the proper ideals. Starting from $(0)$, follow arrows upwards without ever reaching $\Z/12$: where can you get stuck? Every finite poset has maximal elements, so the climb always stops. In an infinite ring the climb might go on for ever, and Zorn's lemma is the guarantee that, when chains have upper bounds, there is still a maximal element at the "top".
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Choice is only needed for uncountable families."** Choosing from *countably many* two-element sets can already need it: ZF does not prove that every countable family of pairs has a choice function. What is provable without choice is choosing from *finitely* many sets, or from any family for which a rule is available.
+
+</Misconception>
+
+<Misconception>
+
+**"The Banach–Tarski paradox refutes the axiom of choice."** It shows that some subsets of $\R^3$ cannot be assigned a volume that is additive and invariant under rigid motions. The pieces are non-measurable; nothing contradictory happens. Choice is consistent relative to ZF (Gödel, 1938).
+
+</Misconception>
+
+<Misconception>
+
+**"Every proof that uses Zorn's lemma can easily be made constructive."** Sometimes it can — for finite-dimensional or countable structures one can often climb explicitly, as in the computation section. But in general it cannot: for instance "every vector space has a basis" is equivalent to AC (Blass), so no proof avoids choice, and no one can exhibit a basis of $\R$ over $\Q$.
+
+</Misconception>
+
+<Misconception>
+
+**"Zorn's lemma is a lemma, so it is weaker than an axiom."** The name is historical. Over ZF it is equivalent to AC; it is "provable" only from AC (or WO), as Theorem 4 shows.
+
+</Misconception>
+
+<Misconception>
+
+**"With choice we can write down a well-order of $\R$."** AC asserts that a well-order *exists*; it gives no formula for one. In fact it is consistent with ZFC that no well-order of $\R$ is definable by any formula of set theory (Solomon Feferman, 1965).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Tychonoff's theorem is the axiom of choice">
+
+**Tychonoff's theorem** says that any product of compact spaces is compact. Its proof (by ultrafilters, or by Zorn's lemma applied to families of closed sets with the finite intersection property) uses choice, and John L. Kelley (1950) showed that it is in fact *equivalent* to AC over ZF. The topological statement contains the set-theoretic one: a product of non-empty spaces must be non-empty before it can be compact, and Kelley's proof extracts a choice function from compactness of a cleverly topologised product. For **Hausdorff** spaces, Tychonoff's theorem is weaker — equivalent to the ultrafilter lemma — and that version is all one needs for the Stone–Čech compactification or for the compactness theorem of propositional logic, which is Tychonoff's theorem for the Cantor space $\{0, 1\}^{\text{variables}}$ (see the <TopicLink id="math.found.completeness-theorem">completeness theorem</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Paradoxical decompositions and amenability">
+
+The Banach–Tarski paradox is geometry, not just set theory. Its engine is a group-theoretic fact: the rotation group $SO(3)$ contains a free subgroup on two generators (Felix Hausdorff, 1914), and a free group $F_2$ splits into pieces that can be reassembled, by multiplying by generators, into two copies of itself. Choice transfers this paradox from $F_2$ to the sphere by choosing one point from each orbit. In the plane and on the line there is no such paradox: John von Neumann (1929) explained why — the groups of rigid motions in dimensions $1$ and $2$ are **amenable** (they carry an invariant mean), which forbids paradoxical decompositions, while the rotation group in dimension $3$ is not. Alfred Tarski (1938) proved the general principle: a group action admits a paradoxical decomposition exactly when there is no invariant finitely additive measure.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Existence theorems, and their exact strength">
+
+Much of algebra is built on Zorn's lemma: bases of vector spaces, maximal ideals (Krull), algebraic closures, transcendence bases, injective hulls of modules. Reverse-engineering these proofs has shown, remarkably, that several of them are *exactly* as strong as AC: "every vector space has a basis" (Blass, 1984) and "every non-zero commutative ring with identity has a maximal ideal" (Hodges, 1979) each imply AC over ZF. Others are weaker: the existence of algebraic closures follows from the ultrafilter lemma. Algebraists also note what goes wrong without choice: in some models of ZF, $\R$ has no basis over $\Q$ at all.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Hahn–Banach, measure and dependent choice">
+
+The **Hahn–Banach theorem** — a bounded linear functional on a subspace of a normed space extends to the whole space with the same norm — is usually proved with Zorn's lemma, but follows from the strictly weaker ultrafilter lemma (Jerzy Łoś and Czesław Ryll-Nardzewski, 1951; W. A. J. Luxemburg, 1962). In the other direction, Hahn–Banach implies the existence of non-measurable sets (Foreman and Wehrung, 1991), so it is not free either. For the everyday analysis of $\R$ and of separable spaces, dependent choice is enough; and in Solovay's model of ZF + DC every set of reals is Lebesgue measurable, has the property of Baire, and (if uncountable) contains a perfect subset. Analysts can thus see choice as a trade: existence theorems for huge spaces in exchange for pathological sets.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Splitting epimorphisms">
+
+In the category of sets the surjections are exactly the epimorphisms, so Theorem 1 says: **AC holds if and only if every epimorphism in $\mathbf{Set}$ splits**, i.e. every object of $\mathbf{Set}$ is **projective**. This categorical form makes sense in any category, and it shows why choice fails in many natural settings: in the category of groups, the quotient $\Z \to \Z/2$ does not split; in a topos of sheaves on a space, a local homeomorphism may have local sections without a global one. For an elementary topos, Diaconescu's theorem says that the internal axiom of choice forces the topos to be Boolean (see <TopicLink id="math.cat.elementary-topoi">elementary topoi</TopicLink>): choice is a strong, "classical" property of a universe of sets.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Infinitely many arbitrary choices were made, often without comment, throughout nineteenth-century analysis. **Giuseppe Peano** (1890), in his work on differential equations, explicitly refused to apply "infinitely many times an arbitrary law", and **Beppo Levi** (1902) pointed out a hidden choice in a proof of Bernstein's.
+- **Ernst Zermelo** proved the well-ordering theorem from the choice principle in 1904 and made choice an axiom in 1908. The proof caused an exchange of five letters (published in 1905) among **René Baire**, **Émile Borel**, **Jacques Hadamard** and **Henri Lebesgue** on whether a "choice" that cannot be described is legitimate. **Bertrand Russell** formulated the equivalent "multiplicative axiom" (1906), and **Wacław Sierpiński** surveyed the uses of choice in analysis in 1918.
+- Maximal principles were found by **Felix Hausdorff** (1914), **Kazimierz Kuratowski** (1922), **Max Zorn** (1935, for algebra) and **Oswald Teichmüller** and **John Tukey** (1939–40). **Wolfgang Krull** proved his maximal ideal theorem in 1929, and **Andrey Tychonoff** his product theorem in 1930–35.
+- **Giuseppe Vitali** found his non-measurable set in 1905; **Hausdorff** his paradox of the sphere in 1914; **Stefan Banach** and **Alfred Tarski** their paradox in 1924.
+- Independence: **Abraham Fraenkel** (1922) and later **Andrzej Mostowski** used permutation models; **Kurt Gödel** (1938) proved the consistency of AC and **Paul Cohen** (1963) its independence. **Robert Solovay** (1970) built his model with every set of reals measurable.
+- **Radu Diaconescu** (1975), working in topos theory, proved that choice implies excluded middle; **N. D. Goodman** and **John Myhill** (1978) gave the set-theoretic version.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Thomas Jech, *The Axiom of Choice* (1973) — the classic monograph, including permutation models and the independence proofs.
+- Horst Herrlich, *Axiom of Choice*, Lecture Notes in Mathematics 1876 (2006) — what goes wrong in analysis, topology and algebra without choice.
+- Gregory H. Moore, *Zermelo's Axiom of Choice: Its Origins, Development, and Influence* (1982) — the history, including the 1905 letters.
+- Paul Howard and Jean E. Rubin, *Consequences of the Axiom of Choice* (1998) — an encyclopaedia of choice principles and their relations.
+- Grzegorz Tomkowicz and Stan Wagon, *The Banach–Tarski Paradox* (second edition, 2016).
+- Kenneth Kunen, *Set Theory: An Introduction to Independence Proofs* (1980) — Gödel's $L$ and the consistency of AC.
+- Serge Lang, *Algebra* (revised third edition, 2002) — Zorn's lemma in its native habitat.
+
+</Section>

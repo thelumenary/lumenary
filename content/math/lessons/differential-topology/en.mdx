@@ -1,0 +1,486 @@
+---
+slug: differential-topology
+topic: math.geom.differential-topology
+title: Differential topology
+subtitle: Count the solutions of $f(x) = y$ with signs, and the answer refuses to change — the idea behind Brouwer's fixed points, the hairy ball and the Poincaré–Hopf theorem.
+level: grad
+ages: Graduate
+minutes: 140
+order: 7021
+objectives:
+  - State Sard's theorem, prove it for maps between spaces of the same dimension, and use regular values to define the mod 2 and oriented degree of a map between closed manifolds
+  - Prove that the degree is independent of the regular value and invariant under homotopy, using the classification of compact 1-manifolds
+  - Prove the Brouwer fixed-point theorem and the hairy ball theorem using regular values and degree
+  - Compute indices of zeros of vector fields, state the Poincaré–Hopf theorem and check it on spheres and tori
+  - Explain transversality, Morse functions and the difference between homeomorphic and diffeomorphic manifolds
+narrators: []
+lean:
+  - Lumenary.DifferentialTopology.sard_equidimensional
+  - Lumenary.DifferentialTopology.critical_values_null
+  - Lumenary.DifferentialTopology.dot
+  - Lumenary.DifferentialTopology.hopfField
+  - Lumenary.DifferentialTopology.hopfField_tangent
+  - Lumenary.DifferentialTopology.hopfField_length
+  - Lumenary.DifferentialTopology.rotation_homotopy
+  - Lumenary.DifferentialTopology.antipodal_det
+  - Lumenary.DifferentialTopology.antipodal_det_even
+  - Lumenary.DifferentialTopology.no_retraction_interval
+  - Lumenary.DifferentialTopology.brouwer_interval
+  - Lumenary.DifferentialTopology.crossings
+  - Lumenary.DifferentialTopology.crossings_parity
+  - Lumenary.DifferentialTopology.odd_crossings
+compute: [differential_topology_degree_count, differential_topology_poincare_hopf]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why must the wind stop somewhere?">
+
+At every moment, somewhere on the Earth the horizontal wind is calm. Stir a cup of coffee and let it settle: in an idealised model, some point of the surface ends up exactly where it started. Crumple a map of Nairobi and drop it on the floor of a room in Nairobi: some point of the map lies exactly over the place it represents. These are three faces of two theorems — the **hairy ball theorem** and the **Brouwer fixed-point theorem** — and neither can be proved by calculus alone, because neither is about a formula. They are about the *shape* of the sphere and the disc.
+
+Differential topology studies smooth manifolds up to diffeomorphism, using smooth maps as probes. Its central trick is to count: given a smooth map $f : M \to N$ between manifolds of the same dimension, count the solutions of $f(x) = y$, with a sign telling whether $f$ preserves or reverses orientation near $x$. For a generic $y$ the count is finite, and — this is the miracle — it does not depend on $y$, nor on deforming $f$. That number, the **degree**, is a topological invariant built from derivatives, and with it the theorems above take a page each.
+
+This lesson builds on <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink> (regular values, orientation, vector fields), and it meets <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink> (the degree of a map of circles is a winding number) and <TopicLink id="math.geom.surfaces-euler-characteristic">the Euler characteristic</TopicLink>, which reappears as the sum of the indices of a vector field.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Counting preimages, with signs">
+
+Wrap a rubber band round a pencil three times and look at it as a map from the circle to the circle. A typical point of the target is covered three times. Now push a fold into the band: near the fold, some points are covered five times — the band goes forward, back, forward. The unsigned count jumped by $2$. But the extra two passes go in opposite directions, so if we count forward passes as $+1$ and backward ones as $-1$, the signed count is still $3$.
+
+<Figure caption="Part of the graph of a map that folds back. The level $y$ is met three times; the middle crossing (the differently coloured dot) runs backwards, so the signed count is $1 - 1 + 1 = 1$ — the same as for a level above the peak or below the valley, which is met only once. The unsigned count jumps only at the critical values, the heights of the peak and the valley.">
+<svg viewBox="0 0 320 200" role="img" aria-label="The graph of a function rising overall, with a downward fold, crossed five times by a horizontal level line">
+  <line x1="30" y1="180" x2="300" y2="180" stroke="var(--ink-2)" strokeWidth="1.2" />
+  <line x1="30" y1="180" x2="30" y2="15" stroke="var(--ink-2)" strokeWidth="1.2" />
+  <path d="M 30 175 C 70 150, 90 60, 120 55 C 150 50, 150 140, 180 140 C 210 140, 240 40, 300 20" fill="none" stroke="var(--formal)" strokeWidth="2.5" />
+  <line x1="30" y1="100" x2="300" y2="100" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="5 4" />
+  <circle cx="88" cy="100" r="4" fill="var(--compute)" />
+  <circle cx="146" cy="100" r="4" fill="var(--human)" />
+  <circle cx="214" cy="100" r="4" fill="var(--compute)" />
+  <text x="276" y="94" fontSize="13" fill="var(--ink-2)">y</text>
+</svg>
+</Figure>
+
+Three ideas make this precise. **Regular values** are the levels that avoid the tips of folds; **Sard's theorem** says almost every level is regular. The **degree** is the signed count at a regular value; it does not depend on the level because, as the level moves, preimages are born and die in pairs of opposite sign (exactly at the critical values). And it does not change under deformation, because a deformation sweeps out a surface whose preimage of a level is a union of arcs and circles — and arcs have two ends.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Regular values, degree, index and transversality">
+
+Throughout, manifolds are smooth, Hausdorff and second countable; a **closed** manifold is compact without boundary.
+
+<Definition term="critical point, regular value, measure zero">
+
+Let $f : M \to N$ be smooth. A point $x \in M$ is **critical** if $df_x : T_xM \to T_{f(x)}N$ is not surjective; its image $f(x)$ is a **critical value**. Every other point of $N$ — including every point not in the image — is a **regular value**. A subset $A \subseteq N$ has **measure zero** if $\varphi(A \cap U)$ has Lebesgue measure zero for every chart $(U, \varphi)$; this is well defined because diffeomorphisms of open subsets of $\R^n$ preserve null sets.
+
+</Definition>
+
+<Definition term="degree">
+
+Let $f : M \to N$ be smooth, with $M$ closed, $N$ connected and $\dim M = \dim N = n$. For a regular value $y$, the preimage $f^{-1}(y)$ is finite (it is compact, and discrete by the inverse function theorem). The **mod 2 degree** is $\deg_2 f = \# f^{-1}(y) \bmod 2$. If $M$ and $N$ are oriented, each $x \in f^{-1}(y)$ has a sign $\operatorname{sign} df_x = \pm 1$ according as the isomorphism $df_x$ preserves or reverses orientation, and the **degree** is
+
+$$
+\deg f = \sum_{x \in f^{-1}(y)} \operatorname{sign} df_x \in \Z .
+$$
+
+</Definition>
+
+That these numbers do not depend on $y$ is Theorem 3 below.
+
+<Definition term="index of a zero of a vector field">
+
+Let $v$ be a vector field with an isolated zero at $p$. In a chart centred at $p$, $v$ becomes a map $\R^n \supseteq U \to \R^n$ with $v(0) = 0$ and no other zeros in a small ball $B_\varepsilon$. The **index** $\operatorname{ind}_p(v)$ is the degree of $u \mapsto v(u)/|v(u)|$ from the sphere $\partial B_\varepsilon$ to $S^{n-1}$. It does not depend on $\varepsilon$ or on the chart. In the plane it is the number of times $v$ turns round as one walks once anticlockwise round $p$.
+
+</Definition>
+
+<Definition term="transversality">
+
+A smooth map $f : X \to Y$ is **transverse** to a submanifold $Z \subseteq Y$ if $\operatorname{im} df_x + T_{f(x)}Z = T_{f(x)}Y$ whenever $f(x) \in Z$. Two submanifolds are transverse if the inclusion of one is transverse to the other. A regular value is the special case $Z = \{y\}$.
+
+</Definition>
+
+<Definition term="Morse function">
+
+A critical point $p$ of $h : M \to \R$ is **non-degenerate** if the Hessian of $h$ at $p$ (in any chart) is invertible; its **Morse index** $\lambda$ is the number of negative eigenvalues. $h$ is a **Morse function** if all its critical points are non-degenerate.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Degrees of maps of circles and spheres">
+
+- $z \mapsto z^k$ on $S^1 \subset \C$ has degree $k$: for $k > 0$ each $w$ has $k$ preimages, all orientation-preserving; for $k < 0$ all $|k|$ preimages reverse orientation. The degree of a map $S^1 \to S^1$ is its winding number.
+- Complex conjugation $z \mapsto \bar z$ has degree $-1$.
+- The antipodal map $a(x) = -x$ of $S^n$ is the restriction of $-I$ on $\R^{n+1}$; it sends the outward normal at $x$ to the outward normal at $-x$, so it preserves the orientation of $S^n$ exactly when $\det(-I) = (-1)^{n+1} > 0$. Hence $\deg a = (-1)^{n+1}$.
+- A constant map, or any map that is not onto, has degree $0$ (a point outside the image is a regular value with no preimages). So a map of non-zero degree is surjective.
+- A non-constant polynomial $p$ of degree $d$ extends to the Riemann sphere $\C \cup \{\infty\}$ with $p(\infty) = \infty$. Being holomorphic, it preserves orientation at every regular point (its Jacobian determinant is $|p'(z)|^2 > 0$), so its degree is $d$, the number of solutions of $p(z) = w$ for a regular value $w$. In particular every $w$ has a preimage: this is a proof of the **fundamental theorem of algebra**.
+
+</Example>
+
+<Example title="Indices of zeros in the plane">
+
+Think of a planar field as a complex function $v(z)$.
+
+| field | picture | index |
+| --- | --- | --- |
+| $v = z$ | source | $+1$ |
+| $v = -z$ | sink | $+1$ |
+| $v = iz$ | centre (rotation) | $+1$ |
+| $v = \bar z$ | saddle | $-1$ |
+| $v = z^k$ | $k-1$ "petals" | $k$ |
+| $v = \bar z^k$ | | $-k$ |
+
+A source and a sink both have index $+1$: the index sees how the arrow turns, not whether the flow goes in or out. For a linear field $v(x) = Ax$ with $\det A \ne 0$, the index is $\operatorname{sign}\det A$. In particular the gradient of $h = -x_1^2 - \dots - x_\lambda^2 + x_{\lambda+1}^2 + \dots + x_n^2$ has index $(-1)^\lambda$ at $0$.
+
+</Example>
+
+<Example title="Vector fields on the sphere and the torus">
+
+On $S^2$, the rotation field $(-y, x, 0)$ vanishes at the two poles, each of index $+1$; the gradient of the height function $z$ (projected onto the sphere) has a source at the south pole and a sink at the north pole, again $+1 + 1 = 2$. On the torus, the field $\partial_\theta$ along the parallels vanishes nowhere: total index $0$. The gradient of the height of an upright torus has a maximum, a minimum and two saddles: $+1 - 1 - 1 + 1 = 0$. In every case the total is the Euler characteristic.
+
+</Example>
+
+<Example title="Critical values that cannot be avoided">
+
+$f(x) = x^2$ on $\R$ has the single critical point $0$ and the critical value $0$. The height function on the upright torus has exactly four critical values. Sard's theorem does not say there are no critical values; it says they form a set of measure zero. (A cautionary example: a smooth function $\R \to \R$ can have *uncountably* many critical values — integrate a smooth function that vanishes exactly on a Cantor set of positive measure — yet they still have measure zero.)
+
+</Example>
+
+</Section>
+
+<Section id="sard" kind="proof" title="Sard's theorem">
+
+<Theorem name="Theorem 1 (Sard, 1942)">
+
+For every smooth map $f : M \to N$, the set of critical values has measure zero in $N$. Consequently the regular values are dense.
+
+</Theorem>
+
+The general proof is an induction on dimension that stratifies the critical set by the order to which derivatives vanish (Milnor, *Topology from the Differentiable Viewpoint*, §3); it needs $f$ of class $C^k$ with $k \ge \max(1, \dim M - \dim N + 1)$. Degree theory only needs the case of equal dimensions, which has a short complete proof.
+
+<Theorem name="Theorem 2 (Sard in equal dimensions)">
+
+Let $U \subseteq \R^n$ be open, $f : U \to \R^n$ of class $C^1$, and $C = \{x \in U : \det Df(x) = 0\}$. Then $f(C)$ has Lebesgue measure zero.
+
+</Theorem>
+
+<Proof>
+
+$U$ is a countable union of closed cubes, and a countable union of null sets is null, so it suffices to show that $f(C \cap Q)$ is null for a closed cube $Q \subseteq U$ of side $\ell$. Let $M = \max_Q \|Df\|$. Since $Df$ is uniformly continuous on $Q$, there is a function $\varepsilon(\eta) \to 0$ as $\eta \to 0$ with $\|Df(y) - Df(x)\| \le \varepsilon(\eta)$ whenever $x, y \in Q$, $|x - y| \le \eta$. By the mean value inequality applied to $y \mapsto f(y) - Df(x)(y - x)$ on the segment $[x, y] \subseteq Q$,
+
+$$
+\big| f(y) - f(x) - Df(x)(y - x) \big| \le \varepsilon(\eta)\, |y - x| \qquad (|y - x| \le \eta).
+$$
+
+Divide $Q$ into $N^n$ subcubes of side $\ell/N$ and diameter $\eta = \sqrt n\, \ell / N$. Suppose a subcube $Q'$ contains a critical point $x$. For $y \in Q'$, the point $f(x) + Df(x)(y - x)$ lies in the affine subspace $f(x) + \operatorname{im} Df(x)$, of dimension at most $n - 1$, within distance $M\eta$ of $f(x)$; and $f(y)$ lies within $\varepsilon(\eta)\eta$ of it. Choosing orthonormal coordinates in which a hyperplane containing $\operatorname{im}Df(x)$ is $\{y_n = 0\}$, we see that $f(Q')$ lies in a box with $n - 1$ sides of length $2(M + \varepsilon(\eta))\eta$ and one side of length $2\varepsilon(\eta)\eta$. So
+
+$$
+\operatorname{vol} f(Q') \le 2^n \big(M + \varepsilon(\eta)\big)^{n-1} \varepsilon(\eta)\, \eta^n .
+$$
+
+There are at most $N^n$ such subcubes and $N^n \eta^n = (\sqrt n\, \ell)^n$, so the outer measure of $f(C \cap Q)$ is at most $2^n (M + \varepsilon(\eta))^{n-1} \varepsilon(\eta) (\sqrt n\,\ell)^n$, which tends to $0$ as $N \to \infty$. ∎
+
+</Proof>
+
+For manifolds of the same dimension, apply Theorem 2 in countably many charts. Mathlib proves an even stronger version — differentiability suffices, no continuity of $Df$ is needed — and we cite it in the formal section.
+
+</Section>
+
+<Section id="degree" kind="proof" title="The degree is well defined">
+
+We use one classification theorem without proof (see Milnor, Appendix, or Guillemin–Pollack, Appendix 2).
+
+<Theorem name="Fact (compact 1-manifolds)">
+
+Every compact connected $1$-manifold with boundary is diffeomorphic to a circle or to a closed interval. Hence a compact $1$-manifold with boundary has an even number of boundary points; if it is oriented, its boundary points (with their Stokes signs) sum to $0$.
+
+</Theorem>
+
+We also use the regular value theorem for manifolds with boundary: if $y$ is a regular value of $F : W \to N$ and of $F|_{\partial W}$, then $F^{-1}(y)$ is a manifold with boundary $F^{-1}(y) \cap \partial W$, of dimension $\dim W - \dim N$.
+
+<Theorem name="Theorem 3 (invariance of the degree)">
+
+Let $M$ be closed, $N$ connected, $\dim M = \dim N$. Then (a) $\#f^{-1}(y) \bmod 2$ is the same for all regular values $y$ of $f$; (b) homotopic maps have the same mod 2 degree. If $M$ and $N$ are oriented, the same holds for the signed count $\deg f$.
+
+</Theorem>
+
+<Proof>
+
+*Local constancy.* If $y$ is regular with $f^{-1}(y) = \{x_1, \dots, x_k\}$, the inverse function theorem gives disjoint neighbourhoods $U_i \ni x_i$ mapped diffeomorphically onto a common neighbourhood $V$ of $y$; shrinking $V$ to avoid the compact set $f(M \setminus \bigcup U_i)$, every $y' \in V$ is regular with exactly $k$ preimages, of the same signs.
+
+*Homotopy invariance (b).* Let $F : M \times [0, 1] \to N$ be a smooth homotopy from $f$ to $g$, and let $y$ be a regular value of $f$ and $g$. By local constancy and Sard's theorem we may replace $y$ by a nearby value $z$ that is regular for $F$ too, without changing the counts for $f$ and $g$. Then $F^{-1}(z)$ is a compact $1$-manifold with boundary
+
+$$
+F^{-1}(z) \cap \big(M \times \{0, 1\}\big) = f^{-1}(z) \times \{0\} \;\sqcup\; g^{-1}(z) \times \{1\}.
+$$
+
+By the Fact the number of boundary points is even, so $\#f^{-1}(z) \equiv \#g^{-1}(z) \pmod 2$. With orientations, an arc of $F^{-1}(z)$ joining two points of $f^{-1}(z)$ joins points of opposite sign, an arc joining $f^{-1}(z)$ to $g^{-1}(z)$ joins points of the same sign, and so the signed counts agree (Milnor, §5, checks the sign conventions).
+
+*Independence of $y$ (a).* For regular values $y, z$ of $f$ there is a diffeomorphism $h : N \to N$, smoothly isotopic to the identity, with $h(y) = z$ (the **homogeneity lemma**: move points along flows of compactly supported vector fields, and use connectedness of $N$). Then $h \circ f \simeq f$, and $(h \circ f)^{-1}(z) = f^{-1}(y)$, with the same signs since $h$ preserves orientation. By (b), $\#f^{-1}(y) = \#(h\circ f)^{-1}(z) \equiv \#f^{-1}(z)$, and likewise for signed counts. ∎
+
+</Proof>
+
+<Theorem name="Corollary 4 (properties of the degree)">
+
+$\deg(g \circ f) = \deg g \cdot \deg f$; a diffeomorphism has degree $\pm 1$; a map of non-zero degree is surjective; and if $M = \partial W$ for a compact oriented $W$ and $f$ extends to a smooth $F : W \to N$, then $\deg f = 0$.
+
+</Theorem>
+
+The last statement is proved like (b): for $y$ regular for $F$ and $f$, the preimage $F^{-1}(y)$ is a compact oriented $1$-manifold with boundary $f^{-1}(y)$, so the signs sum to $0$.
+
+</Section>
+
+<Section id="brouwer" kind="proof" title="Brouwer's fixed-point theorem and the hairy ball theorem">
+
+<Theorem name="Theorem 5 (no retraction)">
+
+There is no smooth map $r : \overline{D}{}^n \to S^{n-1}$ with $r(x) = x$ for all $x \in S^{n-1}$.
+
+</Theorem>
+
+<Proof>
+
+(M. Hirsch.) Suppose $r$ exists. By Sard's theorem it has a regular value $y \in S^{n-1}$; $y$ is also regular for $r|_{S^{n-1}} = \mathrm{id}$. So $r^{-1}(y)$ is a compact $1$-manifold with boundary $r^{-1}(y) \cap S^{n-1} = \{y\}$ — a single point. This contradicts the Fact. ∎
+
+</Proof>
+
+<Theorem name="Theorem 6 (Brouwer's fixed-point theorem)">
+
+Every continuous map $f : \overline{D}{}^n \to \overline{D}{}^n$ has a fixed point.
+
+</Theorem>
+
+<Proof>
+
+*Smooth case.* Suppose $f$ is smooth with $f(x) \ne x$ for all $x$. Let $u(x) = x - f(x) \ne 0$ and send $x$ along the ray from $f(x)$ through $x$ until it meets the sphere: $r(x) = x + t(x)\,u(x)$, where $t(x) \ge 0$ solves $|x + t u|^2 = 1$, that is
+
+$$
+t(x) = \frac{-\langle x, u\rangle + \sqrt{\langle x, u\rangle^2 + |u|^2 (1 - |x|^2)}}{|u|^2}.
+$$
+
+The discriminant is positive on the disc: for $|x| < 1$ because $|u|^2(1 - |x|^2) > 0$, and for $|x| = 1$ because $\langle x, u\rangle = 1 - \langle x, f(x)\rangle > 0$, by Cauchy–Schwarz and $f(x) \ne x$. So $t$ is smooth, and for $|x| = 1$ it gives $t = 0$, $r(x) = x$. Thus $r$ is a smooth retraction, contradicting Theorem 5.
+
+*Continuous case.* If a continuous $f$ has no fixed point, then $|f(x) - x| \ge \mu > 0$ on the compact disc. By the Weierstrass approximation theorem there is a polynomial map $P$ with $|P - f| < \mu/2$ on the disc. Then $P_1 = P/(1 + \mu/2)$ maps the disc into itself, $|P_1 - f| < \mu$, and so $P_1$ is a smooth map with no fixed point — impossible by the smooth case. ∎
+
+</Proof>
+
+Brouwer's theorem holds for any space homeomorphic to a disc (any compact convex set with non-empty interior), but not for an annulus (rotate it) or for $\R^n$ (translate it). It says nothing about *how many* fixed points there are, or how to find one.
+
+<Theorem name="Theorem 7 (hairy ball theorem)">
+
+$S^n$ has a continuous tangent vector field without zeros if and only if $n$ is odd.
+
+</Theorem>
+
+<Proof>
+
+If $n = 2m - 1$ is odd, regard $S^n \subset \C^m$ and let $v(z) = iz$, i.e. $(x_1, y_1, \dots, x_m, y_m) \mapsto (-y_1, x_1, \dots, -y_m, x_m)$. Then $\langle z, v(z)\rangle = 0$ and $|v(z)| = |z| = 1$.
+
+Conversely, suppose $v$ is a nowhere-zero tangent field on $S^n$. We may assume it is smooth (approximate it by a polynomial field and project onto the tangent spaces; a small perturbation stays non-zero) and of length $1$ (divide by $|v|$). Then
+
+$$
+F(x, t) = \cos(\pi t)\, x + \sin(\pi t)\, v(x)
+$$
+
+is a unit vector, since $x \perp v(x)$, so $F$ is a homotopy on $S^n$ from $F_0 = \mathrm{id}$ to $F_1 = a$, the antipodal map. By Theorem 3, $1 = \deg \mathrm{id} = \deg a = (-1)^{n+1}$, so $n$ is odd. ∎
+
+</Proof>
+
+On the round Earth ($n = 2$) every continuous horizontal wind field has a calm point — a statement about an idealised continuous model, but a theorem about that model.
+
+</Section>
+
+<Section id="poincare-hopf" kind="proof" title="The Poincaré–Hopf theorem and Morse theory">
+
+<Theorem name="Theorem 8 (Poincaré–Hopf)">
+
+Let $M$ be a closed manifold and $v$ a smooth vector field on $M$ with only isolated zeros $p_1, \dots, p_k$. Then
+
+$$
+\sum_{i=1}^k \operatorname{ind}_{p_i}(v) = \chi(M),
+$$
+
+the Euler characteristic of $M$ (the alternating sum of the numbers of cells in any cell decomposition, or of the Betti numbers).
+
+</Theorem>
+
+**Proof sketch** (Milnor, *Topology from the Differentiable Viewpoint*, §6). *Step 1: the sum does not depend on $v$.* Embed $M$ in $\R^N$ and take a closed tubular neighbourhood $T$ of $M$. Extend $v$ to a vector field $w$ on $T$ that points outward along $\partial T$ and has the same zeros, with the same indices. On the compact manifold with boundary $T$ minus small balls round the zeros, $w/|w|$ is defined; by Corollary 4, the degree of $w/|w|$ on $\partial T$ equals the sum of the degrees on the small spheres, which is $\sum \operatorname{ind}(v)$. But on $\partial T$, $w/|w|$ is homotopic to the outward unit normal (the **Gauss map** of $\partial T$), which does not involve $v$. *Step 2: compute it for one field.* Take a triangulation of $M$ and a field with one zero at the barycentre of each simplex, flowing from the barycentre of each simplex towards the barycentres of the higher-dimensional simplices containing it (so vertices are sources). At the barycentre of a $k$-simplex the flow is attracting in the $k$ directions of the simplex and repelling in the $n - k$ others, so the index is $(-1)^k$, so the sum is $\sum_k (-1)^k \#\{k\text{-simplices}\} = \chi(M)$. Alternatively, use the gradient of a Morse function, as below. $\square$
+
+Consequences:
+
+- **The hairy ball theorem again:** $\chi(S^2) = 2 \ne 0$, so every vector field on $S^2$ vanishes somewhere. The torus and the Klein bottle ($\chi = 0$) carry nowhere-zero fields; a surface of genus $g \ge 2$ does not.
+- **Hopf's converse** (stated): a closed connected manifold has a nowhere-zero vector field if and only if $\chi(M) = 0$. Every closed odd-dimensional manifold has $\chi = 0$ (by Poincaré duality), so it has one.
+- **Morse theory.** If $h$ is a Morse function, its gradient (for any metric) has a zero of index $(-1)^\lambda$ at each critical point of Morse index $\lambda$ (from the normal form $h = h(p) - x_1^2 - \dots - x_\lambda^2 + x_{\lambda+1}^2 + \dots + x_n^2$, the **Morse lemma**). So $\sum_\lambda (-1)^\lambda c_\lambda = \chi(M)$, where $c_\lambda$ is the number of critical points of index $\lambda$. For the upright torus, $1 - 2 + 1 = 0$. Morse proved more: $M$ has a cell decomposition with one $\lambda$-cell for each critical point of index $\lambda$, which gives the **Morse inequalities** $c_\lambda \ge b_\lambda$ (the Betti numbers).
+
+**Transversality.** Regular values generalise to transversality, and Sard's theorem to **Thom's transversality theorem**: if $F : X \times S \to Y$ is smooth and transverse to $Z$, then $F_s = F(\cdot, s)$ is transverse to $Z$ for almost every $s$. Hence any map can be perturbed to be transverse to a given submanifold. For $X$ compact with $\dim X + \dim Z = \dim Y$, the number of points of $F_s^{-1}(Z)$ mod 2 is then a homotopy invariant, the **mod 2 intersection number**. A meridian and a longitude on the torus meet once, transversally, so no homotopy can pull them apart; any two closed curves on the sphere have intersection number $0$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Differential topology in Lean and Mathlib">
+
+Mathlib has a strong form of Sard's theorem in equal dimensions: the image of the set where the derivative is singular is null for any Haar measure, assuming only differentiability. We cite it and deduce that critical values are negligible:
+
+<Lean decl="Lumenary.DifferentialTopology.sard_equidimensional" />
+
+<Lean decl="Lumenary.DifferentialTopology.critical_values_null" />
+
+Degree theory, the Brouwer theorem in dimension $\ge 2$, the hairy ball theorem and Poincaré–Hopf are not yet in Mathlib (they need either homology or the classification of $1$-manifolds, which are not formalised in this form). What we can formalise are the explicit constructions in their proofs. First, the odd-dimensional half of Theorem 7: the Hopf field $z \mapsto iz$ on $\C^n = \R^{2n}$ is tangent to every sphere and has length $|z|$:
+
+<Lean decl="Lumenary.DifferentialTopology.dot" />
+
+<Lean decl="Lumenary.DifferentialTopology.hopfField" />
+
+<Lean decl="Lumenary.DifferentialTopology.hopfField_tangent" />
+
+<Lean decl="Lumenary.DifferentialTopology.hopfField_length" />
+
+Next, the two ingredients of the even-dimensional half: the rotation homotopy stays on the sphere and joins the identity to the antipodal map, and the antipodal map has determinant $(-1)^{n+1}$, which is $-1$ on even-dimensional spheres:
+
+<Lean decl="Lumenary.DifferentialTopology.rotation_homotopy" />
+
+<Lean decl="Lumenary.DifferentialTopology.antipodal_det" />
+
+<Lean decl="Lumenary.DifferentialTopology.antipodal_det_even" />
+
+In dimension one, the whole argument of Theorems 5 and 6 can be formalised: the "1-manifold" $r^{-1}(y)$ is replaced by the intermediate value theorem, and the retraction is $r(x) = (x - f(x))/|x - f(x)|$:
+
+<Lean decl="Lumenary.DifferentialTopology.no_retraction_interval" />
+
+<Lean decl="Lumenary.DifferentialTopology.brouwer_interval" />
+
+Finally, the combinatorial heart of Theorem 3(a) in one dimension. Sample a function at $0, 1, \dots, N$ and count how often the samples cross a level $c$: the count depends on $c$, but its parity depends only on which side of $c$ the two ends lie — preimages appear and disappear in pairs:
+
+<Lean decl="Lumenary.DifferentialTopology.crossings" />
+
+<Lean decl="Lumenary.DifferentialTopology.crossings_parity" />
+
+<Lean decl="Lumenary.DifferentialTopology.odd_crossings" />
+
+**What is and is not formalised.** Cited from Mathlib: Sard's theorem in equal dimensions (Theorem 2, in a stronger form). Proved here: the critical-value corollary, the constructions in the proof of the hairy ball theorem (the Hopf field, the rotation homotopy, the sign of the antipodal map), Theorems 5 and 6 in dimension one, and the parity lemma for crossings. Not formalised: the degree of maps between manifolds, its invariance (Theorem 3), Theorems 5–8 in higher dimensions, and transversality.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting preimages and indices">
+
+The first program takes a degree-$3$ map of the circle with two folds, $F(t) = 3t + 4\sin 2t$, and finds all preimages of several values. Their number is $5$ or $7$, depending on the value; the count with the signs of $F'$ is always $3$. It also lists the four critical values. Then it counts preimages for maps of the Riemann sphere: $z^3 - 3z$ has three preimages of every value except the critical values $\pm 2$, all counted $+1$, and $\bar z^3$ has degree $-3$.
+
+<Python id="differential_topology_degree_count" />
+
+The second program computes indices as winding numbers round small circles, then checks Poincaré–Hopf on the sphere (using the two charts $z$ and $w = 1/z$, in which a field $V(z)$ becomes $W(w) = -w^2 V(1/w)$) and on the torus. For instance the constant field $V = 1$ has no zeros in the $z$-chart but a zero of index $2$ at the north pole: the sum is still $2 = \chi(S^2)$.
+
+<Python id="differential_topology_poincare_hopf" />
+
+Both are numerical evidence about finitely many maps and fields. The theorems, proved or sketched above, say why the signed counts never change.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: indices you can see">
+
+Drag the loop round the zero of each field and use the walk slider to follow the arrow as you go once round. For the saddle the arrow turns once *clockwise* (index $-1$); for the "dipole" $v = z^2$, the field of the complex function $z^2$, it turns twice anticlockwise (index $2$). Move the loop so that it does not enclose the zero: the index drops to $0$. A non-zero index forces a zero inside the loop — the two-dimensional version of the intermediate value theorem.
+
+<VectorField mode="field" preset="saddleField" title="A saddle: index −1" subtitle="Walk round the loop: the arrow turns once, clockwise." />
+
+<VectorField mode="field" preset="dipole" title="v = z²: index 2" subtitle="The arrow turns twice as you walk once round the zero." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Almost every value is regular, so every value is regular."** Sard's theorem says the critical values form a set of *measure zero*, not that they are absent. $x \mapsto x^2$ has the critical value $0$; a height function on a torus has four; a smooth function on $\R$ can even have uncountably many. Proofs use Sard to *choose* a regular value, never to assume a given value is regular.
+
+</Misconception>
+
+<Misconception>
+
+**"Homeomorphic manifolds are diffeomorphic."** Milnor (1956) constructed smooth manifolds homeomorphic but not diffeomorphic to $S^7$; Kervaire and Milnor showed there are exactly $28$ oriented diffeomorphism classes of smooth structures on the topological $7$-sphere. In dimension $4$ the gap is wider still: $\R^4$ carries uncountably many pairwise non-diffeomorphic smooth structures, while $\R^n$ for $n \ne 4$ carries only one. In dimensions $\le 3$ homeomorphic manifolds are diffeomorphic.
+
+</Misconception>
+
+<Misconception>
+
+**"The degree is the number of preimages."** Only at a regular value, and only with signs. The unsigned count can vary from value to value (the first experiment shows $5$ and $7$ for a map of degree $3$) and is infinite above a critical value of a constant map. For holomorphic maps all signs are $+1$, which is why the confusion is harmless in complex analysis.
+
+</Misconception>
+
+<Misconception>
+
+**"Every surface is hairy."** Only those with $\chi \ne 0$. The torus and the Klein bottle carry nowhere-vanishing vector fields; so does every odd-dimensional sphere. The hairy ball theorem is about $S^2$ (and even-dimensional spheres), and Poincaré–Hopf explains which manifolds are hairy.
+
+</Misconception>
+
+<Misconception>
+
+**"The index of a zero is always $\pm 1$."** That is true for non-degenerate zeros (where $dv_p$ is invertible), but degenerate zeros can have any index: $z^k$ has index $k$, and $\bar z^k$ has index $-k$. Perturbing a degenerate zero splits it into non-degenerate ones whose indices add up to the original index.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Degree is homology">
+
+For closed connected oriented $n$-manifolds, $H_n(M; \Z) \cong \Z$, generated by the fundamental class $[M]$, and a map $f$ induces $f_*[M] = (\deg f)[N]$. The degree is thus the effect of $f$ on top homology, and Theorem 3 becomes the homotopy invariance of homology. **Hopf's theorem** (1927) completes the picture: two maps $M \to S^n$ from a closed connected oriented $n$-manifold are homotopic if and only if they have the same degree, so $\pi_n(S^n) \cong \Z$. Thom (1954) turned the preimage construction into **cobordism theory**: preimages of regular values of maps to spheres are framed submanifolds, and Pontryagin and Thom showed that homotopy classes of maps correspond to cobordism classes of such submanifolds — a bridge from differential topology to stable homotopy theory. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink> and <TopicLink id="math.geom.homotopy-theory">homotopy theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Gauss–Bonnet is Poincaré–Hopf for the Gauss map">
+
+For a closed surface $S \subset \R^3$, the Gauss map $\nu : S \to S^2$ has Jacobian determinant equal to the Gaussian curvature $K$, so $\int_S K\, dA = \operatorname{area}(S^2) \cdot \deg \nu = 4\pi \deg \nu$. Step 1 of the proof of Poincaré–Hopf identifies $2\deg\nu$ with $\chi(S)$ (here $T$ is a thickening of $S$ and $\partial T$ is two copies of $S$), giving the Gauss–Bonnet theorem $\int_S K\, dA = 2\pi\chi(S)$. Chern's intrinsic proof runs the argument in reverse, through a vector field on $S$; see <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>. Morse theory has a geometric incarnation too: applied to the energy functional on paths, it relates the topology of the loop space of a Riemannian manifold to its geodesics and conjugate points.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Fixed points and degree in infinite dimensions">
+
+Analysts use degree to solve equations. **Schauder's fixed-point theorem** extends Brouwer to compact maps of closed convex sets in Banach spaces, and the **Leray–Schauder degree** extends the degree to compact perturbations of the identity; both prove existence theorems for nonlinear PDEs by deforming the equation to a solvable one without letting solutions escape through the boundary. In complex analysis the degree is the **argument principle**: the number of zeros minus poles of a meromorphic function inside a curve is the winding number of its image, $\frac{1}{2\pi i}\oint f'/f\, dz$. See <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink> and <TopicLink id="math.analysis.complex-analysis">complex analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The Lefschetz number">
+
+Brouwer's theorem is a special case of the **Lefschetz fixed-point theorem**: for a map $f$ of a compact triangulable space $X$, if the Lefschetz number $L(f) = \sum_k (-1)^k \operatorname{tr}\big(f_* : H_k(X; \Q) \to H_k(X; \Q)\big)$ is non-zero, then $f$ has a fixed point. For the disc only $H_0$ survives and $L(f) = 1$. For the identity of a closed manifold, $L(\mathrm{id}) = \chi(M)$, and for a smooth $f$ with non-degenerate fixed points, $L(f)$ is the signed count of fixed points. Applied to the time-$\varepsilon$ flow of a vector field $v$ (homotopic to the identity, with fixed points exactly the zeros of $v$ for small $\varepsilon$), this recovers Poincaré–Hopf. Linear algebra (traces on homology) computes a geometric count.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Sperner's lemma and the game of Hex">
+
+Brouwer's theorem has a purely combinatorial core. **Sperner's lemma** (1928): colour the vertices of a triangulation of a triangle with three colours so that the corners get different colours and each edge uses only the colours of its endpoints; then some small triangle has all three colours — in fact an odd number of them, by a parity argument like `crossings_parity`. Taking finer triangulations and a limit proves the two-dimensional Brouwer theorem. David Gale (1979) showed that the fact that a game of **Hex** cannot end in a draw is equivalent to the two-dimensional Brouwer theorem. These parity proofs also show why computing an approximate fixed point is hard in general: it is the prototypical problem of the complexity class PPAD (Papadimitriou, 1994), which also contains computing a Nash equilibrium — whose existence Nash proved with Brouwer's and Kakutani's theorems.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Defects, vortices and calm points">
+
+In physics, the index is a **topological charge**. The order parameter of a planar ferromagnet or a liquid crystal film is a field of directions; an isolated defect has a winding number that cannot change under small continuous deformations, so defects can only disappear by meeting defects of opposite charge. On a sphere-shaped object the charges must add up to $\chi(S^2) = 2$: the arrangement of whorls in some liquid-crystal droplets, and the two "calm points" of an idealised global wind field, are physical shadows of Poincaré–Hopf. Such arguments are as good as the continuum model behind them; real wind is not a continuous vector field at every scale.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Indices and fixed points.** Henri Poincaré introduced the index of a singular point of a vector field on a surface in his memoirs on curves defined by differential equations (1881–1885), and proved the surface case of the index theorem. Piers Bohl in Riga proved a result equivalent to the Brouwer theorem in 1904, and Jacques Hadamard gave a proof in 1910.
+- **Degree.** L. E. J. Brouwer, in Amsterdam, defined the degree of a map and proved invariance of dimension and the fixed-point theorem for the $n$-ball around 1910–1912. Heinz Hopf proved the index theorem in all dimensions and the classification of maps into spheres by degree (both published in 1927).
+- **Regular values and transversality.** Anthony Morse (1939) and Arthur Sard (1942) proved the measure-zero theorem for critical values. Hassler Whitney laid the foundations of smooth manifolds and their embeddings in the 1930s. René Thom introduced transversality and cobordism (1954), and Lev Pontryagin, in Moscow, framed cobordism; Thom received the Fields Medal in 1958.
+- **Morse theory and exotic structures.** Marston Morse developed his theory of critical points from the 1920s, with applications to geodesics. John Milnor's discovery of exotic $7$-spheres (1956) and Stephen Smale's h-cobordism theorem (1961), which proved the Poincaré conjecture in dimensions $\ge 5$, showed the power of these methods; both received the Fields Medal. In the 1980s Michael Freedman's topological classification of simply connected $4$-manifolds and Simon Donaldson's gauge-theoretic constraints on smooth ones revealed the exotic $\R^4$s.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- John Milnor, *Topology from the Differentiable Viewpoint* (1965) — sixty pages that cover Sard, degree, Brouwer, the hairy ball and Poincaré–Hopf; the model for this lesson.
+- Victor Guillemin and Alan Pollack, *Differential Topology* (1974) — transversality, intersection theory and Lefschetz numbers, with many exercises.
+- Morris W. Hirsch, *Differential Topology* (1976) — a thorough graduate text, including transversality, tubular neighbourhoods and Morse theory.
+- John Milnor, *Morse Theory* (1963) — the classic introduction, with the application to geodesics.
+- John M. Lee, *Introduction to Smooth Manifolds* (2nd edition, 2013) — Chapter 6 for Sard's theorem and transversality.
+
+</Section>

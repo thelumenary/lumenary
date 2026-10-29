@@ -1,0 +1,479 @@
+---
+slug: surfaces-euler-characteristic
+topic: math.geom.surfaces-euler-characteristic
+title: Surfaces, polyhedra and the Euler characteristic
+subtitle: Count the corners, edges and faces of any solid without holes and you get $V - E + F = 2$ — the first invariant of topology, and the key to classifying every closed surface.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 110
+order: 5008
+objectives:
+  - Prove Euler's formula $V - E + F = 2$ for connected plane graphs, and deduce that there are exactly five Platonic solids
+  - Use Euler's formula to prove that $K_5$ and $K_{3,3}$ are not planar and that a football-shaped polyhedron has exactly twelve pentagons
+  - Build the sphere, torus, Klein bottle and projective plane by gluing the edges of a square, and decide which are orientable
+  - Compute the Euler characteristic of surfaces given as polygons with edge identifications, and identify them using the classification theorem
+  - Explain why the Euler characteristic is a topological invariant and how it is tied to curvature (Descartes, Gauss–Bonnet)
+narrators: []
+lean:
+  - Lumenary.SurfacesEulerCharacteristic.Cells
+  - Lumenary.SurfacesEulerCharacteristic.euler
+  - Lumenary.SurfacesEulerCharacteristic.euler_examples
+  - Lumenary.SurfacesEulerCharacteristic.platonic_solids
+  - Lumenary.SurfacesEulerCharacteristic.twelve_pentagons
+  - Lumenary.SurfacesEulerCharacteristic.edge_bound
+  - Lumenary.SurfacesEulerCharacteristic.k5_not_planar
+  - Lumenary.SurfacesEulerCharacteristic.k33_not_planar
+  - Lumenary.SurfacesEulerCharacteristic.descartes_defect
+  - Lumenary.SurfacesEulerCharacteristic.connectedSum
+  - Lumenary.SurfacesEulerCharacteristic.euler_connected_sum
+  - Lumenary.SurfacesEulerCharacteristic.subdivision_invariant
+  - Lumenary.SurfacesEulerCharacteristic.tree_edges
+  - Lumenary.SurfacesEulerCharacteristic.connected_edges
+compute: [surfaces_euler_characteristic_platonic, surfaces_euler_characteristic_gluing]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A number that refuses to change">
+
+Take a cube: $8$ corners, $12$ edges, $6$ faces, and $8 - 12 + 6 = 2$. A tetrahedron: $4 - 6 + 4 = 2$. A pyramid on a square base: $5 - 8 + 5 = 2$. A football stitched from $12$ pentagons and $20$ hexagons: $60 - 90 + 32 = 2$. Every solid you can think of without a hole through it gives the same answer. Leonhard Euler noticed this in 1750 and wrote to Christian Goldbach about it, remarking that, as far as he knew, nobody had observed it before.
+
+Now take a square picture frame, built from $16$ four-sided faces: $16 - 32 + 16 = 0$. A frame with two holes gives $-2$. The number $V - E + F$ is blind to size, shape and the way a solid is cut into faces, but it sees **holes**. It is the first invariant of **topology**, the geometry of properties that survive stretching and bending.
+
+The same count answers puzzles that seem to have nothing to do with solids. Why does every football (and every $\mathrm{C}_{60}$ molecule) have exactly twelve pentagons? Why can three houses not each be joined to three utilities by pipes that never cross? Why are there exactly five regular solids? And it leads to one of the great theorems of the 20th century's foundations: every closed surface is a sphere, a many-holed doughnut, or a "one-sided" relative of the projective plane — and $V - E + F$, together with one yes/no question, tells you which. Along the way we use <TopicLink id="math.discrete.graph-basics">graphs</TopicLink>, a little <TopicLink id="math.geom.euclidean-geometry">Euclidean geometry</TopicLink>, and <TopicLink id="math.found.proof-techniques">proof by induction</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Count them yourself">
+
+Count the vertices, edges and faces of each solid below, and compute $V - E + F$. Then open the *Surfaces and genus* tab: refining the subdivision (splitting an edge, cutting a face with a diagonal) changes $V$, $E$ and $F$ but never $V - E + F$.
+
+<EulerCounter solids={["tetrahedron", "cube", "octahedron", "dodecahedron", "icosahedron", "prism", "pyramid", "torus", "doubleTorus"]} subtitle="Solids without holes give 2. What do the frames give?" />
+
+Here is why the answer should not depend on the solid. Imagine the polyhedron made of rubber and inflate it into a round ball; its edges become curves drawn on the sphere, dividing it into faces. Cutting a face along a new edge between two of its corners adds one edge and one face: $V - E + F$ is unchanged. Adding a new vertex in the middle of an edge adds one vertex and one edge: unchanged again. Any two ways of cutting up the same surface can be compared through a common refinement, so they must give the same number. That number is a property of the *surface*, not of the cutting — its **Euler characteristic** $\chi$.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="plane graph and faces">
+
+A **graph** consists of finitely many vertices and edges, each edge joining two vertices. A **plane graph** is a graph drawn in the plane so that edges are curves (for us, polygonal paths) that meet only at shared endpoints. Its **faces** are the connected regions into which the drawing cuts the plane, including the unbounded outer region. A graph is **planar** if it can be drawn this way.
+
+</Definition>
+
+<Definition term="surface">
+
+A (closed) **surface** is a compact Hausdorff space in which every point has a neighbourhood homeomorphic to an open disc. Two spaces are **homeomorphic** if there is a continuous bijection between them with a continuous inverse — the precise meaning of "the same shape up to stretching and bending, without tearing or gluing". Examples: the sphere $S^2$, the torus $T$. Non-examples: the closed disc and the Möbius band (points on the edge have only half-disc neighbourhoods; these are *surfaces with boundary*), and two spheres touching at a point (the touching point has no disc neighbourhood).
+
+</Definition>
+
+<Definition term="subdivision and Euler characteristic">
+
+A **subdivision** of a surface cuts it into finitely many polygonal faces (each homeomorphic to a closed disc bounded by its edges), meeting along whole edges or at vertices. If it has $V$ vertices, $E$ edges and $F$ faces, its **Euler characteristic** is
+
+$$
+\chi = V - E + F .
+$$
+
+</Definition>
+
+<Definition term="gluing a polygon">
+
+A **polygon with edge identifications** is described by a **word**: label the sides of a $2n$-gon in order around the boundary with letters, each letter used twice, and write $a$ when the side is traversed in the direction of its arrow and $a^{-1}$ when against it. Gluing each pair of sides so the arrows match produces a closed surface; its subdivision has $F = 1$, $E = n$, and $V$ = the number of classes of corners that get glued together.
+
+</Definition>
+
+<Definition term="orientable, connected sum">
+
+A surface is **orientable** if it contains no Möbius band — equivalently, if a consistent choice of "clockwise" can be made on every face, so that a small turning arrow carried around any loop comes back the same way. The **connected sum** $M \mathbin{\#} N$ of two surfaces is formed by removing a small open disc from each and gluing the two boundary circles together.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="The five Platonic solids">
+
+A **Platonic solid** is a convex polyhedron whose faces are congruent regular polygons, with the same number of faces at every vertex. Writing $\{p, q\}$ for "$p$-gonal faces, $q$ at each vertex":
+
+| Solid | $\{p, q\}$ | $V$ | $E$ | $F$ | $V - E + F$ |
+| --- | --- | --- | --- | --- | --- |
+| tetrahedron | $\{3, 3\}$ | 4 | 6 | 4 | 2 |
+| cube | $\{4, 3\}$ | 8 | 12 | 6 | 2 |
+| octahedron | $\{3, 4\}$ | 6 | 12 | 8 | 2 |
+| dodecahedron | $\{5, 3\}$ | 20 | 30 | 12 | 2 |
+| icosahedron | $\{3, 5\}$ | 12 | 30 | 20 | 2 |
+
+Swapping $p$ and $q$ swaps $V$ and $F$: the cube and octahedron are **dual** (put a vertex in the centre of each face of one, and you get the other), as are the dodecahedron and icosahedron; the tetrahedron is dual to itself.
+
+</Example>
+
+<Example title="Four surfaces from one square">
+
+Glue the sides of a square in pairs. With the words read anticlockwise from the bottom-left corner:
+
+- $a\,b\,a^{-1}b^{-1}$ (opposite sides, both pairs parallel): all four corners become one vertex. $V = 1$, $E = 2$, $F = 1$, so $\chi = 0$: the **torus**.
+- $a\,b\,a^{-1}b$ (one pair parallel, one pair reversed): again one vertex, $\chi = 0$, but walking across the reversed pair of sides turns left into right: the **Klein bottle**, non-orientable.
+- $a\,a^{-1}b\,b^{-1}$ (adjacent sides folded together): three vertices, so $\chi = 3 - 2 + 1 = 2$: the **sphere** (fold the square like an envelope).
+- $a\,b\,a\,b$ (both pairs reversed): the corners form two classes, $\chi = 2 - 2 + 1 = 1$: the **real projective plane**, non-orientable.
+
+Gluing only one pair, $a \cdots a^{-1}$ gives a cylinder, and $a \cdots a$ (with a half twist) the **Möbius band**: $V = 2$, $E = 3$ (the glued side and the two free sides), $F = 1$, so $\chi = 0$.
+
+</Example>
+
+<Figure caption="The four square gluings. Sides with the same colour and number of arrowheads are glued so that the arrows match. From the left: torus a b a⁻¹ b⁻¹, Klein bottle a b a⁻¹ b, sphere a a⁻¹ b b⁻¹, projective plane a b a b.">
+<svg viewBox="0 0 450 135" role="img" aria-label="Four squares with arrows on their sides indicating how opposite or adjacent sides are glued to form a torus, a Klein bottle, a sphere and a projective plane">
+  <rect x="20" y="20" width="80" height="80" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <polygon points="55,95 65,100 55,105" fill="var(--gold)" />
+  <polygon points="95,69 100,59 105,69" fill="var(--human)" />
+  <polygon points="95,61 100,51 105,61" fill="var(--human)" />
+  <polygon points="55,15 65,20 55,25" fill="var(--gold)" />
+  <polygon points="15,69 20,59 25,69" fill="var(--human)" />
+  <polygon points="15,61 20,51 25,61" fill="var(--human)" />
+  <text x="60" y="122" textAnchor="middle" fontSize="12" fill="var(--ink-2)">torus</text>
+  <rect x="130" y="20" width="80" height="80" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <polygon points="165,95 175,100 165,105" fill="var(--gold)" />
+  <polygon points="205,69 210,59 215,69" fill="var(--human)" />
+  <polygon points="205,61 210,51 215,61" fill="var(--human)" />
+  <polygon points="165,15 175,20 165,25" fill="var(--gold)" />
+  <polygon points="125,51 130,61 135,51" fill="var(--human)" />
+  <polygon points="125,59 130,69 135,59" fill="var(--human)" />
+  <text x="170" y="122" textAnchor="middle" fontSize="12" fill="var(--ink-2)">Klein bottle</text>
+  <rect x="240" y="20" width="80" height="80" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <polygon points="275,95 285,100 275,105" fill="var(--gold)" />
+  <polygon points="315,55 320,65 325,55" fill="var(--gold)" />
+  <polygon points="289,15 279,20 289,25" fill="var(--human)" />
+  <polygon points="281,15 271,20 281,25" fill="var(--human)" />
+  <polygon points="235,69 240,59 245,69" fill="var(--human)" />
+  <polygon points="235,61 240,51 245,61" fill="var(--human)" />
+  <text x="280" y="122" textAnchor="middle" fontSize="12" fill="var(--ink-2)">sphere</text>
+  <rect x="350" y="20" width="80" height="80" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <polygon points="385,95 395,100 385,105" fill="var(--gold)" />
+  <polygon points="425,69 430,59 435,69" fill="var(--human)" />
+  <polygon points="425,61 430,51 435,61" fill="var(--human)" />
+  <polygon points="395,15 385,20 395,25" fill="var(--gold)" />
+  <polygon points="345,51 350,61 355,51" fill="var(--human)" />
+  <polygon points="345,59 350,69 355,59" fill="var(--human)" />
+  <text x="390" y="122" textAnchor="middle" fontSize="12" fill="var(--ink-2)">projective plane</text>
+</svg>
+</Figure>
+
+<Example title="Non-examples and boundary cases">
+
+- The picture frame (a polyhedron with a tunnel) has $\chi = 16 - 32 + 16 = 0$: Euler's "$= 2$" is a theorem about solids *without holes*, not about every polyhedron.
+- Two cubes sharing a single vertex: $V = 15$, $E = 24$, $F = 12$, so $V - E + F = 3$. This is not a surface (the shared vertex has no disc neighbourhood), which is why no theorem about surfaces predicts it.
+
+</Example>
+
+</Section>
+
+<Section id="euler" kind="proof" title="Euler's formula and its consequences">
+
+<Theorem name="Theorem (Euler's formula)">
+
+Every connected plane graph with $V$ vertices, $E$ edges and $F$ faces satisfies $V - E + F = 2$.
+
+</Theorem>
+
+<Proof>
+
+We use two facts about polygonal curves in the plane: **(J)** a closed polygonal curve without self-intersections separates the plane into exactly two regions, and each edge of the curve borders both (the polygonal Jordan curve theorem, which has an elementary proof); **(L)** an edge ending at a vertex of degree $1$ has the same face on both sides (one can walk around its free end).
+
+Induction on $E$. If $E = 0$, the graph is a single vertex: $1 - 0 + 1 = 2$. Let $E \ge 1$.
+
+*If some vertex has degree $1$*, delete it together with its edge. The graph stays connected, and by (L) the number of faces does not change: $V$ and $E$ each drop by $1$, so $V - E + F$ is unchanged.
+
+*Otherwise every vertex has degree at least $2$.* Then the graph contains a cycle: walk along edges without immediately reversing; since there are finitely many vertices, some vertex repeats, and the walk between its two visits is a cycle. Delete one edge $e$ of this cycle. The graph stays connected (the rest of the cycle still joins the ends of $e$). By (J), the two sides of $e$ lie in different faces — one inside the cycle, one outside — and deleting $e$ merges them into one. So $E$ and $F$ each drop by $1$, and $V - E + F$ is unchanged.
+
+In both cases the smaller graph satisfies the formula by induction, hence so does the original.
+
+</Proof>
+
+The proof shows that $V - E + F$ is unchanged by deleting a "leaf" or a "cycle edge", and these moves reduce any connected graph to a single vertex. In the language of Mathlib, the leaf-deletion half is the statement that a tree with $V$ vertices has $V - 1$ edges.
+
+<Theorem name="Corollary (convex polyhedra)">
+
+Every convex polyhedron satisfies $V - E + F = 2$.
+
+</Theorem>
+
+<Proof>
+
+Choose a face $f$ and a point just outside the polyhedron near the middle of $f$, and project the polyhedron from that point onto the plane of $f$ (looking through $f$, the whole polyhedron appears inside it — a *Schlegel diagram*). Convexity makes this a plane graph whose bounded faces are the other $F - 1$ faces of the polyhedron and whose outer face corresponds to $f$. It has the same $V$, $E$ and $F$, and it is connected, so Euler's formula applies.
+
+</Proof>
+
+<Theorem name="Theorem (there are exactly five Platonic solids)">
+
+If a convex polyhedron has every face a $p$-gon and $q$ faces at every vertex ($p, q \ge 3$), then $\{p, q\}$ is one of $\{3, 3\}, \{3, 4\}, \{4, 3\}, \{3, 5\}, \{5, 3\}$, and $V, E, F$ are as in the table.
+
+</Theorem>
+
+<Proof>
+
+Each edge borders two faces and each face has $p$ edges, so $pF = 2E$; each edge has two ends and each vertex has $q$ edges, so $qV = 2E$. Substituting $V = 2E/q$ and $F = 2E/p$ into Euler's formula:
+
+$$
+\frac{2E}{q} - E + \frac{2E}{p} = 2 \quad\Longleftrightarrow\quad \frac1p + \frac1q = \frac12 + \frac1E .
+$$
+
+So $\frac1p + \frac1q > \frac12$, i.e. $2q + 2p > pq$, i.e. $(p - 2)(q - 2) < 4$. With $p, q \ge 3$ both factors are at least $1$, so each is at most $3$: $p, q \le 5$, and the only pairs are the five listed. For each, $E = \left(\frac1p + \frac1q - \frac12\right)^{-1}$ gives $6, 12, 12, 30, 30$, and then $V = 2E/q$, $F = 2E/p$. All five exist (their coordinates are in the computation section).
+
+</Proof>
+
+The same counting gives two famous results.
+
+<Theorem name="Theorem (K₅ and K₃,₃ are not planar)">
+
+A simple planar graph (no loops or multiple edges) with $V \ge 3$ vertices has $E \le 3V - 6$; if it has no triangles, $E \le 2V - 4$. Hence the complete graph $K_5$ and the complete bipartite graph $K_{3,3}$ are not planar.
+
+</Theorem>
+
+<Proof>
+
+We may assume the graph is connected (otherwise add edges between components; this only strengthens the inequality to prove). In a plane drawing with $V \ge 3$, every face is bounded by at least $3$ edges (at least $4$ if there are no triangles), and each edge borders at most two faces, so $3F \le 2E$ (or $4F \le 2E$). Substituting $F = 2 - V + E$: $3(2 - V + E) \le 2E$, i.e. $E \le 3V - 6$ (respectively $E \le 2V - 4$). $K_5$ has $V = 5$, $E = 10 > 9$. $K_{3,3}$ is bipartite, so has no triangles, and $E = 9 > 8$.
+
+</Proof>
+
+The $K_{3,3}$ statement is the **three utilities puzzle**: three houses cannot each be joined to water, gas and electricity by non-crossing pipes in the plane. On a torus they can — a hint that $\chi$ governs graph drawing on other surfaces too.
+
+<Theorem name="Theorem (twelve pentagons)">
+
+If every face of a polyhedron with $V - E + F = 2$ is a pentagon or a hexagon, and exactly three faces meet at each vertex, then there are exactly $12$ pentagons.
+
+</Theorem>
+
+<Proof>
+
+Let there be $P$ pentagons and $H$ hexagons. Counting edge–face incidences, $5P + 6H = 2E$; counting edge–vertex incidences, $3V = 2E$. Then $6(V - E + F) = 4E - 6E + 6P + 6H = 6P + 6H - 2E = 6P + 6H - (5P + 6H) = P$, and $6(V - E + F) = 12$.
+
+</Proof>
+
+This is why footballs, the carbon molecule $\mathrm{C}_{60}$ (buckminsterfullerene), geodesic domes and many virus shells all have exactly twelve five-fold points, while the number of hexagons varies.
+
+<Theorem name="Theorem (Descartes: the total angle defect is 4π)">
+
+At a vertex of a polyhedron, the **angle defect** is $2\pi$ minus the sum of the face angles there. For a polyhedron with $V - E + F = 2$, the defects add up to $4\pi$; in general they add up to $2\pi(V - E + F)$.
+
+</Theorem>
+
+<Proof>
+
+The angles of an $n$-gon add up to $(n - 2)\pi$, and each edge borders two faces, so the sides of all faces add up to $2E$. Summing all face angles face by face, $\sum_{\text{faces}} (n_f - 2)\pi = (2E - 2F)\pi$. The total defect is $2\pi V - (2E - 2F)\pi = 2\pi(V - E + F)$.
+
+</Proof>
+
+For a cube, each vertex has three right angles, so defect $\pi/2$, and $8 \cdot \frac\pi2 = 4\pi$. For the picture frame, the outer corners have defect $+\frac\pi2$ and the inner corners $-\frac\pi2$, and they cancel. This "discrete curvature" is the ancestor of the Gauss–Bonnet theorem (see the viewpoints).
+
+</Section>
+
+<Section id="classification" kind="proof" title="Surfaces, invariance and classification">
+
+<Theorem name="Theorem (invariance of the Euler characteristic)">
+
+Any two subdivisions of the same surface — or of homeomorphic surfaces — have the same $V - E + F$.
+
+</Theorem>
+
+*Proof sketch.* Each of the elementary refinements — a new vertex on an edge ($V + 1$, $E + 1$), a new edge across a face ($E + 1$, $F + 1$), a new vertex inside a face joined to a corner ($V + 1$, $E + 1$) — leaves $V - E + F$ unchanged, and so does their inverse. The hard part is that any two subdivisions have a common refinement reachable by such moves; for arbitrary (wild) subdivisions this needs care, and the cleanest complete proof uses homology: $\chi = b_0 - b_1 + b_2$, where the **Betti numbers** $b_i$ are ranks of homology groups, which are homeomorphism invariants by construction (see <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>). That every surface has a subdivision at all is Tibor Radó's theorem (1925).
+
+<Theorem name="Proposition (connected sums)">
+
+$\chi(M \mathbin{\#} N) = \chi(M) + \chi(N) - 2$.
+
+</Theorem>
+
+<Proof>
+
+Choose subdivisions in which $M$ and $N$ each have an $n$-gon face, and form the connected sum by removing these two faces and gluing their boundary polygons edge to edge. The $n$ vertices and $n$ edges of the two boundaries are identified in pairs, and two faces are lost: $V = V_M + V_N - n$, $E = E_M + E_N - n$, $F = F_M + F_N - 2$. Subtracting, $\chi = \chi(M) + \chi(N) - 2$.
+
+</Proof>
+
+So the connected sum of $g$ tori, $\Sigma_g = T \mathbin{\#} \cdots \mathbin{\#} T$, has $\chi = 2 - 2g$, and the connected sum of $k$ projective planes, $N_k$, has $\chi = 2 - k$. In word form, $\Sigma_g$ is $a_1 b_1 a_1^{-1} b_1^{-1} \cdots a_g b_g a_g^{-1} b_g^{-1}$ (a $4g$-gon) and $N_k$ is $a_1 a_1 a_2 a_2 \cdots a_k a_k$ (a $2k$-gon). For example, the double torus is an octagon $abAB\,cdCD$ (writing capitals for inverses), with all eight corners glued to one vertex: $\chi = 1 - 4 + 1 = -2$.
+
+<Theorem name="Theorem (classification of closed surfaces)">
+
+Every closed connected surface is homeomorphic to exactly one of: the sphere $S^2$; a connected sum $\Sigma_g$ of $g \ge 1$ tori ($\chi = 2 - 2g$, orientable); a connected sum $N_k$ of $k \ge 1$ projective planes ($\chi = 2 - k$, non-orientable). In particular, two closed connected surfaces are homeomorphic if and only if they have the same Euler characteristic and are both orientable or both non-orientable.
+
+</Theorem>
+
+*Proof sketch.* (1) Triangulate the surface (Radó). (2) Cut it open along edges of a spanning tree of the dual graph, obtaining a single polygon with paired sides, described by a word. (3) Simplify the word by cut-and-paste moves that do not change the surface: cancel adjacent pairs $aa^{-1}$; bring each twisted pair $\cdots a \cdots a \cdots$ together as $aa$; arrange the remaining pairs into commutators $aba^{-1}b^{-1}$; reduce to a word with a single vertex class. (4) Use the relation $T \mathbin{\#} N_1 \cong N_3$ (Walther von Dyck, 1888) to remove tori when twisted pairs are present. The resulting normal forms are the list above, and they are distinguished by $\chi$ and orientability, which are invariants. Complete proofs: Massey (1967, ch. 1), Armstrong (1983, ch. 7), Gallier and Xu (2013); Conway's elegant "ZIP proof" is written up by Francis and Weeks (1999).
+
+<Example title="Identifying surfaces from words">
+
+- $abcABC$ (a hexagon, capitals for inverses): orientable (each letter once each way). Chasing corners gives $2$ vertex classes, so $\chi = 2 - 3 + 1 = 0$: a **torus**.
+- $aabbcc$: non-orientable, one vertex class, $\chi = 1 - 3 + 1 = -1$: $N_3$, **Dyck's surface**.
+- $abABcc$: $T \mathbin{\#} N_1$; non-orientable with $\chi = -1$. By the classification it is $N_3$ — Dyck's theorem, recovered by counting.
+- $aabb$: non-orientable, $\chi = 0$: the Klein bottle, which is therefore $N_2 = \R P^2 \mathbin{\#} \R P^2$.
+
+</Example>
+
+The **Klein bottle** cannot be embedded in $\R^3$ — a closed surface embedded in $\R^3$ separates space into an inside and an outside and is therefore orientable — so its familiar glass models pass through themselves. In $\R^4$ there is room: use the fourth coordinate to lift the tube where it would cross, and the self-intersection disappears. The same holds for every non-orientable closed surface.
+
+</Section>
+
+<Section id="formal" kind="formal" title="What Lean checks">
+
+Mathlib has graphs (`SimpleGraph`), trees and spanning trees, but not yet plane drawings or their faces, so Euler's formula itself is **not formalised** here. What is formalised is all the counting that follows from it, with Euler's formula taken as a hypothesis (`V + F = E + 2`, in natural numbers to avoid subtraction). The definitions:
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.Cells" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.euler" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.euler_examples" />
+
+The Platonic solids: the proof multiplies Euler's formula by $pq$, bounds $p, q \le 5$ by nonlinear arithmetic (`nlinarith`), and then checks the remaining nine cases (`interval_cases`, `omega`) — exactly the human proof, including the values of $V$, $E$, $F$:
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.platonic_solids" />
+
+The other consequences are linear arithmetic once the incidence counts are written down:
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.twelve_pentagons" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.edge_bound" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.k5_not_planar" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.k33_not_planar" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.descartes_defect" />
+
+The connected-sum formula and the invariance of $\chi$ under the elementary refinements (but not the existence of common refinements):
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.connectedSum" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.euler_connected_sum" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.subdivision_invariant" />
+
+Finally, Mathlib's graph theory supplies the base case of the proof of Euler's formula (a tree has $E = V - 1$, so with its single face $V - E + F = 2$) and the inequality $V \le E + 1$ for connected graphs:
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.tree_edges" />
+
+<Lean decl="Lumenary.SurfacesEulerCharacteristic.connected_edges" />
+
+**Honest summary.** Formalised: the combinatorial consequences of Euler's formula, Descartes's theorem as an identity about angle sums, the connected-sum formula, the refinement moves, and the tree case. Not formalised: plane drawings, faces and the Jordan curve theorem (Mathlib has the topological Jordan curve theorem only in special forms), surfaces as topological spaces with subdivisions, the topological invariance of $\chi$, and the classification theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting with a computer">
+
+The first experiment builds the five Platonic solids from explicit coordinates — for instance the icosahedron's twelve vertices are the cyclic permutations of $(0, \pm1, \pm\varphi)$ with $\varphi$ the golden ratio. It finds the edges as the pairs of vertices at minimal distance and the faces as the shortest cycles of the edge graph, checks Euler's formula, and adds up Descartes's angle defects from the actual angles. It ends with the picture frame, whose defects cancel.
+
+<Python id="surfaces_euler_characteristic_platonic" />
+
+The second experiment turns words into surfaces: it chases corners to find $V$, computes $\chi$ and orientability, and names the result by the classification theorem. Then it does something no hand could: it glues the sides of a $2n$-gon in **every** orientable way (there are $1 \cdot 3 \cdot 5 \cdots (2n - 1)$ of them) and sorts the resulting surfaces by genus.
+
+<Python id="surfaces_euler_characteristic_gluing" />
+
+The genus-$0$ counts $1, 2, 5, 14, 42$ are the **Catalan numbers**: a gluing gives a sphere exactly when the pairing of sides is "non-crossing", like a correct arrangement of brackets. The full table is given by the Harer–Zagier formula (1986), which arose in the study of moduli spaces of curves and of random matrices. The experiment checks $n \le 5$ only; the theorem covers all $n$.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: a flatlander on a glued square">
+
+Walk the flatlander across the sides of the square. On the torus it always comes back the same way round. On the Klein bottle and the projective plane, crossing a reversed pair of sides brings it back **mirror-reversed** — its flag changes hands. That is non-orientability, seen from inside the surface. The tiling view shows the torus and Klein bottle unrolled into the plane.
+
+<SurfaceGluing surface="klein" subtitle="Which surfaces turn the flatlander into its mirror image? Compare the χ shown for each with the corner count in the lesson." />
+
+<SurfaceGluing surface="torus" surfaces={["torus", "klein"]} showTiling title="Unrolled: copies of the square tile the plane" subtitle="For the Klein bottle, alternate columns are flipped — the glide reflection of transformation geometry." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Topology ignores all structure."** Topology forgets distances and angles, but it keeps exactly the properties preserved by continuous maps with continuous inverses — connectedness, compactness, orientability, the number of holes, the Euler characteristic. These are rigid: no amount of stretching changes $\chi$. A coffee mug and a doughnut are the same to a topologist; a sphere and a doughnut are not.
+
+</Misconception>
+
+<Misconception>
+
+**"A Klein bottle must intersect itself."** Every *picture* or glass model of it in $\R^3$ does, because no closed non-orientable surface embeds in $\R^3$. But the Klein bottle itself is a perfectly good surface (a square with glued sides), and it embeds in $\R^4$, where the extra dimension lets the tube pass "around" itself.
+
+</Misconception>
+
+<Misconception>
+
+**"Euler's formula holds for every polyhedron."** It holds for polyhedra that are topologically spheres — for example all convex ones. A polyhedron with a tunnel through it, like the picture frame, has $V - E + F = 0$, and with $g$ tunnels, $2 - 2g$. (Simon Lhuilier pointed this out in 1813; the history of such "exceptions" is the subject of Lakatos's *Proofs and Refutations*.)
+
+</Misconception>
+
+<Misconception>
+
+**"The Euler characteristic alone determines the surface."** The torus and the Klein bottle both have $\chi = 0$. One also needs orientability — and then, by the classification theorem, the pair (χ, orientability) is a complete invariant for closed connected surfaces.
+
+</Misconception>
+
+<Misconception>
+
+**"The Möbius band is a one-sided closed surface."** It has a boundary circle, so it is a surface *with boundary*. Gluing a disc to its boundary closes it up into the projective plane: $\chi = 0 + 1 = 1$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Homology, vector fields and the hairy ball">
+
+In algebraic topology, $\chi = b_0 - b_1 + b_2$, where $b_0$ counts connected pieces, $b_1$ independent loops that do not bound, and $b_2$ closed two-dimensional pieces (for a closed orientable surface $b_0 = b_2 = 1$ and $b_1 = 2g$). This explains the invariance at once. A deeper link: by the **Poincaré–Hopf theorem**, for any continuous tangent vector field on a closed surface with finitely many zeros, the sum of the indices of the zeros equals $\chi$. Since $\chi(S^2) = 2 \ne 0$, every tangent vector field on the sphere vanishes somewhere — the **hairy ball theorem**: you cannot comb a hairy ball flat, and at every moment there is a point on Earth where the horizontal wind velocity is zero. The torus, with $\chi = 0$, has nowhere-vanishing fields (flow around the tube). See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Gauss–Bonnet: curvature knows the topology">
+
+Descartes's theorem has a smooth version, the **Gauss–Bonnet theorem**: for a closed surface with a Riemannian metric, $\int_M K\, dA = 2\pi \chi(M)$, where $K$ is the Gaussian curvature. However you dent a sphere, its total curvature stays $4\pi$; any metric on a torus has as much negative as positive curvature. Combined with the **uniformisation theorem**, this sorts surfaces geometrically: those with $\chi > 0$ (sphere, projective plane) carry metrics of constant curvature $+1$, those with $\chi = 0$ (torus, Klein bottle) flat metrics — the square with glued sides — and all the others hyperbolic metrics of curvature $-1$, built from polygons in the <TopicLink id="math.geom.non-euclidean-geometry">hyperbolic plane</TopicLink>. For curvature $-1$, Gauss–Bonnet gives the area: $-\text{area} = 2\pi\chi$, so a genus-$2$ surface has area $4\pi$. See <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Maps, colourings and counting gluings">
+
+Euler's formula is the basic tool of topological graph theory. It shows that every planar graph has a vertex of degree at most $5$ (since $E \le 3V - 6$ forces average degree below $6$), which gives a short proof that planar maps can be coloured with $6$ colours, and with more work $5$; the four colour theorem (Appel and Haken, 1976) needed a computer. On other surfaces the answer is governed by $\chi$: Heawood's bound, proved sharp by Ringel and Youngs (1968), says maps on a closed surface with $\chi \le 0$, other than the Klein bottle, need at most $\left\lfloor \frac{7 + \sqrt{49 - 24\chi}}{2} \right\rfloor$ colours — $7$ on the torus. And counting gluings of polygons, as in the computation section, leads to the Catalan numbers and the Harer–Zagier formula. See <TopicLink id="math.discrete.graph-theory">graph theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The word is a group presentation">
+
+The word of a polygon gluing is also a presentation of the **fundamental group**: the torus $aba^{-1}b^{-1}$ has $\pi_1 = \langle a, b \mid aba^{-1}b^{-1} \rangle \cong \Z^2$, the projective plane $aa$ has $\pi_1 = \Z/2$, and $\Sigma_g$ has the surface group $\langle a_1, b_1, \dots, a_g, b_g \mid [a_1, b_1]\cdots[a_g, b_g] \rangle$. Abelianising gives the first homology group $H_1$: $\Z^{2g}$ for $\Sigma_g$ and $\Z^{k-1} \oplus \Z/2$ for $N_k$, which recovers $\chi$ and orientability algebraically. The Euler characteristic also behaves like a "size": it is multiplicative for coverings (an $n$-sheeted cover has $\chi$ multiplied by $n$, so the sphere double covers $\R P^2$ and $2 = 2 \cdot 1$) and for products. See <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Twelve defects: molecules, viruses and wind">
+
+Nature obeys the twelve-pentagon theorem. Buckminsterfullerene $\mathrm{C}_{60}$ (discovered in 1985 by Kroto, Curl and Smalley) is a football of carbon atoms with $12$ pentagons and $20$ hexagons, and every closed fullerene cage of three-bonded carbon atoms with only pentagonal and hexagonal rings has exactly $12$ pentagons. Many viruses have icosahedral shells whose protein units form hexamers with exactly $12$ pentamers (the Caspar–Klug theory, 1962). When a large number of particles crystallises on a sphere, the hexagonal order must contain defects of total "topological charge" $6\chi = 12$. And the hairy ball theorem is a theorem about weather: a continuous horizontal wind field on the globe must have a calm point somewhere. These are honest consequences of $\chi(S^2) = 2$, applied to idealised models.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Regular solids.** Book XIII of **Euclid**'s *Elements* (c. 300 BCE) constructs the five regular solids and proves there are no others; the classification is traditionally credited to **Theaetetus**, and **Plato**'s *Timaeus* associated them with the elements, hence "Platonic". In 10th-century Baghdad, **Abū al-Wafāʾ al-Būzjānī**'s book of geometric constructions for craftsmen included constructions of polyhedra inscribed in a sphere. **Johannes Kepler** (1619) studied the regular and semi-regular solids and the star polyhedra.
+- **Descartes and Euler.** **René Descartes**'s manuscript *De solidorum elementis* (c. 1630) contains the angle-defect theorem; it was lost, survived in a copy made by **Gottfried Wilhelm Leibniz** in 1676, and was published only in 1860. **Leonhard Euler** stated $V - E + F = 2$ in a letter to **Christian Goldbach** (1750) and published it in 1758; his attempted proof had a gap.
+- **Proofs and exceptions.** **Adrien-Marie Legendre** gave the first correct proof (1794), using spherical geometry and the area formula for spherical triangles. **Augustin-Louis Cauchy** (1813) gave the proof by flattening and reducing the graph. **Simon Lhuilier** (1813) found the polyhedra with tunnels, for which $V - E + F = 2 - 2g$. Imre Lakatos's *Proofs and Refutations* (1976) is a celebrated dialogue built on this history.
+- **Surfaces.** **August Möbius** and **Johann Benedict Listing** independently discovered the Möbius band in 1858. **Felix Klein** described the Klein bottle in 1882. **Walther von Dyck** (1888) classified closed surfaces, including the relation $T \mathbin{\#} \R P^2 \cong 3\R P^2$, and **Henri Poincaré**'s *Analysis Situs* (1895) introduced the Betti numbers and the alternating sum. The first fully rigorous proof of the classification, for triangulated surfaces, is due to **Henry Brahana** (1921), building on work of **Max Dehn** and **Poul Heegaard** (1907); **Tibor Radó** (1925) proved that every surface can be triangulated.
+- **Today.** The Euler characteristic has been generalised to all dimensions and many settings — from Poincaré–Hopf and Gauss–Bonnet–Chern to the Euler characteristic of categories — and Euler's formula remains a starting point for graph theory, chemistry and computer graphics, where meshes are checked with $V - E + F$.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- David S. Richeson, *Euler's Gem: The Polyhedron Formula and the Birth of Topology* (2008) — the whole story, from Plato to Poincaré, for a general reader.
+- Imre Lakatos, *Proofs and Refutations: The Logic of Mathematical Discovery* (1976) — a dialogue about what Euler's formula really says.
+- Jean Gallier and Dianna Xu, *A Guide to the Classification Theorem for Compact Surfaces* (2013) — a complete, careful proof.
+- M. A. Armstrong, *Basic Topology* (1983) — surfaces, the Euler characteristic, triangulations and the classification theorem.
+- William S. Massey, *Algebraic Topology: An Introduction* (1967), chapter 1 — the classic account of the classification by cutting and pasting.
+- George K. Francis and Jeffrey R. Weeks, "Conway's ZIP proof", *American Mathematical Monthly* 106 (1999).
+- Jeffrey R. Weeks, *The Shape of Space* (1985; 2nd ed. 2002) — surfaces and three-dimensional manifolds, intuitively.
+
+</Section>

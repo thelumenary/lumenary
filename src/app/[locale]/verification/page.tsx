@@ -4,7 +4,7 @@ import path from "node:path";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, ShieldCheck, FlaskConical, ListChecks, UserX, XCircle } from "lucide-react";
 import { getT, resolveLocale } from "@/i18n/server";
-import { getComputeReport, getLeanReport, ROOT } from "@/lib/content";
+import { getComputeReport, getLeanReport, lessonSlugs, ROOT, trailSlugs } from "@/lib/content";
 import { href } from "@/lib/href";
 import { PageHeader } from "@/components/ui/PageHeader";
 
@@ -152,7 +152,7 @@ export default async function VerificationPage({ params }: { params: Promise<{ l
             <h2 className="text-xl font-semibold text-ink">{t("verification.limitations")}</h2>
             <ul className="prose-ui mt-3 text-sm">
               {[1, 2, 3, 4, 5].map((i) => (
-                <li key={i}>{t(`verification.limitationsList.l${i}`)}</li>
+                <li key={i}>{t(`verification.limitationsList.l${i}`, { lessons: lessonSlugs().length, trails: trailSlugs().length })}</li>
               ))}
             </ul>
           </section>

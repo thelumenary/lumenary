@@ -15,8 +15,11 @@ function findRegion(region?: string, decl?: string): LeanRegion | undefined {
   if (decl) {
     const r = getLeanReport()?.declarations.find((d) => d.name === decl)?.region;
     if (r) return regions.get(r);
-    const short = decl.split(".").pop()!;
-    return [...regions.values()].find((x) => x.id.endsWith(`.${short}`));
+    // Before the report lists it, use the region-id convention `<module_snake>.<name>`.
+    const parts = decl.split(".");
+    const short = parts.pop()!;
+    const mod = (parts.pop() ?? "").replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+    return regions.get(`${mod}.${short}`);
   }
   return undefined;
 }

@@ -1,0 +1,495 @@
+---
+slug: algorithm-design
+topic: math.comp.algorithm-design
+title: Algorithm design and analysis
+subtitle: Divide and conquer, greedy choice, dynamic programming and graph search — four ideas behind most efficient algorithms, and the proofs that tell you when each one is right and how fast it runs.
+level: ug1
+ages: Undergraduate (first or second year)
+minutes: 120
+order: 5019
+objectives:
+  - Design divide-and-conquer algorithms and analyse them with recurrences, proving that mergesort is correct and makes at most $n\lceil\log_2 n\rceil$ comparisons
+  - Prove that every comparison sort needs at least $\log_2 n! = \Theta(n \log n)$ comparisons in the worst case
+  - Prove the correctness of greedy algorithms by exchange arguments — Kruskal's algorithm via the cut property, and Dijkstra's algorithm when all edge weights are non-negative — and recognise when greedy choice fails
+  - Design dynamic-programming algorithms from an optimal-substructure recurrence, as for the longest common subsequence, and analyse their cost
+  - Use breadth-first search for unweighted distances and choose an appropriate algorithm for a graph problem
+narrators: []
+lean:
+  - Lumenary.AlgorithmDesign.mergeSort_perm
+  - Lumenary.AlgorithmDesign.mergeSort_sorted
+  - Lumenary.AlgorithmDesign.mergeComparisons
+  - Lumenary.AlgorithmDesign.mergeComparisons_le
+  - Lumenary.AlgorithmDesign.DecisionTree
+  - Lumenary.AlgorithmDesign.DecisionTree.leaves
+  - Lumenary.AlgorithmDesign.DecisionTree.height
+  - Lumenary.AlgorithmDesign.leaves_le_two_pow_height
+  - Lumenary.AlgorithmDesign.sorting_lower_bound
+  - Lumenary.AlgorithmDesign.five_items_need_seven
+  - Lumenary.AlgorithmDesign.four_items_need_five
+  - Lumenary.AlgorithmDesign.lcs
+  - Lumenary.AlgorithmDesign.lcs_optimal
+  - Lumenary.AlgorithmDesign.lcs_achieved
+  - Lumenary.AlgorithmDesign.lcs_example
+  - Lumenary.AlgorithmDesign.fibPair
+  - Lumenary.AlgorithmDesign.fibPair_eq
+  - Lumenary.AlgorithmDesign.greedyCoins
+  - Lumenary.AlgorithmDesign.greedy_not_optimal
+  - Lumenary.AlgorithmDesign.maximal_acyclic_is_tree
+  - Lumenary.AlgorithmDesign.tree_edges
+compute: [algorithm_design_sorting, algorithm_design_greedy, algorithm_design_lcs]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Four problems, four ideas">
+
+- A national statistics office in Jakarta must sort the records of 280 million people by an identity number. Comparing every pair would take about $4 \times 10^{16}$ comparisons; a good algorithm needs about $8 \times 10^{9}$.
+- A rural electrification agency in Malawi must connect twelve villages to a grid with as little cable as possible. A complete graph on twelve villages has $12^{10} \approx 6 \times 10^{10}$ spanning trees; we cannot try them all.
+- An ambulance dispatcher in São Paulo needs the fastest route from the station to every address in the city, recomputed whenever traffic changes.
+- A biologist in Nairobi compares a gene from a cassava virus with a gene from a related strain, looking for the longest stretch of shared structure — a **longest common subsequence** of two strings of thousands of letters.
+
+Each problem has an obvious but hopeless method: try everything. Each has a clever method that is fast, and — this is the mathematical part — **provably correct**. The four clever methods illustrate four ideas that account for a large share of practical algorithms: **divide and conquer** (sorting), **greedy choice** (the cable network and the routes), **dynamic programming** (the gene comparison) and **graph search**.
+
+This lesson builds on <TopicLink id="math.comp.algorithms-and-efficiency">algorithms, correctness and efficiency</TopicLink> (loop invariants, counting steps, growth rates) and <TopicLink id="math.discrete.graph-basics">graphs</TopicLink> (paths, connectivity, trees). The recurrences that measure divide-and-conquer algorithms are solved in <TopicLink id="math.discrete.recurrences-generating-functions">recurrences and generating functions</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Two questions for every algorithm">
+
+Every algorithm faces two questions: **Is it correct?** — does it always produce a right answer — and **how much does it cost?** — how many steps, as a function of the input size, in the worst case. The four ideas answer them in characteristic ways.
+
+- **Divide and conquer.** Split the problem into smaller instances of the same problem, solve them recursively, and combine. Correctness is proved by (strong) induction on the size; cost is measured by a recurrence such as $T(n) = 2T(n/2) + n$.
+- **Greedy.** Build a solution one piece at a time, always taking the piece that looks best right now, and never reconsider. Greedy algorithms are fast and simple — and often wrong. When they are right, the proof is usually an **exchange argument**: any optimal solution can be transformed, without getting worse, into one that agrees with the greedy choice.
+- **Dynamic programming.** Write the optimal value as a recurrence over **subproblems** (prefixes, sub-intervals, smaller capacities). If the same subproblems recur many times, compute each once and store it in a table. Correctness is the recurrence (proved by an "optimal substructure" argument); cost is (number of subproblems) × (work per subproblem).
+- **Graph search.** Explore a graph from a source, keeping a frontier of discovered but unexplored vertices. The order of exploration — a queue for breadth-first search, a stack for depth-first search, a priority queue for Dijkstra — decides what the search computes.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="cost model and running time">
+
+We measure cost by counting **basic operations** (comparisons, arithmetic on machine-sized numbers, reading or writing one memory cell), each taken to cost one unit. The **worst-case running time** $T(n)$ is the largest number of basic operations over all inputs of size $n$. We usually state it up to a constant factor, with $O$, $\Omega$ and $\Theta$ (defined in <TopicLink id="math.discrete.recurrences-generating-functions">recurrences and generating functions</TopicLink>).
+
+</Definition>
+
+<Definition term="loop invariant">
+
+A **loop invariant** is a statement that holds before the first iteration of a loop and is preserved by every iteration. If it holds when the loop stops, together with the stopping condition it proves what the loop achieves.
+
+</Definition>
+
+<Definition term="weighted graph, path weight, distance">
+
+A **weighted graph** is a graph (directed or undirected) with a real number $w(e)$ on each edge. The weight of a path is the sum of the weights of its edges. The **distance** $\delta(s, v)$ is the least weight of a path from $s$ to $v$ (and $\infty$ if there is none). A **shortest path** is a path achieving it.
+
+</Definition>
+
+<Definition term="spanning tree and minimum spanning tree">
+
+A **spanning tree** of a connected undirected graph $G = (V, E)$ is a subgraph that contains every vertex and is a tree (connected and acyclic); it has exactly $|V| - 1$ edges. A **minimum spanning tree** (MST) is a spanning tree of least total weight.
+
+</Definition>
+
+<Definition term="cut">
+
+A **cut** of a graph is a partition of its vertex set into two non-empty parts $S$ and $V \setminus S$. An edge **crosses** the cut if it has one endpoint in each part.
+
+</Definition>
+
+<Definition term="subsequence">
+
+A **subsequence** of a string $x_1 x_2 \cdots x_m$ is a string $x_{i_1} x_{i_2} \cdots x_{i_k}$ with $i_1 < i_2 < \cdots < i_k$ — obtained by deleting letters, keeping the order. A **longest common subsequence** (LCS) of two strings is a subsequence of both, of maximum length. For example, `BCBA` is an LCS of `ABCBDAB` and `BDCABA`.
+
+</Definition>
+
+</Section>
+
+<Section id="divide" kind="proof" title="Divide and conquer: mergesort and the limits of sorting">
+
+**Mergesort** sorts a list of $n$ items: if $n \le 1$, return it; otherwise split it into halves of sizes $\lfloor n/2 \rfloor$ and $\lceil n/2 \rceil$, sort each half recursively, and **merge** the two sorted halves by repeatedly moving the smaller of the two front items to the output.
+
+<Theorem name="Lemma (merging)">
+
+Merging sorted lists of lengths $p$ and $q$ produces a sorted list containing exactly their items, using at most $p + q - 1$ comparisons.
+
+</Theorem>
+
+<Proof>
+
+Loop invariant: *the output so far is sorted, consists of the items already removed from the two lists, and every output item is $\le$ every item still in either list.* It holds at the start (empty output). Each step compares the two front items and moves the smaller, $m$, to the output; $m$ is $\ge$ the previous output items (by the invariant) and $\le$ both fronts, hence $\le$ everything remaining, because each list is sorted. So the invariant is preserved. When one list is empty, the rest of the other list is appended; it is sorted and its items are $\ge$ the output, so the final output is sorted. Each comparison moves one item, and no comparison is needed for the last item, so at most $p + q - 1$ comparisons are made.
+
+</Proof>
+
+<Theorem name="Theorem 1 (mergesort)">
+
+Mergesort returns its input in sorted order, and on $n \ge 1$ items it makes at most $n\lceil \log_2 n \rceil$ comparisons.
+
+</Theorem>
+
+<Proof>
+
+*Correctness*, by strong induction on $n$: lists of length $\le 1$ are sorted; for $n \ge 2$ both halves are shorter, so by the inductive hypothesis they come back sorted, and the lemma shows that merging them gives a sorted rearrangement of the input.
+
+*Cost.* Let $C(n)$ be the worst-case number of comparisons. Then $C(0) = C(1) = 0$ and, by the lemma, $C(n) \le C(\lfloor n/2 \rfloor) + C(\lceil n/2 \rceil) + n - 1$. We show $C(n) \le n k$ where $k = \lceil \log_2 n \rceil$, by strong induction. For $n \le 1$ it is clear. For $n \ge 2$, $n \le 2^k$ gives $\lfloor n/2 \rfloor \le \lceil n/2 \rceil \le 2^{k-1}$, so $\lceil \log_2 \lceil n/2 \rceil \rceil \le k - 1$, and by the inductive hypothesis applied to both halves
+
+$$
+C(n) \le \lfloor n/2 \rfloor (k - 1) + \lceil n/2 \rceil (k - 1) + n - 1 = n(k - 1) + n - 1 < nk.
+$$
+
+</Proof>
+
+So mergesort is $O(n \log n)$. Can any sorting method do fundamentally better? Not if it learns about the input only by comparing items.
+
+<Theorem name="Theorem 2 (the comparison lower bound)">
+
+Every algorithm that sorts $n$ distinct items using only comparisons makes at least $\lceil \log_2 n! \rceil$ comparisons on some input. Moreover $\log_2 n! \ge \frac{n}{2}\log_2 \frac{n}{2}$, so the bound is $\Omega(n \log n)$.
+
+</Theorem>
+
+<Proof>
+
+Fix $n$ and model the algorithm as a **decision tree**: the root is its first comparison "is $a_i \le a_j$?", the two subtrees describe what it does after each answer, and each leaf is a point where it stops and outputs an ordering. On an input it follows one root-to-leaf path, and the number of comparisons is the length of that path; the worst case is the **height** $h$ of the tree.
+
+Different orderings of the input must reach different leaves: if two of the $n!$ orderings reached the same leaf, the algorithm would rearrange them in the same way, and it cannot sort both. So the tree has at least $n!$ leaves. A binary tree of height $h$ has at most $2^h$ leaves (induction: each subtree of the root has height at most $h - 1$, hence at most $2^{h-1}$ leaves). Therefore $n! \le 2^h$, i.e. $h \ge \log_2 n!$.
+
+For the estimate, at least $n/2$ of the factors of $n! = 1 \cdot 2 \cdots n$ are $\ge n/2$, so $n! \ge (n/2)^{n/2}$.
+
+</Proof>
+
+The two bounds nearly meet: for $n = 5$ the lower bound is $\lceil \log_2 120 \rceil = 7$ and mergesort's worst case is $8$ (the first experiment below computes both exactly). Stirling's formula gives $\log_2 n! = n\log_2 n - n\log_2 e + O(\log n)$, while mergesort's worst case is $n\log_2 n - n + 1$ when $n$ is a power of two: mergesort is within about $0.44n$ comparisons of optimal.
+
+**More divide and conquer.** Binary search satisfies $T(n) = T(n/2) + 1$, so $T(n) = O(\log n)$. Karatsuba's method multiplies two $n$-digit numbers with three half-size multiplications instead of four, using $(a + b)(c + d) - ac - bd = ad + bc$; its recurrence $T(n) = 3T(n/2) + O(n)$ gives $O(n^{\log_2 3}) \approx O(n^{1.585})$. The **master theorem** in <TopicLink id="math.discrete.recurrences-generating-functions">recurrences and generating functions</TopicLink> solves such recurrences in general.
+
+</Section>
+
+<Section id="search" kind="proof" title="Graph search: breadth first">
+
+**Breadth-first search** (BFS) from a source $s$ keeps a **queue**. Initially $s$ is marked with $\mathrm{dist}(s) = 0$ and is the only vertex in the queue. Repeatedly remove the vertex $u$ at the front; for each unmarked neighbour $v$, mark it with $\mathrm{dist}(v) = \mathrm{dist}(u) + 1$ and add it to the back of the queue.
+
+<Theorem name="Theorem 3 (BFS computes distances)">
+
+In an unweighted graph (every edge of length $1$), BFS from $s$ marks exactly the vertices reachable from $s$, and $\mathrm{dist}(v)$ equals the number of edges $\delta(s, v)$ on a shortest path from $s$ to $v$. It runs in time $O(|V| + |E|)$.
+
+</Theorem>
+
+<Proof>
+
+First, the queue always holds marked vertices whose $\mathrm{dist}$ values are non-decreasing from front to back and differ by at most $1$: this holds initially and is preserved, because vertices added while processing $u$ get $\mathrm{dist}(u) + 1$, which is at least every value in the queue and at most one more than the front. Hence vertices are removed in non-decreasing order of $\mathrm{dist}$.
+
+Every marked $v$ has $\mathrm{dist}(v) \ge \delta(s, v)$, since following the "marked by" links back from $v$ gives a path of length $\mathrm{dist}(v)$ from $s$. Suppose some reachable $v$ is unmarked or has $\mathrm{dist}(v) > \delta(s, v)$, and choose one with $\delta(s, v) = k$ as small as possible; $v \ne s$, so $k \ge 1$. Let $u$ be the vertex before $v$ on a shortest path; then $\delta(s, u) = k - 1$, so $u$ was marked with $\mathrm{dist}(u) = k - 1$ and was eventually removed from the queue. At that moment either $v$ was unmarked — and then it got $\mathrm{dist}(v) = k$ — or it was already marked, by a vertex removed no later than $u$, whose $\mathrm{dist}$ is at most $k - 1$, so $\mathrm{dist}(v) \le k$. Either way $\mathrm{dist}(v) = k$, a contradiction.
+
+Each vertex enters the queue at most once and each edge is examined at most twice (once from each end), so the time is $O(|V| + |E|)$.
+
+</Proof>
+
+**Depth-first search** (DFS) explores as far as possible along each branch before backtracking (a stack instead of a queue). It also runs in $O(|V| + |E|)$ and finds connected components, cycles, and a **topological order** of a directed acyclic graph (list vertices in decreasing order of the time DFS finishes with them).
+
+</Section>
+
+<Section id="greedy" kind="proof" title="Greedy algorithms and exchange arguments">
+
+**Kruskal's algorithm** for a minimum spanning tree: sort the edges by weight; go through them in that order, adding an edge to a growing forest $F$ unless it would create a cycle (i.e. unless its endpoints are already in the same component of $F$).
+
+<Theorem name="Theorem 4 (Kruskal)">
+
+For a connected graph with real edge weights, Kruskal's algorithm returns a minimum spanning tree.
+
+</Theorem>
+
+<Proof>
+
+We prove the invariant: *after each step, the forest $F$ is contained in some minimum spanning tree.* It holds at the start ($F$ empty; an MST exists because there are finitely many spanning trees and at least one, $G$ being connected).
+
+Suppose $F \subseteq T$ for an MST $T$, and the algorithm now adds the edge $e = uv$. Let $S$ be the set of vertices of the component of $F$ containing $u$; then $v \notin S$, so $e$ crosses the cut $(S, V \setminus S)$. **Claim:** every edge crossing this cut has weight $\ge w(e)$. Indeed, an edge $f$ processed before $e$ was either added to $F$ (and edges of $F$ do not cross $S$, a component of $F$), or rejected because its endpoints were already in the same component of the forest at that time — hence in the same component now, so $f$ does not cross $S$ either. Edges processed after $e$ weigh at least $w(e)$.
+
+If $e \in T$, then $F + e \subseteq T$ and we are done. Otherwise $T + e$ contains exactly one cycle, and it passes through $e$. Walking around this cycle from $u$ across $e$ to $v$ and back to $u$, we must cross the cut again, along some edge $e' \ne e$ of $T$. Then $e' \notin F$ (it crosses $S$), and $w(e') \ge w(e)$ by the claim. **Exchange:** $T' = T + e - e'$ is connected (removing an edge of a cycle does not disconnect) and has $|V| - 1$ edges, so it is a spanning tree, with $w(T') = w(T) + w(e) - w(e') \le w(T)$. So $T'$ is an MST, and it contains $F + e$.
+
+At the end, $F$ is a spanning tree: it is acyclic, and if it had two components, some edge of the connected graph $G$ would join them, and that edge would have been added when it was processed. A spanning tree contained in an MST $T$ has as many edges as $T$, so it *is* $T$.
+
+</Proof>
+
+The argument contains the general **cut property**: for any cut, a lightest edge crossing it belongs to some MST. With a union–find data structure to test "same component?", Kruskal runs in $O(|E| \log |E|)$ time, dominated by sorting.
+
+**Dijkstra's algorithm** computes distances from a source $s$ in a graph with **non-negative** weights. It keeps a set $S$ of finished vertices and a tentative value $d(v)$ for every vertex: initially $d(s) = 0$, $d(v) = \infty$ otherwise, and $S = \varnothing$. Repeatedly choose the unfinished vertex $u$ with the smallest $d(u)$, add it to $S$, and **relax** its edges: for each edge $u \to v$ set $d(v) \leftarrow \min(d(v),\, d(u) + w(u, v))$.
+
+<Theorem name="Theorem 5 (Dijkstra)">
+
+If every edge weight is non-negative, then whenever Dijkstra's algorithm adds a vertex $u$ to $S$, $d(u) = \delta(s, u)$. With a binary heap it runs in $O((|V| + |E|)\log |V|)$ time.
+
+</Theorem>
+
+<Proof>
+
+Each finite $d(v)$ is the weight of some path from $s$ to $v$ (by induction over the relaxations), so always $d(v) \ge \delta(s, v)$. We prove $d(u) \le \delta(s, u)$ when $u$ is chosen, assuming (induction) that it holds for all vertices already in $S$. If $\delta(s, u) = \infty$ there is nothing to prove. Otherwise take a shortest path $P$ from $s$ to $u$. Since $s \in S$ (it is chosen first) and $u \notin S$, there is a first vertex $y$ on $P$ outside $S$; let $x$ be its predecessor on $P$, so $x \in S$. When $x$ was finished, the edge $x \to y$ was relaxed, so
+
+$$
+d(y) \le d(x) + w(x, y) = \delta(s, x) + w(x, y) = \delta(s, y) \le \delta(s, u) \le d(u) \le d(y).
+$$
+
+Here $\delta(s, x) + w(x, y) = \delta(s, y)$ because the part of $P$ up to $y$ is a shortest path to $y$; $\delta(s, y) \le \delta(s, u)$ because **the rest of $P$, from $y$ to $u$, has non-negative weight**; and $d(u) \le d(y)$ because $u$ was chosen with the smallest tentative value. So all are equal, and $d(u) = \delta(s, u)$.
+
+</Proof>
+
+<Figure caption="Dijkstra's algorithm fails with a negative weight. It finishes $s$, then $a$ (tentative value $1$, the smallest), then $b$; relaxing $b \to a$ would give $2 + (-2) = 0$, but $a$ is already finished with the wrong value $1$. The inequality $\delta(s, y) \le \delta(s, u)$ in the proof is exactly what breaks.">
+<svg viewBox="0 0 240 130" role="img" aria-label="Three vertices s, a and b. Edges s to a of weight 1, s to b of weight 2, and b to a of weight minus 2.">
+  <defs>
+    <marker id="ad-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-2)" />
+    </marker>
+  </defs>
+  <g stroke="var(--ink-2)" strokeWidth="1.5" fill="none">
+    <line x1="46" y1="62" x2="182" y2="28" markerEnd="url(#ad-arrow)" />
+    <line x1="46" y1="72" x2="182" y2="104" markerEnd="url(#ad-arrow)" />
+    <line x1="200" y1="96" x2="200" y2="38" markerEnd="url(#ad-arrow)" stroke="var(--human)" />
+  </g>
+  <g fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5">
+    <circle cx="32" cy="66" r="14" />
+    <circle cx="200" cy="24" r="14" />
+    <circle cx="200" cy="108" r="14" />
+  </g>
+  <g fill="var(--ink-2)" fontSize="13" textAnchor="middle">
+    <text x="32" y="71">s</text>
+    <text x="200" y="29">a</text>
+    <text x="200" y="113">b</text>
+    <text x="108" y="34">1</text>
+    <text x="108" y="104">2</text>
+    <text x="222" y="71" fill="var(--human)">−2</text>
+  </g>
+</svg>
+</Figure>
+
+With negative weights (but no cycle of negative total weight) the **Bellman–Ford** algorithm is correct: relax every edge $|V| - 1$ times, in $O(|V|\,|E|)$ time. Adding a constant to every weight to make them non-negative does **not** work: it penalises paths with many edges, so it can change which path is shortest.
+
+**When greedy fails.** Paying an amount with as few coins as possible, the greedy rule "use the largest coin that fits" is optimal for coins $1, 5, 10, 25$ — but with coins $1, 3, 4$ it pays $6$ as $4 + 1 + 1$, while $3 + 3$ uses two coins. Nothing in the *form* of a greedy algorithm tells you whether it is correct; only a proof does. (For change-making, dynamic programming always works: the fewest coins for amount $x$ is $1 + \min_c (\text{fewest for } x - c)$.)
+
+</Section>
+
+<Section id="dynamic" kind="proof" title="Dynamic programming: the longest common subsequence">
+
+Let $x = x_1 \cdots x_m$ and $y = y_1 \cdots y_n$, and write $L(i, j)$ for the length of an LCS of the prefixes $x_1 \cdots x_i$ and $y_1 \cdots y_j$.
+
+<Theorem name="Theorem 6 (optimal substructure)">
+
+$L(i, 0) = L(0, j) = 0$, and for $i, j \ge 1$:
+
+$$
+L(i, j) = \begin{cases} L(i-1, j-1) + 1 & \text{if } x_i = y_j, \\ \max\big(L(i-1, j),\, L(i, j-1)\big) & \text{if } x_i \ne y_j. \end{cases}
+$$
+
+</Theorem>
+
+<Proof>
+
+The empty prefix has only the empty subsequence. Now let $i, j \ge 1$, and let $z = z_1 \cdots z_k$ be an LCS of the two prefixes, so $k = L(i, j)$; fix a way of finding $z$ inside each prefix.
+
+*Case $x_i = y_j$.* Since $x_i$ and $y_j$ are the last letters of the prefixes, only $z_k$ can be matched to them. If $z_k$ is matched to neither, then $z\,x_i$ is a longer common subsequence, which is impossible. If $z_k$ is matched to exactly one of them — say to $x_i$, and to some $y_{j'}$ with $j' < j$ — then $z_k = x_i = y_j$, and we may re-match $z_k$ to $y_j$ instead, because the earlier letters of $z$ are matched before position $j'$. So we may assume $z_k$ is matched to both $x_i$ and $y_j$; then $z_1 \cdots z_{k-1}$ is a common subsequence of $x_1 \cdots x_{i-1}$ and $y_1 \cdots y_{j-1}$, so $L(i, j) - 1 \le L(i-1, j-1)$. Conversely, appending $x_i$ to an LCS of the shorter prefixes gives $L(i-1, j-1) + 1 \le L(i, j)$.
+
+*Case $x_i \ne y_j$.* The last letter $z_k$ cannot be matched to both $x_i$ and $y_j$. If it is not matched to $x_i$, then $z$ lies inside $x_1 \cdots x_{i-1}$, so $L(i, j) \le L(i-1, j)$; otherwise it is not matched to $y_j$, and $L(i, j) \le L(i, j-1)$. The reverse inequalities hold because a common subsequence of shorter prefixes is one of longer prefixes.
+
+</Proof>
+
+Computed recursively as written, this recurrence is disastrous: on a mismatch it makes two recursive calls, and the same pairs $(i, j)$ are recomputed again and again — the number of calls grows exponentially (see the third experiment). But there are only $(m+1)(n+1)$ different subproblems. **Dynamic programming** fills a table $L[0..m][0..n]$ row by row, each entry in $O(1)$ time from entries already computed, for $O(mn)$ time in all. An actual LCS is recovered by walking back from $L[m][n]$: on a match, take the letter and move diagonally; otherwise move to the larger neighbour.
+
+<Example title="ABCBDAB and BDCABA">
+
+The table for $x = $ `ABCBDAB` and $y = $ `BDCABA` ends with $L(7, 6) = 4$, and walking back gives `BCBA`. (Other longest common subsequences, such as `BDAB`, exist: the LCS is not unique, its length is.)
+
+</Example>
+
+**The recipe.** (1) Describe the optimal value of a problem in terms of optimal values of smaller subproblems, and prove the recurrence. (2) Check that there are few distinct subproblems — polynomially many. (3) Order them so that each is computed after the ones it needs, and fill a table. The same recipe gives the edit distance used by spell-checkers and DNA aligners (Needleman–Wunsch), the knapsack problem, optimal matrix-chain multiplication, and the Bellman–Ford algorithm itself. Its simplest instance is computing Fibonacci numbers by remembering the last two values instead of recursing.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Algorithms in Lean">
+
+**Mergesort.** Core Lean's `List.mergeSort` comes with its specification proved: the output is a permutation of the input, and it is sorted. Both are needed — the function that returns `[]` is "sorted", and the identity function is "a permutation".
+
+<Lean decl="Lumenary.AlgorithmDesign.mergeSort_perm" />
+
+<Lean decl="Lumenary.AlgorithmDesign.mergeSort_sorted" />
+
+The comparison count of Theorem 1 is proved here independently. The recurrence is a definition by well-founded recursion, and the proof is the strong induction of the lesson, with Mathlib's `Nat.clog 2 n` $= \lceil \log_2 n \rceil$:
+
+<Lean decl="Lumenary.AlgorithmDesign.mergeComparisons" />
+
+<Lean decl="Lumenary.AlgorithmDesign.mergeComparisons_le" />
+
+**The lower bound.** Decision trees are an inductive type; the counting core of Theorem 2 — a tree of height $h$ has at most $2^h$ leaves — is a structural induction:
+
+<Lean decl="Lumenary.AlgorithmDesign.DecisionTree" />
+
+<Lean decl="Lumenary.AlgorithmDesign.DecisionTree.leaves" />
+
+<Lean decl="Lumenary.AlgorithmDesign.DecisionTree.height" />
+
+<Lean decl="Lumenary.AlgorithmDesign.leaves_le_two_pow_height" />
+
+<Lean decl="Lumenary.AlgorithmDesign.sorting_lower_bound" />
+
+<Lean decl="Lumenary.AlgorithmDesign.five_items_need_seven" />
+
+<Lean decl="Lumenary.AlgorithmDesign.four_items_need_five" />
+
+What is *not* formalised is the modelling step: that every comparison-based algorithm gives a decision tree in which different orderings reach different leaves. That step is a statement about a model of computation, which is exactly where formalisation would have to start from a precise definition of "algorithm".
+
+**Dynamic programming.** The LCS recursion below compares all three options; Theorem 6 shows that the third dominates when the letters agree, so it computes the same values. The two theorems say together that it computes the length of a *longest* common subsequence — no common subsequence is longer (`lcs_optimal`), and one has exactly this length (`lcs_achieved`). Both proofs follow the case analysis of Theorem 6, using `List.Sublist` (`<+`, "obtained by deleting elements"):
+
+<Lean decl="Lumenary.AlgorithmDesign.lcs" />
+
+<Lean decl="Lumenary.AlgorithmDesign.lcs_optimal" />
+
+<Lean decl="Lumenary.AlgorithmDesign.lcs_achieved" />
+
+<Lean decl="Lumenary.AlgorithmDesign.lcs_example" />
+
+The Lean function is the *recursion*, not the table: it is a specification, proved correct, while the efficient table-filling program is in the experiment below. Proving that a table implementation equals the recursion is a typical next step in verified programming. In miniature, here is a remembered pair that provably equals the Fibonacci recursion:
+
+<Lean decl="Lumenary.AlgorithmDesign.fibPair" />
+
+<Lean decl="Lumenary.AlgorithmDesign.fibPair_eq" />
+
+**Greedy algorithms.** A counterexample is a perfectly good formal theorem:
+
+<Lean decl="Lumenary.AlgorithmDesign.greedyCoins" />
+
+<Lean decl="Lumenary.AlgorithmDesign.greedy_not_optimal" />
+
+Kruskal's and Dijkstra's algorithms are not formalised here (Mathlib has graphs, walks and trees, but not these algorithms). Mathlib does prove the structural facts behind Kruskal's output — a maximal acyclic subgraph of a connected graph is a spanning tree, and a tree on $n$ vertices has $n - 1$ edges:
+
+<Lean decl="Lumenary.AlgorithmDesign.maximal_acyclic_is_tree" />
+
+<Lean decl="Lumenary.AlgorithmDesign.tree_edges" />
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: counting comparisons, testing greed, filling tables">
+
+The first experiment counts comparisons. For $n \le 7$ it tries all $n!$ inputs, so the worst cases are exact; for larger $n$ it averages over random inputs and compares mergesort with insertion sort, whose average is about $n^2/4$.
+
+<Python id="algorithm_design_sorting" />
+
+The second experiment tests the greedy algorithms against brute force: Kruskal against every spanning tree, Dijkstra against Bellman–Ford (with and without negative weights), and greedy change-making against dynamic programming for every coin system $\{1, a, b\}$ with $b \le 12$.
+
+<Python id="algorithm_design_greedy" />
+
+The third fills the LCS table for the example above and measures how much work the table saves compared with the plain recursion.
+
+<Python id="algorithm_design_lcs" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: spanning trees and growth rates">
+
+Why not find a minimum spanning tree by trying every spanning tree? Build a few spanning trees of this small network of towns by clicking edges, and look at the exact number of spanning trees the widget reports (by Kirchhoff's matrix-tree theorem). On $n$ towns all joined to each other there are $n^{n-2}$ (Cayley's formula): $10^8$ for $10$ towns. Kruskal looks at each edge once.
+
+<GraphExplorer nodes={["A", "B", "C", "D", "E"]} edges={[["A", "B"], ["A", "C"], ["B", "C"], ["B", "D"], ["C", "D"], ["C", "E"], ["D", "E"]]} positions={[[0, 1], [2, 0], [2, 2], [4, 0], [4, 2]]} modes={["spanning", "matrix"]} title="Spanning trees of a small network" subtitle="Click edges to build a spanning tree. How many are there in all?" />
+
+The second picture compares growth rates: mergesort's worst case is about $n\log_2 n$, insertion sort's average about $n^2/4$, and no comparison sort can beat roughly $\log_2 n! \approx n\log_2 n - 1.44n$. For small $n$ insertion sort's curve is *below* mergesort's — which is why practical sorting libraries switch to insertion sort for short runs.
+
+<FunctionPlot fns={["x*log2(x)", "x^2/4", "x*log2(x) - 1.4427*x"]} labels={["n log₂ n (mergesort, worst case)", "n²/4 (insertion sort, average)", "≈ log₂ n! (lower bound)"]} x={[1, 64]} y={[0, 1100]} xLabel="n" yLabel="comparisons" title="Comparisons needed to sort n items" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Dijkstra's algorithm works with any weights."** Its proof uses non-negativity at one precise step, and the three-vertex example above shows it can fail with a single negative edge. Use Bellman–Ford when weights can be negative (and no cycle has negative total weight). Shifting all weights by a constant does not rescue Dijkstra: it changes which paths are shortest.
+
+</Misconception>
+
+<Misconception>
+
+**"A greedy algorithm that works on my examples is correct."** Greedy change-making works for coins $1, 5, 10, 25$ and fails for $1, 3, 4$. A greedy algorithm needs a proof — typically an exchange argument, as for Kruskal — or a counterexample.
+
+</Misconception>
+
+<Misconception>
+
+**"An $O(n \log n)$ algorithm is always faster than an $O(n^2)$ one."** Big-O hides constant factors and only describes large $n$. For small inputs insertion sort beats mergesort, and good library sorts use it on short runs. Asymptotic analysis predicts what happens as inputs grow, not which program wins on a given input.
+
+</Misconception>
+
+<Misconception>
+
+**"No sorting algorithm can beat $n \log n$."** The lower bound applies to algorithms that learn about the input *only by comparisons*. If the keys are integers in a small range $0, \dots, k$, counting sort runs in $O(n + k)$ time, and radix sort sorts $d$-digit keys in $O(d(n + b))$ for base $b$.
+
+</Misconception>
+
+<Misconception>
+
+**"Dynamic programming is just recursion with a cache, so it is always fast."** It is fast only when there are few distinct subproblems. The LCS of two strings has $(m+1)(n+1)$ subproblems; a problem whose natural subproblems are all *subsets* of an $n$-element set has $2^n$ of them, and a cache does not change that.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="combinatorics" title="Matroids: exactly where greed is good">
+
+Why does greed work for spanning trees but not for coins? A **matroid** is a finite set $E$ with a non-empty family $\mathcal{I}$ of "independent" subsets that is closed under taking subsets and has the **exchange property**: if $A, B \in \mathcal{I}$ and $|A| < |B|$, some $b \in B \setminus A$ has $A \cup \{b\} \in \mathcal{I}$. The edge sets of forests in a graph form a matroid (the *graphic matroid*), and so do linearly independent sets of vectors. The theorem of Richard Rado (1957), David Gale (1968) and Jack Edmonds (1971) says: a hereditary family $\mathcal{I}$ is a matroid **if and only if** the greedy algorithm finds a maximum-weight independent set for *every* choice of weights. Kruskal's algorithm is this greedy algorithm on the graphic matroid (with weights negated to minimise). The exchange property is the abstract form of the exchange step in Theorem 4.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Cycles, cuts and Betti numbers">
+
+A graph is a one-dimensional space (a cell complex with vertices as points and edges as intervals), and its number of independent cycles is a topological invariant: the **first Betti number** $b_1 = |E| - |V| + c$, where $c$ is the number of connected components. A spanning tree is a maximal subgraph with $b_1 = 0$, a contractible "skeleton" of a connected graph; each of the $|E| - |V| + 1$ edges outside it closes exactly one cycle (its *fundamental cycle*), and these cycles form a basis of the cycle space $H_1(G; \mathbb{F}_2)$. Kruskal's algorithm rejects precisely the edges that would raise $b_1$. Over $\mathbb{F}_2$ the cycle space and the cut space are orthogonal complements, and this duality pairs the cut property ("a lightest edge across any cut is in some MST") with the cycle property ("if weights are distinct, the heaviest edge of any cycle is in no MST"). See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Shortest paths are linear algebra over (min, +)">
+
+Replace addition by $\min$ and multiplication by $+$. These operations on $\R \cup \{\infty\}$ form the **tropical** (min-plus) semiring: $\min$ is associative and commutative with identity $\infty$, $+$ distributes over $\min$, and $0$ is the multiplicative identity. If $W$ is the matrix of edge weights (with $0$ on the diagonal and $\infty$ for missing edges), then the $(i, j)$ entry of the min-plus power $W^{k}$ is the least weight of a path from $i$ to $j$ with at most $k$ edges — matrix multiplication literally *is* "extend paths by one edge and keep the best". Bellman–Ford computes $d \mapsto \min(d, d \otimes W)$ repeatedly, and repeated squaring computes all distances in $O(|V|^3 \log |V|)$ operations. Many dynamic programs are linear recurrences over such semirings. See <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Randomness as a design tool">
+
+**Quicksort** picks a pivot, splits the items into those smaller and larger, and recurses. With a *uniformly random* pivot, items $i < j$ (in sorted order) are compared exactly when one of them is the first pivot chosen among the $j - i + 1$ items between them, which happens with probability $\frac{2}{j - i + 1}$. Linearity of expectation gives an expected number of comparisons $\sum_{i < j} \frac{2}{j - i + 1} = 2(n+1)H_n - 4n \sim 2n\ln n \approx 1.39\, n\log_2 n$, for **every** input: the randomness is in the algorithm, not in the data. Karger's contraction algorithm (1993) finds a minimum cut of a graph with probability at least $2/(n(n-1))$ per run, so repeating it about $n^2 \ln n$ times makes failure unlikely. See <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Distances, wavefronts and Euclidean spanning trees">
+
+With positive weights, $\delta$ is a **metric** on the vertices of a connected undirected graph, and Dijkstra's algorithm explores the metric balls $\{v : \delta(s, v) \le r\}$ in order of increasing radius $r$, like a wavefront spreading from $s$. *As an analogy* (not a proof), this is Huygens' picture of light, and its continuous limit is the eikonal equation $|\nabla T| = 1/c$ for arrival times, which "fast marching" methods solve with a Dijkstra-like ordering. In the plane, geometry speeds up the MST: for $n$ points with Euclidean distances, a minimum spanning tree can be found among the $O(n)$ edges of the **Delaunay triangulation**, giving an $O(n \log n)$ algorithm instead of considering all $\binom{n}{2}$ pairs.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Easy problems, hard problems">
+
+Every problem in this lesson has a polynomial-time algorithm. Small changes make problems hard: the shortest tour through all vertices (the travelling salesperson problem) is NP-hard, as is the longest common subsequence of an *arbitrary number* of strings (Maier, 1978), and no polynomial algorithm is known for them; whether one exists is the P versus NP question. Even inside P there are limits: the edit distance of two strings of length $n$ cannot be computed in time $O(n^{2 - \varepsilon})$ unless the Strong Exponential Time Hypothesis fails (Backurs and Indyk, 2015) — a conditional lower bound. See <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ancient algorithms.** Euclid's algorithm for the greatest common divisor appears in the *Elements* (Book VII, c. 300 BCE). Āryabhaṭa's *kuṭṭaka* ("pulveriser", 499 CE) solved linear Diophantine equations by a related recursive procedure, and Chinese mathematicians, from the *Sunzi Suanjing* (3rd–5th century) to Qin Jiushao's *dayan* method (1247), solved simultaneous congruences algorithmically. The word "algorithm" comes from the name of Muḥammad ibn Mūsā al-Khwārizmī, who worked in Baghdad in the 9th century and whose book on Hindu–Arabic numerals taught the methods of written arithmetic.
+- **Sorting.** John von Neumann described mergesort in 1945. C. A. R. Hoare invented quicksort in 1959–61. Anatoly Karatsuba's 1960 multiplication method refuted Andrey Kolmogorov's conjecture that $n$-digit multiplication needs order $n^2$ operations.
+- **Spanning trees.** Otakar Borůvka (1926) solved the minimum spanning tree problem to design an electrical network for southern Moravia; Vojtěch Jarník (1930) gave the algorithm later rediscovered by Robert Prim (1957) and Edsger Dijkstra (1959); Joseph Kruskal published his in 1956.
+- **Shortest paths and dynamic programming.** Dijkstra designed his shortest-path algorithm in 1956 and published it in 1959. Richard Bellman developed dynamic programming at the RAND Corporation in the 1950s; the Bellman–Ford algorithm appears in work of Lester Ford (1956), Bellman (1958) and Edward Moore (1959), whose paper also describes breadth-first search for mazes. Saul Needleman and Christian Wunsch (1970) brought sequence alignment by dynamic programming to biology, and Robert Wagner and Michael Fischer (1974) gave the edit-distance algorithm.
+- **Efficiency as a concept.** Alan Cobham and Jack Edmonds (both 1965) proposed polynomial time as the mathematical meaning of "efficient". Donald Knuth's *The Art of Computer Programming* (from 1968) made the precise analysis of algorithms a mathematical discipline.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein, *Introduction to Algorithms* (1990; 4th edition 2022) — the standard reference, with complete proofs.
+- Jon Kleinberg and Éva Tardos, *Algorithm Design* (2005) — organised by design paradigm, with especially clear exchange arguments.
+- Sanjoy Dasgupta, Christos Papadimitriou and Umesh Vazirani, *Algorithms* (2006) — short and mathematical.
+- Donald E. Knuth, *The Art of Computer Programming*, Volume 3: *Sorting and Searching* (1973; 2nd edition 1998) — everything about comparisons, including optimal sorting of small sets.
+- Alexander Schrijver, *Combinatorial Optimization: Polyhedra and Efficiency* (2003) — matroids, spanning trees and shortest paths in depth, with their history.
+- Steven S. Skiena, *The Algorithm Design Manual* (1997; 3rd edition 2020) — practical advice on choosing and adapting algorithms.
+
+Next in the Lumenary: <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>, <TopicLink id="math.discrete.graph-theory">graph theory</TopicLink> (matchings and flows, the algorithmic side of Hall's and Menger's theorems) and <TopicLink id="math.applied.optimisation">optimisation</TopicLink>.
+
+</Section>

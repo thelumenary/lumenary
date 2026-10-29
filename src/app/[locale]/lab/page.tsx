@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronDown, FlaskConical, Sparkles } from "lucide-react";
+import { FlaskConical, Sparkles } from "lucide-react";
 import { Messages } from "@/i18n/Messages";
 import { getT, resolveLocale } from "@/i18n/server";
-import { getComputeReport, getTrailList } from "@/lib/content";
+import { getComputeReport, getLesson, getTrailList, lessonSlugs } from "@/lib/content";
+import { LEVEL_IDS, type LevelId } from "@/lib/schema";
 import { highlight } from "@/lib/highlight";
 import { href } from "@/lib/href";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { PythonBlock } from "@/components/lesson/PythonBlock";
 import { PythonRunner } from "@/components/python/PythonRunner";
 import { EVIDENCE_TYPES } from "@/lib/schema";
 
@@ -39,6 +39,14 @@ export default async function LabPage({ params }: { params: Promise<{ locale: st
   const scratchHtml = await highlight(SCRATCH, "python");
   const trails = getTrailList(locale).map((x) => x.frontmatter);
   void EVIDENCE_TYPES;
+  // Group experiments by the level of the first lesson (or trail) that uses them.
+  const slugs = new Set(lessonSlugs());
+  const levelOf = (slug: string): LevelId | undefined => (slugs.has(slug) ? getLesson(slug, locale).frontmatter.level : trails.find((tr) => tr.slug === slug)?.level);
+  const byLevel = new Map<LevelId, NonNullable<typeof report>["experiments"]>();
+  for (const e of report?.experiments ?? []) {
+    const level = e.lessons.map(levelOf).find(Boolean) ?? "research";
+    byLevel.set(level, [...(byLevel.get(level) ?? []), e]);
+  }
 
   return (
     <Messages locale={locale} ns={["python", "exercise"]}>
@@ -65,26 +73,31 @@ export default async function LabPage({ params }: { params: Promise<{ locale: st
               Python {report.python} · {Object.entries(report.packages).map(([k, v]) => `${k} ${v}`).join(" · ")} · pytest: {report.pytest.passed} passed, {report.pytest.failed} failed
             </p>
           )}
-          <div className="mt-6 space-y-3">
-            {(report?.experiments ?? []).map((e) => (
-              <details key={e.id} className="group card overflow-hidden" id={e.id}>
-                <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
-                  <FlaskConical size={18} className="text-compute" aria-hidden="true" />
-                  <span className="font-semibold text-ink">{e.title}</span>
-                  <span className="flex flex-wrap gap-1.5">
-                    {e.evidence.map((ev) => (
-                      <span key={ev} className="chip">
-                        {t(`evidence.${ev}`)}
-                      </span>
-                    ))}
-                  </span>
-                  <ChevronDown size={18} className="ms-auto text-muted transition-transform group-open:rotate-180" aria-hidden="true" />
-                </summary>
-                <div className="border-t border-line px-5 pb-5">
-                  <p className="pt-4 text-sm leading-relaxed text-ink-2">{e.summary}</p>
-                  <PythonBlock t={t} id={e.id} />
-                </div>
-              </details>
+          <p className="mt-3 max-w-3xl text-ink-2">{t("lab.experimentsLead")}</p>
+          <div className="mt-6 space-y-10">
+            {LEVEL_IDS.filter((l) => byLevel.has(l)).map((level) => (
+              <div key={level}>
+                <h3 className="font-display text-xl font-semibold text-ink">{t(`levels.${level}`)}</h3>
+                <ul className="mt-3 grid gap-3 md:grid-cols-2">
+                  {byLevel.get(level)!.map((e) => (
+                    <li key={e.id}>
+                      <Link prefetch={false} href={href(locale, `lab/${e.id}`)} className="card flex h-full flex-col gap-2 p-4 hover:shadow-[var(--shadow-lg)]">
+                        <span className="flex items-start gap-2.5">
+                          <FlaskConical size={17} className="mt-0.5 shrink-0 text-compute" aria-hidden="true" />
+                          <span className="font-semibold text-ink">{e.title}</span>
+                        </span>
+                        <span className="flex flex-wrap gap-1.5">
+                          {e.evidence.map((ev) => (
+                            <span key={ev} className="chip">
+                              {t(`evidence.${ev}`)}
+                            </span>
+                          ))}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
           </div>
         </section>
@@ -102,7 +115,7 @@ export default async function LabPage({ params }: { params: Promise<{ locale: st
           <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {trails.map((tr) => (
               <li key={tr.slug}>
-                <Link href={href(locale, `math/trails/${tr.slug}`)} className="card flex h-full items-start gap-3 p-4 hover:shadow-[var(--shadow-lg)]">
+                <Link prefetch={false} href={href(locale, `math/trails/${tr.slug}`)} className="card flex h-full items-start gap-3 p-4 hover:shadow-[var(--shadow-lg)]">
                   <Sparkles size={17} className="mt-0.5 shrink-0 text-gold-ink" aria-hidden="true" />
                   <span className="font-semibold text-ink">{tr.title}</span>
                 </Link>

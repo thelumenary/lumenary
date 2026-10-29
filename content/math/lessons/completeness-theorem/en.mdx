@@ -1,0 +1,461 @@
+---
+slug: completeness-theorem
+topic: math.found.completeness-theorem
+title: Completeness, compactness and Löwenheim–Skolem
+subtitle: "Every consistent theory has a model — and three surprises follow: finiteness cannot be axiomatised, arithmetic has nonstandard models, and set theory has a countable model."
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6001
+objectives:
+  - Prove Gödel's completeness theorem for countable languages by a Henkin construction
+  - Derive the compactness theorem, and use it to show that classes such as the finite structures or the torsion groups are not first-order axiomatisable
+  - Construct nonstandard models of arithmetic and ordered fields containing infinitesimals
+  - State and prove the Löwenheim–Skolem theorems via the Tarski–Vaught test, and explain Skolem's paradox
+  - Explain why the completeness theorem and Gödel's incompleteness theorems do not contradict each other
+narrators: []
+lean:
+  - Lumenary.CompletenessTheorem.Finitary
+  - Lumenary.CompletenessTheorem.lindenbaum
+  - Lumenary.CompletenessTheorem.maximal_mem_or_neg_mem
+  - Lumenary.CompletenessTheorem.compactness
+  - Lumenary.CompletenessTheorem.satisfiable_finitary
+  - Lumenary.CompletenessTheorem.satisfiable_split
+  - Lumenary.CompletenessTheorem.exists_maximal_extension
+  - Lumenary.CompletenessTheorem.exists_infinite_model
+  - Lumenary.CompletenessTheorem.finiteness_not_axiomatizable
+  - Lumenary.CompletenessTheorem.lowenheim_skolem
+  - Lumenary.CompletenessTheorem.models_iff_finset_models
+  - Lumenary.CompletenessTheorem.dlo_categorical
+  - Lumenary.CompletenessTheorem.dlo_complete
+compute: [completeness_theorem_resolution, completeness_theorem_konig_colouring]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Truth in every model, and proof">
+
+There are two ways to say that a sentence $\varphi$ *follows* from a set of sentences $\Gamma$.
+
+- **Semantically:** $\Gamma \models \varphi$ if $\varphi$ is true in every structure in which all the sentences of $\Gamma$ are true. To check this one must, in principle, survey all structures — infinitely many, of every size.
+- **Syntactically:** $\Gamma \vdash \varphi$ if there is a formal derivation of $\varphi$ from $\Gamma$: a finite list of formulas, each an axiom, a member of $\Gamma$ or obtained from earlier lines by a rule.
+
+The lesson on <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink> proved **soundness**: if $\Gamma \vdash \varphi$ then $\Gamma \models \varphi$, so derivations never lead from truths to falsehoods. In 1928 David Hilbert and Wilhelm Ackermann asked whether the converse holds — whether the rules of first-order logic are strong enough to derive *every* consequence. In his 1929 doctoral thesis, Kurt Gödel proved that they are.
+
+<Theorem name="Gödel's completeness theorem (1929)">
+
+For every set of first-order sentences $\Gamma$ and every sentence $\varphi$: $\ \Gamma \models \varphi \implies \Gamma \vdash \varphi$. Equivalently, **every consistent set of sentences has a model.**
+
+</Theorem>
+
+So the two notions of consequence coincide. That alone would make the theorem a cornerstone of logic. But it has consequences that reach far beyond logic, because "has a model" is a statement about mathematical structures, while "is consistent" is a statement about *finite* objects. This lesson proves the theorem and follows three of its consequences: the **compactness theorem**, which shows that "finite" cannot be expressed in first-order logic and produces numbers larger than every natural number; and the **Löwenheim–Skolem theorems**, which show that no first-order theory with an infinite model can pin down the size of its models — not even set theory.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Building a model out of words">
+
+How can one produce a model of a theory knowing only that it is consistent? Leon Henkin's idea (1949) is to build the model out of the **language itself**. Its elements will be the closed terms — expressions such as $c$, $f(c)$, $f(f(c), d)$ — with two terms identified when the theory proves them equal, and a relation holding of terms exactly when the theory says it does.
+
+For this to work the theory must already *decide* everything (for each sentence, contain it or its negation) and must have **witnesses**: whenever it contains $\exists x\, \varphi(x)$, it must contain $\varphi(c)$ for some named constant $c$. Otherwise the theory might assert that something exists while no term names it. So the proof has three steps: add witnesses, extend to a complete theory, read off the model.
+
+<Analogy>
+
+The construction resembles building $\C$ as $\R[x]/(x^2 + 1)$: one manufactures the new objects from symbols (polynomials, terms) and then identifies two of them when the rules force them to be equal ($x^2 + 1 = 0$, or "the theory proves $t = s$"). This is only an analogy — the Henkin model is built from a theory, not a ring — but in both cases the model is made of syntax up to provable equality.
+
+</Analogy>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Fix a first-order language $L$ (constant, function and relation symbols) and write $|L|$ for the number of its symbols. An **$L$-structure** $M$ is a non-empty set with interpretations of the symbols; $M \models \varphi$ means the sentence $\varphi$ is true in $M$.
+
+<Definition term="models, consistency, satisfiability">
+
+A **model** of a set of sentences $\Gamma$ is a structure in which every sentence of $\Gamma$ is true. $\Gamma$ is **satisfiable** if it has a model, and **finitely satisfiable** if each of its finite subsets has a model. $\Gamma$ is **consistent** if there is no $\varphi$ with $\Gamma \vdash \varphi$ and $\Gamma \vdash \neg\varphi$ (equivalently, $\Gamma \nvdash \bot$).
+
+</Definition>
+
+<Definition term="complete theories, witnesses">
+
+$\Gamma$ is **complete** if for every sentence $\varphi$, $\Gamma \vdash \varphi$ or $\Gamma \vdash \neg\varphi$. A consistent $\Gamma$ is **maximal consistent** if no proper superset is consistent. $\Gamma$ has the **witness property** (is a *Henkin* theory) if for every formula $\varphi(x)$ with one free variable there is a constant $c$ with $(\exists x\, \varphi(x) \to \varphi(c)) \in \Gamma$.
+
+</Definition>
+
+<Definition term="elementary substructure">
+
+$M$ and $N$ are **elementarily equivalent**, $M \equiv N$, if they satisfy the same sentences. If $N \subseteq M$ is a substructure, it is an **elementary substructure**, $N \preceq M$, if for every formula $\varphi(\vec x)$ and every tuple $\vec b$ from $N$: $N \models \varphi(\vec b) \iff M \models \varphi(\vec b)$.
+
+</Definition>
+
+<Note>
+
+Two different uses of "complete" meet in this lesson. A *proof system* is complete if it derives every semantic consequence (Gödel's theorem). A *theory* is complete if it decides every sentence. The completeness theorem says first-order logic is complete in the first sense; Gödel's incompleteness theorem says that arithmetic has no consistent, effectively axiomatised theory that is complete in the second sense.
+
+</Note>
+
+For the proof we only need four properties of the derivation relation $\vdash$, all standard for natural deduction or Hilbert-style systems:
+
+1. **Finiteness.** If $\Gamma \vdash \varphi$ then $\Gamma_0 \vdash \varphi$ for some finite $\Gamma_0 \subseteq \Gamma$ (a derivation uses finitely many hypotheses).
+2. **Splitting.** If $\Gamma \cup \{\varphi\}$ and $\Gamma \cup \{\neg\varphi\}$ are both inconsistent, so is $\Gamma$ (proof by cases).
+3. **Constants are generic.** If $\Gamma \vdash \psi(c)$ and the constant $c$ occurs neither in $\Gamma$ nor in $\psi(x)$, then $\Gamma \vdash \forall x\, \psi(x)$.
+4. **Equality and logic.** The usual rules for $=$ (reflexivity, symmetry, transitivity, substitution) and for the connectives and quantifiers, e.g. $\psi(t) \vdash \exists x\, \psi(x)$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples: theories and their models">
+
+<Example title="Consistent theories with very different models">
+
+- The axioms of **groups** have finite and infinite models, abelian and non-abelian ones; they decide neither "$\forall x\, \forall y\ xy = yx$" nor its negation, so the theory of groups is consistent but not complete.
+- The theory **DLO** of dense linear orders without endpoints has the models $(\Q, <)$, $(\R, <)$ and $(\Q \cap (0, 1), <)$. By Cantor's back-and-forth theorem, any two *countable* models are isomorphic, and (as we will see) this makes DLO complete.
+- The **complete theory of arithmetic** $\mathrm{Th}(\N) = \{\varphi \mid (\N, 0, 1, +, \times, <) \models \varphi\}$ is complete by definition. We will show it has models not isomorphic to $\N$.
+
+</Example>
+
+<Example title="Saying 'at least n elements'">
+
+The sentence $\sigma_n = \exists x_1 \cdots \exists x_n \bigwedge_{i < j} x_i \neq x_j$ is true in a structure exactly when it has at least $n$ elements. So $\{\sigma_1, \sigma_2, \sigma_3, \dots\}$ is an infinite set of sentences whose models are exactly the infinite structures. Can a set of sentences have exactly the *finite* structures as its models? The compactness theorem will say no.
+
+</Example>
+
+<Example title="A finitely satisfiable set that looks impossible">
+
+In the language of arithmetic with one new constant $c$, let $\Gamma = \mathrm{Th}(\N) \cup \{\, c > \overline{0},\ c > \overline{1},\ c > \overline{2}, \dots \}$, where $\overline{n}$ is the numeral $1 + 1 + \cdots + 1$. No natural number is larger than every numeral, so $(\N, c)$ is not a model, whatever $c$ is. But any *finite* subset mentions only finitely many numerals, and $\N$ with $c$ interpreted as a large enough number is a model of it. So $\Gamma$ is finitely satisfiable.
+
+</Example>
+
+</Section>
+
+<Section id="completeness-proof" kind="proof" title="The completeness theorem">
+
+<Theorem name="Theorem 1 (completeness, countable languages)">
+
+Let $L$ be a countable language. Every consistent set $\Gamma$ of $L$-sentences has a model, of cardinality at most $\aleph_0$. Consequently, if $\Gamma \models \varphi$ then $\Gamma \vdash \varphi$.
+
+</Theorem>
+
+<Proof>
+
+**Step 1: adding witnesses.** Let $L_0 = L$. Given $L_n$, add a new constant $c_\varphi$ for each $L_n$-formula $\varphi(x)$ with one free variable, obtaining $L_{n+1}$, and let $L^* = \bigcup_n L_n$, still countable. Let $H$ be the set of **Henkin axioms** $\exists x\, \varphi(x) \to \varphi(c_\varphi)$, one for each $L^*$-formula $\varphi(x)$ (each such formula lies in some $L_n$, and $c_\varphi$ is a constant of $L_{n+1}$).
+
+*Claim: $\Gamma \cup H$ is consistent.* By finiteness it suffices to show $\Gamma \cup H_0$ consistent for finite $H_0 \subseteq H$. Add the axioms of $H_0$ to $\Gamma$ one at a time, in order of increasing level of their constants. When the axiom for $c_\varphi$ is added to the set $\Delta$ built so far, $c_\varphi$ occurs neither in $\varphi(x)$ nor in $\Delta$: the axioms already in $\Delta$ involve only constants of lower or equal level, and an axiom of the same level has a different constant and a formula from a lower level. Suppose $\Delta$ is consistent but $\Delta \cup \{\exists x\, \varphi(x) \to \varphi(c)\}$ is not. Then $\Delta \vdash \neg(\exists x\, \varphi(x) \to \varphi(c))$, so $\Delta \vdash \exists x\, \varphi(x)$ and $\Delta \vdash \neg\varphi(c)$. By property 3, $\Delta \vdash \forall x\, \neg\varphi(x)$, i.e. $\Delta \vdash \neg \exists x\, \varphi(x)$, and $\Delta$ is inconsistent — a contradiction.
+
+**Step 2: completing (Lindenbaum's lemma).** List all $L^*$-sentences as $\psi_0, \psi_1, \psi_2, \dots$. Put $\Gamma_0 = \Gamma \cup H$ and
+
+$$
+\Gamma_{n+1} = \begin{cases} \Gamma_n \cup \{\psi_n\} & \text{if this is consistent,} \\ \Gamma_n \cup \{\neg\psi_n\} & \text{otherwise.} \end{cases}
+$$
+
+By property 2, each $\Gamma_n$ is consistent. Let $\Gamma^* = \bigcup_n \Gamma_n$. It is consistent by finiteness (a derivation of $\bot$ would use hypotheses from a single $\Gamma_n$), it contains $\psi$ or $\neg\psi$ for every sentence $\psi$, and it is **deductively closed**: if $\Gamma^* \vdash \psi$ then $\psi \in \Gamma^*$, since otherwise $\neg\psi \in \Gamma^*$ and $\Gamma^*$ would be inconsistent.
+
+**Step 3: the term model.** For closed $L^*$-terms put $t \sim s$ if $(t = s) \in \Gamma^*$. By the equality rules and deductive closure, $\sim$ is an equivalence relation compatible with the function symbols and relations. Let $M$ be the set of classes $[t]$, and interpret: $c^M = [c]$, $f^M([t_1], \dots, [t_k]) = [f(t_1, \dots, t_k)]$, and $R^M([t_1], \dots, [t_k])$ iff $R(t_1, \dots, t_k) \in \Gamma^*$. These are well defined by the substitution rule for equality. Every element of $M$ is named by a closed term, and $M$ is countable.
+
+**Step 4: the truth lemma.** *For every $L^*$-sentence $\psi$: $\ M \models \psi \iff \psi \in \Gamma^*$.* By induction on the number of connectives and quantifiers in $\psi$.
+
+- *Atomic $\psi$:* by the definition of $M$ (closed terms denote their own classes).
+- *$\neg\psi$:* $M \models \neg\psi \iff M \not\models \psi \iff \psi \notin \Gamma^* \iff \neg\psi \in \Gamma^*$, the last step because $\Gamma^*$ contains exactly one of $\psi$ and $\neg\psi$.
+- *$\psi \land \chi$:* by deductive closure, $\psi \land \chi \in \Gamma^*$ iff both $\psi, \chi \in \Gamma^*$.
+- *$\exists x\, \varphi(x)$:* if $\exists x\, \varphi(x) \in \Gamma^*$, the Henkin axiom and deductive closure give $\varphi(c_\varphi) \in \Gamma^*$; by induction $M \models \varphi(c_\varphi)$, so $M \models \exists x\, \varphi(x)$. Conversely, if $M \models \exists x\, \varphi(x)$, some element $[t]$ is a witness, so $M \models \varphi(t)$; $\varphi(t)$ has fewer logical symbols than $\exists x\, \varphi(x)$, so by induction $\varphi(t) \in \Gamma^*$, and since $\varphi(t) \vdash \exists x\, \varphi(x)$, deductive closure gives $\exists x\, \varphi(x) \in \Gamma^*$.
+
+(The other connectives and $\forall$ are expressible by $\neg$, $\land$, $\exists$.) In particular $M \models \Gamma$, and forgetting the new constants gives a countable $L$-structure that is a model of $\Gamma$.
+
+**The second form.** If $\Gamma \nvdash \varphi$, then $\Gamma \cup \{\neg\varphi\}$ is consistent (otherwise $\Gamma \vdash \neg\neg\varphi$, hence $\Gamma \vdash \varphi$), so it has a model, which shows $\Gamma \not\models \varphi$.
+
+</Proof>
+
+For a language of any cardinality $\kappa$ the same proof works with transfinite lists (or Zorn's lemma in Step 2) and gives a model of cardinality at most $\kappa + \aleph_0$. The only step that is not purely finitary is Step 2: for countable languages it is an explicit induction, and in general it is exactly the Lindenbaum lemma formalised below.
+
+</Section>
+
+<Section id="compactness" kind="proof" title="Compactness and what it forbids">
+
+<Theorem name="Theorem 2 (compactness)">
+
+A set of first-order sentences has a model if and only if every finite subset of it has a model.
+
+</Theorem>
+
+<Proof>
+
+One direction is trivial. Conversely, suppose $\Gamma$ has no model. By completeness $\Gamma$ is inconsistent, i.e. $\Gamma \vdash \bot$. The derivation uses only a finite $\Gamma_0 \subseteq \Gamma$, so $\Gamma_0 \vdash \bot$, and by soundness $\Gamma_0$ has no model.
+
+</Proof>
+
+The theorem has a direct semantic proof too, by **ultraproducts** and Łoś's theorem — that is how Mathlib proves it, and it is done in the <TopicLink id="math.found.model-theory">model theory</TopicLink> lesson. Either way, it has striking consequences.
+
+<Theorem name="Theorem 3 (finiteness is not first-order)">
+
+If a set of sentences $T$ has arbitrarily large finite models, then it has an infinite model. In particular, no set of sentences has exactly the finite structures as its models.
+
+</Theorem>
+
+<Proof>
+
+Let $\Gamma = T \cup \{\sigma_1, \sigma_2, \dots\}$, where $\sigma_n$ says "there are at least $n$ elements". A finite $\Gamma_0 \subseteq \Gamma$ contains only $\sigma_n$ with $n \le N$ for some $N$, and a model of $T$ with at least $N$ elements is a model of $\Gamma_0$. By compactness $\Gamma$ has a model, which is a model of $T$ satisfying every $\sigma_n$ — an infinite model. If $T$'s models were exactly the finite structures, $T$ would have arbitrarily large finite models but no infinite one.
+
+</Proof>
+
+<Theorem name="Corollary 4 (torsion groups)">
+
+The class of torsion groups (every element has finite order) is not first-order axiomatisable.
+
+</Theorem>
+
+<Proof>
+
+Suppose $T$ were a set of sentences in the language of groups whose models are exactly the torsion groups. Add a constant $c$ and let $\Gamma = T \cup \{c^n \neq e \mid n \ge 1\}$. A finite subset mentions only $c^n \neq e$ for $n \le N$; it is satisfied in the torsion group $\Z/(N + 1)$ with $c = 1$. By compactness $\Gamma$ has a model: a torsion group (it satisfies $T$) containing an element $c$ of infinite order. Contradiction.
+
+</Proof>
+
+The same method shows that the classes of connected graphs, of well-orders, of fields of positive characteristic and of finite groups are not first-order axiomatisable (see the exercises). The class of *infinite* groups is axiomatisable — add $\sigma_1, \sigma_2, \dots$ to the group axioms — but not by finitely many sentences.
+
+<Theorem name="Theorem 5 (nonstandard models of arithmetic)">
+
+There is a structure $M \equiv (\N, 0, 1, +, \times, <)$ that contains an element larger than every numeral $\overline{n}$. In particular $M \not\cong \N$, and the same holds for models of Peano arithmetic.
+
+</Theorem>
+
+<Proof>
+
+The set $\Gamma = \mathrm{Th}(\N) \cup \{c > \overline{n} \mid n \in \N\}$ is finitely satisfiable, as shown in the examples. By compactness it has a model $M$, which satisfies $\mathrm{Th}(\N)$ (so $M \equiv \N$; in particular $M$ satisfies the axioms of PA) and contains $c^M > \overline{n}^M$ for every $n$. An isomorphism $\N \to M$ would have to send $n$ to $\overline{n}^M$, missing $c^M$.
+
+</Proof>
+
+Such an $M$ looks like $\N$ followed by further "galaxies": every element has a successor and every non-zero element a predecessor, so $c^M$ sits in a copy of $\Z$, and between and above these copies there are densely ordered families of others — a countable nonstandard model has order type $\omega + (\omega^* + \omega) \cdot \eta$, where $\eta$ is the order type of $\Q$. Its arithmetic is wild: Stanley Tennenbaum (1959) proved that in a countable nonstandard model of PA neither $+$ nor $\times$ is computable.
+
+<Example title="Infinitesimals">
+
+Let $\R^\sharp$ be the structure $\R$ with a symbol for every real number, every subset of $\R^n$ and every function $\R^n \to \R$. Add a constant $\varepsilon$ and the sentences $0 < \varepsilon < \overline{r}$ for every real $r > 0$. Every finite subset is satisfied in $\R^\sharp$ by a small enough real $\varepsilon$, so by compactness there is a structure ${}^*\R \equiv \R^\sharp$ with a positive element smaller than every positive real: an **infinitesimal**. Because ${}^*\R$ satisfies exactly the same sentences as $\R^\sharp$, it is an ordered field, and every first-order statement about real functions transfers to it. This is the starting point of Abraham Robinson's **nonstandard analysis** (1961), in which $f'(x)$ is the standard part of $(f(x + \varepsilon) - f(x))/\varepsilon$ — a rigorous version of Leibniz's infinitesimals.
+
+</Example>
+
+</Section>
+
+<Section id="lowenheim-skolem" kind="proof" title="The Löwenheim–Skolem theorems">
+
+Compactness says that first-order theories cannot express "finite". The Löwenheim–Skolem theorems say they cannot control *infinite* size either.
+
+<Theorem name="Lemma 6 (Tarski–Vaught test)">
+
+Let $N$ be a substructure of $M$. Then $N \preceq M$ if and only if: for every formula $\varphi(x, \vec y)$ and every tuple $\vec b$ from $N$, if $M \models \exists x\, \varphi(x, \vec b)$ then $M \models \varphi(a, \vec b)$ for some $a \in N$.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) If $M \models \exists x\, \varphi(x, \vec b)$ then $N \models \exists x\, \varphi(x, \vec b)$ by elementarity, so some $a \in N$ has $N \models \varphi(a, \vec b)$, hence $M \models \varphi(a, \vec b)$. ($\Leftarrow$) Show $N \models \psi(\vec b) \iff M \models \psi(\vec b)$ by induction on $\psi$. Atomic formulas agree because $N$ is a substructure, and the connective steps are immediate. For $\psi = \exists x\, \varphi(x, \vec y)$: if $N \models \psi(\vec b)$, a witness in $N$ is a witness in $M$ by induction; if $M \models \psi(\vec b)$, the test provides a witness $a \in N$ with $M \models \varphi(a, \vec b)$, so $N \models \varphi(a, \vec b)$ by induction, and $N \models \psi(\vec b)$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (downward Löwenheim–Skolem)">
+
+Let $L$ be countable, $M$ an $L$-structure and $A \subseteq M$ countable. Then there is a countable $N \preceq M$ with $A \subseteq N$.
+
+</Theorem>
+
+<Proof>
+
+Put $A_0 = A$. Given a countable $A_n$, there are countably many pairs $(\varphi, \vec b)$ with $\vec b$ a tuple from $A_n$; for each with $M \models \exists x\, \varphi(x, \vec b)$ choose a witness $a \in M$ (this uses countable choice), and let $A_{n+1}$ be $A_n$ together with the chosen witnesses — still countable. Let $N = \bigcup_n A_n$, which is countable. It is closed under the functions of $M$ (a witness for $\exists x\, (x = f(\vec b))$ is $f(\vec b)$ itself) and contains the constants (witnesses for $\exists x\, (x = c)$), so it is a substructure, and it satisfies the Tarski–Vaught test by construction: a formula with parameters from $N$ has its parameters in some $A_n$, and a witness was added in $A_{n+1}$. So $N \preceq M$.
+
+</Proof>
+
+<Theorem name="Theorem 8 (upward Löwenheim–Skolem)">
+
+If a theory $T$ in a countable language has an infinite model, then it has a model of every infinite cardinality $\kappa$.
+
+</Theorem>
+
+<Proof>
+
+Add $\kappa$ new constants $c_\alpha$ ($\alpha < \kappa$) and let $\Gamma = T \cup \{c_\alpha \neq c_\beta \mid \alpha \neq \beta\}$. A finite subset mentions finitely many constants, which can be interpreted as distinct elements of an infinite model of $T$; so by compactness (for a language of size $\kappa$) $\Gamma$ has a model, which has at least $\kappa$ elements. The downward theorem for languages of size $\kappa$ (same proof, with $|A_n| \le \kappa$) applied to $A = \{c_\alpha^M\}$ gives an elementary substructure of cardinality exactly $\kappa$, still a model of $\Gamma$ and hence of $T$.
+
+</Proof>
+
+So a first-order theory with an infinite model has models of every infinite size, and **no first-order theory with an infinite model determines its models up to isomorphism**. $\mathrm{Th}(\N)$ has uncountable models; $\mathrm{Th}(\R, +, \times, <)$ has countable ones. The best one can hope for is categoricity in a single cardinality, and the Łoś–Vaught test turns that into completeness: if $T$ has no finite models and all its models of some infinite cardinality $\kappa \ge |L|$ are isomorphic, then $T$ is complete. For instance DLO is $\aleph_0$-categorical (Cantor), hence complete, so $(\Q, <)$ and $(\R, <)$ satisfy exactly the same sentences.
+
+**Skolem's paradox.** ZFC is a first-order theory in the countable language $\{\in\}$. If it is consistent, it has a model, and by Theorem 7 a **countable** model $(M, E)$. But ZFC proves that $\mathcal P(\omega)$ is uncountable, so $M$ contains an element $p$ that $M$ believes is $\mathcal P(\omega)$ and believes is uncountable — while $p$ has only countably many $E$-members, since $M$ itself is countable. There is no contradiction. "$p$ is uncountable" means, inside $M$, "there is no bijection between $\omega$ and $p$ *that is an element of $M$*". A bijection between the $E$-members of $\omega^M$ and of $p$ exists outside $M$, but it is not one of $M$'s sets. Countability is not absolute: it depends on which functions are available. Thoralf Skolem, who pointed this out in 1922, took it as evidence that set-theoretic notions are relative to a model.
+
+</Section>
+
+<Section id="incompleteness" kind="human" title="Completeness versus incompleteness">
+
+Gödel proved the completeness theorem in 1929 and the **incompleteness theorems** in 1931. The names suggest a contradiction; there is none.
+
+- **Completeness** is about *all* models: if a sentence is true in every model of a theory $T$, then $T$ proves it.
+- **Incompleteness** is about *one intended* model: for any consistent, effectively axiomatised theory $T$ containing enough arithmetic, such as PA, there is a sentence $G$ that is true in $\N$ but not provable in $T$ (see <TopicLink id="math.found.incompleteness">Gödel's incompleteness theorems</TopicLink>).
+
+Put together: since $\mathrm{PA} \nvdash G$, the completeness theorem says that $\mathrm{PA} \cup \{\neg G\}$ has a model. That model satisfies PA but not $G$, so it is not $\N$: it is a nonstandard model, whose existence we already know from compactness. True-in-$\N$ and true-in-every-model-of-PA are different things, and the gap between them is exactly where the incompleteness theorem lives.
+
+The completeness theorem also has a computational meaning. Derivations can be listed mechanically, so the set of sentences valid in all structures is **computably enumerable**: a machine can confirm validity, eventually, whenever it holds. Alonzo Church and Alan Turing (1936) proved that validity is nevertheless **undecidable**: no machine can also confirm *invalidity* in every case (see <TopicLink id="math.comp.computability">computability</TopicLink>).
+
+</Section>
+
+<Section id="formal" kind="formal" title="What Lean and Mathlib formalise">
+
+Mathlib has first-order syntax and semantics — languages, terms, formulas with bound variables indexed by `Fin n`, structures, `M ⊨ φ`, theories and models — and proves the compactness theorem **semantically**, by an ultraproduct of models of the finite subtheories. It does not yet contain a formal derivation relation $\vdash$ for first-order logic, so Gödel's theorem in the form "consistent implies satisfiable" is not formalised here. What we can formalise is the combinatorial core of the Henkin proof, Lindenbaum's lemma, for an arbitrary **finitary** notion of consistency:
+
+<Lean decl="Lumenary.CompletenessTheorem.Finitary" />
+
+<Lean decl="Lumenary.CompletenessTheorem.lindenbaum" />
+
+<Lean decl="Lumenary.CompletenessTheorem.maximal_mem_or_neg_mem" />
+
+The proof uses Zorn's lemma; for countable languages Step 2 of the lesson avoids it by listing the sentences. Mathlib's compactness theorem says that satisfiability itself is finitary:
+
+<Lean decl="Lumenary.CompletenessTheorem.compactness" />
+
+<Lean decl="Lumenary.CompletenessTheorem.satisfiable_finitary" />
+
+<Lean decl="Lumenary.CompletenessTheorem.satisfiable_split" />
+
+so the abstract Lindenbaum lemma applies to it: every satisfiable theory extends to a maximal satisfiable theory, which decides every sentence.
+
+<Lean decl="Lumenary.CompletenessTheorem.exists_maximal_extension" />
+
+Theorem 3 and its consequence, proved as in the lesson. In Lean the sets $T \cup \{\sigma_k \mid k < n\}$ form a directed family whose union is $T \cup \{\sigma_k \mid k \in \N\}$, and Mathlib's compactness for directed unions does the rest:
+
+<Lean decl="Lumenary.CompletenessTheorem.exists_infinite_model" />
+
+<Lean decl="Lumenary.CompletenessTheorem.finiteness_not_axiomatizable" />
+
+From Mathlib: the Löwenheim–Skolem theorem in "theory" form (models of every infinite cardinality at least $|L|$), compactness for consequence, and the theory DLO — Cantor's $\aleph_0$-categoricity and its completeness by the Łoś–Vaught test:
+
+<Lean decl="Lumenary.CompletenessTheorem.lowenheim_skolem" />
+
+<Lean decl="Lumenary.CompletenessTheorem.models_iff_finset_models" />
+
+<Lean decl="Lumenary.CompletenessTheorem.dlo_categorical" />
+
+<Lean decl="Lumenary.CompletenessTheorem.dlo_complete" />
+
+**What is and is not formalised.** Proved here: Lindenbaum's lemma for any finitary consistency notion, the decision property of maximal sets, its instance for satisfiable theories, Theorem 3 and the non-axiomatisability of finiteness (for the language of pure equality). From Mathlib: compactness, Löwenheim–Skolem and the DLO results. Not formalised: a proof calculus, soundness and completeness with respect to it, the Henkin term model and truth lemma, nonstandard models of arithmetic and Skolem's paradox.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Completeness and compactness, computed">
+
+For **propositional** logic both theorems can be watched in action. The first experiment uses the **resolution** proof system: clauses are sets of literals, and from $C \cup \{v\}$ and $D \cup \{\neg v\}$ one derives $C \cup D$. A clause set is *consistent* if the empty clause cannot be derived. The program compares this syntactic notion with satisfiability by truth tables on random clause sets — soundness and completeness say they always agree — and then builds a model of each consistent set the way Step 2 of the Henkin proof does: deciding the variables one by one, keeping the set consistent.
+
+<Python id="completeness_theorem_resolution" />
+
+The second experiment shows compactness in its most concrete form. Colour the natural numbers so that numbers whose difference lies in a set $D$ get different colours, and arrange the proper colourings of $\{0, \dots, n - 1\}$ in a tree, level by level. If a level is empty, a finite part of the problem is already impossible. If every level is non-empty, **König's lemma** — a finitely branching infinite tree has an infinite branch — gives a colouring of all of $\N$. This is the compactness theorem for countably many propositional variables.
+
+<Python id="completeness_theorem_konig_colouring" />
+
+Both experiments are exact computations of finite cases. The first tests the propositional completeness theorem on randomly sampled clause sets; the second can only ever look at finitely many levels of an infinite tree, and the step to infinity is the theorem, not the computation.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: a finite obstruction">
+
+Here is the finite piece $\{0, 1, \dots, 6\}$ of the graph on $\N$ in which numbers are joined when they differ by $1$, $3$ or $4$.
+
+<GraphExplorer
+  nodes={[0, 1, 2, 3, 4, 5, 6]}
+  edges={[[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [0, 3], [1, 4], [2, 5], [3, 6], [0, 4], [1, 5], [2, 6]]}
+  mode="colour"
+  modes={["colour"]}
+  title="Differences 1, 3 and 4"
+  subtitle="Can you colour these seven numbers with three colours?"
+/>
+
+Try to colour it with three colours so that joined numbers differ. You will fail — the computation section shows that no proper $3$-colouring of these seven vertices exists — and so the whole infinite graph cannot be $3$-coloured. The **de Bruijn–Erdős theorem** (1951), a consequence of compactness, says that this is the only way an infinite graph can fail to be $k$-colourable: *a graph is $k$-colourable if and only if every finite subgraph is.* With four colours the obstruction disappears.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The completeness and incompleteness theorems contradict each other."** Completeness concerns truth in *all* models: whatever holds in every model of $T$ is provable from $T$. Incompleteness concerns one intended model: some sentences true in $\N$ are not provable in PA — and they are therefore false in some nonstandard model of PA.
+
+</Misconception>
+
+<Misconception>
+
+**"Skolem's paradox shows set theory is inconsistent."** A countable model $M$ of ZFC contains no bijection between $\omega$ and its version of $\mathcal P(\omega)$, although one exists outside the model. "Uncountable" inside $M$ means "no bijection in $M$", so there is no contradiction — only the discovery that countability is relative to the available functions.
+
+</Misconception>
+
+<Misconception>
+
+**"A complete proof system makes every theory complete."** Completeness of first-order logic means every *semantic consequence* is derivable. A theory such as the theory of groups is still incomplete — it decides neither commutativity nor its negation — because some of its models satisfy a sentence and others do not.
+
+</Misconception>
+
+<Misconception>
+
+**"A nonstandard number knows it is infinite."** Inside a nonstandard model $M$ of PA, the element $c$ larger than every numeral satisfies every first-order property that natural numbers have: it is even or odd, it has a predecessor, it factors into primes. The set of "standard" numbers $\{\overline{n}^M\}$ is not definable in $M$: if it were, by the least-number principle (an instance of induction) the set of nonstandard elements would have a least element, whose predecessor would then be standard — but the successor of a standard number is standard.
+
+</Misconception>
+
+<Misconception>
+
+**"Compactness holds for any logic."** It is special to first-order logic. Second-order logic can express "the domain is finite" and characterises $\N$ up to isomorphism, so it is not compact, and it has no sound and complete effective proof system. Per Lindström (1969) proved that first-order logic is the strongest logic satisfying both compactness and the downward Löwenheim–Skolem theorem.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Why it is called compactness">
+
+Let $S$ be the set of complete consistent theories in a language $L$ (maximal consistent sets of sentences), and give it the topology whose basic open sets are $[\varphi] = \{T \in S \mid \varphi \in T\}$. Each $[\varphi]$ is also closed (its complement is $[\neg\varphi]$), so $S$ is totally disconnected and Hausdorff. The compactness theorem says precisely that **$S$ is compact**: a family of basic closed sets $[\varphi]$, $\varphi \in \Gamma$, with the finite intersection property is a finitely satisfiable $\Gamma$, and a point in the intersection is a complete theory containing $\Gamma$. $S$ is the **Stone space** of the Boolean algebra of sentences. For propositional logic with variable set $V$, models are points of the Cantor space $\{0, 1\}^V$, and compactness is Tychonoff's theorem for that product (see <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Ultrafilters, Boolean algebras and Ax–Grothendieck">
+
+Sentences modulo provable equivalence form a Boolean algebra, the **Lindenbaum–Tarski algebra**, and complete consistent theories are its ultrafilters. So Lindenbaum's lemma is the statement that every proper filter extends to an ultrafilter — the Boolean prime ideal theorem — and Helena Rasiowa and Roman Sikorski (1950) gave an algebraic proof of the completeness theorem along these lines. Compactness then becomes a tool of algebra. A famous example: a sentence of the language of rings that holds in algebraically closed fields of every large enough prime characteristic holds in $\C$; since an injective polynomial map $\overline{\mathbb F}_p^{\,n} \to \overline{\mathbb F}_p^{\,n}$ is surjective by a counting argument over finite fields, every injective polynomial map $\C^n \to \C^n$ is surjective (the **Ax–Grothendieck theorem**; full proof in <TopicLink id="math.found.model-theory">model theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Infinitesimals made rigorous">
+
+For an analyst the most dramatic consequence of compactness is the hyperreal field ${}^*\R$: an ordered field containing $\R$, infinitesimals and infinite numbers, satisfying the **transfer principle** — every first-order statement about $\R$ (with all its functions and sets) holds in ${}^*\R$ for the starred versions. In Robinson's nonstandard analysis, $f$ is continuous at $a$ iff $f(x) - f(a)$ is infinitesimal whenever $x - a$ is, and $\int_a^b f$ is the standard part of a Riemann sum with infinitesimal mesh. The theorems obtained are ordinary theorems about $\R$: transfer guarantees that nonstandard proofs of standard statements are valid, and some results (for instance in probability and functional analysis) were first found this way.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Infinite to finite, and back">
+
+Compactness moves combinatorics between the finite and the infinite. The **de Bruijn–Erdős theorem** (1951) says an infinite graph is $k$-colourable iff all its finite subgraphs are: assign a propositional variable $x_{v, i}$ to "vertex $v$ gets colour $i$" and apply compactness. In the other direction, the **finite Ramsey theorem** — for all $k, m$ there is $N$ such that every $2$-colouring of the $k$-subsets of $\{1, \dots, N\}$ has a monochromatic $m$-set — follows from the infinite Ramsey theorem by compactness: if no such $N$ existed, a compactness (or König's lemma) argument would produce a bad colouring of the $k$-subsets of $\N$. Such proofs give no bound on $N$, and sometimes none can be extracted within weak systems: the Paris–Harrington variant (1977) is a true finite statement unprovable in Peano arithmetic.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="What the theorems say about algorithms">
+
+The completeness theorem makes first-order validity **semi-decidable**: enumerate all derivations, and every valid sentence eventually appears. This is the basis of automated theorem provers (resolution, used in the computation section, was introduced by J. A. Robinson in 1965). By Church and Turing (1936) validity is not decidable, and by Gödel the truths of arithmetic are not even semi-decidable. Compactness has a computable shadow as well: König's lemma holds for finitely branching trees, but a computable infinite binary tree need not have a computable infinite branch (Kleene, 1953). Tennenbaum's theorem adds that nonstandard models of PA, which compactness guarantees, can never be computable.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Leopold Löwenheim** (1915) proved that a first-order sentence with a model has a countable model; **Thoralf Skolem** (1920, 1922) simplified the proof, extended it to countable sets of sentences, and in 1922 formulated the "paradox" that bears his name. Skolem also constructed nonstandard models of arithmetic directly (1933–34).
+- **David Hilbert** and **Wilhelm Ackermann** posed the completeness problem in their textbook *Grundzüge der theoretischen Logik* (1928). **Kurt Gödel** solved it in his Vienna doctoral thesis (1929, published 1930), proving compactness for countable languages along the way. **Jacques Herbrand** (1930) independently developed closely related results on the reduction of first-order provability to propositional logic.
+- **Anatolii Maltsev** in the Soviet Union proved compactness for languages of arbitrary cardinality (1936) and applied it to group theory (1941). **Alfred Tarski** gave the mathematical definition of truth in a structure (1933), and with **Robert Vaught** developed elementary substructures (1957).
+- **Leon Henkin** gave the proof used today in 1949; **Helena Rasiowa** and **Roman Sikorski** in Warsaw gave an algebraic proof (1950). **Nicolaas de Bruijn** and **Paul Erdős** proved their colouring theorem in 1951, and **Abraham Robinson** created nonstandard analysis in 1961.
+- **Stanley Tennenbaum** proved the non-computability of nonstandard models of PA (1959), and **Per Lindström** in Sweden characterised first-order logic by compactness and Löwenheim–Skolem (1969).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Herbert B. Enderton, *A Mathematical Introduction to Logic* (1972; second edition 2001) — completeness, compactness and Löwenheim–Skolem at exactly this level.
+- Heinz-Dieter Ebbinghaus, Jörg Flum and Wolfgang Thomas, *Mathematical Logic* (1984; third edition 2021) — includes Lindström's theorem.
+- Dirk van Dalen, *Logic and Structure* (1980; fifth edition 2013) — natural deduction and the Henkin proof.
+- David Marker, *Model Theory: An Introduction* (2002) — compactness and Löwenheim–Skolem as tools, with algebraic applications.
+- Wilfrid Hodges, *A Shorter Model Theory* (1997).
+- Robert Goldblatt, *Lectures on the Hyperreals: An Introduction to Nonstandard Analysis* (1998).
+- Richard Kaye, *Models of Peano Arithmetic* (1991) — nonstandard models and Tennenbaum's theorem.
+
+</Section>

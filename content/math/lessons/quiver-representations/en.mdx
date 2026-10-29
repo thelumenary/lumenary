@@ -1,0 +1,453 @@
+---
+slug: quiver-representations
+topic: math.algebra.quiver-representations
+title: Quiver representations
+subtitle: Put a vector space at each dot and a linear map on each arrow. Which configurations can be classified? Astonishingly, the answer is the list $A_n, D_n, E_6, E_7, E_8$ — the same list that classifies simple Lie algebras.
+level: research
+ages: Research orientation (path algebras and homological algebra assumed)
+minutes: 130
+order: 8006
+objectives:
+  - Define representations of quivers, their dimension vectors, Euler form and Tits form, and compute $\operatorname{Hom}$ and $\operatorname{Ext}^1$ dimensions with the Euler form
+  - Prove that a quiver of finite representation type has a weakly positive Tits form, and hence is of Dynkin type, following Tits' orbit-dimension argument
+  - State Gabriel's theorem and verify it for small Dynkin quivers using reflections, reflection functors and the Tits form
+  - Compute Auslander–Reiten quivers of path algebras of Dynkin type by knitting
+  - State Kac's theorem and describe the links with Lie theory, cluster algebras and geometry, separating established results from open questions
+narrators: []
+lean:
+  - Lumenary.QuiverRepresentations.QuiverRep
+  - Lumenary.QuiverRepresentations.QuiverRep.toFunctor
+  - Lumenary.QuiverRepresentations.toFunctor_restricts
+  - Lumenary.QuiverRepresentations.toFunctor_unique
+  - Lumenary.QuiverRepresentations.A2_multiplicities
+  - Lumenary.QuiverRepresentations.titsA2
+  - Lumenary.QuiverRepresentations.titsA2_pos
+  - Lumenary.QuiverRepresentations.titsD4
+  - Lumenary.QuiverRepresentations.titsD4_sum_of_squares
+  - Lumenary.QuiverRepresentations.titsD4_pos
+  - Lumenary.QuiverRepresentations.titsD4_reflect_centre
+  - Lumenary.QuiverRepresentations.titsD4_reflect_leaf
+  - Lumenary.QuiverRepresentations.D4_roots
+  - Lumenary.QuiverRepresentations.D4_positive_roots
+  - Lumenary.QuiverRepresentations.D4_roots_length
+  - Lumenary.QuiverRepresentations.titsKronecker_semidefinite
+compute: [quiver_representations_roots]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Classifying configurations of linear maps">
+
+Many classical problems of linear algebra ask for normal forms of a few linear maps between a few vector spaces.
+
+- **One map $V \to W$.** Up to changes of basis in $V$ and $W$, a linear map is determined by its rank: it is the matrix $\left(\begin{smallmatrix} I_r & 0 \\ 0 & 0 \end{smallmatrix}\right)$.
+- **One map $V \to V$.** Up to a single change of basis, this is the Jordan normal form problem: infinitely many normal forms, depending on continuous parameters (the eigenvalues).
+- **Two maps $V \rightrightarrows W$.** Pairs of matrices up to $(A, B) \mapsto (gAh^{-1}, gBh^{-1})$, the theory of *matrix pencils* solved by Weierstrass (1868) and Kronecker (1890).
+- **Three or four subspaces of a vector space.** Triples of subspaces have finitely many *indecomposable* configurations up to isomorphism; for quadruples they come in one-parameter families (the cross-ratio appears), solved by Gelfand and Ponomarev (1970); five or more subspaces lead to problems containing all the others.
+
+All of these are **representations of quivers**: directed graphs with a vector space at each vertex and a linear map on each arrow. The striking discovery of Pierre Gabriel (1972) was that the problems with only finitely many indecomposable answers are exactly those whose underlying graph is a Dynkin diagram of type $A$, $D$ or $E$ — and that the indecomposables then correspond to the **positive roots** of the corresponding root system from Lie theory.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Pictures, dimension vectors, indecomposables">
+
+Draw the quiver; at each vertex write the dimension of the space placed there. This **dimension vector** is the first invariant of a representation. Two representations can be added (direct sum, vertex by vertex), and every finite-dimensional representation is a direct sum of **indecomposable** ones, uniquely up to order and isomorphism (the Krull–Schmidt theorem: endomorphism rings of indecomposables are local). So classification means: list the indecomposables.
+
+For the quiver $1 \to 2$ there are exactly three, with dimension vectors $(1, 0)$, $(0, 1)$, $(1, 1)$:
+
+$$
+k \to 0, \qquad 0 \to k, \qquad k \xrightarrow{\;1\;} k,
+$$
+
+and a map $f : V \to W$ of rank $r$ decomposes as $r$ copies of $k \xrightarrow{1} k$, $\dim \ker f$ copies of $k \to 0$ and $\dim \operatorname{coker} f$ copies of $0 \to k$. These three vectors are precisely the positive roots of the root system $A_2$ (the vectors with $x_1^2 + x_2^2 - x_1 x_2 = 1$). That is Gabriel's theorem in its smallest case.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="quiver and representation">
+
+A **quiver** $Q = (Q_0, Q_1, s, t)$ is a finite set $Q_0$ of vertices, a finite set $Q_1$ of arrows, and source and target maps $s, t : Q_1 \to Q_0$. A **representation** $V$ over a field $k$ assigns a finite-dimensional vector space $V_i$ to each vertex and a linear map $V_a : V_{s(a)} \to V_{t(a)}$ to each arrow. A **morphism** $\varphi : V \to W$ is a family of linear maps $\varphi_i : V_i \to W_i$ with $\varphi_{t(a)} V_a = W_a \varphi_{s(a)}$ for every arrow $a$. The **dimension vector** is $\underline{\dim}\, V = (\dim V_i)_{i \in Q_0} \in \N^{Q_0}$.
+
+</Definition>
+
+The category $\mathrm{rep}_k(Q)$ is equivalent to the category of finite-dimensional modules over the path algebra $kQ$ (see <TopicLink id="math.algebra.path-algebras">quivers and path algebras</TopicLink>); it is abelian and **hereditary**: $\operatorname{Ext}^2$ vanishes. Each vertex $i$ gives a **simple** representation $S(i)$ ($k$ at $i$, zero elsewhere), a **projective** $P(i)$ with $P(i)_j$ the span of the paths from $i$ to $j$, and an **injective** $I(i)$ with $I(i)_j$ dual to the span of the paths from $j$ to $i$.
+
+<Definition term="Euler form and Tits form">
+
+The **Euler form** of $Q$ is the bilinear form on $\Z^{Q_0}$
+
+$$
+\langle x, y \rangle = \sum_{i \in Q_0} x_i y_i - \sum_{a \in Q_1} x_{s(a)} y_{t(a)},
+$$
+
+and the **Tits form** is the quadratic form $q(x) = \langle x, x \rangle = \sum_i x_i^2 - \sum_a x_{s(a)} x_{t(a)}$, which depends only on the underlying graph. A **positive root** is a vector $x \in \N^{Q_0} \setminus \{0\}$ with $q(x) = 1$ (for Dynkin graphs; Kac's theorem below uses the more general Kac–Moody roots).
+
+</Definition>
+
+<Definition term="finite representation type">
+
+$Q$ has **finite representation type** if it has only finitely many indecomposable representations up to isomorphism. (It always has infinitely many representations up to isomorphism, since $S(i)^{\oplus n}$, $n = 1, 2, \dots$, are pairwise non-isomorphic.)
+
+</Definition>
+
+<Definition term="reflections">
+
+For a vertex $i$ without loops, the **simple reflection** $s_i$ of $\Z^{Q_0}$ changes only the $i$-th coordinate:
+
+$$
+s_i(x)_i = \Big(\sum_{j \text{ adjacent to } i} x_j\Big) - x_i
+$$
+
+(neighbours counted with the number of edges). It preserves $q$, and $s_i^2 = \mathrm{id}$. If $i$ is a sink of $Q$, the quiver $\sigma_i Q$ reverses every arrow at $i$, and the **reflection functor** $S_i^+ : \mathrm{rep}(Q) \to \mathrm{rep}(\sigma_i Q)$ replaces $V_i$ by the kernel of $\bigoplus_{a : j \to i} V_j \to V_i$ (Bernstein–Gelfand–Ponomarev, 1973).
+
+</Definition>
+
+<Definition term="Auslander–Reiten sequence and quiver">
+
+An **Auslander–Reiten (almost split) sequence** is a non-split short exact sequence $0 \to A \to B \xrightarrow{g} C \to 0$ with $A$ and $C$ indecomposable, such that every map $X \to C$ that is not a split epimorphism factors through $g$. One writes $A = \tau C$, the **Auslander–Reiten translate**. The **Auslander–Reiten quiver** has the indecomposables as vertices, the irreducible maps as arrows, and the translation $\tau$ recorded by dashed arrows.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Type A₃ and intervals">
+
+For the linear quiver $1 \to 2 \to 3$, the indecomposables are the "interval modules" $[i, j]$: $k$ at the vertices $i, \dots, j$ joined by identity maps, $0$ elsewhere. There are $6 = \binom{4}{2}$ of them, with dimension vectors $100, 010, 001, 110, 011, 111$ — the positive roots of $A_3$, i.e. the vectors $e_i + \dots + e_j$. For $A_n$ there are $n(n+1)/2$.
+
+</Example>
+
+<Example title="Type D₄ and three subspaces">
+
+Orient $D_4$ with three arrows into the centre. A representation is three linear maps into a space $V_c$; an indecomposable one with all maps injective is a configuration of three subspaces of $V_c$. There are $12$ indecomposables; the most interesting has dimension vector $(1, 2, 1, 1)$ (centre written second): three distinct lines in a plane. Its Tits form is $1 + 4 + 1 + 1 - 2 - 2 - 2 = 1$. The positive roots of $D_4$ number $12$, and the formal section proves that these are exactly the non-negative solutions of $q = 1$.
+
+</Example>
+
+<Example title="The Kronecker quiver: a family">
+
+For $1 \rightrightarrows 2$, a representation of dimension $(1, 1)$ is a pair $(\lambda, \mu) \in k^2$. If $(\lambda, \mu) \neq (0, 0)$ it is indecomposable, and two such are isomorphic exactly when they are proportional. So the indecomposables of dimension $(1, 1)$ are parametrised by the projective line $\mathbb{P}^1(k)$: infinitely many when $k$ is infinite, and $|k| + 1$ over a finite field. The Tits form $q(x, y) = (x - y)^2$ vanishes at $(1, 1)$: an *imaginary root*. The Kronecker quiver is the first quiver of infinite type, and its classification is the theory of matrix pencils.
+
+</Example>
+
+<Example title="Computing Ext with the Euler form">
+
+For $1 \to 2$: $\langle \underline{\dim}\, S(1), \underline{\dim}\, S(2) \rangle = \langle e_1, e_2 \rangle = 0 - 1 = -1$. Since $\operatorname{Hom}(S(1), S(2)) = 0$, Theorem 1 below gives $\dim \operatorname{Ext}^1(S(1), S(2)) = 1$: the non-split extension is $0 \to S(2) \to (k \xrightarrow{1} k) \to S(1) \to 0$. In the other order, $\langle e_2, e_1 \rangle = 0$ and indeed $\operatorname{Hom}(S(2), S(1)) = \operatorname{Ext}^1(S(2), S(1)) = 0$.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central theorems">
+
+<Theorem name="Theorem 1 — the Euler form computes Hom minus Ext (Ringel)">
+
+For representations $V$, $W$ of a quiver $Q$,
+
+$$
+\langle \underline{\dim}\, V, \underline{\dim}\, W \rangle = \dim \operatorname{Hom}(V, W) - \dim \operatorname{Ext}^1(V, W).
+$$
+
+</Theorem>
+
+<Proof>
+
+Consider the linear map
+
+$$
+\delta : \bigoplus_{i \in Q_0} \operatorname{Hom}_k(V_i, W_i) \longrightarrow \bigoplus_{a \in Q_1} \operatorname{Hom}_k(V_{s(a)}, W_{t(a)}), \qquad \delta(\varphi)_a = \varphi_{t(a)} V_a - W_a \varphi_{s(a)}.
+$$
+
+By definition $\ker \delta = \operatorname{Hom}(V, W)$. Ringel's *standard resolution* $0 \to \bigoplus_a P(t(a)) \otimes V_{s(a)} \to \bigoplus_i P(i) \otimes V_i \to V \to 0$ is a projective resolution of length $1$ (this is how one sees that $\mathrm{rep}(Q)$ is hereditary); applying $\operatorname{Hom}(-, W)$ and using $\operatorname{Hom}(P(i), W) = W_i$ turns it into $\delta$, so $\operatorname{coker} \delta \cong \operatorname{Ext}^1(V, W)$. Hence $\dim \operatorname{Hom} - \dim \operatorname{Ext}^1 = \dim(\text{source}) - \dim(\text{target}) = \sum_i \dim V_i \dim W_i - \sum_a \dim V_{s(a)} \dim W_{t(a)}$.
+
+</Proof>
+
+<Theorem name="Theorem 2 — finite type forces a weakly positive Tits form (Tits)">
+
+Let $k$ be algebraically closed. If $Q$ has finite representation type, then $q(d) \geq 1$ for every $d \in \N^{Q_0} \setminus \{0\}$.
+
+</Theorem>
+
+<Proof>
+
+Representations of dimension vector $d$ form the affine space $\mathrm{Rep}(Q, d) = \prod_a \operatorname{Hom}(k^{d_{s(a)}}, k^{d_{t(a)}})$, of dimension $\sum_a d_{s(a)} d_{t(a)}$. The group $GL(d) = \prod_i GL_{d_i}(k)$, of dimension $\sum_i d_i^2$, acts by change of basis, and its orbits are exactly the isomorphism classes. The scalars $\{(\lambda \cdot I)_i\}$ act trivially, so every orbit has dimension at most $\sum_i d_i^2 - 1$.
+
+If $Q$ has finite type, Krull–Schmidt gives finitely many isomorphism classes of each dimension vector, so $\mathrm{Rep}(Q, d)$ is a finite union of orbits. An irreducible variety that is a finite union of (locally closed) orbits contains an orbit of full dimension, so $\sum_a d_{s(a)} d_{t(a)} \le \sum_i d_i^2 - 1$, which says $q(d) \geq 1$.
+
+</Proof>
+
+<Theorem name="Corollary 3 — finite type implies Dynkin">
+
+Let $k$ be algebraically closed. If a connected quiver has finite representation type over $k$, its underlying graph is a Dynkin diagram $A_n$, $D_n$ ($n \ge 4$), $E_6$, $E_7$ or $E_8$.
+
+</Theorem>
+
+<Proof>
+
+A connected graph that is not of type $A$, $D$, $E$ contains (by an elementary combinatorial argument) a subgraph of **extended Dynkin** type $\tilde A_n$ (a cycle, including a loop $\tilde A_0$ and a double edge $\tilde A_1$), $\tilde D_n$, $\tilde E_6$, $\tilde E_7$ or $\tilde E_8$. Each extended Dynkin graph $\Gamma'$ has a **null root** $\delta \in \N^{\Gamma'_0}$ with $q_{\Gamma'}(\delta) = 0$: for instance $\delta = (1, \dots, 1)$ for a cycle and $\delta = (1, 1, 1, 1, 2)$ for $\tilde D_4$ (the star with four leaves, centre last). Extending $\delta$ by zero, extra edges of the full graph can only subtract further terms, so $q(\delta) \le 0$, contradicting Theorem 2. (Over an arbitrary field the conclusion still holds, by a different argument: for a non-Dynkin graph the reflection functors produce infinitely many pairwise non-isomorphic preprojective indecomposables $\tau^{-m}P(i)$, as the Kronecker example in the computation section illustrates.)
+
+</Proof>
+
+Conversely, the Tits form of every Dynkin graph is positive definite — for $A_n$, $2q(x) = x_1^2 + \sum_{i=1}^{n-1} (x_i - x_{i+1})^2 + x_n^2$, and the formal section proves the $D_4$ case by an explicit sum of squares — so the set of positive roots is finite.
+
+<Theorem name="Theorem 4 — Gabriel's theorem (1972)">
+
+Let $Q$ be a connected quiver and $k$ any field. Then $Q$ has finite representation type if and only if its underlying graph is a Dynkin diagram of type $A$, $D$ or $E$. In that case $V \mapsto \underline{\dim}\, V$ is a bijection between isomorphism classes of indecomposable representations and positive roots. In particular the number of indecomposables does not depend on the orientation: it is $n(n+1)/2$ for $A_n$, $n(n-1)$ for $D_n$, and $36, 63, 120$ for $E_6, E_7, E_8$.
+
+</Theorem>
+
+<Proof>
+
+*Outline, following Bernstein–Gelfand–Ponomarev.* "Only if" is Corollary 3. For "if", let $i$ be a sink and $V$ indecomposable with $V \not\cong S(i)$. Then $\bigoplus_{a : j \to i} V_j \to V_i$ is surjective (otherwise a complement of its image would split off a copy of $S(i)$), so $S_i^+ V$ has dimension vector $s_i(\underline{\dim}\, V)$; one checks that $S_i^+V$ is indecomposable and $S_i^- S_i^+ V \cong V$. Number the vertices so that each is a sink after reflecting at the previous ones, and let $c = s_{i_n} \cdots s_{i_1}$ be the corresponding **Coxeter element**. Because $q$ is positive definite, $c$ has finite order and no non-zero fixed vector, so for every positive vector $x$ some $c^m x$ fails to be positive. Following an indecomposable $V$ through the reflection functors, its dimension vector stays positive until $V$ becomes a simple $S(i)$ and is killed. Hence every indecomposable is obtained from a simple by inverse reflection functors: it is determined by its dimension vector, which is a root since reflections preserve $q$ and $q(e_i) = 1$. Conversely every positive root is reached this way from a simple root. (Full proofs: Schiffler, *Quiver Representations*, Ch. 8; Derksen–Weyman, Ch. 4.)
+
+</Proof>
+
+<Theorem name="Theorem 5 — Auslander–Reiten sequences and knitting">
+
+For a finite-dimensional algebra $A$ and an indecomposable non-projective module $C$ there is an Auslander–Reiten sequence $0 \to \tau C \to E \to C \to 0$, unique up to isomorphism (Auslander–Reiten, 1975). For $A = kQ$ with $Q$ acyclic, $\underline{\dim}\, \tau C = \Phi\, \underline{\dim}\, C$, where $\Phi = -E^{-1}E^{T}$ is the **Coxeter matrix** and $E$ the matrix of the Euler form. For Dynkin $Q$ every indecomposable has the form $\tau^{-m} P(i)$.
+
+</Theorem>
+
+Theorem 5 (whose proof we do not give; see Assem–Simson–Skowroński, Ch. IV and VIII) yields the **knitting algorithm**. Start from the projectives $P(i)$, whose dimension vectors are path counts. Each mesh $\tau^{-1}M$ satisfies $\underline{\dim}\, \tau^{-1} M = \Phi^{-1} \underline{\dim}\, M$ (equivalently, the sum of the middle terms of the mesh minus $\underline{\dim}\, M$), and the process stops at $M$ exactly when $\Phi^{-1}\underline{\dim}\, M$ has a negative entry, i.e. when $M$ is injective. For $1 \to 2 \to 3$:
+
+<CommutativeDiagram
+  objects={[
+    { id: "p3", tex: "001", row: 2, col: 0 },
+    { id: "p2", tex: "011", row: 1, col: 1 },
+    { id: "p1", tex: "111", row: 0, col: 2 },
+    { id: "s2", tex: "010", row: 2, col: 2 },
+    { id: "i2", tex: "110", row: 1, col: 3 },
+    { id: "s1", tex: "100", row: 2, col: 4 }
+  ]}
+  arrows={[
+    { from: "p3", to: "p2", tex: "" },
+    { from: "p2", to: "p1", tex: "" },
+    { from: "p2", to: "s2", tex: "" },
+    { from: "p1", to: "i2", tex: "" },
+    { from: "s2", to: "i2", tex: "" },
+    { from: "i2", to: "s1", tex: "" },
+    { from: "s2", to: "p3", tex: "\\tau", style: "dashed", labelSide: "right" },
+    { from: "s1", to: "s2", tex: "\\tau", style: "dashed", labelSide: "right" },
+    { from: "i2", to: "p2", tex: "\\tau", style: "dashed" }
+  ]}
+  size="sm"
+  caption="The Auslander–Reiten quiver of 1 → 2 → 3, by dimension vectors: projectives on the left edge, injectives on the right, dashed arrows the translation τ. The meshes encode the AR sequences, e.g. 0 → 011 → 111 ⊕ 010 → 110 → 0."
+/>
+
+<Theorem name="Theorem 6 — Kac's theorem (1980)">
+
+Let $k$ be algebraically closed and $Q$ a quiver without loops. The dimension vectors of indecomposable representations are exactly the positive roots of the Kac–Moody root system of the underlying graph, independently of the orientation. For a *real* root (one in the Weyl group orbit of a simple root) there is exactly one indecomposable up to isomorphism; for an *imaginary* root $\alpha$ there are infinitely many, in families with $1 - q(\alpha)$ parameters.
+
+</Theorem>
+
+The proof (Kac, *Inventiones* 1980) counts representations over finite fields: the number of absolutely indecomposable representations of dimension $\alpha$ over $\mathbb{F}_q$ is a polynomial $a_\alpha(q)$ with integer coefficients, independent of the orientation. Kac conjectured that its coefficients are non-negative and that $a_\alpha(0)$ is the multiplicity of $\alpha$ as a root. Both conjectures are now **theorems**: Crawley-Boevey and Van den Bergh (2004) proved the second for indivisible $\alpha$, Hausel (2010) in general, and Hausel, Letellier and Rodriguez-Villegas (2013) proved positivity. For the Kronecker quiver and $\alpha = (1, 1)$, $a_\alpha(q) = q + 1$ — the points of $\mathbb{P}^1(\mathbb{F}_q)$ — and $a_\alpha(0) = 1$ is the multiplicity of the imaginary root $\delta$ of $\widehat{\mathfrak{sl}}_2$.
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: tame, wild, and the links with Lie theory">
+
+**Tame and wild.** Connected quivers fall into three classes. *Dynkin* quivers have finite type (Gabriel). *Extended Dynkin* (Euclidean) quivers are **tame**: in each dimension, all but finitely many indecomposables lie in finitely many one-parameter families (Donovan–Freislich and Nazarova, 1973); the Kronecker quiver and the four-subspace quiver $\tilde D_4$ are the basic examples. All other connected quivers are **wild**: their classification contains that of pairs of matrices up to simultaneous conjugation, and with it the module theory of every finite-dimensional algebra. Drozd (1979) proved that every finite-dimensional algebra over an algebraically closed field is tame or wild, never both.
+
+**Lie theory.** Gabriel's coincidence has an explanation. Ringel (1990) showed that the Hall algebra of $\mathrm{rep}_{\mathbb{F}_q}(Q)$, whose structure constants count submodules, realises the positive part $U_v^+(\mathfrak{g})$ of the quantum group of the Dynkin type of $Q$ at $v = \sqrt{q}$; Green extended this to all quivers. Lusztig (1990–91) constructed the canonical basis of $U_v^+$ from perverse sheaves on the spaces $\mathrm{Rep}(Q, d)$, and Nakajima's quiver varieties (1994, 1998) realise the integrable representations geometrically — a central source of categorification (see <TopicLink id="math.cat.categorical-representation-theory">categorical representation theory</TopicLink>).
+
+**Derived categories.** For Dynkin $Q$, Happel showed that $D^b(\mathrm{rep}\,Q)$ depends only on the underlying graph and is described by the mesh category of the repetitive quiver $\Z Q$: the AR quiver of the derived category is $\Z Q$ (see <TopicLink id="math.cat.derived-categories">derived categories</TopicLink>).
+
+**Cluster algebras.** Fomin and Zelevinsky (2003) classified cluster algebras of finite type by the same Dynkin diagrams, with cluster variables matching almost positive roots. Buan, Marsh, Reineke, Reiten and Todorov (2006) explained this with the *cluster category* $D^b(kQ)/\tau^{-1}[1]$, and Caldero and Chapoton (2006) expressed cluster variables through Euler characteristics of quiver Grassmannians.
+
+**Quivers with relations.** Every basic finite-dimensional algebra over an algebraically closed field is $kQ/I$ for a quiver $Q$ and an admissible ideal $I$ (Gabriel), so quivers with relations model all finite-dimensional algebras. Here genuinely **open problems** remain, among them the *finitistic dimension conjecture* (Bass, 1960) and the *Nakayama conjecture* (1958). For the frontiers closer to this lesson — Hall algebras, cohomological Donaldson–Thomas invariants of quivers, moduli of wild quivers — the state of the art moves quickly; consult a recent survey rather than any list here.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: Dynkin or not, through walks">
+
+For a graph with adjacency matrix $A$, the Tits form is $q(x) = \tfrac12 x^{T}(2I - A)x$, so $q$ is positive definite exactly when every eigenvalue of $A$ is less than $2$. For the Dynkin diagrams the largest eigenvalue is $2\cos(\pi/h)$, with $h$ the Coxeter number; for the extended Dynkin diagrams it is exactly $2$. You can see this in walk counts: the number of closed walks of length $2m$ grows like $\lambda_{\max}^{2m}$.
+
+Try the **Matrix** tab on the two stars below. On $D_4$ (three leaves), the entry of $A^{2m}$ at the centre is $3^m = (\sqrt{3})^{2m}$; on $\tilde D_4$ (four leaves) it is $4^m = 2^{2m}$, the borderline growth of an extended Dynkin graph, whose null root is $(1, 1, 1, 1, 2)$. Predict the growth for five leaves before computing it.
+
+<GraphExplorer
+  nodes={["c", "1", "2", "3"]}
+  edges={[["c", "1"], ["c", "2"], ["c", "3"]]}
+  positions={[[0, 0], [0, -1], [-0.87, 0.5], [0.87, 0.5]]}
+  modes={["matrix", "degrees"]}
+  mode="matrix"
+  title="D₄: a Dynkin star"
+  subtitle="Count closed walks at the centre with powers of the adjacency matrix."
+/>
+
+<GraphExplorer
+  nodes={["c", "1", "2", "3", "4"]}
+  edges={[["c", "1"], ["c", "2"], ["c", "3"], ["c", "4"]]}
+  positions={[[0, 0], [0, -1], [-1, 0], [0, 1], [1, 0]]}
+  modes={["matrix", "degrees"]}
+  mode="matrix"
+  title="D̃₄: the four-subspace star"
+  subtitle="Extended Dynkin: the walk counts grow exactly like 2 to the length."
+/>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Quiver representations in Lean and Mathlib">
+
+Mathlib has quivers (`Quiver`), prefunctors, paths and the free category `Paths Q` with its universal property, but not (at this version) a library of quiver representations. A representation is exactly a prefunctor into the category of vector spaces, so we *define* it that way:
+
+<Lean decl="Lumenary.QuiverRepresentations.QuiverRep" />
+
+<Lean decl="Lumenary.QuiverRepresentations.QuiverRep.toFunctor" />
+
+<Lean decl="Lumenary.QuiverRepresentations.toFunctor_restricts" />
+
+<Lean decl="Lumenary.QuiverRepresentations.toFunctor_unique" />
+
+Together these say that representations of $Q$ are the same as functors from the path category — the categorical form of $\mathrm{rep}(Q) \simeq kQ\text{-mod}$. The $A_2$ case of Gabriel's theorem, as a dimension count:
+
+<Lean decl="Lumenary.QuiverRepresentations.A2_multiplicities" />
+
+Now the arithmetic half of Gabriel's theorem, proved by hand. Positive definiteness for $A_2$ and $D_4$, via sums of squares:
+
+<Lean decl="Lumenary.QuiverRepresentations.titsA2" />
+
+<Lean decl="Lumenary.QuiverRepresentations.titsA2_pos" />
+
+<Lean decl="Lumenary.QuiverRepresentations.titsD4" />
+
+<Lean decl="Lumenary.QuiverRepresentations.titsD4_sum_of_squares" />
+
+<Lean decl="Lumenary.QuiverRepresentations.titsD4_pos" />
+
+Reflections preserve the form:
+
+<Lean decl="Lumenary.QuiverRepresentations.titsD4_reflect_centre" />
+
+<Lean decl="Lumenary.QuiverRepresentations.titsD4_reflect_leaf" />
+
+And the complete list of positive roots of $D_4$: the sum-of-squares identity bounds every coordinate, and a finite case check does the rest.
+
+<Lean decl="Lumenary.QuiverRepresentations.D4_roots" />
+
+<Lean decl="Lumenary.QuiverRepresentations.D4_positive_roots" />
+
+<Lean decl="Lumenary.QuiverRepresentations.D4_roots_length" />
+
+Finally, the Kronecker form is semidefinite but not definite — the arithmetic reason the Kronecker quiver has infinite type:
+
+<Lean decl="Lumenary.QuiverRepresentations.titsKronecker_semidefinite" />
+
+**What is and is not formalised.** We formalise the definition of representations (as prefunctors) and their equivalence with functors out of the path category, the $A_2$ dimension count, positive definiteness of the $A_2$ and $D_4$ forms, invariance under reflections, and the exact set of positive roots of $D_4$. We do **not** formalise Gabriel's theorem itself (that the indecomposables correspond to these roots), Krull–Schmidt for quiver representations, reflection functors, Tits' orbit argument, Auslander–Reiten theory or Kac's theorem; none of these is in Mathlib at this version.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Three ways to count indecomposables">
+
+The experiment counts positive roots of Dynkin quivers in three independent ways: closing the simple roots under reflections; brute force over a box of non-negative vectors with $q = 1$; and **knitting**, iterating the inverse Coxeter matrix on the projectives until injectives are reached (Theorem 5). All three agree with $n(n+1)/2$, $n(n-1)$, $36$, $63$, $120$, for two orientations of $A_4$. For the Kronecker quiver, knitting never stops — the preprojectives $(n, n+1)$ go on forever — and over $\mathbb{F}_p$ there are $p + 1$ indecomposables of dimension $(1, 1)$.
+
+<Python id="quiver_representations_roots" />
+
+This is exact, exhaustive evidence for the quivers and primes shown. The knitting step relies on Theorem 5; none of it proves Gabriel's theorem.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Gabriel's theorem depends on the orientation."** Finite type and the bijection with positive roots depend only on the underlying graph: the reflection functors relate all orientations of a tree. What the orientation changes is *which* representation has a given dimension vector, and the shape of the AR quiver — not how many indecomposables there are.
+
+</Misconception>
+
+<Misconception>
+
+**"Finite representation type means finitely many representations."** There are always infinitely many representations up to isomorphism ($S(i)^{\oplus n}$ for every $n$), over any field, finite or infinite. Finite type means finitely many *indecomposable* ones; by Krull–Schmidt every representation is then a direct sum of these.
+
+</Misconception>
+
+<Misconception>
+
+**"Every vector with $q(x) = 1$ is a dimension vector of an indecomposable."** Only the *positive* ones: $q(-x) = q(x)$, so negative roots also satisfy $q = 1$. And for non-Dynkin quivers, dimension vectors of indecomposables are the positive roots of the Kac–Moody root system, which include imaginary roots with $q(x) \le 0$.
+
+</Misconception>
+
+<Misconception>
+
+**"Over an infinite field the Kronecker quiver has infinitely many indecomposables, but over a finite field it has finitely many."** Over $\mathbb{F}_q$ each dimension vector carries finitely many isomorphism classes, but the preprojectives $(n, n+1)$ already give infinitely many indecomposables. Infinite type is a property of the graph.
+
+</Misconception>
+
+<Misconception>
+
+**"The Auslander–Reiten translate $\tau$ is a functor on $\mathrm{rep}(Q)$ given by reflection."** For path algebras $\tau$ agrees on indecomposable non-projectives with the Coxeter functor, a composite of reflection functors, but it is not an equivalence of $\mathrm{rep}(Q)$: it kills the projectives. On dimension vectors it acts linearly by $\Phi$ only on indecomposable non-projective modules.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="Orbits, moduli and quiver varieties">
+
+Isomorphism classes of representations of dimension $d$ are the orbits of $GL(d)$ on the affine space $\mathrm{Rep}(Q, d)$, and Theorem 2 is a statement about orbit dimensions. Finite type means finitely many orbits; then there is a dense open orbit, and degenerations between orbits are studied as a geometric order on representations. For infinite type one builds moduli spaces by geometric invariant theory: King (1994) translated GIT stability into a slope-type condition on subrepresentations, giving projective moduli spaces of stable representations. Nakajima's quiver varieties, hyperkähler quotients built from doubled quivers, carry geometric actions of Kac–Moody algebras on their cohomology. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="The McKay correspondence and the E₈ manifold">
+
+The same Dynkin diagrams classify the finite subgroups $G \subset SU(2)$ (McKay, 1980: the irreducible representations of $G$ form the vertices of an extended Dynkin diagram) and the simple surface singularities $\mathbb{C}^2/G$ (Du Val). The minimal resolution of $\mathbb{C}^2/G$ replaces the singular point by a tree of $(-2)$-spheres whose dual graph is the Dynkin diagram, and their intersection form is minus the Cartan matrix $2I - A$, i.e. $-2q$ in symmetric form. For $E_8$ this gives a smooth $4$-manifold with intersection form $-E_8$ whose boundary is the Poincaré homology sphere — a building block in four-dimensional topology (see <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>). Grauert's criterion says that a configuration of curves on a surface can be contracted to a point only if its intersection form is negative definite; for a tree of $(-2)$-spheres this happens exactly when the tree is a Dynkin diagram — the same positivity that singles out Gabriel's quivers.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Roots, Hall algebras and hereditary categories">
+
+Gabriel's positive roots are the positive roots of the semisimple Lie algebra with the same Dynkin diagram, and Ringel's Hall algebra explains why: the category $\mathrm{rep}_{\mathbb{F}_q}(Q)$ "knows" the quantum group, with indecomposables corresponding to a PBW-type basis. From the point of view of ring theory, path algebras of acyclic quivers are exactly the basic hereditary finite-dimensional algebras over an algebraically closed field, so this lesson is also the representation theory of hereditary algebras. See <TopicLink id="math.geom.lie-groups">Lie groups and Lie algebras</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Counting roots, clusters and walks">
+
+The Dynkin classification is itself a combinatorial theorem: a connected graph has positive definite $2I - A$ iff it is $A_n$, $D_n$, $E_{6,7,8}$, iff its largest adjacency eigenvalue is below $2$. Root counts $n(n+1)/2$, $n(n-1)$, $36$, $63$, $120$ equal $nh/2$ with $h$ the Coxeter number. For cluster algebras of type $A_n$ the number of clusters is the Catalan number $\frac{1}{n+2}\binom{2n+2}{n+1}$, and clusters correspond to triangulations of an $(n+3)$-gon (Fomin–Zelevinsky).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Quiver gauge theories (heuristic)">
+
+In string theory, D-branes at the orbifold singularity $\mathbb{C}^2/G$ are described by a gauge theory whose matter content is encoded by the McKay quiver of $G$ (Douglas–Moore, 1996), and in four-dimensional $\mathcal{N} = 2$ theories the BPS states are counted by stable representations of a quiver with potential, with wall-crossing governed by the Kontsevich–Soibelman formula. These physical pictures motivate much current mathematics (cohomological Hall algebras, Donaldson–Thomas invariants); they are heuristics, and the theorems are proved separately.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Functors from a free category">
+
+A representation of $Q$ is a functor from the free category $\mathrm{Paths}(Q)$ to $\mathrm{Vect}_k$ (formalised above), so $\mathrm{rep}(Q)$ is a functor category and inherits its abelian structure pointwise; the projective $P(i)$ is the representable functor $k\,\mathrm{Paths}(Q)(i, -)$, and the Yoneda lemma gives $\operatorname{Hom}(P(i), V) = V_i$. The reflection functors, the Coxeter functor and $\tau$ are functors between such categories; their derived versions are equivalences of derived categories.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1868–1890.** Karl Weierstrass (elementary divisors) and Leopold Kronecker solve the classification of matrix pencils — in modern terms, representations of the Kronecker quiver.
+- **1960s–70.** In Kyiv, **Lyudmila Nazarova** and **Andrei Roiter** develop matrix problems and their reduction techniques; in Moscow, **Israel Gelfand** and **V. A. Ponomarev** classify quadruples of subspaces (1970).
+- **1972.** **Pierre Gabriel** (France/Switzerland) proves his theorem, in "Unzerlegbare Darstellungen I", and coins the term *quiver* (Köcher).
+- **1973.** **Joseph Bernstein, Israel Gelfand** and **V. A. Ponomarev** introduce reflection functors and explain Gabriel's theorem through Coxeter functors. **Peter Donovan** and **Mary Ruth Freislich** (Australia) and, independently, **Nazarova** classify the tame quivers.
+- **1975.** **Maurice Auslander** (USA) and **Idun Reiten** (Norway) introduce almost split sequences.
+- **1979–80.** **Yuriy Drozd** (Kyiv) proves the tame–wild dichotomy; **Victor Kac** proves his theorem on dimension vectors.
+- **1990s–2000s.** **Claus Michael Ringel** (Hall algebras), **George Lusztig** (canonical bases), **Hiraku Nakajima** (quiver varieties), **Sergey Fomin** and **Andrei Zelevinsky** (cluster algebras). The representation theory of algebras has strong schools in many countries, including Mexico, Brazil, China, Japan, Poland and Norway.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Ralf Schiffler, *Quiver Representations* (CMS Books in Mathematics, 2014) — an accessible, complete first course, including Gabriel's theorem and AR quivers.
+- Harm Derksen and Jerzy Weyman, *An Introduction to Quiver Representations* (AMS Graduate Studies 184, 2017) — invariant theory, reflection functors, Kac's theorem.
+- Ibrahim Assem, Daniel Simson and Andrzej Skowroński, *Elements of the Representation Theory of Associative Algebras*, Vol. 1 (2006) — AR theory and knitting in detail.
+- Maurice Auslander, Idun Reiten and Sverre O. Smalø, *Representation Theory of Artin Algebras* (1995).
+- Alexander Kirillov Jr., *Quiver Representations and Quiver Varieties* (AMS Graduate Studies 174, 2016) — the geometric and Lie-theoretic side.
+- Joseph Bernstein, Israel Gelfand and V. A. Ponomarev, "Coxeter functors and Gabriel's theorem", *Russian Mathematical Surveys* 28 (1973) — still a beautiful read.
+
+A reading path: Schiffler Ch. 1–8 (with the knitting exercises) → Derksen–Weyman for Kac's theorem → Kirillov for quiver varieties, or Assem–Simson–Skowroński for the theory of algebras.
+
+</Section>

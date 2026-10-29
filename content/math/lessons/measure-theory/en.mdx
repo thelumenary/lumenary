@@ -1,0 +1,520 @@
+---
+slug: measure-theory
+topic: math.analysis.measure-theory
+title: Measure theory and integration
+subtitle: Lebesgue's idea — slice the *range*, not the domain — gives an integral that commutes with limits, a notion of size for wild sets, and the complete function spaces on which modern analysis and probability are built.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7025
+objectives:
+  - Define σ-algebras, measures and outer measures, and construct Lebesgue measure from outer measure by Carathéodory's criterion
+  - Define the Lebesgue integral through simple functions, and prove the monotone convergence theorem, Fatou's lemma and the dominated convergence theorem
+  - Recognise when a limit may not be exchanged with an integral, using counterexamples in which mass escapes
+  - State and apply the Fubini–Tonelli theorem, including why σ-finiteness and integrability are needed
+  - Prove that $L^p(\mu)$ is a Banach space (Riesz–Fischer), and relate the Lebesgue integral to the Riemann integral
+narrators: []
+lean:
+  - Lumenary.MeasureTheory.volume_Icc
+  - Lumenary.MeasureTheory.volume_rat_eq_zero
+  - Lumenary.MeasureTheory.countable_null
+  - Lumenary.MeasureTheory.markov
+  - Lumenary.MeasureTheory.monotone_convergence
+  - Lumenary.MeasureTheory.dominated_convergence
+  - Lumenary.MeasureTheory.escapingMass
+  - Lumenary.MeasureTheory.escapingMass_lintegral
+  - Lumenary.MeasureTheory.escapingMass_tendsto_zero
+  - Lumenary.MeasureTheory.tonelli
+  - Lumenary.MeasureTheory.lp_complete
+  - Lumenary.MeasureTheory.borel_cantelli
+compute: [measure_theory_cantor_set, measure_theory_convergence_modes]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why the Riemann integral is not enough">
+
+The Riemann integral is built for continuous functions on intervals, and it behaves badly under limits. Enumerate the rationals of $[0, 1]$ as $q_1, q_2, \dots$ and let $f_n$ be the indicator of $\{q_1, \dots, q_n\}$. Each $f_n$ is Riemann integrable with integral $0$, the sequence increases, and its pointwise limit is the **Dirichlet function** $\mathbf 1_{\Q \cap [0, 1]}$, whose upper Riemann sums are all $1$ and lower sums all $0$. A monotone limit of integrable functions with integrals $0$ has *no* Riemann integral.
+
+This is not a curiosity. Fourier series, solutions of differential equations and probability all produce functions as **limits**, and analysis needs a space of integrable functions that is **complete**: Cauchy sequences should converge to something integrable. Henri Lebesgue's thesis (1902) supplied it. His idea, in his own later image, is the shopkeeper's: to count the takings, do not add coins in the order they arrived (the Riemann sum over the domain); sort them by value and multiply each value by how many coins have it. For a function, that means slicing the **range** and asking for the *size* of each set $\{x : f(x) > t\}$. That requires a notion of size — a **measure** — for sets far wilder than intervals.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Slicing the range">
+
+<Figure caption="Left: Riemann partitions the domain into vertical strips. Right: Lebesgue partitions the range into horizontal layers; the layer at height $t$ has width $\lambda(\{f > t\})$, which may be a complicated set. Integrating the widths over $t$ gives the layer-cake formula $\int f \, d\mu = \int_0^\infty \mu(\{f > t\}) \, dt$ for $f \ge 0$.">
+<svg viewBox="0 0 360 160" role="img" aria-label="Two copies of the same hump-shaped graph: the left one filled with vertical bars, the right one cut by horizontal layers">
+  <g fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1">
+    <rect x="20" y="110" width="20" height="30" />
+    <rect x="40" y="70" width="20" height="70" />
+    <rect x="60" y="40" width="20" height="100" />
+    <rect x="80" y="30" width="20" height="110" />
+    <rect x="100" y="55" width="20" height="85" />
+    <rect x="120" y="95" width="20" height="45" />
+  </g>
+  <path d="M 20 135 C 50 20, 100 0, 150 135" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <g stroke="var(--ink-2)" strokeWidth="1">
+    <line x1="10" y1="140" x2="160" y2="140" />
+    <line x1="200" y1="140" x2="350" y2="140" />
+  </g>
+  <g fill="var(--gold)" opacity="0.55" stroke="var(--ink-2)" strokeWidth="1">
+    <rect x="212" y="115" width="124" height="20" />
+    <rect x="224" y="95" width="98" height="20" />
+    <rect x="238" y="75" width="74" height="20" />
+    <rect x="250" y="55" width="52" height="20" />
+    <rect x="262" y="35" width="28" height="20" />
+  </g>
+  <path d="M 210 135 C 240 20, 290 0, 340 135" fill="none" stroke="var(--human)" strokeWidth="2" />
+</svg>
+</Figure>
+
+For a hump-shaped function the two pictures give the same number. They part ways for wild functions. For the Dirichlet function, the vertical strips never settle down, but the horizontal picture is easy: the set where $\mathbf 1_\Q > t$ is $\Q \cap [0, 1]$ for $0 \le t < 1$, a countable set, and a countable set ought to have size $0$. So the Lebesgue integral of the Dirichlet function is $0$.
+
+Three questions organise the subject. **Which sets get a size?** Not all of them: Vitali's construction below produces a subset of $\R$ that cannot be given any translation-invariant, countably additive length. **How do we build the size function?** By approximating from outside with countably many intervals (outer measure) and keeping the sets that split every other set additively (Carathéodory). **What do we gain?** Countable additivity of the measure becomes, for integrals, the convergence theorems: under monotonicity or domination, $\lim \int f_n = \int \lim f_n$.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="σ-algebras, measures and the integral">
+
+<Definition term="σ-algebra and measure">
+
+A **σ-algebra** on a set $X$ is a collection $\mathcal M$ of subsets of $X$ containing $X$ and closed under complements and countable unions (hence also countable intersections). A **measure** on $(X, \mathcal M)$ is a function $\mu : \mathcal M \to [0, \infty]$ with $\mu(\varnothing) = 0$ that is **countably additive**: $\mu\big(\bigcup_j E_j\big) = \sum_j \mu(E_j)$ for pairwise disjoint $E_j \in \mathcal M$. The triple $(X, \mathcal M, \mu)$ is a **measure space**; it is **finite** if $\mu(X) < \infty$, a **probability space** if $\mu(X) = 1$, and **σ-finite** if $X$ is a countable union of sets of finite measure.
+
+</Definition>
+
+From countable additivity: $\mu$ is monotone, countably subadditive ($\mu(\bigcup E_j) \le \sum \mu(E_j)$ for any $E_j$), **continuous from below** ($E_1 \subseteq E_2 \subseteq \cdots$ implies $\mu(\bigcup E_n) = \lim \mu(E_n)$), and continuous from above when $\mu(E_1) < \infty$. The **Borel σ-algebra** $\mathcal B(X)$ of a topological space is the smallest σ-algebra containing the open sets. A property holds **almost everywhere** (a.e.) if it fails only on a set of measure $0$, a **null set**.
+
+<Definition term="outer measure and Carathéodory measurability">
+
+An **outer measure** on $X$ is a function $\mu^* : \mathcal P(X) \to [0, \infty]$ with $\mu^*(\varnothing) = 0$, monotone, and countably subadditive. A set $E \subseteq X$ is **$\mu^*$-measurable** if it splits every set additively:
+
+$$
+\mu^*(A) = \mu^*(A \cap E) + \mu^*(A \setminus E) \quad \text{for every } A \subseteq X.
+$$
+
+**Lebesgue outer measure** on $\R$ is $\lambda^*(A) = \inf\left\{ \sum_j (b_j - a_j) : A \subseteq \bigcup_{j \ge 1} (a_j, b_j) \right\}$, the infimum over countable covers by open intervals.
+
+</Definition>
+
+<Definition term="measurable function and the integral">
+
+A function $f : X \to [-\infty, \infty]$ is **measurable** if $\{x : f(x) > t\} \in \mathcal M$ for every $t \in \R$. A **simple function** is a finite combination $\varphi = \sum_{i=1}^k c_i \mathbf 1_{E_i}$ with $E_i \in \mathcal M$; for $\varphi \ge 0$ (with the $E_i$ disjoint), $\int \varphi \, d\mu = \sum_i c_i \, \mu(E_i)$, with $0 \cdot \infty = 0$. For measurable $f \ge 0$,
+
+$$
+\int f \, d\mu = \sup \left\{ \int \varphi \, d\mu : 0 \le \varphi \le f, \ \varphi \text{ simple} \right\} \in [0, \infty].
+$$
+
+A real measurable $f$ is **integrable**, $f \in \mathcal L^1(\mu)$, if $\int |f| \, d\mu < \infty$, and then $\int f = \int f^+ - \int f^-$ where $f^\pm = \max(\pm f, 0)$.
+
+</Definition>
+
+Every measurable $f \ge 0$ is the increasing limit of the simple functions
+
+$$
+\varphi_n = \sum_{k=0}^{n 2^n - 1} \frac{k}{2^n} \, \mathbf 1_{\{k 2^{-n} \le f < (k+1) 2^{-n}\}} + n \, \mathbf 1_{\{f \ge n\}},
+$$
+
+which round $f$ down to the dyadic grid of mesh $2^{-n}$ and cap it at $n$. This is the "slice the range" picture made precise.
+
+<Definition term="Lᵖ spaces">
+
+For $1 \le p < \infty$ let $\|f\|_p = \left( \int |f|^p \, d\mu \right)^{1/p}$, and let $\|f\|_\infty = \inf\{ M : |f| \le M \text{ a.e.}\}$ (the essential supremum). Then $L^p(\mu)$ is the space of measurable $f$ with $\|f\|_p < \infty$, **with functions equal almost everywhere identified**. Without the identification, $\|\cdot\|_p$ is only a seminorm: $\|\mathbf 1_\Q\|_p = 0$.
+
+</Definition>
+
+**Hölder's inequality** $\int |fg| \le \|f\|_p \|g\|_q$ for $1/p + 1/q = 1$, and **Minkowski's inequality** $\|f + g\|_p \le \|f\|_p + \|g\|_p$, follow from Young's inequality $ab \le a^p/p + b^q/q$ (Folland, §6.1); Minkowski makes $\|\cdot\|_p$ a norm on $L^p$.
+
+</Section>
+
+<Section id="construction" kind="proof" title="Constructing Lebesgue measure">
+
+<Theorem name="Carathéodory's theorem">
+
+Let $\mu^*$ be an outer measure on $X$. The $\mu^*$-measurable sets form a σ-algebra $\mathcal M$, and the restriction of $\mu^*$ to $\mathcal M$ is a measure. Moreover every set with $\mu^*(E) = 0$ is in $\mathcal M$ (the measure is **complete**).
+
+</Theorem>
+
+<Proof>
+
+By subadditivity $\mu^*(A) \le \mu^*(A \cap E) + \mu^*(A \setminus E)$ always, so $E$ is measurable as soon as $\mu^*(A) \ge \mu^*(A \cap E) + \mu^*(A \setminus E)$ for all $A$. The definition is symmetric in $E$ and $E^c$, so $\mathcal M$ is closed under complements. If $\mu^*(E) = 0$ then $\mu^*(A \cap E) = 0$ and $\mu^*(A \setminus E) \le \mu^*(A)$, so $E \in \mathcal M$.
+
+*Finite unions.* Let $E, F \in \mathcal M$ and $A \subseteq X$. Splitting $A$ by $E$ and then both pieces by $F$,
+
+$$
+\mu^*(A) = \mu^*(A \cap E \cap F) + \mu^*(A \cap E \cap F^c) + \mu^*(A \cap E^c \cap F) + \mu^*(A \cap E^c \cap F^c).
+$$
+
+The first three sets have union $A \cap (E \cup F)$, so by subadditivity their measures sum to at least $\mu^*(A \cap (E \cup F))$; the last set is $A \setminus (E \cup F)$. Hence $E \cup F \in \mathcal M$, and $\mathcal M$ is an algebra.
+
+*Countable disjoint unions.* Let $E_1, E_2, \ldots \in \mathcal M$ be disjoint, $B_n = \bigcup_{j \le n} E_j$ and $B = \bigcup_j E_j$. Splitting $A \cap B_n$ by $E_n \in \mathcal M$ gives $\mu^*(A \cap B_n) = \mu^*(A \cap E_n) + \mu^*(A \cap B_{n-1})$, so by induction $\mu^*(A \cap B_n) = \sum_{j \le n} \mu^*(A \cap E_j)$. Since $B_n \in \mathcal M$ and $A \setminus B_n \supseteq A \setminus B$,
+
+$$
+\mu^*(A) = \mu^*(A \cap B_n) + \mu^*(A \setminus B_n) \ge \sum_{j \le n} \mu^*(A \cap E_j) + \mu^*(A \setminus B).
+$$
+
+Let $n \to \infty$ and use subadditivity once more:
+
+$$
+\mu^*(A) \ge \sum_{j=1}^\infty \mu^*(A \cap E_j) + \mu^*(A \setminus B) \ge \mu^*(A \cap B) + \mu^*(A \setminus B) \ge \mu^*(A).
+$$
+
+All are equalities. So $B \in \mathcal M$, and taking $A = B$ gives $\mu^*(B) = \sum_j \mu^*(E_j)$: countable additivity. An arbitrary countable union $\bigcup F_j$ in $\mathcal M$ equals the disjoint union of $F_j \setminus (F_1 \cup \dots \cup F_{j-1})$, which lie in the algebra $\mathcal M$; so $\mathcal M$ is a σ-algebra.
+
+</Proof>
+
+<Theorem name="Theorem (outer measure of an interval)">
+
+$\lambda^*([a, b]) = b - a$ for all $a \le b$. Consequently $\lambda^*(I)$ is the length of every bounded interval $I$.
+
+</Theorem>
+
+<Proof>
+
+The cover by the single interval $(a - \varepsilon, b + \varepsilon)$ gives $\lambda^*([a, b]) \le b - a + 2\varepsilon$ for every $\varepsilon > 0$. Conversely let $[a, b] \subseteq \bigcup_j (a_j, b_j)$. By the Heine–Borel theorem finitely many of these intervals already cover $[a, b]$. Choose one, $(c_1, d_1)$, containing $a$. If $d_1 \le b$, then $d_1 \in [a, b]$ lies in another chosen interval $(c_2, d_2)$, with $c_2 < d_1 < d_2$. Continue. The right endpoints $d_1 < d_2 < \cdots$ strictly increase, so the chosen intervals are distinct members of the finite subcover, and after some $k$ steps $d_k > b$. Then
+
+$$
+\sum_j (b_j - a_j) \ge \sum_{i=1}^k (d_i - c_i) = d_k - \sum_{i=1}^{k-1} (c_{i+1} - d_i) - c_1 \ge d_k - c_1 > b - a,
+$$
+
+because each $c_{i+1} - d_i < 0$. Taking the infimum over covers, $\lambda^*([a, b]) \ge b - a$. A bounded interval with endpoints $a < b$ lies between $[a + \varepsilon, b - \varepsilon]$ and $[a, b]$, so by monotonicity its outer measure is its length.
+
+</Proof>
+
+<Theorem name="Theorem (Borel sets are Lebesgue measurable)">
+
+Every half-line $H = (-\infty, c]$ is $\lambda^*$-measurable. Hence every Borel set is, and **Lebesgue measure** $\lambda$, the restriction of $\lambda^*$ to the Carathéodory σ-algebra $\mathcal L$, satisfies $\lambda(I) = \operatorname{length}(I)$ for every interval.
+
+</Theorem>
+
+<Proof>
+
+Let $A \subseteq \R$ with $\lambda^*(A) < \infty$ and $\varepsilon > 0$, and cover $A$ by open intervals $I_j$ with $\sum_j |I_j| \le \lambda^*(A) + \varepsilon$. Each $I_j$ splits into the intervals $I_j \cap H$ and $I_j \setminus H$, whose lengths add up to $|I_j|$ and which equal their outer measures by the previous theorem. By monotonicity and subadditivity,
+
+$$
+\lambda^*(A \cap H) + \lambda^*(A \setminus H) \le \sum_j \big(\lambda^*(I_j \cap H) + \lambda^*(I_j \setminus H)\big) = \sum_j |I_j| \le \lambda^*(A) + \varepsilon.
+$$
+
+So $H$ is measurable. The half-lines generate $\mathcal B(\R)$: writing $H_c = (-\infty, c]$, an open interval is the countable union $(a, b) = \bigcup_n \big(H_{b - 1/n} \setminus H_a\big)$, and every open set is a countable union of open intervals. Since $\mathcal L$ is a σ-algebra containing the half-lines, $\mathcal B(\R) \subseteq \mathcal L$.
+
+</Proof>
+
+The same recipe — a **premeasure** on an algebra of simple sets, extended by outer measure and Carathéodory — builds Lebesgue measure on $\R^n$ (from boxes), Lebesgue–Stieltjes measures $\mu((a, b]) = F(b) - F(a)$ for increasing right-continuous $F$ (the distributions of probability), product measures, and Hausdorff measures. Lebesgue measure is translation invariant, and up to a constant factor it is the only translation-invariant measure on $\mathcal B(\R)$ that is finite on bounded sets.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Null sets, a non-measurable set, and escaping mass">
+
+<Example title="Countable sets are null; so is the Cantor set">
+
+A singleton $\{x\}$ lies in $[x, x]$, so $\lambda(\{x\}) = 0$, and by countable subadditivity every countable set is null. In particular $\lambda(\Q) = 0$, so $\int \mathbf 1_\Q \, d\lambda = 1 \cdot \lambda(\Q \cap [0, 1]) = 0$.
+
+The converse fails. The **Cantor set** $C = \bigcap_n C_n$, where $C_n$ is obtained from $[0, 1]$ by removing open middle thirds $n$ times, is a union of $2^n$ intervals of length $3^{-n}$ at stage $n$; so $\lambda(C) \le (2/3)^n$ for every $n$, and $\lambda(C) = 0$. Yet $C$ consists of the numbers with a ternary expansion using only the digits $0$ and $2$, and the map $(b_i) \mapsto \sum_i 2 b_i 3^{-i}$ from $\{0, 1\}^\N$ to $C$ is injective, so $|C| = 2^{\aleph_0}$. Since every subset of $C$ is null, hence Lebesgue measurable, $\mathcal L$ has $2^{2^{\aleph_0}}$ elements while $\mathcal B(\R)$ has only $2^{\aleph_0}$: there are Lebesgue measurable sets that are not Borel.
+
+</Example>
+
+<Example title="Small open dense sets">
+
+Enumerate $\Q = \{q_1, q_2, \ldots\}$ and let $U = \bigcup_n (q_n - \varepsilon 2^{-n}, q_n + \varepsilon 2^{-n})$. Then $U$ is open and dense, and $\lambda(U) \le \sum_n 2\varepsilon 2^{-n} = 2\varepsilon$. Topologically $U$ is "large" (its complement is nowhere dense), measure-theoretically it is small. Intersecting such sets for $\varepsilon = 1/k$ gives a dense $G_\delta$ set of measure zero: $\R$ is the union of a meagre set and a null set.
+
+</Example>
+
+<Example title="Vitali's non-measurable set (uses the axiom of choice)">
+
+Call $x, y \in [0, 1)$ equivalent if $x - y \in \Q$. Using the axiom of choice, pick one point from each equivalence class to form $V$. For rationals $r \in [0, 1)$ the translates $V_r = \{v + r \bmod 1 : v \in V\}$ are pairwise disjoint and cover $[0, 1)$. If $V$ were measurable, each $V_r$ would be measurable with $\lambda(V_r) = \lambda(V)$ (translation invariance, applied piecewise), and countable additivity would give $1 = \sum_{r} \lambda(V)$, which is $0$ or $\infty$. Contradiction. So no measure on all of $\mathcal P(\R)$ can be translation invariant, countably additive and give $[0, 1)$ measure $1$: σ-algebras are a necessity, not a fussiness.
+
+</Example>
+
+<Example title="Mass that escapes">
+
+Three sequences on $\R$ with Lebesgue measure, each converging to $0$ at every point:
+
+- $f_n = n \mathbf 1_{(0, 1/n)}$ (mass escapes **upwards**): $\int f_n = 1$ for all $n$;
+- $g_n = \mathbf 1_{[n, n+1]}$ (mass escapes **to infinity**): $\int g_n = 1$;
+- $h_n = \frac1n \mathbf 1_{[0, n]}$ (mass **spreads out**): $\int h_n = 1$, even though $h_n \to 0$ uniformly.
+
+In each case $\lim \int = 1 \ne 0 = \int \lim$. None is monotone, and none has an integrable dominating function: $\sup_n f_n(x) \approx 1/x$ near $0$, $\sup_n g_n = \mathbf 1_{[0, \infty)}$ and $\sup_n h_n(x) \approx 1/x$ for large $x$ are not integrable. Fatou's lemma, proved below, says that the inequality $\int \lim \le \lim \int$ is all that survives in general: mass can be lost in the limit, never created.
+
+</Example>
+
+</Section>
+
+<Section id="convergence" kind="proof" title="The convergence theorems">
+
+Throughout, $(X, \mathcal M, \mu)$ is a measure space. Two facts follow at once from the definitions: the integral is monotone ($0 \le f \le g$ implies $\int f \le \int g$), and for a simple $\varphi \ge 0$ the map $A \mapsto \int_A \varphi \, d\mu = \sum_i c_i \mu(A \cap E_i)$ is a measure on $\mathcal M$, hence continuous from below.
+
+<Theorem name="Monotone convergence theorem (Beppo Levi, 1906)">
+
+If $f_n : X \to [0, \infty]$ are measurable and $f_1 \le f_2 \le \cdots$ pointwise, with $f = \lim f_n$, then $\int f \, d\mu = \lim_{n \to \infty} \int f_n \, d\mu$.
+
+</Theorem>
+
+<Proof>
+
+The limit $f = \sup_n f_n$ is measurable, since $\{f > t\} = \bigcup_n \{f_n > t\}$. By monotonicity $\int f_n$ increases to some $L \le \int f$. For the reverse inequality, fix a simple $0 \le \varphi \le f$ and $\alpha \in (0, 1)$, and let $E_n = \{x : f_n(x) \ge \alpha \varphi(x)\}$. These sets are measurable and increasing, and their union is $X$: if $\varphi(x) = 0$ then $x \in E_1$, and if $\varphi(x) > 0$ then $\alpha\varphi(x) < \varphi(x) \le f(x)$, so $f_n(x) \ge \alpha \varphi(x)$ for large $n$. Hence
+
+$$
+\int f_n \, d\mu \ge \int_{E_n} f_n \, d\mu \ge \alpha \int_{E_n} \varphi \, d\mu \xrightarrow[n \to \infty]{} \alpha \int \varphi \, d\mu,
+$$
+
+by continuity from below of $A \mapsto \int_A \varphi$. So $L \ge \alpha \int \varphi$. Let $\alpha \to 1$ and take the supremum over $\varphi$: $L \ge \int f$.
+
+</Proof>
+
+Applied to the partial sums, monotone convergence gives $\int \sum_n g_n = \sum_n \int g_n$ for measurable $g_n \ge 0$ — termwise integration of non-negative series with no further hypothesis. With the dyadic approximations $\varphi_n \uparrow f$ it also shows that the integral is additive, $\int (f + g) = \int f + \int g$, because it is additive on simple functions.
+
+<Theorem name="Fatou's lemma (1906)">
+
+For measurable $f_n : X \to [0, \infty]$, $\displaystyle \int \liminf_{n \to \infty} f_n \, d\mu \le \liminf_{n \to \infty} \int f_n \, d\mu$.
+
+</Theorem>
+
+<Proof>
+
+Let $g_k = \inf_{n \ge k} f_n$. Then $g_k$ is measurable, $g_1 \le g_2 \le \cdots$, and $\lim_k g_k = \liminf_n f_n$. Since $g_k \le f_n$ for every $n \ge k$, we have $\int g_k \le \inf_{n \ge k} \int f_n$. By monotone convergence, $\int \liminf f_n = \lim_k \int g_k \le \lim_k \inf_{n \ge k} \int f_n = \liminf \int f_n$.
+
+</Proof>
+
+<Theorem name="Dominated convergence theorem (Lebesgue)">
+
+Let $f_n$ be real measurable functions with $f_n \to f$ almost everywhere, and suppose there is $g \in \mathcal L^1(\mu)$ with $|f_n| \le g$ a.e. for all $n$. Then $f \in \mathcal L^1(\mu)$ and $\int f_n \, d\mu \to \int f \, d\mu$; in fact $\int |f_n - f| \, d\mu \to 0$.
+
+</Theorem>
+
+<Proof>
+
+Changing the functions on a null set changes no integral, so we may assume $f_n \to f$ and $|f_n| \le g$ everywhere. Then $|f| \le g$, so $f$ is integrable. The functions $g + f_n$ and $g - f_n$ are non-negative, so Fatou's lemma gives
+
+$$
+\int g + \int f \le \liminf_n \int (g + f_n) = \int g + \liminf_n \int f_n, \qquad \int g - \int f \le \int g - \limsup_n \int f_n.
+$$
+
+Since $\int g < \infty$ we may cancel it: $\limsup \int f_n \le \int f \le \liminf \int f_n$. For the stronger statement apply what was just proved to $|f_n - f| \to 0$, which is dominated by $2g$.
+
+</Proof>
+
+In the examples above no integrable $g$ dominates, and the conclusion fails. Dominated convergence also justifies **differentiation under the integral sign**: if $\partial_t F(x, t)$ exists and $|\partial_t F(x, t)| \le g(x)$ with $g$ integrable, then $\frac{d}{dt} \int F(x, t) \, dx = \int \partial_t F(x, t) \, dx$ (apply dominated convergence to difference quotients, bounded by $g$ via the mean value theorem).
+
+</Section>
+
+<Section id="products-lp" kind="proof" title="Products, Lᵖ and the Riemann integral">
+
+<Theorem name="Fubini–Tonelli theorem (Fubini 1907, Tonelli 1909)">
+
+Let $(X, \mathcal M, \mu)$ and $(Y, \mathcal N, \nu)$ be **σ-finite** and $\mu \times \nu$ the product measure on $\mathcal M \otimes \mathcal N$, determined by $(\mu \times \nu)(A \times B) = \mu(A) \nu(B)$.
+
+1. (Tonelli) If $f : X \times Y \to [0, \infty]$ is $\mathcal M \otimes \mathcal N$-measurable, then $x \mapsto \int f(x, y) \, d\nu(y)$ and $y \mapsto \int f(x, y) \, d\mu(x)$ are measurable and
+$$
+\int_{X \times Y} f \, d(\mu \times \nu) = \int_X \int_Y f(x, y) \, d\nu(y) \, d\mu(x) = \int_Y \int_X f(x, y) \, d\mu(x) \, d\nu(y).
+$$
+2. (Fubini) If $f \in \mathcal L^1(\mu \times \nu)$, then $f(x, \cdot) \in \mathcal L^1(\nu)$ for a.e. $x$, $f(\cdot, y) \in \mathcal L^1(\mu)$ for a.e. $y$, the a.e.-defined iterated integrals are integrable, and the same equalities hold.
+
+</Theorem>
+
+*About the proof.* The product measure comes from the premeasure on finite unions of rectangles via Carathéodory. One proves the formula for indicators of rectangles, extends it to all of $\mathcal M \otimes \mathcal N$ with the monotone class lemma (this is where σ-finiteness enters, through continuity from above), then to simple functions by linearity, to non-negative functions by monotone convergence, and to integrable functions by splitting $f = f^+ - f^-$. Details: Folland, §2.5, or Stein–Shakarchi, Ch. 2 §3. In practice one uses Tonelli on $|f|$ to *check* integrability and then Fubini to compute.
+
+Both hypotheses are needed:
+
+- **Integrability.** On $\N \times \N$ with counting measure let $a_{m,n} = 1$ if $m = n$, $a_{m,n} = -1$ if $m = n + 1$, and $0$ otherwise. Every column sums to $0$ and every row except the first sums to $0$, so $\sum_n \sum_m a_{m,n} = 0$ while $\sum_m \sum_n a_{m,n} = 1$. Here $\sum |a_{m,n}| = \infty$. (A continuous version: $(x^2 - y^2)/(x^2 + y^2)^2$ on $(0, 1)^2$ has iterated integrals $\pm \pi/4$.)
+- **σ-finiteness.** Let $\mu$ be Lebesgue measure and $\nu$ counting measure on $[0, 1]$, and $f = \mathbf 1_{\{x = y\}}$. Then $\int \!\! \int f \, d\nu \, d\mu = \int 1 \, d\mu = 1$ but $\int \!\! \int f \, d\mu \, d\nu = \int 0 \, d\nu = 0$.
+
+<Theorem name="Riesz–Fischer theorem (1907)">
+
+For $1 \le p \le \infty$, $L^p(\mu)$ is a Banach space. Moreover every sequence converging in $L^p$ has a subsequence converging almost everywhere.
+
+</Theorem>
+
+<Proof>
+
+*Step 1: a criterion.* A normed space is complete if every absolutely convergent series $\sum \|u_k\| < \infty$ converges. Indeed, given a Cauchy sequence $(f_n)$ choose $n_1 < n_2 < \cdots$ with $\|f_m - f_n\| < 2^{-j}$ for $m, n \ge n_j$. The series $f_{n_1} + \sum_j (f_{n_{j+1}} - f_{n_j})$ is absolutely convergent, so its partial sums $f_{n_k}$ converge; and a Cauchy sequence with a convergent subsequence converges.
+
+*Step 2: $1 \le p < \infty$.* Let $\sum_k \|u_k\|_p = B < \infty$. Put $G_n = \sum_{k \le n} |u_k|$ and $G = \sum_k |u_k| \in [0, \infty]$. By Minkowski $\|G_n\|_p \le B$, and by monotone convergence $\int G^p = \lim \int G_n^p \le B^p$. So $G < \infty$ a.e., and on that set $\sum_k u_k(x)$ converges absolutely to some $F(x)$ (set $F = 0$ elsewhere). Then $|F| \le G$, so $F \in L^p$, and $|F - \sum_{k \le n} u_k|^p \le (2G)^p \in L^1$. By dominated convergence $\|F - \sum_{k \le n} u_k\|_p \to 0$. The same argument applied to the series of Step 1 shows that the subsequence $f_{n_k}$ converges a.e.
+
+*Step 3: $p = \infty$.* If $(f_n)$ is Cauchy in $L^\infty$, the sets $\{|f_m - f_n| > \|f_m - f_n\|_\infty\}$ are null; off their (countable, hence null) union, $(f_n)$ is uniformly Cauchy and converges uniformly to a bounded $f$, and $\|f_n - f\|_\infty \to 0$.
+
+</Proof>
+
+The subsequence cannot be avoided. The **typewriter sequence** — indicators of $[0, 1]$, then $[0, \tfrac12], [\tfrac12, 1]$, then the four quarters, and so on — tends to $0$ in $L^1$ (the integrals are the interval lengths), but at every $x \in [0, 1]$ it takes the value $1$ infinitely often. When $p = 2$, $L^2(\mu)$ is a Hilbert space with $\langle f, g \rangle = \int f \bar g \, d\mu$; it is the stage for Fourier analysis and quantum mechanics.
+
+<Theorem name="Theorem (Riemann integrable functions are Lebesgue integrable)">
+
+If $f : [a, b] \to \R$ is Riemann integrable, then $f$ is Lebesgue measurable and integrable, and its Lebesgue integral equals its Riemann integral.
+
+</Theorem>
+
+<Proof>
+
+Take partitions $P_1 \subseteq P_2 \subseteq \cdots$, each refining the last, whose lower and upper Riemann sums $L_k, U_k$ both converge to the Riemann integral $R$. Let $\ell_k \le f \le u_k$ be the corresponding lower and upper step functions (on each subinterval, the infimum and supremum of $f$), so $\int \ell_k \, d\lambda = L_k$ and $\int u_k \, d\lambda = U_k$. Refinement makes $\ell_k$ increase and $u_k$ decrease; their limits $\ell \le f \le u$ are Borel measurable and bounded by $\sup |f|$. By dominated convergence $\int \ell = \lim L_k = R = \lim U_k = \int u$, so $\int (u - \ell) = 0$ with $u - \ell \ge 0$, and therefore $u = \ell$ a.e. (Markov's inequality: $\lambda(\{u - \ell \ge 1/m\}) \le m \int (u - \ell) = 0$ for every $m$). Thus $f = \ell$ except on a null set, so $f$ is measurable for the complete σ-algebra $\mathcal L$, and $\int f \, d\lambda = \int \ell \, d\lambda = R$.
+
+</Proof>
+
+Lebesgue's criterion sharpens this: a bounded function on $[a, b]$ is Riemann integrable exactly when its set of discontinuities is null. Improper Riemann integrals are another matter: $\int_0^\infty \frac{\sin x}{x} \, dx = \frac\pi2$ exists as an improper Riemann integral, but $\frac{\sin x}{x} \notin \mathcal L^1(0, \infty)$ because $\int_0^\infty \frac{|\sin x|}{x} \, dx = \infty$. The Lebesgue integral is an **absolute** integral.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Measure theory in Lean and Mathlib">
+
+Mathlib's measure theory is one of its largest and most used libraries: probability theory, the Fourier transform and the integration on manifolds are all built on it. Its `volume` on `ℝ` is Lebesgue measure, constructed from outer measure with Carathéodory's criterion via Stieltjes functions, exactly as above. It extends length:
+
+<Lean decl="Lumenary.MeasureTheory.volume_Icc" />
+
+The lesson's proof that $\Q$ is null — a countable union of null singletons — and Mathlib's general statement for countable sets:
+
+<Lean decl="Lumenary.MeasureTheory.volume_rat_eq_zero" />
+
+<Lean decl="Lumenary.MeasureTheory.countable_null" />
+
+Mathlib writes `∫⁻ x, f x ∂μ` for the integral of a function into $[0, \infty]$ (the "lintegral", defined as the supremum over simple functions below $f$) and `∫ x, f x ∂μ` for the Bochner integral of integrable functions into a Banach space. Markov's inequality, proved here by comparing $f$ with the simple function $\varepsilon \mathbf 1_{\{f \ge \varepsilon\}}$ (the step used in the Riemann–Lebesgue comparison above):
+
+<Lean decl="Lumenary.MeasureTheory.markov" />
+
+The convergence theorems are library theorems. Note the different hypotheses: monotone convergence needs no integrability, dominated convergence needs one integrable bound for all $n$.
+
+<Lean decl="Lumenary.MeasureTheory.monotone_convergence" />
+
+<Lean decl="Lumenary.MeasureTheory.dominated_convergence" />
+
+The escaping-mass sequence $f_n = n \mathbf 1_{(0, 1/n)}$, formalised and analysed from scratch: every integral is $1$, every pointwise limit is $0$. Together these two theorems show formally that the hypotheses of the convergence theorems cannot simply be dropped.
+
+<Lean decl="Lumenary.MeasureTheory.escapingMass" />
+
+<Lean decl="Lumenary.MeasureTheory.escapingMass_lintegral" />
+
+<Lean decl="Lumenary.MeasureTheory.escapingMass_tendsto_zero" />
+
+Tonelli's theorem (Mathlib states it for s-finite measures, a class containing the σ-finite ones), the Riesz–Fischer theorem as a `CompleteSpace` instance on Mathlib's `Lp` (a type of a.e.-equivalence classes), and the first Borel–Cantelli lemma:
+
+<Lean decl="Lumenary.MeasureTheory.tonelli" />
+
+<Lean decl="Lumenary.MeasureTheory.lp_complete" />
+
+<Lean decl="Lumenary.MeasureTheory.borel_cantelli" />
+
+**Not formalised here:** the Carathéodory construction and the Heine–Borel argument for $\lambda^*([a, b])$ (Mathlib has both, as `MeasureTheory.OuterMeasure.caratheodory` and `StieltjesFunction.outer_Ioc`), the proofs of the convergence theorems and of Riesz–Fischer (we cite Mathlib's), and the comparison with the Riemann integral (Mathlib relates `intervalIntegral` to antiderivatives through the fundamental theorem of calculus rather than through Riemann sums).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing with null sets and escaping mass">
+
+The first experiment builds the stages of the Cantor set with exact fractions. It confirms the lengths $(2/3)^n$, checks that $1/4 = 0.\overline{02}_3$ survives every stage computed without ever being an endpoint (so the Cantor set is more than its endpoints), and exhibits the injection from $0/1$-strings that drives the uncountability proof.
+
+<Python id="measure_theory_cantor_set" />
+
+The second computes, exactly, the integrals and point values of four sequences: escaping mass, a travelling bump, the dominated sequence $x^n$ on $[0, 1]$, and the typewriter sequence. Watch the value at $x = 1/3$ return to $1$ once in every dyadic block, although the integrals shrink to $0$; along the subsequence $k = 2^m$ it converges, as Riesz–Fischer predicts.
+
+<Python id="measure_theory_convergence_modes" />
+
+Both are finite computations: they display the phenomena and supply counterexamples, but the limiting statements are the theorems above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Watch the mass escape">
+
+The shaded area is $\int f_n = 1$ for every $n$. Move the slider: the tower grows taller and thinner, and any fixed $x > 0$ is eventually outside it. Where does the mass go, and why does no single integrable function lie above every tower?
+
+<FunctionPlot
+  fns={["n*(sign(x) - sign(x - 1/n))/2"]}
+  labels={["f_n = n · 1_(0, 1/n)"]}
+  params={[{ name: "n", min: 1, max: 20, step: 1, value: 2 }]}
+  x={[-0.25, 1.25]}
+  y={[-1, 21]}
+  shade={0}
+  shadeRange={[-0.25, 1.25]}
+  title="Escaping mass: integral 1, pointwise limit 0"
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A set of measure zero must be countable."** Countable sets are null, but the Cantor set is uncountable — it has the cardinality of $\R$ — and null. Null sets can be topologically large too: there are dense $G_\delta$ null sets.
+
+</Misconception>
+
+<Misconception>
+
+**"If $f_n \to f$ pointwise, then $\int f_n \to \int f$."** Not without a hypothesis. Mass can escape upwards ($n \mathbf 1_{(0, 1/n)}$), to infinity ($\mathbf 1_{[n, n+1]}$) or by spreading ($\frac1n \mathbf 1_{[0, n]}$, even with uniform convergence on an infinite measure space). Check monotonicity (MCT) or find one integrable dominating function (DCT); otherwise only Fatou's inequality survives.
+
+</Misconception>
+
+<Misconception>
+
+**"Every subset of $\R$ is Lebesgue measurable."** Vitali's set is not. Its construction uses the axiom of choice, and Solovay (1970) showed that some choice is necessary: in ZF with dependent choice it is consistent (relative to an inaccessible cardinal) that every set of reals is measurable. No explicitly definable Borel or even analytic set is non-measurable.
+
+</Misconception>
+
+<Misconception>
+
+**"Lebesgue integrable is the same as improperly Riemann integrable."** The Lebesgue integral is absolute: $f$ is integrable only if $|f|$ is. So $\frac{\sin x}{x}$ has an improper Riemann integral on $(0, \infty)$ but is not Lebesgue integrable there; conversely $\mathbf 1_\Q$ is Lebesgue but not Riemann integrable on $[0, 1]$.
+
+</Misconception>
+
+<Misconception>
+
+**"Convergence in $L^1$ means convergence almost everywhere" (or the reverse).** The typewriter sequence converges to $0$ in $L^1$ and at no point; $n \mathbf 1_{(0, 1/n)}$ converges everywhere and not in $L^1$. What is true: $L^p$ convergence gives an a.e.-convergent subsequence, and a.e. convergence plus domination gives $L^1$ convergence.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Measures as functionals, and measure versus category">
+
+On a locally compact Hausdorff space $X$, the **Riesz–Markov–Kakutani theorem** identifies the positive linear functionals $I$ on $C_c(X)$ with the Radon measures: $I(f) = \int f \, d\mu$ for a unique regular Borel measure $\mu$. So a measure is determined by how it integrates continuous functions — a topological object. Regularity ties the two worlds together: for Lebesgue measure, $\lambda(E) = \inf\{\lambda(U) : U \supseteq E \text{ open}\} = \sup\{\lambda(K) : K \subseteq E \text{ compact}\}$, and **Lusin's theorem** says a measurable function is continuous once a set of arbitrarily small measure is removed.
+
+Yet "small" means different things to the topologist and the measure theorist. The example of small open dense sets shows $\R = M \cup N$ with $M$ meagre and $N$ null: the σ-ideals of meagre sets and of null sets are "orthogonal". Oxtoby's *Measure and Category* (1971) develops this duality, where many theorems have a twin with "null" replaced by "meagre" and the proofs differ.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Invariance, Haar measure and Hausdorff dimension">
+
+Lebesgue measure on $\R^n$ is characterised geometrically: it is the unique translation-invariant Borel measure giving the unit cube measure $1$, and it transforms under a linear map $A$ by $\lambda(A E) = |\det A| \, \lambda(E)$ — the determinant *is* the volume scaling factor, and rotations preserve volume. Haar (1933) generalised this: every locally compact group carries a left-invariant Radon measure, unique up to scaling — the starting point of <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink> on groups. In $\R^3$ the Banach–Tarski paradox (1924) decomposes a ball into finitely many pieces that can be rigidly reassembled into two balls; the pieces are non-measurable, which is why volume cannot be defined for all sets even with only finite additivity in dimension $3$.
+
+Hausdorff (1918) built measures $\mathcal H^s$ for every real $s \ge 0$ from covers by small sets of diameter $\le \delta$, weighting each by $\operatorname{diam}^s$. Each set has a critical exponent, its **Hausdorff dimension**, where $\mathcal H^s$ jumps from $\infty$ to $0$. The Cantor set has dimension $\log 2 / \log 3 \approx 0.631$: it is null for length but has positive finite $\mathcal H^{\log 2/\log 3}$-measure. Geometric measure theory measures curves, surfaces and fractals this way.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Kolmogorov's axioms">
+
+In 1933 Kolmogorov founded probability on measure theory: a probability space is a measure space of total mass $1$, an event is a measurable set, a random variable is a measurable function, and expectation is the integral, $\mathbb E[X] = \int X \, dP$. The dictionary turns theorems into theorems: Markov's inequality is $P(X \ge \varepsilon) \le \mathbb E[X]/\varepsilon$; dominated convergence justifies exchanging limits and expectations; Fubini says $\mathbb E[XY] = \mathbb E[X] \mathbb E[Y]$ for independent integrable variables, because independence means the joint law is a product measure; the first Borel–Cantelli lemma (formalised above) says that if $\sum P(A_n) < \infty$, almost surely only finitely many $A_n$ occur.
+
+Infinite products of probability spaces — infinitely many coin tosses — exist by the Kolmogorov extension theorem, itself a Carathéodory argument. The flip of a fair coin infinitely often, read as binary digits, is Lebesgue measure on $[0, 1]$; the strong law of large numbers then becomes Borel's theorem (1909) that almost every real number is normal in base $2$. See <TopicLink id="math.prob.measure-theoretic-probability">measure-theoretic probability</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="How much choice does measure need?">
+
+Vitali's set uses the axiom of choice, and this is unavoidable. Solovay (1970) constructed, from a model of ZFC with an inaccessible cardinal, a model of ZF plus dependent choice (enough for all of classical analysis, including the convergence theorems) in which every subset of $\R$ is Lebesgue measurable; Shelah (1984) showed the inaccessible cannot be removed from that statement. Positively, sets that can be *defined* simply are measurable: analytic sets (projections of Borel sets) are universally measurable, a theorem of Lusin. So the non-measurable sets of analysis are those produced by choice, never those written down by a formula of low complexity — a theme of <TopicLink id="math.found.descriptive-set-theory">descriptive set theory</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Bernhard Riemann** defined his integral in his 1854 Habilitation (published 1868); **Giuseppe Peano** (1887) and **Camille Jordan** (1892) defined content using finite covers, which cannot measure $\Q \cap [0, 1]$.
+- **Émile Borel** (1898) introduced countably additive measure on the sets now called Borel sets. **Henri Lebesgue**'s thesis *Intégrale, longueur, aire* (1902) defined the measure and the integral and proved the dominated convergence theorem for bounded functions; **Giuseppe Vitali** (1905) constructed a non-measurable set.
+- In 1906–1907 came **Beppo Levi** (monotone convergence), **Pierre Fatou** (his lemma, in a thesis on Fourier series and analytic functions), **Frigyes Riesz** and **Ernst Fischer** (completeness of $L^2$, in connection with Fourier series), and **Guido Fubini** (iterated integrals); **Leonida Tonelli** (1909) treated non-negative functions.
+- **Johann Radon** (1913) integrated with respect to general measures on $\R^n$; **Constantin Carathéodory** (1914) introduced outer measure and his criterion; **Maurice Fréchet** (1915) defined integrals on abstract sets; **Felix Hausdorff** (1918) defined the measures and dimension named after him.
+- **Andrey Kolmogorov**'s *Grundbegriffe der Wahrscheinlichkeitsrechnung* (1933) made measure theory the foundation of probability; **Alfréd Haar** (1933) proved the existence of invariant measures on separable locally compact groups, with **John von Neumann** (uniqueness) and **André Weil** (all locally compact groups) completing the theory. **Frigyes Riesz** (1909, for $C[0, 1]$), **Andrey Markov Jr.** (1938) and **Shizuo Kakutani** (1941) proved the representation theorem for functionals.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Gerald B. Folland, *Real Analysis: Modern Techniques and Their Applications* (2nd ed., 1999), Chapters 1–3 and 6 — the proofs above follow its route.
+- Elias M. Stein and Rami Shakarchi, *Real Analysis: Measure Theory, Integration, and Hilbert Spaces* (2005) — Lebesgue measure on $\R^n$ first, with many applications.
+- Terence Tao, *An Introduction to Measure Theory* (2011) — a careful, example-rich development, with the "escape of mass" taxonomy.
+- Walter Rudin, *Real and Complex Analysis* (3rd ed., 1987) — the Riesz representation theorem and $L^p$ spaces, concisely.
+- John C. Oxtoby, *Measure and Category* (2nd ed., 1980) — the parallel between null and meagre sets.
+- Vladimir I. Bogachev, *Measure Theory* (2007), 2 volumes — comprehensive reference with extensive historical notes.
+
+</Section>

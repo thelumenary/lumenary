@@ -1,0 +1,527 @@
+---
+slug: transformation-geometry
+topic: math.geom.transformation-geometry
+title: Transformation geometry and the Erlangen programme
+subtitle: Every rigid motion of the plane is one of four kinds — and, as Felix Klein saw in 1872, a geometry is a group of transformations together with everything it leaves unchanged.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 110
+order: 5009
+objectives:
+  - Prove that every isometry of the plane is a translation, a rotation, a reflection or a glide reflection, and that each is a product of at most three reflections
+  - Represent isometries, similarities and affine maps by complex numbers and by matrices in homogeneous coordinates, and compose them
+  - Prove that affine maps preserve parallelism and ratios along lines but in general not lengths or angles
+  - Prove that projective transformations of a line preserve the cross-ratio, and use it in perspective drawings
+  - Explain Klein's Erlangen programme and compare the invariants of Euclidean, similarity, affine and projective geometry
+narrators: []
+lean:
+  - Lumenary.TransformationGeometry.eq_of_three_dists
+  - Lumenary.TransformationGeometry.fix_three_eq_id
+  - Lumenary.TransformationGeometry.isometry_normal_form
+  - Lumenary.TransformationGeometry.isometry_normal_form_mathlib
+  - Lumenary.TransformationGeometry.direct_is_rotation
+  - Lumenary.TransformationGeometry.opposite_square
+  - Lumenary.TransformationGeometry.opposite_fixed_iff
+  - Lumenary.TransformationGeometry.opposite_with_fixed_point
+  - Lumenary.TransformationGeometry.glide_decomposition
+  - Lumenary.TransformationGeometry.glide_no_fixed_point
+  - Lumenary.TransformationGeometry.reflect_reflect
+  - Lumenary.TransformationGeometry.parallel_reflections
+  - Lumenary.TransformationGeometry.conj_translation
+  - Lumenary.TransformationGeometry.affine_preserves_ratio
+  - Lumenary.TransformationGeometry.shear_breaks_right_angle
+  - Lumenary.TransformationGeometry.crossRatio
+  - Lumenary.TransformationGeometry.mobius
+  - Lumenary.TransformationGeometry.mobius_sub
+  - Lumenary.TransformationGeometry.crossRatio_mobius
+compute: [transformation_geometry_isometries, transformation_geometry_erlangen]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What stays the same?">
+
+Walk along a beach and look back at your footprints: left, right, left, right. No single rotation or reflection carries the whole trail onto itself, yet the trail clearly has a symmetry — *reflect in the line you walked along, then slide forward one step*. That motion is a **glide reflection**, and it is one of exactly four kinds of rigid motion of the plane.
+
+Now photograph a straight railway line. In the photo the rails meet at the horizon and the equally spaced sleepers crowd together. Lengths, angles and even parallelism are destroyed. And yet something survives: a certain combination of four distances along a line, the **cross-ratio**, is exactly the same in the photo as on the ground. With it you can predict where the next sleeper will appear in the picture.
+
+Which properties of a figure are "geometric"? In 1872 the 23-year-old Felix Klein gave an answer that reorganised the subject: *choose a group of transformations; the geometry is the study of whatever that group leaves unchanged.* Rigid motions give Euclidean geometry; the projections of a camera give projective geometry; in between lie similarity and affine geometry; and the non-Euclidean geometries fit into the same scheme. This lesson proves the classification of rigid motions, works out the invariants of the larger groups, and explains Klein's programme. It builds on <TopicLink id="math.geom.euclidean-geometry">Euclidean geometry</TopicLink> and <TopicLink id="math.geom.rigid-motions-similarity">rigid motions and similarity</TopicLink> from school, on matrices from <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>, and on the notion of a group from <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Mirrors make everything">
+
+A single mirror reflects the plane. Two mirrors, one after the other, do something that is not a reflection at all: if the mirrors cross at an angle $\theta$, the result is a **rotation** about the crossing point by $2\theta$; if they are parallel at distance $d$, it is a **translation** by $2d$ perpendicular to them. A kaleidoscope works this way.
+
+Rigid motions come in two orientations. A rotation or translation keeps a left hand a left hand (it is **direct**); a reflection turns it into a right hand (it is **opposite**). Each mirror flips orientation, so an even number of reflections is direct and an odd number is opposite. Three mirrors in general position give a glide reflection — the footprint symmetry.
+
+<Figure caption="Footprints: the trail is carried onto itself by a glide reflection — reflect in the dashed line, then translate along it by one step. The motion has no fixed point, and doing it twice is a translation by two steps.">
+<svg viewBox="0 0 420 120" role="img" aria-label="Alternating left and right footprints along a dashed line, each the mirror image of the previous one shifted forward">
+  <line x1="10" y1="60" x2="410" y2="60" stroke="var(--ink-2)" strokeWidth="1.5" strokeDasharray="6 5" />
+  <ellipse cx="50" cy="38" rx="18" ry="9" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="70" cy="31" r="4" fill="var(--gold)" />
+  <ellipse cx="130" cy="82" rx="18" ry="9" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="150" cy="89" r="4" fill="var(--gold)" />
+  <ellipse cx="210" cy="38" rx="18" ry="9" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="230" cy="31" r="4" fill="var(--gold)" />
+  <ellipse cx="290" cy="82" rx="18" ry="9" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="310" cy="89" r="4" fill="var(--gold)" />
+  <ellipse cx="370" cy="38" rx="18" ry="9" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <circle cx="390" cy="31" r="4" fill="var(--gold)" />
+  <path d="M 60 50 Q 95 60 120 72" fill="none" stroke="var(--human)" strokeWidth="1.5" />
+  <polygon points="120,72 110,72 116,64" fill="var(--human)" />
+</svg>
+</Figure>
+
+The best coordinate system for all of this is the complex plane. A point is a complex number $z$, distance is $|z - w|$, a rotation about $0$ by $\theta$ is $z \mapsto e^{i\theta} z$, a translation is $z \mapsto z + b$, and complex conjugation $z \mapsto \bar z$ is the reflection in the real axis.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="isometry">
+
+An **isometry** of the plane is a map $f : \R^2 \to \R^2$ that preserves distances: $|f(z) - f(w)| = |z - w|$ for all $z, w$. We identify $\R^2$ with $\C$.
+
+</Definition>
+
+<Definition term="the four types">
+
+- A **translation** by $b$: $z \mapsto z + b$.
+- A **rotation** about $c$ by the angle $\theta$: $z \mapsto c + e^{i\theta}(z - c)$.
+- A **reflection** in a line $\ell$: each point goes to its mirror image across $\ell$. In the line through $c$ in direction $e^{i\theta}$, it is $z \mapsto c + e^{2i\theta}\,\overline{(z - c)}$.
+- A **glide reflection**: a reflection in a line $\ell$ followed by a non-zero translation *parallel to* $\ell$.
+
+An isometry is **direct** if it preserves orientation (translations, rotations) and **opposite** if it reverses it (reflections, glide reflections).
+
+</Definition>
+
+<Definition term="similarity, affine map">
+
+A **similarity** multiplies all distances by a fixed $k > 0$; in complex form, $z \mapsto az + b$ or $z \mapsto a\bar z + b$ with $a \ne 0$. An **affine map** of $\R^n$ is a map $x \mapsto Ax + b$ with $A$ an invertible $n \times n$ matrix. In **homogeneous coordinates**, writing the point $x$ as the column $(x, 1)$, it is the $(n+1) \times (n+1)$ matrix $\begin{pmatrix} A & b \\ 0 & 1 \end{pmatrix}$, and composition of affine maps is matrix multiplication.
+
+</Definition>
+
+<Definition term="projective line, projective plane, projective transformation">
+
+The **real projective line** is $\R \cup \{\infty\}$; its **projective transformations** are the maps $x \mapsto \dfrac{px + q}{rx + s}$ with $ps - qr \ne 0$ (with the conventions $-s/r \mapsto \infty$ and $\infty \mapsto p/r$). The **real projective plane** $\R P^2$ is the set of lines through the origin in $\R^3$; the line through $(x, y, z) \ne 0$ is written $[x : y : z]$. Ordinary points $(x, y)$ are $[x : y : 1]$, and the points $[x : y : 0]$ form the **line at infinity**, where parallel lines meet. A **projective transformation** of $\R P^2$ is $[v] \mapsto [Mv]$ for an invertible $3 \times 3$ matrix $M$; $M$ and $cM$ ($c \ne 0$) give the same transformation.
+
+</Definition>
+
+<Definition term="cross-ratio">
+
+The **cross-ratio** of four distinct points $a, b, c, d$ on a line (given by coordinates) is
+
+$$
+(a, b;\, c, d) = \frac{(c - a)(d - b)}{(c - b)(d - a)} .
+$$
+
+</Definition>
+
+<Definition term="geometry in the sense of Klein">
+
+A **group action** of a group $G$ on a set $X$ assigns to each $g \in G$ a bijection $X \to X$, compatibly with composition. A property or quantity is an **invariant** of the action if it is unchanged by every $g \in G$. In Klein's sense, a **geometry** is a pair $(X, G)$; its theorems are the statements about invariants, and two figures are *equivalent* (congruent, similar, …) if some $g \in G$ carries one to the other.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Recognising the type from the formula">
+
+- $z \mapsto -z + 4$: a direct isometry with $a = -1 \ne 1$. Its fixed point solves $c = -c + 4$, so $c = 2$; it is the half-turn about $2$.
+- $z \mapsto iz$: the rotation about $0$ by $90^\circ$.
+- $z \mapsto \bar z + 2i$: opposite. It fixes every point of the line $\operatorname{Im} z = 1$ (if $z = x + i$ then $\bar z + 2i = x + i$): the reflection in that line.
+- $z \mapsto \bar z + 1$: opposite with no fixed point ($\operatorname{Re}$ would give $0 = 1$): the footprint glide reflection along the real axis.
+
+</Example>
+
+<Example title="Two mirrors">
+
+Reflection in the real axis is $z \mapsto \bar z$; reflection in the line $y = x$ (direction $e^{i\pi/4}$) is $z \mapsto e^{i\pi/2}\bar z = i\bar z$. First the real axis, then $y = x$: $z \mapsto i\,\overline{\bar z} = iz$, the rotation by $90^\circ = 2 \times 45^\circ$. In the other order: $z \mapsto \overline{i\bar z} = -iz$, the rotation by $-90^\circ$. Reflections do not commute.
+
+</Example>
+
+<Example title="An affine map that is not a similarity">
+
+The shear $(x, y) \mapsto (x + y, y)$ has matrix $\begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$. It sends the perpendicular vectors $(1, 0)$ and $(0, 1)$ to $(1, 0)$ and $(1, 1)$, at $45^\circ$; it sends the unit circle to an ellipse; but it maps lines to lines, keeps parallel lines parallel, and keeps midpoints midpoints. It preserves area ($\det = 1$).
+
+</Example>
+
+<Example title="Perspective">
+
+A camera at the origin of $\R^3$ photographs the ground plane $z = -1$ onto the picture plane $y = 1$: the point $(x, t, -1)$ of the ground, at distance $t$ ahead, appears at $(x/t, 1, -1/t)$. A ground line receding at constant spacing $t = 1, 2, 3, \dots$ appears at heights $-1, -\tfrac12, -\tfrac13, \dots$ — crowding towards the horizon, which is the image of the points at infinity. In homogeneous coordinates the map is linear, so it is a projective transformation.
+
+</Example>
+
+</Section>
+
+<Section id="isometries" kind="proof" title="The classification of plane isometries">
+
+<Theorem name="Lemma (three distances determine a point)">
+
+If $|w| = |z|$, $|w - 1| = |z - 1|$ and $|w - i| = |z - i|$, then $w = z$.
+
+</Theorem>
+
+<Proof>
+
+For any $c$, $|w - c|^2 = |w|^2 - 2\operatorname{Re}(w \bar c) + |c|^2$. Comparing the first two hypotheses (with $c = 1$) gives $\operatorname{Re} w = \operatorname{Re} z$; comparing the first and third (with $c = i$, so $\operatorname{Re}(w\,\bar\imath) = \operatorname{Im} w$) gives $\operatorname{Im} w = \operatorname{Im} z$.
+
+</Proof>
+
+<Theorem name="Theorem (normal form)">
+
+Every isometry $f$ of the plane has the form
+
+$$
+f(z) = az + b \quad\text{for all } z, \qquad\text{or}\qquad f(z) = a\bar z + b \quad\text{for all } z,
+$$
+
+with $|a| = 1$. In particular every isometry is a bijection, and the isometries form a group.
+
+</Theorem>
+
+<Proof>
+
+Put $b = f(0)$ and $a = f(1) - f(0)$; then $|a| = |1 - 0| = 1$. The map $g(z) = (f(z) - b)/a$ is again an isometry (dividing by $a$ does not change lengths) and fixes $0$ and $1$. The point $g(i)$ has distance $1$ from $g(0) = 0$ and $\sqrt2$ from $g(1) = 1$; writing $g(i) = x + iy$, this says $x^2 + y^2 = 1$ and $(x - 1)^2 + y^2 = 2$, so $x = 0$ and $y = \pm1$: $g(i) = \pm i$.
+
+If $g(i) = i$, then for every $z$ the point $g(z)$ has the same distances from $0, 1, i$ as $z$ (because $g$ preserves distances and fixes these three points), so $g(z) = z$ by the lemma, and $f(z) = az + b$. If $g(i) = -i$, then $h(z) = \overline{g(z)}$ is an isometry fixing $0$, $1$ and $i$, so $h(z) = z$, i.e. $g(z) = \bar z$, and $f(z) = a\bar z + b$.
+
+Both forms are bijections, with inverses $z \mapsto \bar a(z - b)$ and $z \mapsto a\,\overline{(z - b)}$ (using $a\bar a = 1$), which are isometries; composites of isometries are isometries.
+
+</Proof>
+
+<Theorem name="Theorem (the four types)">
+
+Every isometry of the plane other than the identity is exactly one of: a translation, a rotation, a reflection, a glide reflection.
+
+</Theorem>
+
+<Proof>
+
+**Direct**, $f(z) = az + b$. If $a = 1$, $f$ is a translation. If $a \neq 1$, let $c = b/(1 - a)$; then $c = ac + b$, so $f(z) - c = a(z - c)$: $f$ is the rotation about $c$ by $\arg a$.
+
+**Opposite**, $g(z) = a\bar z + b$. Since $a\bar a = 1$,
+
+$$
+g(g(z)) = a\,\overline{(a\bar z + b)} + b = a\bar a z + a\bar b + b = z + s, \qquad s = a\bar b + b,
+$$
+
+so $g \circ g$ is the translation by $s$.
+
+*If $s = 0$:* the point $c = b/2$ is fixed, since $g(c) = \tfrac12 a\bar b + b = \tfrac12(s + b) = c$. Then $b = c - a\bar c$, so $g(z) = c + a\,\overline{(z - c)}$. Writing $a = e^{2i\theta}$, the map $w \mapsto a\bar w$ sends $re^{i\varphi}$ to $re^{i(2\theta - \varphi)}$, the mirror image of $re^{i\varphi}$ in the line at angle $\theta$; so $g$ is the reflection in the line through $c$ at angle $\theta$.
+
+*If $s \neq 0$:* $g$ has no fixed point (a fixed point $c$ would give $c = g(g(c)) = c + s$). Let $w = s/2$. Then $a\bar w = \tfrac12 a(\bar a b + \bar b) = \tfrac12(b + a\bar b) = w$, so $w$ is fixed by $u \mapsto a\bar u$, which means $w$ is a real multiple of $e^{i\theta}$: it points along the mirror direction. The map $h(z) = g(z) - w = a\bar z + (b - w)$ has $a\overline{(b - w)} + (b - w) = s - (a\bar w + w) = s - 2w = 0$, so by the previous case $h$ is a reflection, in a line of direction $e^{i\theta}$. Hence $g = (\text{translation by } w) \circ h$ is a glide reflection.
+
+The types are distinct: translations and glide reflections have no fixed points, a rotation has exactly one, a reflection fixes a line; and a direct isometry is never opposite (if $az + b = a'\bar z + b'$ for all $z$, then $z = 0, 1, i$ give $b = b'$, $a = a'$ and $a = -a'$, so $a = 0$).
+
+</Proof>
+
+<Theorem name="Corollary (three mirrors suffice)">
+
+The composite of reflections in two lines meeting at angle $\theta$ is the rotation by $2\theta$ about their intersection; in two parallel lines at distance $d$, it is a translation by $2d$ perpendicular to them. Consequently every isometry of the plane is a product of at most three reflections.
+
+</Theorem>
+
+<Proof>
+
+For lines through $0$ at angles $\beta$ and then $\alpha$: $z \mapsto e^{2i\alpha}\,\overline{e^{2i\beta}\bar z} = e^{2i\alpha}e^{-2i\beta}z = e^{2i(\alpha - \beta)}z$; moving the intersection point to $c$ conjugates by a translation. For the vertical lines $\operatorname{Re} z = b$, then $\operatorname{Re} z = a$: $z \mapsto 2a - \overline{(2b - \bar z)} = z + 2(a - b)$. Conversely, a rotation about $c$ by $\varphi$ is the product of reflections in two lines through $c$ at angle $\varphi/2$, a translation by $t$ is the product of reflections in two lines perpendicular to $t$ at distance $|t|/2$, and a glide reflection is a reflection followed by a translation, i.e. three reflections.
+
+</Proof>
+
+The direct isometries form a subgroup of index $2$ (the kernel of "orientation", a homomorphism to $\{\pm1\}$). The translations form a **normal** subgroup: if $f(z) = az + b$, then $f \circ (z \mapsto z + t) \circ f^{-1}$ is the translation by $at$. In words: every observer, however they are placed and turned, agrees on which motions are translations — though not on their direction.
+
+</Section>
+
+<Section id="affine" kind="proof" title="Affine geometry">
+
+<Theorem name="Theorem (what affine maps preserve)">
+
+Let $f(x) = Ax + b$ with $A$ an invertible $n \times n$ matrix. Then
+
+1. $f\big((1 - t)x + ty\big) = (1 - t)f(x) + tf(y)$ for all $x, y$ and $t \in \R$: $f$ preserves ratios along lines, and in particular midpoints;
+2. $f$ maps lines to lines and parallel lines to parallel lines;
+3. $f$ multiplies all areas ($n = 2$) or volumes ($n = 3$) by the same factor $|\det A|$, so it preserves ratios of areas;
+4. for any two triangles $pqr$ and $p'q'r'$ in the plane there is exactly one affine map with $p \mapsto p'$, $q \mapsto q'$, $r \mapsto r'$.
+
+</Theorem>
+
+<Proof>
+
+(1) $A\big((1 - t)x + ty\big) + b = (1 - t)(Ax + b) + t(Ay + b)$ by linearity of $A$ (and $(1 - t) + t = 1$). (2) The line $\{p + tv\}$ goes to $\{f(p) + tAv\}$, a line since $Av \neq 0$; parallel lines have a common direction $v$, and their images the common direction $Av$. (3) This is the geometric meaning of the determinant (see <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>). (4) The vectors $q - p$, $r - p$ form a basis of $\R^2$, as do $q' - p'$, $r' - p'$; so there is exactly one linear $A$ with $A(q - p) = q' - p'$ and $A(r - p) = r' - p'$, and it is invertible. Then $b = p' - Ap$ is forced.
+
+</Proof>
+
+Affine maps do **not** preserve lengths or angles: the shear above turns a right angle into $45^\circ$ and a circle into an ellipse. Part 4 says something striking: *in affine geometry all triangles are alike.* So any theorem about triangles that only mentions affine notions — lines, midpoints, parallels, ratios along lines, ratios of areas — need only be checked for one triangle.
+
+<Example title="An Erlangen-style proof: the medians are concurrent">
+
+The three medians of a triangle (each joining a vertex to the midpoint of the opposite side) meet in a point that divides each of them in the ratio $2 : 1$. *Proof.* Medians and the ratio $2:1$ are affine notions, so by part 4 we may assume the triangle is equilateral, with vertices $1$, $\omega$, $\omega^2$ where $\omega = e^{2\pi i/3}$. The midpoint of the side opposite $1$ is $(\omega + \omega^2)/2 = -\tfrac12$, and the point $0$ lies on the segment from $1$ to $-\tfrac12$, dividing it as $1 : \tfrac12 = 2 : 1$. By the rotational symmetry $z \mapsto \omega z$, the same holds for the other two medians. Mapping back by an affine map, which preserves lines, midpoints and ratios along lines, proves the theorem for every triangle.
+
+</Example>
+
+</Section>
+
+<Section id="projective" kind="proof" title="Projective geometry and the cross-ratio">
+
+A projective transformation of $\R P^2$ maps lines to lines (planes through $0$ in $\R^3$ to planes through $0$) and preserves incidence: if three points are collinear, so are their images. Affine maps are exactly the projective transformations that map the line at infinity to itself (those whose matrix has last row $(0, 0, c)$). A general one can move the line at infinity into view — that is the horizon in a photograph — so parallel lines can become lines that meet, and ratios along a line are not preserved. What survives is the cross-ratio.
+
+<Theorem name="Lemma (the key identity)">
+
+If $m(x) = \dfrac{px + q}{rx + s}$ and $rx + s \neq 0 \neq ry + s$, then
+
+$$
+m(x) - m(y) = \frac{(ps - qr)(x - y)}{(rx + s)(ry + s)} .
+$$
+
+</Theorem>
+
+<Proof>
+
+$m(x) - m(y) = \dfrac{(px + q)(ry + s) - (py + q)(rx + s)}{(rx + s)(ry + s)}$, and the numerator expands to $psx + qry - qrx - psy = (ps - qr)(x - y)$.
+
+</Proof>
+
+<Theorem name="Theorem (invariance of the cross-ratio)">
+
+Projective transformations of the line preserve the cross-ratio: if $ps - qr \neq 0$ and $a, b, c, d$ are distinct points none of which is sent to $\infty$, then $\big(m(a), m(b);\, m(c), m(d)\big) = (a, b;\, c, d)$.
+
+</Theorem>
+
+<Proof>
+
+Substitute the key identity into each of the four differences:
+
+$$
+\frac{(m(c) - m(a))(m(d) - m(b))}{(m(c) - m(b))(m(d) - m(a))}
+= \frac{(ps - qr)^2 (c - a)(d - b) \big/ \big[(rc + s)(ra + s)(rd + s)(rb + s)\big]}{(ps - qr)^2 (c - b)(d - a) \big/ \big[(rc + s)(rb + s)(rd + s)(ra + s)\big]} .
+$$
+
+The factor $(ps - qr)^2 \neq 0$ and the four factors $(rx + s)$ appear in numerator and denominator alike, and cancel, leaving $(a, b; c, d)$.
+
+</Proof>
+
+A projective transformation of the plane restricted to a line $\ell$ is a projective transformation from $\ell$ to its image line (in a parameter $t$ along $\ell$, the homogeneous coordinates of the image depend linearly on $t$, so the image parameter is a ratio of two linear functions of $t$). So **every projective transformation of the plane — every photograph of a flat scene — preserves cross-ratios of collinear points.** The cross-ratio has a neat interpretation: the unique projective map with $a \mapsto 0$, $b \mapsto \infty$, $d \mapsto 1$ is $x \mapsto \frac{(x - a)(d - b)}{(x - b)(d - a)}$, and it sends $c$ to $(a, b; c, d)$. The cross-ratio is the coordinate of the fourth point in the frame made by the other three.
+
+<Example title="Where is the next sleeper?">
+
+Sleepers lie on the ground at distances $0, 1, 2, 3$ along a rail; their cross-ratio is $(0, 1; 2, 3) = \frac{2 \cdot 2}{1 \cdot 3} = \frac43$. In a photo, measured up the image of the rail, the first three appear at $0$, $10$ and $15$ mm. Where is the fourth? Solve $(0, 10; 15, x) = \frac{15(x - 10)}{5x} = \frac43$: $45(x - 10) = 20x$, so $x = 18$ mm. The gaps $10, 5, 3, \dots$ shrink towards the horizon, which is at $m(\infty)$: here the map is $m(t) = \frac{30t}{t + 2}$, so the horizon is at $30$ mm.
+
+</Example>
+
+<Figure caption="Equally spaced sleepers in perspective. Their images are not equally spaced, and the rails meet at the horizon, but the cross-ratio of any four sleepers is the same on the ground and in the picture.">
+<svg viewBox="0 0 300 165" role="img" aria-label="Two rails converging to a vanishing point, crossed by sleepers whose spacing shrinks with distance">
+  <line x1="20" y1="24" x2="280" y2="24" stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="4 4" />
+  <line x1="70" y1="150" x2="150" y2="24" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="230" y1="150" x2="150" y2="24" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="62" y1="150" x2="238" y2="150" stroke="var(--gold)" strokeWidth="4" />
+  <line x1="91" y1="108" x2="209" y2="108" stroke="var(--gold)" strokeWidth="3.5" />
+  <line x1="106" y1="87" x2="194" y2="87" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="115" y1="74.4" x2="185" y2="74.4" stroke="var(--gold)" strokeWidth="2.5" />
+  <line x1="121" y1="66" x2="179" y2="66" stroke="var(--gold)" strokeWidth="2" />
+  <circle cx="150" cy="24" r="3" fill="var(--human)" />
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="erlangen" kind="human" title="Klein's Erlangen programme">
+
+In his inaugural programme at the University of Erlangen (1872), Klein proposed to classify geometries by their groups. The bigger the group, the fewer invariants, and the more figures count as "the same":
+
+| Geometry | Group of transformations | Typical invariants | Figures that are all equivalent |
+| --- | --- | --- | --- |
+| Euclidean | isometries $z \mapsto az + b$, $a\bar z + b$, $\lvert a\rvert = 1$ | distance, angle, area | congruent figures only |
+| Similarity | $z \mapsto az + b$, $a\bar z + b$, $a \ne 0$ | angle, ratios of lengths | all circles; all squares; all equilateral triangles |
+| Affine | $x \mapsto Ax + b$ | parallelism, ratios along a line, ratios of areas | all triangles; all parallelograms; all ellipses |
+| Projective | $[v] \mapsto [Mv]$ | incidence (collinearity, concurrence), cross-ratio | all quadrilaterals (four points, no three collinear); all non-degenerate conics with real points |
+
+Each group contains the one above it, so each geometry's invariants include the invariants of the geometries below it: the cross-ratio is also a Euclidean invariant, and so is parallelism. A theorem of projective geometry (such as Pappus's or Desargues's theorem, which speak only of points lying on lines) is automatically a theorem of Euclidean geometry, and can be proved by first moving the figure, by a projective transformation, to a convenient position — exactly as we proved the median theorem by making the triangle equilateral.
+
+The programme reaches further. The <TopicLink id="math.geom.non-euclidean-geometry">non-Euclidean geometries</TopicLink> are $(X, G)$ pairs too: spherical geometry is the sphere with its rotation group $SO(3)$, and the hyperbolic plane is the unit disc with the Möbius transformations that map the disc to itself (together with the reflections), whose invariant is the hyperbolic distance (itself built from a cross-ratio). Topology appears as the geometry of the very large group of homeomorphisms, with invariants such as connectedness and the Euler characteristic (see <TopicLink id="math.geom.surfaces-euler-characteristic">surfaces</TopicLink>). An honest caveat: a general curved space has very few symmetries, so Riemannian geometry does not fit Klein's scheme directly; Élie Cartan's generalisation (Cartan geometries) models such spaces infinitesimally on Klein geometries.
+
+</Section>
+
+<Section id="formal" kind="formal" title="The classification in Lean">
+
+Mathlib represents the Euclidean plane by `ℂ` with its norm, and has the group `ℂ ≃ᵢ ℂ` of isometries. The lesson's module proves the normal form from scratch, following the human proof: first the lemma that three distances determine a point, then that an isometry fixing $0$, $1$, $i$ is the identity, then the theorem itself, including the computation $g(i) = \pm i$.
+
+<Lean decl="Lumenary.TransformationGeometry.eq_of_three_dists" />
+
+<Lean decl="Lumenary.TransformationGeometry.fix_three_eq_id" />
+
+<Lean decl="Lumenary.TransformationGeometry.isometry_normal_form" />
+
+Mathlib reaches the same normal form by a more general route: the **Mazur–Ulam theorem** (a surjective isometry between real normed spaces is affine) and a description of the linear isometries of `ℂ`. Our proof is specific to the plane but elementary; Mathlib's works in every normed space and needs surjectivity as a hypothesis — which, as our proof shows, is automatic in the plane.
+
+<Lean decl="Lumenary.TransformationGeometry.isometry_normal_form_mathlib" />
+
+Sorting the normal forms into the four types, step by step as in the proof:
+
+<Lean decl="Lumenary.TransformationGeometry.direct_is_rotation" />
+
+<Lean decl="Lumenary.TransformationGeometry.opposite_square" />
+
+<Lean decl="Lumenary.TransformationGeometry.opposite_fixed_iff" />
+
+<Lean decl="Lumenary.TransformationGeometry.opposite_with_fixed_point" />
+
+<Lean decl="Lumenary.TransformationGeometry.glide_decomposition" />
+
+<Lean decl="Lumenary.TransformationGeometry.glide_no_fixed_point" />
+
+Products of reflections, and the normality of translations:
+
+<Lean decl="Lumenary.TransformationGeometry.reflect_reflect" />
+
+<Lean decl="Lumenary.TransformationGeometry.parallel_reflections" />
+
+<Lean decl="Lumenary.TransformationGeometry.conj_translation" />
+
+Affine maps preserve ratios along lines in any real vector space; the shear destroys a right angle:
+
+<Lean decl="Lumenary.TransformationGeometry.affine_preserves_ratio" />
+
+<Lean decl="Lumenary.TransformationGeometry.shear_breaks_right_angle" />
+
+Finally the cross-ratio, over an arbitrary field. Lean's division satisfies $x/0 = 0$, so the theorem needs exactly the hypotheses of the human statement — $ps - qr \ne 0$ and no point sent to $\infty$ — and the proof handles the degenerate case where $(c - b)(d - a) = 0$ separately.
+
+<Lean decl="Lumenary.TransformationGeometry.crossRatio" />
+
+<Lean decl="Lumenary.TransformationGeometry.mobius" />
+
+<Lean decl="Lumenary.TransformationGeometry.mobius_sub" />
+
+<Lean decl="Lumenary.TransformationGeometry.crossRatio_mobius" />
+
+**Not formalised here:** the projective plane itself (Mathlib has `Projectivization`, which this module does not use), the restriction of a planar projective map to a line, and the Erlangen programme as such — which is a point of view rather than a theorem.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Composing mirrors, and Klein's table by machine">
+
+The first experiment stores isometries in the normal form of the lesson, with complex numbers made of exact fractions, and composes reflections in random lines. It classifies each product with the criteria from the proof and double-checks the answer against fixed points.
+
+<Python id="transformation_geometry_isometries" />
+
+Even products are always direct and odd products opposite — the orientation homomorphism at work. Notice also *how often* each type occurs: two random mirrors almost always meet (a rotation), and three random mirrors almost always give a glide reflection, because a reflection requires the special condition $a\bar b + b = 0$.
+
+The second experiment builds Klein's table experimentally. For each of the four groups it applies random transformations (exact rational rotations, scalings, integer matrices) to random configurations and records which quantities survive.
+
+<Python id="transformation_geometry_erlangen" />
+
+A count below $100$ is a set of genuine counterexamples; a count of $100$ is only evidence — the proofs are in the sections above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: two mirrors make a rotation">
+
+Matrix $A$ is the reflection in the $x$-axis and $B$ the reflection in the line at $30^\circ$. "First $A$, then $B$" is the matrix $BA$; compare it with $AB$. Both are rotations — by $+60^\circ$ and $-60^\circ$ — and the flag shows they are direct. Change $B$ to other reflections and predict the angle before you look.
+
+<MatrixTransform mode="compose" matrix={[[1, 0], [0, -1]]} matrix2={[["cos(pi/3)", "sin(pi/3)"], ["sin(pi/3)", "-cos(pi/3)"]]} title="Two reflections compose to a rotation" subtitle="The mirrors meet at 30°; the composite turns by 60°." />
+
+Over the complex numbers the formula $z \mapsto (pz + q)/(rz + s)$ acts on the Riemann sphere $\C \cup \{\infty\}$. These **Möbius transformations** form the group of *inversive geometry*: they map circles and lines to circles and lines, preserve angles, and preserve the (complex) cross-ratio. Move the probe and watch the right angle survive.
+
+<ComplexPlane mode="map" map="mobius" title="A Möbius transformation: w = (z − 1)/(z + 1)" subtitle="Lines and circles go to lines and circles; small right angles stay right angles." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every isometry fixes some point."** Translations and glide reflections move every point. The correct statement is the classification: rotations fix exactly one point, reflections fix a line, the identity fixes everything, and the other two types fix nothing. (In the proof, the absence of a fixed point for an opposite isometry is detected by $g \circ g$ being a non-zero translation.)
+
+</Misconception>
+
+<Misconception>
+
+**"Affine maps preserve angles."** Only the similarities among them do. A shear turns a right angle into $45^\circ$, and a stretch $(x, y) \mapsto (2x, y)$ turns a circle into an ellipse. Affine maps preserve *parallelism* and *ratios along a line* — which is why "midpoint" and "centroid" are affine notions but "perpendicular" and "circle" are not.
+
+</Misconception>
+
+<Misconception>
+
+**"Two reflections make a reflection."** Two reflections make a direct isometry: a rotation (by twice the angle between the mirrors) or a translation (by twice the distance between parallel mirrors). Orientation is reversed twice.
+
+</Misconception>
+
+<Misconception>
+
+**"Projective transformations keep parallel lines parallel."** Only the affine ones do. A general projective transformation moves the line at infinity, so parallel lines (which meet at infinity) can become lines meeting at a visible point — the vanishing point of a photograph.
+
+</Misconception>
+
+<Misconception>
+
+**"A glide reflection is just a reflection followed by any translation."** Every reflection followed by a translation is indeed a reflection or a glide reflection — but its mirror is usually a different line. The definition uses a translation *parallel to the mirror*, and with that convention the decomposition is unique: the translation part is half of $g \circ g$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Symmetry groups of patterns: 7 friezes and 17 wallpapers">
+
+The symmetries of a figure form a subgroup of the isometry group, and Klein's view turns the study of patterns into the study of these subgroups. A **frieze** pattern, repeating along one direction, has one of exactly 7 symmetry groups; a **wallpaper** pattern, repeating in two independent directions, has one of exactly 17 (E. S. Fedorov, 1891; rediscovered by George Pólya, 1924). The proof uses the classification of this lesson: a discrete group of isometries containing two independent translations can only contain rotations of order $1, 2, 3, 4$ or $6$ (the **crystallographic restriction** — a rotation by $\theta$ must preserve a lattice, so $2\cos\theta$ is an integer), and the possible combinations with reflections and glide reflections can be listed. Patterns from many cultures — Islamic tilings such as those of the Alhambra, Kuba textiles from Central Africa, Chinese lattice windows — have been analysed in exactly these terms. See <TopicLink id="math.algebra.groups">groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The structure of the Euclidean group">
+
+Algebraically, the isometry group of the plane is a **semidirect product** $\R^2 \rtimes O(2)$: every isometry is uniquely "an orthogonal map $x \mapsto Qx$, then a translation", the translations form a normal subgroup $\R^2$, and the quotient is $O(2)$, the group of rotations and reflections about the origin. In homogeneous coordinates this is the block form $\begin{pmatrix} Q & b \\ 0 & 1 \end{pmatrix}$. The four types are unions of **conjugacy classes**: conjugating a rotation gives a rotation by the same angle (or its negative, if we conjugate by an opposite isometry) about another centre, which is why "rotation by $90^\circ$" is a geometric notion but "rotation about the origin" is not. In $n$ dimensions the **Cartan–Dieudonné theorem** says that every isometry of $\R^n$ fixing the origin is a product of at most $n$ reflections in hyperplanes, generalising our "three mirrors suffice". See <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="The shape of the group, and surfaces as quotients">
+
+The isometry group of the plane is itself a space: the normal form identifies it with two copies of $S^1 \times \R^2$ (the choices of $a$ on the unit circle and $b \in \C$), one for direct and one for opposite isometries. So it is a 3-dimensional manifold with **two connected components** — one cannot continuously deform a reflection into a rotation through isometries, which is the topological content of orientation (see <TopicLink id="math.geom.matrix-groups">matrix groups</TopicLink>).
+
+Groups of isometries also *build* spaces. Quotienting the plane by the group generated by two independent translations gives a **torus**; quotienting by the group generated by a glide reflection along the $x$-axis and a translation in the $y$-direction gives a **Klein bottle**, a non-orientable surface — the glide reflection is what reverses orientation as you go around. Both have Euler characteristic $0$, as they must, being tiled by copies of a flat square; this is developed in <TopicLink id="math.geom.surfaces-euler-characteristic">surfaces and the Euler characteristic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Symmetry, conservation, and the geometry of spacetime">
+
+Physics takes Klein's programme literally. By **Noether's theorem**, each continuous symmetry of the laws of motion gives a conserved quantity: invariance under translations gives conservation of momentum, under rotations conservation of angular momentum, under time translations conservation of energy. Special relativity is an Erlangen geometry: spacetime $\R^4$ with the **Poincaré group** (translations and Lorentz transformations), whose basic invariant is the interval $c^2 t^2 - x^2 - y^2 - z^2$ rather than Euclidean distance; Newtonian mechanics is the geometry of the Galilean group. In crystallography, the classification of discrete isometry groups of space gives the 230 space groups (Fedorov and Schoenflies, 1891), the 3D analogue of the 17 wallpaper groups, which organise the X-ray diffraction patterns of crystals. See <TopicLink id="math.applied.relativity">relativity</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="A group is a one-object category; a geometry is an action">
+
+A group $G$ is a category with one object in which every morphism is invertible, and an action of $G$ on $X$ is a functor from that category to $\cat{Set}$ sending the object to $X$. Klein's invariants are then the functions on $X$ (or on configurations in $X$) that factor through the quotient $X/G$, and "equivalent figures" are isomorphic objects of the **action groupoid**, whose objects are the points of $X$ and whose morphisms $x \to y$ are the $g$ with $gx = y$. Changing geometry by enlarging $G$ adds morphisms, so more figures become isomorphic and fewer invariants survive — Klein's table read categorically. See <TopicLink id="math.cat.categories">categories</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ornament before theory.** Long before any classification, artisans explored symmetry systematically: Islamic geometric tiling in Spain, North Africa, Iran and Central Asia; textile and basketry traditions in Africa, the Americas and Oceania; lattice designs in China. Dorothy Washburn and Donald Crowe's *Symmetries of Culture* (1988) shows how the frieze and wallpaper classifications are used by anthropologists to compare such patterns.
+- **Cross-ratio.** A lemma in Book VII of the *Collection* of **Pappus of Alexandria** (4th century CE) amounts to the invariance of the cross-ratio under projection. **Girard Desargues** (1639) founded projective geometry in a study of conic sections inspired by perspective drawing; **Jean-Victor Poncelet**'s *Traité des propriétés projectives des figures* (1822) developed it systematically. The cross-ratio was named in the 1820s–1830s by **August Ferdinand Möbius** (*Doppelverhältnis*) and **Michel Chasles** (*rapport anharmonique*).
+- **Affine geometry.** **Leonhard Euler** used the word *affinitas* for these maps in 1748, and Möbius's *Der barycentrische Calcul* (1827) studied affine and projective properties with coordinates.
+- **Motions.** The theorem that every rigid motion of space is a screw motion (a rotation about an axis combined with a translation along it) is due to **Giulio Mozzi** (1763) and **Michel Chasles** (1830); its planar case is the classification in this lesson.
+- **Groups and Klein.** **Felix Klein** and **Sophus Lie** met in Berlin and worked together in Paris in 1870, studying transformation groups. Klein's *Vergleichende Betrachtungen über neuere geometrische Forschungen* (1872), the "Erlangen programme", proposed the classification of geometries by groups; Lie went on to create the theory of continuous groups that now bears his name.
+- **Patterns classified.** **Evgraf Fedorov** (1891) proved that there are 17 wallpaper groups and 230 space groups (the latter independently found by **Arthur Schoenflies**); **George Pólya** (1924) rediscovered the planar classification, and his paper inspired the artist M. C. Escher.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- H. S. M. Coxeter, *Introduction to Geometry* (1961; 2nd ed. 1969) — isometries, similarities, affine and projective geometry, and the symmetry groups of patterns.
+- John Stillwell, *The Four Pillars of Geometry* (2005) — Euclidean, coordinate, projective and transformation geometry, compared side by side.
+- David A. Brannan, Matthew F. Esplen and Jeremy J. Gray, *Geometry* (1999; 2nd ed. 2012) — an undergraduate course organised around Klein's programme, from affine to hyperbolic geometry.
+- I. M. Yaglom, *Geometric Transformations* (Russian 1955; English translation in several volumes from 1962) — problem-based and beautiful.
+- M. A. Armstrong, *Groups and Symmetry* (1988) — friezes, wallpapers and the crystallographic restriction.
+- Dorothy K. Washburn and Donald W. Crowe, *Symmetries of Culture: Theory and Practice of Plane Pattern Analysis* (1988).
+
+</Section>

@@ -1,0 +1,140 @@
+{
+  "lesson": "homotopy-type-theory",
+  "exercises": [
+    {
+      "id": "homotopy-type-theory-reading",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "In the homotopy interpretation, what is the identity type $a =_A b$?",
+      "options": [
+        { "id": "paths", "label": "The space of paths in $A$ from $a$ to $b$", "correct": true, "feedback": "Yes. Its elements are paths, paths between them are homotopies, and so on." },
+        { "id": "bool", "label": "A truth value: true if $a$ and $b$ are equal, false otherwise", "correct": false, "feedback": "That is the reading under uniqueness of identity proofs, as in Lean's `Prop`. In HoTT, two elements can be equal in many different ways." },
+        { "id": "set", "label": "The set $\\{a, b\\}$", "correct": false, "feedback": "Identity types are not built from the elements themselves; they collect the ways in which $a$ and $b$ are identified." },
+        { "id": "iso", "label": "The set of isomorphisms between $a$ and $b$, by definition", "correct": false, "feedback": "For elements of the universe, univalence makes $A = B$ *equivalent* to $A \\simeq B$, but this is an axiom about the universe, not the definition of identity types." }
+      ],
+      "hints": ["Think of a type as a space and its elements as points.", "What connects two points in a space?"],
+      "solution": "$a =_A b$ is read as the space of paths from $a$ to $b$. Reflexivity is the constant path, symmetry is reversal, transitivity is concatenation, and paths between paths are homotopies."
+    },
+    {
+      "id": "homotopy-type-theory-fin3",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Assume univalence. How many elements does the identity type $\\mathsf{Fin}(3) = \\mathsf{Fin}(3)$ have (it is a set, so count elements up to paths)?",
+      "answer": 6,
+      "feedback": [
+        { "match": "1", "message": "That would follow from uniqueness of identity proofs, which univalence contradicts. What does univalence say $\\mathsf{Fin}(3) = \\mathsf{Fin}(3)$ is equivalent to?" },
+        { "match": "27", "message": "$27 = 3^3$ counts all functions $\\mathsf{Fin}(3) \\to \\mathsf{Fin}(3)$. Univalence identifies paths with *equivalences*, i.e. bijections." },
+        { "match": "3", "message": "Count the bijections of a three-element set, not its elements." }
+      ],
+      "hints": ["Univalence: $(\\mathsf{Fin}(3) = \\mathsf{Fin}(3)) \\simeq (\\mathsf{Fin}(3) \\simeq \\mathsf{Fin}(3))$.", "Equivalences between finite sets are bijections."],
+      "solution": "By univalence the paths are the self-equivalences of $\\mathsf{Fin}(3)$, i.e. the $3! = 6$ permutations. So the universe 'remembers' the symmetric group $S_3$ as the loop space of the type of 3-element types, which is $BS_3$."
+    },
+    {
+      "id": "homotopy-type-theory-transport-paths",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Let $P(x) :\\equiv (a = x)$ for a fixed $a : A$. For $p : b = c$ and $q : a = b$, what is $\\mathsf{tr}^P(p, q) : a = c$?",
+      "options": [
+        { "id": "qp", "label": "$q \\cdot p$", "correct": true, "feedback": "Yes: transporting a path from $a$ along $p$ appends $p$. Prove it by induction on $p$: for $p \\equiv \\mathsf{refl}$ both sides are $q$." },
+        { "id": "pq", "label": "$p \\cdot q$", "correct": false, "feedback": "This does not typecheck: $p$ ends at $c$ but $q$ starts at $a$." },
+        { "id": "q", "label": "$q$, since transport is just substitution", "correct": false, "feedback": "$q$ has type $a = b$, but the result must have type $a = c$." },
+        { "id": "inv", "label": "$p^{-1} \\cdot q$", "correct": false, "feedback": "Check endpoints: $p^{-1} : c = b$ cannot be followed by $q : a = b$." }
+      ],
+      "hints": ["Check the types: the answer must be a path from $a$ to $c$.", "Use path induction on $p$."],
+      "solution": "$\\mathsf{tr}^P(p, q) = q \\cdot p$. By path induction on $p$ it suffices to treat $p \\equiv \\mathsf{refl}_b$, where transport is the identity and $q \\cdot \\mathsf{refl} \\equiv q$. This is the type-theoretic form of 'lifting a path to the path fibration'."
+    },
+    {
+      "id": "homotopy-type-theory-path-induction",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "A student argues: 'Let $p : a = a$. By path induction we may assume $p$ is $\\mathsf{refl}_a$, so every loop equals $\\mathsf{refl}_a$.' What is wrong?",
+      "options": [
+        { "id": "free", "label": "Path induction applies only to families over paths with a free endpoint, $\\Pi_{x}\\Pi_{p : a = x} C(x, p)$; here both endpoints are fixed at $a$", "correct": true, "feedback": "Exactly. The statement 'every $p : a = a$ is $\\mathsf{refl}$' is axiom K, which is independent of type theory and false in HoTT (think of $\\mathsf{loop}$ in the circle)." },
+        { "id": "nothing", "label": "Nothing: this is a valid proof of uniqueness of identity proofs", "correct": false, "feedback": "If it were valid, HoTT would prove UIP and contradict univalence. Look closely at the form of the induction principle." },
+        { "id": "sym", "label": "The argument forgot to use symmetry of equality", "correct": false, "feedback": "Symmetry does not help; the problem is the shape of the statement being proved by induction." },
+        { "id": "funext", "label": "Path induction requires function extensionality", "correct": false, "feedback": "Path induction is a basic rule of identity types and does not depend on function extensionality." }
+      ],
+      "hints": ["Write down the induction principle precisely: what must be free?", "Is the statement of the form $\\Pi_{x : A} \\Pi_{p : a = x} C(x, p)$?"],
+      "solution": "Path induction proves statements $\\Pi_{x : A}\\Pi_{p : a = x} C(x, p)$ in which the endpoint $x$ varies. To apply it to loops one would need a family $C(x, p)$ that only makes sense when $x \\equiv a$, which is not available. The conclusion is axiom K (UIP), independent of Martin-Löf type theory (Hofmann–Streicher) and refuted by univalence."
+    },
+    {
+      "id": "homotopy-type-theory-lean-univalence",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "Which Lean statement expresses that univalence fails in Lean, for the type `Bool`?",
+      "options": [
+        { "id": "a", "label": "`¬ Function.Surjective (idtoeqv : Paths Bool Bool → (Bool ≃ Bool))`", "correct": true, "feedback": "Yes. Univalence says `idtoeqv` is an equivalence; here it is not even surjective. This is `Lumenary.HomotopyTypeTheory.Paths.univalence_fails`." },
+        { "id": "b", "label": "`¬ Nonempty (Paths Bool Bool)`", "correct": false, "feedback": "This is false: `Paths.refl : Paths Bool Bool` exists." },
+        { "id": "c", "label": "`Function.Injective (idtoeqv : Paths Bool Bool → (Bool ≃ Bool))`", "correct": false, "feedback": "This is true in Lean (the domain has at most one element) but it is half of what univalence asks, not its failure." },
+        { "id": "d", "label": "`¬ (Bool ≃ Bool)`", "correct": false, "feedback": "This is false (`Equiv.refl Bool` exists) and has nothing to do with paths in the universe." }
+      ],
+      "hints": ["Univalence: `idtoeqv` is an equivalence. Its failure must contradict that.", "How many paths `Bool = Bool` does Lean allow, and how many equivalences `Bool ≃ Bool` are there?"],
+      "solution": "`¬ Function.Surjective (idtoeqv : Paths Bool Bool → (Bool ≃ Bool))`. Lean proves that `Paths Bool Bool` has at most one element (`paths_subsingleton`, using proof irrelevance of `Eq`), while `Bool ≃ Bool` has two different elements, so `idtoeqv` cannot hit both."
+    },
+    {
+      "id": "homotopy-type-theory-where-ua",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In the encode–decode proof that $(\\mathsf{base} = \\mathsf{base}) \\simeq \\Z$, where is the univalence axiom used?",
+      "options": [
+        { "id": "code", "label": "To define the universal cover $\\mathsf{code}$, sending $\\mathsf{loop}$ to the path $\\mathsf{ua}(\\mathsf{succ}) : \\Z = \\Z$ in the universe", "correct": true, "feedback": "Yes. Circle recursion into the universe needs a loop $\\Z = \\Z$, and univalence turns the equivalence $\\mathsf{succ}$ into one; its computation rule gives $\\mathsf{tr}^{\\mathsf{code}}(\\mathsf{loop}, n) = n + 1$." },
+        { "id": "decode-encode", "label": "To prove $\\mathsf{decode}(\\mathsf{encode}(p)) = p$", "correct": false, "feedback": "That step is by based path induction on $p$ and needs no univalence." },
+        { "id": "induction", "label": "To prove $\\mathsf{succ}^n(0) = n$ by induction on $n$", "correct": false, "feedback": "That is ordinary arithmetic of the integers (and is the step formalised in Lean in this lesson)." },
+        { "id": "nowhere", "label": "Nowhere; the higher inductive circle suffices", "correct": false, "feedback": "Without univalence (or another non-set type to eliminate into) one cannot even show $\\mathsf{loop} \\neq \\mathsf{refl}$." }
+      ],
+      "hints": ["Which construction maps the circle into the universe?", "Circle recursion needs a point and a loop in the target type."],
+      "solution": "Univalence is used to build $\\mathsf{code} : S^1 \\to \\mathcal{U}$, with $\\mathsf{ap}_{\\mathsf{code}}(\\mathsf{loop}) = \\mathsf{ua}(\\mathsf{succ})$, and through its computation rule $\\mathsf{tr}^{\\mathsf{code}}(\\mathsf{loop}, -) = \\mathsf{succ}$. The other steps use path induction, circle induction and arithmetic."
+    },
+    {
+      "id": "homotopy-type-theory-consistent",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which principles are consistent with (or follow from) univalence? (Choose all that apply.)",
+      "options": [
+        { "id": "lemprop", "label": "Excluded middle for propositions", "correct": true, "feedback": "Consistent: it holds in the simplicial-set model (classically)." },
+        { "id": "acset", "label": "The axiom of choice for sets", "correct": true, "feedback": "Consistent: it also holds in the simplicial-set model." },
+        { "id": "funext", "label": "Function extensionality", "correct": true, "feedback": "It follows from univalence (Voevodsky)." },
+        { "id": "uip", "label": "Uniqueness of identity proofs for all types, including the universe", "correct": false, "feedback": "Contradicts univalence: $\\mathsf{Bool} = \\mathsf{Bool}$ has two distinct elements (Theorem 3)." },
+        { "id": "leminf", "label": "Excluded middle for all types, $\\Pi_{A : \\mathcal{U}} (A + \\neg A)$", "correct": false, "feedback": "Contradicts univalence: it would choose, uniformly, an element of every inhabited type, which no construction can do in a universe with non-trivial symmetries (HoTT book §3.2)." }
+      ],
+      "hints": ["Univalence is about types with higher structure; principles restricted to propositions or sets are usually harmless.", "A principle that chooses elements uniformly in all types would have to be invariant under $\\mathsf{ua}(\\mathsf{not})$."],
+      "solution": "Excluded middle for propositions, choice for sets, and function extensionality are all compatible with univalence (the last is a consequence). UIP for the universe and excluded middle for all types contradict it."
+    },
+    {
+      "id": "homotopy-type-theory-sets",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "In homotopy type theory with univalence and the higher inductive circle, which of these types are **sets** (all of their identity types are propositions)? (Choose all that apply.)",
+      "options": [
+        { "id": "nat", "label": "$\\mathbb{N}$", "correct": true, "feedback": "Yes: it has decidable equality, so it is a set by Hedberg's theorem." },
+        { "id": "bool", "label": "$\\mathsf{Bool}$", "correct": true, "feedback": "Yes: decidable equality again." },
+        { "id": "loopspace", "label": "$\\mathsf{base} = \\mathsf{base}$ in $S^1$", "correct": true, "feedback": "Yes: it is equivalent to $\\Z$, a set (Theorem 5). The circle is a 1-type." },
+        { "id": "circle", "label": "$S^1$", "correct": false, "feedback": "No: its identity type $\\mathsf{base} = \\mathsf{base}$ is $\\Z$, which is not a proposition." },
+        { "id": "universe", "label": "The universe $\\mathcal{U}$", "correct": false, "feedback": "No: $\\mathsf{Bool} = \\mathsf{Bool}$ has two elements (Theorem 3)." }
+      ],
+      "hints": ["Hedberg: decidable equality implies set.", "A type is a set when each $x = y$ has at most one element up to paths."],
+      "solution": "$\\mathbb{N}$, $\\mathsf{Bool}$ and $\\Omega(S^1) \\simeq \\Z$ are sets. $S^1$ is a 1-type but not a set, and the univalent universe is not a set (it is not even a 1-type once it contains types with non-trivial path spaces)."
+    },
+    {
+      "id": "homotopy-type-theory-python-reduce",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Loops in the circle built from $\\mathsf{loop}$ ($+1$) and $\\mathsf{loop}^{-1}$ ($-1$) are words, e.g. `(1, 1, -1)`. The groupoid laws let us cancel an adjacent pair `1, -1` or `-1, 1`. Write `reduce_word(word)` returning the fully reduced word as a tuple. (The tests check that your reduced word is always $\\mathsf{decode}(\\mathsf{encode}(w))$.)",
+      "starter": "def reduce_word(word):\n    # cancel adjacent (1, -1) and (-1, 1) pairs until none are left\n    return tuple(word)\n",
+      "tests": "from itertools import product\nencode = lambda w: sum(w)\ndecode = lambda n: (1,) * n if n >= 0 else (-1,) * (-n)\nassert reduce_word(()) == ()\nassert reduce_word((1, -1)) == ()\nassert reduce_word((1, 1, -1, 1)) == (1, 1)\nassert reduce_word((-1, 1, -1, -1, 1)) == (-1,)\nfor n in range(1, 9):\n    for w in product((1, -1), repeat=n):\n        assert reduce_word(w) == decode(encode(w)), w\nprint('All tests passed!')\n",
+      "hints": ["Use a stack: push each letter, but if it cancels the letter on top of the stack, pop instead.", "A fully reduced word cannot contain both $+1$ and $-1$ adjacent; for a word in one generator that means it is all $+1$ or all $-1$."],
+      "solution": "```python\ndef reduce_word(word):\n    stack = []\n    for step in word:\n        if stack and stack[-1] == -step:\n            stack.pop()\n        else:\n            stack.append(step)\n    return tuple(stack)\n```\n\nA reduced word in one generator is $\\mathsf{loop}^n$ for a unique $n \\in \\Z$, namely its winding number. That reduced words are classified by $\\Z$ is the combinatorial shadow of $(\\mathsf{base} = \\mathsf{base}) \\simeq \\Z$; the type-theoretic proof (encode–decode) shows it for all loops, not only those built from words."
+    }
+  ]
+}

@@ -1,0 +1,472 @@
+---
+slug: large-cardinals
+topic: math.found.large-cardinals
+title: Large cardinals
+subtitle: 'Infinities so large that the universe below them is a model of ZFC — inaccessible and measurable cardinals, elementary embeddings $j : V \to M$, and the ladder of consistency strength.'
+level: research
+ages: Research (graduate set theory)
+minutes: 140
+order: 8002
+objectives:
+  - Define inaccessible and measurable cardinals and prove that $V_\kappa \models \mathsf{ZFC}$ when $\kappa$ is inaccessible
+  - Explain why ZFC cannot prove that an inaccessible cardinal exists (if ZFC is consistent), and what consistency strength means
+  - 'Prove that every measurable cardinal is inaccessible, and describe how measurable cardinals correspond to non-trivial elementary embeddings $j : V \to M$'
+  - Survey the hierarchy of large cardinals and its consequences for sets of reals, separating theorems from open problems
+narrators: []
+lean:
+  - Lumenary.LargeCardinals.inaccessible_iff
+  - Lumenary.LargeCardinals.card_vonNeumann
+  - Lumenary.LargeCardinals.card_lt_of_mem
+  - Lumenary.LargeCardinals.pair_mem
+  - Lumenary.LargeCardinals.sUnion_mem
+  - Lumenary.LargeCardinals.powerset_mem
+  - Lumenary.LargeCardinals.range_mem
+  - Lumenary.LargeCardinals.omega_mem
+  - Lumenary.LargeCardinals.univ_inaccessible
+  - Lumenary.LargeCardinals.IsComplete
+  - Lumenary.LargeCardinals.IsNonprincipal
+  - Lumenary.LargeCardinals.IsMeasurable
+  - Lumenary.LargeCardinals.le_card_of_mem
+  - Lumenary.LargeCardinals.principal_of_card_lt
+  - Lumenary.LargeCardinals.nat_countably_complete_principal
+  - Lumenary.LargeCardinals.two_power_lt
+  - Lumenary.LargeCardinals.is_regular
+  - Lumenary.LargeCardinals.measurable_inaccessible
+compute: [large_cardinals_hereditarily_finite, large_cardinals_laver_tables]
+trails: [boxes-in-boxes, how-many-infinities]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Climbing past ZFC">
+
+Gödel's second incompleteness theorem says that ZFC, if consistent, cannot prove its own consistency (see <TopicLink id="math.found.incompleteness">incompleteness</TopicLink>). So there are true arithmetical statements — $\mathrm{Con}(\mathsf{ZFC})$ among them, if ZFC is consistent — that ZFC cannot reach. How can we strengthen ZFC in a principled way? One natural answer is to assert that the universe of sets is *large*: that there is a cardinal $\kappa$ so far beyond the cardinals below it that the sets of rank below $\kappa$ form a universe of their own, a model of all of ZFC. Such a $\kappa$ is an **inaccessible cardinal**, and the axiom "an inaccessible cardinal exists" proves $\mathrm{Con}(\mathsf{ZFC})$.
+
+A second road starts in analysis. In 1930 Stanisław Ulam, following a question of Stefan Banach, asked whether some set carries a countably additive measure defined on *all* of its subsets, vanishing on points. His analysis produced the **measurable cardinals** — cardinals $\kappa$ carrying a two-valued measure on all their subsets that is $\kappa$-additive: a union of fewer than $\kappa$ null sets is null. Thirty years later Dana Scott showed that a measurable cardinal is incompatible with Gödel's constructible universe $L$, and Jerome Keisler showed that measurability is equivalent to the existence of an elementary embedding of the universe into part of itself.
+
+These axioms — and the much stronger ones that followed — are not about large numbers for their own sake. They form a hierarchy that calibrates the **consistency strength** of mathematical theories, and they settle questions about sets of real numbers that ZFC leaves open. This lesson builds on <TopicLink id="math.found.axiomatic-set-theory">axiomatic set theory</TopicLink> (the hierarchy $V_\alpha$, cofinality, $L$) and <TopicLink id="math.found.forcing">forcing</TopicLink> (relative consistency).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Universes inside the universe">
+
+The cumulative hierarchy $V_0 = \varnothing$, $V_{\alpha+1} = \mathcal P(V_\alpha)$, $V_\lambda = \bigcup_{\alpha < \lambda} V_\alpha$ builds every set in stages. Look at the first infinite stage. $V_\omega$, the set of **hereditarily finite** sets, is closed under every operation of finite set theory — pairs, unions, power sets, images under functions — because $\omega$ cannot be reached from below by them: finite unions of finite sets are finite, and power sets of finite sets are finite. $V_\omega$ satisfies every axiom of ZFC except Infinity.
+
+An **inaccessible cardinal** is an uncountable $\kappa$ with the same two properties: a union of fewer than $\kappa$ sets each of size less than $\kappa$ has size less than $\kappa$ (regularity), and the power set of a set of size less than $\kappa$ has size less than $\kappa$ (strong limit). Then $V_\kappa$ is closed under all the operations of ZFC, and contains $\omega$ too: a universe inside the universe.
+
+<Figure caption="The cumulative hierarchy $V$, with ordinals (Ord) running up the middle. The stage $V_\omega$ of hereditarily finite sets satisfies ZFC without Infinity; if $\kappa$ is inaccessible, the stage $V_\kappa$ satisfies all of ZFC.">
+<svg viewBox="0 0 300 220" role="img" aria-label="A large letter V with two horizontal cuts, the lower labelled V omega and the higher labelled V kappa">
+  <polygon points="150,205 77.6,80 222.4,80" fill="var(--sky-soft)" />
+  <polygon points="150,205 124,160 176,160" fill="var(--gold)" fillOpacity="0.45" />
+  <line x1="150" y1="205" x2="40" y2="15" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="150" y1="205" x2="260" y2="15" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="150" y1="205" x2="150" y2="12" stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="4 3" />
+  <line x1="124" y1="160" x2="176" y2="160" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="77.6" y1="80" x2="222.4" y2="80" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <text x="183" y="164" fontSize="12" fill="var(--ink-2)">V_ω</text>
+  <text x="229" y="84" fontSize="12" fill="var(--ink-2)">V_κ ⊨ ZFC</text>
+  <text x="143" y="157" fontSize="11" textAnchor="end" fill="var(--ink-2)">ω</text>
+  <text x="143" y="77" fontSize="11" textAnchor="end" fill="var(--ink-2)">κ</text>
+  <text x="156" y="14" fontSize="11" fill="var(--ink-2)">Ord</text>
+  <text x="262" y="14" fontSize="13" fill="var(--ink-2)">V</text>
+</svg>
+</Figure>
+
+A **measurable cardinal** carries a notion of "almost all subsets of $\kappa$" that is extraordinarily robust: every subset of $\kappa$ either contains almost all of $\kappa$ or misses almost all of it, and the intersection of fewer than $\kappa$ "large" sets is still large. Using it one can take an ultrapower of the whole universe and obtain an **elementary embedding** $j : V \to M$ — a map that preserves every statement of set theory — which moves $\kappa$ and nothing below it. The universe looks like a proper part of itself. Stronger large cardinals demand that $M$ be closer and closer to $V$; the limit, $M = V$, is inconsistent with the axiom of choice (Kunen, 1971).
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Cardinals are initial ordinals, and $\operatorname{cf}(\kappa)$ is the least order type of a cofinal subset of $\kappa$.
+
+<Definition term="regular, singular, strong limit">
+
+An infinite cardinal $\kappa$ is **regular** if $\operatorname{cf}(\kappa) = \kappa$, equivalently if $\kappa$ is not a union of fewer than $\kappa$ sets each of size less than $\kappa$; otherwise it is **singular**. It is a **strong limit** if $2^\lambda < \kappa$ for every cardinal $\lambda < \kappa$.
+
+</Definition>
+
+<Definition term="inaccessible cardinal">
+
+$\kappa$ is **(strongly) inaccessible** if it is uncountable, regular, and a strong limit. It is **weakly inaccessible** if it is uncountable, regular, and a limit cardinal ($\lambda^+ < \kappa$ for all $\lambda < \kappa$). Under GCH the two notions coincide.
+
+</Definition>
+
+<Definition term="κ-complete ultrafilter, measurable cardinal">
+
+An ultrafilter $U$ on a set $X$ is **$\kappa$-complete** if $\bigcap \mathcal S \in U$ whenever $\mathcal S \subseteq U$ and $|\mathcal S| < \kappa$, and **non-principal** if it contains no singleton. An uncountable cardinal $\kappa$ is **measurable** if there is a $\kappa$-complete non-principal ultrafilter on $\kappa$. (The word "uncountable" matters: every ultrafilter is $\aleph_0$-complete, since it is closed under finite intersections, and non-principal ultrafilters on $\omega$ exist by the ultrafilter lemma.)
+
+</Definition>
+
+<Definition term="elementary embedding, critical point">
+
+For classes $M, N$, a map $j : M \to N$ is an **elementary embedding** if $M \models \varphi(a_1, \dots, a_n) \iff N \models \varphi(j(a_1), \dots, j(a_n))$ for every formula $\varphi$ and all $a_i \in M$. If $j$ is not the identity on ordinals, its **critical point** $\operatorname{crit}(j)$ is the least ordinal $\alpha$ with $j(\alpha) \ne \alpha$ (then $j(\alpha) > \alpha$).
+
+</Definition>
+
+<Definition term="consistency strength">
+
+A theory $T$ has **at least the consistency strength** of $S$ if $\mathrm{Con}(T) \to \mathrm{Con}(S)$ is provable in a weak base theory (for instance Peano arithmetic, or ZFC); they are **equiconsistent** if each has at least the strength of the other, and $T$ is **strictly stronger** if moreover $\mathrm{Con}(S) \to \mathrm{Con}(T)$ is not provable.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Small cardinals that fail">
+
+- $\omega$ is regular and a strong limit, but countable. It is the finite model of inaccessibility: $V_\omega \models \mathsf{ZFC} - \text{Infinity} + \neg\text{Infinity}$.
+- $\aleph_1$ is regular (a countable union of countable sets is countable, using choice) but not a limit cardinal.
+- $\aleph_\omega = \sup_n \aleph_n$ is a limit cardinal but singular: $\operatorname{cf}(\aleph_\omega) = \omega$. Likewise $\beth_\omega = \sup_n \beth_n$ is a singular strong limit.
+- Even the least cardinal $\kappa$ with $\kappa = \aleph_\kappa$ — the limit of $\omega, \aleph_\omega, \aleph_{\aleph_\omega}, \dots$ — is singular, of cofinality $\omega$. Being "very big" is not the point; an inaccessible satisfies $\kappa = \aleph_\kappa = \beth_\kappa$ *and* is regular, and ZFC cannot prove that such a cardinal exists.
+
+</Example>
+
+<Example title="Ultrafilters">
+
+For $a \in X$, the **principal ultrafilter** $\{A \subseteq X : a \in A\}$ is $\kappa$-complete for every $\kappa$. On a finite set every ultrafilter is principal. On $\omega$, a non-principal ultrafilter contains every cofinite set, hence each $\{n\}^c$; the intersection of these countably many sets is empty, so it is **not** countably complete. More generally (Lemma 4 below), a $\kappa$-complete non-principal ultrafilter contains only sets of size at least $\kappa$ — so it can live only on a set of size at least $\kappa$.
+
+</Example>
+
+<Example title="Universes in Lean">
+
+In Lean's type theory, `Type u` is a type in `Type (u+1)`, and Mathlib proves that its cardinality, `Cardinal.univ.{u, u+1}`, is inaccessible from the point of view of `Type (u+1)`. So Lean's foundations prove the existence of inaccessible cardinals — which ZFC cannot do (Theorem 3). This is no paradox: Lean's type theory, with its hierarchy of universes, is a stronger theory than ZFC.
+
+</Example>
+
+</Section>
+
+<Section id="inaccessible" kind="proof" title="Inaccessible cardinals: a model of ZFC, and why ZFC cannot find one">
+
+<Theorem name="Lemma 1">
+
+If $\kappa$ is inaccessible then $|V_\alpha| < \kappa$ for every $\alpha < \kappa$, and $|V_\kappa| = \kappa$.
+
+</Theorem>
+
+<Proof>
+
+By induction on $\alpha < \kappa$. $|V_0| = 0$. If $|V_\alpha| < \kappa$ then $|V_{\alpha+1}| = 2^{|V_\alpha|} < \kappa$ because $\kappa$ is a strong limit. If $\lambda < \kappa$ is a limit and $|V_\alpha| < \kappa$ for all $\alpha < \lambda$, then $V_\lambda$ is a union of $|\lambda| < \kappa$ sets each of size less than $\kappa$, so $|V_\lambda| < \kappa$ by regularity. Finally $V_\kappa = \bigcup_{\alpha < \kappa} V_\alpha$ has size at most $\kappa \cdot \kappa = \kappa$, and at least $\kappa$ since it contains every ordinal $\alpha < \kappa$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (Zermelo 1930)">
+
+If $\kappa$ is inaccessible, then $(V_\kappa, \in) \models \mathsf{ZFC}$.
+
+</Theorem>
+
+<Proof>
+
+$V_\kappa$ is transitive, so $\Delta_0$ formulas are absolute between $V_\kappa$ and $V$; and if $x \in V_\kappa$, every subset of $x$ is in $V_\kappa$ (if $x \in V_{\alpha+1}$ then $x \subseteq V_\alpha$, so each $y \subseteq x$ is in $V_{\alpha+1}$). We check the axioms.
+
+*Extensionality and Foundation* hold in every transitive class. *Pairing, Union, Power Set:* if $x, y \in V_\alpha$ with $\alpha < \kappa$, then $\{x, y\} \in V_{\alpha+1}$, $\bigcup x \in V_\alpha$, and $\mathcal P(x) \in V_{\alpha+1}$; these lie in $V_\kappa$ because $\kappa$ is a limit ordinal, and by the remark above $V_\kappa$ computes $\mathcal P(x)$ correctly. *Infinity:* $\omega \in V_{\omega+1} \subseteq V_\kappa$ as $\kappa > \omega$. *Separation:* for any formula $\varphi$ and parameters in $V_\kappa$, $\{y \in x : V_\kappa \models \varphi(y)\}$ is a subset of $x \in V_\kappa$, so it is in $V_\kappa$. *Choice:* a well-ordering $R$ of $x \in V_\alpha$ exists in $V$ and is a subset of $x \times x \in V_{\alpha+3}$; being a well-ordering is absolute for $V_\kappa$ because every subset of $x$ is in $V_\kappa$.
+
+*Replacement* is where regularity enters. Suppose $V_\kappa \models$ "$F$ is a function with domain $x$", where $F$ is defined over $V_\kappa$ by a formula with parameters. Then $F[x] = \{F(y) : y \in x\} \subseteq V_\kappa$, and $|x| < \kappa$ by Lemma 1. The ranks $\operatorname{rank}(F(y)) + 1$, $y \in x$, are fewer than $\kappa$ ordinals below $\kappa$, so by regularity their supremum $\beta$ is below $\kappa$, and $F[x] \subseteq V_\beta$ gives $F[x] \in V_{\beta+1} \subseteq V_\kappa$.
+
+</Proof>
+
+Both hypotheses are needed. For the singular strong limit $\beth_\omega$ (viewed as an ordinal), the map $n \mapsto \beth_n$ is definable in $V_{\beth_\omega}$, which computes power sets and cardinalities correctly, but its range is cofinal in $\beth_\omega$, so it is not an element: Replacement fails. And if $\kappa$ is regular but not a strong limit, then some $\mathcal P(\lambda)$ with $\lambda < \kappa$ has size at least $\kappa$; a well-ordering of $\mathcal P(\lambda)$ of length at least $\kappa$ lies in $V_\kappa$, and Replacement, which would collapse it onto an ordinal of $V_\kappa$, fails again.
+
+<Theorem name="Theorem 3">
+
+If ZFC is consistent, then ZFC does not prove that an inaccessible cardinal exists. Moreover, if ZFC + "there is an inaccessible cardinal" is consistent, then ZFC does not even prove $\mathrm{Con}(\mathsf{ZFC}) \to \mathrm{Con}(\mathsf{ZFC} + \text{there is an inaccessible})$.
+
+</Theorem>
+
+<Proof>
+
+Write IC for "there is an inaccessible cardinal". Theorem 2 is a theorem of ZFC, about the formalised satisfaction relation for set-sized structures: $\mathsf{ZFC} \vdash$ "if $\kappa$ is inaccessible then $V_\kappa \models \mathsf{ZFC}$". And ZFC proves that a theory with a set model is consistent. Hence $\mathsf{ZFC} + \mathrm{IC} \vdash \mathrm{Con}(\mathsf{ZFC})$.
+
+If $\mathsf{ZFC} \vdash \mathrm{IC}$, then $\mathsf{ZFC} \vdash \mathrm{Con}(\mathsf{ZFC})$, and by Gödel's second incompleteness theorem ZFC is inconsistent. If $\mathsf{ZFC} \vdash \mathrm{Con}(\mathsf{ZFC}) \to \mathrm{Con}(\mathsf{ZFC} + \mathrm{IC})$, then $\mathsf{ZFC} + \mathrm{IC} \vdash \mathrm{Con}(\mathsf{ZFC} + \mathrm{IC})$, and by the second incompleteness theorem, now for the theory $\mathsf{ZFC} + \mathrm{IC}$, that theory is inconsistent.
+
+</Proof>
+
+A second, more set-theoretic argument: if $\kappa$ is the *least* inaccessible, then $V_\kappa \models \mathsf{ZFC} + \neg\mathrm{IC}$, because for $\lambda < \kappa$, "$\lambda$ is inaccessible" is absolute between $V_\kappa$ and $V$ (all subsets of $\lambda$ and all functions from smaller ordinals into $\lambda$ lie in $V_\kappa$). So ZFC + IC proves that ZFC + $\neg$IC has a model; and IC cannot be a theorem of ZFC, for then $V_\kappa$, a model of ZFC, would satisfy both IC and $\neg$IC. Theorem 3 also says that ZFC + IC is **strictly stronger** than ZFC in consistency strength (if it is consistent at all). Its consistency cannot be established by any proof that ZFC can formalise; belief in it rests on other evidence — the coherence of the theory that has grown from it, the absence of contradictions after a century of intense study, and the way it fits with everything else we know.
+
+</Section>
+
+<Section id="measurable" kind="proof" title="Measurable cardinals, ultrapowers and embeddings">
+
+<Theorem name="Lemma 4">
+
+Let $U$ be a $\kappa$-complete non-principal ultrafilter on a set $X$. Then every $A \in U$ has $|A| \ge \kappa$. In particular, a $\kappa$-complete ultrafilter on a set of size less than $\kappa$ is principal.
+
+</Theorem>
+
+<Proof>
+
+Suppose $A \in U$ and $|A| < \kappa$. For each $a \in A$, $\{a\} \notin U$, so $X \setminus \{a\} \in U$. These fewer than $\kappa$ sets have intersection $X \setminus A$, which is therefore in $U$; but then $\varnothing = A \cap (X \setminus A) \in U$, which is impossible.
+
+</Proof>
+
+<Theorem name="Theorem 5 (Ulam 1930)">
+
+Every measurable cardinal is inaccessible.
+
+</Theorem>
+
+<Proof>
+
+Let $U$ be a $\kappa$-complete non-principal ultrafilter on $\kappa$; by definition $\kappa$ is uncountable.
+
+*Strong limit.* Suppose $\lambda < \kappa \le 2^\lambda$. Then there is an injection $g$ from $\kappa$ into $\mathcal P(\lambda)$. For each $i < \lambda$, exactly one of $\{\alpha : i \in g(\alpha)\}$ and its complement is in $U$; call it $Y_i$. The intersection $Y = \bigcap_{i < \lambda} Y_i$ of these $\lambda < \kappa$ sets is in $U$. If $\alpha, \beta \in Y$ then for every $i$, $i \in g(\alpha) \iff i \in g(\beta)$, so $g(\alpha) = g(\beta)$ and $\alpha = \beta$. Thus $|Y| \le 1 < \kappa$, contradicting Lemma 4.
+
+*Regular.* If $\operatorname{cf}(\kappa) < \kappa$, there is a cofinal set $C \subseteq \kappa$ with $|C| < \kappa$, so $\kappa = \bigcup_{\gamma \in C} [0, \gamma]$, a union of fewer than $\kappa$ sets each of size less than $\kappa$. By Lemma 4 none of these sets is in $U$, so all their complements are; by $\kappa$-completeness so is the intersection of the complements, which is empty. Contradiction.
+
+</Proof>
+
+Both proofs are formalised in Lean below. To go further we need the ultrapower of the universe.
+
+**Ultrapowers.** Let $U$ be a countably complete ultrafilter on $\kappa$. For functions $f, g$ with domain $\kappa$ (classes of them, cut down to sets by Scott's trick of taking only the elements of least rank) put $f =_U g$ iff $\{\alpha : f(\alpha) = g(\alpha)\} \in U$ and $f \in_U g$ iff $\{\alpha : f(\alpha) \in g(\alpha)\} \in U$. **Łoś's theorem** says that the resulting structure $\mathrm{Ult}(V, U)$ satisfies $\varphi([f_1], \dots, [f_n])$ if and only if $\{\alpha : \varphi(f_1(\alpha), \dots, f_n(\alpha))\} \in U$. Countable completeness makes $\in_U$ well-founded (a descending sequence $[f_{n+1}] \in_U [f_n]$ would give a single $\alpha$ in countably many $U$-sets with $f_{n+1}(\alpha) \in f_n(\alpha)$ for all $n$), so $\mathrm{Ult}(V, U)$ collapses to a transitive class $M$, and $j_U(x) = [\text{constant function } x]$ is an elementary embedding $j_U : V \to M$, by Łoś's theorem. If $U$ is $\kappa$-complete and non-principal, then $j_U(\alpha) = \alpha$ for $\alpha < \kappa$ and $j_U(\kappa) > \kappa$.
+
+<Theorem name="Theorem 6 (Keisler, Scott)">
+
+$\kappa$ is measurable if and only if there is an elementary embedding $j : V \to M$, with $M$ a transitive class, whose critical point is $\kappa$.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) is the ultrapower construction just described. ($\Leftarrow$) Given $j$, let $U = \{X \subseteq \kappa : \kappa \in j(X)\}$. Since $j(\kappa) > \kappa$, $\kappa \in j(\kappa)$, so $\kappa \in U$; and for $X \subseteq \kappa$, $j(X) \cup j(\kappa \setminus X) = j(\kappa)$, so exactly one of $X$, $\kappa \setminus X$ is in $U$. Intersections: if $\gamma < \kappa$ and $\langle X_\xi : \xi < \gamma \rangle$ is a sequence of members of $U$, then by elementarity $j(\langle X_\xi : \xi < \gamma \rangle)$ is a sequence of length $j(\gamma) = \gamma$ whose $\xi$-th term is $j(X_\xi)$ (as $j(\xi) = \xi$), so $j(\bigcap_\xi X_\xi) = \bigcap_\xi j(X_\xi) \ni \kappa$. Upward closure is similar, so $U$ is a $\kappa$-complete ultrafilter. Finally, for $\alpha < \kappa$, $j(\{\alpha\}) = \{j(\alpha)\} = \{\alpha\} \not\ni \kappa$, so $U$ is non-principal.
+
+</Proof>
+
+The two directions fit together. Given $j$ with critical point $\kappa$ and the derived ultrafilter $U$, the map $k([f]_U) = j(f)(\kappa)$ is a well-defined elementary embedding of the ultrapower into $M$, and $k \circ j_U = j$: every embedding with critical point $\kappa$ factors through the ultrapower by its own derived measure.
+
+<CommutativeDiagram
+  objects={[
+    { id: "V", tex: "V", row: 0, col: 0 },
+    { id: "M", tex: "M", row: 0, col: 2 },
+    { id: "U", tex: "M_U = \\mathrm{Ult}(V, U)", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "V", to: "M", tex: "j" },
+    { from: "V", to: "U", tex: "j_U", labelSide: "right" },
+    { from: "U", to: "M", tex: "k", labelSide: "right", style: "dashed" },
+  ]}
+  caption="An embedding $j$ with critical point $\kappa$, its derived measure $U = \{X \subseteq \kappa : \kappa \in j(X)\}$, and the factor map $k([f]_U) = j(f)(\kappa)$: the triangle commutes, $k \circ j_U = j$."
+/>
+
+<Theorem name="Theorem 7 (Scott 1961)">
+
+If there is a measurable cardinal, then $V \ne L$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $V = L$ and let $\kappa$ be the least measurable cardinal. Take $j : V \to M$ with critical point $\kappa$. Since $j(\alpha) \ge \alpha$ for every ordinal, $M$ contains all ordinals; it is a transitive class model of ZF, and $L$ is the smallest such, so $L \subseteq M \subseteq V = L$ and $M = V$. By elementarity, $M \models$ "$j(\kappa)$ is the least measurable cardinal", that is, $V$ believes it; so $j(\kappa) = \kappa$, contradicting $j(\kappa) > \kappa$.
+
+</Proof>
+
+The same ultrapower shows that a measurable cardinal $\kappa$ is a **limit of inaccessible cardinals**: $M$ contains every subset of $\kappa$ and every function from a smaller ordinal into $\kappa$, so $M \models$ "$\kappa$ is inaccessible"; if $U$ is chosen normal, $\kappa = [\mathrm{id}]_U$, and Łoś's theorem gives $\{\alpha < \kappa : \alpha \text{ is inaccessible}\} \in U$ — a set of size $\kappa$ by Lemma 4. In particular, the least measurable is much larger than the least inaccessible, as Tarski, Keisler and Hanf showed in the early 1960s.
+
+</Section>
+
+<Section id="hierarchy" kind="human" title="The hierarchy, and what it decides">
+
+Large cardinal axioms are naturally ordered by consistency strength. Some landmarks, in increasing order of consistency strength:
+
+| Axiom | Definition, informally | Some consequences |
+| --- | --- | --- |
+| inaccessible | uncountable regular strong limit | $V_\kappa \models \mathsf{ZFC}$; Grothendieck universes |
+| Mahlo | the inaccessibles below $\kappa$ form a stationary set | reflection of inaccessibility |
+| weakly compact | $\kappa \to (\kappa)^2_2$: every 2-colouring of pairs has a homogeneous set of size $\kappa$ | compactness for infinitary languages $L_{\kappa\kappa}$ |
+| measurable | $\kappa$-complete non-principal ultrafilter; $j : V \to M$ with critical point $\kappa$ | $V \ne L$ (Scott); analytic games determined (Martin 1970) |
+| strong, Woodin | embeddings with $V_\lambda \subseteq M$, for many $\lambda$ | infinitely many Woodin cardinals give projective determinacy (Martin and Steel 1989) |
+| supercompact | for every $\lambda$, an embedding with $M$ closed under $\lambda$-sequences | consistency of the proper forcing axiom (Baumgartner) |
+| huge, rank-into-rank | $j : V_\lambda \to V_\lambda$ (axiom I3) and beyond | Laver's free left-distributive algebras |
+
+Beyond the top lies inconsistency: Kunen (1971) proved that, with the axiom of choice, there is no non-trivial elementary embedding $j : V \to V$.
+
+**What is known.** Large cardinals settle the theory of definable sets of reals level by level: a measurable cardinal implies that analytic games are determined (Martin, 1970) and that every $\boldsymbol\Sigma^1_2$ set is Lebesgue measurable (Solovay); infinitely many Woodin cardinals imply projective determinacy and with it the regularity of all projective sets (Martin–Steel; see <TopicLink id="math.found.descriptive-set-theory">descriptive set theory</TopicLink>). Many natural statements turn out equiconsistent with a large cardinal: "every set of reals is Lebesgue measurable" (with dependent choice instead of choice) with an inaccessible (Solovay 1970; Shelah 1984); "there is a real-valued measurable cardinal" with a measurable (Solovay 1971); the axiom of determinacy with infinitely many Woodin cardinals (Woodin). On the other hand, large cardinals **do not decide the continuum hypothesis**: Lévy and Solovay (1967) showed that forcing with a poset smaller than $\kappa$ preserves the measurability of $\kappa$ (and similarly for the other large cardinals), and CH can be forced either way by such small posets.
+
+**An empirical phenomenon, not a theorem.** Every natural theory studied so far has turned out to be comparable in consistency strength with the large cardinal hierarchy, and the hierarchy has turned out to be linearly ordered. There is no proof that this must happen — artificial incomparable theories can be built from self-referential sentences — and many set theorists regard the phenomenon as evidence that large cardinals measure something real.
+
+**What is open.** Whether there are canonical inner models — analogues of $L$ — for supercompact cardinals is the subject of Woodin's "Ultimate $L$" programme and is open. Whether a Reinhardt cardinal (a non-trivial $j : V \to V$) is consistent with ZF without choice is open. Whether the purely finite statement about Laver tables in the computation section can be proved without large cardinals is open. And for every large cardinal axiom, its consistency — relative to ZFC or anything weaker — is, by Gödel's theorem, beyond proof; it is a matter of evidence and judgement.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Inaccessible and measurable cardinals in Lean">
+
+Mathlib defines inaccessible cardinals, the von Neumann hierarchy `ZFSet.vonNeumann` inside its model `ZFSet` of ZFC, and the rank of a set. Its definition of inaccessibility agrees with ours:
+
+<Lean decl="Lumenary.LargeCardinals.inaccessible_iff" />
+
+**$V_\kappa$.** Lemma 1 is in Mathlib in the form $|V_\alpha| = \beth'_\alpha$ ("pre-beth") together with $\beth'_\kappa = \kappa$ for inaccessible $\kappa$; from it, every member of $V_\kappa$ is small:
+
+<Lean decl="Lumenary.LargeCardinals.card_vonNeumann" />
+
+<Lean decl="Lumenary.LargeCardinals.card_lt_of_mem" />
+
+The closure properties used in the proof of Theorem 2 — pairing, union and power set (true at every limit stage), replacement (needs regularity) and infinity (needs $\kappa > \aleph_0$):
+
+<Lean decl="Lumenary.LargeCardinals.pair_mem" />
+
+<Lean decl="Lumenary.LargeCardinals.sUnion_mem" />
+
+<Lean decl="Lumenary.LargeCardinals.powerset_mem" />
+
+<Lean decl="Lumenary.LargeCardinals.range_mem" />
+
+<Lean decl="Lumenary.LargeCardinals.omega_mem" />
+
+And Lean's own universes:
+
+<Lean decl="Lumenary.LargeCardinals.univ_inaccessible" />
+
+**Measurable cardinals.** Mathlib has ultrafilters but no measurable cardinals, so we define them:
+
+<Lean decl="Lumenary.LargeCardinals.IsComplete" />
+
+<Lean decl="Lumenary.LargeCardinals.IsNonprincipal" />
+
+<Lean decl="Lumenary.LargeCardinals.IsMeasurable" />
+
+Lemma 4, its corollaries, and Theorem 5 in full — each proof follows the human one:
+
+<Lean decl="Lumenary.LargeCardinals.le_card_of_mem" />
+
+<Lean decl="Lumenary.LargeCardinals.principal_of_card_lt" />
+
+<Lean decl="Lumenary.LargeCardinals.nat_countably_complete_principal" />
+
+<Lean decl="Lumenary.LargeCardinals.two_power_lt" />
+
+<Lean decl="Lumenary.LargeCardinals.is_regular" />
+
+<Lean decl="Lumenary.LargeCardinals.measurable_inaccessible" />
+
+**What is and is not formalised.** Formalised: the definitions, Lemma 4 and Theorem 5 (every measurable cardinal is inaccessible), and the closure properties of $V_\kappa$ that drive Theorem 2. Not formalised: Theorem 2 itself (Mathlib has no satisfaction relation for formulas of set theory inside `ZFSet`, so "$V_\kappa \models \mathsf{ZFC}$" cannot yet be stated), Theorem 3 (it needs formalised provability and Gödel's second incompleteness theorem for ZFC), ultrapowers, Łoś's theorem, elementary embeddings and Scott's theorem. Note the quiet subtlety in `univ_inaccessible`: Lean *proves* that an inaccessible exists, which tells us about the strength of Lean's type theory (roughly ZFC with an inaccessible for each universe level), not about ZFC.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing in the shadow of large cardinals">
+
+The first experiment explores the finite analogue of Theorem 2. In Ackermann's coding of hereditarily finite sets by natural numbers, it computes ranks and the sizes $|V_k|$, and checks that each finite stage $V_k$ fails to be closed under pairing and power set while $V_\omega$ is closed — the mechanism that, one level up, makes $V_\kappa$ a model of ZFC.
+
+<Python id="large_cardinals_hereditarily_finite" />
+
+The second shows a large cardinal axiom reaching down to finite combinatorics. **Laver tables** $A_n$ are the unique left-distributive operations on $\{1, \dots, 2^n\}$ with $p \star 1 = p + 1 \pmod{2^n}$. Laver found them while studying the algebra of rank-into-rank embeddings $j : V_\lambda \to V_\lambda$, and proved from that axiom (I3) that the period of the first row of $A_n$ tends to infinity.
+
+<Python id="large_cardinals_laver_tables" />
+
+The periods grow absurdly slowly: Dougherty showed that the first $n$ with period $32$, if it exists, is astronomically large — bounded below by an iterated value of the Ackermann function. Whether ZFC alone proves that the periods are unbounded is not known. This is a theorem *conditional on* a large cardinal axiom about finite objects — exactly the kind of statement that makes the consistency strength of such axioms a concern for all of mathematics.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: building V_ω">
+
+Build hereditarily finite sets by putting boxes inside boxes. Every set you can make lies in some finite stage $V_n$: the empty box has rank $0$, and a box has rank one more than the largest rank inside it. Notice that you can always make a new box from boxes you have (pairing, union, power set never leave $V_\omega$), but you can never make a box containing *all* the natural numbers — that would be $\omega$, of rank $\omega$, outside $V_\omega$. One level up, allow yourself also to gather any family of boxes indexed by a box you already hold. An uncountable $\kappa$ is inaccessible exactly when this richer game never escapes $V_\kappa$ — and now $\omega$ itself is inside. (Such a $V_\kappa$ is a Grothendieck universe.)
+
+<BoxesNesting />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Large cardinals are just very big numbers."** Size alone is not the point: $\aleph_{\omega_1}$, $\beth_\omega$ and the least $\kappa = \aleph_\kappa$ are enormous, provably exist in ZFC, and are not large cardinals at all. What makes a cardinal "large" is a reflection or closure property that ZFC cannot prove to be instantiated — and the significance lies in the consistency strength such axioms carry and their consequences, for instance for sets of reals.
+
+</Misconception>
+
+<Misconception>
+
+**"Large cardinal axioms are known to be consistent."** Their consistency cannot be proved in ZFC (if ZFC is consistent), nor even reduced to the consistency of ZFC; by Gödel's theorem the same holds at every level of the hierarchy. Belief in them rests on mathematical evidence and judgement: the depth and coherence of their theory, their agreement with each other, the absence of contradictions, and their success in settling questions.
+
+</Misconception>
+
+<Misconception>
+
+**"Measurable cardinals are about Lebesgue measure."** Measurability of $\kappa$ is about a two-valued measure — an ultrafilter — on *all* subsets of $\kappa$. The historical link to Lebesgue measure is real (Ulam's work on measures defined on all subsets, and real-valued measurable cardinals), but a measurable cardinal is a combinatorial object.
+
+</Misconception>
+
+<Misconception>
+
+**"Kunen's theorem shows that large cardinals are inconsistent."** Kunen ruled out a non-trivial $j : V \to V$ under the axiom of choice. Embeddings $j : V \to M$ with $M \ne V$, such as those from measurable cardinals, are not affected; the theorem marks the ceiling of the hierarchy, not a crack in it.
+
+</Misconception>
+
+<Misconception>
+
+**"Large cardinals will settle the continuum hypothesis."** Gödel hoped so in 1947, but Lévy and Solovay (1967) showed that small forcing preserves large cardinals while changing the value of $2^{\aleph_0}$; so no large cardinal axiom of the usual kind decides CH.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="logic" title="A ruler for theories">
+
+Gödel's second incompleteness theorem makes the consistency strengths of theories form a strict hierarchy: whenever $T$ proves $\mathrm{Con}(S)$, $T$ is strictly stronger than $S$ (if consistent). Large cardinals provide natural, well-understood marks along this hierarchy, and the method for comparing other theories with them is relative consistency: forcing pushes statements down to large cardinals ("if there is a measurable, then $\varphi$ is consistent"), and inner model theory pushes large cardinals out of statements ("if $\varphi$ is consistent, then so is a measurable"), giving equiconsistencies. Gödel himself suggested in 1947 that new axioms of infinity, justified by the iterative conception of set, might settle independent questions; Penelope Maddy's "Believing the axioms" (1988) analyses the kinds of evidence offered for them. See <TopicLink id="math.found.incompleteness">incompleteness</TopicLink> and <TopicLink id="math.found.model-theory">model theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Ultrafilters as points, and realcompact spaces">
+
+The ultrafilters on a set $X$ are the points of its Stone–Čech compactification $\beta X$ (for $X$ discrete), the principal ones being the points of $X$ itself; a measurable cardinal is a $\kappa$ for which $\beta\kappa$ has a non-principal point that is $\kappa$-complete. A classical theorem of general topology makes this concrete: a discrete space is **realcompact** — homeomorphic to a closed subspace of a power of $\R$ — if and only if its cardinality is less than the least measurable cardinal (Gillman and Jerison, 1960, chapter 12; their "measurable" means carrying a countably additive two-valued measure that vanishes on points, and the least such cardinal is measurable in our sense). So whether every discrete space is realcompact is exactly the question whether measurable cardinals exist. Stronger axioms reach deeper into topology: Casacuberta, Scevenels and Smith (2005) showed that Vopěnka's principle, a large cardinal principle far above measurables, implies that every homotopy idempotent functor on spaces is a localisation with respect to a single map. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Banach and Ulam's measure problem">
+
+Can Lebesgue measure be extended to a countably additive measure defined on *all* subsets of $[0, 1]$? Vitali's set shows that no translation-invariant extension exists; Banach and Kuratowski (1929) showed that under CH there is no extension at all. Ulam (1930) analysed the general problem: if some set carries a countably additive probability measure on all its subsets vanishing on points, then there is a cardinal $\kappa$ carrying such a measure that is $\kappa$-additive, and either $\kappa$ is measurable (the measure can be taken two-valued) or $\kappa \le 2^{\aleph_0}$ and $\kappa$ is weakly inaccessible — a "real-valued measurable" cardinal. Solovay (1971) proved that a real-valued measurable cardinal is equiconsistent with a measurable one. So the analyst's question "can every set of reals be measured?" has the answer "consistently yes, but only at the price of a measurable cardinal" (or, in Solovay's model of ZF + DC where every set of reals is Lebesgue measurable, of an inaccessible). See <TopicLink id="math.analysis.measure-theory">measure theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Left distributivity and braids">
+
+For a rank-into-rank embedding $j : V_\lambda \to V_\lambda$, applying $j$ to (pieces of) another such embedding $k$ defines $j \cdot k = \bigcup_{\alpha < \lambda} j(k \cap V_\alpha)$, and this operation is **left self-distributive**: $j \cdot (k \cdot l) = (j \cdot k) \cdot (j \cdot l)$. Laver (1992) proved, assuming I3, that the algebra generated by one embedding is free, and deduced that the word problem for the left self-distributive law is decidable. Patrick Dehornoy then found a proof of the decidability without large cardinals, and in the process discovered that the braid groups $B_n$ admit a left-invariant linear order (1994) — a fact about braids, and so about knots and the topology of configuration spaces, uncovered by way of large cardinals. The Laver tables of the computation section are finite quotients of such algebras of embeddings. See <TopicLink id="math.algebra.groups">groups</TopicLink> and <TopicLink id="math.geom.knot-theory">knot theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Universes and size">
+
+Category theory constantly needs "large" collections — the category of all groups, the functor category $\mathbf{Set}^{\mathcal C^{op}}$. Grothendieck's solution, introduced in SGA 4, was a **universe**: a set closed under the operations of set theory, inside which "small" mathematics happens. The uncountable Grothendieck universes are exactly the sets $V_\kappa$ with $\kappa$ inaccessible, so Grothendieck's axiom "every set lies in a universe" says that the inaccessible cardinals are unbounded. Lean adopts the same solution in type-theoretic form: `Type u : Type (u+1)`, and Mathlib proves that each universe is inaccessible from the next (`univ_inaccessible`). Much stronger principles also have categorical forms: Vopěnka's principle is equivalent to the statement that the category of graphs has no large discrete full subcategory, and it controls when subcategories of locally presentable categories are reflective (Adámek and Rosický, 1994). See <TopicLink id="math.cat.higher-categories">higher categories</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Two Wonder Trails approach these ideas from the very beginning: sets built as boxes inside boxes, and Cantor's discovery that some infinities are bigger than others.
+
+<Trail slug="boxes-in-boxes" />
+
+<Trail slug="how-many-infinities" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Beginnings.** Felix Hausdorff (1908) considered regular limit cardinals (weakly inaccessible) and remarked that they would be exceedingly large, if they exist; Paul Mahlo (1911) studied the hierarchy above them. In 1930 Wacław Sierpiński and Alfred Tarski, and independently Ernst Zermelo, introduced strongly inaccessible cardinals, and Zermelo described the models $V_\kappa$ of set theory they give.
+- **The measure problem.** Stefan Banach and Kazimierz Kuratowski (1929) and Stanisław Ulam (1930), in Lwów and Warsaw, created the theory of measures defined on all subsets of a set, and with it measurable cardinals.
+- **The 1960s.** Alfred Tarski, H. Jerome Keisler and William Hanf showed that measurable cardinals are far larger than the first inaccessible; Dana Scott (1961) proved that a measurable cardinal implies $V \ne L$; Keisler's ultrapowers turned measurability into elementary embeddings. Haim Gaifman and Jack Silver studied $0^\sharp$, and Azriel Lévy and Robert Solovay (1967) showed that large cardinals do not decide CH.
+- **Embeddings and determinacy.** Kenneth Kunen (1971) showed that $j : V \to V$ is inconsistent with choice; Solovay, William Reinhardt and Akihiro Kanamori (1978) organised the hierarchy of strong axioms of infinity by elementary embeddings. Donald A. Martin (1970, 1975) linked large cardinals with determinacy, and Martin, John Steel and W. Hugh Woodin (1985–89) proved projective determinacy from Woodin cardinals. Inner model theory, from Ronald Jensen's fine structure through the work of William Mitchell, Steel and many others, builds canonical models for ever larger cardinals.
+- **Algebra.** Richard Laver (1992) and Patrick Dehornoy (1994) connected rank-into-rank embeddings with left-distributive algebras and braid orderings; Randall Dougherty and Thomas Jech analysed the finite Laver tables.
+- Today large cardinal theory is pursued worldwide — in the Americas, Europe, Israel and Asia — and its central questions, about inner models and the status of new axioms, remain open.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Akihiro Kanamori, *The Higher Infinite: Large Cardinals in Set Theory from Their Beginnings* (1994; 2nd edition 2003) — the standard reference, with careful history.
+- Thomas Jech, *Set Theory*, Third Millennium Edition (2003), chapters 10 (measurable cardinals), 17 (large cardinals) and 20 (large cardinals and $L$).
+- Kenneth Kunen, *Set Theory: An Introduction to Independence Proofs* (1980) — inaccessibles, $V_\kappa$ and relative consistency.
+- Frank R. Drake, *Set Theory: An Introduction to Large Cardinals* (1974).
+- Leonard Gillman and Meyer Jerison, *Rings of Continuous Functions* (1960), chapter 12 — measurable cardinals and realcompactness.
+- Patrick Dehornoy, *Braids and Self-Distributivity* (2000) — Laver tables, free left-distributive algebras and the braid order.
+- Penelope Maddy, "Believing the axioms, I and II", *Journal of Symbolic Logic* 53 (1988) — on the justification of new axioms.
+
+</Section>

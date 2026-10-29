@@ -1,0 +1,411 @@
+---
+slug: reading-literature
+topic: math.found.reading-literature
+title: Reading the mathematical literature
+subtitle: Finding the sources, reading them non-linearly, reconstructing what the author left out — Zagier's one-sentence proof, checked line by line — and judging what is proved, cited, conjectured or merely hoped.
+level: grad
+ages: Graduate
+minutes: 110
+order: 7007
+objectives:
+  - Locate primary sources and surveys for a topic using arXiv, zbMATH Open or MathSciNet, and follow chains of citations backwards and forwards
+  - Read a paper in passes, mapping its logical structure before reading proofs in detail
+  - Reconstruct the omitted steps of a published proof, list the results it depends on, and identify where each hypothesis is used
+  - Classify the claims in a paper as proved, cited, conditional, conjectured, heuristic or numerical, and judge what is genuinely open
+  - Recognise that conventions differ between texts, and that preprints, peer review and computation each give a different kind of assurance
+narrators: []
+lean:
+  - Lumenary.ReadingLiterature.zagierSet
+  - Lumenary.ReadingLiterature.zagier
+  - Lumenary.ReadingLiterature.mem_facts
+  - Lumenary.ReadingLiterature.mem_zagierSet
+  - Lumenary.ReadingLiterature.zagier_mem
+  - Lumenary.ReadingLiterature.zagier_zagier
+  - Lumenary.ReadingLiterature.zagier_fixed_iff
+  - Lumenary.ReadingLiterature.card_odd
+  - Lumenary.ReadingLiterature.zagier_two_squares
+  - Lumenary.ReadingLiterature.sq_add_sq_library
+  - Lumenary.ReadingLiterature.div_mul_cancel_needs_hypothesis
+  - Lumenary.ReadingLiterature.nat_sub_add_needs_hypothesis
+compute: [reading_literature_zagier, reading_literature_evidence]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A proof in one sentence">
+
+In 1990 Don Zagier published in the *American Mathematical Monthly* a note whose entire proof is a single sentence. It proves Fermat's theorem that every prime $p \equiv 1 \pmod 4$ is a sum of two squares:
+
+> The involution on the finite set $S = \{(x, y, z) \in \N^3 : x^2 + 4yz = p\}$ defined by
+> $(x, y, z) \mapsto (x + 2z,\ z,\ y - x - z)$ if $x \lt y - z$; $(2y - x,\ y,\ x - y + z)$ if $y - z \lt x \lt 2y$; $(x - 2y,\ x - y + z,\ y)$ if $x \gt 2y$
+> has exactly one fixed point, so $|S|$ is odd and the involution defined by $(x, y, z) \mapsto (x, z, y)$ also has a fixed point.
+
+Every word is correct, and almost nothing is explained. Why is $S$ finite? Why does the map send $S$ to $S$, and why is it an involution? What about the cases $x = y - z$ and $x = 2y$, which the sentence skips? Which fixed point, and why only one? Why does a fixed point of the second involution give two squares? Where is it used that $p$ is prime, and that $p \equiv 1 \pmod 4$?
+
+Research mathematics is written like this — not always so tersely, but always for readers who will supply routine steps. Reading it is a skill: finding the right sources among millions of documents, reading them in the right order, reconstructing what was left out, and knowing at every point whether a statement is proved, cited, conjectured or hoped. This lesson develops that skill, with Zagier's sentence as a fully worked case study (checked by computer and in Lean).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Reading is not linear">
+
+Nobody reads a research paper once, from the first line to the last. Experienced readers make several passes:
+
+1. **Survey.** Title, abstract, introduction, the statements of the main theorems, the section headings, the bibliography. What is claimed? Is it new? Is this the paper I need?
+2. **Map.** Read the statements of all lemmas and propositions, and draw the **dependency graph**: which results are used to prove which, which are proved here and which are cited. Identify the one or two key ideas.
+3. **Read the proofs that matter**, with pencil and paper: check examples and special cases, reconstruct omitted steps, and mark every place a hypothesis is used.
+4. **Place it.** Follow the references backwards (where do the tools come from?) and the citations forwards (who used, corrected or improved this?).
+
+Getting stuck is normal, not a sign of inadequacy: "it is easy to see" may hide an hour of work, and occasionally an error. The aim of a first reading is understanding the structure; full verification comes later, and only for what you need. Reading is the other side of <TopicLink id="math.found.mathematical-writing">mathematical writing</TopicLink>: the conventions a good writer follows are the ones a good reader relies on, and checks.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Kinds of documents and kinds of claims">
+
+<Definition term="preprint">
+
+A **preprint** is a paper made public before, or without, peer review — today usually on the arXiv. A **published** article has been accepted by a journal after **peer review**: one or more referees, chosen by an editor, judge its correctness, novelty and interest. Review lowers the probability of error; it does not eliminate it.
+
+</Definition>
+
+<Definition term="survey, research article, monograph">
+
+A **research article** claims new results with proofs. A **survey** summarises a field, its main results and its literature, usually without full proofs. A **monograph** is a book-length research treatment; **lecture notes** and **textbooks** are expository. Surveys and textbooks are the right starting points for a new field; research articles are the primary sources for specific results.
+
+</Definition>
+
+<Definition term="conjecture and open problem">
+
+A **conjecture** is a precise statement believed, but not proved, to be true. An **open problem** is a question with no accepted resolution; it need not come with a predicted answer (for example "is $\pi + e$ irrational?"). A claim is **conditional** if it is proved assuming an unproved hypothesis ("assuming the generalised Riemann hypothesis …"); the implication is then a theorem, and its conclusion is not.
+
+</Definition>
+
+<Definition term="status of a claim">
+
+In reading a paper, label each claim as **proved** (in this paper), **cited** (proved elsewhere — where?), **conditional**, **conjectured**, **heuristic** (supported by a non-rigorous argument), **numerical** (supported by computation, with stated bounds), or **folklore** (claimed to be known, with no source — a warning sign).
+
+</Definition>
+
+</Section>
+
+<Section id="finding" kind="human" title="Finding the literature">
+
+**Start from expository sources.** For a field you do not know, read a survey, a good textbook, the relevant article of the *Princeton Companion to Mathematics*, or a talk in the proceedings of the International Congress of Mathematicians. Surveys in the *Bulletin of the AMS* and the Séminaire Bourbaki are written to be read by non-specialists.
+
+**Databases.** The **arXiv** (since 1991) holds preprints in all areas of mathematics, freely available; it moderates but does not referee. **zbMATH Open** — the former *Zentralblatt für Mathematik*, freely accessible since 2021 — indexes the published literature with reviews and summaries, reaching back to the nineteenth century through the *Jahrbuch über die Fortschritte der Mathematik*; **MathSciNet** (the American Mathematical Society's *Mathematical Reviews*, since 1940) does the same by subscription. Both classify papers by the **Mathematics Subject Classification** (MSC2020), so that, for example, `11A41` collects papers on primes; both link authors' publication lists, references and citations.
+
+**Following citations.** Backward citations (the bibliography) lead to the tools and the history; forward citations ("cited by", in zbMATH, MathSciNet or general search engines) lead to later corrections, simplifications and generalisations — essential before relying on an old result. Errata and retractions are attached to papers in the databases.
+
+**Specialised resources.** The OEIS for integer sequences; the NIST *Digital Library of Mathematical Functions*; the LMFDB for $L$-functions and modular forms; the Stacks Project, whose results have permanent "tags" that can be cited; Mathlib's documentation for formalised mathematics; MathOverflow for research-level questions.
+
+**Languages.** Important work exists in Russian, French, German, Chinese, Japanese and other languages. Many Russian journals have cover-to-cover English translations (for example *Uspekhi Matematicheskikh Nauk* as *Russian Mathematical Surveys*), and reviews in zbMATH and MathSciNet are in English; machine translation now makes the original accessible too. Mathematical notation travels well; terminology does not always — see the conventions below.
+
+</Section>
+
+<Section id="reconstruction" kind="proof" title="Reconstructing Zagier's proof">
+
+Here is the sentence, reconstructed as a sequence of lemmas. Throughout, $p$ is prime with $p \equiv 1 \pmod 4$, and (as in Zagier's note) $\N$ means the positive integers; the Lean formalisation uses $\N = \{0, 1, 2, \dots\}$, which gives the same set $S$ by Lemma 1.
+
+<Theorem name="Lemma 1 (S is finite, and its elements are well behaved)">
+
+If $(x, y, z) \in \N^3$ with $x^2 + 4yz = p$, then $x, y, z \le p$; and neither $x = y - z$ nor $x = 2y$ holds. (With $\N$ including $0$: also $x, y, z \ge 1$.)
+
+</Theorem>
+
+<Proof>
+
+The bounds are clear since each of $x^2$ and $4yz$ is at most $p$ (and $y, z \ge 1$). If $x = y - z$ then $p = x^2 + 4(x + z)z = (x + 2z)^2$ is a square; if $x = 2y$ then $p = 4y^2 + 4yz = 4y(y + z)$ is divisible by $4$. A prime is neither. (If zero were allowed: $y = 0$ or $z = 0$ would make $p = x^2$ a square, and $x = 0$ would make $4 \mid p$.) $\blacksquare$
+
+</Proof>
+
+So the three cases of the map cover $S$ completely — the first place where primality is used, silently.
+
+<Theorem name="Lemma 2 (the map sends S to S)">
+
+Write $f$ for Zagier's map. If $t \in S$ then $f(t) \in S$.
+
+</Theorem>
+
+<Proof>
+
+In each case the entries are positive integers by the case conditions, and $x^2 + 4yz$ is preserved:
+
+$$
+(x + 2z)^2 + 4z(y - x - z) = x^2 + 4yz, \quad (2y - x)^2 + 4y(x - y + z) = x^2 + 4yz, \quad (x - 2y)^2 + 4(x - y + z)y = x^2 + 4yz,
+$$
+
+each checked by expanding. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Lemma 3 (f is an involution)">
+
+$f(f(t)) = t$ for all $t \in S$.
+
+</Theorem>
+
+<Proof>
+
+If $x \lt y - z$, then $f(t) = (x', y', z') = (x + 2z, z, y - x - z)$ satisfies $x' = x + 2z \gt 2z = 2y'$, so the third formula applies: $f(f(t)) = (x' - 2y', x' - y' + z', y') = (x, y, z)$. Symmetrically, the third case is sent to the first and back. If $y - z \lt x \lt 2y$, then $f(t) = (2y - x, y, x - y + z)$ again lies in the middle case (since $y' - z' = 2y - x - z \lt 2y - x = x' \lt 2y = 2y'$, using $z \ge 1$ and $x \ge 1$), and applying the middle formula once more returns $(x, y, z)$. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Lemma 4 (exactly one fixed point)">
+
+The only fixed point of $f$ in $S$ is $(1, 1, k)$, where $p = 4k + 1$.
+
+</Theorem>
+
+<Proof>
+
+A fixed point in the first case would need $z = 0$, and in the third case $y = 0$; neither occurs. In the middle case $2y - x = x$ forces $x = y$, so $p = x^2 + 4xz = x(x + 4z)$. Since $p$ is prime, $x = 1$ or $x = p$, and $x = p$ would give $p + 4z = 1$, which is impossible; so $x = 1$. Then $4z = p - 1$. Conversely $(1, 1, k)$ satisfies $y - z \lt 1 \lt 2$ and is fixed. This is where $p \equiv 1 \pmod 4$ is used — to make $k$ an integer — and primality is used a second time. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Lemma 5 (parity of fixed points)">
+
+If $g$ is an involution of a finite set $X$, then $|X| \equiv |\mathrm{Fix}(g)| \pmod 2$.
+
+</Theorem>
+
+<Proof>
+
+The elements not fixed by $g$ fall into pairs $\{t, g(t)\}$ with $t \ne g(t)$. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Theorem (Fermat; Zagier's proof)">
+
+Every prime $p \equiv 1 \pmod 4$ is a sum of two squares.
+
+</Theorem>
+
+<Proof>
+
+By Lemmas 2–5, $|S| \equiv 1 \pmod 2$. The map $g(x, y, z) = (x, z, y)$ is another involution of $S$, so by Lemma 5 it has an odd — hence non-zero — number of fixed points. A fixed point has $y = z$, and then $p = x^2 + 4y^2 = x^2 + (2y)^2$. $\blacksquare$
+
+</Proof>
+
+<Figure caption="The dependency graph of Zagier's proof. Arrows point from a result to the results that use it; the dashed box is the one cited ingredient (Lemma 5). The finiteness of S is used by both parity arguments.">
+<svg viewBox="0 0 660 420" role="img" aria-label="A directed graph. 'No boundary cases' leads to 'map sends S to S', 'map is an involution' and 'unique fixed point'. 'Map sends S to S' leads to 'map is an involution'. 'Map is an involution', 'unique fixed point', 'S is finite' and the cited 'parity lemma' lead to '|S| is odd', which with the parity lemma leads to 'swap fixes a point', which leads to 'p = x² + (2y)²'.">
+  <defs>
+    <marker id="rl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--human)" />
+    </marker>
+  </defs>
+  <g stroke="var(--human)" strokeWidth="2" fill="none" markerEnd="url(#rl-arrow)">
+    <line x1="300" y1="64" x2="182" y2="99" />
+    <line x1="330" y1="64" x2="330" y2="179" />
+    <line x1="310" y1="64" x2="202" y2="179" />
+    <line x1="150" y1="144" x2="150" y2="179" />
+    <line x1="200" y1="224" x2="289" y2="269" />
+    <line x1="330" y1="224" x2="330" y2="269" />
+    <line x1="470" y1="144" x2="391" y2="269" />
+    <line x1="470" y1="224" x2="401" y2="269" />
+    <line x1="300" y1="314" x2="262" y2="349" />
+    <line x1="535" y1="224" x2="327" y2="371" />
+    <line x1="325" y1="372" x2="394" y2="372" />
+  </g>
+  <g fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2">
+    <rect x="255" y="20" width="150" height="44" rx="8" />
+    <rect x="75" y="100" width="150" height="44" rx="8" />
+    <rect x="460" y="100" width="150" height="44" rx="8" />
+    <rect x="75" y="180" width="150" height="44" rx="8" />
+    <rect x="255" y="180" width="150" height="44" rx="8" />
+    <rect x="255" y="270" width="150" height="44" rx="8" />
+    <rect x="175" y="350" width="150" height="44" rx="8" />
+    <rect x="395" y="350" width="150" height="44" rx="8" />
+  </g>
+  <rect x="460" y="180" width="150" height="44" rx="8" fill="var(--sky-soft)" stroke="var(--gold)" strokeWidth="2.5" strokeDasharray="6 4" />
+  <g fontSize="13" fill="var(--ink-2)" textAnchor="middle">
+    <text x="330" y="39">no boundary cases</text>
+    <text x="330" y="56" fontSize="11">uses: p prime</text>
+    <text x="150" y="127">map sends S to S</text>
+    <text x="535" y="127">S is finite</text>
+    <text x="150" y="207">map is an involution</text>
+    <text x="330" y="199">unique fixed point</text>
+    <text x="330" y="216" fontSize="11">uses: p prime, p ≡ 1 (mod 4)</text>
+    <text x="535" y="199">parity lemma</text>
+    <text x="535" y="216" fontSize="11">cited</text>
+    <text x="330" y="297">|S| is odd</text>
+    <text x="250" y="377">swap fixes a point</text>
+    <text x="470" y="377">p = x² + (2y)²</text>
+  </g>
+</svg>
+</Figure>
+
+The reconstruction also shows what the hypotheses buy. For $n \equiv 3 \pmod 4$ the set $S$ is empty, since $x^2 + 4yz \equiv 1 \pmod 4$ for odd $x$. For composite $n \equiv 1 \pmod 4$ there is one fixed point of $f$ for each factorisation $n = x(x + 4z)$, so $|S|$ can be even (for $n = 21$, which is not a sum of two squares) or odd (for $n = 45 = 3^2 + 6^2$). For squares the boundary cases occur and $f$ is not an involution of $S$. The first computation below checks all of this. Zagier's proof is itself a distillation of an argument of Heath-Brown (1984), inspired by Liouville — something a reader learns by following his references.
+
+</Section>
+
+<Section id="claims" kind="human" title="Judging what a paper establishes">
+
+**Annotate the claims.** In the introduction of a typical paper you will meet sentences of every kind: "We prove that … (Theorem 1.1)" — proved here; "By a theorem of Siegel [12] …" — cited (check that the cited result really has the hypotheses needed); "Assuming the generalised Riemann hypothesis, we show … (Theorem 1.3)" — a proved implication, not a proved conclusion; "We conjecture that the constant $2$ is optimal" — conjectured; "A heuristic argument suggests …" — heuristic; "Numerical computations up to $10^{12}$ support …" — numerical, with its bound; "It is well known that …" — folklore, if no source is given. An abstract or a title may claim more than the theorems prove; the theorems are what count.
+
+**Read the quantifiers and constants.** "For all sufficiently large $N$" may hide an ineffective constant, as in Vinogradov's 1937 theorem that every sufficiently large odd number is a sum of three primes — closing that gap for *every* odd number greater than $5$ took Helfgott's work of 2013, combining improved analysis with large computations. Implied constants in $O(\cdot)$ and $\ll$ may or may not be computable; the paper should say which.
+
+**Know the status of preprints.** A preprint's claims are claims. Perelman's 2002–2003 arXiv preprints on the Poincaré and geometrisation conjectures were never submitted to a journal; they became accepted mathematics after several teams (Kleiner and Lott; Morgan and Tian; Cao and Zhu) worked through every step. By contrast, Mochizuki's 2012 claimed proof of the abc conjecture, published in 2021 in a journal edited at his own institute, is not accepted by most experts: Scholze and Stix (2018) argued that a key step does not hold. Status is decided by the community's checking, not by the place of publication.
+
+**Know that published results can be wrong.** Kempe's 1879 "proof" of the four colour theorem was accepted for eleven years until Heawood found the error. Grunwald's 1933 theorem in algebraic number theory was false; Shianghao Wang found the counterexample in 1948, and the corrected statement is now called the Grunwald–Wang theorem. Dulac's 1923 proof that a polynomial vector field has finitely many limit cycles contained a gap noticed by Ilyashenko around 1981; complete proofs were given by Écalle and by Ilyashenko in the early 1990s. Before relying on a result, look for later papers that cite it.
+
+**Know what evidence can do.** Goldbach's conjecture has been verified for every even number up to $4 \times 10^{18}$ (Oliveira e Silva, Herzog and Pardi, 2014) and is unproved. The Mertens conjecture, $|M(n)| \lt \sqrt n$ for all $n \gt 1$, holds for every $n$ ever checked — and is false (Odlyzko and te Riele, 1985), although no counterexample is known explicitly. Numerical support makes a conjecture worth taking seriously; it does not make it a theorem. See <TopicLink id="math.comp.experimental-mathematics">experimental mathematics</TopicLink>.
+
+**Mind the conventions.** Is $0 \in \N$? (Zagier's $\N$ starts at $1$; Lean's at $0$.) In French, *positif* means $\ge 0$ and *strictement positif* means $\gt 0$. Bourbaki's "compact" includes the Hausdorff condition, which English-language texts often call "compact Hausdorff"; Bourbaki's "quasi-compact" is the English "compact". "Ring" may or may not require a unit; "$\log$" may be natural or base $2$; "smooth" may mean $C^\infty$ or "sufficiently differentiable". In formal libraries $a/0 = 0$ and natural-number subtraction is truncated, so identities carry side conditions that informal texts leave implicit. A statement is only meaningful once its conventions are fixed.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Zagier's proof, reconstructed in Lean">
+
+The Lean module carries out the reconstruction above, step by step. The set $S$ and Zagier's map, with the boundary cases assigned to branches (they never occur):
+
+<Lean decl="Lumenary.ReadingLiterature.zagierSet" />
+
+<Lean decl="Lumenary.ReadingLiterature.zagier" />
+
+Lemma 1 — the silent uses of primality — and the consequence that the box bounds are automatic:
+
+<Lean decl="Lumenary.ReadingLiterature.mem_facts" />
+
+<Lean decl="Lumenary.ReadingLiterature.mem_zagierSet" />
+
+Lemmas 2–4:
+
+<Lean decl="Lumenary.ReadingLiterature.zagier_mem" />
+
+<Lean decl="Lumenary.ReadingLiterature.zagier_zagier" />
+
+<Lean decl="Lumenary.ReadingLiterature.zagier_fixed_iff" />
+
+The two parity arguments, using Mathlib's `Equiv.Perm.card_fixedPoints_modEq` for Lemma 5 (stated there for any map whose $p^n$-th power is the identity), and the theorem:
+
+<Lean decl="Lumenary.ReadingLiterature.card_odd" />
+
+<Lean decl="Lumenary.ReadingLiterature.zagier_two_squares" />
+
+The same theorem in Mathlib, proved through the arithmetic of the Gaussian integers — a different literature — and stated with the hypothesis $p \bmod 4 \ne 3$, which also covers $p = 2$:
+
+<Lean decl="Lumenary.ReadingLiterature.sq_add_sq_library" />
+
+Two conventions that change the meaning of familiar formulas:
+
+<Lean decl="Lumenary.ReadingLiterature.div_mul_cancel_needs_hypothesis" />
+
+<Lean decl="Lumenary.ReadingLiterature.nat_sub_add_needs_hypothesis" />
+
+**What is formalised:** the whole of Zagier's argument, with every omitted step; only the parity lemma (Lemma 5) and the library version of the theorem are cited from Mathlib. Formalising a proof is the most thorough way of reading it — every case the author skipped must be supplied — and a formal proof of this length took longer to write than the sentence did to read. **Not formalised:** anything about the literature itself — the claims about databases, history and status in this lesson are ordinary scholarly claims, with references.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Checking a proof, and weighing evidence">
+
+The first experiment tests our *reading* of Zagier's proof: it builds $S$ and both involutions and checks every claim of the sentence for all primes $p \equiv 1 \pmod 4$ below $3000$; then it runs the same code where a hypothesis fails, to see exactly what breaks.
+
+<Python id="reading_literature_zagier" />
+
+The second experiment computes the kind of evidence a paper might quote for two famous conjectures — the Mertens conjecture and Goldbach's conjecture. The data look equally reassuring. One conjecture is false and the other is open.
+
+<Python id="reading_literature_evidence" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: a theorem and its converse">
+
+Papers state implications, and readers often silently reverse them. Let $p$ stand for "$n$ is a prime with $n \equiv 1 \pmod 4$" and $q$ for "$n$ is a sum of two squares". Fermat's theorem is $p \to q$. Its converse $q \to p$ is false — $25 = 3^2 + 4^2$ is not prime — and the table shows the row where the two differ. Then type `not q -> not p` into the comparison box: the contrapositive is equivalent to the theorem, which is why proofs "by contrapositive" are valid. Remember also: "$p$ only if $q$" means $p \to q$; "$q$ is necessary for $p$" means $p \to q$; "$q$ is sufficient for $p$" means $q \to p$.
+
+<TruthTable formula="p -> q" compare="q -> p" title="Fermat's theorem and its converse" subtitle="p: n is a prime ≡ 1 (mod 4);  q: n is a sum of two squares" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A preprint's claims are established results."** They are claims, made in good faith but not yet checked by others. Cite them as preprints, check whether a later version or a published version exists, and look for the community's response before relying on them.
+
+</Misconception>
+
+<Misconception>
+
+**"I should understand every line on a first, linear reading."** Professionals read in passes: structure first, then the proofs that matter. Being stuck on a line is normal; mark it, read on, and return with examples, special cases, the cited sources, or a colleague.
+
+</Misconception>
+
+<Misconception>
+
+**"A conjecture with strong numerical support must be true."** The Mertens conjecture holds for every $n$ that has been checked and was disproved in 1985; $\pi(x) \lt \mathrm{li}(x)$ holds wherever computed and fails infinitely often (Littlewood, 1914). Evidence measures plausibility, not truth.
+
+</Misconception>
+
+<Misconception>
+
+**"Published means correct."** Peer review lowers but does not remove the chance of error: Kempe's, Grunwald's and Dulac's published arguments all failed. Follow forward citations and errata before relying on a result, especially an old or isolated one.
+
+</Misconception>
+
+<Misconception>
+
+**"The same symbols mean the same thing in every text."** Conventions about $\N$, positivity, compactness, rings, logarithms and division by zero vary. Find the author's conventions — often in a short section at the start, sometimes only implicitly — before judging a claim.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="number-theory" title="One theorem, several proofs, several literatures">
+
+Fermat stated the two-squares theorem in a letter to Mersenne on Christmas Day 1640 (Girard had stated it in 1625); Euler gave the first published proof (1747–1749), by descent. Lagrange and Gauss placed it in the theory of binary quadratic forms: a prime is represented by $x^2 + y^2$ iff $-1$ is a square modulo $p$, i.e. iff $p = 2$ or $p \equiv 1 \pmod 4$. Thue's lemma and Minkowski's theorem give further proofs, and Heath-Brown's and Zagier's involutions yet another. A reader who knows several proofs knows which hypotheses are essential — and can recognise the theorem in disguise, for example as the statement that $p$ splits in the Gaussian integers. See <TopicLink id="math.number.elementary-number-theory">number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The Gaussian integers">
+
+Mathlib's proof goes through the ring $\Z[i]$, a Euclidean domain. If $p \equiv 1 \pmod 4$, then $-1 \equiv a^2 \pmod p$ for some $a$ (since $(\Z/p\Z)^\times$ is cyclic of order divisible by $4$), so $p \mid a^2 + 1 = (a + i)(a - i)$ but $p$ divides neither factor; hence $p$ is not prime in $\Z[i]$, and in a unique factorisation domain it factors as $p = (x + iy)(x - iy) = x^2 + y^2$. The algebraist's proof explains *why* the theorem is true in terms of structure — the splitting of primes in $\Q(i)$ — and generalises to the vast theory of which primes split in which number fields. See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Counting fixed points modulo 2">
+
+Lemma 5 is the simplest case of a principle that runs through topology. If a group of prime order $q$ acts on a finite set $X$, then $|X| \equiv |X^{G}| \pmod q$, because non-fixed points come in orbits of size $q$; the same cell-counting argument shows that for a finite $G$-CW complex $X$ with $G$ of order $q$, the Euler characteristics satisfy $\chi(X) \equiv \chi(X^G) \pmod q$, the starting point of P. A. Smith's theory of periodic maps. Fixed-point counts as invariants appear again in the Lefschetz fixed-point theorem. Zagier's proof is a fixed-point argument: one involution with a known fixed point forces another to have one.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Windmills">
+
+Zagier's involution has a well-known geometric reading. Draw $x^2 + 4yz$ as a square of side $x$ with four $y \times z$ rectangles attached around it, one on each side and rotated in turn, like the sails of a windmill. The same windmill outline can be re-read with a different central square, and that re-reading is exactly Zagier's map; its three cases correspond to whether the new central square is larger or smaller than the old. The fixed point $(1, 1, k)$ is the windmill whose re-reading is itself, and a windmill whose sails are squares ($y = z$) has area $x^2 + 4y^2 = x^2 + (2y)^2$. Pictures like this are often how a terse algebraic argument was found, even when the published text omits them.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="What a proof certifies">
+
+A proof is a finite object whose correctness can in principle be checked mechanically; the formal reconstruction in Lean does exactly that, and in doing so had to make explicit every case, convention and hypothesis that Zagier's sentence leaves implicit — the boundary cases, the meaning of $\N$, the finiteness of $S$. Reading a paper is checking an informal proof against an implicit standard of rigour; formal verification makes the standard explicit. Logic also explains the asymmetry of evidence: the Mertens and Goldbach conjectures are $\Pi_1$ statements, refutable by a single computation, but never confirmable by one. See <TopicLink id="math.comp.formalising-published-mathematics">formalising published mathematics</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Commentaries.** Reconstructing what an author left out is an ancient practice. Liu Hui's commentary (263 CE) on the Chinese *Nine Chapters on the Mathematical Art* supplied justifications for its procedures; Bhāskara I's commentary (629 CE) explained the terse verses of Āryabhaṭa's *Āryabhaṭīya*; scholars writing in Arabic and Persian, among them Naṣīr al-Dīn al-Ṭūsī in the thirteenth century, produced critical editions of Euclid that filled gaps and examined the parallel postulate.
+- **Journals and reviews.** The first scientific journals appeared in 1665 (the *Journal des sçavans* in Paris and the *Philosophical Transactions* in London); Crelle's *Journal für die reine und angewandte Mathematik* (1826) was among the first devoted to mathematics. The *Jahrbuch über die Fortschritte der Mathematik* reviewed the literature from 1868. Otto Neugebauer founded the *Zentralblatt für Mathematik* in 1931 and, after leaving Nazi Germany, *Mathematical Reviews* in the United States in 1940.
+- **Self-taught readers.** Srinivasa Ramanujan learned much of his mathematics in India from G. S. Carr's *Synopsis of Elementary Results*, a compendium of thousands of results with few proofs; reconstructing them shaped his style.
+- **Preprints.** Paul Ginsparg started the arXiv at Los Alamos in 1991, and mathematicians began posting there in 1992; today most new research in mathematics appears there first, free to readers everywhere.
+- **The theorem of this lesson.** Stated by Girard (1625) and Fermat (1640), proved by Euler (1747–1749), recast by Lagrange and Gauss, and proved in one sentence by Zagier (1990), after Heath-Brown (1984).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- D. Zagier, "A one-sentence proof that every prime $p \equiv 1 \pmod 4$ is a sum of two squares", *American Mathematical Monthly* 97 (1990), p. 144.
+- Martin Aigner and Günter M. Ziegler, *Proofs from THE BOOK* (6th ed., 2018) — several proofs of the two-squares theorem, including Zagier's.
+- Timothy Gowers (ed.), *The Princeton Companion to Mathematics* (2008) — an entry point to every field.
+- Imre Lakatos, *Proofs and Refutations* (1976) — how proofs, definitions and counterexamples evolve together.
+- Nicholas J. Higham, *Handbook of Writing for the Mathematical Sciences* (3rd ed., 2020) — includes chapters on reading, searching and refereeing.
+- Paul R. Halmos, "How to write mathematics", *L'Enseignement Mathématique* (1970); Steven G. Krantz, *A Primer of Mathematical Writing* (2nd ed., 2017) — the writer's side of the same contract. See also <TopicLink id="math.found.mathematical-writing">mathematical writing</TopicLink>.
+
+</Section>

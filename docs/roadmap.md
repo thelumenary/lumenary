@@ -16,23 +16,24 @@ Repository structure · website architecture · brand and design system · subje
 
 **Next steps for Phase B:**
 
-1. **Human review.** Recruit mathematicians and teachers to review the five lessons, seven trails and all exercises, and record each review.
+1. **Human review.** Recruit mathematicians and teachers to review the lessons, trails and exercises, and record each review.
 2. **Translation review.** Ask fluent mathematics teachers to review the machine-drafted locales.
 3. **Accessibility.** Run an accessibility audit and test with screen-reader users.
 4. **Browser tests.** Automate end-to-end tests of the widgets and exercises, and run the Pyodide experiments in CI.
-5. **Mathlib.** Add Mathlib as a dependency, using its cache, and cross-check the formal library against it.
+5. ~~**Mathlib.** Add Mathlib as a dependency, using its cache.~~ Done: Mathlib `v4.35.0` is a pinned dependency.
 
-## Phase C — Elementary and secondary expansion
+## Phases C, D and E — first drafts of the whole curriculum ✅ (AI-drafted; awaiting human review)
 
-Arithmetic, place value, fractions, measurement, geometry, algebra, logic, relations, equivalence relations, proof techniques, introductory probability and statistics. Each lesson must ship with its exercises, its verification and a review plan.
+Every topic in the knowledge graph now has a lesson — 200 in all, from counting in kindergarten to research directions — each with exercises, a Lean module and at least one tested Python experiment. The graph was extended so that the higher levels are not seen only through set theory and category theory: geometry and topology now have their own thread from K–2 to research (non-Euclidean and projective geometry, surfaces, knots, differential forms, manifolds, Riemannian geometry, Lie groups, homotopy theory, characteristic classes, Riemann surfaces, low-dimensional topology, geometric group theory, symplectic and Kähler geometry), alongside analysis (harmonic analysis, PDE, dynamics, ergodic theory, geometric analysis), number theory (analytic, arithmetic geometry, Langlands), probability (random geometry) and physics (relativity, gauge theory). Every lesson from early undergraduate onwards has a required *Viewpoints* section, and four specialisation pathways were added. About thirty generic widgets and twelve new Wonder Trails support the lessons. Formal sections moved to Mathlib from Grade 9 onwards.
 
-## Phase D — Undergraduate expansion
+**What these drafts are not:** reviewed. Every lesson is labelled *AI-drafted*. At graduate and research level many central theorems are stated with references or proved in outline, and formal sections often formalise a key lemma rather than the headline result; each lesson says which.
 
-Calculus, linear algebra, real analysis, abstract algebra, topology, probability, numerical methods, introductory category theory (categories, functors, natural transformations, universal properties). Formal sections move to Mathlib.
+**Next steps:**
 
-## Phase E — Graduate expansion
-
-Measure theory, functional analysis, graduate algebra, commutative algebra, representation theory, categorical logic and topos theory, plus specialised pathways.
+1. **Human review, level by level.** Recruit mathematicians and teachers to review lessons, exercises, proofs, history and attributions, starting with K–8 and with the claims agents flagged as uncertain. Record each review.
+2. **Missing widgets** noted by authors: box plots, tree diagrams, scatter plots with line fitting, directed graphs (state machines, blueprints, Cayley graphs), and a grid robot for young children.
+3. **Translations** of the lessons themselves (only Collections is translated), starting where the interface is already translated.
+4. **Deepen the formal library** where Mathlib grows (e.g. plane graphs, degree theory, characteristic classes), and contribute upstream.
 
 ## Phase F — Globalisation and educational review
 
@@ -40,4 +41,4 @@ Human-reviewed translations, terminology glossaries reviewed by mathematicians, 
 
 ## Phase G — Research pathways
 
-Reading literature, mathematical writing, formalising published results, computational reproducibility, open-problem evaluation, research ethics. Optional directions include quiver representations, path algebras and derived categories.
+First-draft orientation lessons now exist for the research skills (reading the literature, mathematical writing, formalising published mathematics, computational reproducibility, experimental mathematics, research ethics) and for twenty-two research directions across topology, geometry, analysis, number theory, probability, combinatorics, physics, logic and category theory. Still to do: advanced laboratories (larger formalisation and computation projects), curated reading lists checked by specialists, and regular updates of the "known versus open" sections as the literature moves.

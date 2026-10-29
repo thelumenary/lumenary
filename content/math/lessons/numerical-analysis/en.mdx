@@ -1,0 +1,490 @@
+---
+slug: numerical-analysis
+topic: math.comp.numerical-analysis
+title: Numerical analysis
+subtitle: A computer does arithmetic with about sixteen significant digits. When can you trust its answers? The **condition number** of the problem, the **stability** of the algorithm and the **order** of the method decide.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6034
+objectives:
+  - Define condition numbers and prove the perturbation bound for linear systems; distinguish forward error, backward error and backward stability
+  - Solve linear systems by LU factorisation with partial pivoting, explain why pivoting is needed and why one should not form $A^{-1}$
+  - Solve least-squares problems by QR factorisation, explain why the normal equations square the condition number, and describe the QR algorithm for eigenvalues
+  - Prove that Euler's method converges with order 1, state and test the order of Runge–Kutta methods, and analyse absolute stability, stiffness and A-stability
+narrators: []
+lean:
+  - Lumenary.NumericalAnalysis.condNum
+  - Lumenary.NumericalAnalysis.op_norm_bound
+  - Lumenary.NumericalAnalysis.one_le_condNum
+  - Lumenary.NumericalAnalysis.relative_error_bound
+  - Lumenary.NumericalAnalysis.lu_example
+  - Lumenary.NumericalAnalysis.det_mul_lu
+  - Lumenary.NumericalAnalysis.det_via_lu
+  - Lumenary.NumericalAnalysis.no_pivot_lu
+  - Lumenary.NumericalAnalysis.pivot_lu
+  - Lumenary.NumericalAnalysis.euler_error_step
+  - Lumenary.NumericalAnalysis.discrete_gronwall
+  - Lumenary.NumericalAnalysis.one_add_le_exp
+  - Lumenary.NumericalAnalysis.euler_global_error
+  - Lumenary.NumericalAnalysis.explicit_euler_iterate
+  - Lumenary.NumericalAnalysis.explicit_euler_stable_iff
+  - Lumenary.NumericalAnalysis.backward_euler_contracts
+compute: [numerical_analysis_conditioning, numerical_analysis_ode_order]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Sixteen digits are not enough — or are they?">
+
+On 25 February 1991 a Patriot missile battery at Dhahran failed to intercept an incoming missile, and 28 soldiers died. The system counted time in tenths of a second and converted to seconds by multiplying by $0.1$, stored in a 24-bit register. But $0.1$ has no finite binary expansion, and the stored value was too small by about $9.5 \times 10^{-8}$. After 100 hours of continuous operation the clock had drifted by $0.34$ seconds, during which the target travelled more than half a kilometre (US General Accounting Office report, 1992).
+
+Rounding errors are usually harmless. Every weather forecast, every bridge designed by finite elements and every GPS fix solves enormous systems of equations in floating point, and the answers are excellent. Numerical analysis is the mathematics that explains when and why, and it rests on three questions.
+
+- **Is the problem sensitive?** Some problems amplify any small change in their data. That is a property of the problem — its **condition number** — and no algorithm can repair it.
+- **Is the algorithm stable?** A good algorithm adds no more error than the inevitable rounding of the data. Gaussian elimination *with pivoting* is good; without pivoting it can fail on an innocent $2 \times 2$ system.
+- **How fast does the method converge?** Discretising a differential equation with step $h$ gives an error like $h^p$, where $p$ is the **order**, provided the method is **stable** — and for "stiff" problems, stability can matter far more than order.
+
+This lesson develops these ideas for the two workhorses of scientific computing: linear algebra (linear systems, least squares and eigenvalues) and ordinary differential equations.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Problems, algorithms, and who is to blame">
+
+Think of a problem as a function $f$ from data to answers, and of an algorithm as a computed approximation $\tilde f$. The **forward error** $|\tilde f(x) - f(x)|$ is what we care about but usually cannot measure. The **backward error** asks a cleverer question: *for which nearby data $x + \delta x$ is the computed answer exact?* If $\tilde f(x) = f(x + \delta x)$ with $\delta x$ as small as the rounding of the data, the algorithm is **backward stable**: it has answered a question we could not distinguish from ours.
+
+Then the error splits into two factors:
+
+$$
+\text{forward error} \;\lesssim\; \text{condition number} \times \text{backward error}.
+$$
+
+The algorithm controls the second factor and the problem controls the first. Geometrically, a matrix $A$ maps the unit sphere to an ellipsoid. If the ellipsoid is very thin, two very different inputs have nearly the same image, and inverting $A$ magnifies errors by the ratio of its longest to its shortest axis. That ratio is the condition number.
+
+<Figure caption="A well-conditioned matrix maps the unit circle to a round ellipse; an ill-conditioned one squashes it into a thin ellipse. The ratio of the semi-axes, $\sigma_{\max}/\sigma_{\min}$, is the 2-norm condition number $\kappa_2(A)$.">
+<svg viewBox="0 0 330 150" role="img" aria-label="A circle, an almost round ellipse and a very thin tilted ellipse">
+  <circle cx="55" cy="75" r="45" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <ellipse cx="165" cy="75" rx="52" ry="40" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="2" />
+  <ellipse cx="275" cy="75" rx="60" ry="7" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="2" transform="rotate(-30 275 75)" />
+  <text x="40" y="140" fontSize="12" fill="var(--ink-2)">unit circle</text>
+  <text x="140" y="140" fontSize="12" fill="var(--formal)">κ ≈ 1.3</text>
+  <text x="250" y="140" fontSize="12" fill="var(--human)">κ ≈ 9</text>
+</svg>
+</Figure>
+
+For differential equations the analogue of backward stability is **stability of the scheme**: errors made in early steps must not be amplified by later ones. A method that is consistent (each step is accurate to some order) *and* stable converges. Stiff problems contain a rapidly decaying component that is invisible in the solution, but an explicit method must still take tiny steps to keep that component from exploding.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="floating-point model">
+
+A floating-point system with base 2 and $t$ significant bits has **unit roundoff** $u = 2^{-t}$ ($u = 2^{-53} \approx 1.1 \times 10^{-16}$ in IEEE double precision). Every real $x$ in range is rounded to $\mathrm{fl}(x) = x(1 + \delta)$ with $|\delta| \le u$, and the basic operations satisfy $\mathrm{fl}(x \circ y) = (x \circ y)(1 + \delta)$, $|\delta| \le u$, for $\circ \in \{+, -, \times, \div\}$.
+
+</Definition>
+
+<Definition term="norms and condition number">
+
+For a vector norm $\|\cdot\|$ on $\R^n$, the induced **matrix norm** is $\|A\| = \max_{x \ne 0}\|Ax\|/\|x\|$, so that $\|Ax\| \le \|A\|\|x\|$ and $\|AB\| \le \|A\|\|B\|$. The **condition number** of an invertible matrix is $\kappa(A) = \|A\|\,\|A^{-1}\|$. In the 2-norm, $\kappa_2(A) = \sigma_{\max}/\sigma_{\min}$, the ratio of the largest and smallest singular values.
+
+</Definition>
+
+<Definition term="forward and backward error, backward stability">
+
+Let an algorithm compute $\tilde y$ as an approximation to $y = f(x)$. The **forward error** is $\|\tilde y - y\|$ (relative: divided by $\|y\|$). The **backward error** is the smallest $\|\delta x\|/\|x\|$ such that $\tilde y = f(x + \delta x)$. The algorithm is **backward stable** if its backward error is $O(u)$ for all data.
+
+</Definition>
+
+<Definition term="LU and QR factorisations">
+
+An **LU factorisation** writes $A = LU$ with $L$ unit lower triangular and $U$ upper triangular. With **partial pivoting**, $PA = LU$ for a permutation matrix $P$, where at step $k$ the row with the largest $|a_{ik}|$, $i \ge k$, is swapped into the pivot position. The **growth factor** is $\rho = \max_{i,j}|u_{ij}| / \max_{i,j}|a_{ij}|$. A **QR factorisation** of $A \in \R^{m\times n}$ ($m \ge n$, full rank) writes $A = QR$ with $Q \in \R^{m\times n}$ having orthonormal columns and $R$ upper triangular with positive diagonal (the *reduced* form).
+
+</Definition>
+
+<Definition term="one-step methods, order, stability function">
+
+For $y' = f(t, y)$, a **one-step method** computes $y_{n+1} = y_n + h\,\Phi(t_n, y_n; h)$. Its **local truncation error** is $\tau_{n} = y(t_{n+1}) - y(t_n) - h\Phi(t_n, y(t_n); h)$ for the exact solution $y$. It has **order $p$** if the global error $\max_{n h \le T}|y(t_n) - y_n|$ is $O(h^p)$ for smooth problems. Applied to the **test equation** $y' = \lambda y$, a Runge–Kutta method gives $y_{n+1} = R(h\lambda)y_n$, and $R$ is its **stability function**. The method is **A-stable** if $|R(z)| \le 1$ whenever $\operatorname{Re} z \le 0$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="A nearly singular system">
+
+The system $x + y = 2$, $x + 1.0001y = 2.0001$ has solution $(1, 1)$. Change the right-hand side to $(2, 2.0002)$, a relative change of about $3.5 \times 10^{-5}$, and the solution becomes $(0, 2)$. Here $A = \begin{pmatrix}1 & 1\\1 & 1.0001\end{pmatrix}$, $A^{-1} = 10^4\begin{pmatrix}1.0001 & -1\\-1 & 1\end{pmatrix}$, and $\kappa_\infty(A) = 2.0001 \times 2.0001 \times 10^4 \approx 4 \times 10^4$. The two equations describe almost parallel lines, and a tiny shift of one moves their intersection a long way.
+
+</Example>
+
+<Example title="Condition numbers to know">
+
+- Orthogonal matrices: $\kappa_2(Q) = 1$, the best possible. Multiplying by them never amplifies errors, which is why QR is so stable.
+- Diagonal matrices: $\kappa(\mathrm{diag}(d_i)) = \max|d_i| / \min|d_i|$ in any $p$-norm.
+- Hilbert matrices $H_{ij} = \frac{1}{i + j - 1}$: $\kappa_2(H_n)$ grows roughly like $e^{3.5n}$, so already $\kappa_2(H_{12}) \approx 2 \times 10^{16}$ — numerically singular in double precision.
+
+</Example>
+
+<Example title="Euler's method on y′ = λy">
+
+Explicit Euler gives $y_{n+1} = y_n + h\lambda y_n = (1 + h\lambda)y_n$, so $R(z) = 1 + z$, while the exact solution is multiplied by $e^{h\lambda}$ per step. For $\lambda = -50$ and $h = 0.05$, $R = -1.5$: the numerical solution oscillates with growing amplitude while the true one decays like $e^{-50t}$. Backward Euler, $y_{n+1} = y_n + h\lambda y_{n+1}$, gives $R(z) = \frac{1}{1 - z} = \frac{1}{3.5}$ here, decaying as it should.
+
+</Example>
+
+</Section>
+
+<Section id="conditioning" kind="proof" title="Conditioning of linear systems">
+
+<Theorem name="Theorem 1 (perturbing the right-hand side)">
+
+Let $A$ be invertible, $Ax = b \ne 0$ and $A(x + \delta x) = b + \delta b$. Then
+
+$$
+\frac{\|\delta x\|}{\|x\|} \le \kappa(A)\,\frac{\|\delta b\|}{\|b\|},
+$$
+
+and for each $A$ there are $b$ and $\delta b$ for which equality holds.
+
+</Theorem>
+
+<Proof>
+
+Subtracting, $A\,\delta x = \delta b$, so $\delta x = A^{-1}\delta b$ and $\|\delta x\| \le \|A^{-1}\|\|\delta b\|$. Also $\|b\| = \|Ax\| \le \|A\|\|x\|$, so $\frac{1}{\|x\|} \le \frac{\|A\|}{\|b\|}$. Multiply the two inequalities. For equality, choose $x$ with $\|Ax\| = \|A\|\|x\|$ and $\delta b$ with $\|A^{-1}\delta b\| = \|A^{-1}\|\|\delta b\|$; both exist because the maximum defining an induced norm is attained.
+
+</Proof>
+
+<Theorem name="Theorem 2 (perturbing the matrix)">
+
+Let $A$ be invertible and $\|A^{-1}\|\|\delta A\| < 1$. If $Ax = b$ and $(A + \delta A)(x + \delta x) = b + \delta b$ with $b \ne 0$, then $A + \delta A$ is invertible and
+
+$$
+\frac{\|\delta x\|}{\|x\|} \le \frac{\kappa(A)}{1 - \kappa(A)\frac{\|\delta A\|}{\|A\|}}\left(\frac{\|\delta A\|}{\|A\|} + \frac{\|\delta b\|}{\|b\|}\right).
+$$
+
+To first order: relative forward error $\le \kappa(A) \times$ relative backward error.
+
+</Theorem>
+
+<Proof>
+
+If $(A + \delta A)v = 0$ then $v = -A^{-1}\delta A\,v$, so $\|v\| \le \|A^{-1}\|\|\delta A\|\|v\|$, forcing $v = 0$: $A + \delta A$ is invertible. Expanding and using $Ax = b$, we get $A\,\delta x = \delta b - \delta A\,(x + \delta x)$, so
+
+$$
+\|\delta x\| \le \|A^{-1}\|\big(\|\delta b\| + \|\delta A\|\|x\| + \|\delta A\|\|\delta x\|\big).
+$$
+
+Move the last term to the left: $(1 - \|A^{-1}\|\|\delta A\|)\|\delta x\| \le \|A^{-1}\|(\|\delta b\| + \|\delta A\|\|x\|)$. Divide by $\|x\|$, and use $\|\delta b\|/\|x\| \le \|A\|\|\delta b\|/\|b\|$ and $\|A^{-1}\|\|\delta A\| = \kappa(A)\|\delta A\|/\|A\|$.
+
+</Proof>
+
+Since rounding the data alone causes relative perturbations of size $u$, **no algorithm can promise relative accuracy better than about $\kappa(A)\,u$**. The rule of thumb: with $\kappa \approx 10^k$, expect to lose about $k$ of the $16$ significant decimal digits.
+
+</Section>
+
+<Section id="lu" kind="proof" title="Gaussian elimination as LU factorisation">
+
+Gaussian elimination subtracts multiples $\ell_{ik} = a^{(k)}_{ik}/a^{(k)}_{kk}$ of the pivot row $k$ from the rows below it. Each step is multiplication by a unit lower triangular matrix $L_k$, and the product of their inverses is the unit lower triangular matrix $L$ of multipliers. So elimination computes $A = LU$. Solving $Ax = b$ then takes a forward substitution $Ly = b$ and a back substitution $Ux = y$.
+
+<Theorem name="Theorem 3 (existence and uniqueness of LU)">
+
+An invertible $A \in \R^{n\times n}$ has a factorisation $A = LU$ ($L$ unit lower triangular, $U$ upper triangular) if and only if all its leading principal submatrices $A_k = A[1..k, 1..k]$ are invertible. The factorisation is then unique.
+
+</Theorem>
+
+<Proof>
+
+*Necessity.* If $A = LU$, then $A_k = L_kU_k$ (the leading blocks multiply, because $L$ is lower and $U$ upper triangular). Since $\det A = \det U = \prod u_{ii} \ne 0$, every $\det A_k = \prod_{i\le k}u_{ii} \ne 0$.
+
+*Existence,* by induction on $n$. Write $A = \begin{pmatrix}A_{n-1} & c\\ r^T & a\end{pmatrix}$ and, by induction, $A_{n-1} = L'U'$ with $U'$ invertible. Seek $L = \begin{pmatrix}L' & 0\\ \ell^T & 1\end{pmatrix}$ and $U = \begin{pmatrix}U' & w\\ 0 & \upsilon\end{pmatrix}$. Comparing blocks requires $L'w = c$, $\ell^TU' = r^T$ and $\ell^Tw + \upsilon = a$, which have the unique solutions $w = L'^{-1}c$, $\ell^T = r^TU'^{-1}$ and $\upsilon = a - \ell^Tw$.
+
+*Uniqueness.* If $L_1U_1 = L_2U_2$, then $L_2^{-1}L_1 = U_2U_1^{-1}$ is both unit lower triangular and upper triangular, hence the identity.
+
+</Proof>
+
+The matrix $\begin{pmatrix}0 & 1\\1 & 1\end{pmatrix}$ is perfectly well conditioned but has no LU factorisation, since $A_1 = (0)$. A *nearly* zero pivot is just as bad in floating point. For $\begin{pmatrix}\varepsilon & 1\\1 & 1\end{pmatrix}$ the multiplier is $1/\varepsilon$ and $u_{22} = 1 - 1/\varepsilon$. With $\varepsilon = 10^{-20}$, $\mathrm{fl}(1 - 10^{20}) = -10^{20}$, and the computed solution of $Ax = (1, 2)^T$ is $(0, 1)$ instead of $(1, 1)$. Swapping the rows first gives multiplier $\varepsilon$ and an accurate answer. **Partial pivoting** always selects the largest available pivot. Then every $|\ell_{ik}| \le 1$, and every invertible $A$ has a factorisation $PA = LU$: at each step the pivot column below the diagonal contains a non-zero entry, since otherwise the matrix would be singular.
+
+<Theorem name="Theorem 4 (Wilkinson's backward error analysis; stated)">
+
+Gaussian elimination with partial pivoting, in floating point, computes $\hat x$ with $(A + \delta A)\hat x = b$, where $\|\delta A\|_\infty \le c_n\,\rho\,u\,\|A\|_\infty$ for a modest constant $c_n$ (a low-degree polynomial in $n$) and the growth factor $\rho$. Moreover $\rho \le 2^{n-1}$, with equality for a matrix of Wilkinson's ($1$ on the diagonal and in the last column, $-1$ below the diagonal).
+
+</Theorem>
+
+(Wilkinson, 1961; see Higham, *Accuracy and Stability of Numerical Algorithms* (2002), chapter 9.) The bound $2^{n-1}$ is attained, so partial pivoting is **not** backward stable in the worst case. In practice growth factors are small — of order $n^{2/3}$ on average for random matrices, according to experiments of Trefethen and Schreiber (1990) — and matrices with large growth seem almost never to arise. Why this is so is still not fully understood. It is an empirical fact supported by probabilistic analysis, not a theorem about all matrices. LU costs about $\frac23n^3$ flops; each additional right-hand side costs only $2n^2$.
+
+**Do not compute $A^{-1}$ to solve $Ax = b$.** Forming $A^{-1}$ costs about $2n^3$ flops, three times as much as LU. The computed $\mathrm{fl}(A^{-1})b$ is also not backward stable: its residual $\|b - A\hat x\|$ can be about $\kappa(A)$ times larger than the residual of the LU solution, although both forward errors are of size $\kappa(A)u$ (Higham 2002, §14.1). And for sparse $A$, the inverse is typically dense while the LU factors often stay sparse.
+
+</Section>
+
+<Section id="least-squares" kind="proof" title="Least squares, QR and eigenvalues">
+
+Given $A \in \R^{m\times n}$ with $m > n$ and full column rank, and $b \in \R^m$, the **least-squares problem** asks for $x$ minimising $\|Ax - b\|_2$ — for example, fitting a line to $m$ noisy measurements.
+
+<Theorem name="Theorem 5 (normal equations and QR)">
+
+(a) $x$ minimises $\|Ax - b\|_2$ if and only if $A^TAx = A^Tb$, and the minimiser is unique.
+(b) If $A = QR$ (reduced QR factorisation), the minimiser is the solution of the triangular system $Rx = Q^Tb$.
+(c) $\kappa_2(A^TA) = \kappa_2(A)^2$.
+
+</Theorem>
+
+<Proof>
+
+(a) For any $x$ and $v$, $\|A(x + v) - b\|^2 = \|Ax - b\|^2 + 2v^TA^T(Ax - b) + \|Av\|^2$. If $A^T(Ax - b) = 0$, the middle term vanishes and $x$ is a minimiser, unique because $Av \ne 0$ for $v \ne 0$ (full rank). Conversely, at a minimiser the derivative $2A^T(Ax - b)$ of the quadratic must vanish.
+
+(b) $A^TA = R^TQ^TQR = R^TR$ and $A^Tb = R^TQ^Tb$, so the normal equations read $R^T(Rx - Q^Tb) = 0$. Since $R$ is invertible, this means $Rx = Q^Tb$.
+
+(c) With the singular value decomposition $A = U\Sigma V^T$, $A^TA = V\Sigma^2V^T$ has singular values $\sigma_i^2$.
+
+</Proof>
+
+So solving the normal equations in floating point loses twice as many digits as the problem deserves. In **Läuchli's example** $A = \begin{pmatrix}1 & 1\\ \varepsilon & 0\\ 0 & \varepsilon\end{pmatrix}$ with $\varepsilon = 10^{-8}$, $A^TA = \begin{pmatrix}1 + \varepsilon^2 & 1\\ 1 & 1 + \varepsilon^2\end{pmatrix}$, and $\mathrm{fl}(1 + 10^{-16}) = 1$ makes it exactly singular. QR computed by **Householder reflections** works on $A$ itself and is backward stable (Higham 2002, chapter 19). Orthogonal transformations do not amplify errors, since $\kappa_2(Q) = 1$.
+
+**Eigenvalues by the QR algorithm.** Starting from $A_0 = A$, factor $A_k = Q_kR_k$ and set $A_{k+1} = R_kQ_k$. Since $A_{k+1} = Q_k^TA_kQ_k$, every $A_k$ is orthogonally similar to $A$ and has the same eigenvalues. *Theorem (stated):* if the eigenvalues of $A$ have distinct absolute values $|\lambda_1| > |\lambda_2| > \cdots > |\lambda_n|$ (plus a mild condition on the eigenvectors), then $A_k$ converges to an upper triangular matrix with the $\lambda_i$ on the diagonal. The subdiagonal entry $(i+1, i)$ decays like $|\lambda_{i+1}/\lambda_i|^k$. The reason is that $Q_0Q_1\cdots Q_{k-1}$ is the orthonormalisation of $A^k$ — simultaneous power iteration on all columns at once. Practical versions first reduce $A$ to Hessenberg form (cost $O(n^3)$ once, then $O(n^2)$ per step) and use shifts $A_k - \mu_kI$, which make convergence typically quadratic, or cubic for symmetric matrices (Trefethen and Bau 1997, lectures 28–29).
+
+</Section>
+
+<Section id="odes" kind="proof" title="Numerical solution of ODEs: order and stability">
+
+Consider $y' = f(t, y)$, $y(0) = y_0$ on $[0, T]$, with $f$ continuous and $L$-Lipschitz in $y$: $|f(t, u) - f(t, v)| \le L|u - v|$. Take steps $h = T/N$, $t_n = nh$.
+
+<Theorem name="Theorem 6 (Euler's method converges with order 1)">
+
+If the exact solution $y$ is $C^2$ with $|y''| \le M$ on $[0, T]$, the Euler iterates $y_{n+1} = y_n + hf(t_n, y_n)$ satisfy
+
+$$
+|y(t_n) - y_n| \le \frac{Mh}{2}\cdot t_n\,e^{Lt_n} \le \frac{MT e^{LT}}{2}\,h \qquad (0 \le n \le N).
+$$
+
+</Theorem>
+
+<Proof>
+
+*Consistency.* By Taylor's theorem, $y(t_{n+1}) = y(t_n) + hy'(t_n) + \frac{h^2}{2}y''(\xi_n) = y(t_n) + hf(t_n, y(t_n)) + \tau_n$ with $|\tau_n| \le \frac{Mh^2}{2}$.
+
+*Error recursion.* Subtract the Euler step. For $e_n = y(t_n) - y_n$, the Lipschitz condition gives
+
+$$
+|e_{n+1}| \le |e_n| + h|f(t_n, y(t_n)) - f(t_n, y_n)| + |\tau_n| \le (1 + hL)|e_n| + \tfrac{M}{2}h^2.
+$$
+
+*Stability (discrete Gronwall).* By induction, $|e_n| \le (1 + hL)^n|e_0| + n\cdot\frac{M}{2}h^2(1 + hL)^n$. With $e_0 = 0$ and $(1 + hL)^n \le e^{nhL} = e^{Lt_n}$ (from $1 + x \le e^x$), this gives $|e_n| \le \frac{M}{2}h\,(nh)\,e^{Lt_n}$.
+
+</Proof>
+
+The proof has the shape of every convergence proof in numerical analysis: **consistency** (small local errors) plus **stability** (errors are not amplified too much) gives **convergence**. The whole argument is formalised in Lean below.
+
+**Runge–Kutta methods** evaluate $f$ several times per step to cancel more terms of the Taylor expansion. Heun's method $y_{n+1} = y_n + \frac h2\big(k_1 + k_2\big)$, with $k_1 = f(t_n, y_n)$ and $k_2 = f(t_n + h, y_n + hk_1)$, has order 2. The classical fourth-order method of Kutta (1901),
+
+$$
+\begin{aligned}
+k_1 &= f(t_n, y_n), & k_2 &= f\big(t_n + \tfrac h2, y_n + \tfrac h2k_1\big),\\
+k_3 &= f\big(t_n + \tfrac h2, y_n + \tfrac h2k_2\big), & k_4 &= f(t_n + h, y_n + hk_3),
+\end{aligned}
+\qquad y_{n+1} = y_n + \tfrac h6(k_1 + 2k_2 + 2k_3 + k_4),
+$$
+
+has order 4. *Theorem (stated):* a Runge–Kutta method whose local truncation error is $O(h^{p+1})$ for smooth $f$ (equivalently, whose coefficients satisfy Butcher's order conditions up to order $p$) has global error $O(h^p)$, by the same consistency-plus-stability argument as Theorem 6. Checking that the classical method satisfies the eight order conditions for $p = 4$ is a finite computation (Hairer, Nørsett and Wanner, *Solving Ordinary Differential Equations I*, §II.2). The experiment below *measures* the orders $1, 2, 4$.
+
+**Absolute stability.** On the test equation $y' = \lambda y$ with $\operatorname{Re}\lambda < 0$, whose solutions decay, we want the numerical solution $y_n = R(h\lambda)^ny_0$ to decay too, i.e. $|R(h\lambda)| < 1$. The stability functions are:
+
+| method | $R(z)$ | stable for real $z < 0$ |
+| --- | --- | --- |
+| explicit Euler | $1 + z$ | $-2 < z < 0$ |
+| classical RK4 | $1 + z + \frac{z^2}{2} + \frac{z^3}{6} + \frac{z^4}{24}$ | $-2.785\ldots < z < 0$ |
+| backward Euler | $\dfrac{1}{1 - z}$ | all $z < 0$ |
+| trapezoidal rule | $\dfrac{1 + z/2}{1 - z/2}$ | all $z < 0$ |
+
+<Theorem name="Theorem 7 (explicit methods are never A-stable)">
+
+(a) Backward Euler and the trapezoidal rule are A-stable. (b) No explicit Runge–Kutta method is A-stable.
+
+</Theorem>
+
+<Proof>
+
+(a) For $\operatorname{Re}z \le 0$: $|1 - z| \ge 1$, so $\left|\frac{1}{1 - z}\right| \le 1$; and $|1 + z/2| \le |1 - z/2|$, because $z/2$ is at least as close to $-1$ as to $1$. (b) For an explicit method with $s$ stages, $R$ is a polynomial of degree at most $s$, non-constant since $R(z) = 1 + z + O(z^2)$. A non-constant polynomial is unbounded on the half-line $z \to -\infty$.
+
+</Proof>
+
+A problem is **stiff** when it contains decay rates far faster than the time scale of interest. The equation $y' = -50(y - \cos t)$ has the smooth solution $y \approx \cos t$ after a transient of length $\approx 0.1$, yet explicit Euler needs $50h < 2$ for ever after. In chemical kinetics or circuit simulation, rates can differ by factors of $10^{10}$, and only implicit methods are practical. Germund Dahlquist (1963) proved the **second Dahlquist barrier**: an A-stable linear multistep method has order at most $2$. Among the A-stable multistep methods of order 2, the trapezoidal rule has the smallest error constant.
+
+**Smaller is not always better.** Each step makes a rounding error of order $u$, and $N = T/h$ steps accumulate roughly $uT/h$ of it. So the total error behaves like $Ch^p + uT/h$, which is smallest at a moderate $h$ and *grows* as $h \to 0$. The same trade-off appears in a single difference quotient: $(f(x + h) - f(x))/h$ has truncation error $\approx h|f''|/2$ and rounding error $\approx 2u|f|/h$, optimal near $h \approx \sqrt u \approx 10^{-8}$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Numerical analysis in Lean and Mathlib">
+
+Mathlib has operator norms, matrices and determinants, but no model of floating-point arithmetic and no library of numerical algorithms. So what can be formalised is the *exact* mathematics behind the error analysis: perturbation bounds, factorisations, and the convergence and stability estimates. The rounding-error statements (Theorem 4, backward stability of Householder QR) are not formalised.
+
+The condition number of an invertible bounded linear map between normed spaces, and Theorem 1 in multiplied-out form (which avoids dividing by $\|x\|$ and $\|b\|$):
+
+<Lean decl="Lumenary.NumericalAnalysis.condNum" />
+
+<Lean decl="Lumenary.NumericalAnalysis.op_norm_bound" />
+
+<Lean decl="Lumenary.NumericalAnalysis.one_le_condNum" />
+
+<Lean decl="Lumenary.NumericalAnalysis.relative_error_bound" />
+
+An LU factorisation produced by elimination, and the determinant as the product of the pivots:
+
+<Lean decl="Lumenary.NumericalAnalysis.lu_example" />
+
+<Lean decl="Lumenary.NumericalAnalysis.det_mul_lu" />
+
+<Lean decl="Lumenary.NumericalAnalysis.det_via_lu" />
+
+The pivoting example, exactly, with and without the row swap:
+
+<Lean decl="Lumenary.NumericalAnalysis.no_pivot_lu" />
+
+<Lean decl="Lumenary.NumericalAnalysis.pivot_lu" />
+
+Theorem 6, Euler's method has order 1, in three steps that follow the human proof — the error recursion, the discrete Gronwall inequality, and the global bound (with $1 + x \le e^x$ from Mathlib):
+
+<Lean decl="Lumenary.NumericalAnalysis.euler_error_step" />
+
+<Lean decl="Lumenary.NumericalAnalysis.discrete_gronwall" />
+
+<Lean decl="Lumenary.NumericalAnalysis.one_add_le_exp" />
+
+<Lean decl="Lumenary.NumericalAnalysis.euler_global_error" />
+
+Stability on the test equation: explicit Euler multiplies by $1 + h\lambda$ and is stable exactly when $h|\lambda| < 2$, while backward Euler contracts for every step size:
+
+<Lean decl="Lumenary.NumericalAnalysis.explicit_euler_iterate" />
+
+<Lean decl="Lumenary.NumericalAnalysis.explicit_euler_stable_iff" />
+
+<Lean decl="Lumenary.NumericalAnalysis.backward_euler_contracts" />
+
+**What is and is not formalised.** Proved here: $\kappa \ge 1$, Theorem 1, the example factorisations, the Euler error recursion, discrete Gronwall and Theorem 6 (given the one-step recursion), and Theorem 7 on the negative real axis for the two Euler methods. Cited from Mathlib: the operator-norm inequality, $\det(LU) = \det L\det U$ and $1 + x \le e^x$. Not formalised: Theorem 2, Theorems 3–5 in general, the QR algorithm, the order of RK4, and anything about floating-point rounding.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments in double precision">
+
+The first program puts the linear-algebra theorems to work in IEEE double precision. Hilbert systems are solved with relative error close to $\kappa_2(H)u$, as Theorems 1–2 predict for a backward-stable solver. (The right-hand side $b = H\mathbf{1}$ is itself rounded, which already causes errors of this size.) Elimination without pivoting fails on the $\varepsilon$-matrix. Wilkinson's matrix achieves the worst-case growth $2^{n-1}$ and destroys all accuracy at $n = 55$, although its condition number is modest. And the normal equations for Läuchli's problem are exactly singular in floating point, while QR solves it.
+
+<Python id="numerical_analysis_conditioning" />
+
+The second program measures the order of three one-step methods by halving $h$ — the error ratios approach $2$, $4$ and $16$ — then shows stiffness: explicit Euler on $y' = -50(y - \cos t)$ explodes for $50h = 2.5$, is neutral at $50h = 2$, and is accurate for $50h \le 1.25$, while backward Euler is accurate for every step. Finally it shows the U-shaped total error of a difference quotient as $h$ shrinks past $\sqrt u$.
+
+<Python id="numerical_analysis_ode_order" />
+
+These are numerical experiments on single examples. They illustrate the theorems, and the agreement with the predicted rates is good evidence that the code is right, but they prove nothing about other matrices or equations.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: thin ellipses, stability regions and stiffness">
+
+**Ill-conditioning.** This matrix has determinant $0.05$: it squashes the unit square into a sliver, and its condition number is about $80$. Move the $(2, 2)$ entry towards $1$ and watch the parallelogram collapse onto a line — the matrix becomes singular, and $\kappa \to \infty$.
+
+<MatrixTransform matrix={[[1, 1], [1, 1.05]]} mode="single" presets={["identity", "singular", "rotation"]} title="An ill-conditioned matrix" subtitle="A thin image means a large condition number." />
+
+**Stability functions on the negative real axis.** Each curve is $|R(z)|$ for $z = h\lambda < 0$. A method is stable where its curve lies below the line $y = 1$: explicit Euler on $(-2, 0)$, RK4 on about $(-2.79, 0)$, and backward Euler everywhere.
+
+<FunctionPlot fns={["abs(1 + x)", "abs(1 + x + x^2/2 + x^3/6 + x^4/24)", "1/(1 - x)", "1"]} labels={["explicit Euler", "RK4", "backward Euler", "y = 1"]} x={[-4, 0.5]} y={[0, 2.5]} title="|R(hλ)| for three methods" />
+
+**Stiffness in the slope field.** Solutions of $y' = -50(y - \cos x)$ from any starting value collapse within $x \approx 0.1$ onto the slow solution $y \approx \cos x$. An accurate method only needs to follow that smooth curve, but an explicit method must still respect the fast decay rate $50$.
+
+<VectorField mode="slope" f="-50*(y - cos(x))" x={[0, 3]} y={[-1.5, 1.5]} points={[[0, 1.4], [0, -1.2], [0, 0]]} title="A stiff equation: y′ = −50(y − cos x)" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"To solve $Ax = b$, compute $A^{-1}$ and multiply."** It costs about three times as much as LU with partial pivoting, it destroys sparsity, and it is less accurate in the backward sense: the residual of $\mathrm{fl}(A^{-1})b$ can be $\kappa(A)$ times larger. In MATLAB, Julia or NumPy, write `A \ b` or `numpy.linalg.solve(A, b)`, which use LU. You almost never need $A^{-1}$ itself; if you need $A^{-1}B$, solve $AX = B$.
+
+</Misconception>
+
+<Misconception>
+
+**"A smaller step size always reduces the error."** Truncation error falls like $h^p$, but rounding error accumulates over $T/h$ steps and grows like $u/h$. Below an optimal $h$ the total error *increases*, which is visible in the difference-quotient experiment, where the best $h$ is near $10^{-8}$. For stiff problems the opposite surprise occurs: a *larger* step with an explicit method does not just lose accuracy, it explodes.
+
+</Misconception>
+
+<Misconception>
+
+**"A small residual means an accurate solution."** A backward-stable solver produces a residual $\|b - A\hat x\|$ of order $u\|A\|\|\hat x\|$ — tiny — even when the forward error is of order $\kappa(A)u$ and therefore large. The Hilbert matrix of order $12$ gives residuals near $10^{-16}$ and errors near $1$. The residual measures the backward error, and accuracy needs the condition number too.
+
+</Misconception>
+
+<Misconception>
+
+**"Ill-conditioning is the algorithm's fault."** Conditioning belongs to the problem. If $\kappa(A) = 10^{12}$, then perturbing the data in the 16th digit changes the answer in the 4th, and no algorithm working with rounded data can do better. The cure is to reformulate the problem (rescale, choose a better basis, add regularisation) or to compute with more digits, not to look for a cleverer solver.
+
+</Misconception>
+
+<Misconception>
+
+**"Higher order is always better."** Order describes the error as $h \to 0$ for smooth problems. For stiff problems the explicit RK4 method, whatever its order, is limited by its stability interval of about $2.79/|\lambda|$, while the first-order backward Euler method can take steps a thousand times larger. For non-smooth problems, high-order methods lose their advantage.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Distance to singularity, and integrators that respect geometry">
+
+The condition number is a distance. **Theorem (Eckart–Young, Gastinel–Kahan):** $\min\{\|\delta A\|_2 : A + \delta A \text{ singular}\} = \sigma_{\min}(A) = 1/\|A^{-1}\|_2$, so $\frac{1}{\kappa_2(A)}$ is the *relative distance from $A$ to the nearest singular matrix*. (Proof: if $A + \delta A$ is singular, Theorem 2's argument shows $\|A^{-1}\|\|\delta A\| \ge 1$; conversely, subtracting $\sigma_{\min}u_nv_n^T$ from the SVD reaches a singular matrix.) Ill-conditioned problems are those near the "variety of ill-posed problems" — a geometric picture that Demmel (1987) extended to many other problems.
+
+For differential equations, **geometric integration** asks methods to preserve the structure of the flow. Explicit Euler applied to the harmonic oscillator $\dot q = p$, $\dot p = -q$ multiplies the energy by $1 + h^2$ at every step, so the orbit spirals outwards. The **symplectic Euler** method, $p_{n+1} = p_n - hq_n$, $q_{n+1} = q_n + hp_{n+1}$, preserves area in phase space exactly, and its energy error stays bounded for exponentially long times. That is why symplectic methods are used for planetary orbits and molecular dynamics. See <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Consistency + stability = convergence">
+
+Theorem 6 is a special case of a general principle. The **Lax equivalence theorem** (Lax and Richtmyer, 1956) says that for a consistent finite-difference approximation of a well-posed *linear* initial-value problem, stability is necessary and sufficient for convergence. The explicit heat-equation scheme of <TopicLink id="math.analysis.pde-intro">partial differential equations</TopicLink> is the standard example: consistent for all $r = k\Delta t/\Delta x^2$, stable (hence convergent) exactly for $r \le \frac12$. In the language of <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>, stability is a uniform bound on the powers of the discrete evolution operators, and the theorem is an application of the uniform boundedness principle. Backward error analysis has an analytic counterpart for ODEs too: a numerical integrator follows, to high accuracy, the exact flow of a *modified* differential equation, and studying that equation explains long-time behaviour.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Factorisations are group decompositions">
+
+The factorisations of numerical linear algebra are classical decompositions of the group $GL_n(\R)$. **Gram–Schmidt** proves the **Iwasawa** (QR) decomposition: every invertible $A$ is uniquely $QR$ with $Q$ orthogonal and $R$ upper triangular with positive diagonal, so $GL_n(\R) = O(n) \cdot B^+$ as a product of subgroups. LU with pivoting is the **Bruhat decomposition** $GL_n = \bigsqcup_{w} B^-wB$ over permutation matrices $w$ (with $B^\pm$ the lower and upper triangular groups); the cell of the identity — matrices with an LU factorisation — is open and dense. The QR algorithm has a hidden integrable structure: its iterates are samples of the **Toda flow**, a Hamiltonian system on symmetric matrices that preserves eigenvalues (Symes, 1982; Deift, Nanda and Tomei, 1983).
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random matrices and why pivoting works">
+
+Worst-case analysis says partial pivoting can lose everything ($\rho = 2^{n-1}$); experience says it never does. Probability bridges the gap. For an $n \times n$ matrix with independent standard Gaussian entries, Edelman (1988) showed that $\mathbb E[\log\kappa_2] = \log n + 1.537\ldots + o(1)$, so random matrices are only mildly ill-conditioned. Trefethen and Schreiber's experiments (1990) found typical growth factors of order $n^{2/3}$. **Smoothed analysis** (Spielman and Teng, 2004) studies the worst case over data perturbed by small random noise. Sankar, Spielman and Teng (2006) showed that for Gaussian elimination *without* pivoting the growth stays polynomial in $n$ and $1/\sigma$ with high probability, where $\sigma$ is the noise level. A smoothed analysis that fully explains partial pivoting is still a research question.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Floating point, complexity and the cost of linear algebra">
+
+The IEEE 754 standard (1985), designed largely by William Kahan, fixed the model used here: correctly rounded basic operations, so that $\mathrm{fl}(x \circ y) = (x\circ y)(1 + \delta)$ is a *guarantee*, not an approximation. It also defined infinities, NaNs and gradual underflow. Its predictability is what makes backward error analysis possible. On the complexity side, Gaussian elimination costs $O(n^3)$, but Volker Strassen (1969) showed that matrix multiplication, and therefore solving linear systems and inversion, can be done in $O(n^{2.81})$. The exponent $\omega$ of matrix multiplication has been below $2.38$ since Coppersmith and Winograd (1990), with small further improvements since 2010. Whether $\omega = 2$ is open, and these fast algorithms raise their own questions of numerical stability. See <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Elimination.** The *Nine Chapters on the Mathematical Art* (China, compiled by about the 1st century CE) solves systems of linear equations by the *fangcheng* method: elimination on a counting board, column by column, with negative numbers, essentially Gaussian elimination. Carl Friedrich Gauss used elimination systematically for least-squares problems in astronomy and geodesy (1809–1810), after Adrien-Marie Legendre published the method of least squares in 1805.
+- **ODE methods.** Leonhard Euler described his method in 1768. Carl Runge (1895), Karl Heun (1900) and Martin Wilhelm Kutta (1901) developed the methods named after them, and John Butcher's algebraic theory of order conditions (from 1963) made Runge–Kutta methods a subject in their own right.
+- **The computer age.** John von Neumann and Herman Goldstine's 1947 analysis of matrix inversion, and Alan Turing's 1948 paper "Rounding-off errors in matrix processes" (which introduced the term *condition number* and the LU language), founded rounding-error analysis. James Wilkinson developed backward error analysis at the National Physical Laboratory (*Rounding Errors in Algebraic Processes*, 1963; *The Algebraic Eigenvalue Problem*, 1965). Alston Householder introduced his reflections in 1958.
+- **Eigenvalues.** The QR algorithm was discovered independently in 1961 by John Francis in England and Vera Kublanovskaya in Leningrad. It is often listed among the most important algorithms of the twentieth century.
+- **Stiffness and stability.** Charles Curtiss and Joseph Hirschfelder named stiffness in 1952, in chemical kinetics. Germund Dahlquist in Stockholm proved his stability barriers (1956, 1963), and Peter Lax and Robert Richtmyer their equivalence theorem (1956).
+- **Floating point.** William Kahan led the design of IEEE 754 (1985), for which he received the Turing Award in 1989.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Lloyd N. Trefethen and David Bau III, *Numerical Linear Algebra* (1997) — forty short lectures on conditioning, stability, QR, least squares and eigenvalue algorithms.
+- Endre Süli and David F. Mayers, *An Introduction to Numerical Analysis* (2003) — a rigorous general course, including ODE methods and their convergence proofs.
+- Nicholas J. Higham, *Accuracy and Stability of Numerical Algorithms* (2nd edition, 2002) — the reference for rounding-error analysis, including Wilkinson's results.
+- Ernst Hairer, Syvert P. Nørsett and Gerhard Wanner, *Solving Ordinary Differential Equations I* (1987), and Hairer and Wanner, *II: Stiff and Differential-Algebraic Problems* (1991) — order conditions, stability and stiffness in depth.
+
+</Section>

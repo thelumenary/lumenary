@@ -10,7 +10,7 @@ export function TrailCard({ locale, t, slug, compact = false }: { locale: Locale
   if (!trailSlugs().includes(slug)) return null;
   const trail = getTrail(slug, locale).frontmatter;
   return (
-    <Link
+    <Link prefetch={false}
       href={href(locale, `math/trails/${slug}`)}
       className="group relative !mt-5 block overflow-hidden rounded-2xl border border-gold/40 bg-gradient-to-br from-gold-soft via-card to-card p-5 font-sans no-underline shadow-[var(--shadow)] transition-shadow hover:shadow-[var(--shadow-lg)]"
       style={{ textDecoration: "none" }}

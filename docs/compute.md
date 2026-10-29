@@ -186,7 +186,9 @@ floats became compensated (more accurate) in Python 3.12, so
 `exact_vs_numerical` uses an explicit loop for its "naive" float sum. The
 report records the interpreter actually used (`"python"` field). To verify on
 the same interpreter as the browser, create the venv with Python 3.13
-(`python3.13 -m venv compute/.venv`); no other change is needed.
+(`python3.13 -m venv compute/.venv`); no other change is needed. CI does exactly
+this: it runs `verify:compute` on Python 3.13, and all experiments and tests
+also passed locally on CPython 3.13.1.
 
 Note: the lock file's `info.version` field reads `0.28.0.dev0`, although it is
 served from the v0.29.3 release (whose `package.json` says `0.29.3`). The package
@@ -257,71 +259,7 @@ counted in the report. To try the checker on another folder, set
 
 ## The experiments
 
-| id | title | lessons / trails | evidence | packages |
-|---|---|---|---|---|
-| `collections_sorting` | Sorting and counting a market basket | collections | exact, exhaustive-finite | — |
-| `set_identities` | Checking set identities exhaustively | sets | exhaustive-finite, counterexample | — |
-| `integer_inverses` | Hunting for inverses in the integers and the rationals | integers, inverses-and-structure | experimental, exact | — |
-| `sign_rules` | Negative times negative: grid, symbols and proof | integers | experimental, symbolic | sympy |
-| `counting_functions` | Counting functions, injections and surjections | functions | exhaustive-finite, exact | — |
-| `composition_check` | Composing functions: associative, but order matters | composition, arrows-that-compose | exhaustive-finite, counterexample | — |
-| `clock_arithmetic` | Clock arithmetic: which residues have inverses? | clock-arithmetic | exhaustive-finite, exact | — |
-| `remainder_families` | Remainder families: residue classes that add up | remainder-families | exhaustive-finite, counterexample | — |
-| `euler_polynomial` | Forty primes in a row, then a counterexample | integers | experimental, counterexample | — |
-| `exact_vs_numerical` | Exact versus numerical: 0.1 + 0.2 and the square root of 2 | integers | numerical, exact, symbolic | numpy, sympy |
-| `cantor_diagonal` | Cantor's diagonal trick on a finite list | how-many-infinities | exact | — |
-| `random_walk_statistics` | Does a random walk come home? Statistical evidence | integers | statistical, exact | — |
-
-What each one shows, and what it doesn't:
-
-- **collections_sorting**: sorts a 10-item basket by kind and colour and counts
-  each group exactly. It tries all 720 orders of a 6-item basket and gets the
-  same counts every time. That proves order-independence for that basket only.
-- **set_identities**: checks De Morgan's laws and both distributive laws on
-  every pair and triple of subsets of {1, 2, 3, 4} (256 and 4096 cases), which
-  proves them for that universe only. It also gives the smallest counterexample
-  to A − (B − C) = (A − B) − C (A = {1}, B = ∅, C = {1}), which disproves that
-  "law" in general.
-- **integer_inverses**: searches finite windows for additive inverses (always
-  found) and multiplicative inverses (only ±1), then checks with exact
-  fractions that every non-zero rational has an inverse. A two-line size
-  argument, not the search, proves that only ±1 are invertible in ℤ.
-- **sign_rules**: checks (−a)(−b) = ab on a 21 × 21 grid, then with SymPy,
-  which shows how it stores −a as (−1)·a. It also shows the rule holds without
-  commutativity. Finally it prints the distributive-law proof, which is the
-  only part that explains *why*.
-- **counting_functions**: enumerates all functions between sets of sizes 1–4
-  (plus empty-set edge cases). It counts the injections, surjections and
-  bijections and matches them against n^m, the falling factorial and
-  inclusion–exclusion.
-- **composition_check**: checks associativity on all 19683 triples of
-  functions on {0, 1, 2} and the identity laws on all 27 functions. Pairs
-  with g∘f ≠ f∘g show that composition is not commutative: only 141 of the 729
-  ordered pairs commute.
-- **clock_arithmetic**: prints the + and × tables mod 6 and finds the
-  invertible residues mod 6 and mod 7. For every k ≤ 30 it checks that search,
-  gcd(a, k) = 1 and `pow(a, -1, k)` agree. The general statement is a theorem
-  (Bézout's identity), proved elsewhere.
-- **remainder_families**: splits −12..12 into residue classes. For k = 1..12 it
-  checks that the classes are disjoint and cover the range, and that + and ×
-  depend only on classes (well-definedness), for every pair of representatives
-  in the range. It also finds a counterexample for exponents: 2⁰ vs 2³ mod 3.
-- **euler_polynomial**: n² + n + 41 is prime for n = 0..39 and fails at n = 40,
-  where it equals 41². This is the classic case of evidence that is not proof.
-- **exact_vs_numerical**: compares 0.1 + 0.2 in floats with `Fraction` and
-  `sympy.Rational`. It adds 0.1 ten thousand times in a Python loop, with
-  `numpy.sum` (pairwise), with a float32 running sum and with `math.fsum`.
-  Finally it computes √2 by Newton's method in floats and in fractions, and
-  compares both with the exact `sympy.sqrt(2)`.
-- **cantor_diagonal**: applies the diagonal flip to 8 infinite binary
-  sequences, each given by a rule, and checks that the result differs from
-  every row. It also shows why the trick needs infinite sequences: all 8
-  strings of length 3 can be listed. The general argument is the proof.
-- **random_walk_statistics**: simulates 4000 seeded walks and estimates the
-  chance of returning to 0 within 2, 10, 100 and 1000 steps, with Wilson 95%
-  intervals. It compares these with the exact value 1 − C(2m, m)/4^m and shows
-  the spread between seeds. It explains why no simulation can establish Pólya's
-  theorem that the walk returns with probability 1.
+Every lesson has at least one experiment, so there are several hundred. Their ids start with the lesson slug in snake case (`point_set_topology_open_sets`). The authoritative list — with title, evidence types, lessons and whether each ran and passed its tests — is the generated `content/verification/compute-report.json`; the site's Math lab lists them by level, and each has its own page (`/[locale]/lab/<id>/`).
 
 ## Adding an experiment
 
@@ -329,8 +267,8 @@ What each one shows, and what it doesn't:
    functions and a `main()` that ends with an `Epistemic status:` paragraph.
 2. Add `compute/tests/test_<id>.py` with unit tests for those functions,
    including boundary cases. Tests in that file are what `testsPassed` reports.
-3. Add the id to `EXPECTED_IDS` in `compute/tests/conftest.py`. If it serves a
-   new lesson or trail, add the slug to `KNOWN_LESSONS` / `KNOWN_TRAILS` in
-   `tests/test_experiments_meta.py`.
-4. Reference it from the lesson or trail frontmatter (`compute: [<id>]`), run
-   `npm run verify:compute`, and commit the regenerated report.
+3. List the lesson or trail slugs that show it in `EXPERIMENT["lessons"]` (they
+   must exist; the tests derive the known slugs from `content/`).
+4. Reference it from the lesson or trail frontmatter (`compute: [<id>]`), check
+   it with `npm run check:lesson -- <slug>`, run `npm run verify:compute`, and
+   commit the regenerated report.

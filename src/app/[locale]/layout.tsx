@@ -22,10 +22,14 @@ export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
 }
 
+/** Canonical origin of the public site (absolute URLs in metadata and the sitemap). */
+const SITE_URL = "https://lumenary.academy";
+
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const t = makeT(await getMessages(locale));
   return {
+    metadataBase: new URL(SITE_URL),
     title: { default: `${t("meta.siteName")} — ${t("meta.tagline")}`, template: `%s · ${t("meta.siteName")}` },
     description: t("meta.description"),
     alternates: { languages: Object.fromEntries(LOCALES.map((l) => [l, `/${l}/`])) },

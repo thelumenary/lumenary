@@ -1,0 +1,420 @@
+---
+slug: proof-theory
+topic: math.found.proof-theory
+title: Proof theory
+subtitle: Proofs as mathematical objects — cut elimination and the subformula property, Gentzen's consistency proof by induction up to $\varepsilon_0$, and proofs as programs.
+level: grad
+ages: Graduate
+minutes: 130
+order: 7006
+objectives:
+  - Present classical and intuitionistic sequent calculi, and prove cut elimination for classical propositional logic by Gentzen-style reductions
+  - Derive the subformula property, consistency and the intuitionistic disjunction property from cut elimination
+  - Distinguish syntactic cut elimination from semantic cut admissibility via cut-free completeness
+  - Explain the idea of Gentzen's consistency proof for $\mathsf{PA}$ by transfinite induction up to $\varepsilon_0$, and what an ordinal analysis measures
+  - Describe the Curry–Howard correspondence, in which normalising a proof is running a program
+narrators: []
+lean:
+  - Lumenary.ProofTheory.Fml
+  - Lumenary.ProofTheory.Fml.dual
+  - Lumenary.ProofTheory.Fml.eval_dual
+  - Lumenary.ProofTheory.Valid
+  - Lumenary.ProofTheory.Deriv
+  - Lumenary.ProofTheory.excluded_middle
+  - Lumenary.ProofTheory.soundness
+  - Lumenary.ProofTheory.consistency
+  - Lumenary.ProofTheory.cut_free_complete
+  - Lumenary.ProofTheory.cut_admissible
+  - Lumenary.ProofTheory.not_derivable_atom
+  - Lumenary.ProofTheory.curry_howard_swap
+  - Lumenary.ProofTheory.epsilon_zero_fixed
+  - Lumenary.ProofTheory.omega_tower_lt_epsilon_zero
+  - Lumenary.ProofTheory.omega_pow_omega_lt_epsilon_zero
+compute: [proof_theory_cut_free_search, proof_theory_goodstein]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Studying proofs themselves">
+
+Hilbert hoped to prove the consistency of arithmetic by treating proofs as finite combinatorial objects and showing that none of them ends in $0 = 1$. Gödel's second theorem (see <TopicLink id="math.found.incompleteness">the incompleteness theorems</TopicLink>) shows that such a proof cannot be carried out inside $\mathsf{PA}$ itself. Yet in 1936 Gerhard Gentzen proved the consistency of $\mathsf{PA}$ by a finitary argument plus one carefully isolated non-finitary principle: transfinite induction along the ordinals below $\varepsilon_0 = \sup\{\omega, \omega^\omega, \omega^{\omega^\omega}, \dots\}$.
+
+The tools Gentzen built for this — the sequent calculus and the *Hauptsatz* (cut elimination) — became the backbone of modern logic. They explain why proof search is possible, why intuitionistic proofs contain witnesses, how strong a theory is (its proof-theoretic ordinal), and, through the Curry–Howard correspondence, why a proof in Lean is literally a program. This lesson develops the core: sequent calculi, a complete proof of cut elimination for propositional logic, and a guided tour of Gentzen's consistency proof.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Lemmas are detours">
+
+In everyday mathematics we prove a lemma $A$ and then use it to prove $B$. Formally this is the **cut rule**: from "$\Gamma$ yields $A$" and "$A$ yields $B$", conclude "$\Gamma$ yields $B$". The lemma $A$ may be far more complicated than $\Gamma$ or $B$ — think of proving a statement about integers by complex analysis.
+
+Gentzen's Hauptsatz says that, in pure logic, every lemma can be **eliminated**: the proof can be rewritten so that it never mentions any formula that is not already a piece (a subformula) of the conclusion. Such a proof is *analytic*: it only takes the goal apart. Two consequences are immediate. A cut-free proof of a contradiction would have to be built from pieces of "nothing", so there is none — consistency. And to search for a proof of a formula we need only look at its subformulas, a finite space — decidability of propositional logic.
+
+The price is size. Inlining a lemma used many times copies its proof many times, and lemmas about lemmas compound the effect: eliminating cuts can make proofs enormously longer.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Sequent calculi">
+
+<Definition term="sequent">
+
+A **sequent** $\Gamma \Rightarrow \Delta$ consists of two finite multisets of formulas. It means: the conjunction of the formulas in $\Gamma$ implies the disjunction of those in $\Delta$. An empty $\Gamma$ means "true", an empty $\Delta$ means "false"; so $\;\Rightarrow\;$ (both empty) is a contradiction.
+
+</Definition>
+
+<Definition term="LK and LJ">
+
+Gentzen's classical calculus **LK** has the axioms $A \Rightarrow A$ and, for each connective, a *left* and a *right* rule. For example
+
+$$
+\dfrac{\Gamma \Rightarrow \Delta, A \qquad \Gamma \Rightarrow \Delta, B}{\Gamma \Rightarrow \Delta, A \wedge B}\;(\wedge R)
+\qquad
+\dfrac{A, B, \Gamma \Rightarrow \Delta}{A \wedge B, \Gamma \Rightarrow \Delta}\;(\wedge L)
+\qquad
+\dfrac{A, \Gamma \Rightarrow \Delta, B}{\Gamma \Rightarrow \Delta, A \to B}\;(\to R)
+$$
+
+together with structural rules (weakening, contraction, exchange) and the **cut rule**
+
+$$
+\dfrac{\Gamma \Rightarrow \Delta, A \qquad A, \Gamma' \Rightarrow \Delta'}{\Gamma, \Gamma' \Rightarrow \Delta, \Delta'}\;(\mathrm{cut}).
+$$
+
+The intuitionistic calculus **LJ** is obtained by allowing at most one formula on the right of every sequent. The quantifier rules are $\forall R$: from $\Gamma \Rightarrow \Delta, A(y)$ infer $\Gamma \Rightarrow \Delta, \forall x\, A(x)$ when $y$ is not free in the conclusion, and dually for $\exists$.
+
+</Definition>
+
+The restriction defining LJ is exactly what blocks classical reasoning: the classical proof of $\Rightarrow p \vee \neg p$ passes through the sequent $\Rightarrow p, \neg p$, which has two formulas on the right.
+
+For classical logic it is convenient to use a **one-sided** calculus (Schütte, Tait). Formulas are in *negation normal form*: built from literals $p_n$ and $\neg p_n$ by $\wedge$ and $\vee$ (every formula is classically equivalent to one). The **dual** $A^\perp$ pushes a negation inwards: $p^\perp = \neg p$, $(\neg p)^\perp = p$, $(A \wedge B)^\perp = A^\perp \vee B^\perp$, $(A \vee B)^\perp = A^\perp \wedge B^\perp$.
+
+<Definition term="the one-sided calculus GS">
+
+A sequent $\vdash \Gamma$ is a finite **set** of formulas, read as their disjunction; "$\Gamma, A$" means $\Gamma \cup \{A\}$. The rules are
+
+$$
+\dfrac{}{\vdash \Gamma, p, \neg p}\;(\mathrm{Ax})
+\qquad
+\dfrac{\vdash \Gamma, A \qquad \vdash \Gamma, B}{\vdash \Gamma, A \wedge B}\;(\wedge)
+\qquad
+\dfrac{\vdash \Gamma, A, B}{\vdash \Gamma, A \vee B}\;(\vee)
+\qquad
+\dfrac{\vdash \Gamma, A \qquad \vdash \Gamma, A^\perp}{\vdash \Gamma}\;(\mathrm{cut}).
+$$
+
+We write $\vdash^n \Gamma$ if $\Gamma$ has a cut-free derivation of height at most $n$. Weakening and contraction are not rules: the axiom allows any side formulas, and sets absorb repetitions.
+
+</Definition>
+
+<Definition term="subformula">
+
+The subformulas of $A$ are $A$ itself and, if $A = B \wedge C$ or $B \vee C$, the subformulas of $B$ and of $C$. A derivation has the **subformula property** if every formula in it is a subformula of a formula in its conclusion.
+
+</Definition>
+
+Every rule of GS except cut has the subformula property: its premises consist of subformulas of its conclusion. Cut introduces an arbitrary formula $A$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Excluded middle and Peirce's law">
+
+In GS: $\vdash p, \neg p$ is an axiom, so one $\vee$-step gives $\vdash p \vee \neg p$. Peirce's law $((p \to q) \to p) \to p$ has negation normal form $((\neg p \vee q) \wedge \neg p) \vee p$; after the $\vee$-step, the $\wedge$-rule leaves $\vdash \neg p \vee q, p$ and $\vdash \neg p, p$, both closed quickly. Neither formula is provable in LJ: a cut-free LJ proof of $\Rightarrow p \vee \neg p$ would end with $\vee R$ (see the disjunction property below), so $\Rightarrow p$ or $\Rightarrow \neg p$ would be provable, and neither is.
+
+</Example>
+
+<Example title="A failed search is a countermodel">
+
+Search for a proof of $\vdash p \vee (q \wedge \neg p)$: the $\vee$-step gives $\vdash p, q \wedge \neg p$, and the $\wedge$-step gives $\vdash p, q$ and $\vdash p, \neg p$. The second is an axiom; the first consists of literals with no complementary pair, so it is not derivable — and the valuation making $p$ and $q$ false refutes it, hence refutes the original formula.
+
+</Example>
+
+<Example title="A useful cut">
+
+Suppose $\vdash \Gamma, A$ and $\vdash \Delta, A^\perp$ have short proofs, and $A$ is used many times in a long argument. Eliminating the cut replaces each use of $A$ by a copy of its proof. For first-order logic, Statman (1979) and Orevkov (1979) found sequences of formulas with proofs of size polynomial in $n$ using cuts whose shortest cut-free proofs have size at least a tower $2^{2^{\cdot^{\cdot^{2}}}}$ of height about $n$ — non-elementary growth.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Cut elimination for propositional logic">
+
+We prove that cut is admissible in GS by Gentzen-style syntactic reductions. Three lemmas about cut-free derivations come first.
+
+<Theorem name="Lemma 1 (weakening)">
+
+If $\vdash^n \Gamma$ then $\vdash^n \Gamma \cup \Sigma$ for every finite set $\Sigma$.
+
+</Theorem>
+
+<Proof>
+
+Induction on the derivation: add $\Sigma$ to every sequent. Axioms stay axioms, and each rule instance remains an instance because the rules share their context.
+
+</Proof>
+
+<Theorem name="Lemma 2 (inversion)">
+
+If $\vdash^n \Gamma$ and $A \wedge B \in \Gamma$, then $\vdash^n (\Gamma \setminus \{A \wedge B\}) \cup \{A\}$ and $\vdash^n (\Gamma \setminus \{A \wedge B\}) \cup \{B\}$. If $\vdash^n \Gamma$ and $A \vee B \in \Gamma$, then $\vdash^n (\Gamma \setminus \{A \vee B\}) \cup \{A, B\}$.
+
+</Theorem>
+
+<Proof>
+
+We treat $A \wedge B$ and the conclusion with $A$; the other cases are the same. Write $\Gamma^- = \Gamma \setminus \{A \wedge B\}$ and argue by induction on $n$, looking at the last rule.
+
+- *Axiom.* $\Gamma$ contains a complementary pair of literals; so does $\Gamma^- \cup \{A\}$.
+- *Principal formula $A \wedge B$.* The premise $\vdash^{n-1} \Sigma, A$ has $\Sigma \cup \{A \wedge B\} = \Gamma$, so $\Sigma \subseteq \Gamma$. If $A \wedge B \notin \Sigma$, then $\Sigma = \Gamma^-$ and we are done (raising the height bound is harmless). If $A \wedge B \in \Sigma$, apply the induction hypothesis to the premise to remove it: $\vdash^{n-1} (\Sigma \setminus \{A \wedge B\}) \cup \{A\} = \Gamma^- \cup \{A\}$.
+- *Another principal formula $C$* (so $C \neq A \wedge B$), with premises $\Sigma \cup \Pi_i$, where $\Pi_i$ is $\{C_1\}$, $\{C_2\}$ for $C = C_1 \wedge C_2$ or $\{C_1, C_2\}$ for $C = C_1 \vee C_2$, and $\Sigma \cup \{C\} = \Gamma$; thus $A \wedge B \in \Sigma$. Put $\Sigma^- = \Sigma \setminus \{A \wedge B\}$ and turn each premise into a derivation of $(\Sigma^- \cup \{A\}) \cup \Pi_i$ of height at most $n - 1$: if $A \wedge B \notin \Pi_i$, by the induction hypothesis; if $A \wedge B \in \Pi_i$, by weakening the premise with $A$ (the premise already equals $\Sigma^- \cup \Pi_i$). The same rule with context $\Sigma^- \cup \{A\}$ then gives $\Sigma^- \cup \{A, C\} = \Gamma^- \cup \{A\}$ at height $n$. $\blacksquare$
+
+</Proof>
+
+<Theorem name="Lemma 3 (atomic cuts)">
+
+If $\vdash \Gamma, p$ and $\vdash \Gamma, \neg p$ cut-free, then $\vdash \Gamma$ cut-free.
+
+</Theorem>
+
+<Proof>
+
+If $p \in \Gamma$ or $\neg p \in \Gamma$, one of the hypotheses already is $\vdash \Gamma$. Otherwise argue by induction on the height of the derivation of $\vdash \Gamma, p$. If it is an axiom, its complementary pair cannot involve $p$ (that would need $\neg p \in \Gamma$), so $\Gamma$ is an axiom. If its last rule has principal formula $C \in \Gamma$, say $C = C_1 \wedge C_2$, let $\Gamma_0 = \Gamma \setminus \{C\}$. Weakening and inversion turn the premises into derivations of $\vdash \Gamma_0, C_i, p$ of smaller height, and inversion applied to $\vdash \Gamma, \neg p$ gives $\vdash \Gamma_0, C_i, \neg p$. By the induction hypothesis $\vdash \Gamma_0, C_1$ and $\vdash \Gamma_0, C_2$; the $\wedge$-rule gives $\vdash \Gamma$. The case $C = C_1 \vee C_2$ is the same with one premise.
+
+</Proof>
+
+<Theorem name="Hauptsatz (cut elimination; Gentzen 1935, propositional case)">
+
+If $\vdash \Gamma, A$ and $\vdash \Gamma, A^\perp$ have cut-free derivations, so does $\vdash \Gamma$. Consequently every sequent derivable in GS with cuts has a cut-free derivation.
+
+</Theorem>
+
+<Proof>
+
+Induction on the number of connectives in $A$. If $A \in \Gamma$ or $A^\perp \in \Gamma$ there is nothing to prove, so assume neither is.
+
+- $A$ is a literal: Lemma 3 (for $A = \neg p$, exchange the roles of the two derivations).
+- $A = B \wedge C$, so $A^\perp = B^\perp \vee C^\perp$. Inversion gives $\vdash \Gamma, B$ and $\vdash \Gamma, C$ from the first derivation, and $\vdash \Gamma, B^\perp, C^\perp$ from the second. Weakening $\vdash \Gamma, C$ to $\vdash \Gamma, B^\perp, C$ and using the induction hypothesis for the smaller formula $C$ with context $\Gamma \cup \{B^\perp\}$ gives $\vdash \Gamma, B^\perp$. The induction hypothesis for $B$ with context $\Gamma$ gives $\vdash \Gamma$.
+- $A = B \vee C$: the same, with the two derivations exchanged, since $A^\perp = B^\perp \wedge C^\perp$.
+
+For the consequence, remove the cuts of a derivation one at a time, always choosing a cut whose premises are already cut-free (an uppermost cut).
+
+</Proof>
+
+The same strategy — invertibility where available, then induction on the cut formula and, in general, on the height of the derivations — proves cut elimination for first-order LK and for LJ (Gentzen 1935). For LJ, not all rules are invertible and the induction on height does real work; see Troelstra and Schwichtenberg (2000, chapter 4).
+
+<Theorem name="Corollaries">
+
+1. **Subformula property.** Every derivable sequent has a derivation using only its subformulas.
+2. **Consistency.** The empty sequent is not derivable, even with cut: no cut-free rule has the empty set as conclusion.
+3. **Decidability.** Propositional derivability is decidable: a cut-free derivation of $\vdash \Gamma$ involves only subsets of the (finite) set of subformulas of $\Gamma$.
+4. **Disjunction property of LJ.** If $\Rightarrow A \vee B$ is derivable in LJ, then $\Rightarrow A$ or $\Rightarrow B$ is derivable.
+
+</Theorem>
+
+<Proof>
+
+1–3 are immediate from the shape of the cut-free rules. For 4, take a cut-free LJ derivation of $\Rightarrow A \vee B$. Its last rule cannot be a left rule (the antecedent is empty), nor contraction on the right (the right side holds one formula), nor weakening on the right (its premise would be the empty sequent, which has no cut-free LJ derivation, by the argument of 2); so it is $\vee R$, whose premise is $\Rightarrow A$ or $\Rightarrow B$.
+
+</Proof>
+
+The disjunction property is the logical form of the slogan that intuitionistic proofs contain witnesses; for first-order LJ the same argument gives the existence property: if $\Rightarrow \exists x\, A(x)$ is derivable then so is $\Rightarrow A(t)$ for some term $t$.
+
+<Theorem name="Semantic route: cut-free completeness">
+
+If $\Gamma$ is valid (every valuation makes some formula of $\Gamma$ true), then $\vdash \Gamma$ has a cut-free derivation. Hence, with soundness, cut is admissible.
+
+</Theorem>
+
+<Proof>
+
+Induction on the number of connectives in $\Gamma$. The rules are *semantically invertible*: if $\Gamma, A \wedge B$ is valid so are $\Gamma, A$ and $\Gamma, B$; if $\Gamma, A \vee B$ is valid so is $\Gamma, A, B$. So if $\Gamma$ contains a compound formula, decompose it and apply the induction hypothesis. If $\Gamma$ consists of literals and contains no complementary pair, the valuation making $p$ true exactly when $\neg p \in \Gamma$ makes every member of $\Gamma$ false; so a valid $\Gamma$ of literals contains a pair, and is an axiom. A derivation with cuts is sound, so its conclusion is valid, so it has a cut-free derivation.
+
+</Proof>
+
+This argument is short but uses the completeness theorem in miniature. Gentzen's syntactic proof gives more: an explicit transformation of proofs, bounds on its cost, and a method that extends to systems such as arithmetic where no completeness theorem rescues us.
+
+</Section>
+
+<Section id="gentzen" kind="human" title="Gentzen's consistency proof and ordinal analysis">
+
+In $\mathsf{PA}$ the induction schema cannot be eliminated like a cut: a derivation may use the induction rule, from $\Gamma, A(x) \Rightarrow A(Sx), \Delta$ infer $\Gamma, A(0) \Rightarrow A(t), \Delta$, with induction formulas of unbounded complexity. Gentzen's idea was to measure derivations by **ordinals**.
+
+**Ordinals below $\varepsilon_0$.** Every ordinal $\alpha$ with $0 \lt \alpha \lt \varepsilon_0$ has a unique **Cantor normal form** $\alpha = \omega^{\alpha_1} + \cdots + \omega^{\alpha_k}$ with $\alpha \gt \alpha_1 \ge \cdots \ge \alpha_k$, and the exponents again have normal forms. So these ordinals are coded by finite trees, with a primitive recursive order: a *notation system*. Here $\varepsilon_0$ is the least ordinal $\varepsilon$ with $\omega^\varepsilon = \varepsilon$ (see <TopicLink id="math.found.cardinals">ordinals and cardinals</TopicLink>).
+
+**The proof (outline).**
+
+1. Work with a sequent calculus for $\mathsf{PA}$ whose axioms are true closed atomic sequents and whose only non-logical rule is the induction rule, and assign to each derivation $d$ an ordinal $o(d) \lt \varepsilon_0$, computed from the shape of $d$ and the complexity of its cut and induction formulas.
+2. Define a primitive recursive **reduction** $d \mapsto d'$ on derivations of the empty sequent: replace an induction by finitely many cuts (unfolding it up to the numeral concerned), or reduce a cut on a complex formula to cuts on simpler ones, always so that $o(d') \lt o(d)$.
+3. A derivation of $\;\Rightarrow\;$ (of $0 = 1$) would yield an infinite sequence $d, d', d'', \dots$ with strictly decreasing ordinals below $\varepsilon_0$.
+4. **Transfinite induction up to $\varepsilon_0$**, applied to quantifier-free (primitive recursive) predicates, rules this out.
+
+Everything except step 4 can be carried out in primitive recursive arithmetic $\mathsf{PRA}$. So $\mathsf{PRA} + \mathrm{TI}(\varepsilon_0)$ proves $\mathrm{Con}_{\mathsf{PA}}$, and by Gödel's second theorem $\mathsf{PA}$ does not prove $\mathrm{TI}(\varepsilon_0)$ for this notation system. Gentzen (1943) showed the converse half: $\mathsf{PA}$ proves transfinite induction up to every ordinal below $\varepsilon_0$ in the system. Hence $\varepsilon_0$ is the **proof-theoretic ordinal** of $\mathsf{PA}$, written $|\mathsf{PA}| = \varepsilon_0$.
+
+**Ordinal analysis** computes such ordinals for stronger theories: for example $|\mathsf{ACA}_0| = \varepsilon_0$ as well, while the predicative theory $\mathsf{ATR}_0$ has ordinal $\Gamma_0$, the Feferman–Schütte ordinal. The ordinal also measures computational strength: the functions $\mathsf{PA}$ proves total are exactly those computable in time bounded by some $F_\alpha$, $\alpha \lt \varepsilon_0$, of the fast-growing hierarchy. Goodstein's theorem (the computation below) is true, provable from $\mathrm{TI}(\varepsilon_0)$, and unprovable in $\mathsf{PA}$ (Kirby and Paris, 1982).
+
+</Section>
+
+<Section id="curry-howard" kind="human" title="Proofs as programs">
+
+In Gentzen's **natural deduction**, a proof of $A \to B$ ends with $\to$-introduction (assume $A$, derive $B$, discharge), and $\to$-elimination is modus ponens. A *detour* is an introduction immediately followed by an elimination; removing it is the natural-deduction analogue of eliminating a cut (Prawitz 1965).
+
+The **Curry–Howard correspondence** reads this as computation. Propositions are types; a proof of $A \to B$ is a function $\lambda x{:}A.\, t$; modus ponens is application; and removing a detour is the $\beta$-reduction $(\lambda x.\, t)\, u \to t[u/x]$. Conjunction is the product type, disjunction the sum type. Normalisation of proofs (every proof reduces to one without detours) becomes **strong normalisation** of the simply typed $\lambda$-calculus (see <TopicLink id="math.comp.lambda-calculus">the λ-calculus</TopicLink> and <TopicLink id="math.found.type-theory">type theory</TopicLink>). Lean is built on this: a Lean proof is a term of a dependent type theory, and the kernel checks it by type-checking.
+
+</Section>
+
+<Section id="formal" kind="formal" title="A sequent calculus in Lean">
+
+The Lean module formalises the one-sided calculus of this lesson (with lists for sequents and an explicit exchange rule), its semantics, and the semantic route to cut admissibility. Formulas in negation normal form, the dual, and truth under a valuation:
+
+<Lean decl="Lumenary.ProofTheory.Fml" />
+
+<Lean decl="Lumenary.ProofTheory.Fml.dual" />
+
+<Lean decl="Lumenary.ProofTheory.Fml.eval_dual" />
+
+Validity, and derivability with a flag saying whether cut is allowed:
+
+<Lean decl="Lumenary.ProofTheory.Valid" />
+
+<Lean decl="Lumenary.ProofTheory.Deriv" />
+
+<Lean decl="Lumenary.ProofTheory.excluded_middle" />
+
+Soundness is an induction over derivations. Its cut case is the only place where `eval_dual` is needed: $A$ and $A^\perp$ cannot both be true.
+
+<Lean decl="Lumenary.ProofTheory.soundness" />
+
+<Lean decl="Lumenary.ProofTheory.consistency" />
+
+The main theorem is cut-free completeness, proved exactly as in the semantic route above: strong induction on the number of connectives, using semantic invertibility and the "literal case" lemma that builds a falsifying valuation. Cut admissibility is then one line.
+
+<Lean decl="Lumenary.ProofTheory.cut_free_complete" />
+
+<Lean decl="Lumenary.ProofTheory.cut_admissible" />
+
+<Lean decl="Lumenary.ProofTheory.not_derivable_atom" />
+
+So the formal *statement* "cut is admissible in classical propositional logic" is fully verified, but by the semantic proof, not by Gentzen's reduction of cuts (which is the one that generalises to arithmetic). A proof term is a program, as Curry and Howard observed:
+
+<Lean decl="Lumenary.ProofTheory.curry_howard_swap" />
+
+Finally, $\varepsilon_0$ in Mathlib (`Mathlib.SetTheory.Ordinal.Veblen` defines it as the first fixed point of $\alpha \mapsto \omega^\alpha$):
+
+<Lean decl="Lumenary.ProofTheory.epsilon_zero_fixed" />
+
+<Lean decl="Lumenary.ProofTheory.omega_tower_lt_epsilon_zero" />
+
+<Lean decl="Lumenary.ProofTheory.omega_pow_omega_lt_epsilon_zero" />
+
+**Not formalised:** the syntactic cut-elimination procedure, first-order LK and LJ, and Gentzen's consistency proof. Mathlib also has `ONote`, a computable notation system for the ordinals below $\varepsilon_0$, which would be the starting point for formalising Gentzen's ordinal assignment.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Proof search and Goodstein sequences">
+
+The first experiment implements cut-free proof search in GS. Every proof it finds is checked for the subformula property; when the search fails, the failed branch is turned into a falsifying valuation — the completeness proof run as a program. It also measures how the *order* of decomposition affects proof size for $\vdash A^\perp, A$: exponential in one order, linear in another. (Finding short proofs is hard in general: Cook and Reckhow (1979) showed that a propositional proof system with polynomial-size proofs of all tautologies exists if and only if $\mathsf{NP} = \mathsf{coNP}$.)
+
+<Python id="proof_theory_cut_free_search" />
+
+The second experiment computes Goodstein sequences: write $n$ in hereditary base $b$, replace $b$ by $b + 1$, subtract $1$, repeat. The numbers grow enormously, but replacing the base by $\omega$ turns each term into an ordinal below $\varepsilon_0$, and these ordinals strictly decrease — the experiment checks this along the computed terms. That they always reach $0$ is a theorem whose proof needs $\mathrm{TI}(\varepsilon_0)$.
+
+<Python id="proof_theory_goodstein" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: validity and cut-free provability">
+
+By cut-free completeness, a propositional formula is derivable in GS exactly when its truth table is all true. Use the truth table to check the classical tautologies of this lesson — Peirce's law below, then $p \vee \neg p$ and $\neg\neg p \to p$. All three are classical tautologies, and none is provable in LJ: a truth table cannot see the difference between classical and intuitionistic logic, which is why intuitionistic logic needs other semantics (Kripke models, Heyting algebras).
+
+<TruthTable formula="((p → q) → p) → p" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Gentzen's consistency proof is circular."** It does not assume the consistency of $\mathsf{PA}$. It uses a principle — quantifier-free transfinite induction up to $\varepsilon_0$ — that $\mathsf{PA}$ cannot prove, but which is different in kind: it is about a concrete, primitive recursive ordering of finite trees. Whether this principle is more evident than $\mathrm{Con}_{\mathsf{PA}}$ is a philosophical question; the mathematical content is a precise reduction.
+
+</Misconception>
+
+<Misconception>
+
+**"Cut elimination makes proofs shorter."** It makes them *simpler in structure*, not shorter. Eliminating cuts can increase size exponentially in propositional logic and non-elementarily in first-order logic (Statman, Orevkov). Lemmas are a compression device.
+
+</Misconception>
+
+<Misconception>
+
+**"Cut is a rule of logic we could do without, so it is useless."** Cut is *admissible*, not *derivable*: adding it changes no theorems but changes which proofs exist. Cut-free calculi are good for analysing proofs and searching for them; calculi with cut are good for writing short ones.
+
+</Misconception>
+
+<Misconception>
+
+**"$\varepsilon_0$ is a large, exotic ordinal."** It is countable, and every ordinal below it is written by a finite tree of symbols. What is strong is not the ordinal but the assertion that its notation system is well-founded.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="computation" title="Normalisation is evaluation">
+
+Under Curry–Howard, a proof of $\forall x\, \exists y\, R(x, y)$ in an intuitionistic system is a program computing $y$ from $x$, and cut elimination is execution. Kreisel's "unwinding" programme and Kohlenbach's *proof mining* extract explicit bounds from classical proofs in analysis by proof-theoretic transformations (functional interpretation). In the other direction, Lean's kernel evaluates proofs: `decide` proves a decidable proposition by running the decision procedure. Proof complexity asks how long proofs must be — the Cook–Reckhow theorem ties the existence of a polynomially bounded propositional proof system to $\mathsf{NP} = \mathsf{coNP}$.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Fast-growing functions and the pigeonhole principle">
+
+The strength of a theory shows up in combinatorics. Every function provably total in $\mathsf{PA}$ is eventually dominated by some $F_\alpha$, $\alpha \lt \varepsilon_0$, in the fast-growing hierarchy; the Goodstein function and the Paris–Harrington function are dominated by none of them (they grow at the level of $F_{\varepsilon_0}$), which is why $\mathsf{PA}$ cannot prove them total. At the propositional level, Haken (1985) proved that the pigeonhole principle "$n + 1$ pigeons do not fit in $n$ holes" needs resolution refutations of size exponential in $n$, while it has polynomial-size proofs in Frege systems with cut-like reasoning (Buss 1987).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Proof nets and paths">
+
+Girard's linear logic (1987) represents proofs as **proof nets**: graphs whose vertices are formula occurrences and links. A graph is a correct proof exactly when every "switching" (keeping one of the two premise edges at each par-link, ⅋) yields an acyclic, connected graph — the Danos–Regnier criterion, a topological condition. Cut elimination becomes local graph rewriting. In homotopy type theory, a proof of an equation $a = b$ is interpreted as a *path* from $a$ to $b$ in a space, proofs of equality between proofs as homotopies, and Martin-Löf's identity types have models in homotopy theory (Awodey–Warren 2009, Voevodsky). See <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Proofs as polynomial identities">
+
+Algebraic proof systems refute a set of polynomial equations $f_1 = \cdots = f_m = 0$ (encoding a propositional formula, with $x^2 = x$ for each variable) by exhibiting a certificate $\sum_i g_i f_i = 1$, whose existence is guaranteed by Hilbert's Nullstellensatz. The *Nullstellensatz* and *polynomial calculus* proof systems (Beame, Impagliazzo, Krajíček, Pitassi, Pudlák 1994; Clegg, Edmonds, Impagliazzo 1996) measure proof size by the degree of the $g_i$, and lower bounds come from algebra and combinatorics. On the semantic side, intuitionistic propositional logic is complete for Heyting algebras, and cut elimination yields the finite model property and decidability.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Curry–Howard–Lambek">
+
+Lambek observed that proofs in the conjunction–implication fragment of intuitionistic logic, identified up to normalisation ($\beta\eta$-equality), are the morphisms of the **free cartesian closed category** on the atomic propositions: conjunction is product, implication is exponential, and cut is composition. Cut elimination says that every morphism has a normal form. See <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>, and Lambek and Scott, *Introduction to Higher Order Categorical Logic* (1986).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Gerhard Gentzen** introduced natural deduction and the sequent calculi LK and LJ, and proved the Hauptsatz, in "Untersuchungen über das logische Schließen" (1935). **Stanisław Jaśkowski** in Poland independently developed a system of natural deduction (1934).
+- Gentzen's consistency proof for arithmetic appeared in 1936, with a revised version in 1938; his 1943 paper showed that $\mathsf{PA}$ proves transfinite induction below $\varepsilon_0$ but not up to it. Gentzen died in Prague in 1945. **Wilhelm Ackermann** (1940) gave another consistency proof up to $\varepsilon_0$, using Hilbert's $\varepsilon$-substitution method.
+- **Kurt Schütte** developed infinitary proof theory; he and **Solomon Feferman** independently identified $\Gamma_0$ as the limit of predicativity (1964–65). **William Tait** popularised the one-sided calculus used here. **Gaisi Takeuti** conjectured cut elimination for higher-order logic; it was proved for second-order logic by Tait (1966) and in general by Moto-o Takahashi (1967) and Dag Prawitz (1968), and **Jean-Yves Girard** proved normalisation for System F (1971).
+- **Dag Prawitz** (1965) proved normalisation for natural deduction. **Haskell Curry** (1934, 1958) and **William Howard** (manuscript 1969, published 1980) formulated the correspondence between proofs and programs.
+- **Richard Statman** and **Vladimir Orevkov** (1979) proved non-elementary lower bounds for cut elimination; **Laurie Kirby** and **Jeff Paris** (1982) connected Goodstein's theorem to $\varepsilon_0$.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- A. S. Troelstra and H. Schwichtenberg, *Basic Proof Theory* (1996; 2nd edition 2000) — sequent calculi, cut elimination with bounds, normalisation.
+- Sara Negri and Jan von Plato, *Structural Proof Theory* (2001) — invertibility-based cut elimination, as in this lesson.
+- Jean-Yves Girard, Yves Lafont and Paul Taylor, *Proofs and Types* (1989) — Curry–Howard, System F and normalisation.
+- Gaisi Takeuti, *Proof Theory* (1975; 2nd edition 1987) — Gentzen's consistency proof in detail.
+- Wolfram Pohlers, *Proof Theory: The First Step into Impredicativity* (2009) — ordinal analysis.
+- Morten Heine Sørensen and Paweł Urzyczyn, *Lectures on the Curry–Howard Isomorphism* (2006).
+- Samuel R. Buss (ed.), *Handbook of Proof Theory* (1998).
+
+</Section>

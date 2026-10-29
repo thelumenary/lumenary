@@ -1,0 +1,486 @@
+---
+slug: exponential-logarithmic-functions
+topic: math.analysis.exponential-logarithmic-functions
+title: Exponential and logarithmic functions
+subtitle: Growth by multiplying, the logarithms that undo it, and the number $e$ that appears when interest is compounded without end.
+level: g9-12
+ages: Ages 15–18
+minutes: 80
+order: 4015
+objectives:
+  - Extend exponents to zero, negative and rational values, and prove that the laws of exponents force these definitions
+  - Use logarithms as the inverses of exponential functions, prove the laws of logarithms and solve exponential equations
+  - Model growth and decay with exponential functions, and prove that exponential growth eventually beats every polynomial
+  - Explain the number $e$ as the limit of $(1 + 1/n)^n$ and why $e^{x + y} = e^x e^y$ makes exp an isomorphism from addition to multiplication
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.ExponentialLogarithmicFunctions.law_zero
+  - Lumenary.ExponentialLogarithmicFunctions.law_neg
+  - Lumenary.ExponentialLogarithmicFunctions.law_pos
+  - Lumenary.ExponentialLogarithmicFunctions.law_nat
+  - Lumenary.ExponentialLogarithmicFunctions.law_int
+  - Lumenary.ExponentialLogarithmicFunctions.law_rat
+  - Lumenary.ExponentialLogarithmicFunctions.rpow_add_library
+  - Lumenary.ExponentialLogarithmicFunctions.exp_add_library
+  - Lumenary.ExponentialLogarithmicFunctions.log_mul_from_exp
+  - Lumenary.ExponentialLogarithmicFunctions.log_rpow_from_exp
+  - Lumenary.ExponentialLogarithmicFunctions.log_mul_library
+  - Lumenary.ExponentialLogarithmicFunctions.rpow_bijective
+  - Lumenary.ExponentialLogarithmicFunctions.solve_two_pow
+  - Lumenary.ExponentialLogarithmicFunctions.two_pow_ne_three_pow
+  - Lumenary.ExponentialLogarithmicFunctions.irrational_logb_two_three
+  - Lumenary.ExponentialLogarithmicFunctions.bernoulli
+  - Lumenary.ExponentialLogarithmicFunctions.e_ge_two
+  - Lumenary.ExponentialLogarithmicFunctions.sq_lt_two_pow
+  - Lumenary.ExponentialLogarithmicFunctions.exp_beats_powers
+  - Lumenary.ExponentialLogarithmicFunctions.compound_interest_limit
+compute: [exponential_logarithmic_functions_growth_race, exponential_logarithmic_functions_e_limit]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Grains on a chessboard">
+
+A well-known legend, told in many versions across India, Persia and the Arab world, says that the inventor of chess asked a king for a modest reward: one grain of wheat on the first square of the board, two on the second, four on the third, doubling on each of the $64$ squares. The king laughed at so small a request — until his treasurers worked it out. The last square alone needs $2^{63} \approx 9.2 \times 10^{18}$ grains. The whole board needs $2^{64} - 1$, more wheat than the world has ever harvested.
+
+Or take a sheet of paper $0.1$ mm thick. Fold it in half $42$ times (if you could): it would be about $440\,000$ km thick, farther than the Moon.
+
+**Multiplying by the same factor again and again** — *exponential growth* — is utterly unlike **adding the same amount again and again**. This lesson makes exponents work for all real numbers. It introduces **logarithms** to answer "how many doublings?", and it meets the number $e \approx 2.71828$, which turns up whenever growth is continuous.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Adding versus multiplying">
+
+Compare two savings plans over five years. In plan A you add $100$ each year; in plan B your savings grow by $10\%$ each year (multiply by $1.1$).
+
+| year | 0 | 1 | 2 | 3 | 4 | 5 |
+| --- | --- | --- | --- | --- | --- | --- |
+| A: add 100 | 1000 | 1100 | 1200 | 1300 | 1400 | 1500 |
+| B: multiply by 1.1 | 1000 | 1100 | 1210 | 1331 | 1464.1 | 1610.51 |
+
+In A the **differences** between consecutive years are constant; in B the **ratios** are. At first they look alike. Soon B pulls ahead, and the gap widens faster and faster: after $30$ years plan A holds $4000$ and plan B more than $17\,000$.
+
+Decay works the same way. A medicine or a radioactive substance with a **half-life** of $8$ days keeps $\tfrac12$ of what it had every $8$ days: $100\% \to 50\% \to 25\% \to 12.5\% \to \cdots$ In this model it never quite reaches zero.
+
+<Narrator who="chloe">
+
+We know what $2^3$ means: $2 \cdot 2 \cdot 2$. But what could $2^{-1}$ or $2^{1/2}$ or $2^{\sqrt 2}$ possibly mean? You can't multiply $2$ by itself half a time! Watch how the rules of exponents leave us no choice.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+For a real number $a > 0$ and a positive integer $n$, $a^n = a \cdot a \cdots a$ ($n$ factors). From this, $a^m a^n = a^{m+n}$ and $(a^m)^n = a^{mn}$ by counting factors.
+
+<Definition term="zero, negative and rational exponents">
+
+For $a > 0$, integers $m$ and positive integers $n$:
+
+$$
+a^0 = 1, \qquad a^{-n} = \frac{1}{a^n}, \qquad a^{1/n} = \sqrt[n]{a} \ \text{(the positive $n$-th root)}, \qquad a^{m/n} = \left(a^{1/n}\right)^m.
+$$
+
+</Definition>
+
+For an irrational exponent such as $\sqrt 2$, $a^{\sqrt 2}$ is the number that $a^{1.4}, a^{1.41}, a^{1.414}, \dots$ approach. This gives $2^{\sqrt 2} \approx 2.665$. Making this precise needs the completeness of the <TopicLink id="math.number.real-numbers">real numbers</TopicLink>. Mathlib instead defines $a^x = e^{x \ln a}$, which gives the same values.
+
+<Definition term="exponential function">
+
+For a fixed base $a > 0$, $a \neq 1$, the function $x \mapsto a^x$ on $\R$ is the **exponential function with base $a$**. It is increasing if $a > 1$ (growth) and decreasing if $0 < a < 1$ (decay).
+
+</Definition>
+
+<Definition term="logarithm">
+
+For $a > 0$ with $a \ne 1$ and $x > 0$, the **logarithm of $x$ to base $a$**, $\log_a x$, is the number $y$ with $a^y = x$. The **natural logarithm** is $\ln x = \log_e x$.
+
+</Definition>
+
+So $\log_2 8 = 3$ because $2^3 = 8$, $\log_{10} 0.01 = -2$ because $10^{-2} = 0.01$, and $\log_a 1 = 0$ for every base. A logarithm answers the question "**which power?**", or in growth terms, "how many doublings (or tenfoldings)?"
+
+<Definition term="the number e">
+
+$e$ is the limit of $\left(1 + \tfrac1n\right)^n$ as $n$ grows without bound; $e = 2.718281828\ldots$ The function $x \mapsto e^x$ is called **the** exponential function, $\exp x$.
+
+</Definition>
+
+That this limit exists is a theorem, proved below.
+
+</Section>
+
+<Section id="laws" kind="proof" title="Why the definitions are forced">
+
+<Theorem name="The laws of exponents determine the exponents">
+
+Suppose a function $E : \R \to \R$, not identically zero, satisfies the law $E(x + y) = E(x)\,E(y)$ for all real $x, y$, and let $a = E(1)$. Then:
+
+1. $E(0) = 1$;
+2. $E(-x) = \dfrac{1}{E(x)}$, and $E(x) > 0$ for all $x$;
+3. $E(n x) = E(x)^n$ for every integer $n$; in particular $E(n) = a^n$;
+4. $E\!\left(\tfrac{m}{n}\right)$ is the positive $n$-th root of $a^m$, for all integers $m$ and $n > 0$.
+
+</Theorem>
+
+<Proof>
+
+1. Pick $x$ with $E(x) \neq 0$. Then $E(x) = E(x + 0) = E(x)E(0)$, and dividing by $E(x)$ gives $E(0) = 1$.
+2. $E(x)E(-x) = E(x - x) = E(0) = 1$, so $E(-x) = 1/E(x)$ and $E(x) \ne 0$. Also $E(x) = E\!\left(\tfrac x2 + \tfrac x2\right) = E\!\left(\tfrac x2\right)^2 \ge 0$, so $E(x) > 0$.
+3. For $n \ge 0$ by induction: $E((n + 1)x) = E(nx + x) = E(x)^n E(x)$. For negative $n$ use part 2.
+4. By part 3, $E\!\left(\tfrac mn\right)^n = E\!\left(n \cdot \tfrac mn\right) = E(m) = a^m$, and $E\!\left(\tfrac mn\right) > 0$ by part 2. A positive number has only one positive $n$-th root: if $0 < u < v$ then $u^n < v^n$.
+
+</Proof>
+
+So if we want the law $a^{x + y} = a^x a^y$ to keep working, then $a^0$ *must* be $1$, $a^{-n}$ *must* be $1/a^n$, and $a^{m/n}$ *must* be $\sqrt[n]{a^m}$. The definitions are not conventions chosen for convenience: they are the only ones consistent with the law. Part 4 also shows that $a^{m/n}$ does not depend on how the fraction is written ($a^{2/4} = a^{1/2}$), because it is pinned down by the value of $\tfrac mn$ alone.
+
+<Theorem name="Laws of logarithms">
+
+For $a > 0$, $a \ne 1$, $x, y > 0$ and every real $r$:
+
+$$
+\log_a(xy) = \log_a x + \log_a y, \qquad \log_a\!\left(\frac xy\right) = \log_a x - \log_a y, \qquad \log_a(x^r) = r \log_a x,
+$$
+
+and the change-of-base formula $\log_a x = \dfrac{\ln x}{\ln a}$.
+
+</Theorem>
+
+<Proof>
+
+Let $u = \log_a x$ and $v = \log_a y$, so $a^u = x$ and $a^v = y$. Then $a^{u + v} = a^u a^v = xy$, so $\log_a(xy) = u + v$. Similarly $a^{u - v} = x/y$ and $a^{ru} = (a^u)^r = x^r$. For change of base, write $x = a^u$ and take $\ln$ of both sides: $\ln x = u \ln a$, so $u = \ln x / \ln a$ (and $\ln a \ne 0$ because $a \ne 1$).
+
+</Proof>
+
+<Theorem name="Exponentials and logarithms are inverse functions">
+
+For $a > 0$, $a \neq 1$, the function $x \mapsto a^x$ is a bijection from $\R$ onto $(0, \infty)$. Its inverse is $y \mapsto \log_a y$:
+
+$$
+a^{\log_a y} = y \ \ (y > 0), \qquad \log_a(a^x) = x \ \ (x \in \R).
+$$
+
+</Theorem>
+
+<Proof>
+
+*Injective:* if $a > 1$ and $x < y$, then $a^y = a^x a^{y - x}$ with $a^{y - x} > 1$, so $a^y > a^x$. The function is strictly increasing, hence injective (for $0 < a < 1$ it is strictly decreasing). *Surjective onto $(0, \infty)$:* every value is positive by the theorem above. That every $y > 0$ is actually reached uses the completeness of the real numbers (an intermediate value argument); we take it from the construction of $\ln$, as Mathlib does. A bijection has an inverse, and by definition that inverse is $\log_a$.
+
+</Proof>
+
+The graph of $y = \log_a x$ is therefore the reflection of the graph of $y = a^x$ in the line $y = x$, as for every inverse function (see <TopicLink id="math.analysis.functions-and-graphs">functions and their graphs</TopicLink>).
+
+<Theorem name="log₂ 3 is irrational">
+
+There are no integers $m, n$ with $n > 0$ and $\log_2 3 = \tfrac mn$.
+
+</Theorem>
+
+<Proof>
+
+Suppose $\log_2 3 = \tfrac mn$. Then $2^{m/n} = 3$, so $2^m = 3^n$. Since $3 > 1$, $\log_2 3 > 0$ and so $m > 0$. But $2^m$ is even and $3^n$ is odd, so they cannot be equal.
+
+</Proof>
+
+</Section>
+
+<Section id="growth" kind="proof" title="Exponential growth beats every polynomial">
+
+<Theorem name="Bernoulli's inequality">
+
+For every real $h \ge -1$ and every whole number $n$: $(1 + h)^n \ge 1 + nh$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $n$; the case $n = 0$ reads $1 \ge 1$. If $(1 + h)^n \ge 1 + nh$, multiply by $1 + h \ge 0$:
+
+$$
+(1 + h)^{n + 1} \ge (1 + nh)(1 + h) = 1 + (n + 1)h + nh^2 \ge 1 + (n + 1)h.
+$$
+
+</Proof>
+
+<Theorem name="Exponentials outgrow powers">
+
+Let $a > 1$ and let $k$ be a whole number. Then $\dfrac{a^n}{n^k}$ grows beyond every bound as $n \to \infty$. In particular $a^n > n^k$ for all large enough $n$.
+
+</Theorem>
+
+<Proof>
+
+Write $a = 1 + h$ with $h > 0$. By the binomial theorem every term of $(1 + h)^n$ is positive, so for $n \ge k + 1$, keeping just the term containing $h^{k+1}$,
+
+$$
+a^n \ge \binom{n}{k+1} h^{k+1} = \frac{n(n-1)\cdots(n-k)}{(k+1)!}\, h^{k+1}.
+$$
+
+If $n \ge 2(k + 1)$, each factor $n - j$ with $j \le k$ is at least $\tfrac n2$. So
+
+$$
+\frac{a^n}{n^k} \ge \frac{(n/2)^{k+1} h^{k+1}}{(k+1)!\; n^k} = \frac{(h/2)^{k+1}}{(k+1)!}\cdot n,
+$$
+
+a fixed positive number times $n$, which grows beyond every bound.
+
+</Proof>
+
+The crossover can come late. $2^n > n^{10}$ holds for $n = 1$, fails for every $n$ from $2$ to $58$, and holds for every $n \ge 59$. Exponential growth is slow to start and then unstoppable.
+
+<Theorem name="The limit defining e exists">
+
+The numbers $s_n = \left(1 + \tfrac1n\right)^n$ increase with $n$ and satisfy $2 \le s_n < 3$. Hence they approach a limit $e$ with $2 < e < 3$.
+
+</Theorem>
+
+<Proof>
+
+$s_n \ge 1 + n \cdot \tfrac1n = 2$ by Bernoulli's inequality. By the binomial theorem,
+
+$$
+s_n = \sum_{k=0}^{n} \binom nk \frac{1}{n^k} = \sum_{k=0}^{n} \frac{1}{k!}\left(1 - \frac1n\right)\left(1 - \frac2n\right)\cdots\left(1 - \frac{k-1}{n}\right).
+$$
+
+Each bracket grows when $n$ grows, and $s_{n+1}$ has one more (positive) term than $s_n$. So $s_{n+1} > s_n$. Each bracket is less than $1$, so
+
+$$
+s_n \le \sum_{k=0}^{n} \frac{1}{k!} \le 1 + 1 + \frac12 + \frac14 + \cdots + \frac{1}{2^{n-1}} < 3,
+$$
+
+using $k! \ge 2^{k-1}$. An increasing sequence that is bounded above has a limit; this is the completeness of the real numbers. The limit is at least $s_2 = \tfrac94 > 2$. For the upper bound, $3! = 6$ is larger than $2^2 = 4$, so the estimate above loses at least $\tfrac14 - \tfrac16 = \tfrac1{12}$ once $n \ge 3$. Every $s_n$ is therefore at most $3 - \tfrac1{12}$, and so is the limit.
+
+</Proof>
+
+A refinement of the same argument shows $e = 1 + 1 + \tfrac1{2!} + \tfrac1{3!} + \cdots$. More generally, compounding a rate $r$ ever more often gives $\left(1 + \tfrac rn\right)^n \to e^r$. That is why continuous growth at rate $r$ is described by $e^{rt}$.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Simplifying with the laws">
+
+$8^{2/3} = \left(8^{1/3}\right)^2 = 2^2 = 4$. Also $\dfrac{3^{5} \cdot 3^{-2}}{3^{4}} = 3^{5 - 2 - 4} = 3^{-1} = \tfrac13$, and $\log_2 48 - \log_2 3 = \log_2 16 = 4$.
+
+</Example>
+
+<Example title="Solving an exponential equation">
+
+Solve $5 \cdot 3^x = 200$. Divide by $5$: $3^x = 40$. Take logarithms: $x = \log_3 40 = \dfrac{\ln 40}{\ln 3} \approx 3.358$. Check: $3^{3.358} \approx 40.0$.
+
+</Example>
+
+<Example title="Half-life">
+
+Iodine-131, used in medicine to treat thyroid disease, has a half-life of about $8$ days. Of an initial amount $A_0$, after $t$ days there remains $A(t) = A_0 \left(\tfrac12\right)^{t/8}$. When is only $10\%$ left? We need $\left(\tfrac12\right)^{t/8} = \tfrac1{10}$, so $\tfrac t8 \ln \tfrac12 = \ln \tfrac1{10}$ and
+
+$$
+t = 8 \cdot \frac{\ln 10}{\ln 2} \approx 26.6 \text{ days}.
+$$
+
+</Example>
+
+<Example title="Doubling time">
+
+Savings growing by $5\%$ a year double when $1.05^t = 2$, that is, after $t = \dfrac{\ln 2}{\ln 1.05} \approx 14.2$ years. Since $\ln(1 + r) \approx r$ for small $r$, the doubling time is about $\dfrac{0.693}{r}$. Bankers call this the **rule of 70**: at $5\%$, about $70/5 = 14$ years.
+
+</Example>
+
+<Example title="Logarithmic scales">
+
+Some quantities range over so many powers of ten that we measure them by their logarithms. Acidity is measured by $\mathrm{pH} = -\log_{10}[\mathrm{H}^+]$, where $[\mathrm{H}^+]$ is the hydrogen-ion concentration in moles per litre. Lemon juice at pH $2$ has $10^{5}$ times the hydrogen-ion concentration of a solution at pH $7$. A logarithmic scale turns "times $10$" into "plus $1$".
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="The proofs, checked by Lean">
+
+The "laws force the definitions" theorem is proved for an arbitrary function `E : ℝ → ℝ` satisfying `E (x + y) = E x * E y` that is not identically zero. These are exactly parts 1–4 of the theorem:
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.law_zero" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.law_neg" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.law_pos" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.law_nat" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.law_int" />
+
+The last step compares `E` with Mathlib's real power `a ^ x`. At every rational number they agree, so the law alone determines all the rational exponents:
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.law_rat" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.rpow_add_library" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.exp_add_library" />
+
+The laws of logarithms, derived from the law for `exp` and the fact that `exp` is injective. The library version follows for comparison:
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.log_mul_from_exp" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.log_rpow_from_exp" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.log_mul_library" />
+
+Exponentials as bijections, and an exponential equation solved exactly:
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.rpow_bijective" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.solve_two_pow" />
+
+The irrationality of $\log_2 3$: first the statement about whole numbers, then the bridge from the real logarithm to it. `Irrational x` is Mathlib's notion: $x$ is not equal to any rational number.
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.two_pow_ne_three_pow" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.irrational_logb_two_three" />
+
+Growth. Bernoulli's inequality and two consequences are proved here. The general facts "$e^x$ beats every power" and "$(1 + t/n)^n \to e^t$" are applied from Mathlib:
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.bernoulli" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.e_ge_two" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.sq_lt_two_pow" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.exp_beats_powers" />
+
+<Lean decl="Lumenary.ExponentialLogarithmicFunctions.compound_interest_limit" />
+
+<Narrator who="gideon">
+
+`law_rat` stops at the rational numbers, and that is honest, not lazy. Values at irrational numbers are *not* forced by the law $E(x + y) = E(x)E(y)$ alone. Mathematicians have shown there are wild solutions that disagree with $a^x$ at irrational points. To pin $E$ down everywhere you also need it to be continuous, or merely increasing. Lean made me state exactly how far the law goes.
+
+</Narrator>
+
+</Section>
+
+<Section id="computation" kind="computation" title="Racing exponentials, and watching e appear">
+
+<Narrator who="margaret">
+
+When does $2^n$ overtake $n^{10}$ — and stay ahead? A computer can compare the exact integers, and a little argument turns the finite search into a proof.
+
+</Narrator>
+
+<Python id="exponential_logarithmic_functions_growth_race" />
+
+A finite search can never show that something holds *forever*. Here it is combined with an induction step. Once $(1 + 1/n)^k < 2$, each step from $n$ to $n + 1$ doubles $2^n$ but multiplies $n^k$ by less than $2$. So the search plus the argument is a complete proof for these values of $k$.
+
+Next, compound interest. Watch $\left(1 + \tfrac1n\right)^n$ creep towards $e$, and compare it with the much faster series $\sum 1/k!$:
+
+<Python id="exponential_logarithmic_functions_e_limit" />
+
+The pattern "error $\approx e/(2n)$" is an **observation** from the numbers. The table makes it convincing but does not prove it, and calculus can.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: exponentials, logarithms and e">
+
+Move the base $b$. The curve $y = b^x$ always passes through $(0, 1)$, and its reflection in $y = x$, the logarithm $y = \log_b x$, always passes through $(1, 0)$. What happens as $b$ passes through $1$? Why is $b = 1$ excluded as a base?
+
+<FunctionPlot
+  fns={["b^x", "ln(x)/ln(b)", "x"]}
+  labels={["y = bˣ", "y = log_b x", "y = x"]}
+  params={[{ name: "b", min: 0.2, max: 5, step: 0.1, value: 2 }]}
+  points={[[0, 1, "(0, 1)"], [1, 0, "(1, 0)"]]}
+  x={[-4, 6]}
+  y={[-4, 6]}
+  title="An exponential and its inverse"
+/>
+
+Exponential against polynomial: $2^x$ and $x^3$ cross twice. Which is larger between the crossings, and which wins in the end?
+
+<FunctionPlot
+  fns={["2^x", "x^3"]}
+  labels={["y = 2ˣ", "y = x³"]}
+  x={[0, 12]}
+  y={[0, 2500]}
+  title="Who wins the race?"
+/>
+
+Finally, the sequence $\left(1 + \tfrac1n\right)^n$ approaching $e$. Shrink $\varepsilon$ and see how large $n$ must be before every later term stays within $\varepsilon$ of $e$:
+
+<SequenceLab mode="sequence" term="(1 + 1/n)^n" limit="e" epsilon={0.05} N={80} />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"$\log(x + y) = \log x + \log y$."** The logarithm turns **products** into sums: $\log(xy) = \log x + \log y$. There is no simple rule for $\log(x + y)$. Test: $\log_{10}(10 + 10) = \log_{10} 20 \approx 1.30$, but $\log_{10} 10 + \log_{10} 10 = 2$.
+
+</Misconception>
+
+<Misconception>
+
+**"$a^{-n}$ is negative."** A negative exponent means a reciprocal, not a negative number: $2^{-3} = \tfrac18 > 0$. For $a > 0$, every power $a^x$ is positive, as the theorem above proves.
+
+</Misconception>
+
+<Misconception>
+
+**Confusing exponential and linear growth.** "Growing by $5$ per year" (add the same amount: linear) is very different from "growing by $5\%$ per year" (multiply by the same factor: exponential). In a table, linear growth has constant **differences**; exponential growth has constant **ratios**.
+
+</Misconception>
+
+<Misconception>
+
+**"Exponential means fast."** Exponential growth with a small rate is slow at first, and it can trail a polynomial for a long time: $1.01^n$ is smaller than $n$ for every $n$ from $2$ to $651$. What makes it exponential is that it eventually overtakes *every* polynomial.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="exp translates addition into multiplication">
+
+The law $e^{x + y} = e^x e^y$ says that $\exp$ is a **structure-preserving map** from the real numbers under addition, $(\R, +)$, to the positive real numbers under multiplication, $(\R_{>0}, \times)$. It is a bijection, and its inverse $\ln$ preserves structure too: $\ln(xy) = \ln x + \ln y$. So $\exp$ is an **isomorphism**: the two structures are the same structure in different clothes. That is exactly why logarithm tables worked: to multiply two numbers, look up their logarithms, add, and look up the answer (see <TopicLink id="math.cat.structure-preserving-maps">structure-preserving maps</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Why a piano can never be perfectly in tune">
+
+A musical octave doubles a frequency, and a perfect fifth multiplies it by $\tfrac32$. Could some number of fifths equal a whole number of octaves? That would mean $\left(\tfrac32\right)^q = 2^p$, that is, $3^q = 2^{p + q}$, which the parity argument forbids. Equivalently, $\log_2 \tfrac32$ is irrational. Twelve fifths overshoot seven octaves by the *Pythagorean comma* $\tfrac{3^{12}}{2^{19}} \approx 1.0136$. Modern equal temperament compromises: its fifth is $2^{7/12} \approx 1.4983$, slightly flat of $1.5$.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="The function equal to its own slope">
+
+Analysts characterise $e^x$ in several equivalent ways: as the power series $\sum_k x^k/k!$ (which is how Mathlib defines it), as the limit of $\left(1 + \tfrac xn\right)^n$, or as the unique function with $f' = f$ and $f(0) = 1$. The last property says that the graph's slope at every point equals its height, which is what makes $e$ the natural base for calculus (see <TopicLink id="math.analysis.intro-calculus">introductory calculus</TopicLink>). Continuity really is needed in the "laws force the definitions" theorem. The equation $E(x + y) = E(x)E(y)$ also has wildly discontinuous solutions, whose construction (going back to Georg Hamel, 1905) needs the axiom of choice. Every *continuous* solution that is not identically zero is $a^x$ for $a = E(1)$.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Why radioactive decay is exponential">
+
+Each unstable nucleus decays independently, with the same small probability per second, regardless of its age. So in each short time interval a fixed *fraction* of the remaining nuclei decays, and a fixed fraction lost per unit time is exactly exponential decay. Carbon-14 has a half-life of about $5730$ years. Willard Libby's radiocarbon dating (late 1940s) measures how much carbon-14 is left in once-living material to estimate its age. This is a model built on assumptions: steady production of carbon-14 in the past, which is corrected using calibration curves.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Adding exponents.** In *The Sand Reckoner* (3rd century BCE), Archimedes noted that multiplying terms of a geometric progression corresponds to adding their positions. Jain mathematicians in India, for example in Vīrasena's *Dhavalā* commentary (9th century), worked with the *ardhaccheda* of a number, the number of times it can be halved, an idea akin to a base-2 logarithm. Michael Stifel's *Arithmetica integra* (1544) set the powers of $2$, including negative exponents, beside their exponents.
+- **Logarithms.** John Napier published the first table of logarithms in 1614. Jost Bürgi computed a similar table independently and published it in 1620, and Henry Briggs produced base-10 tables (1617–1624). Logarithm tables and slide rules turned multiplication into addition for navigators, astronomers and engineers for more than three centuries, until electronic calculators replaced them in the 1970s.
+- **The hyperbola and e.** Grégoire de Saint-Vincent and Alphonse Antonio de Sarasa (1640s) noticed that areas under the hyperbola $y = 1/x$ behave like logarithms. Jacob Bernoulli met the limit $\left(1 + \tfrac1n\right)^n$ in 1683 while studying compound interest. Leonhard Euler named the number $e$, gave its series and many of its properties in his *Introductio in analysin infinitorum* (1748), and Charles Hermite proved in 1873 that $e$ is transcendental.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Eli Maor, *e: The Story of a Number* (1994) — the history and mathematics of $e$ and logarithms.
+- Silvanus P. Thompson, *Calculus Made Easy* (1910) — its chapter on "the compound interest law" is a classic introduction to $e$.
+- Michael Spivak, *Calculus* (1967) — a rigorous construction of $\exp$ and $\ln$ for the ambitious reader.
+- Richard Courant and Herbert Robbins, *What Is Mathematics?* (1941).
+
+</Section>

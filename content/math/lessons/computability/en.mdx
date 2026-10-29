@@ -1,0 +1,596 @@
+---
+slug: computability
+topic: math.comp.computability
+title: Computability
+subtitle: What can an algorithm do in principle, given unlimited time and memory? Turing machines, the halting problem, and the surprisingly sharp line between the decidable and the undecidable.
+level: ug2
+ages: Undergraduate
+minutes: 110
+order: 6032
+objectives:
+  - Design simple Turing machines, trace their computations and explain why the model is believed to capture every algorithm (the Church–Turing thesis)
+  - Define decidable and recursively enumerable sets, and prove that a set is decidable if and only if both it and its complement are recursively enumerable
+  - Prove that the halting problem is undecidable by a diagonal argument, and that most functions $\N \to \N$ are not computable
+  - Use many-one reductions to prove undecidability, and prove Rice's theorem
+  - Recognise undecidability in other parts of mathematics, from Diophantine equations to groups and tilings
+narrators: []
+lean:
+  - Lumenary.Computability.Machine
+  - Lumenary.Computability.step
+  - Lumenary.Computability.incr_eleven
+  - Lumenary.Computability.bb2
+  - Lumenary.Computability.bb2_run
+  - Lumenary.Computability.no_halting_decider
+  - Lumenary.Computability.cantor_diag
+  - Lumenary.Computability.exists_not_computable
+  - Lumenary.Computability.halting_problem
+  - Lumenary.Computability.halting_re
+  - Lumenary.Computability.post
+  - Lumenary.Computability.non_halting_not_re
+  - Lumenary.Computability.undecidable_of_reduces
+  - Lumenary.Computability.rice
+  - Lumenary.Computability.zero_function_undecidable
+compute: [computability_turing_machines, computability_busy_beaver]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A question no program can answer">
+
+Here is a five-line program. Given a positive integer $n$, it repeatedly halves $n$ if $n$ is even and replaces $n$ by $3n + 1$ if $n$ is odd, and it stops when it reaches $1$.
+
+```
+while n != 1:
+    if n % 2 == 0: n = n // 2
+    else:          n = 3 * n + 1
+```
+
+Does it stop for every starting value? This is the **Collatz problem**, and nobody knows. Computers have checked starting values into the quintillions, and every one has reached $1$ — but that is evidence, not proof.
+
+A software company would love a tool that reads any program and its input and reports, correctly and always, whether the program eventually stops or runs forever. Such a tool would settle the Collatz problem in an afternoon, and Goldbach's conjecture too (write a program that searches for a counterexample and ask whether it stops). In 1936 Alan Turing proved that **no such tool can exist** — not because it would be slow, or because we have not been clever enough, but because its existence is contradictory.
+
+Turing was answering a question of David Hilbert's: is there a mechanical procedure that decides, for every statement of first-order logic, whether it is valid? To answer "no", he first had to say precisely what a *mechanical procedure* is. His answer — the Turing machine — is the founding definition of computer science, and this lesson is about what it can and cannot do. It builds on <TopicLink id="math.comp.algorithms-and-efficiency">algorithms and their correctness</TopicLink> and on <TopicLink id="math.found.countability">countability and Cantor's diagonal argument</TopicLink>, which will reappear in a new guise.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Programs are data">
+
+Two simple observations drive the whole subject.
+
+**Programs can be written down.** A program is a finite string of symbols, so programs can be listed: $P_0, P_1, P_2, \dots$ (say, in order of length and then alphabetically). In particular there are only **countably many** programs, while there are uncountably many functions $\N \to \N$. Before doing anything else, we already know that almost all functions cannot be computed by any program.
+
+**Programs can read programs.** Compilers, interpreters and virus scanners take programs as input. In particular there is a single **universal** program $U$ that, given the text of any program $P$ and an input $x$, simulates $P$ on $x$. A Python interpreter is, in effect, such a program.
+
+Put these together and something strange becomes possible: a program can be run *on its own text*. Picture an infinite table whose rows are the programs and whose columns are the inputs $0, 1, 2, \dots$; entry $(e, x)$ records whether $P_e$ halts on input $x$. Cantor's diagonal argument walks down the diagonal of a table like this and builds a row that differs from every row. Here the diagonal row *is* a program — provided some program could read the table — and that will be the contradiction behind the halting problem.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Turing machines and what they compute">
+
+<Definition term="Turing machine">
+
+A (deterministic, one-tape) **Turing machine** consists of a finite set $Q$ of **states** with a start state $q_0 \in Q$, a finite **tape alphabet** $\Gamma$ containing a blank symbol $\sqcup$, and a **transition function**
+
+$$
+\delta : Q \times \Gamma \to \Gamma \times \{\mathrm{L}, \mathrm{R}\} \times (Q \cup \{\mathrm{halt}\}).
+$$
+
+The machine works on a tape of cells indexed by $\Z$, all blank except finitely many, with a head scanning one cell. If it is in state $q$ scanning symbol $s$ and $\delta(q, s) = (s', d, q')$, it writes $s'$, moves the head one cell in direction $d$, and enters state $q'$ — or stops, if $q' = \mathrm{halt}$.
+
+</Definition>
+
+A **configuration** is a snapshot (state, tape contents, head position); one application of $\delta$ is a **step**. Started on an input written on the tape, the machine either **halts** after finitely many steps or **runs forever**. Many conventions differ in inessential ways (several tapes, a one-way infinite tape, accepting and rejecting states, larger alphabets); all of them compute the same functions.
+
+<Definition term="computable function">
+
+Fix a way of writing natural numbers on the tape (in binary, say). A machine $M$ **computes** the partial function $f : \N \rightharpoonup \N$ if, started on input $x$, it halts with $f(x)$ on the tape whenever $f(x)$ is defined, and runs forever whenever $f(x)$ is undefined. A partial function is **(partial) computable** if some machine computes it; a **computable function** is a total one. Write $\varphi_e$ for the partial function computed by the $e$-th machine $M_e$ in a fixed listing, $\varphi_e(x)\!\downarrow$ if $M_e$ halts on $x$ and $\varphi_e(x)\!\uparrow$ if it does not.
+
+</Definition>
+
+<Definition term="decidable and recursively enumerable sets">
+
+A set $A \subseteq \N$ is **decidable** (or **computable**, **recursive**) if its characteristic function $\chi_A$ is computable: some machine halts on every input and answers correctly whether $x \in A$. It is **recursively enumerable** (**r.e.**, **semi-decidable**, **computably enumerable**) if some machine halts exactly on the members of $A$, i.e. $A = W_e := \{x \mid \varphi_e(x)\!\downarrow\}$ for some $e$. It is **co-r.e.** if its complement $\overline{A} = \N \setminus A$ is r.e.
+
+</Definition>
+
+A semi-decider for $A$ says "yes" on members and stays silent forever on non-members — and silence never turns into an answer, because at no finite time can you tell "silent so far" from "silent forever". The same definitions apply to sets of strings, pairs or programs, via any reasonable coding as natural numbers.
+
+<Definition term="the halting problem">
+
+The **halting set** is $H = \{\langle e, x\rangle \mid \varphi_e(x)\!\downarrow\}$, where $\langle e, x \rangle$ is a computable pairing of $\N \times \N$ with $\N$. Its diagonal is $K = \{e \mid \varphi_e(e)\!\downarrow\}$. The **halting problem** is the question whether $H$ is decidable.
+
+</Definition>
+
+Two facts about the listing $M_0, M_1, \dots$ are used constantly. The **universal machine theorem**: there is a machine $U$ with $\varphi_U(\langle e, x\rangle) \simeq \varphi_e(x)$ for all $e, x$ (both sides defined and equal, or both undefined). Turing built one in 1936; a modern interpreter is one. Kleene's **s-m-n theorem**: there is a computable function $s$ such that $\varphi_{s(e, y)}(x) \simeq \varphi_e(\langle y, x\rangle)$ — from a program and a value you can compute a program with that value "hard-wired" in. Both are straightforward but long to prove in full detail for Turing machines; any of the texts in the reading list does it.
+
+<Note>
+
+**The Church–Turing thesis** says that every function which is *effectively calculable* — computable by a finite, deterministic, mechanical procedure, with unlimited time and paper — is computable by a Turing machine. It is a **thesis**, not a theorem: "effectively calculable" is an informal notion, so the claim cannot be proved. The evidence for it is strong. Turing's 1936 analysis of what a human computer can do with pencil and paper leads to his machines; and every other model proposed — Church's λ-calculus, Gödel–Herbrand–Kleene general recursive functions, Post systems, register machines, cellular automata, every programming language — computes exactly the same class of functions, a fact that *is* proved, model by model.
+
+</Note>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Machines, decidable sets and undecidable ones">
+
+<Figure caption="A Turing machine in state carry, scanning the last bit of 1011. The tape is unbounded in both directions; all but finitely many cells are blank.">
+<svg viewBox="0 0 420 120" role="img" aria-label="A tape of cells reading blank, blank, 1, 0, 1, 1, blank, blank, with a head labelled carry pointing at the last 1">
+  <g stroke="var(--ink-2)" strokeWidth="1.5" fill="var(--sky-soft)">
+    <rect x="30" y="20" width="45" height="45" />
+    <rect x="75" y="20" width="45" height="45" />
+    <rect x="120" y="20" width="45" height="45" />
+    <rect x="165" y="20" width="45" height="45" />
+    <rect x="210" y="20" width="45" height="45" />
+    <rect x="255" y="20" width="45" height="45" fill="var(--gold)" />
+    <rect x="300" y="20" width="45" height="45" />
+    <rect x="345" y="20" width="45" height="45" />
+  </g>
+  <g fill="var(--ink-2)" fontSize="20" textAnchor="middle">
+    <text x="142" y="50">1</text>
+    <text x="187" y="50">0</text>
+    <text x="232" y="50">1</text>
+    <text x="277" y="50">1</text>
+    <text x="15" y="50">…</text>
+    <text x="405" y="50">…</text>
+  </g>
+  <polygon points="277,70 267,88 287,88" fill="var(--formal)" />
+  <text x="277" y="110" fill="var(--ink-2)" fontSize="15" textAnchor="middle">carry</text>
+</svg>
+</Figure>
+
+<Example title="A binary incrementer">
+
+One state, `carry`, with the head on the least significant bit:
+
+| state | read | write | move | next |
+| --- | --- | --- | --- | --- |
+| carry | 1 | 0 | L | carry |
+| carry | 0 or blank | 1 | L | halt |
+
+On $1011$ (eleven) it turns the two trailing $1$s into $0$s, turns the $0$ into a $1$ and halts: $1100$ (twelve), in $3$ steps. In general it takes $t + 1$ steps, where $t$ is the number of trailing $1$s. Although a single increment can take many steps ($2^k - 1 \mapsto 2^k$ takes $k + 1$), counting from $0$ to $2^k - 1$ takes $2^{k+1} - 1$ steps in total — fewer than two per increment on average.
+
+</Example>
+
+<Example title="A unary adder">
+
+Write $m + n$ as $1^m\,0\,1^n$ ($m$ ones, a separator, $n$ ones). The machine walks right in state A over the first block; at the separator it writes $1$ and switches to state B; B walks right over the second block; at the blank after it, B steps back left into state C, and C erases the last $1$ and halts. The tape now holds $1^{m+n}$, after $m + n + 3$ steps.
+
+</Example>
+
+<Example title="The two-state busy beaver">
+
+Started on a blank tape, the machine with states A, B and table
+
+$$
+\mathrm{A}0 \to 1\mathrm{R}\mathrm{B}, \qquad \mathrm{A}1 \to 1\mathrm{L}\mathrm{B}, \qquad \mathrm{B}0 \to 1\mathrm{L}\mathrm{A}, \qquad \mathrm{B}1 \to 1\mathrm{R}\,\mathrm{halt}
+$$
+
+runs for $6$ steps and leaves four $1$s on the tape. Tibor Radó (1962) defined the **busy-beaver function** $S(n)$: the largest number of steps taken by an $n$-state, two-symbol machine that halts when started on a blank tape. There are only finitely many such machines, so $S(n)$ is a perfectly well-defined number — but we shall see that $S$ is not computable. The machine above shows $S(2) \ge 6$; the experiment below proves $S(2) = 6$ by settling all $20\,736$ two-state machines.
+
+</Example>
+
+<Example title="Decidable sets">
+
+The primes, the even numbers, the set of $n$ such that $n$ is a perfect number, the set of (codes of) propositional tautologies, and the set of pairs $(G, k)$ such that the finite graph $G$ has a $k$-colouring are all decidable: in each case a finite search answers the question. The set of $e$ such that machine $M_e$ has fewer than $10$ states is decidable — you only have to read the table, not run it. Decidability says nothing about speed; that is the subject of <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>.
+
+</Example>
+
+<Example title="Recursively enumerable sets">
+
+$\{e \mid \varphi_e(0) = 7\}$ is r.e.: run $M_e$ on $0$ and halt if the output is $7$. The halting set $H$ is r.e.: run the universal machine. The set of theorems of Peano arithmetic is r.e.: enumerate all finite strings and halt when one is a proof of the given sentence. The set of polynomials $p \in \Z[x_1, \dots, x_n]$ with an integer root is r.e.: search through all integer tuples. We will see that $H$ is not decidable; the other three are not decidable either.
+
+</Example>
+
+<Example title="A set that is not even r.e.">
+
+$\overline{K} = \{e \mid \varphi_e(e)\!\uparrow\}$, the set of machines that do **not** halt on their own index, is not r.e. (Corollary below). Neither is $\mathrm{Tot} = \{e \mid \varphi_e \text{ is total}\}$ (Exercise).
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The halting problem, reductions and Rice's theorem">
+
+<Theorem name="Theorem 1 (most functions are not computable)">
+
+There are only countably many computable partial functions $\N \rightharpoonup \N$, but uncountably many functions $\N \to \N$. In particular, some total function $\N \to \N$ is not computable.
+
+</Theorem>
+
+<Proof>
+
+A Turing machine is determined by its finite table, which can be written as a finite string over a fixed finite alphabet (name the states $q_0, q_1, \dots$ in binary). The set of finite strings over a finite alphabet is countable, so there are countably many machines, and each computes exactly one partial function.
+
+On the other hand, given any sequence $f_0, f_1, f_2, \dots$ of functions $\N \to \N$, the function $g(n) = f_n(n) + 1$ differs from $f_n$ at the input $n$, so $g$ is not in the sequence: $\N \to \N$ is uncountable. A countable set cannot contain an uncountable one, so some $f : \N \to \N$ is computed by no machine.
+
+</Proof>
+
+This proof is non-constructive: it does not name a non-computable function. The next theorem does.
+
+<Theorem name="Theorem 2 (Turing, 1936: the halting problem is undecidable)">
+
+The set $K = \{e \mid \varphi_e(e)\!\downarrow\}$ is not decidable. Consequently the halting set $H = \{\langle e, x\rangle \mid \varphi_e(x)\!\downarrow\}$ is not decidable.
+
+</Theorem>
+
+<Proof>
+
+Suppose some machine decides $K$: it computes the total function $h$ with $h(e) = 1$ if $\varphi_e(e)\!\downarrow$ and $h(e) = 0$ otherwise. Build a new machine $D$ which, on input $x$, computes $h(x)$ and then
+
+- if $h(x) = 1$, enters a loop that never halts;
+- if $h(x) = 0$, halts.
+
+$D$ is a genuine Turing machine (it runs the machine for $h$ as a subroutine and then does one of two trivial things), so $D = M_d$ for some index $d$. Now ask whether $D$ halts on its own index $d$:
+
+$$
+\varphi_d(d)\!\downarrow \iff h(d) = 0 \iff \varphi_d(d)\!\uparrow.
+$$
+
+The first equivalence is the construction of $D$; the second is the correctness of $h$. This is a contradiction, so no machine decides $K$.
+
+If $H$ were decidable, then so would be $K$: to decide whether $e \in K$, compute the pair $\langle e, e \rangle$ and ask the decider for $H$.
+
+</Proof>
+
+<Note>
+
+Notice what the proof did *not* say. For each single machine $e$, the question "does $M_e$ halt on $e$?" has an answer, and one of the two constant algorithms "always say yes" and "always say no" gives it. Undecidability means that **no single algorithm** answers correctly for **all** $e$. Many individual instances are easy; some (like Collatz) may be hard; the theorem is about uniformity.
+
+</Note>
+
+<Theorem name="Theorem 3 (the halting set is recursively enumerable)">
+
+$K$ and $H$ are r.e.
+
+</Theorem>
+
+<Proof>
+
+The universal machine halts on $\langle e, x\rangle$ exactly when $M_e$ halts on $x$, so it is a semi-decider for $H$. For $K$, first compute $\langle e, e\rangle$ and then run the universal machine.
+
+</Proof>
+
+<Theorem name="Theorem 4 (decidable = r.e. and co-r.e.)">
+
+A set $A \subseteq \N$ is decidable if and only if both $A$ and its complement $\overline{A}$ are recursively enumerable.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) If a machine decides $A$, modify it to loop forever instead of answering "no": that semi-decides $A$. Modify it to loop instead of answering "yes": that semi-decides $\overline{A}$.
+
+($\Leftarrow$) Let $M$ semi-decide $A$ and $N$ semi-decide $\overline{A}$. On input $x$, simulate one step of $M$ on $x$, then one step of $N$ on $x$, then the next step of $M$, and so on (**dovetailing**). Every $x$ lies in exactly one of $A$ and $\overline{A}$, so exactly one of the two simulations eventually halts, after finitely many rounds. Answer "yes" if $M$ halted and "no" if $N$ did. This procedure always halts and is always correct.
+
+</Proof>
+
+This is often called Post's theorem. Note the importance of interleaving: running $M$ to completion first would hang forever on inputs outside $A$.
+
+<Theorem name="Corollary 5">
+
+$\overline{K}$ is not recursively enumerable. So the class of r.e. sets is not closed under complement.
+
+</Theorem>
+
+<Proof>
+
+$K$ is r.e. (Theorem 3). If $\overline{K}$ were r.e. too, $K$ would be decidable by Theorem 4, contradicting Theorem 2.
+
+</Proof>
+
+The r.e. sets have a useful alternative description, which is how they appear in logic and number theory.
+
+<Theorem name="Theorem 6 (r.e. = projection of decidable)">
+
+$A \subseteq \N$ is r.e. if and only if there is a decidable relation $R \subseteq \N \times \N$ with $A = \{x \mid \exists y\, R(x, y)\}$.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) If $A = W_e$, let $R(x, y)$ say "$M_e$ halts on input $x$ within $y$ steps". $R$ is decidable — simulate $M_e$ for $y$ steps — and $x \in A$ iff $R(x, y)$ for some $y$.
+
+($\Leftarrow$) Given decidable $R$, the machine that on input $x$ tests $R(x, 0), R(x, 1), R(x, 2), \dots$ in turn and halts at the first success semi-decides $A$.
+
+</Proof>
+
+So "r.e." means "membership has a finite, checkable certificate $y$": a halting computation, a proof, an integer solution. Decidable sets are those where non-membership also has one.
+
+### Reductions
+
+To show a new problem undecidable we rarely repeat the diagonal argument. Instead we **reduce** a known undecidable problem to it.
+
+<Definition term="many-one reduction">
+
+$A$ is **many-one reducible** to $B$, written $A \le_m B$, if there is a total computable $f : \N \to \N$ with $x \in A \iff f(x) \in B$ for all $x$.
+
+</Definition>
+
+<Theorem name="Lemma 7 (reductions transfer decidability)">
+
+Suppose $A \le_m B$. If $B$ is decidable, so is $A$; if $B$ is r.e., so is $A$. Equivalently: if $A$ is undecidable, so is $B$; if $A$ is not r.e., neither is $B$.
+
+</Theorem>
+
+<Proof>
+
+Let $f$ be the reduction. To decide (or semi-decide) whether $x \in A$, compute $f(x)$ — this always halts — and run the decider (or semi-decider) for $B$ on $f(x)$. Correctness is exactly $x \in A \iff f(x) \in B$.
+
+</Proof>
+
+The direction matters: to prove $B$ hard, reduce a known hard problem **to** $B$.
+
+<Example title="Halting on the blank tape">
+
+Let $H_0 = \{e \mid M_e \text{ halts when started on a blank tape}\}$. Given $e$, compute (by the s-m-n theorem) an index $f(e)$ for the machine that ignores its input, writes $e$ on the tape and then runs $M_e$. Then $M_{f(e)}$ halts on the blank tape iff $\varphi_e(e)\!\downarrow$, so $K \le_m H_0$ and $H_0$ is undecidable.
+
+</Example>
+
+<Theorem name="Corollary 8 (the busy-beaver function is not computable)">
+
+$S$ is not computable.
+
+</Theorem>
+
+<Proof>
+
+If it were, we could decide $H_0$: given $e$, count the states $n$ of $M_e$ (passing first to an equivalent two-symbol machine, which can be done effectively), compute $S(n)$, and simulate $M_e$ on the blank tape for $S(n)$ steps. If it has not halted by then, it never will, by the definition of $S(n)$. This contradicts the undecidability of $H_0$.
+
+</Proof>
+
+In fact $S$ eventually exceeds every computable function (Radó, 1962). The known values are $S(1) = 1$, $S(2) = 6$, $S(3) = 21$, $S(4) = 107$ and — settled in 2024 by the online Busy Beaver Challenge collaboration, with a proof checked in the Coq proof assistant — $S(5) = 47\,176\,870$. Already for six states, the question involves machines whose behaviour resembles open problems of Collatz type.
+
+### Rice's theorem
+
+Halting is not special. Every question about **what a program computes** — as opposed to what its text looks like — is undecidable, unless it is trivial.
+
+<Theorem name="Theorem 9 (Rice, 1953)">
+
+Let $\mathcal P$ be a set of partial computable functions which is **non-trivial**: some partial computable function lies in $\mathcal P$ and some does not. Then the index set $I_{\mathcal P} = \{e \mid \varphi_e \in \mathcal P\}$ is undecidable.
+
+</Theorem>
+
+<Proof>
+
+Let $\bot$ denote the nowhere-defined function. Decidability is preserved by complements, and $I_{\overline{\mathcal P}}$ is the complement of $I_{\mathcal P}$, so we may assume $\bot \notin \mathcal P$ (otherwise replace $\mathcal P$ by its complement in the partial computable functions, which is also non-trivial). Choose $\psi \in \mathcal P$, computed by the machine $M_m$.
+
+For each $e$, let $g(e)$ be an index of the machine that, on input $y$, first runs $M_e$ on $e$ and, if that halts, then runs $M_m$ on $y$ and outputs the result. The function $g$ is computable (s-m-n theorem), and
+
+$$
+\varphi_{g(e)} = \begin{cases} \psi & \text{if } \varphi_e(e)\!\downarrow, \\ \bot & \text{if } \varphi_e(e)\!\uparrow. \end{cases}
+$$
+
+Since $\psi \in \mathcal P$ and $\bot \notin \mathcal P$, we get $e \in K \iff g(e) \in I_{\mathcal P}$. So $K \le_m I_{\mathcal P}$, and $I_{\mathcal P}$ is undecidable by Lemma 7.
+
+</Proof>
+
+<Example title="What Rice's theorem does and does not say">
+
+Undecidable by Rice: "$\varphi_e$ is total", "$\varphi_e(3) = 3$", "$\varphi_e$ is the zero function", "$\mathrm{dom}\,\varphi_e$ is finite", "$M_e$ computes the same function as $M_7$". Not covered by Rice, because they are about the program text or running time rather than the function computed: "$M_e$ has an even number of states" (decidable), "$M_e$ halts on input $0$ within $100$ steps" (decidable). Rice's theorem is the reason a perfect bug-finder cannot exist: "this program never divides by zero" is a semantic property.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Computability in Lean and Mathlib">
+
+Mathlib's computability library (built by Mario Carneiro) does not start from Turing machines. Its basic notion is the **partial recursive function** `Nat.Partrec : (ℕ →. ℕ) → Prop`, generated from zero, successor and pairing by composition, primitive recursion and unbounded search — a model proved equivalent to Turing machines in the classical literature. Programs are an inductive type `Nat.Partrec.Code` with a universal evaluator `Code.eval : Code → ℕ →. ℕ`, and `Code` is countable (indeed `Denumerable`). The arrow `→.` is a *partial* function, valued in `Part ℕ`; `(c.eval n).Dom` is the proposition "program `c` halts on `n`". Mathlib separately develops Turing machines and proves that they can simulate partial recursive functions.
+
+To make the definitions concrete, this lesson's module also contains a small two-symbol Turing machine simulator of its own:
+
+<Lean decl="Lumenary.Computability.Machine" />
+
+<Lean decl="Lumenary.Computability.step" />
+
+Concrete runs are checked by evaluation (`decide`): the incrementer on $1011$, and the busy beaver halting at step 6 with four $1$s.
+
+<Lean decl="Lumenary.Computability.incr_eleven" />
+
+<Lean decl="Lumenary.Computability.bb2" />
+
+<Lean decl="Lumenary.Computability.bb2_run" />
+
+**The diagonal argument, abstractly.** The heart of Theorem 2 needs nothing about Turing machines: only a "halts" relation and the ability to build the diagonal program. Proved here:
+
+<Lean decl="Lumenary.Computability.no_halting_decider" />
+
+**Theorem 1, formalised.** Cantor's diagonal argument for $\N \to \N$, and then the counting argument, using Mathlib's theorem that every computable function has a code:
+
+<Lean decl="Lumenary.Computability.cantor_diag" />
+
+<Lean decl="Lumenary.Computability.exists_not_computable" />
+
+**The halting problem, Post's theorem and Rice's theorem** from Mathlib. Mathlib's `ComputablePred p` means that `p` is decidable and its decision procedure is computable; `REPred p` means `p` is the domain of a partial recursive function. Note that Mathlib's halting problem is stated for each **fixed input** `n`, a slightly sharper form than Theorem 2.
+
+<Lean decl="Lumenary.Computability.halting_problem" />
+
+<Lean decl="Lumenary.Computability.halting_re" />
+
+<Lean decl="Lumenary.Computability.post" />
+
+Corollary 5 and Lemma 7, proved here from those:
+
+<Lean decl="Lumenary.Computability.non_halting_not_re" />
+
+<Lean decl="Lumenary.Computability.undecidable_of_reduces" />
+
+<Lean decl="Lumenary.Computability.rice" />
+
+And an application of Rice's theorem, proved here — the property "computes the constant function $0$" is semantic and non-trivial:
+
+<Lean decl="Lumenary.Computability.zero_function_undecidable" />
+
+What is **not** formalised here: the equivalence of our toy machines with `Nat.Partrec` (we use the toy machines only for examples), Theorem 6, the busy-beaver corollary, and the claim that no two-state machine beats `bb2` (the Python experiment below gives a computer-assisted proof of that, outside Lean). The Church–Turing thesis cannot be formalised, because it is not a mathematical statement.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Running machines, and proving that some never stop">
+
+The first program simulates the incrementer and the unary adder and checks them on every input in a range, together with the step counts claimed in the examples.
+
+<Python id="computability_turing_machines" />
+
+Exhaustive checks over a finite range are evidence, not proof; the general statements need an induction on the input (Exercise). Notice the asymmetry built into the simulator: if a run had not halted within the step bound, the program would have learned *nothing*.
+
+The second program confronts that asymmetry head-on. It takes all $12^4 = 20\,736$ two-state, two-symbol machines and classifies every one. Halting is observed directly. Non-halting is never observed — instead the program looks for a **certificate**, a reason that is a valid proof of non-halting:
+
+- **unreachable halt:** no halting instruction can be reached from the start state in the table's state graph;
+- **repeated configuration:** the exact configuration (state, head position, tape) occurs twice, so the run is periodic;
+- **translated cycle:** at two times $t_1 < t_2$ the head is at a new record position (left or right), in the same state, and the tape contents on the side it came from agree, as far back as the head travelled between $t_1$ and $t_2$; beyond the record the tape is blank both times, so the machine repeats the same moves forever, shifted along the tape.
+
+<Python id="computability_busy_beaver" />
+
+Every machine is settled, so — provided the code is correct — this is a proof that $S(2) = 6$ and $\Sigma(2) = 4$. The 2024 proof that $S(5) = 47\,176\,870$ worked the same way on a vastly larger scale: all five-state machines were either run to halting or given certificates by a collection of "deciders", and the deciders were verified in Coq so that the code's correctness was no longer an assumption. The undecidability of the halting problem says that no finite collection of certificate types can work for **all** $n$.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Pictures of the two key arguments">
+
+**The diagonal.** Tabulate halting behaviour, with $\downarrow$ for "halts" and $\uparrow$ for "runs forever":
+
+| | input 0 | input 1 | input 2 | input 3 | … |
+| --- | --- | --- | --- | --- | --- |
+| $M_0$ | **↓** | ↑ | ↓ | ↓ | |
+| $M_1$ | ↑ | **↑** | ↓ | ↑ | |
+| $M_2$ | ↓ | ↓ | **↓** | ↑ | |
+| $M_3$ | ↑ | ↓ | ↑ | **↓** | |
+| $D$ | ↑ | ↓ | ↑ | ↑ | |
+
+The machine $D$ of Theorem 2 does the opposite of the diagonal entry in every column, so its row differs from row $e$ in column $e$. If a decider for $K$ existed, $D$ would be a machine — some row $d$ — and the entry in row $d$, column $d$ would have to differ from itself.
+
+**A reduction** is a translation of questions that preserves answers. Here $\chi_A$ and $\chi_B$ are the characteristic functions, with values in $\{0, 1\}$:
+
+<CommutativeDiagram
+  objects={[
+    { id: "A", tex: "\\mathbb{N}", row: 0, col: 0 },
+    { id: "B", tex: "\\mathbb{N}", row: 0, col: 2 },
+    { id: "T", tex: "\\{0,1\\}", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "A", to: "B", tex: "f" },
+    { from: "A", to: "T", tex: "\\chi_A", labelSide: "right" },
+    { from: "B", to: "T", tex: "\\chi_B" },
+  ]}
+  caption="$A \le_m B$: a total computable $f$ with $\chi_A = \chi_B \circ f$. A decider for $B$ composed with $f$ decides $A$."
+/>
+
+Things to try: in the proof of Rice's theorem, what are $A$, $B$ and $f$? (Answer: $A = K$, $B = I_{\mathcal P}$, $f = g$.) Draw the triangle for the reduction $K \le_m H_0$.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The Church–Turing thesis is a theorem."** It cannot be: it relates the informal notion of an effective procedure to a mathematical definition. What *are* theorems are the equivalences between formal models — Turing machines, λ-calculus, recursive functions, register machines — which are the main evidence for the thesis.
+
+</Misconception>
+
+<Misconception>
+
+**"Undecidable means no instance can be solved."** Undecidability says that no *single algorithm* answers every instance correctly. Particular instances are often easy (this program has no loops, so it halts), and for any one instance one of the two constant answers is correct. What fails is uniformity.
+
+</Misconception>
+
+<Misconception>
+
+**"If a program has not halted after a very long time, it probably never will."** The busy-beaver function shows how wrong this can be: a five-state machine runs for $47\,176\,870$ steps before halting. No computable bound on running time exists for halting machines, or the halting problem would be decidable.
+
+</Misconception>
+
+<Misconception>
+
+**"Rice's theorem says every property of programs is undecidable."** Only **semantic** properties — those that depend on the function computed — and only **non-trivial** ones. Syntactic questions ("does the program contain a loop?", "does it halt within $100$ steps on input $0$?") are often decidable.
+
+</Misconception>
+
+<Misconception>
+
+**"Recursively enumerable means the members can be listed in increasing order."** An infinite set can be enumerated in increasing order by an algorithm if and only if it is decidable. An r.e. set like $K$ can be listed, but in a scrambled order: elements keep appearing whose size bears no relation to how long you have waited.
+
+</Misconception>
+
+<Misconception>
+
+**"Undecidability is a fact about physical computers with finite memory."** A computer with a fixed finite memory has finitely many configurations, so its halting problem *is* decidable in principle (watch for a repeated configuration). The theorem concerns unbounded memory — the idealisation that makes "algorithm" a mathematical notion — and its practical message is that no general-purpose analysis tool can be both always-terminating and always-correct.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="logic" title="Incompleteness from the halting problem">
+
+Hilbert's *Entscheidungsproblem* asked for an algorithm deciding validity of first-order sentences. By Gödel's completeness theorem the valid sentences are r.e. (enumerate proofs); Church and Turing showed in 1936 that they are not decidable, by coding the halting of a machine as the validity of a sentence. The halting problem also gives a quick form of Gödel's first incompleteness theorem. Let $T$ be any theory whose theorems are r.e. and which is **sound** for statements of the form "$M_e$ does not halt on $e$" (it proves only true ones). If $T$ proved every true such statement, then $\overline{K} = \{e \mid T \vdash \text{“}M_e \text{ does not halt on } e\text{”}\}$ would be r.e. — contradicting Corollary 5. So some true sentence "$M_e$ does not halt on $e$" is unprovable in $T$. Gödel's theorem is stronger (it assumes only consistency, and produces an explicit sentence), but the halting argument shows *why* incompleteness is unavoidable: proofs are finite certificates, and non-halting has none in general. See <TopicLink id="math.found.incompleteness">Gödel's incompleteness theorems</TopicLink> and <TopicLink id="math.found.first-order-logic">first-order logic</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Hilbert's tenth problem">
+
+Hilbert's tenth problem (1900) asked for a procedure deciding whether a polynomial equation $p(x_1, \dots, x_n) = 0$ with integer coefficients has a solution in integers. The **MRDP theorem** (Matiyasevich 1970, completing work of Martin Davis, Hilary Putnam and Julia Robinson) says that every r.e. set $A \subseteq \N$ is **Diophantine**: there is a polynomial $p$ with $a \in A \iff \exists x_1, \dots, x_n \in \N\; p(a, x_1, \dots, x_n) = 0$. Applied to $K$, this produces a polynomial family for which solvability is undecidable, so Hilbert's procedure does not exist. Applied to the primes it yields a polynomial whose positive values, as the variables range over $\N$, are exactly the primes (Jones, Sato, Wada and Wiens, 1976). Theorem 6 — r.e. sets are projections of decidable relations — is the first step: MRDP shows the decidable relation can be taken to be a single polynomial equation. Whether solvability in **rational** numbers is decidable remains open. See <TopicLink id="math.number.elementary-number-theory">elementary number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The word problem for groups">
+
+A finitely presented group $G = \langle a_1, \dots, a_k \mid r_1, \dots, r_m \rangle$ comes with a natural question: does a given word in the generators represent the identity? Max Dehn posed it in 1911 and solved it for surface groups. The set of trivial words is always r.e. (enumerate consequences of the relators), and for free groups, finite groups, one-relator groups (Magnus, 1932) and hyperbolic groups the word problem is decidable. But Pyotr Novikov (1955) and William Boone (1958) independently constructed finitely presented groups with **undecidable** word problem, by encoding machines into relators. The Adian–Rabin theorem (1955–58) goes further: whether a finite presentation defines the trivial group, a finite group, an abelian group, … are all undecidable — Rice's theorem for groups. See <TopicLink id="math.algebra.groups">groups</TopicLink> and <TopicLink id="math.geom.geometric-group-theory">geometric group theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Semi-decidable sets are open">
+
+Semi-decidable properties behave like **open sets**: finite intersections and (computably indexed) unions of r.e. sets are r.e., complements need not be — just as complements of open sets need not be open. This is more than an analogy. If a semi-decider accepts an input, it has read only finitely much of it; so in the space of infinite sequences (or of partial functions, with the Scott topology), a semi-decidable property is determined by finite information and is genuinely open. The **Rice–Shapiro theorem** makes this precise: if $\{e \mid \varphi_e \in \mathcal P\}$ is r.e., then a partial computable $f$ lies in $\mathcal P$ if and only if some finite restriction of $f$ lies in $\mathcal P$. Totality fails this test (no finite function is total), so $\mathrm{Tot}$ is not r.e. Undecidability also appears inside topology: since every finitely presented group is the fundamental group of a closed 4-manifold, the Adian–Rabin theorem led A. A. Markov (1958) to prove that the homeomorphism problem for closed 4-manifolds is undecidable. In dimension 3, by contrast, homeomorphism of closed manifolds is decidable, a consequence of Perelman's geometrisation theorem together with earlier algorithmic work. See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink> and <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Tilings that cannot be decided">
+
+A **Wang tile** is a unit square with coloured edges; a set of tiles tiles the plane if copies (translated, not rotated) can cover it with matching colours on adjacent edges. Hao Wang (1961) asked whether one can decide if a finite tile set tiles the plane, and observed that this would follow if every tile set that tiles the plane could tile it periodically. Robert Berger (1966) proved the **domino problem undecidable**, by encoding the space-time diagram of a Turing machine into tiles — rows of tiles are successive configurations — and on the way he constructed an **aperiodic** tile set, which tiles the plane but never periodically. This is the origin of the aperiodic tilings of Robinson (1971) and Penrose (1974), of the mathematics of quasicrystals, and of the 2023 discovery by Smith, Myers, Kaplan and Goodman-Strauss of a single aperiodic tile, the "hat". See <TopicLink id="math.geom.symmetry-transformations">symmetry and transformations</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Computable real numbers">
+
+A real number $x$ is **computable** if some algorithm, given $n$, outputs a rational $q_n$ with $|x - q_n| < 2^{-n}$; $\pi$, $e$ and every algebraic number are computable, and only countably many reals are. Analysis looks different in this world. Ernst Specker (1949) constructed a computable, increasing, bounded sequence of rationals whose limit is **not** a computable real: list $K$ without repetitions by an algorithm as $k_0, k_1, \dots$ and take the partial sums of $\sum_i 2^{-k_i}$ (from the limit one could decide $K$). So the monotone convergence theorem has no computable version. Equality of computable reals is undecidable — only $x \ne y$ is semi-decidable, by computing both to more and more precision until they separate — and as a consequence every computable function $\R \to \R$ is continuous, so the sign function is not computable. Pour-El and Richards (1981) found computable initial data for the three-dimensional wave equation whose solution at a later time is not computable. See <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Lawvere's fixed-point theorem">
+
+Cantor's theorem, Russell's paradox, Gödel's incompleteness theorem and the halting problem all walk down a diagonal. F. William Lawvere (1969) showed that the core of many such arguments is a single theorem about cartesian closed categories: if there is a morphism $\phi : A \to B^A$ that is surjective on points, then every endomorphism $t : B \to B$ has a fixed point. (Proof: given $t$, form $g = t \circ \mathrm{ev} \circ \langle \phi, \mathrm{id}_A \rangle : A \to B$, choose a point $a$ with $\phi(a) = g$, and check that $g(a)$ is fixed by $t$.) Read contrapositively: since negation on $\{0, 1\}$ has no fixed point, there is no surjection $A \to \{0,1\}^A$ — Cantor's theorem. Turing's argument has the same shape, with $t$ "swap halting and looping". Noson Yanofsky's 2003 survey in the *Bulletin of Symbolic Logic* works through many such instances from logic and computer science. See <TopicLink id="math.cat.categories">categories</TopicLink> and <TopicLink id="math.comp.lambda-calculus">the λ-calculus</TopicLink>, where fixed points of every term exist and give recursion.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Algorithms before computability.** The word *algorithm* comes from the name of Muḥammad ibn Mūsā al-Khwārizmī, who worked in Baghdad in the 9th century and whose arithmetic book introduced Hindu–Arabic numeral calculation to readers of Arabic and, in Latin translation, of Europe. Euclid's algorithm, the Chinese remainder procedure in Sunzi's *Suanjing* and Indian *kuṭṭaka* methods for linear Diophantine equations are much older. Leibniz dreamed of a *calculus ratiocinator* that would settle disputes by calculation.
+- **Hilbert's questions.** In 1900 David Hilbert asked for a procedure to decide Diophantine equations (his tenth problem); in 1928, with Wilhelm Ackermann, he posed the *Entscheidungsproblem* for first-order logic. Kurt Gödel's incompleteness theorems (1931) introduced the coding of syntax by numbers and the primitive recursive functions.
+- **1936.** Alonzo Church (with his student Stephen Kleene) proposed λ-definability as the definition of effective calculability and proved the Entscheidungsproblem unsolvable. Independently, Alan Turing, a young fellow of King's College, Cambridge, defined his machines from an analysis of human calculation, built a universal machine, proved that no machine can decide whether a given machine is "circle-free" (the ancestor of the halting problem, which was named later) and solved the Entscheidungsproblem negatively; his paper appeared in 1936–37. Emil Post published a closely similar model the same year. Gödel, initially unconvinced by Church's thesis, accepted Turing's analysis as decisive.
+- **The theory grows.** Kleene developed recursive function theory (the s-m-n and recursion theorems); Post's 1944 paper founded the study of r.e. sets and degrees; Henry Gordon Rice proved his theorem in 1953. Pyotr Novikov in Moscow (1955) and William Boone (1958) proved the word problem undecidable; A. A. Markov proved the undecidability of the homeomorphism problem for 4-manifolds (1958).
+- **Hilbert's tenth problem** was resolved in 1970 by the 22-year-old Yuri Matiyasevich in Leningrad, completing two decades of work by Martin Davis, Hilary Putnam and Julia Robinson.
+- **Busy beavers.** Tibor Radó introduced the busy-beaver function in 1962; Shen Lin and Radó settled three states in 1965, Allen Brady four states in 1983, and the Busy Beaver Challenge, an open online collaboration, five states in 2024.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Michael Sipser, *Introduction to the Theory of Computation* (1996; 3rd edition 2012) — Part Two is a clear first course on Turing machines, decidability and reductions.
+- George S. Boolos, John P. Burgess and Richard C. Jeffrey, *Computability and Logic* (5th edition 2007) — computability alongside incompleteness.
+- Nigel Cutland, *Computability: An Introduction to Recursive Function Theory* (1980) — a careful mathematical introduction via register machines.
+- Hartley Rogers, *Theory of Recursive Functions and Effective Computability* (1967) — the classic graduate text.
+- Robert I. Soare, *Turing Computability: Theory and Applications* (2016) — modern computability theory.
+- Alan M. Turing, "On computable numbers, with an application to the Entscheidungsproblem", *Proceedings of the London Mathematical Society* (1936–37); Charles Petzold, *The Annotated Turing* (2008) reads it line by line.
+- Mario Carneiro, "Formalizing computability theory via partial recursive functions", *Interactive Theorem Proving* (2019) — the design of Mathlib's library.
+
+Next steps in the Lumenary: <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink> asks what can be computed *efficiently*; <TopicLink id="math.comp.lambda-calculus">the λ-calculus</TopicLink> is Church's equivalent model; <TopicLink id="math.found.incompleteness">Gödel's incompleteness theorems</TopicLink> carry the diagonal argument into logic.
+
+</Section>

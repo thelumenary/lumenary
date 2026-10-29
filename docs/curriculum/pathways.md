@@ -1,6 +1,6 @@
 # Learning pathways
 
-<!-- Tables in this document were generated from content/math/graph/graph.json and pathways.json when it was written. Update them whenever the graph changes. -->
+<!-- The marked sections are generated from content/math/graph/graph.json and pathways.json by `npm run docs:curriculum`; do not edit them by hand. -->
 
 Pathways are ordered selections of milestones through the knowledge graph, defined in `content/math/graph/pathways.json`. They support learners with different starting points and goals without changing the graph itself.
 
@@ -11,6 +11,7 @@ Pathways are ordered selections of milestones through the knowledge graph, defin
 - **Pathways never make optional material compulsory.** Wonder Trails and discovery edges remain optional on every pathway.
 - **Programmes differ.** School systems, universities and graduate programmes order and weight topics differently. In particular, graduate programmes vary widely in what they require of a first-year student. The graduate and research pathways are therefore offered as adaptable examples, and learners and teachers are encouraged to substitute topics to suit their programme or specialisation.
 
+<!-- generated:table -->
 | Id | Title | Milestones |
 |---|---|---|
 | `k12-conventional` | Conventional K–12 progression | 20 |
@@ -21,7 +22,13 @@ Pathways are ordered selections of milestones through the knowledge graph, defin
 | `applied-math` | Applied mathematics | 16 |
 | `graduate-prep` | Graduate preparation | 18 |
 | `research-prep` | Research preparation | 13 |
+| `geometry-topology` | Geometry and topology | 20 |
+| `analysis-dynamics` | Analysis, PDE and dynamics | 18 |
+| `algebra-number-theory` | Algebra and number theory | 17 |
+| `mathematical-physics` | Mathematical physics | 21 |
+<!-- /generated:table -->
 
+<!-- generated:pathways -->
 ## Conventional K–12 progression (`k12-conventional`)
 
 **Audience:** School learners from kindergarten to the end of secondary school, and the teachers and families supporting them.
@@ -231,3 +238,116 @@ Research skills (writing, reading the literature, reproducible computation, expe
 | 11 | Research | `math.algebra.quiver-representations` | Quiver representations | Algebra |
 | 12 | Research | `math.comp.formalising-published-mathematics` | Formalising published mathematics | Computation |
 | 13 | Research | `math.found.research-ethics` | Research ethics and attribution | Foundations |
+
+## Geometry and topology (`geometry-topology`)
+
+**Audience:** Learners drawn to shape, space and continuity: future geometers and topologists, and anyone who wants to see mathematics through the geometer's and topologist's eyes.
+
+Follows the geometric thread from Euclid to current research: vectors and non-Euclidean geometry, surfaces and the Euler characteristic, point-set topology, curves and surfaces, the fundamental group, differential forms and knots, then smooth manifolds, algebraic and differential topology, Riemannian geometry, homotopy theory and characteristic classes, ending at low-dimensional topology. Set theory and category theory appear where geometry needs them — as languages for spaces, maps and invariants — not as replacements for geometric intuition. Programmes differ, so adapt the order and the research end-point (for example symplectic, Kähler or geometric group theory instead).
+
+| # | Level | Milestone | Title | Subject |
+|---|---|---|---|---|
+| 1 | 9–12 | `math.geom.euclidean-geometry` | Euclidean geometry and proof | Geometry & Topology |
+| 2 | 9–12 | `math.geom.vectors` | Vectors and coordinate geometry | Geometry & Topology |
+| 3 | UG 1 | `math.geom.non-euclidean-geometry` | Non-Euclidean geometry: spherical and hyperbolic | Geometry & Topology |
+| 4 | UG 1 | `math.geom.surfaces-euler-characteristic` | Surfaces, polyhedra and the Euler characteristic | Geometry & Topology |
+| 5 | UG 1 | `math.algebra.linear-algebra` | Linear algebra | Algebra |
+| 6 | UG 1 | `math.analysis.multivariable-calculus` | Multivariable and vector calculus | Analysis |
+| 7 | UG 2 | `math.analysis.real-analysis` | Real analysis | Analysis |
+| 8 | UG 2 | `math.geom.point-set-topology` | Metric spaces and point-set topology | Geometry & Topology |
+| 9 | UG 2 | `math.geom.curves-surfaces` | Differential geometry of curves and surfaces | Geometry & Topology |
+| 10 | UG 2 | `math.algebra.groups` | Groups | Algebra |
+| 11 | UG 2 | `math.geom.fundamental-group` | Homotopy and the fundamental group | Geometry & Topology |
+| 12 | UG 2 | `math.geom.differential-forms` | Differential forms and Stokes' theorem | Geometry & Topology |
+| 13 | UG 2 | `math.geom.knot-theory` | Knot theory | Geometry & Topology |
+| 14 | Grad | `math.geom.smooth-manifolds` | Smooth manifolds | Geometry & Topology |
+| 15 | Grad | `math.geom.algebraic-topology` | Algebraic topology | Geometry & Topology |
+| 16 | Grad | `math.geom.differential-topology` | Differential topology | Geometry & Topology |
+| 17 | Grad | `math.geom.riemannian-geometry` | Riemannian geometry | Geometry & Topology |
+| 18 | Grad | `math.geom.homotopy-theory` | Homotopy theory | Geometry & Topology |
+| 19 | Grad | `math.geom.vector-bundles-characteristic-classes` | Vector bundles and characteristic classes | Geometry & Topology |
+| 20 | Research | `math.geom.low-dimensional-topology` | Low-dimensional topology: 3- and 4-manifolds | Geometry & Topology |
+
+## Analysis, PDE and dynamics (`analysis-dynamics`)
+
+**Audience:** Learners who want the analyst's view of mathematics — limits, estimates, approximation, differential equations and long-term behaviour — whether heading to pure analysis, applied mathematics or physics.
+
+From functions and calculus through real and complex analysis to the core graduate subjects of measure theory and functional analysis, then onward to harmonic analysis, the modern theory of PDE, dynamical systems and ergodic theory, ending with geometric analysis, where nonlinear PDE answer questions about shape. Each stage pairs rigorous estimates with numerical experiment, always distinguishing evidence from proof.
+
+| # | Level | Milestone | Title | Subject |
+|---|---|---|---|---|
+| 1 | 9–12 | `math.analysis.functions-and-graphs` | Functions and their graphs (precalculus) | Analysis |
+| 2 | 9–12 | `math.analysis.intro-calculus` | Introductory calculus | Analysis |
+| 3 | 9–12 | `math.analysis.sequences-series` | Sequences and series | Analysis |
+| 4 | UG 1 | `math.analysis.single-variable-calculus` | Calculus of one variable | Analysis |
+| 5 | UG 1 | `math.analysis.multivariable-calculus` | Multivariable and vector calculus | Analysis |
+| 6 | UG 1 | `math.analysis.ordinary-differential-equations` | Ordinary differential equations | Analysis |
+| 7 | UG 2 | `math.analysis.real-analysis` | Real analysis | Analysis |
+| 8 | UG 2 | `math.geom.point-set-topology` | Metric spaces and point-set topology | Geometry & Topology |
+| 9 | UG 2 | `math.analysis.complex-analysis` | Complex analysis | Analysis |
+| 10 | UG 2 | `math.analysis.pde-intro` | Partial differential equations and Fourier series | Analysis |
+| 11 | UG 2 | `math.analysis.dynamical-systems` | Dynamical systems and chaos | Analysis |
+| 12 | Grad | `math.analysis.measure-theory` | Measure theory and integration | Analysis |
+| 13 | Grad | `math.analysis.functional-analysis` | Functional analysis | Analysis |
+| 14 | Grad | `math.analysis.harmonic-analysis` | Fourier and harmonic analysis | Analysis |
+| 15 | Grad | `math.analysis.pde-theory` | Partial differential equations: modern theory | Analysis |
+| 16 | Grad | `math.analysis.ergodic-theory` | Ergodic theory | Analysis |
+| 17 | Grad | `math.geom.riemannian-geometry` | Riemannian geometry | Geometry & Topology |
+| 18 | Research | `math.analysis.geometric-analysis` | Geometric analysis | Analysis |
+
+## Algebra and number theory (`algebra-number-theory`)
+
+**Audience:** Learners fascinated by whole numbers, equations and symmetry, heading towards algebra, number theory or arithmetic geometry.
+
+Begins with divisibility and congruences and builds the algebraist's toolkit — groups, rings, quotients, fields and Galois theory, modules and commutative algebra, representation theory — alongside the number theorist's questions about primes and equations. It continues through algebraic and analytic number theory and algebraic geometry to elliptic curves and an orientation to the Langlands programme, separating proved theorems from open conjectures at every step.
+
+| # | Level | Milestone | Title | Subject |
+|---|---|---|---|---|
+| 1 | 9–12 | `math.number.divisibility-gcd` | Divisibility, Euclid's algorithm and unique factorisation | Number |
+| 2 | UG 1 | `math.number.congruences` | Congruences | Number |
+| 3 | UG 1 | `math.algebra.algebraic-structures` | Algebraic structures: monoids, groups and rings | Algebra |
+| 4 | UG 2 | `math.algebra.groups` | Groups | Algebra |
+| 5 | UG 2 | `math.algebra.rings` | Rings, ideals and fields | Algebra |
+| 6 | UG 2 | `math.number.elementary-number-theory` | Number theory | Number |
+| 7 | UG 2 | `math.algebra.quotients` | Quotient groups and quotient rings | Algebra |
+| 8 | UG 2 | `math.algebra.fields-galois` | Fields and Galois theory | Algebra |
+| 9 | UG 2 | `math.analysis.complex-analysis` | Complex analysis | Analysis |
+| 10 | Grad | `math.algebra.modules` | Modules | Algebra |
+| 11 | Grad | `math.algebra.commutative-algebra` | Commutative algebra | Algebra |
+| 12 | Grad | `math.algebra.representation-theory` | Representation theory of finite groups | Algebra |
+| 13 | Grad | `math.number.algebraic-number-theory` | Algebraic number theory | Number |
+| 14 | Grad | `math.number.analytic-number-theory` | Analytic number theory | Number |
+| 15 | Grad | `math.geom.algebraic-geometry` | Algebraic geometry | Geometry & Topology |
+| 16 | Research | `math.number.arithmetic-geometry` | Arithmetic geometry and elliptic curves | Number |
+| 17 | Research | `math.number.langlands-programme` | The Langlands programme: an orientation | Number |
+
+## Mathematical physics (`mathematical-physics`)
+
+**Audience:** Learners who want to understand the mathematics in which physical theories are written — mechanics, relativity, quantum theory and gauge theory — and the physicist's viewpoint on geometry.
+
+Combines analysis, linear algebra and geometry with physical theory: classical mechanics and its symplectic geometry, continuous symmetry through matrix groups and Lie groups, Fourier analysis and functional analysis for quantum mechanics, Riemannian geometry for relativity, and bundles and connections for gauge theory. Physical intuition and mathematical rigour are kept distinct: heuristic arguments are labelled as such, and open problems (such as the Yang–Mills mass gap) are identified honestly.
+
+| # | Level | Milestone | Title | Subject |
+|---|---|---|---|---|
+| 1 | UG 1 | `math.analysis.single-variable-calculus` | Calculus of one variable | Analysis |
+| 2 | UG 1 | `math.algebra.linear-algebra` | Linear algebra | Algebra |
+| 3 | UG 1 | `math.analysis.multivariable-calculus` | Multivariable and vector calculus | Analysis |
+| 4 | UG 1 | `math.analysis.ordinary-differential-equations` | Ordinary differential equations | Analysis |
+| 5 | UG 1 | `math.applied.classical-mechanics` | Classical mechanics | Applied Mathematics |
+| 6 | UG 2 | `math.analysis.pde-intro` | Partial differential equations and Fourier series | Analysis |
+| 7 | UG 2 | `math.algebra.groups` | Groups | Algebra |
+| 8 | UG 2 | `math.algebra.advanced-linear-algebra` | Advanced linear algebra | Algebra |
+| 9 | UG 2 | `math.geom.matrix-groups` | Matrix groups and continuous symmetry | Geometry & Topology |
+| 10 | UG 2 | `math.analysis.real-analysis` | Real analysis | Analysis |
+| 11 | UG 2 | `math.geom.differential-forms` | Differential forms and Stokes' theorem | Geometry & Topology |
+| 12 | UG 2 | `math.geom.point-set-topology` | Metric spaces and point-set topology | Geometry & Topology |
+| 13 | Grad | `math.geom.smooth-manifolds` | Smooth manifolds | Geometry & Topology |
+| 14 | Grad | `math.analysis.measure-theory` | Measure theory and integration | Analysis |
+| 15 | Grad | `math.analysis.functional-analysis` | Functional analysis | Analysis |
+| 16 | Grad | `math.applied.quantum-mechanics` | Mathematical foundations of quantum mechanics | Applied Mathematics |
+| 17 | Grad | `math.geom.lie-groups` | Lie groups and Lie algebras | Geometry & Topology |
+| 18 | Grad | `math.geom.riemannian-geometry` | Riemannian geometry | Geometry & Topology |
+| 19 | Grad | `math.applied.relativity` | The geometry of spacetime: special and general relativity | Applied Mathematics |
+| 20 | Research | `math.geom.symplectic-geometry` | Symplectic geometry and topology | Geometry & Topology |
+| 21 | Research | `math.applied.gauge-theory` | Gauge theory and the geometry of physics | Applied Mathematics |
+<!-- /generated:pathways -->

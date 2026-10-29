@@ -1,0 +1,627 @@
+---
+slug: point-set-topology
+topic: math.geom.point-set-topology
+title: Metric spaces and point-set topology
+subtitle: What does it mean for points to be *near* each other? Strip distance down to its essentials — the open sets — and the great theorems of calculus turn out to be theorems about **compactness** and **connectedness**.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6018
+objectives:
+  - Work with metrics, open and closed sets and the axioms of a topology, including sets that are both open and closed, or neither
+  - Prove that ε–δ continuity between metric spaces agrees with the open-set definition
+  - Prove the Heine–Borel theorem, and that continuous images of compact (respectively connected) spaces are compact (connected)
+  - Use compactness and connectedness to tell spaces apart, and decide when a continuous bijection is a homeomorphism
+  - Construct product spaces and quotient spaces such as the circle, torus and Möbius band from intervals and squares
+narrators: []
+lean:
+  - Lumenary.PointSetTopology.ball_isOpen
+  - Lumenary.PointSetTopology.continuous_iff_eps_delta
+  - Lumenary.PointSetTopology.eps_delta_iff_isOpen_preimage
+  - Lumenary.PointSetTopology.isCompact_image
+  - Lumenary.PointSetTopology.isPreconnected_image
+  - Lumenary.PointSetTopology.unitInterval_isConnected
+  - Lumenary.PointSetTopology.heine_borel
+  - Lumenary.PointSetTopology.exists_max_on_compact
+  - Lumenary.PointSetTopology.tychonoff
+  - Lumenary.PointSetTopology.no_rat_sq_eq_two
+  - Lumenary.PointSetTopology.rat_clopen
+  - Lumenary.PointSetTopology.rat_not_preconnected
+  - Lumenary.PointSetTopology.ico_not_homeomorphic_circle
+  - Lumenary.PointSetTopology.quotient_lift_continuous
+  - Lumenary.PointSetTopology.addCircle_compact
+compute: [point_set_topology_finite_topologies, point_set_topology_bisection_cover]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Nearness without numbers">
+
+In <TopicLink id="math.analysis.real-analysis">real analysis</TopicLink> you proved two theorems that calculus cannot live without. The **intermediate value theorem**: a continuous function on $[a, b]$ takes every value between $f(a)$ and $f(b)$. The **extreme value theorem**: a continuous function on $[a, b]$ attains a maximum. Both proofs leaned on the completeness of $\R$. But look at what they *actually* used about $[a, b]$. The first used that the interval is "in one piece"; the second that it is "finite in disguise": any way of covering it by small open pieces can be cut down to finitely many. Neither proof cared about the formula $|x - y|$ for distance.
+
+Distances come in many flavours. A delivery cyclist in the grid of Barcelona's Eixample or the old chessboard streets of Kyoto measures the *taxicab* distance $|x_1 - y_1| + |x_2 - y_2|$, not the straight-line one. A geneticist comparing two DNA strings of the same length counts the positions where they differ (the **Hamming distance**), and so does an engineer designing the error-correcting code in a QR code. A pilot flying from Nairobi to Lima follows a great circle on the sphere. An analyst asks how far apart two functions $f, g$ on $[0, 1]$ are and answers $\max_x |f(x) - g(x)|$. Each of these is a **metric**, and in each the same questions arise: which sequences converge, which maps are continuous, which sets are "in one piece"?
+
+Point-set topology answers them once and for all, in two steps. First, it abstracts distance into a **metric space** (Fréchet, 1906). Second, it notices that most of the answers depend only on which sets are **open**, and abstracts again into a **topological space** (Hausdorff, 1914). The reward is a toolkit — compactness, connectedness, continuity, products and quotients — that the rest of geometry, topology and analysis is built on. It also answers questions like these: *is a circle the same shape as an interval? Is a line the same as a plane?* Your intuition says no. By the end of this lesson you will be able to prove it.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Wiggle room">
+
+Think of a set $U$ in the plane as **open** if every point of $U$ has some wiggle room: a small disc around it that stays inside $U$. The open disc $\{x^2 + y^2 < 1\}$ is open — a point near the edge has only a little room, but some. The closed disc $\{x^2 + y^2 \le 1\}$ is not: a point on the boundary circle has no room at all.
+
+Now change how distance is measured. With the taxicab metric the "disc" of radius $r$ is a diamond; with the maximum metric $\max(|x_1 - y_1|, |x_2 - y_2|)$ it is a square. But every disc contains a smaller diamond and a smaller square around the same centre, and vice versa:
+
+<Figure caption="Unit balls of three metrics on the plane, all centred at the same point: the taxicab diamond inside the Euclidean disc inside the maximum-metric square. Because each contains a shrunken copy of the others, the three metrics have exactly the same open sets.">
+<svg viewBox="0 0 300 220" role="img" aria-label="A square, containing a circle, containing a diamond, all with the same centre">
+  <rect x="70" y="30" width="160" height="160" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <circle cx="150" cy="110" r="80" fill="var(--paper-2)" stroke="var(--formal)" strokeWidth="2.5" />
+  <polygon points="150,30 230,110 150,190 70,110" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <circle cx="150" cy="110" r="3.5" fill="var(--gold)" />
+  <line x1="150" y1="110" x2="230" y2="110" stroke="var(--ink-2)" strokeWidth="1" strokeDasharray="4 3" />
+  <text x="186" y="104" fontSize="12" fill="var(--ink-2)">r</text>
+  <text x="236" y="40" fontSize="12" fill="var(--ink-2)">max</text>
+  <text x="236" y="170" fontSize="12" fill="var(--formal)">Euclid</text>
+  <text x="18" y="114" fontSize="12" fill="var(--human)">taxicab</text>
+</svg>
+</Figure>
+
+So "open" does not depend on which of these three metrics we use, even though the distances themselves differ. *Topology is what survives when you forget the exact distances and keep only the open sets.*
+
+Three ideas carry the whole subject.
+
+- **Continuity** becomes: *the preimage of an open set is open.* A continuous map may squash and stretch, but it cannot tear: if $f(x)$ has wiggle room inside $V$, then $x$ has wiggle room inside $f^{-1}(V)$.
+- **Connectedness** means: the space cannot be split into two disjoint non-empty open pieces.
+- **Compactness** means: every cover of the space by open sets has a finite subcover. It is what turns *local* information (near each point, $f$ is bounded) into *global* information ($f$ is bounded).
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Metric spaces and topological spaces">
+
+<Definition term="metric space">
+
+A **metric** on a set $X$ is a function $d : X \times X \to [0, \infty)$ such that for all $x, y, z \in X$:
+
+1. $d(x, y) = 0$ if and only if $x = y$;
+2. $d(x, y) = d(y, x)$ (symmetry);
+3. $d(x, z) \le d(x, y) + d(y, z)$ (the **triangle inequality**).
+
+The **open ball** of radius $r > 0$ about $x$ is $B(x, r) = \{\, y \in X \mid d(y, x) < r \,\}$. A set $U \subseteq X$ is **open** if for every $x \in U$ there is $r > 0$ with $B(x, r) \subseteq U$.
+
+</Definition>
+
+<Definition term="topological space">
+
+A **topology** on a set $X$ is a collection $\mathcal{T}$ of subsets of $X$, called the **open sets**, such that
+
+1. $\varnothing \in \mathcal{T}$ and $X \in \mathcal{T}$;
+2. any union of members of $\mathcal{T}$ (finite or infinite) is in $\mathcal{T}$;
+3. the intersection of any two (hence any finitely many) members of $\mathcal{T}$ is in $\mathcal{T}$.
+
+A set $C$ is **closed** if its complement $X \setminus C$ is open. An **open neighbourhood** of $x$ is an open set containing $x$.
+
+</Definition>
+
+Closed sets therefore satisfy the "dual" axioms: $\varnothing$ and $X$ are closed, arbitrary intersections and finite unions of closed sets are closed. The finiteness in axiom 3 matters: in $\R$ the open intervals $(-1/n, 1/n)$ intersect in $\{0\}$, which is not open.
+
+<Definition term="interior, closure, boundary">
+
+The **interior** $A^\circ$ of $A \subseteq X$ is the union of all open sets contained in $A$; the **closure** $\overline{A}$ is the intersection of all closed sets containing $A$; the **boundary** is $\overline{A} \setminus A^\circ$. A point $x$ lies in $\overline{A}$ exactly when every open neighbourhood of $x$ meets $A$. In a metric space this happens exactly when $x$ is the limit of a sequence of points of $A$.
+
+</Definition>
+
+<Definition term="continuous map, homeomorphism">
+
+A map $f : X \to Y$ between topological spaces is **continuous** if $f^{-1}(V)$ is open in $X$ for every open $V \subseteq Y$. A **homeomorphism** is a continuous bijection whose inverse is also continuous; $X$ and $Y$ are **homeomorphic**, $X \cong Y$, if there is one. A property preserved by homeomorphisms is a **topological property**.
+
+</Definition>
+
+<Definition term="subspace, product and quotient topologies">
+
+Let $X$ and $Y$ be topological spaces.
+
+- **Subspace.** For $A \subseteq X$, the open sets of $A$ are the sets $U \cap A$ with $U$ open in $X$.
+- **Product.** The open sets of $X \times Y$ are the unions of **boxes** $U \times V$ with $U$ open in $X$ and $V$ open in $Y$. For a product $\prod_{i \in I} X_i$ of any family, the open sets are unions of finite intersections of sets $\pi_i^{-1}(U_i)$, $U_i$ open in $X_i$: it is the *coarsest* topology making every projection $\pi_i$ continuous.
+- **Quotient.** If $\sim$ is an equivalence relation on $X$ and $q : X \to X/{\sim}$ sends $x$ to its class, a set $W \subseteq X/{\sim}$ is open when $q^{-1}(W)$ is open in $X$: it is the *finest* topology making $q$ continuous.
+
+</Definition>
+
+<Definition term="compact, connected, path-connected">
+
+A space $X$ is **compact** if every open cover of $X$ (a family of open sets whose union is $X$) has a finite subcover. A subset is compact if it is compact in the subspace topology; equivalently, every cover of it by open sets of $X$ has a finite subcover.
+
+$X$ is **connected** if it is not the union of two disjoint non-empty open sets; equivalently, its only **clopen** (closed and open) subsets are $\varnothing$ and $X$. It is **path-connected** if any two points $x, y$ are joined by a continuous path $\gamma : [0, 1] \to X$ with $\gamma(0) = x$ and $\gamma(1) = y$.
+
+</Definition>
+
+<Definition term="separation axioms">
+
+$X$ is **T₀** if for any two distinct points some open set contains one but not the other; **T₁** if every one-point set is closed; and **Hausdorff** (or T₂) if any two distinct points have disjoint open neighbourhoods. Every metric space is Hausdorff: if $d(x, y) = r > 0$, the balls $B(x, r/2)$ and $B(y, r/2)$ are disjoint by the triangle inequality.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples, non-examples and boundary cases">
+
+<Example title="Three metrics, one topology">
+
+On $\R^n$ let $d_2$ be the Euclidean metric, $d_1(x, y) = \sum_i |x_i - y_i|$ and $d_\infty(x, y) = \max_i |x_i - y_i|$. For all $x, y$,
+
+$$
+d_\infty(x, y) \le d_2(x, y) \le d_1(x, y) \le n\, d_\infty(x, y).
+$$
+
+So a $d_1$-ball of radius $r$ lies inside the $d_2$-ball of radius $r$, which lies inside the $d_\infty$-ball of radius $r$, which lies inside the $d_1$-ball of radius $nr$. Hence the three metrics have the same open sets: the **Euclidean topology**. It is also the product topology on $\R \times \cdots \times \R$, because the $d_\infty$-balls are exactly the open cubes, which are boxes.
+
+</Example>
+
+<Example title="The discrete metric and the Hamming metric">
+
+On any set, $d(x, y) = 1$ for $x \ne y$ (and $0$ for $x = y$) is the **discrete metric**. Every ball $B(x, 1/2) = \{x\}$ is open, so *every* subset is open — and closed. On binary strings of length $n$, the **Hamming distance** counts differing positions; the ball of radius $2$ about $000$ is $\{000, 100, 010, 001\}$. As a topology on a finite set it is again discrete, but the metric carries real information: a code whose codewords are at distance at least $3$ from each other can correct any single error.
+
+</Example>
+
+<Example title="Topologies that come from no metric">
+
+- The **indiscrete** topology $\{\varnothing, X\}$ on a set with at least two points is not Hausdorff, so no metric produces it.
+- The **Sierpiński space** $\{a, b\}$ with open sets $\varnothing, \{a\}, \{a, b\}$: here $\{a\}$ is open but not closed and $\{b\}$ is closed but not open. It is T₀ but not T₁.
+- The **cofinite topology** on an infinite set $X$ (open sets: $\varnothing$ and complements of finite sets) is T₁, not Hausdorff (any two non-empty open sets meet), and compact.
+
+</Example>
+
+<Example title="Open, closed, both, neither">
+
+In $\R$: $(0, 1)$ is open, $[0, 1]$ and $\Z$ are closed, $\varnothing$ and $\R$ are both, and $[0, 1)$ and $\Q$ are neither. In the subspace $Y = [0, 1) \cup (2, 3]$ of $\R$, the set $[0, 1) = Y \cap (-1, 1)$ is open *and* closed (its complement in $Y$ is $Y \cap (2, 4)$), so $Y$ is not connected. More surprisingly, in $\Q$ the set $\{x \in \Q \mid x^2 < 2\}$ is clopen, because no rational squares to $2$ — so $\Q$ falls apart into pieces at every irrational number. This is proved in Lean below.
+
+</Example>
+
+<Example title="Gluing: quotient spaces">
+
+Glue the ends of $[0, 1]$ together: the quotient $[0, 1]/(0 \sim 1)$ is homeomorphic to the circle $S^1$, via $[t] \mapsto (\cos 2\pi t, \sin 2\pi t)$. The same circle is $\R/\Z$, where $x \sim y$ when $x - y \in \Z$.
+
+From the square $[0, 1]^2$ we can make several famous spaces:
+
+- glue $(0, y) \sim (1, y)$: a **cylinder** $S^1 \times [0, 1]$;
+- glue $(0, y) \sim (1, 1 - y)$: a **Möbius band** (one twist);
+- glue $(0, y) \sim (1, y)$ and $(x, 0) \sim (x, 1)$: the **torus**, homeomorphic to the product $S^1 \times S^1$;
+- glue $(0, y) \sim (1, y)$ and $(x, 0) \sim (1 - x, 1)$: the **Klein bottle**.
+
+</Example>
+
+<Figure caption="Gluing a square along a pair of opposite sides. Left: arrows pointing the same way give a cylinder. Right: arrows pointing opposite ways — glue with a half twist — give a Möbius band.">
+<svg viewBox="0 0 360 170" role="img" aria-label="Two squares; the left has upward arrows on both vertical sides, the right has an upward arrow on the left side and a downward arrow on the right side">
+  <rect x="30" y="25" width="110" height="110" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="30" y1="25" x2="30" y2="135" stroke="var(--human)" strokeWidth="3" />
+  <line x1="140" y1="25" x2="140" y2="135" stroke="var(--human)" strokeWidth="3" />
+  <polygon points="30,70 23,84 37,84" fill="var(--human)" />
+  <polygon points="140,70 133,84 147,84" fill="var(--human)" />
+  <text x="85" y="158" fontSize="13" textAnchor="middle" fill="var(--ink-2)">cylinder</text>
+  <rect x="220" y="25" width="110" height="110" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="220" y1="25" x2="220" y2="135" stroke="var(--formal)" strokeWidth="3" />
+  <line x1="330" y1="25" x2="330" y2="135" stroke="var(--formal)" strokeWidth="3" />
+  <polygon points="220,70 213,84 227,84" fill="var(--formal)" />
+  <polygon points="330,90 323,76 337,76" fill="var(--formal)" />
+  <text x="275" y="158" fontSize="13" textAnchor="middle" fill="var(--ink-2)">Möbius band</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="continuity" kind="proof" title="Continuity: from ε–δ to open sets">
+
+<Theorem name="Proposition 1 (metric spaces are topological spaces)">
+
+In a metric space, every open ball is open, and the open sets form a topology.
+
+</Theorem>
+
+<Proof>
+
+Let $y \in B(x, r)$ and put $s = r - d(y, x) > 0$. If $d(z, y) < s$ then $d(z, x) \le d(z, y) + d(y, x) < s + d(y, x) = r$, so $B(y, s) \subseteq B(x, r)$. Hence balls are open.
+
+Clearly $\varnothing$ and $X$ are open. If $x$ lies in a union of open sets, it lies in one of them, $U$, and a ball around $x$ inside $U$ lies inside the union. If $x \in U \cap V$ with $B(x, r) \subseteq U$ and $B(x, s) \subseteq V$, then $B(x, \min(r, s)) \subseteq U \cap V$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (ε–δ continuity is open-set continuity)">
+
+Let $f : X \to Y$ be a map between metric spaces. Then $f$ is continuous in the ε–δ sense — for every $x \in X$ and $\varepsilon > 0$ there is $\delta > 0$ with $d(f(y), f(x)) < \varepsilon$ whenever $d(y, x) < \delta$ — if and only if $f^{-1}(V)$ is open for every open $V \subseteq Y$.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) Let $V$ be open and $x \in f^{-1}(V)$. As $V$ is open there is $\varepsilon > 0$ with $B(f(x), \varepsilon) \subseteq V$. Take the corresponding $\delta$: if $y \in B(x, \delta)$ then $f(y) \in B(f(x), \varepsilon) \subseteq V$. So $B(x, \delta) \subseteq f^{-1}(V)$, and $f^{-1}(V)$ is open.
+
+($\Leftarrow$) Let $x \in X$ and $\varepsilon > 0$. The ball $B(f(x), \varepsilon)$ is open (Proposition 1), so $f^{-1}\big(B(f(x), \varepsilon)\big)$ is an open set containing $x$. It therefore contains some ball $B(x, \delta)$, which says precisely that $d(y, x) < \delta$ implies $d(f(y), f(x)) < \varepsilon$.
+
+</Proof>
+
+Two consequences show why the open-set definition is so convenient.
+
+<Theorem name="Corollary 3">
+
+(a) The composite of continuous maps is continuous. (b) A map is continuous if and only if the preimage of every closed set is closed.
+
+</Theorem>
+
+<Proof>
+
+(a) If $f : X \to Y$ and $g : Y \to Z$ are continuous and $W \subseteq Z$ is open, then $(g \circ f)^{-1}(W) = f^{-1}\big(g^{-1}(W)\big)$ is open. (b) Preimages commute with complements: $f^{-1}(Y \setminus C) = X \setminus f^{-1}(C)$.
+
+</Proof>
+
+Notice the direction: continuity pulls open sets *back*. It does not push them forward. The continuous map $x \mapsto x^2$ sends the open interval $(-1, 1)$ to $[0, 1)$, which is not open.
+
+</Section>
+
+<Section id="connectedness" kind="proof" title="Connectedness">
+
+<Theorem name="Theorem 4 (the interval is connected)">
+
+The interval $[0, 1]$ is connected.
+
+</Theorem>
+
+<Proof>
+
+Suppose $[0, 1] = U \cup V$ with $U, V$ disjoint, non-empty and open in $[0, 1]$; say $0 \in U$. Let $S = \{\, t \in [0, 1] \mid [0, t] \subseteq U \,\}$. It contains $0$ and is bounded by $1$, so by completeness it has a supremum $s \in [0, 1]$.
+
+*If $s \in V$:* then $s > 0$, since $0 \in U$. As $V$ is open in $[0, 1]$ there is $\varepsilon > 0$ with $(s - \varepsilon, s] \cap [0, 1] \subseteq V$. Since $s = \sup S$ there is $t \in S$ with $s - \varepsilon < t \le s$. Then $t \in U$ (as $[0, t] \subseteq U$) and $t \in V$, contradicting $U \cap V = \varnothing$.
+
+*If $s \in U$:* as $U$ is open in $[0, 1]$ there is $\varepsilon > 0$ with $(s - \varepsilon, s + \varepsilon) \cap [0, 1] \subseteq U$. Pick $t \in S$ with $t > s - \varepsilon$; then $[0, t] \subseteq U$ and $[t, s'] \subseteq U$ for $s' = \min(s + \varepsilon/2, 1)$, so $s' \in S$. If $s < 1$ then $s' > s$, contradicting $s = \sup S$. So $s = 1$ and $1 \in S$, which means $[0, 1] \subseteq U$ and $V = \varnothing$ — a contradiction.
+
+</Proof>
+
+<Theorem name="Theorem 5 (continuous images of connected spaces are connected)">
+
+If $X$ is connected and $f : X \to Y$ is continuous, then $f(X)$ is connected.
+
+</Theorem>
+
+<Proof>
+
+Suppose $f(X) = A \cup B$ with $A, B$ disjoint, non-empty and open in $f(X)$. Then $f^{-1}(A)$ and $f^{-1}(B)$ are open in $X$ (continuity, together with the definition of the subspace topology), disjoint, non-empty and cover $X$ — impossible, since $X$ is connected.
+
+</Proof>
+
+<Theorem name="Corollary 6 (intermediate value theorem)">
+
+If $f : [a, b] \to \R$ is continuous and $c$ lies between $f(a)$ and $f(b)$, then $f(x) = c$ for some $x \in [a, b]$.
+
+</Theorem>
+
+<Proof>
+
+$[a, b]$ is homeomorphic to $[0, 1]$, so connected by Theorem 4, and $f([a, b])$ is connected by Theorem 5. A connected subset $A \subseteq \R$ is an interval: if $p, q \in A$, $p < c < q$ and $c \notin A$, then $A \cap (-\infty, c)$ and $A \cap (c, \infty)$ would split $A$ into two disjoint non-empty open pieces. So $c \in f([a, b])$.
+
+</Proof>
+
+A path-connected space is connected: if $X = U \cup V$ were a splitting and $\gamma$ a path from a point of $U$ to a point of $V$, then $\gamma^{-1}(U), \gamma^{-1}(V)$ would split the connected interval $[0, 1]$. The converse fails: the **topologist's sine curve**, the closure of $\{(x, \sin(1/x)) \mid 0 < x \le 1\}$ in $\R^2$, is connected but not path-connected.
+
+<Theorem name="Corollary 7 (counting pieces tells spaces apart)">
+
+(a) $\R$ is not homeomorphic to $\R^2$. (b) $[0, 1]$ is not homeomorphic to the circle $S^1$.
+
+</Theorem>
+
+<Proof>
+
+A homeomorphism $h : X \to Y$ restricts to a homeomorphism $X \setminus \{p\} \to Y \setminus \{h(p)\}$ for every point $p$.
+
+(a) $\R \setminus \{0\}$ is not connected (it is split by $(-\infty, 0)$ and $(0, \infty)$), but $\R^2$ minus any point is path-connected — go around the missing point — hence connected.
+
+(b) $[0, 1] \setminus \{1/2\}$ is not connected, but $S^1$ minus any point is homeomorphic to an open interval, hence connected.
+
+</Proof>
+
+</Section>
+
+<Section id="compactness" kind="proof" title="Compactness and the Heine–Borel theorem">
+
+<Theorem name="Theorem 8 (continuous images of compact spaces are compact)">
+
+If $K$ is compact and $f : K \to Y$ is continuous, then $f(K)$ is compact.
+
+</Theorem>
+
+<Proof>
+
+Let $(V_i)_{i \in I}$ be a cover of $f(K)$ by open sets of $Y$. The sets $f^{-1}(V_i)$ are open and cover $K$, so finitely many of them, $f^{-1}(V_{i_1}), \dots, f^{-1}(V_{i_m})$, already cover $K$. Then $V_{i_1}, \dots, V_{i_m}$ cover $f(K)$.
+
+</Proof>
+
+Before the extreme value theorem we need to know what compact sets look like.
+
+<Theorem name="Lemma 9 (three facts about compact sets)">
+
+(a) A closed subset of a compact space is compact. (b) A compact subset of a Hausdorff space is closed. (c) A compact subset of a metric space is bounded.
+
+</Theorem>
+
+<Proof>
+
+(a) Let $C \subseteq K$ be closed and $\mathcal{U}$ an open cover of $C$. Then $\mathcal{U} \cup \{K \setminus C\}$ is an open cover of $K$; a finite subcover, with $K \setminus C$ removed, covers $C$.
+
+(b) Let $C$ be compact in a Hausdorff space $X$ and $x \notin C$. For each $c \in C$ choose disjoint open sets $U_c \ni c$ and $W_c \ni x$. Finitely many $U_{c_1}, \dots, U_{c_m}$ cover $C$; then $W = W_{c_1} \cap \dots \cap W_{c_m}$ is an open neighbourhood of $x$ missing $U_{c_1} \cup \dots \cup U_{c_m} \supseteq C$. So $X \setminus C$ is open.
+
+(c) Fix $x_0$. The balls $B(x_0, n)$, $n = 1, 2, \dots$, cover the space, so finitely many cover $C$, and $C \subseteq B(x_0, N)$ for the largest $N$ used.
+
+</Proof>
+
+<Theorem name="Corollary 10 (extreme value theorem)">
+
+A continuous function $f : K \to \R$ on a non-empty compact space attains a maximum and a minimum.
+
+</Theorem>
+
+<Proof>
+
+$f(K)$ is compact (Theorem 8), hence bounded and closed in $\R$ (Lemma 9). A non-empty bounded set has a supremum $M$, which lies in the closure of the set, hence in $f(K)$ itself. So $M = f(x)$ for some $x$. Apply this to $-f$ for the minimum.
+
+</Proof>
+
+<Theorem name="Theorem 11 (closed bounded intervals are compact)">
+
+Every interval $[a, b] \subseteq \R$ is compact.
+
+</Theorem>
+
+<Proof>
+
+Suppose an open cover $\mathcal{U}$ of $I_0 = [a, b]$ has no finite subcover. Cut $I_0$ in half. If both halves had finite subcovers, so would $I_0$; so one half — call it $I_1$ — has none. Repeating, we get nested closed intervals $I_0 \supseteq I_1 \supseteq I_2 \supseteq \cdots$, each with no finite subcover, with $I_k$ of length $(b - a)/2^k$. By completeness (the nested interval property) they share a point $x$. Now $x \in U$ for some $U \in \mathcal{U}$, and since $U$ is open, $(x - \varepsilon, x + \varepsilon) \subseteq U$ for some $\varepsilon > 0$. Choose $k$ with $(b - a)/2^k < \varepsilon$: then $I_k \subseteq U$, so the single set $U$ covers $I_k$ — a contradiction.
+
+</Proof>
+
+The experiment in the computation section runs this proof as an algorithm.
+
+<Theorem name="Lemma 12 (the tube lemma; products of two compact spaces)">
+
+If $X$ and $Y$ are compact, so is $X \times Y$.
+
+</Theorem>
+
+<Proof>
+
+Let $\mathcal{W}$ be an open cover of $X \times Y$. Each $W \in \mathcal{W}$ is a union of boxes, and if finitely many boxes cover $X \times Y$, the finitely many sets of $\mathcal{W}$ containing them do too. So we may assume $\mathcal{W}$ consists of boxes $U \times V$.
+
+Fix $x \in X$. For each $y \in Y$ choose a box $U_y \times V_y \in \mathcal{W}$ containing $(x, y)$. The open sets $V_y$ cover the compact space $Y$, so finitely many of them, $V_{y_1}, \dots, V_{y_m}$, already do. Then $U_x = U_{y_1} \cap \dots \cap U_{y_m}$ is an open neighbourhood of $x$, and the whole **tube** $U_x \times Y$ is covered by the $m$ boxes $U_{y_j} \times V_{y_j}$. The sets $U_x$ cover the compact space $X$, so finitely many $U_{x_1}, \dots, U_{x_r}$ do; the corresponding finitely many boxes cover $X \times Y$.
+
+</Proof>
+
+<Theorem name="Theorem 13 (Heine–Borel)">
+
+A subset of $\R^n$ is compact if and only if it is closed and bounded.
+
+</Theorem>
+
+<Proof>
+
+($\Rightarrow$) $\R^n$ is a metric space, hence Hausdorff; apply Lemma 9 (b) and (c).
+
+($\Leftarrow$) If $K$ is bounded, then $K \subseteq [-R, R]^n$ for some $R$. The cube $[-R, R]^n$ is compact: $[-R, R]$ is compact by Theorem 11, and products of finitely many compact spaces are compact by Lemma 12 and induction. (We use that the Euclidean topology of $\R^n$ is the product topology — the first example above.) $K$ is closed in $\R^n$, hence closed in the cube, hence compact by Lemma 9 (a).
+
+</Proof>
+
+<Theorem name="Theorem 14 (when a continuous bijection is a homeomorphism)">
+
+A continuous bijection $f : X \to Y$ from a compact space to a Hausdorff space is a homeomorphism.
+
+</Theorem>
+
+<Proof>
+
+We show that $f^{-1}$ is continuous, i.e. that $f$ maps closed sets to closed sets (the preimage of $C$ under $f^{-1}$ is $f(C)$). If $C \subseteq X$ is closed, it is compact (Lemma 9a), so $f(C)$ is compact (Theorem 8), so $f(C)$ is closed in the Hausdorff space $Y$ (Lemma 9b).
+
+</Proof>
+
+Both hypotheses matter. The map $t \mapsto (\cos t, \sin t)$ from $[0, 2\pi)$ to $S^1$ is a continuous bijection, but its inverse jumps from near $2\pi$ to $0$ at the point $(1, 0)$: points of $S^1$ just below $(1, 0)$ go to numbers near $2\pi$. Here the domain is not compact. In fact no homeomorphism $[0, 1) \cong S^1$ exists at all, since $S^1$ is compact (Heine–Borel) and $[0, 1)$ is not (it is not closed in $\R$).
+
+<Note>
+
+**Heine–Borel is a theorem about $\R^n$, not about metric spaces.** In the metric space $\Q$, the set $\{x \in \Q \mid 0 \le x \le 2\}$ is closed and bounded but not compact: the open sets $U_k = \{x \mid |x - \sqrt 2| > 1/k\}$ cover it (as $\sqrt 2 \notin \Q$), with no finite subcover. In an infinite set with the discrete metric, the whole space is closed and bounded (diameter $1$) but the cover by one-point sets has no finite subcover. In a general metric space, compact is equivalent to *complete and totally bounded*, and also to *sequentially compact* (every sequence has a convergent subsequence); see Sutherland (2009) or Munkres (2000).
+
+</Note>
+
+<Theorem name="Theorem 15 (Tychonoff; stated, not proved here)">
+
+Every product $\prod_{i \in I} X_i$ of compact spaces, with the product topology, is compact.
+
+</Theorem>
+
+For finitely many factors this is Lemma 12. For infinitely many, the proof needs the axiom of choice (through Zorn's lemma or ultrafilters); see Munkres (2000), chapter 5. And it must: John Kelley showed in 1950 that Tychonoff's theorem, over the other axioms of ZF, *implies* the <TopicLink id="math.found.axiom-of-choice">axiom of choice</TopicLink>. The product topology is essential: with the "box topology", where all products $\prod U_i$ of open sets are open, even $[0, 1]^{\N}$ fails to be compact.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Point-set topology in Lean and Mathlib">
+
+Mathlib builds topology exactly as this lesson does: a `TopologicalSpace X` is a family of sets called open, closed under unions and finite intersections, and a `MetricSpace` automatically carries the topology of its balls. Two design choices are worth knowing. Mathlib's `IsCompact` is defined with filters (every filter that lives on the set has a cluster point in it), but it proves the equivalence with the open-cover definition, which our proofs use. And `IsPreconnected` is "connected, but possibly empty"; `IsConnected` adds non-emptiness.
+
+First, metric spaces. The proof that balls are open is the triangle-inequality argument of Proposition 1, as a `calc` chain:
+
+<Lean decl="Lumenary.PointSetTopology.ball_isOpen" />
+
+Theorem 2, proved from the definitions, alongside Mathlib's own version, which is a one-line citation:
+
+<Lean decl="Lumenary.PointSetTopology.eps_delta_iff_isOpen_preimage" />
+
+<Lean decl="Lumenary.PointSetTopology.continuous_iff_eps_delta" />
+
+Theorems 5 and 8 — continuous images of connected and compact sets — are proved by pulling covers back along $f$, exactly as on paper:
+
+<Lean decl="Lumenary.PointSetTopology.isCompact_image" />
+
+<Lean decl="Lumenary.PointSetTopology.isPreconnected_image" />
+
+The deeper facts that rest on the completeness of $\R$ are cited from Mathlib: the connectedness of $[0, 1]$ (Theorem 4), Heine–Borel (Theorem 13, for Euclidean space), the extreme value theorem (Corollary 10) and Tychonoff's theorem (Theorem 15), whose Mathlib proof uses ultrafilters.
+
+<Lean decl="Lumenary.PointSetTopology.unitInterval_isConnected" />
+
+<Lean decl="Lumenary.PointSetTopology.heine_borel" />
+
+<Lean decl="Lumenary.PointSetTopology.exists_max_on_compact" />
+
+<Lean decl="Lumenary.PointSetTopology.tychonoff" />
+
+Next, a clopen set in $\Q$, and the conclusion that $\Q$ is disconnected. The only arithmetic input is the irrationality of $\sqrt 2$:
+
+<Lean decl="Lumenary.PointSetTopology.no_rat_sq_eq_two" />
+
+<Lean decl="Lumenary.PointSetTopology.rat_clopen" />
+
+<Lean decl="Lumenary.PointSetTopology.rat_not_preconnected" />
+
+The misconception "a continuous bijection is a homeomorphism" fails for $[0, 1) \to S^1$. Lean proves the stronger statement that *no* homeomorphism exists, by the compactness argument after Theorem 14 (`IsEmpty` of the type of homeomorphisms says there are none):
+
+<Lean decl="Lumenary.PointSetTopology.ico_not_homeomorphic_circle" />
+
+Finally, quotients. Maps out of a quotient are continuous as soon as their composite with the projection is — the universal property of the quotient topology — and Mathlib's circle $\R/\Z$ (`AddCircle 1`) is compact:
+
+<Lean decl="Lumenary.PointSetTopology.quotient_lift_continuous" />
+
+<Lean decl="Lumenary.PointSetTopology.addCircle_compact" />
+
+**What is and is not formalised.** Independent proofs: Proposition 1 (balls are open), Theorem 2 (both directions), Theorems 5 and 8, the clopen subset of $\Q$, the disconnectedness of $\Q$ and the non-existence of a homeomorphism $[0, 1) \cong S^1$. Cited from Mathlib: Theorems 4, 13 and 15, Corollary 10, the universal property of quotients and the compactness of $\R/\Z$. Theorem 14 and Lemma 12 are in Mathlib (`Continuous.homeoOfEquivCompactToT2`, `IsCompact.prod`) but are not restated here, and Corollary 7 is not formalised.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Finite spaces and the bisection machine">
+
+On a finite set a topology is a finite object, so a computer can list them all. The program below tries every family of subsets of an $n$-point set and keeps those that satisfy the axioms. It then sorts them by the separation axioms and by connectedness.
+
+<Python id="point_set_topology_finite_topologies" />
+
+The counts $1, 4, 29, 355$ grow quickly; no simple formula for the number of topologies on $n$ points is known. Notice the T₁ column: a finite T₁ space is discrete (every set is a finite union of closed points, hence closed). So finite spaces — which turn up in combinatorics and in computer science, as models of digital images — are never Hausdorff unless they are discrete. This is exhaustive evidence about at most four points, and nothing more.
+
+The second program runs the proof of Theorem 11 as an algorithm. It halves an interval until each piece lies inside a single set of the cover. On $[0, 1]$ it stops. On $(0, 1]$, with the cover by the intervals $(1/n, 2)$, the piece next to $0$ is never covered, and the number of sets needed grows without bound.
+
+<Python id="point_set_topology_bisection_cover" />
+
+This is a *picture* of the proof, not a proof. The procedure halts on these particular covers. The theorem says it halts on *every* open cover of $[a, b]$ — and its proof shows why. If it never halted, the chain of halvings would close in on a point, and some open set of the cover would swallow every small piece around that point.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: continuity and gluing">
+
+First, continuity at a point in the ε–δ form of Theorem 2. Shrink ε and look for a δ that keeps the graph inside the band. Then switch to the function with a jump: there, no δ works for small ε, and in open-set language the preimage of a small open interval around $f(0)$ is not open — it contains $0$ but no interval around it.
+
+<CalculusLab mode="epsilon-delta" modes={["epsilon-delta"]} fn="x^2" a={1} L={1} epsilon={0.2} title="Continuity at a point: find δ for each ε" />
+
+<CalculusLab mode="epsilon-delta" modes={["epsilon-delta"]} preset="jump" epsilon={0.5} title="A discontinuity: no δ works" />
+
+Next, quotient spaces. Each surface below is a square with its sides glued in pairs. Walk the little creature off one edge and watch where it comes back. In the torus and the sphere every crossing preserves the creature's orientation. In the Klein bottle and the projective plane, some crossings bring it back mirror-reversed.
+
+<SurfaceGluing surface="torus" surfaces={["torus", "klein", "sphere", "rp2"]} title="Quotient spaces: squares with glued sides" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Closed means not open."** Open and closed are not opposites. In every space $\varnothing$ and $X$ are both; in $\R$ the set $[0, 1)$ is neither; in $\Q$ the set $\{x^2 < 2\}$ is both; in a discrete space every set is both. A space is connected exactly when $\varnothing$ and $X$ are its only clopen sets.
+
+</Misconception>
+
+<Misconception>
+
+**"A continuous bijection is a homeomorphism."** The map $t \mapsto (\cos t, \sin t)$ from $[0, 2\pi)$ onto $S^1$ is a continuous bijection whose inverse tears the circle open at $(1, 0)$. The identity map from a two-point set with the discrete topology to the same set with the indiscrete topology is another continuous bijection that is not a homeomorphism. Theorem 14 gives a sufficient condition: compact domain and Hausdorff target. The first example fails the first hypothesis, the second fails the second.
+
+</Misconception>
+
+<Misconception>
+
+**"Closed and bounded implies compact, in every metric space."** That is the Heine–Borel theorem for $\R^n$. It fails in $\Q$, in infinite discrete spaces, and in infinite-dimensional spaces: in the space $\ell^2$ of square-summable sequences, the unit vectors $e_1, e_2, \dots$ lie in the closed unit ball but are at distance $\sqrt 2$ from each other, so no subsequence converges. Boundedness is not even a topological property: $(0, 1)$ is bounded, $\R$ is not, yet they are homeomorphic.
+
+</Misconception>
+
+<Misconception>
+
+**"Continuous maps send open sets to open sets."** Continuity pulls open sets back; it need not push them forward. A constant map sends $\R$ to a point, and $x \mapsto x^2$ sends $(-1, 1)$ to $[0, 1)$. Maps that do send open sets to open sets are called **open maps**; projections $X \times Y \to X$ are examples.
+
+</Misconception>
+
+<Misconception>
+
+**"Connected and path-connected are the same."** Path-connected implies connected, but the topologist's sine curve is connected and not path-connected: no path can reach the segment $\{0\} \times [-1, 1]$ from the wiggling part. For open subsets of $\R^n$ (and for manifolds) the two notions do coincide.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Invariants that tell spaces apart">
+
+Compactness, connectedness and the number of pieces left after removing points are **topological invariants**: homeomorphic spaces share them. They already settle many "same shape?" questions. $(0, 1) \cong \R$ (via $t \mapsto \tan(\pi t - \pi/2)$), but neither is homeomorphic to $[0, 1]$, which is compact. The letters **I**, **O** and **Y** are pairwise non-homeomorphic: removing a suitable point leaves 2, 1 and 3 pieces respectively, and no point of **O** disconnects it.
+
+Point-set invariants soon run out, though. $S^1$ and $S^2$ are both compact and connected, and both stay connected when one point is removed. Removing *two* points separates them: $S^1$ falls apart and $S^2$ does not. And to show that $\R^2 \not\cong \R^3$ one needs a finer invariant. Removing a point from $\R^2$ leaves loops that cannot be shrunk; in $\R^3$ every loop can be shrunk. That is the <TopicLink id="math.geom.fundamental-group">fundamental group</TopicLink>. That $\R^m \not\cong \R^n$ for all $m \ne n$ is Brouwer's invariance of domain, a theorem of <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Metric versus topology">
+
+A geometer keeps the distances. An **isometry** preserves them; a homeomorphism only preserves open sets. So the circle of radius $1$ and the circle of radius $2$ are homeomorphic but not isometric, and the round sphere and the surface of a cube are homeomorphic — topologically the same — while their geometries differ completely. Between these two extremes lie bi-Lipschitz maps, which distort distances by at most a bounded factor; the three metrics $d_1, d_2, d_\infty$ on $\R^n$ are bi-Lipschitz equivalent, which is why they have the same open sets.
+
+Metric geometry can even put a metric on the collection of spaces themselves. The **Hausdorff distance** between compact subsets $A, B$ of a metric space is the least $r$ such that each lies in the $r$-neighbourhood of the other. Gromov extended this to the Gromov–Hausdorff distance between abstract metric spaces. It is the setting for statements such as "the integer grid $\Z^2$, viewed from farther and farther away, converges to the plane with the taxicab metric".
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Compactness is finiteness in disguise">
+
+For an analyst, compactness is the tool that turns pointwise statements into uniform ones. A continuous function on a compact metric space is **uniformly continuous** (Heine–Cantor): around each point there is a δ, and compactness lets one choose a single δ for all points. In metric spaces compactness is equivalent to **sequential compactness** (Bolzano–Weierstrass in disguise) and to "complete and totally bounded".
+
+In infinite dimensions compactness becomes precious. In a normed space the closed unit ball is compact *if and only if* the space is finite-dimensional (F. Riesz's lemma). In the space $C([0, 1])$ with the metric $\max |f - g|$, the **Arzelà–Ascoli theorem** characterises the compact sets: closed, bounded and equicontinuous. That theorem is behind Peano's existence theorem for differential equations. These ideas are developed in <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The Zariski topology: closed sets are solution sets">
+
+An algebraist builds topologies out of equations. On $\C^n$, declare a set **closed** if it is the set of common zeros of some family of polynomials. Finite unions and arbitrary intersections of such sets are again solution sets, so this is a topology: the **Zariski topology**. On $\C$ a non-zero polynomial has finitely many roots, so the closed sets are exactly the finite sets and $\C$ itself — the cofinite topology from the examples, which is compact and T₁ but not Hausdorff. Far from being a defect, this coarse topology is the foundation of <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>. Its non-Hausdorff behaviour is one reason sheaves enter the story.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="A metric in which powers of p shrink">
+
+Fix a prime $p$. For a non-zero rational $x = p^k a/b$ with $a, b$ not divisible by $p$, set $|x|_p = p^{-k}$ (and $|0|_p = 0$). Then $d(x, y) = |x - y|_p$ is a metric on $\Q$ satisfying the **ultrametric inequality** $d(x, z) \le \max(d(x, y), d(y, z))$. In this metric $p^n \to 0$, every triangle is isosceles, and every point of a ball is a centre of it. Balls are therefore clopen, so the completion $\Q_p$ is totally disconnected, and the $p$-adic integers $\Z_p$ — the closed unit ball — are compact. **Ostrowski's theorem** (1916) says that every non-trivial absolute value on $\Q$ is equivalent to the usual one or to a $p$-adic one. So topology sees the primes.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Compactness theorems and choice">
+
+The **compactness theorem** of first-order logic — a set of sentences has a model as soon as every finite subset does — takes its name from topology: it says that a certain space of complete theories (a Stone space) is compact. See <TopicLink id="math.found.completeness-theorem">completeness, compactness and Löwenheim–Skolem</TopicLink>. Logic also measures the strength of topological theorems. Tychonoff's theorem is equivalent to the axiom of choice over ZF (Kelley, 1950). In reverse mathematics, the Heine–Borel theorem for countable covers of $[0, 1]$ is equivalent, over the weak base system RCA₀, to the system WKL₀ ("weak König's lemma": every infinite binary tree has an infinite path). That is exactly the combinatorial heart of the bisection proof.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Products and quotients by their maps">
+
+Topological spaces and continuous maps form a category $\cat{Top}$. The product topology is the categorical product: a map $Z \to \prod X_i$ is continuous exactly when each component $Z \to X_i$ is. The quotient topology has the dual property: a map $X/{\sim} \to Y$ is continuous exactly when its composite with $q$ is (formalised above as `quotient_lift_continuous`). These are <TopicLink id="math.cat.universal-properties">universal properties</TopicLink>, and they make "coarsest" and "finest" precise. The forgetful functor $\cat{Top} \to \cat{Set}$ has a left adjoint (give a set the discrete topology) and a right adjoint (give it the indiscrete topology). That is why it preserves both <TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink>: a product of spaces has the product set as its underlying set, and a quotient space has the quotient set.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Roots in analysis.** Bernard Bolzano's 1817 proof of the intermediate value theorem and Karl Weierstrass's lectures in Berlin made limits and continuity rigorous; Georg Cantor's study of the sets on which Fourier series converge (1870s) introduced limit points and derived sets.
+- **Compactness of intervals.** The theorem named after Eduard Heine and Émile Borel grew out of proofs of uniform continuity. Borel's 1895 thesis showed that a countable cover of a closed interval by open intervals has a finite subcover, and Henri Lebesgue and others removed the countability. Similar arguments appear earlier, in lectures of Dirichlet.
+- **Abstraction.** Maurice Fréchet's 1906 thesis introduced abstract metric spaces (and the word "compact"). Frigyes Riesz proposed axioms for abstract spaces at the 1908 International Congress in Rome. Felix Hausdorff's *Grundzüge der Mengenlehre* (1914) defined topological spaces by neighbourhood axioms, with his separation axiom, and named metric spaces. Kazimierz Kuratowski (1922) gave the closure-operator axioms.
+- **Schools.** In Warsaw, Wacław Sierpiński, Stefan Mazurkiewicz and Zygmunt Janiszewski founded *Fundamenta Mathematicae* in 1920, the first journal devoted to set theory and topology. In Moscow, Pavel Alexandrov and Pavel Urysohn developed the modern open-cover notion of compactness ("bicompactness") in the 1920s, and Urysohn proved his metrisation theorem. Andrey Tychonoff proved in 1930 that arbitrary products of closed intervals are compact; he stated the general product theorem in 1935, and the first published proof of it is in a 1937 paper of Eduard Čech. After the war, Jun-iti Nagata in Japan (1950) and Yuri Smirnov in the Soviet Union (1951) independently characterised the metrisable spaces.
+- **Foundations.** John Kelley's 1950 proof that Tychonoff's theorem implies the axiom of choice tied the subject to set theory. His *General Topology* (1955) fixed much of the modern vocabulary.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- James R. Munkres, *Topology* (2nd edition, 2000) — the standard textbook; chapters 2–5 cover this lesson, including Tychonoff's theorem.
+- Wilson A. Sutherland, *Introduction to Metric and Topological Spaces* (2nd edition, 2009) — a gentle bridge from metric spaces to topology.
+- Lynn Arthur Steen and J. Arthur Seebach Jr., *Counterexamples in Topology* (1970) — 143 spaces that show which hypotheses are necessary.
+- John L. Kelley, *General Topology* (1955), and Ryszard Engelking, *General Topology* (revised edition, 1989) — comprehensive references.
+
+</Section>

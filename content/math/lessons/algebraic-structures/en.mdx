@@ -1,0 +1,533 @@
+---
+slug: algebraic-structures
+topic: math.algebra.algebraic-structures
+title: "Algebraic structures: monoids, groups and rings"
+subtitle: Clock arithmetic, shuffling cards, composing functions and multiplying matrices obey the same few laws — and once you name the laws, one proof serves them all.
+level: ug1
+ages: Undergraduate (first year)
+minutes: 100
+order: 5004
+objectives:
+  - Define binary operations, monoids, groups, rings and fields, and test examples and non-examples such as $(\N, +)$, $(\Z, +)$, $(\Z, \times)$, $\Z/n\Z$, $2 \times 2$ matrices and functions under composition
+  - Prove that an identity element is unique and that inverses in a monoid are unique, and derive the basic rules of algebra in a group
+  - Explain why $\Z$ is a ring but not a field while $\Q$ is a field, and prove that $\Z/n\Z$ is a field exactly when $n$ is prime
+  - Show that the functions from a set to itself form a monoid under composition whose invertible elements form the symmetric group
+  - Recognise homomorphisms and isomorphisms, and prove that a group homomorphism preserves identities and inverses
+narrators: []
+lean:
+  - Lumenary.AlgebraicStructures.identity_unique
+  - Lumenary.AlgebraicStructures.inverse_unique
+  - Lumenary.AlgebraicStructures.inverse_unique_library
+  - Lumenary.AlgebraicStructures.nat_add_not_group
+  - Lumenary.AlgebraicStructures.odd_not_closed
+  - Lumenary.AlgebraicStructures.endoMonoid
+  - Lumenary.AlgebraicStructures.perm_not_comm
+  - Lumenary.AlgebraicStructures.matrix_zero_divisors
+  - Lumenary.AlgebraicStructures.int_not_field
+  - Lumenary.AlgebraicStructures.rat_field
+  - Lumenary.AlgebraicStructures.zmod_isField_iff
+  - Lumenary.AlgebraicStructures.hom_map_one
+  - Lumenary.AlgebraicStructures.hom_map_inv
+  - Lumenary.AlgebraicStructures.mul_hom_not_one
+  - Lumenary.AlgebraicStructures.reduceMod
+  - Lumenary.AlgebraicStructures.reduceMod_eq_zero_iff
+compute: [algebraic_structures_census]
+trails: [inverses-and-structure]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="The same rules in different worlds">
+
+Here are four calculations from four different worlds.
+
+- **Clocks.** A bus leaves Nairobi at 9 o'clock for a journey of 5 hours; it arrives at $9 + 5 = 2$ o'clock. On a 12-hour clock, adding 12 hours changes nothing.
+- **Shuffles.** A card dealer in Macau cuts a deck, then riffles it. Doing the riffle first and the cut second usually gives a different order of the cards. Every shuffle can be undone by some other shuffle.
+- **Functions.** "Add 3" followed by "double" is "$x \mapsto 2(x + 3)$", but "double" followed by "add 3" is "$x \mapsto 2x + 3$". The function $x \mapsto x$ does nothing at all.
+- **Matrices.** A graphics programmer in São Paulo rotates an image by a quarter turn and then shears it. The combined effect is the product of two $2 \times 2$ matrices — and again, the order matters.
+
+In each world there is a way of **combining** two things into a third, the combination can be **bracketed** however we like, there is a **do-nothing** element, and sometimes things can be **undone**. These four features — closure, associativity, identity, inverses — are all we need to prove a surprising number of theorems. Prove them once, in the abstract, and they hold in every world at once. That economy is the point of abstract algebra.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Operation tables">
+
+A finite operation can be written as a table, like a multiplication table. Here are addition and multiplication of remainders modulo $4$, that is, in $\Z/4\Z = \{0, 1, 2, 3\}$ (see <TopicLink id="math.number.modular-arithmetic">modular arithmetic</TopicLink>):
+
+| $+$ | 0 | 1 | 2 | 3 |
+| --- | --- | --- | --- | --- |
+| **0** | 0 | 1 | 2 | 3 |
+| **1** | 1 | 2 | 3 | 0 |
+| **2** | 2 | 3 | 0 | 1 |
+| **3** | 3 | 0 | 1 | 2 |
+
+| $\times$ | 0 | 1 | 2 | 3 |
+| --- | --- | --- | --- | --- |
+| **0** | 0 | 0 | 0 | 0 |
+| **1** | 0 | 1 | 2 | 3 |
+| **2** | 0 | 2 | 0 | 2 |
+| **3** | 0 | 3 | 2 | 1 |
+
+What can we read off?
+
+- In the addition table the row of $0$ copies the header: $0$ is an **identity**. Every row contains a $0$ somewhere, so every element can be **undone**: $1 + 3 = 0$, $2 + 2 = 0$. Every row is a rearrangement of $0, 1, 2, 3$.
+- In the multiplication table the identity is $1$. The rows of $1$ and $3$ contain a $1$ ($3 \times 3 = 1$, so $3$ undoes itself), but the rows of $0$ and $2$ do not: $0$ and $2$ have no multiplicative partner. And $2 \times 2 = 0$: two non-zero things multiply to zero, which never happens with ordinary numbers.
+- Both tables are symmetric about the diagonal: the operations are **commutative**. Tables for shuffles or matrices are not.
+
+Associativity is the one law a table hides: to check $(ab)c = a(bc)$ we have to look up every triple. For $n$ elements that is $n^3$ checks — one reason to prove associativity once and for all, as we will.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="binary operation">
+
+A **binary operation** on a set $S$ is a function $\ast : S \times S \to S$; we write $a \ast b$ for $\ast(a, b)$. The definition includes **closure**: for all $a, b \in S$, the result $a \ast b$ must again lie in $S$. The operation is **associative** if $(a \ast b) \ast c = a \ast (b \ast c)$ for all $a, b, c \in S$, and **commutative** if $a \ast b = b \ast a$ for all $a, b$. An element $e \in S$ is an **identity** if $e \ast a = a = a \ast e$ for all $a \in S$.
+
+</Definition>
+
+<Definition term="monoid, group">
+
+A **monoid** $(M, \ast, e)$ is a set with an associative binary operation and an identity element $e$. If $a \ast b = e = b \ast a$, then $b$ is an **inverse** of $a$, and $a$ is **invertible** (or a **unit**). A **group** is a monoid in which every element is invertible. A monoid or group is **abelian** if its operation is commutative.
+
+</Definition>
+
+Because associativity lets us drop brackets, we usually write the operation as juxtaposition, $ab$, and the identity as $1$ (multiplicative notation); for abelian groups we often write $a + b$, $0$ and $-a$ instead (additive notation). The notation is a convenience: the identity of a monoid is whatever element behaves as one — the number $0$, the number $1$, the identity function, the empty string or the whole set.
+
+<Definition term="ring, field">
+
+A **ring** $(R, +, \cdot, 0, 1)$ is a set with two binary operations such that
+
+1. $(R, +, 0)$ is an abelian group (the additive inverse of $a$ is written $-a$);
+2. $(R, \cdot, 1)$ is a monoid;
+3. multiplication **distributes** over addition on both sides: $a(b + c) = ab + ac$ and $(a + b)c = ac + bc$.
+
+The ring is **commutative** if its multiplication is. The **units** of $R$ are its invertible elements under multiplication; they form the set $R^\times$. A **field** is a commutative ring in which $0 \neq 1$ and every non-zero element is a unit.
+
+</Definition>
+
+<Note>
+
+In this lesson every ring has a multiplicative identity $1$. Some books allow "rings without $1$" (for example the even integers $2\Z$); when reading, check the convention.
+
+</Note>
+
+<Definition term="homomorphism, isomorphism">
+
+A **homomorphism** is a function between two structures of the same kind that preserves the operations and the identities:
+
+- a **monoid homomorphism** $f : M \to N$ satisfies $f(ab) = f(a)f(b)$ and $f(1_M) = 1_N$;
+- a **group homomorphism** is a monoid homomorphism between groups (we will prove that $f(ab) = f(a)f(b)$ alone already forces $f(1) = 1$);
+- a **ring homomorphism** satisfies $f(a + b) = f(a) + f(b)$, $f(ab) = f(a)f(b)$ and $f(1) = 1$.
+
+An **isomorphism** is a bijective homomorphism; its inverse function is automatically a homomorphism. Isomorphic structures are "the same structure with the elements renamed".
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Numbers">
+
+| Set and operation | Associative? | Identity | Every element invertible? | Structure |
+| --- | --- | --- | --- | --- |
+| $\N = \{0, 1, 2, \dots\}$, $+$ | yes | $0$ | no ($1$ has no partner) | commutative monoid |
+| $\Z$, $+$ | yes | $0$ | yes, $-a$ | abelian group |
+| $\Z$, $\times$ | yes | $1$ | no, only $\pm 1$ | commutative monoid |
+| $\Q \setminus \{0\}$, $\times$ | yes | $1$ | yes, $1/a$ | abelian group |
+| $\Z$, $-$ | no: $(5 - 3) - 1 \neq 5 - (3 - 1)$ | none | — | not a monoid |
+| $\N$, $\max$ | yes | $0$ | no | commutative monoid |
+| $\N$, $\gcd$ | yes | $0$, since $\gcd(0, a) = a$ | no | commutative monoid |
+| odd integers, $+$ | — | — | — | not even an operation |
+
+The last row fails closure: $1 + 1 = 2$ is not odd. Subtraction fails associativity, and although $a - 0 = a$, the number $0$ is not a two-sided identity because $0 - a \neq a$. The $\gcd$ row is a reminder that an identity need not look like $0$ or $1$ in any familiar sense — it just has to do nothing.
+
+</Example>
+
+<Example title="Remainders">
+
+On $\Z/n\Z$, the set of remainder classes modulo $n \geq 1$, both $+$ and $\times$ are well defined (see <TopicLink id="math.number.congruences">congruences</TopicLink>), and $(\Z/n\Z, +, \times)$ is a commutative ring. $(\Z/n\Z, +)$ is an abelian group, the **cyclic group of order $n$**. Under $\times$ it is only a monoid; its units are the classes $a$ with $\gcd(a, n) = 1$. For $n = 12$ these are $1, 5, 7, 11$; for $n = 13$ they are all of $1, \dots, 12$.
+
+</Example>
+
+<Example title="Functions and permutations">
+
+For any set $X$, the functions $X \to X$ form a monoid $\mathrm{End}(X)$ under composition: $(f \circ g) \circ h = f \circ (g \circ h)$ and $\mathrm{id}_X \circ f = f = f \circ \mathrm{id}_X$ (see <TopicLink id="math.cat.composition">composition</TopicLink>). Its identity is the identity function — neither $0$ nor $1$. A function is invertible in this monoid exactly when it is a bijection, so the invertible elements form the **symmetric group** $\mathrm{Sym}(X)$; for $X = \{1, \dots, n\}$ it is written $S_n$ and has $n!$ elements.
+
+$S_3$ is not abelian. Let $\sigma$ swap $1$ and $2$, and $\tau$ swap $2$ and $3$. Then $(\sigma \circ \tau)(2) = \sigma(3) = 3$ but $(\tau \circ \sigma)(2) = \tau(1) = 1$. It is the smallest non-abelian group.
+
+</Example>
+
+<Example title="Strings">
+
+The words over an alphabet, such as `"ka"` and `"ribu"`, form a monoid under concatenation: `"ka" · "ribu" = "karibu"`. The identity is the empty word, and the monoid is not commutative. Only the empty word is invertible — concatenation can never make a word shorter.
+
+</Example>
+
+<Example title="Matrices">
+
+The $2 \times 2$ matrices with real entries form a ring $M_2(\R)$ under matrix addition and multiplication, with identity $I$. It is **not commutative**, and it has **zero divisors** — non-zero elements whose product is zero:
+
+$$
+\begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix}\begin{pmatrix} 1 & 0 \\ 0 & 0 \end{pmatrix} = \begin{pmatrix} 0 & 0 \\ 0 & 0 \end{pmatrix}, \qquad \begin{pmatrix} 1 & 0 \\ 0 & 0 \end{pmatrix}\begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix} = \begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix}.
+$$
+
+Its units are the invertible matrices, those with non-zero determinant; they form the group $GL_2(\R)$ (see <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>).
+
+</Example>
+
+<Example title="Rings and fields">
+
+$\Z$, $\Q$, $\R$, $\C$, $\Z/n\Z$, the polynomials $\R[x]$ and the matrices $M_2(\R)$ are rings. $\Q$, $\R$, $\C$ and $\Z/p\Z$ for $p$ prime are fields. $\Z$, $\R[x]$, $M_2(\R)$ and $\Z/6\Z$ are not: in $\Z$ the number $2$ has no inverse, in $\R[x]$ the polynomial $x$ has none, and in $\Z/6\Z$ the class $2$ has none (indeed $2 \cdot 3 = 0$).
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The first theorems">
+
+The theorems in this section use only the axioms, so they hold in every monoid, group or ring at once.
+
+<Theorem name="Theorem 1 (uniqueness of the identity)">
+
+A binary operation has at most one identity element.
+
+</Theorem>
+
+<Proof>
+
+Suppose $e$ and $e'$ are both identities. Compute $e \ast e'$ in two ways. Since $e'$ is an identity, $e \ast e' = e$. Since $e$ is an identity, $e \ast e' = e'$. Hence $e = e'$.
+
+</Proof>
+
+Notice that the proof did not use associativity. It also explains why it is safe to speak of *the* identity of a monoid.
+
+<Theorem name="Theorem 2 (uniqueness of inverses)">
+
+In a monoid $M$, if $ba = 1$ and $ac = 1$, then $b = c$. In particular, an element has at most one inverse.
+
+</Theorem>
+
+<Proof>
+
+Using the identity law, associativity and the two hypotheses,
+
+$$
+b = b1 = b(ac) = (ba)c = 1c = c.
+$$
+
+</Proof>
+
+So we may write $a^{-1}$ for *the* inverse of an invertible element $a$. This time associativity was essential, and the misconceptions section shows that one-sided inverses on their own need not be unique.
+
+<Theorem name="Corollary 3 (algebra in a group)">
+
+Let $G$ be a group and $a, b, c \in G$. Then
+
+1. $(a^{-1})^{-1} = a$ and $(ab)^{-1} = b^{-1}a^{-1}$;
+2. (**cancellation**) if $ab = ac$ then $b = c$, and if $ba = ca$ then $b = c$;
+3. the equation $ax = b$ has exactly one solution, $x = a^{-1}b$. Consequently each row (and each column) of the operation table of a finite group contains every element exactly once.
+
+</Theorem>
+
+<Proof>
+
+(1) $a$ satisfies $a^{-1}a = 1 = aa^{-1}$, so $a$ is an inverse of $a^{-1}$; by Theorem 2 it is *the* inverse. Similarly $(ab)(b^{-1}a^{-1}) = a(bb^{-1})a^{-1} = aa^{-1} = 1$ and $(b^{-1}a^{-1})(ab) = 1$, so $b^{-1}a^{-1}$ is the inverse of $ab$. Note the reversed order: to undo "put on socks, then shoes", take off the shoes first.
+
+(2) Multiply $ab = ac$ on the left by $a^{-1}$: $b = (a^{-1}a)b = a^{-1}(ab) = a^{-1}(ac) = c$. The other case is symmetric.
+
+(3) $x = a^{-1}b$ is a solution because $a(a^{-1}b) = b$; if $ax = b = ax'$ then $x = x'$ by cancellation. In the row of $a$ in the table, the entry in column $x$ is $ax$; existence and uniqueness of solutions say that each $b$ appears in exactly one column.
+
+</Proof>
+
+<Theorem name="Theorem 4 (the units of a monoid form a group)">
+
+If $M$ is a monoid, its set of units $M^\times$ is a group under the same operation. In particular, $\mathrm{Sym}(X) = \mathrm{End}(X)^\times$ is a group, $\Z^\times = \{1, -1\}$, $(\Z/n\Z)^\times$ is a group, and $GL_2(\R) = M_2(\R)^\times$ is a group.
+
+</Theorem>
+
+<Proof>
+
+We check that $M^\times$ is closed and contains the identity and the inverses; associativity is inherited from $M$. The identity is a unit, with inverse $1$. If $a, b$ are units then so is $ab$, with inverse $b^{-1}a^{-1}$ (the computation in Corollary 3(1) used only associativity). If $a$ is a unit then so is $a^{-1}$, with inverse $a$. So every element of $M^\times$ has an inverse lying in $M^\times$.
+
+</Proof>
+
+<Theorem name="Theorem 5 (arithmetic in a ring)">
+
+In every ring, $0a = 0 = a0$, $(-a)b = -(ab) = a(-b)$ and $(-a)(-b) = ab$. If $0 = 1$ in $R$, then $R = \{0\}$.
+
+</Theorem>
+
+<Proof>
+
+The first three are proved from the ring axioms exactly as in the lesson on <TopicLink id="math.number.integers">integers</TopicLink>: for instance $0a = (0 + 0)a = 0a + 0a$, and cancelling $0a$ in the group $(R, +)$ leaves $0 = 0a$. If $0 = 1$, then every $a$ satisfies $a = 1a = 0a = 0$.
+
+</Proof>
+
+This is why a field must have $0 \neq 1$, and why $0$ is excluded from the elements required to be invertible: if $0$ had an inverse $b$, then $1 = 0b = 0$, and the ring would collapse to a single point.
+
+<Theorem name="Theorem 6 (fields have no zero divisors)">
+
+In a field, if $ab = 0$ then $a = 0$ or $b = 0$.
+
+</Theorem>
+
+<Proof>
+
+If $a \neq 0$, multiply by $a^{-1}$: $b = (a^{-1}a)b = a^{-1}(ab) = a^{-1}0 = 0$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (Z is not a field; Q is)">
+
+$\Z$ is a commutative ring but not a field; $\Q$ is a field.
+
+</Theorem>
+
+<Proof>
+
+The ring axioms for $\Z$ are the familiar laws of arithmetic. But $2 \neq 0$ has no inverse: for every integer $x$, the number $2x$ is even, so $2x \neq 1$. In $\Q$, every non-zero element can be written $a/b$ with integers $a, b \neq 0$, and $b/a \in \Q$ satisfies $(a/b)(b/a) = 1$.
+
+</Proof>
+
+Passing from $\Z$ to $\Q$ is exactly the act of adjoining the missing inverses, as <TopicLink id="math.number.number-system-constructions">the construction of the number systems</TopicLink> makes precise.
+
+<Theorem name="Theorem 8 (when is Z/nZ a field?)">
+
+For an integer $n \geq 1$, the ring $\Z/n\Z$ is a field if and only if $n$ is prime.
+
+</Theorem>
+
+<Proof>
+
+*If $n = 1$*, then $\Z/1\Z = \{0\}$ has $0 = 1$, so it is not a field; and $1$ is not prime.
+
+*If $n$ is composite*, write $n = ab$ with $1 < a, b < n$. The classes of $a$ and $b$ are non-zero in $\Z/n\Z$ (neither $a$ nor $b$ is a multiple of $n$), but $ab = n = 0$. By Theorem 6, $\Z/n\Z$ is not a field.
+
+*If $n = p$ is prime*, let $a$ be a non-zero class, represented by an integer not divisible by $p$. The only positive divisors of $p$ are $1$ and $p$, so $\gcd(a, p) = 1$. By Bézout's identity (see <TopicLink id="math.number.divisibility-gcd">divisibility and Euclid's algorithm</TopicLink>) there are integers $u, v$ with $ua + vp = 1$. Reducing modulo $p$ gives $ua = 1$ in $\Z/p\Z$, so $a$ is a unit. The other field axioms are inherited from $\Z$, and $0 \neq 1$ because $p \nmid 1$.
+
+</Proof>
+
+The same argument shows, for every $n$, that the class of $a$ is a unit in $\Z/n\Z$ exactly when $\gcd(a, n) = 1$. The field $\Z/p\Z$ is often written $\mathbb{F}_p$.
+
+<Theorem name="Theorem 9 (group homomorphisms preserve identities and inverses)">
+
+Let $G$ and $H$ be groups and $f : G \to H$ a function with $f(ab) = f(a)f(b)$ for all $a, b \in G$. Then $f(1) = 1$ and $f(a^{-1}) = f(a)^{-1}$ for all $a$.
+
+</Theorem>
+
+<Proof>
+
+$f(1)f(1) = f(1 \cdot 1) = f(1) = f(1) \cdot 1$, and cancelling $f(1)$ in $H$ gives $f(1) = 1$. Then $f(a^{-1})f(a) = f(a^{-1}a) = f(1) = 1$ and likewise $f(a)f(a^{-1}) = 1$, so $f(a^{-1})$ is an inverse of $f(a)$; by Theorem 2 it is *the* inverse.
+
+</Proof>
+
+For monoids the first step fails — there may be no cancellation — and preserving $1$ must be demanded. The zero map $(\Z, \times) \to (\Z, \times)$, $a \mapsto 0$, satisfies $f(ab) = 0 = f(a)f(b)$ but sends $1$ to $0$.
+
+<Example title="Homomorphisms everywhere">
+
+- **Reduction modulo $n$**, $\Z \to \Z/n\Z$, $a \mapsto a \bmod n$, is a ring homomorphism. The elements sent to $0$ — its **kernel** — are the multiples of $n$.
+- **The exponential** $\exp : (\R, +) \to (\R_{>0}, \times)$ satisfies $e^{x + y} = e^x e^y$. It is a group isomorphism, with inverse $\ln$: logarithm tables were, in effect, a way of turning multiplication into addition.
+- **The determinant** $\det : GL_2(\R) \to (\R \setminus \{0\}, \times)$ is a group homomorphism, because $\det(AB) = \det A \det B$.
+- **Length** of a word is a monoid homomorphism from words under concatenation to $(\N, +)$: the length of a concatenation is the sum of the lengths.
+
+</Example>
+
+<CommutativeDiagram
+  objects={[
+    { id: "GG", tex: "G \\times G", row: 0, col: 0 },
+    { id: "G", tex: "G", row: 0, col: 1 },
+    { id: "HH", tex: "H \\times H", row: 1, col: 0 },
+    { id: "H", tex: "H", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "GG", to: "G", tex: "\\cdot" },
+    { from: "GG", to: "HH", tex: "f \\times f", labelSide: "right" },
+    { from: "G", to: "H", tex: "f" },
+    { from: "HH", to: "H", tex: "\\cdot", labelSide: "right" },
+  ]}
+  caption="A homomorphism makes this square commute: multiplying and then applying $f$ gives the same as applying $f$ to both factors and then multiplying, $f(ab) = f(a)f(b)$."
+/>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Algebraic structures in Lean and Mathlib">
+
+Mathlib describes structures with **type classes**: `Monoid M`, `Group G`, `CommRing R`, `Field K`, and many more in a carefully layered hierarchy. A homomorphism of monoids is `M →* N`, of rings `R →+* S`. Writing `[Group G]` in a theorem means "for every group $G$" — so a theorem proved once applies to every instance, just as in the human proofs above.
+
+**Uniqueness.** The identity theorem is stated for an arbitrary operation `op` (no associativity assumed); the inverse theorem is the five-step `calc` of Theorem 2, one axiom per line. Mathlib's own name for it is `left_inv_eq_right_inv`.
+
+<Lean decl="Lumenary.AlgebraicStructures.identity_unique" />
+
+<Lean decl="Lumenary.AlgebraicStructures.inverse_unique" />
+
+<Lean decl="Lumenary.AlgebraicStructures.inverse_unique_library" />
+
+**Examples and non-examples.** $(\N, +)$ is not a group, the odd integers are not closed under addition, the functions from a type to itself form a monoid (built by hand: every axiom holds by `rfl`, "by definition"), $S_3$ is not abelian, and $2 \times 2$ integer matrices have zero divisors.
+
+<Lean decl="Lumenary.AlgebraicStructures.nat_add_not_group" />
+
+<Lean decl="Lumenary.AlgebraicStructures.odd_not_closed" />
+
+<Lean decl="Lumenary.AlgebraicStructures.endoMonoid" />
+
+<Lean decl="Lumenary.AlgebraicStructures.perm_not_comm" />
+
+<Lean decl="Lumenary.AlgebraicStructures.matrix_zero_divisors" />
+
+**Rings and fields.** `IsField R` is Mathlib's proposition "the ring $R$ is a field". The characterisation of $\Z/n\Z$ (Mathlib's `ZMod n`) follows the human proof of Theorem 8 case by case; for $n = 0$, `ZMod 0` is $\Z$ itself, which is also covered. The direction "prime implies field" uses Mathlib's instance `Field (ZMod p)`, which finds inverses by Bézout exactly as we did.
+
+<Lean decl="Lumenary.AlgebraicStructures.int_not_field" />
+
+<Lean decl="Lumenary.AlgebraicStructures.rat_field" />
+
+<Lean decl="Lumenary.AlgebraicStructures.zmod_isField_iff" />
+
+**Homomorphisms.** Theorem 9 in two steps, the second reusing `inverse_unique`; then the zero map showing that monoid homomorphisms must be required to preserve $1$; and reduction modulo $n$ as a ring homomorphism with kernel $n\Z$.
+
+<Lean decl="Lumenary.AlgebraicStructures.hom_map_one" />
+
+<Lean decl="Lumenary.AlgebraicStructures.hom_map_inv" />
+
+<Lean decl="Lumenary.AlgebraicStructures.mul_hom_not_one" />
+
+<Lean decl="Lumenary.AlgebraicStructures.reduceMod" />
+
+<Lean decl="Lumenary.AlgebraicStructures.reduceMod_eq_zero_iff" />
+
+**Not formalised here:** Corollary 3 and Theorem 4 (Mathlib has them as `mul_inv_rev`, `mul_left_cancel` and the group `Mˣ` of units of a monoid), the ring identities of Theorem 5 (`zero_mul`, `neg_mul`, `neg_mul_neg`, proved by hand in the integers lesson), and the isomorphism $\exp : (\R, +) \cong (\R_{>0}, \times)$.
+
+</Section>
+
+<Section id="computation" kind="computation" title="A census of all operations on three elements">
+
+A $3 \times 3$ operation table has nine entries, each one of three elements, so there are $3^9 = 19\,683$ binary operations on a three-element set. Which of them are associative? Which are monoids, which groups? Does any of them break Theorems 1 or 2? A computer can simply look at all of them.
+
+<Python id="algebraic_structures_census" />
+
+Only $113$ of the $19\,683$ operations are associative (a known count), and only $3$ are groups. The groups are all "the same": once we choose which of the three elements is the identity, the table is forced to be that of $\Z/3\Z$ — every group with three elements is isomorphic to $\Z/3\Z$. The search finds no operation with two identities and no monoid element with two inverses, as the theorems predict; but a search of one size proves nothing about other sizes, whereas the proofs above hold for every set at once.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: units and non-commutativity">
+
+On the "multiply" tab, choose a number of hours $k$ and look for the classes that have a multiplicative partner — the units of $\Z/k\Z$. Which $k$ give a partner to *every* non-zero class? Compare $k = 7$ with $k = 12$, and check your answer against Theorem 8.
+
+<ClockLab />
+
+The ring of $2 \times 2$ matrices is not commutative. First a shear, then a quarter turn — or the other way round: the two composites differ.
+
+<MatrixTransform mode="compose" matrix={[[1, 1], [0, 1]]} matrix2={[["cos(pi/2)", "-sin(pi/2)"], ["sin(pi/2)", "cos(pi/2)"]]} title="Matrix multiplication is not commutative" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The identity element is always $0$ or $1$."** It is whatever does nothing. For composition of functions it is the identity function; for concatenation of words it is the empty word; for $\gcd$ on $\N$ it is $0$; for $\max$ on $\N$ it is $0$; for intersection of subsets of $X$ it is $X$ itself.
+
+</Misconception>
+
+<Misconception>
+
+**"Every operation is commutative, like addition."** Composition of functions, multiplication of matrices, concatenation of words and composition of shuffles are not. Commutativity is an extra property that has to be checked, and many of the most important groups — symmetry groups, $S_n$ for $n \geq 3$, $GL_2(\R)$ — lack it.
+
+</Misconception>
+
+<Misconception>
+
+**Forgetting closure.** "Addition on the odd integers" is not an operation at all, because $1 + 1 = 2$ is not odd. Likewise $\{-1, 0, 1\}$ is not closed under addition ($1 + 1 = 2$). Before asking whether an operation is associative, check that it lands back in the set.
+
+</Misconception>
+
+<Misconception>
+
+**"A one-sided inverse is an inverse."** In the monoid of functions $\N \to \N$, the successor $s(n) = n + 1$ has left inverses: any $g$ with $g(n + 1) = n$ satisfies $g \circ s = \mathrm{id}$, and $g(0)$ can be anything, so there are infinitely many of them. But $s$ has no right inverse, since nothing is sent to $0$. Theorem 2 says that *if* both a left and a right inverse exist, they coincide; one-sided inverses alone need be neither two-sided nor unique.
+
+</Misconception>
+
+<Misconception>
+
+**"Checking associativity on a few examples is enough."** Associativity is a statement about *all* triples. Exponentiation on positive integers satisfies $(2^2)^2 = 2^{(2^2)}$, yet $(2^3)^2 = 64 \neq 512 = 2^{(3^2)}$. One failure is enough to refute it; no finite number of successes proves it for an infinite set.
+
+</Misconception>
+
+<Misconception>
+
+**"A homomorphism only has to preserve the operation."** Between groups that is enough (Theorem 9). Between monoids and rings it is not: the zero map on $(\Z, \times)$ preserves products but not $1$, which is why preserving the identity is part of the definition.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Groups are symmetries">
+
+The rotations and reflections that map a square onto itself form a group under composition, the **dihedral group** $D_4$ with $8$ elements: four rotations (by $0^\circ$, $90^\circ$, $180^\circ$, $270^\circ$) and four reflections. It is not abelian — a quarter turn followed by a reflection in the vertical axis is the reflection in one diagonal, while the opposite order gives the other diagonal. More generally the symmetries of any object — a tiling, a crystal, a molecule, a regular polyhedron — form a group, and **Cayley's theorem** says that conversely every group $G$ is a group of symmetries: $g \mapsto (x \mapsto gx)$ is an injective homomorphism $G \to \mathrm{Sym}(G)$. Felix Klein's Erlangen programme (1872) turned this around and *defined* a geometry by its group of transformations: Euclidean geometry studies what is invariant under rigid motions, affine geometry what is invariant under $GL_2(\R)$ and translations (see <TopicLink id="math.geom.transformation-geometry">transformation geometry</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Loops form a group, but only up to deformation">
+
+In a space $X$ with a base point $x_0$, two loops at $x_0$ can be combined by running through one and then the other. This concatenation is *not* associative on the nose — $(\alpha\beta)\gamma$ and $\alpha(\beta\gamma)$ spend different amounts of time on each loop — but the two can be continuously deformed into each other. Passing to loops up to deformation (homotopy) gives a genuine group, the **fundamental group** $\pi_1(X, x_0)$, whose identity is the constant loop and whose inverses run loops backwards. For the circle, $\pi_1(S^1) \cong (\Z, +)$, the integer being the winding number (see <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>). Groups can also carry a topology: the circle $\{z \in \C : |z| = 1\}$ under multiplication is a **topological group**, its operations being continuous maps, and $GL_2(\R)$ splits into two connected pieces according to the sign of the determinant.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Units modulo n and the finite fields">
+
+The units of $\Z/n\Z$ form a group of order $\varphi(n)$, Euler's totient — the number of $a$ in $\{1, \dots, n\}$ coprime to $n$. Group theory then does number theory: Lagrange's theorem (the order of an element divides the order of a finite group) gives Euler's theorem $a^{\varphi(n)} \equiv 1 \pmod n$ whenever $\gcd(a, n) = 1$, and for $n = p$ prime, Fermat's little theorem (see <TopicLink id="math.number.congruences">congruences</TopicLink>). Theorem 8 says that $\Z/p\Z$ is a field; every finite field has prime-power order $p^k$, and there is exactly one field of each such order up to isomorphism (see <TopicLink id="math.algebra.fields-galois">fields and Galois theory</TopicLink>). Finite fields underlie error-correcting codes and much of modern <TopicLink id="math.applied.cryptography">cryptography</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Symmetries of physical law">
+
+In physics, the transformations that leave the laws of nature unchanged form groups: translations in space and time, the rotation group $SO(3)$, and in special relativity the Lorentz group. **Noether's theorem** (Emmy Noether, 1918) states that, for a system whose equations come from a principle of least action, every continuous one-parameter group of symmetries yields a conserved quantity: invariance under time translation gives conservation of energy, under space translation conservation of momentum, and under rotation conservation of angular momentum (see <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>). In quantum mechanics the electron's spin is described by the group $SU(2)$ of unitary $2 \times 2$ matrices of determinant $1$, and the classification of elementary particles is organised by groups such as $SU(3)$. The mathematics of groups is exact; the identification of nature's symmetries is an empirical, and very successful, physical hypothesis.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Monoids make parallel computation possible">
+
+To add a billion numbers on a thousand processors, each processor adds its own million and then the partial sums are added. That this gives the right answer is precisely **associativity**; the identity $0$ is what an idle processor contributes. Programmers use the word "monoid" for exactly this pattern: summing, multiplying, taking maxima, concatenating strings and merging sorted lists are all monoid operations, and a "reduce" or "fold" can be split across machines because of the associative law. Floating-point addition on a computer is commutative but *not* associative — in standard double precision, $(0.1 + 0.2) + 0.3 = 0.6000000000000001$ while $0.1 + (0.2 + 0.3) = 0.6$ — which is why a parallel sum of floating-point numbers can depend on how the work was divided.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="A monoid is a category with one object">
+
+Given a monoid $M$, build a category with a single object $\ast$, one arrow $\ast \to \ast$ for each element of $M$, composition given by the monoid operation and identity arrow given by $1$. The category axioms — associativity and identity laws — are exactly the monoid axioms. Conversely, the arrows from an object to itself in any category form a monoid. A monoid homomorphism is then exactly a functor between such one-object categories, and a group is a one-object category in which every arrow is invertible (a one-object **groupoid**). See <TopicLink id="math.cat.categories">categories</TopicLink> and <TopicLink id="math.cat.functors">functors</TopicLink>; the same idea, one level up, says that a monad is "a monoid in a category of endofunctors" (<TopicLink id="math.cat.monads">monads</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="inverses-and-structure" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **The rules of arithmetic.** Brahmagupta's *Brāhmasphuṭasiddhānta* (628 CE, India) states rules for adding, subtracting and multiplying positive and negative numbers and zero — the ring laws of $\Z$ in words. Al-Khwārizmī's treatise on *al-jabr wa-l-muqābala* (Baghdad, around 820 CE) gave algebra its name, though its subject was solving equations rather than structures.
+- **Remainders and forms.** Carl Friedrich Gauss's *Disquisitiones Arithmeticae* (1801) systematised arithmetic modulo $n$ and introduced a composition of binary quadratic forms — in hindsight, finite abelian groups.
+- **Permutations and groups.** Joseph-Louis Lagrange (1770–71) studied how permuting the roots of a polynomial affects certain expressions in them. Évariste Galois, writing around 1830–32, used the word *groupe* for a set of permutations closed under composition and connected it to the solvability of equations; his work was published by Joseph Liouville in 1846. Arthur Cayley (1854) gave the first definition of an abstract finite group.
+- **Rings and fields.** Richard Dedekind introduced the term *Körper* (field) in 1871, and David Hilbert's report on algebraic number theory (1897) the term *Zahlring*. Abraham Fraenkel gave an axiomatic definition of a ring in 1914. Emmy Noether's paper on ideals in rings (1921) and her school in Göttingen made the abstract, axiomatic approach central, and B. L. van der Waerden's *Moderne Algebra* (1930–31), based on lectures by Noether and Emil Artin, made it the standard way to teach algebra.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Michael Artin, *Algebra* (1991; 2nd ed. 2011) — groups through symmetry and linear algebra, with many geometric examples.
+- Joseph A. Gallian, *Contemporary Abstract Algebra* (many editions) — a gentle first course with a wealth of examples.
+- Charles C. Pinter, *A Book of Abstract Algebra* (1982; Dover reprint 2010) — short chapters with exercises that build the theory step by step.
+- I. N. Herstein, *Topics in Algebra* (1964; 2nd ed. 1975) — a classic, concise and demanding.
+- David S. Dummit and Richard M. Foote, *Abstract Algebra* (1991; 3rd ed. 2004) — a comprehensive reference for groups, rings, modules and fields.
+
+</Section>

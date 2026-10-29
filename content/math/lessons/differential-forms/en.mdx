@@ -1,0 +1,568 @@
+---
+slug: differential-forms
+topic: math.geom.differential-forms
+title: Differential forms and Stokes' theorem
+subtitle: The fundamental theorem of calculus, Green's, Stokes' and the divergence theorem are one theorem, $\int_M d\omega = \int_{\partial M} \omega$ — and where it seems to fail, it is detecting a hole.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6017
+objectives:
+  - Compute with the wedge product, the exterior derivative and pullbacks, and verify $d \circ d = 0$
+  - State and prove Stokes' theorem for cubes and chains, and recover the fundamental theorem of calculus and the theorems of Green, Stokes and Gauss as special cases
+  - Show that $d\theta$ on the punctured plane is closed but not exact, and prove the Poincaré lemma for 1-forms on star-shaped domains
+  - Define de Rham cohomology and explain why $H^1$ of the punctured plane is non-zero
+narrators: []
+lean:
+  - Lumenary.DifferentialForms.wedge
+  - Lumenary.DifferentialForms.wedge_antisymm
+  - Lumenary.DifferentialForms.wedge_self
+  - Lumenary.DifferentialForms.wedge_alternating
+  - Lumenary.DifferentialForms.dx_wedge_dy
+  - Lumenary.DifferentialForms.exterior_anticomm
+  - Lumenary.DifferentialForms.mixed_partials_commute
+  - Lumenary.DifferentialForms.d_squared_zero
+  - Lumenary.DifferentialForms.stokes_interval
+  - Lumenary.DifferentialForms.stokes_rectangle
+  - Lumenary.DifferentialForms.dTheta
+  - Lumenary.DifferentialForms.dTheta_closed
+  - Lumenary.DifferentialForms.circle_path
+  - Lumenary.DifferentialForms.dTheta_on_circle
+  - Lumenary.DifferentialForms.dTheta_circle_integral
+  - Lumenary.DifferentialForms.dTheta_not_exact
+compute: [differential_forms_exterior_calculus, differential_forms_line_integrals]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Four theorems, or one?">
+
+A course in <TopicLink id="math.analysis.multivariable-calculus">multivariable calculus</TopicLink> ends with a list of theorems that look different:
+
+- the **fundamental theorem of calculus**: $\int_a^b f'(x)\,dx = f(b) - f(a)$;
+- **Green's theorem**: $\iint_D \big(\frac{\partial Q}{\partial x} - \frac{\partial P}{\partial y}\big)\,dx\,dy = \oint_{\partial D} P\,dx + Q\,dy$;
+- **Stokes' theorem**: $\iint_S (\nabla \times \mathbf F) \cdot d\mathbf S = \oint_{\partial S} \mathbf F \cdot d\mathbf r$;
+- the **divergence theorem**: $\iiint_V \nabla \cdot \mathbf F\, dV = \iint_{\partial V} \mathbf F \cdot d\mathbf S$.
+
+Each says that integrating some kind of derivative over a region equals integrating the original quantity over the region's boundary. With the right language — **differential forms** — they become literally one statement,
+
+$$
+\int_M d\omega = \int_{\partial M} \omega ,
+$$
+
+valid in every dimension. The same language turns Maxwell's four equations of electromagnetism into two, $dF = 0$ and $d{\star}F = J$, valid in any coordinates and on curved spacetime.
+
+There is a puzzle hiding here too. The vector field $\mathbf F = \big(-y/(x^2 + y^2),\ x/(x^2 + y^2)\big)$ has zero curl everywhere it is defined. Yet its circulation around the unit circle is $2\pi$, not $0$. Green's theorem has not failed: the field is undefined at the origin, which is inside the circle. The surprise is that calculus *noticed the hole*. Making that precise leads to **de Rham cohomology**, where calculus detects topology.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Things you integrate">
+
+A differential form is *something you integrate*. A **1-form** such as $P\,dx + Q\,dy$ is integrated along oriented curves: think of the work done by a force along a path. Reversing the path reverses the sign. A **2-form** is integrated over oriented surfaces: think of the flux of a fluid through a membrane, which depends on which side counts as "out". A **0-form** is a function, "integrated" over points by evaluating it, with signs for orientation.
+
+Orientation is why forms are **alternating**. The 2-form $dx \wedge dy$ assigns to a pair of vectors the signed area of the parallelogram they span, so swapping the vectors changes the sign: $dy \wedge dx = -dx \wedge dy$, and $dx \wedge dx = 0$. That one rule replaces the right-hand rules, cross products and Jacobian determinants of vector calculus.
+
+The **exterior derivative** $d$ measures "how much $\omega$ there is around the boundary of a tiny piece". For a 1-form in the plane, $d\omega$ at a point is the circulation of $\omega$ around a tiny square there, divided by its area. Stokes' theorem then follows from a picture: cut the region into tiny squares and add up their circulations. Each interior edge is traversed twice in opposite directions and cancels, leaving only the outer boundary.
+
+<Figure caption="Why Stokes' theorem holds. Cut a region into small squares and add up the circulation around each: interior edges are traversed once in each direction and cancel, so the total is the circulation around the outer boundary. And each small circulation is approximately dω times the area.">
+<svg viewBox="0 0 300 200" role="img" aria-label="A square divided into a three by two grid of cells, each with an anticlockwise circular arrow; the outer boundary is drawn thick">
+  <rect x="40" y="30" width="220" height="140" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="3.5" />
+  <line x1="113" y1="30" x2="113" y2="170" stroke="var(--ink-2)" strokeWidth="1.2" strokeDasharray="5 4" />
+  <line x1="187" y1="30" x2="187" y2="170" stroke="var(--ink-2)" strokeWidth="1.2" strokeDasharray="5 4" />
+  <line x1="40" y1="100" x2="260" y2="100" stroke="var(--ink-2)" strokeWidth="1.2" strokeDasharray="5 4" />
+  <path d="M90,65 A14,14 0 1 0 76,79" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M164,65 A14,14 0 1 0 150,79" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M238,65 A14,14 0 1 0 224,79" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M90,135 A14,14 0 1 0 76,149" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M164,135 A14,14 0 1 0 150,149" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <path d="M238,135 A14,14 0 1 0 224,149" fill="none" stroke="var(--human)" strokeWidth="2" />
+  <polygon points="76,79 82,73 84,82" fill="var(--human)" />
+  <polygon points="150,79 156,73 158,82" fill="var(--human)" />
+  <polygon points="224,79 230,73 232,82" fill="var(--human)" />
+  <polygon points="76,149 82,143 84,152" fill="var(--human)" />
+  <polygon points="150,149 156,143 158,152" fill="var(--human)" />
+  <polygon points="224,149 230,143 232,152" fill="var(--human)" />
+  <text x="150" y="192" fontSize="12" textAnchor="middle" fill="var(--ink-2)">interior edges cancel; only ∂M remains</text>
+</svg>
+</Figure>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Forms, wedge, d and pullback">
+
+Throughout, $U \subseteq \R^n$ is open, with coordinates $x_1, \dots, x_n$.
+
+<Definition term="alternating forms and the wedge product">
+
+An **alternating $k$-form** on $\R^n$ is a multilinear map $\alpha : (\R^n)^k \to \R$ that changes sign when two arguments are swapped (equivalently, vanishes when two arguments are equal). They form a vector space $\Lambda^k(\R^n)^*$ of dimension $\binom{n}{k}$, with basis $dx_{i_1} \wedge \cdots \wedge dx_{i_k}$ for $i_1 \lt \cdots \lt i_k$. Here $dx_i$ is the $i$-th coordinate functional and
+
+$$
+(dx_{i_1} \wedge \cdots \wedge dx_{i_k})(v_1, \dots, v_k) = \det\big( (v_j)_{i_l} \big)_{l, j = 1}^k .
+$$
+
+The **wedge product** of a $k$-form and an $l$-form is the $(k + l)$-form determined by bilinearity and $dx_I \wedge dx_J = dx_{I \cup J}$ written in order, with the sign of the permutation that sorts $(I, J)$, or $0$ if $I$ and $J$ share an index. For two 1-forms, $(\alpha \wedge \beta)(u, v) = \alpha(u)\beta(v) - \alpha(v)\beta(u)$.
+
+</Definition>
+
+<Definition term="differential form">
+
+A **differential $k$-form** on $U$ is a smooth assignment of an alternating $k$-form to each point:
+
+$$
+\omega = \sum_{i_1 \lt \cdots \lt i_k} f_{i_1 \dots i_k}(x)\, dx_{i_1} \wedge \cdots \wedge dx_{i_k}, \qquad f_I \in C^\infty(U).
+$$
+
+We write $\Omega^k(U)$ for the space of $k$-forms. A 0-form is a smooth function.
+
+</Definition>
+
+<Definition term="exterior derivative">
+
+The **exterior derivative** $d : \Omega^k(U) \to \Omega^{k+1}(U)$ is defined on functions by $df = \sum_i \frac{\partial f}{\partial x_i}\, dx_i$, and on $k$-forms by
+
+$$
+d\Big( \sum_I f_I\, dx_I \Big) = \sum_I df_I \wedge dx_I = \sum_I \sum_i \frac{\partial f_I}{\partial x_i}\, dx_i \wedge dx_I .
+$$
+
+</Definition>
+
+<Definition term="pullback">
+
+If $\varphi : V \to U$ is smooth ($V \subseteq \R^m$ open), the **pullback** $\varphi^*\omega \in \Omega^k(V)$ is $(\varphi^*\omega)_p(v_1, \dots, v_k) = \omega_{\varphi(p)}(D\varphi_p v_1, \dots, D\varphi_p v_k)$. On functions $\varphi^* f = f \circ \varphi$, and $\varphi^*(dx_i) = d\varphi_i$, $\varphi^*(\alpha \wedge \beta) = \varphi^*\alpha \wedge \varphi^*\beta$.
+
+</Definition>
+
+<Definition term="integration over cubes and chains">
+
+For a $k$-form $\omega = f\, dx_1 \wedge \cdots \wedge dx_k$ on $[0, 1]^k$, set $\int_{[0,1]^k} \omega = \int_{[0,1]^k} f\, dx_1 \cdots dx_k$. A **singular $k$-cube** in $U$ is a smooth map $c : [0, 1]^k \to U$, and $\int_c \omega = \int_{[0,1]^k} c^*\omega$. A **$k$-chain** is a formal sum $\sum a_j c_j$ with integer coefficients, integrated linearly. The **boundary** of the standard cube is the $(k-1)$-chain
+
+$$
+\partial [0, 1]^k = \sum_{i=1}^k \sum_{\alpha = 0, 1} (-1)^{i + \alpha}\, I_{(i, \alpha)}, \qquad I_{(i, \alpha)}(t_1, \dots, t_{k-1}) = (t_1, \dots, t_{i-1}, \alpha, t_i, \dots, t_{k-1}),
+$$
+
+and $\partial c = \sum (-1)^{i+\alpha} c \circ I_{(i, \alpha)}$. For $k = 1$, $\partial c = c(1) - c(0)$, and a 0-form is integrated over it as $f(c(1)) - f(c(0))$.
+
+</Definition>
+
+<Definition term="closed, exact, de Rham cohomology">
+
+A form is **closed** if $d\omega = 0$ and **exact** if $\omega = d\eta$ for some form $\eta$. Since $d \circ d = 0$ (Theorem 2), exact forms are closed, and the **de Rham cohomology** groups
+
+$$
+H^k_{\mathrm{dR}}(U) = \frac{\{\text{closed } k\text{-forms}\}}{\{\text{exact } k\text{-forms}\}}
+$$
+
+measure how far closed forms are from being exact.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Vector calculus is exterior calculus in R³">
+
+On $\R^3$, identify a vector field $\mathbf F = (P, Q, R)$ with the 1-form $P\,dx + Q\,dy + R\,dz$ and with the 2-form $P\, dy \wedge dz + Q\, dz \wedge dx + R\, dx \wedge dy$. Then
+
+$$
+df = f_x\, dx + f_y\, dy + f_z\, dz \ \ (\text{grad}), \qquad d(P\,dx + Q\,dy + R\,dz) = (R_y - Q_z)\, dy \wedge dz + (P_z - R_x)\, dz \wedge dx + (Q_x - P_y)\, dx \wedge dy \ \ (\text{curl}),
+$$
+
+$$
+d(P\, dy \wedge dz + Q\, dz \wedge dx + R\, dx \wedge dy) = (P_x + Q_y + R_z)\, dx \wedge dy \wedge dz \ \ (\text{div}).
+$$
+
+The identities $\nabla \times \nabla f = 0$ and $\nabla \cdot (\nabla \times \mathbf F) = 0$ are both $d \circ d = 0$. For example, $d(x^2 y\, dz) = 2xy\, dx \wedge dz + x^2\, dy \wedge dz$.
+
+</Example>
+
+<Example title="Polar coordinates">
+
+Pull back along $\varphi(r, \theta) = (r\cos\theta, r\sin\theta)$. Then $\varphi^* dx = \cos\theta\, dr - r\sin\theta\, d\theta$ and $\varphi^* dy = \sin\theta\, dr + r\cos\theta\, d\theta$. So
+
+$$
+\varphi^*(dx \wedge dy) = (\cos\theta\, dr - r\sin\theta\, d\theta) \wedge (\sin\theta\, dr + r\cos\theta\, d\theta) = r\cos^2\theta\, dr \wedge d\theta - r\sin^2\theta\, d\theta \wedge dr = r\, dr \wedge d\theta .
+$$
+
+The factor $r$ in $dx\,dy = r\,dr\,d\theta$ is the Jacobian determinant, produced automatically by the alternating rule.
+
+</Example>
+
+<Example title="The angle form">
+
+On $U = \R^2 \setminus \{0\}$, let
+
+$$
+d\theta = \frac{x\, dy - y\, dx}{x^2 + y^2} .
+$$
+
+In polar coordinates $\varphi^*(d\theta)$ is literally $d\theta$, as the computation above shows. But the notation is misleading: there is no smooth (or even continuous) function $\theta$ on all of $U$ — the polar angle jumps by $2\pi$ somewhere on every circle around the origin. $d\theta$ is closed (Theorem 5), and its integral over the unit circle $\gamma(t) = (\cos t, \sin t)$ is $\int_0^{2\pi} (\cos t \cdot \cos t - \sin t \cdot (-\sin t))\, dt = 2\pi$.
+
+</Example>
+
+<Example title="A form that measures area">
+
+$\omega = x\, dy - y\, dx$ has $d\omega = dx \wedge dy - dy \wedge dx = 2\, dx \wedge dy$. So by Green's theorem $\frac12 \oint_{\partial D} (x\,dy - y\,dx)$ is the area of $D$. This is the principle of the **planimeter**, an instrument that measures areas on maps and drawings by tracing their boundaries.
+
+</Example>
+
+</Section>
+
+<Section id="algebra-d" kind="proof" title="The wedge product and the exterior derivative">
+
+<Theorem name="Proposition 1 (graded commutativity)">
+
+The wedge product is bilinear and associative, and for a $k$-form $\alpha$ and an $l$-form $\beta$,
+
+$$
+\alpha \wedge \beta = (-1)^{kl}\, \beta \wedge \alpha .
+$$
+
+In particular $\alpha \wedge \alpha = 0$ for every 1-form (indeed every form of odd degree).
+
+</Theorem>
+
+<Proof>
+
+Bilinearity and associativity hold on basis elements, where concatenating index lists is associative and signs of sorting permutations multiply. By bilinearity it suffices to check graded commutativity on $dx_I \wedge dx_J$ with $|I| = k$, $|J| = l$. To turn the list $(I, J)$ into $(J, I)$, move each of the $l$ indices of $J$ to the front past the $k$ indices of $I$: $kl$ transpositions in all, each changing the sign. For a 1-form, $\alpha \wedge \alpha = (-1)^1 \alpha \wedge \alpha$ forces $\alpha \wedge \alpha = 0$.
+
+</Proof>
+
+So 1-forms anticommute, but a 1-form and a 2-form commute: $\alpha \wedge \beta = \beta \wedge \alpha$.
+
+<Theorem name="Theorem 2 (properties of d)">
+
+(a) $d(\alpha \wedge \beta) = d\alpha \wedge \beta + (-1)^k \alpha \wedge d\beta$ for a $k$-form $\alpha$. (b) $d \circ d = 0$. (c) $d$ commutes with pullback: $\varphi^*(d\omega) = d(\varphi^* \omega)$.
+
+</Theorem>
+
+<Proof>
+
+(a) By linearity take $\alpha = f\, dx_I$ and $\beta = g\, dx_J$. Then $\alpha \wedge \beta = fg\, dx_I \wedge dx_J$, and by the product rule
+
+$$
+d(\alpha \wedge \beta) = (g\, df + f\, dg) \wedge dx_I \wedge dx_J = df \wedge dx_I \wedge g\, dx_J + (-1)^k f\, dx_I \wedge dg \wedge dx_J ,
+$$
+
+where moving the 1-form $dg$ past the $k$-form $dx_I$ costs $(-1)^k$ (Proposition 1). This is $d\alpha \wedge \beta + (-1)^k \alpha \wedge d\beta$.
+
+(b) For a function, $d(df) = \sum_{i, j} \frac{\partial^2 f}{\partial x_j \partial x_i}\, dx_j \wedge dx_i$. The coefficients are symmetric in $i, j$ (mixed partials of smooth functions commute) while $dx_j \wedge dx_i$ is antisymmetric, so the terms cancel in pairs and the diagonal terms vanish. For $\omega = f\, dx_I$, $d\omega = df \wedge dx_I$, and by (a), $d(d\omega) = d(df) \wedge dx_I - df \wedge d(dx_I) = 0$, since $d(dx_I) = d(1) \wedge dx_I = 0$.
+
+(c) For functions this is the chain rule: $\varphi^*(df) = \sum_i (\partial_i f \circ \varphi)\, d\varphi_i = d(f \circ \varphi)$. In particular $\varphi^*(dx_i) = d\varphi_i = d(\varphi^* x_i)$. For $\omega = f\, dx_{i_1} \wedge \cdots \wedge dx_{i_k}$, $\varphi^*\omega = (f \circ \varphi)\, d\varphi_{i_1} \wedge \cdots \wedge d\varphi_{i_k}$. By (a) and (b), $d(\varphi^*\omega) = d(f \circ \varphi) \wedge d\varphi_{i_1} \wedge \cdots \wedge d\varphi_{i_k} = \varphi^*(df) \wedge \varphi^*(dx_{i_1}) \wedge \cdots = \varphi^*(d\omega)$.
+
+</Proof>
+
+Property (c) means that $d$ does not depend on coordinates: the same operator works on any manifold, and it is why the definition of $d$ through a coordinate formula is legitimate.
+
+</Section>
+
+<Section id="stokes" kind="proof" title="Stokes' theorem">
+
+<Theorem name="Theorem 3 (Stokes' theorem for chains)">
+
+For every $(k-1)$-form $\omega$ on $U$ and every $k$-chain $c$ in $U$,
+
+$$
+\int_c d\omega = \int_{\partial c} \omega .
+$$
+
+</Theorem>
+
+<Proof>
+
+*Step 1: the standard cube.* By linearity it suffices to take $\omega = f\, dx_1 \wedge \cdots \wedge \widehat{dx_i} \wedge \cdots \wedge dx_k$ (with $dx_i$ omitted) on $[0, 1]^k$. Only the term $\frac{\partial f}{\partial x_i} dx_i$ of $df$ survives in $df \wedge (\cdots)$, and moving $dx_i$ into position $i$ costs $(-1)^{i-1}$:
+
+$$
+d\omega = (-1)^{i-1} \frac{\partial f}{\partial x_i}\, dx_1 \wedge \cdots \wedge dx_k .
+$$
+
+By Fubini and the fundamental theorem of calculus in the variable $x_i$,
+
+$$
+\int_{[0,1]^k} d\omega = (-1)^{i-1} \int_{[0,1]^{k-1}} \big( f(\dots, 1, \dots) - f(\dots, 0, \dots) \big)\, dx_1 \cdots \widehat{dx_i} \cdots dx_k ,
+$$
+
+with $1$ and $0$ in the $i$-th slot. On the other side, $I_{(j, \alpha)}^* \omega = 0$ for $j \ne i$, because along that face $x_j$ is constant, so $dx_j$ pulls back to $0$, and $\omega$ contains $dx_j$. For $j = i$, $I_{(i, \alpha)}^*\omega = f(\dots, \alpha, \dots)\, dt_1 \wedge \cdots \wedge dt_{k-1}$. Hence
+
+$$
+\int_{\partial [0,1]^k} \omega = (-1)^{i+1} \int f(\dots, 1, \dots) + (-1)^{i} \int f(\dots, 0, \dots),
+$$
+
+which is the same.
+
+*Step 2: singular cubes and chains.* For a singular cube $c$, by the definition of the integral, Theorem 2(c) and Step 1,
+
+$$
+\int_c d\omega = \int_{[0,1]^k} c^*(d\omega) = \int_{[0,1]^k} d(c^*\omega) = \int_{\partial [0,1]^k} c^*\omega = \int_{\partial c} \omega ,
+$$
+
+where the last equality holds because $(c \circ I_{(i,\alpha)})^* = I_{(i,\alpha)}^* c^*$. Chains follow by linearity.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Stokes' theorem for manifolds; stated, proof referenced)">
+
+Let $M$ be a compact oriented smooth $k$-manifold with boundary in $\R^n$ (or abstractly), with $\partial M$ given the induced orientation, and let $\omega$ be a smooth $(k-1)$-form on a neighbourhood of $M$. Then $\int_M d\omega = \int_{\partial M} \omega$.
+
+</Theorem>
+
+The proof reduces to Theorem 3 with a partition of unity and orientation-preserving charts (Spivak 1965, chapter 5; Lee, *Introduction to Smooth Manifolds*, chapter 16). The classical theorems are its special cases:
+
+| $k$ | $M$ | $\omega$ | $\int_M d\omega = \int_{\partial M}\omega$ is |
+| --- | --- | --- | --- |
+| 1 | interval $[a, b]$ | function $f$ | $\int_a^b f' = f(b) - f(a)$ (fundamental theorem of calculus) |
+| 1 | curve $\gamma$ in $\R^n$ | function $f$ | $\int_\gamma \nabla f \cdot d\mathbf r = f(\text{end}) - f(\text{start})$ |
+| 2 | region $D \subseteq \R^2$ | $P\,dx + Q\,dy$ | Green's theorem |
+| 2 | surface $S \subseteq \R^3$ | $\mathbf F \cdot d\mathbf r$ | Stokes' (Kelvin–Stokes) theorem |
+| 3 | solid $V \subseteq \R^3$ | $\mathbf F \cdot d\mathbf S$ | divergence (Gauss–Ostrogradsky) theorem |
+
+</Section>
+
+<Section id="closed-exact" kind="proof" title="Closed versus exact: the Poincaré lemma and the angle form">
+
+<Theorem name="Theorem 5 (dθ is closed but not exact)">
+
+The form $d\theta = (x\,dy - y\,dx)/(x^2 + y^2)$ on $\R^2 \setminus \{0\}$ is closed, but it is not $df$ for any smooth function $f$ on $\R^2 \setminus \{0\}$.
+
+</Theorem>
+
+<Proof>
+
+*Closed.* With $P = -y/(x^2 + y^2)$ and $Q = x/(x^2 + y^2)$, $d(P\,dx + Q\,dy) = (Q_x - P_y)\, dx \wedge dy$, and
+
+$$
+Q_x = \frac{(x^2 + y^2) - 2x^2}{(x^2 + y^2)^2} = \frac{y^2 - x^2}{(x^2 + y^2)^2} = P_y .
+$$
+
+*Not exact.* If $d\theta = df$, Stokes' theorem for the 1-cube $\gamma(t) = (\cos 2\pi t, \sin 2\pi t)$, whose boundary $\gamma(1) - \gamma(0)$ is zero, would give $\int_\gamma d\theta = f(\gamma(1)) - f(\gamma(0)) = 0$. But the example above computed $\int_\gamma d\theta = 2\pi$.
+
+</Proof>
+
+The Lean proof of non-exactness is the same argument in calculus form. If $df = d\theta$, then $g(t) = f(\cos t, \sin t)$ has $g'(t) = 1$, so $g(t) - t$ is constant, while $g(2\pi) = g(0)$. Whether closed forms are exact depends on the shape of the domain:
+
+<Theorem name="Theorem 6 (Poincaré lemma)">
+
+Let $U \subseteq \R^n$ be open and star-shaped with respect to $0$ (for every $x \in U$, the segment from $0$ to $x$ lies in $U$). Then every closed $k$-form on $U$ with $k \ge 1$ is exact. We prove the case $k = 1$.
+
+</Theorem>
+
+<Proof>
+
+Let $\omega = \sum_i \omega_i\, dx_i$ be closed, so $\partial_j \omega_i = \partial_i \omega_j$ for all $i, j$. Define $f$ by integrating $\omega$ along the segment from $0$ to $x$:
+
+$$
+f(x) = \int_0^1 \sum_i \omega_i(tx)\, x_i\, dt .
+$$
+
+The integrand is smooth in $(t, x)$, so we may differentiate under the integral sign:
+
+$$
+\frac{\partial f}{\partial x_j}(x) = \int_0^1 \Big( \omega_j(tx) + \sum_i t\, x_i\, (\partial_j \omega_i)(tx) \Big) dt = \int_0^1 \Big( \omega_j(tx) + t \sum_i x_i\, (\partial_i \omega_j)(tx) \Big) dt ,
+$$
+
+using closedness. The integrand is exactly $\frac{d}{dt}\big( t\, \omega_j(tx) \big)$, so the integral is $1 \cdot \omega_j(x) - 0 = \omega_j(x)$. Hence $df = \omega$.
+
+</Proof>
+
+For general $k$, the same idea gives a linear operator $K : \Omega^k(U) \to \Omega^{k-1}(U)$ with $dK + Kd = \mathrm{id}$ on forms of degree $\ge 1$. If $d\omega = 0$, then $\omega = d(K\omega)$ (Spivak 1965, Theorem 4-11). The punctured plane is not star-shaped, and Theorem 5 shows that the conclusion fails there.
+
+<Theorem name="Corollary 7 (first de Rham cohomology of the punctured plane)">
+
+$H^1_{\mathrm{dR}}(\R^2 \setminus \{0\}) \cong \R$, spanned by the class of $d\theta$. A closed 1-form $\omega$ is exact if and only if $\oint_{|x| = 1} \omega = 0$.
+
+</Theorem>
+
+<Proof>
+
+$[d\theta] \ne 0$ by Theorem 5. Let $\omega$ be closed and $c = \frac{1}{2\pi}\oint_{|x|=1} \omega$. Then $\eta = \omega - c\, d\theta$ is closed with $\oint_{|x|=1} \eta = 0$. We show $\eta$ is exact. On the slit plane $V_1 = \R^2$ minus the closed negative $x$-axis, which is star-shaped (with respect to $(1, 0)$), the Poincaré lemma gives $\eta = df_1$. On $V_2 = \R^2$ minus the closed positive $x$-axis, it gives $\eta = df_2$. On $V_1 \cap V_2$, the union of the open upper and lower half-planes, $d(f_1 - f_2) = 0$, so $f_1 - f_2$ is a constant on each half-plane: $a$ on the upper one and $b$ on the lower one. Split the unit circle at $(1, 0)$, $p_+ = (0, 1)$, $(-1, 0)$ and $p_- = (0, -1)$. The two arcs touching $(1, 0)$ lie in $V_1$ and the two touching $(-1, 0)$ lie in $V_2$, so integrating $\eta = df_1$ or $df_2$ arc by arc gives
+
+$$
+0 = \oint \eta = \big(f_1(p_+) - f_1(1, 0)\big) + \big(f_2(-1, 0) - f_2(p_+)\big) + \big(f_2(p_-) - f_2(-1, 0)\big) + \big(f_1(1, 0) - f_1(p_-)\big) = a - b .
+$$
+
+So $a = b$, and $f = f_1$ on $V_1$, $f = f_2 + a$ on $V_2$ is a well-defined smooth function on $\R^2 \setminus \{0\}$ with $df = \eta$. Hence $[\omega] = c\,[d\theta]$.
+
+</Proof>
+
+De Rham's theorem (1931) generalises this. For any smooth manifold $M$, $H^k_{\mathrm{dR}}(M)$ is isomorphic to the singular cohomology $H^k(M; \R)$, a purely topological invariant. Calculus detects holes: $\dim H^1_{\mathrm{dR}}$ of the plane with $m$ points removed is $m$, of the torus $2$, of the sphere $0$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Differential forms in Lean and Mathlib">
+
+Mathlib represents a differential $n$-form on a normed space $E$ as a map $E \to (E \mathbin{[\bigwedge^{\mathrm{Fin}\,n}]\!\!\to\!L[\R]} F)$ into continuous alternating maps, and defines the exterior derivative `extDeriv`. It proves $d \circ d = 0$ and that $d$ commutes with pullback, and it has the exterior algebra and the divergence theorem on boxes. It does not (yet) have integration of forms over manifolds or the general Stokes theorem.
+
+First the wedge product of two 1-forms, its antisymmetry, and $dx \wedge dy$ as signed area, alongside Mathlib's exterior algebra:
+
+<Lean decl="Lumenary.DifferentialForms.wedge" />
+
+<Lean decl="Lumenary.DifferentialForms.wedge_antisymm" />
+
+<Lean decl="Lumenary.DifferentialForms.wedge_self" />
+
+<Lean decl="Lumenary.DifferentialForms.wedge_alternating" />
+
+<Lean decl="Lumenary.DifferentialForms.dx_wedge_dy" />
+
+<Lean decl="Lumenary.DifferentialForms.exterior_anticomm" />
+
+Then $d \circ d = 0$, both as the symmetry of mixed partials (the heart of Theorem 2(b)) and as Mathlib's general theorem about `extDeriv`:
+
+<Lean decl="Lumenary.DifferentialForms.mixed_partials_commute" />
+
+<Lean decl="Lumenary.DifferentialForms.d_squared_zero" />
+
+Stokes' theorem in dimension one (the fundamental theorem of calculus) and on a rectangle (Green's theorem in divergence form), cited from Mathlib:
+
+<Lean decl="Lumenary.DifferentialForms.stokes_interval" />
+
+<Lean decl="Lumenary.DifferentialForms.stokes_rectangle" />
+
+Finally the main independent result, Theorem 5. The angle form is defined pointwise as a continuous linear functional; it is closed; it pulls back to $dt$ on the circle, so its integral is $2\pi$; and it is not the derivative of any function on the punctured plane:
+
+<Lean decl="Lumenary.DifferentialForms.dTheta" />
+
+<Lean decl="Lumenary.DifferentialForms.dTheta_closed" />
+
+<Lean decl="Lumenary.DifferentialForms.circle_path" />
+
+<Lean decl="Lumenary.DifferentialForms.dTheta_on_circle" />
+
+<Lean decl="Lumenary.DifferentialForms.dTheta_circle_integral" />
+
+<Lean decl="Lumenary.DifferentialForms.dTheta_not_exact" />
+
+**What is and is not formalised.** Independent: the algebra of the wedge product of two 1-forms, the closedness of $d\theta$ (as an equality of partial derivatives), its circle integral and its non-exactness. Cited from Mathlib: anticommutativity in the exterior algebra, symmetry of second derivatives, $d \circ d = 0$, the fundamental theorem of calculus and the divergence theorem on rectangles. Not formalised: Theorem 3 for general chains, Theorem 4, the Poincaré lemma and Corollary 7. In `dTheta_not_exact`, $f$ is only assumed differentiable on the punctured plane, which makes the theorem stronger than Theorem 5.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Exterior calculus and line integrals by computer">
+
+The first program implements forms on $\R^3$ as dictionaries of SymPy coefficients, with the wedge product and $d$. It verifies $d \circ d = 0$, graded commutativity and the Leibniz rule for forms with *arbitrary* coefficient functions, and it displays grad, curl and div inside $d$. It also checks Stokes' theorem exactly on the unit cube for one vector field.
+
+<Python id="differential_forms_exterior_calculus" />
+
+The second program integrates 1-forms numerically along paths by pulling them back to $[0, 1]$. An exact form gives $0$ around every loop. The angle form gives $2\pi$ times the winding number, and it gives different answers along two paths with the same endpoints — the computational face of Theorem 5.
+
+<Python id="differential_forms_line_integrals" />
+
+The symbolic checks hold for all coefficient functions, but only because SymPy treats mixed partial derivatives as equal, which is true for $C^2$ functions. The numerical integrals are evidence on particular paths. The theorems are proved above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: circulation, curl and the hole">
+
+The first field is the rotation $(-y, x)$, the vector field of $x\,dy - y\,dx$. Drag the loop anywhere: the circulation $\oint \mathbf F \cdot d\mathbf r$ always equals $\iint \operatorname{curl} \mathbf F\, dA = 2 \times \text{area}$, as Green's theorem says.
+
+<VectorField mode="field" preset="rotation" title="Circulation equals the integral of curl" />
+
+The second field is the vortex $\big(-y/(x^2 + y^2), x/(x^2 + y^2)\big)$, the field of $d\theta$. Its curl is zero wherever it is defined. Move the loop so that it does not enclose the origin: the circulation is $0$. Now let it enclose the origin: the circulation jumps to $2\pi$, while $\iint \operatorname{curl}$ over the region away from the singularity is still $0$. Green's theorem does not apply, because the field is undefined at a point inside — and that defect is exactly the non-zero class $[d\theta] \in H^1_{\mathrm{dR}}$.
+
+<VectorField mode="field" f="-y/(x^2 + y^2)" g="x/(x^2 + y^2)" title="A vortex: circulation without curl" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"$d\theta$ is exact, because it is written as $d$ of something."** The notation is a convenient name, not a theorem. There is no continuous function $\theta$ on $\R^2 \setminus \{0\}$ whose differential is $d\theta$: any choice of polar angle jumps by $2\pi$ somewhere. Locally, on a slit plane, $d\theta$ *is* exact — exactness is a global question.
+
+</Misconception>
+
+<Misconception>
+
+**"The wedge product is commutative."** For 1-forms it is anticommutative: $dx \wedge dy = -dy \wedge dx$ and $dx \wedge dx = 0$. In general $\alpha \wedge \beta = (-1)^{kl}\beta \wedge \alpha$, so it is commutative only when $kl$ is even, for example a 1-form and a 2-form, or anything with a function.
+
+</Misconception>
+
+<Misconception>
+
+**"Closed forms are always exact."** Exact implies closed everywhere. Closed implies exact on star-shaped (more generally, contractible) domains, but not in general. The failure is measured by de Rham cohomology, a topological invariant: $d\theta$ on the punctured plane is the basic example.
+
+</Misconception>
+
+<Misconception>
+
+**"$df$ is the gradient vector."** $df$ is a 1-form — at each point a linear functional that eats a vector $v$ and returns the directional derivative $df(v)$. Turning it into a vector $\nabla f$ needs an inner product: in other coordinates, or on a curved surface, the components of $df$ and of $\nabla f$ differ. Forms need no metric. That is why Stokes' theorem holds in any coordinates.
+
+</Misconception>
+
+<Misconception>
+
+**"Stokes' theorem holds for any region and any form."** It needs a compact oriented region (with the induced orientation on the boundary) and a form that is smooth on all of it. Drop smoothness at one point — $d\theta$ on the unit disc — and "$\iint_D d(d\theta) = 0 \ne 2\pi = \oint d\theta$". The theorem is not wrong; its hypothesis fails at the origin.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Calculus detects holes: de Rham's theorem">
+
+The **de Rham complex** $0 \to \Omega^0(M) \xrightarrow{d} \Omega^1(M) \xrightarrow{d} \Omega^2(M) \to \cdots$ is a cochain complex because $d \circ d = 0$, and its cohomology $H^k_{\mathrm{dR}}(M)$ is defined by calculus alone. De Rham's theorem says it equals the singular cohomology $H^k(M; \R)$, defined by triangulating $M$ and counting. The pairing is integration: a closed $k$-form integrated over $k$-cycles, which by Stokes depends only on cohomology and homology classes. So $\dim H^k_{\mathrm{dR}}(M)$ is the $k$-th Betti number. Homotopy invariance and the Mayer–Vietoris sequence make these groups computable. The proof of Corollary 7 is a small Mayer–Vietoris argument. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink> and the winding numbers of <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>: $\frac{1}{2\pi}\oint_\gamma d\theta$ is the degree of $\gamma$.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Orientation, volume and symplectic forms">
+
+On an oriented $n$-manifold a nowhere-vanishing $n$-form is a **volume form**, and integration of $n$-forms is how manifolds are measured. A Riemannian metric gives a canonical one, $\sqrt{\det g}\, dx_1 \wedge \cdots \wedge dx_n$; on a surface it is the $dA$ of Gauss–Bonnet. A **symplectic form**, a closed non-degenerate 2-form such as $\omega = \sum_i dp_i \wedge dq_i$ on phase space, is the geometry of classical mechanics. Hamiltonian flows preserve it, hence also its top power $\omega^n$, the phase-space volume (Liouville's theorem); see <TopicLink id="math.geom.symplectic-geometry">symplectic geometry</TopicLink>. Curvature itself becomes a 2-form, and Chern's proof of the higher-dimensional Gauss–Bonnet theorem integrates a polynomial in curvature forms; see <TopicLink id="math.geom.curves-surfaces">curves and surfaces</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Harmonic forms and the Hodge theorem">
+
+Given a Riemannian metric, there is a **Hodge star** $\star : \Omega^k \to \Omega^{n-k}$, an adjoint $d^* = \pm \star d \star$, and a Laplacian $\Delta = dd^* + d^*d$ on forms. The **Hodge theorem** (Hodge, 1930s; made rigorous with elliptic PDE methods by Weyl, Kodaira and others) says that on a compact oriented Riemannian manifold every de Rham class contains exactly one **harmonic** form ($\Delta\omega = 0$). Hence $H^k_{\mathrm{dR}}(M)$ is the space of harmonic $k$-forms, a finite-dimensional solution space of an elliptic PDE. For the flat torus $\R^2/\Z^2$, $dx$ and $dy$ are harmonic and span $H^1$. Analysis, geometry and topology meet here; see <TopicLink id="math.geom.complex-kahler-geometry">Hodge theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Maxwell's equations in two lines">
+
+In spacetime $\R^4$, the electric and magnetic fields combine into one 2-form, the **Faraday form** $F = \sum_i E_i\, dx_i \wedge dt + B_1\, dy \wedge dz + B_2\, dz \wedge dx + B_3\, dx \wedge dy$. Maxwell's four equations become
+
+$$
+dF = 0, \qquad d{\star}F = J ,
+$$
+
+with $\star$ the Hodge star of the Minkowski metric and $J$ the current 3-form (in suitable units). The first packages Faraday's law and "no magnetic monopoles"; the second, Gauss's and Ampère's laws. Charge conservation $dJ = 0$ is $d \circ d = 0$. On a contractible region, $dF = 0$ gives a potential, $F = dA$, by the Poincaré lemma. Around a solenoid or a hypothetical monopole the region has topology, and $F$ need not be exact. Physically this shows up in the Aharonov–Bohm effect and in Dirac's argument (1931) that magnetic monopoles would force electric charge to be quantised — a physical argument whose mathematics is the cohomology class of $F$. See <TopicLink id="math.applied.relativity">relativity</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The exterior algebra">
+
+Pointwise, forms live in the **exterior algebra** $\Lambda(V^*) = \bigoplus_k \Lambda^k V^*$, the quotient of the tensor algebra by $v \otimes v$. It is graded-commutative, with $\dim \Lambda^k = \binom{n}{k}$ and total dimension $2^n$. Its top piece is one-dimensional, and a linear map $T$ acts on it by multiplication by $\det T$ — a basis-free definition of the determinant; see <TopicLink id="math.algebra.advanced-linear-algebra">advanced linear algebra</TopicLink>. Globally, $(\Omega^\bullet(M), \wedge, d)$ is a **differential graded algebra**, so de Rham cohomology is a graded ring under the wedge product. On the torus, $[dx] \cup [dy] = [dx \wedge dy] \ne 0$, which detects that the two circles intersect. Rational homotopy theory (Sullivan, 1977) recovers much of the homotopy type of a simply connected space from this algebra.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Naturality">
+
+Theorem 2(c), $\varphi^* d = d \varphi^*$, says that $d$ is a **natural transformation**. Forms $\Omega^k$ are contravariant functors from smooth manifolds to vector spaces, and $d : \Omega^k \Rightarrow \Omega^{k+1}$ commutes with every pullback. Hence de Rham cohomology is a functor $H^k_{\mathrm{dR}} : \cat{Man}^{\mathrm{op}} \to \cat{Vect}_\R$, and smoothly homotopic maps induce the same map on cohomology. Stokes' theorem says that integration is a natural pairing between this functor and (smooth) homology. In <TopicLink id="math.geom.sheaves">sheaf</TopicLink> language, the Poincaré lemma says the de Rham complex is a resolution of the constant sheaf $\R$ — the structural reason behind de Rham's theorem.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **The integral theorems.** Gauss treated special cases of the divergence theorem in his work on attraction (1813). Mikhail Ostrogradsky, in Paris and later St Petersburg, proved it in general (1826, published 1831). George Green, a largely self-taught miller from Nottingham, published his theorem in an essay printed by subscription in 1828. William Thomson (Lord Kelvin) stated the theorem now called Stokes' in a letter to George Gabriel Stokes in 1850, and Stokes set it as a question in the Cambridge Smith's Prize examination of 1854.
+- **The algebra.** Hermann Grassmann's *Ausdehnungslehre* (1844) introduced the exterior algebra, decades ahead of its time and long neglected.
+- **Forms.** Henri Poincaré used integral invariants in celestial mechanics (1890s) and stated the lemma now named after him. Élie Cartan introduced differential forms with the exterior derivative in 1899 and made them a working tool in geometry and Lie theory. Vito Volterra worked on related "functions of lines" in the 1880s.
+- **Cohomology.** Georges de Rham proved his theorem in his 1931 thesis in Paris, connecting Cartan's forms to Poincaré's topology. W. V. D. Hodge developed harmonic forms in the 1930s (*The Theory and Applications of Harmonic Integrals*, 1941). Physicists adopted forms for Maxwell's equations and gauge theory in the twentieth century.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Michael Spivak, *Calculus on Manifolds* (1965) — short and rigorous; chapters 4–5 prove Stokes' theorem as above.
+- Manfredo P. do Carmo, *Differential Forms and Applications* (1994).
+- Harold M. Edwards, *Advanced Calculus: A Differential Forms Approach* (1969) — forms from the start, with motivation.
+- Raoul Bott and Loring W. Tu, *Differential Forms in Algebraic Topology* (1982) — de Rham cohomology, Mayer–Vietoris and much more.
+- Vladimir I. Arnold, *Mathematical Methods of Classical Mechanics* (1978), chapter 7 — forms in mechanics.
+
+</Section>

@@ -1,0 +1,480 @@
+---
+slug: harmonic-analysis
+topic: math.analysis.harmonic-analysis
+title: Fourier and harmonic analysis
+subtitle: Every reasonable function is a superposition of pure frequencies — but "reasonable", "superposition" and "is" each hide a theorem, and the search for them created much of modern analysis.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7027
+objectives:
+  - Define Fourier coefficients, the Fourier transform and convolution, and use convolution with approximate identities to prove Fejér's theorem
+  - Prove Parseval's identity on the circle and the inversion and Plancherel theorems for the Fourier transform on $\R$
+  - Compute Fourier transforms, including that of the Gaussian, and prove and apply the Poisson summation formula
+  - State and prove the Heisenberg uncertainty inequality
+  - Describe honestly what is known about pointwise convergence (Dirichlet, du Bois-Reymond, Kolmogorov, Carleson) and explain the Gibbs phenomenon
+  - Recognise characters and Pontryagin duality as the common frame of Fourier series, transforms and finite Fourier analysis
+narrators: []
+lean:
+  - Lumenary.HarmonicAnalysis.roots_of_unity_sum
+  - Lumenary.HarmonicAnalysis.orthonormal_exponentials
+  - Lumenary.HarmonicAnalysis.parseval
+  - Lumenary.HarmonicAnalysis.fourier_coeff_tendsto_zero
+  - Lumenary.HarmonicAnalysis.fourier_bound
+  - Lumenary.HarmonicAnalysis.riemann_lebesgue
+  - Lumenary.HarmonicAnalysis.plancherel
+  - Lumenary.HarmonicAnalysis.gaussian_self_dual
+  - Lumenary.HarmonicAnalysis.poisson_summation
+  - Lumenary.HarmonicAnalysis.theta_functional_equation
+  - Lumenary.HarmonicAnalysis.basel
+compute: [harmonic_analysis_gibbs_fejer, harmonic_analysis_poisson_uncertainty]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Fourier's audacious claim">
+
+In 1807 Joseph Fourier told the Paris Academy that the temperature in a heated bar could be computed by writing *any* initial temperature profile as a sum of sines and cosines, each of which evolves independently: $e^{inx}$ simply decays like $e^{-n^2 t}$ under the heat equation. Lagrange objected that a discontinuous function could not possibly be a sum of smooth waves. Both were partly right, and settling the dispute took a century: Dirichlet's convergence theorem (1829), Riemann's integral (1854), Cantor's set theory (born from the study of sets where trigonometric series may misbehave), and Lebesgue's integral and the Riesz–Fischer theorem (1902–1907) all came out of it.
+
+Today Fourier analysis is everywhere: it diagonalises every translation-invariant linear operation (differential operators, filters, convolutions), it is how MRI scanners and phone networks work, it proves theorems about primes, and its uncertainty principle is a law of physics. **Harmonic analysis** is the general theory: decompose functions on a group into characters, and study how size, smoothness and localisation on one side are reflected on the other.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Characters diagonalise translation">
+
+Why exponentials? Translation $\tau_a f(x) = f(x - a)$ acts on functions, and $e^{inx}$ is an eigenvector of every translation at once: $\tau_a e^{inx} = e^{-ina} e^{inx}$. So any operator that commutes with translations — differentiation, the heat flow, convolution with a fixed kernel — is diagonal in the basis of exponentials. Differentiation becomes multiplication by $in$; convolution becomes multiplication of coefficients.
+
+Three dictionaries follow, and recur throughout the subject:
+
+- **Smoothness ↔ decay.** If $f$ has $k$ integrable derivatives, $|\hat f(n)| = O(|n|^{-k})$; jumps produce $1/n$ decay and the slow, oscillating convergence of the Gibbs phenomenon.
+- **Convolution ↔ multiplication.** $\widehat{f * g} = \hat f \, \hat g$. Averaging a function against a peaked kernel smooths it, and on the Fourier side multiplies by a factor near $1$ at low frequencies.
+- **Localisation ↔ spread.** A function concentrated near a point has a Fourier transform spread over many frequencies, and conversely. The Heisenberg inequality quantifies this, and the Gaussian is the perfect compromise.
+
+The deep difficulties are about **limits**: in what sense does $\sum \hat f(n) e^{inx}$ converge to $f$? In $L^2$, always (a Hilbert space fact). Uniformly, after averaging (Fejér). Pointwise, the answer is subtle and was only settled in 1966.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Coefficients, transforms and kernels">
+
+Write $\mathbb T = \R / 2\pi\Z$ for the circle, with functions on $\mathbb T$ identified with $2\pi$-periodic functions on $\R$.
+
+<Definition term="Fourier coefficients and partial sums">
+
+For $f \in L^1(\mathbb T)$ and $n \in \Z$, the **Fourier coefficient** is $\hat f(n) = \frac{1}{2\pi} \int_{-\pi}^{\pi} f(x) e^{-inx} \, dx$, and the **partial sums** of the Fourier series are $S_N f(x) = \sum_{|n| \le N} \hat f(n) e^{inx}$. The **Cesàro (Fejér) means** are $\sigma_N f = \frac1N \sum_{n=0}^{N-1} S_n f$.
+
+</Definition>
+
+<Definition term="convolution and approximate identities">
+
+On $\mathbb T$, $(f * g)(x) = \frac{1}{2\pi} \int_{-\pi}^{\pi} f(x - y) g(y) \, dy$; on $\R$, $(f * g)(x) = \int_\R f(x - y) g(y) \, dy$. A family of kernels $(K_N)$ on $\mathbb T$ is an **approximate identity** (a "good kernel") if
+
+1. $\frac{1}{2\pi} \int_{-\pi}^{\pi} K_N(x) \, dx = 1$ for all $N$;
+2. $\frac{1}{2\pi} \int_{-\pi}^{\pi} |K_N(x)| \, dx \le M$ for some $M$ and all $N$;
+3. for every $\delta > 0$, $\int_{\delta \le |x| \le \pi} |K_N(x)| \, dx \to 0$ as $N \to \infty$.
+
+</Definition>
+
+<Definition term="Dirichlet and Fejér kernels">
+
+$D_N(x) = \sum_{|n| \le N} e^{inx} = \dfrac{\sin\big((N + \frac12)x\big)}{\sin(x/2)}$ and $F_N(x) = \dfrac1N \sum_{n=0}^{N-1} D_n(x)$. Then $S_N f = f * D_N$ and $\sigma_N f = f * F_N$.
+
+</Definition>
+
+<Definition term="Fourier transform and Schwartz space">
+
+For $f \in L^1(\R)$, the **Fourier transform** is $\hat f(\xi) = \int_\R f(x) e^{-2\pi i x \xi} \, dx$. The **Schwartz space** $\mathcal S(\R)$ consists of smooth $f$ with $\sup_x |x^k f^{(m)}(x)| < \infty$ for all $k, m \ge 0$; the Fourier transform maps $\mathcal S(\R)$ to itself, and $\widehat{f'}(\xi) = 2\pi i \xi \hat f(\xi)$, $\widehat{(-2\pi i x) f}(\xi) = (\hat f)'(\xi)$.
+
+</Definition>
+
+With this normalisation of the transform no factors of $2\pi$ appear in the inversion formula $f(x) = \int \hat f(\xi) e^{2\pi i x \xi} \, d\xi$ or in Plancherel's theorem. Other books use $e^{-ix\xi}$ and put $\frac{1}{2\pi}$ or $\frac{1}{\sqrt{2\pi}}$ elsewhere; always check the convention.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="The square wave and the Gibbs phenomenon">
+
+Let $f = \operatorname{sign}(\sin x)$ on $\mathbb T$. Since $f$ is odd, $\hat f(n) = \frac{1}{2\pi}\int_{-\pi}^{\pi} f(x) e^{-inx} \, dx = \frac{-i}{\pi}\int_0^\pi \sin(nx)\,dx = \frac{-i\,(1 - (-1)^n)}{\pi n}$, which is $\frac{2}{\pi i n}$ for odd $n$ and $0$ for even $n$. Pairing $n$ with $-n$,
+
+$$
+S_{2M-1} f(x) = \frac4\pi \sum_{j=1}^{M} \frac{\sin\big((2j - 1)x\big)}{2j - 1}.
+$$
+
+At $x = \pi/(2M)$, with $t_j = (2j-1)\pi/(2M)$, each term is $\frac{4}{\pi} \frac{\sin t_j}{2j - 1} = \frac2\pi \cdot \frac{\pi}{M} \cdot \frac{\sin t_j}{t_j}$, so $S_{2M-1} f(\pi/2M)$ is $\frac2\pi$ times a midpoint Riemann sum for $\int_0^\pi \frac{\sin t}{t} \, dt$:
+
+$$
+S_{2M-1} f\Big(\frac{\pi}{2M}\Big) \longrightarrow \frac2\pi \operatorname{Si}(\pi) = 1.17898\ldots \quad (M \to \infty).
+$$
+
+The partial sums overshoot the value $1$ by about $0.179$, which is $8.95\%$ of the jump $2$, at points ever closer to the jump. The convergence is pointwise everywhere (to $0$ at the jump, the average of the one-sided limits) but not uniform near $0$: the **Gibbs phenomenon**.
+
+</Example>
+
+<Example title="The Fejér kernel is positive">
+
+Let $\omega = e^{ix}$. Expanding the square,
+
+$$
+\Big|\sum_{k=0}^{N-1} \omega^k\Big|^2 = \sum_{k, l = 0}^{N-1} \omega^{k - l} = \sum_{|j| < N} (N - |j|) \, \omega^j = \sum_{n=0}^{N-1} D_n(x),
+$$
+
+because the frequency $j$ occurs in $D_n$ exactly for $n \ge |j|$, that is, $N - |j|$ times. Summing the geometric series, $\big|\sum_{k < N} \omega^k\big|^2 = \frac{|1 - \omega^N|^2}{|1 - \omega|^2} = \frac{\sin^2(Nx/2)}{\sin^2(x/2)}$. Hence
+
+$$
+F_N(x) = \frac1N \, \frac{\sin^2(Nx/2)}{\sin^2(x/2)} \ge 0.
+$$
+
+The Dirichlet kernel, by contrast, oscillates in sign, and $\frac{1}{2\pi} \int |D_N| = \frac{4}{\pi^2} \log N + O(1) \to \infty$ (the Lebesgue constants).
+
+</Example>
+
+<Example title="The Gaussian is its own Fourier transform">
+
+Let $f(x) = e^{-\pi x^2}$ and $F = \hat f$. Differentiating under the integral sign (justified by dominated convergence, with dominating function $2\pi|x| e^{-\pi x^2}$) and integrating by parts,
+
+$$
+F'(\xi) = \int e^{-\pi x^2} (-2\pi i x) e^{-2\pi i x \xi} \, dx = i \int \big(e^{-\pi x^2}\big)' e^{-2\pi i x \xi} \, dx = -2\pi \xi \, F(\xi).
+$$
+
+So $F(\xi) = F(0) e^{-\pi \xi^2}$, and $F(0) = \int e^{-\pi x^2} dx = 1$. Thus $\hat f = f$. By scaling, the transform of $e^{-\pi t x^2}$ ($t > 0$) is $t^{-1/2} e^{-\pi \xi^2/t}$: a narrow Gaussian has a wide transform.
+
+</Example>
+
+<Example title="Transforms that are not integrable">
+
+The indicator $\mathbf 1_{[-1/2, 1/2]}$ has transform $\frac{\sin \pi\xi}{\pi\xi}$, which is not in $L^1(\R)$. So the Fourier transform does not map $L^1$ into $L^1$, and the inversion formula needs care: it holds in the $L^2$ sense, or pointwise at points of continuity after Cesàro-type summation.
+
+</Example>
+
+</Section>
+
+<Section id="circle" kind="proof" title="Fourier series: Fejér, Parseval and Riemann–Lebesgue">
+
+<Theorem name="Theorem (approximate identities)">
+
+If $(K_N)$ is an approximate identity and $f$ is continuous on $\mathbb T$, then $f * K_N \to f$ uniformly. If $f \in L^p(\mathbb T)$, $1 \le p < \infty$, then $f * K_N \to f$ in $L^p$.
+
+</Theorem>
+
+<Proof>
+
+By property 1, $(f * K_N)(x) - f(x) = \frac{1}{2\pi} \int_{-\pi}^{\pi} \big(f(x - y) - f(x)\big) K_N(y) \, dy$. Let $\varepsilon > 0$. A continuous function on the compact space $\mathbb T$ is uniformly continuous, so there is $\delta > 0$ with $|f(x - y) - f(x)| < \varepsilon$ whenever $|y| < \delta$. Splitting the integral,
+
+$$
+|(f * K_N)(x) - f(x)| \le \frac{\varepsilon}{2\pi} \int_{|y| < \delta} |K_N| + \frac{2\|f\|_\infty}{2\pi} \int_{\delta \le |y| \le \pi} |K_N| \le \varepsilon M + \frac{\|f\|_\infty}{\pi} \int_{\delta \le |y| \le \pi} |K_N|,
+$$
+
+uniformly in $x$, by property 2. By property 3 the last term is $< \varepsilon$ for large $N$. For $f \in L^p$, the same argument applies to $y \mapsto \|\tau_y f - f\|_p$, which is continuous (approximate $f$ in $L^p$ by continuous functions) and enters via Minkowski's integral inequality.
+
+</Proof>
+
+<Theorem name="Fejér's theorem (1900)">
+
+For every continuous $f$ on $\mathbb T$, $\sigma_N f \to f$ uniformly. Consequently trigonometric polynomials are dense in $C(\mathbb T)$ and in $L^2(\mathbb T)$, and a continuous (or integrable) function with all Fourier coefficients zero vanishes (almost everywhere).
+
+</Theorem>
+
+<Proof>
+
+We check that $(F_N)$ is an approximate identity. Each $D_n$ has $\frac{1}{2\pi}\int D_n = 1$ (only the constant term survives), so $\frac{1}{2\pi}\int F_N = 1$; since $F_N \ge 0$, also $\frac{1}{2\pi}\int |F_N| = 1$. For $\delta \le |x| \le \pi$ we have $\sin^2(x/2) \ge \sin^2(\delta/2)$, so $F_N(x) \le \frac{1}{N \sin^2(\delta/2)} \to 0$ uniformly there. The previous theorem gives uniform convergence. The $\sigma_N f$ are trigonometric polynomials, so these are dense in $C(\mathbb T)$, which is dense in $L^2(\mathbb T)$. If all $\hat f(n) = 0$, every $\sigma_N f = 0$, so $f = \lim \sigma_N f = 0$ (in $L^1$, for integrable $f$).
+
+</Proof>
+
+<Theorem name="Parseval's theorem">
+
+The functions $e_n(x) = e^{inx}$ form an orthonormal basis of $L^2(\mathbb T)$ with $\langle f, g \rangle = \frac{1}{2\pi}\int_{-\pi}^{\pi} f \bar g$. Hence for every $f \in L^2(\mathbb T)$, $S_N f \to f$ in $L^2$ and
+
+$$
+\sum_{n \in \Z} |\hat f(n)|^2 = \frac{1}{2\pi} \int_{-\pi}^{\pi} |f(x)|^2 \, dx.
+$$
+
+Conversely (Riesz–Fischer) every square-summable sequence $(c_n)$ is the coefficient sequence of a unique $f \in L^2(\mathbb T)$.
+
+</Theorem>
+
+<Proof>
+
+Orthonormality is the computation $\frac{1}{2\pi}\int e^{i(m - n)x} dx = \delta_{mn}$, and $\hat f(n) = \langle f, e_n \rangle$. By Fejér's theorem their span is dense, so they form an orthonormal basis, and the theorem on orthonormal bases from <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink> gives $L^2$ convergence and Parseval's identity. Riesz–Fischer is the surjectivity of the isometry $L^2(\mathbb T) \to \ell^2(\Z)$, $f \mapsto (\hat f(n))$, which follows from completeness of $L^2$.
+
+</Proof>
+
+Applied to the square wave, Parseval gives $\sum_{n \text{ odd}} \frac{4}{\pi^2 n^2} = 1$, that is, $1 + \frac19 + \frac1{25} + \cdots = \frac{\pi^2}{8}$, and hence $\sum_{n \ge 1} \frac1{n^2} = \frac{\pi^2}{6}$.
+
+<Theorem name="Riemann–Lebesgue lemma">
+
+If $f \in L^1(\mathbb T)$ then $\hat f(n) \to 0$ as $|n| \to \infty$; if $f \in L^1(\R)$ then $\hat f$ is continuous and $\hat f(\xi) \to 0$ as $|\xi| \to \infty$.
+
+</Theorem>
+
+<Proof>
+
+For $f \in L^2(\mathbb T)$ this follows from Parseval: the terms of a convergent series tend to $0$. In general, $|\hat f(n) - \hat g(n)| \le \frac{1}{2\pi}\|f - g\|_1$, and $L^2$ (even trigonometric polynomials) is dense in $L^1$: given $\varepsilon$, choose a trigonometric polynomial $g$ with $\|f - g\|_1 < \varepsilon$; then $|\hat f(n)| < \varepsilon$ once $|n|$ exceeds the degree of $g$. On $\R$, use step functions, for which $\hat f$ is explicit and $O(1/|\xi|)$; continuity follows from dominated convergence.
+
+</Proof>
+
+</Section>
+
+<Section id="line" kind="proof" title="The Fourier transform on the line">
+
+<Theorem name="Fourier inversion and Plancherel for Schwartz functions">
+
+For $f \in \mathcal S(\R)$: (i) $f(x) = \int \hat f(\xi) e^{2\pi i x \xi} \, d\xi$ for every $x$; (ii) $\int |\hat f|^2 = \int |f|^2$. The Fourier transform extends uniquely from $\mathcal S(\R)$ to a unitary operator on $L^2(\R)$ (Plancherel, 1910).
+
+</Theorem>
+
+<Proof>
+
+*Multiplication formula.* For $f, g \in \mathcal S(\R)$, Fubini's theorem (the integrand is absolutely integrable on $\R^2$) gives $\int f(x) \hat g(x) \, dx = \iint f(x) g(y) e^{-2\pi i x y} \, dy \, dx = \int \hat f(y) g(y) \, dy$.
+
+*Inversion at $0$.* Take $g(\xi) = e^{-\pi \delta \xi^2}$, whose transform is $K_\delta(x) = \delta^{-1/2} e^{-\pi x^2/\delta}$ by the Gaussian example. The multiplication formula reads $\int \hat f(\xi) e^{-\pi\delta\xi^2} d\xi = \int f(x) K_\delta(x) \, dx$. As $\delta \to 0$ the left side tends to $\int \hat f$ by dominated convergence ($\hat f \in \mathcal S$ is integrable). The family $K_\delta$ has integral $1$, is positive, and concentrates at $0$ ($\int_{|x| \ge \eta} K_\delta \to 0$), so — by the same argument as for approximate identities on $\mathbb T$ — the right side tends to $f(0)$. Thus $f(0) = \int \hat f$. Applying this to $f(\cdot + x)$, whose transform is $\hat f(\xi) e^{2\pi i x \xi}$, gives (i).
+
+*Plancherel.* Put $g = \overline{\hat f}$. By (i), $\hat g(x) = \int \overline{\hat f(\xi)} e^{-2\pi i x \xi} d\xi = \overline{f(x)}$, so the multiplication formula gives $\int f \bar f = \int \hat f \, \overline{\hat f}$. Finally $\mathcal S(\R)$ is dense in $L^2(\R)$, so the isometry extends uniquely to $L^2$; its range is closed and contains $\mathcal S(\R) = \widehat{\mathcal S(\R)}$, hence is everything.
+
+</Proof>
+
+<Theorem name="Poisson summation formula">
+
+For $f \in \mathcal S(\R)$ and every $x \in \R$,
+
+$$
+\sum_{n \in \Z} f(x + n) = \sum_{k \in \Z} \hat f(k) \, e^{2\pi i k x}, \qquad \text{in particular} \qquad \sum_{n \in \Z} f(n) = \sum_{k \in \Z} \hat f(k).
+$$
+
+</Theorem>
+
+<Proof>
+
+Because $f$ and its derivatives decay faster than any power, $F(x) = \sum_n f(x + n)$ converges uniformly with all derivatives, so $F$ is a smooth $1$-periodic function. Its Fourier coefficients (on $\R/\Z$) are
+
+$$
+\int_0^1 F(x) e^{-2\pi i k x} \, dx = \sum_n \int_0^1 f(x + n) e^{-2\pi i k x} \, dx = \int_\R f(y) e^{-2\pi i k y} \, dy = \hat f(k),
+$$
+
+exchanging sum and integral by uniform convergence and using $e^{-2\pi i k n} = 1$. Since $\hat f$ decays rapidly, the Fourier series $\sum_k \hat f(k) e^{2\pi i k x}$ converges absolutely and uniformly; its Fejér means converge to the same limit, and by Fejér's theorem they converge to $F$. So the series equals $F(x)$.
+
+</Proof>
+
+Applied to $f(x) = e^{-\pi t x^2}$, Poisson summation gives **Jacobi's identity** $\theta(t) = t^{-1/2} \theta(1/t)$ for $\theta(t) = \sum_n e^{-\pi n^2 t}$. Riemann (1859) wrote $\pi^{-s/2}\Gamma(s/2)\zeta(s) = \int_0^\infty \frac{\theta(t) - 1}{2} t^{s/2} \frac{dt}{t}$ and used Jacobi's identity to prove the functional equation $\xi(s) = \xi(1 - s)$ of the zeta function: see <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink>.
+
+<Theorem name="Heisenberg's uncertainty inequality">
+
+For $f \in \mathcal S(\R)$,
+
+$$
+\left( \int_\R x^2 |f(x)|^2 \, dx \right) \left( \int_\R \xi^2 |\hat f(\xi)|^2 \, d\xi \right) \ge \frac{1}{16\pi^2} \left( \int_\R |f|^2 \right)^2,
+$$
+
+with equality exactly when $f(x) = A e^{-B x^2}$ with $B > 0$.
+
+</Theorem>
+
+<Proof>
+
+Integrating by parts (the boundary terms vanish for Schwartz functions),
+
+$$
+\int |f|^2 \, dx = -\int x \frac{d}{dx}|f|^2 \, dx = -\int x \big(f' \bar f + f \bar f'\big) \, dx \le 2 \int |x f(x)| \, |f'(x)| \, dx.
+$$
+
+By Cauchy–Schwarz the right side is at most $2 \big(\int x^2 |f|^2\big)^{1/2} \big(\int |f'|^2\big)^{1/2}$. Since $\widehat{f'}(\xi) = 2\pi i \xi \hat f(\xi)$, Plancherel gives $\int |f'|^2 = 4\pi^2 \int \xi^2 |\hat f|^2$. Squaring yields the inequality. Equality in Cauchy–Schwarz forces $f' = -2Bxf$ for a constant $B$, real and positive by the equality in the first step and integrability, so $f$ is a Gaussian; Gaussians do give equality.
+
+</Proof>
+
+In quantum mechanics a particle's position density is $|f|^2$ and its momentum density is $|\hat f|^2$ (in units with $p = h\xi$); the theorem says the product of the standard deviations of position and momentum is at least $h/(4\pi) = \hbar/2$. This is a theorem of Fourier analysis, applied to a physical model.
+
+</Section>
+
+<Section id="pointwise" kind="human" title="Pointwise convergence: the honest picture">
+
+Pointwise convergence of $S_N f(x)$ is delicate, because the Dirichlet kernel is not an approximate identity. What is known:
+
+- **Positive results for nice functions.** If $f$ is piecewise $C^1$, then $S_N f(x) \to \frac12\big(f(x^+) + f(x^-)\big)$ everywhere (Dirichlet, 1829), uniformly on closed intervals avoiding jumps. If $f$ is Hölder continuous, or of bounded variation and continuous, $S_N f \to f$ uniformly (Dini–Lipschitz, Jordan).
+- **Continuity is not enough.** du Bois-Reymond (1873) constructed a continuous function whose Fourier series diverges at a point. A quick existence proof: the functionals $f \mapsto S_N f(0)$ on the Banach space $C(\mathbb T)$ have norms $\frac{1}{2\pi}\|D_N\|_1 \to \infty$, so by the uniform boundedness principle they cannot be pointwise bounded. Kahane and Katznelson (1966) showed that for every null set $E \subset \mathbb T$ there is a continuous $f$ whose Fourier series diverges at every point of $E$.
+- **$L^1$ is hopeless.** Kolmogorov (1923) found $f \in L^1(\mathbb T)$ whose Fourier series diverges almost everywhere, and (1926) one that diverges everywhere.
+- **$L^2$ is fine.** Lusin conjectured (1915) and **Carleson proved (1966)** that the Fourier series of every $f \in L^2(\mathbb T)$ converges to $f$ almost everywhere; Hunt (1968) extended this to $L^p$, $p > 1$. The proof is among the hardest in classical analysis; it controls the maximal operator $\sup_N |S_N f|$ by decomposing time–frequency space into tiles.
+- **Averaging rescues everything.** For $f \in L^1$, the Fejér means converge to $f$ in $L^1$ and almost everywhere (at every Lebesgue point), and uniformly for continuous $f$.
+
+So the right summary is not "Fourier series converge" but: in $L^2$, always; after averaging, always; pointwise, almost everywhere exactly in the range $p > 1$, with the Gibbs overshoot near jumps never going away.
+
+</Section>
+
+<Section id="groups" kind="human" title="Harmonic analysis on groups">
+
+The three settings above are one theory. For a locally compact abelian group $G$, a **character** is a continuous homomorphism $\chi : G \to \mathbb S^1$; the characters form the **dual group** $\widehat G$, and the Fourier transform is $\hat f(\chi) = \int_G f(x) \overline{\chi(x)} \, dx$ with respect to Haar measure. **Pontryagin duality** (1934) says $\widehat{\widehat G} \cong G$, and Plancherel holds: with suitably normalised Haar measures, $f \mapsto \hat f$ is unitary from $L^2(G)$ to $L^2(\widehat G)$.
+
+| $G$ | $\widehat G$ | Fourier analysis |
+| --- | --- | --- |
+| $\mathbb T = \R/2\pi\Z$ | $\Z$ ($\chi_n = e^{inx}$) | Fourier series |
+| $\Z$ | $\mathbb T$ | Fourier series read backwards (discrete-time signals) |
+| $\R$ | $\R$ ($\chi_\xi = e^{2\pi i x \xi}$) | the Fourier transform |
+| $\Z/N$ | $\Z/N$ | the discrete Fourier transform, computed by the FFT |
+
+Orthogonality of characters on $\Z/N$ is the geometric-series identity $\sum_{k < N} z^k = 0$ for an $N$-th root of unity $z \ne 1$ (formalised below). For compact non-abelian groups, characters are replaced by irreducible representations: the **Peter–Weyl theorem** (1927) decomposes $L^2(G)$ into matrix coefficients, and for the rotation group acting on the sphere it yields spherical harmonics. Harmonic analysis on non-compact Lie groups such as $SL_2(\R)$ was developed by Gelfand, Bargmann and above all Harish-Chandra, and leads to the theory of automorphic forms.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Fourier analysis in Lean and Mathlib">
+
+The finite model first: orthogonality of the characters of $\Z/N$, proved from the geometric series.
+
+<Lean decl="Lumenary.HarmonicAnalysis.roots_of_unity_sum" />
+
+Mathlib works on `AddCircle T` $= \R / T\Z$ with Haar measure normalised to total mass $1$, so its coefficients are $\hat f(n) = \frac1T \int_0^T f(x) e^{-2\pi i n x/T} dx$. The exponentials are orthonormal (and, by Stone–Weierstrass rather than Fejér, a Hilbert basis), and Parseval's identity holds:
+
+<Lean decl="Lumenary.HarmonicAnalysis.orthonormal_exponentials" />
+
+<Lean decl="Lumenary.HarmonicAnalysis.parseval" />
+
+From Parseval we derive the Riemann–Lebesgue lemma for $L^2$ functions, exactly as in the proof above:
+
+<Lean decl="Lumenary.HarmonicAnalysis.fourier_coeff_tendsto_zero" />
+
+On $\R$, Mathlib writes `𝐞 t` for $e^{2\pi i t}$ and `𝓕` for the transform $\hat f(\xi) = \int f(x) e^{-2\pi i x\xi} dx$, the convention of this lesson. The trivial bound $|\hat f(\xi)| \le \|f\|_1$, proved directly; the Riemann–Lebesgue lemma; Plancherel on $L^2(\R)$; and the self-dual Gaussian:
+
+<Lean decl="Lumenary.HarmonicAnalysis.fourier_bound" />
+
+<Lean decl="Lumenary.HarmonicAnalysis.riemann_lebesgue" />
+
+<Lean decl="Lumenary.HarmonicAnalysis.plancherel" />
+
+<Lean decl="Lumenary.HarmonicAnalysis.gaussian_self_dual" />
+
+Poisson summation for Schwartz functions, the theta functional equation that Riemann used, and $\zeta(2) = \pi^2/6$, which Mathlib proves with Fourier series of Bernoulli polynomials:
+
+<Lean decl="Lumenary.HarmonicAnalysis.poisson_summation" />
+
+<Lean decl="Lumenary.HarmonicAnalysis.theta_functional_equation" />
+
+<Lean decl="Lumenary.HarmonicAnalysis.basel" />
+
+**Not formalised (here or, as far as we know, in Mathlib):** Fejér's theorem and approximate identities on the circle in this form (Mathlib has related results for convolutions with bump functions), the Gibbs phenomenon, the Heisenberg inequality, Carleson's theorem, and Pontryagin duality for general locally compact abelian groups (Mathlib has the Pontryagin dual group and duality for finite abelian groups).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing overshoots, averages and theta">
+
+The first experiment samples the partial sums of the square wave near the jump: the maximum stays at about $1.179$ for $N = 9, 49, 199, 999$, matching $\frac2\pi \operatorname{Si}(\pi)$, while the Fejér means never exceed $1$. It also computes the exact $L^2$ error of $S_N$ from Parseval and watches $\sum_{k \text{ odd}} k^{-2}$ approach $\pi^2/8$.
+
+<Python id="harmonic_analysis_gibbs_fejer" />
+
+The second checks Jacobi's identity $\theta(t) = t^{-1/2}\theta(1/t)$ to machine precision, and computes the uncertainty ratio $\big(\int x^2|f|^2\big)\big(\int \xi^2 |\hat f|^2\big) \big/ \big(\|f\|_2^4/16\pi^2\big)$ for three functions with known transforms: $1$ for the Gaussian, $2$ for $e^{-|x|}$ and $6/5$ for a tent.
+
+<Python id="harmonic_analysis_poisson_uncertainty" />
+
+These are numerical confirmations of theorems proved above, on finitely many cases; they cannot replace the proofs, but they make the constants concrete.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: partial sums and kernels">
+
+Build the square wave from sines and watch the overshoot near the jump. Increase the number of terms: the bump gets narrower, but its height does not shrink.
+
+<SequenceLab mode="fourier" wave="square" N={10} />
+
+The kernels themselves explain the difference between partial sums and Fejér means. Move $N$: the Dirichlet kernel $D_N$ (whose convolution gives $S_N f$) has large negative lobes, while the Fejér kernel $F_N$ is positive and concentrates at $0$ — an approximate identity.
+
+<FunctionPlot
+  fns={["sin((N + 0.5)*x)/sin(x/2)", "(sin(N*x/2)/sin(x/2))^2/N"]}
+  labels={["Dirichlet D_N", "Fejér F_N"]}
+  params={[{ name: "N", min: 1, max: 20, step: 1, value: 6 }]}
+  x={["-pi", "pi"]}
+  y={[-6, 22]}
+  title="Dirichlet and Fejér kernels"
+/>
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The Fourier series of a continuous function converges to it at every point."** False: du Bois-Reymond's continuous function has a Fourier series diverging at a point, and for any null set there is a continuous function diverging on it. What is true: the Fejér means converge uniformly, the partial sums converge in $L^2$ and (Carleson) almost everywhere, and for Hölder continuous functions the partial sums converge uniformly.
+
+</Misconception>
+
+<Misconception>
+
+**"With enough terms the Gibbs overshoot disappears."** The overshoot of the partial sums near a jump tends to $\frac2\pi \operatorname{Si}(\pi) - 1 \approx 0.179$ times half the jump — about $9\%$ of the jump — however many terms are taken; it only moves closer to the jump. This is compatible with $L^2$ convergence (the region of overshoot has shrinking width) and with pointwise convergence (each fixed $x \ne 0$ is eventually outside it), but not with uniform convergence, which is impossible anyway since the limit is discontinuous.
+
+</Misconception>
+
+<Misconception>
+
+**"The Fourier transform maps $L^1$ functions to $L^1$ functions."** It maps $L^1$ to bounded continuous functions vanishing at infinity, but the transform of $\mathbf 1_{[-1/2,1/2]}$ is $\frac{\sin \pi\xi}{\pi\xi} \notin L^1$. The spaces that are mapped to themselves are $L^2$ (Plancherel) and $\mathcal S$; on $L^p$ for $1 < p < 2$ the transform maps into $L^{p'}$ (Hausdorff–Young).
+
+</Misconception>
+
+<Misconception>
+
+**"$L^2$ convergence implies pointwise convergence."** $L^2$ convergence says nothing about any particular point; Carleson's theorem, which gives a.e. convergence of $S_N f$ for $f \in L^2$, is a deep separate theorem, and it would fail for an arbitrary rearrangement or for general orthonormal bases.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="Characters, representations and the group algebra">
+
+For a finite abelian group $G$, the characters form a basis of the space of functions on $G$ that simultaneously diagonalises all translation operators, and the Fourier transform is the isomorphism of algebras from $(\C[G], *)$ to $(\C^{\widehat G}, \cdot)$: convolution becomes pointwise multiplication. For non-abelian finite groups, Wedderburn's theorem gives $\C[G] \cong \prod_\pi \operatorname{End}(V_\pi)$ over the irreducible representations, the non-commutative Fourier transform of <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>. Pontryagin duality is the topological version: $G \mapsto \widehat G$ is a contravariant self-equivalence of the category of locally compact abelian groups, exchanging compact and discrete groups ($\widehat{\mathbb T} = \Z$) and fixing $\R$ and $\Z/N$.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Theta, zeta and equidistribution">
+
+Poisson summation is a bridge between a lattice and its dual. Applied to Gaussians it gives Jacobi's theta identity and hence Riemann's functional equation for $\zeta(s)$; in Tate's thesis (1950), Fourier analysis on the adeles $\mathbb A_\Q$, a self-dual locally compact ring, proves the functional equations of all Hecke $L$-functions at once. Weyl's criterion (1916) turns equidistribution into Fourier analysis: a sequence $x_n$ is equidistributed modulo $1$ iff $\frac1N \sum_{n < N} e^{2\pi i k x_n} \to 0$ for every $k \ne 0$; for $x_n = n\alpha$ with $\alpha$ irrational this is a geometric series, a fact developed in <TopicLink id="math.analysis.ergodic-theory">ergodic theory</TopicLink>. The Hardy–Littlewood circle method writes the number of representations of $n$ as a sum of primes or powers as a Fourier coefficient and estimates it by splitting the circle into major and minor arcs.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Hearing the shape of a drum">
+
+On a compact Riemannian manifold $M$ the Laplacian has an orthonormal basis of eigenfunctions $\Delta \varphi_k = -\lambda_k \varphi_k$, $0 = \lambda_0 \le \lambda_1 \le \cdots \to \infty$ — Fourier series are the case of the circle, and spherical harmonics the case of the sphere. Spectral geometry asks what the spectrum knows about the geometry. **Weyl's law** (1911) recovers the volume: the number of $\lambda_k \le \lambda$ grows like $c_n \operatorname{vol}(M) \lambda^{n/2}$. Kac asked (1966) whether one can "hear the shape of a drum"; Milnor (1964) had already found two non-isometric 16-dimensional flat tori with the same spectrum — Poisson summation relates the Laplace spectrum of a flat torus $\R^n/\Lambda$ to the lengths of vectors in $\Lambda$ — and Gordon, Webb and Wolpert (1992) found isospectral non-congruent planar drums.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Characteristic functions">
+
+The Fourier transform of a probability distribution is its **characteristic function** $\varphi_X(t) = \mathbb E[e^{itX}]$. Independence becomes multiplication, $\varphi_{X + Y} = \varphi_X \varphi_Y$, because the law of $X + Y$ is the convolution of the laws. Lévy's continuity theorem says that convergence in distribution is equivalent to pointwise convergence of characteristic functions, and the central limit theorem becomes the computation $\varphi_{S_n/\sqrt n}(t) = \varphi(t/\sqrt n)^n \to e^{-t^2/2}$ — the Gaussian, the fixed point of the Fourier transform, appears as the universal limit. Bochner's theorem characterises characteristic functions as the continuous positive-definite functions with $\varphi(0) = 1$. See <TopicLink id="math.prob.measure-theoretic-probability">measure-theoretic probability</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Waves, uncertainty and diffraction">
+
+Fourier's own application was heat flow, and every linear wave phenomenon is decomposed into frequencies: the overtones of a vibrating string are its Fourier modes, and the far-field diffraction pattern of light through an aperture is (up to scaling) the squared modulus of the Fourier transform of the aperture — X-ray crystallography reads off a crystal's lattice through Poisson summation. In quantum mechanics position and momentum representations of a state are Fourier transforms of each other, and the Heisenberg relation $\Delta x \, \Delta p \ge \hbar/2$ is the theorem proved above, applied to the model; see <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>. The physics motivated the mathematics, but the inequality is a theorem about functions, with no physical assumptions.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="The fast Fourier transform">
+
+The discrete Fourier transform of a vector of length $N$ costs $N^2$ operations naively. Cooley and Tukey (1965) rediscovered a divide-and-conquer algorithm — known to Gauss around 1805 — that factors the DFT for $N = 2^m$ into $m$ stages of butterflies, costing $O(N \log N)$. It made digital signal processing, spectral methods for PDEs, fast multiplication of large integers (Schönhage–Strassen, and Harvey–van der Hoeven's $O(n \log n)$ algorithm of 2019) and modern imaging possible. Mathematically the FFT is the factorisation of the character table of $\Z/2^m$ along the chain of subgroups $\Z/2 \subset \Z/4 \subset \cdots$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- In the 1750s **Daniel Bernoulli**, **Jean d'Alembert** and **Leonhard Euler** argued over whether the vibrating string could be represented by trigonometric series. **Joseph Fourier** (1807; *Théorie analytique de la chaleur*, 1822) asserted that arbitrary functions could, and computed the coefficients.
+- **Peter Gustav Lejeune Dirichlet** (1829) gave the first rigorous convergence theorem; **Bernhard Riemann** (1854) defined his integral to study trigonometric series and proved the Riemann–Lebesgue lemma for his integral; **Georg Cantor** (1870s) studied sets of uniqueness for trigonometric series, which led him to infinite sets and ordinals; **Paul du Bois-Reymond** (1873) found a continuous function with a divergent Fourier series.
+- **Henry Wilbraham** (1848) and **J. Willard Gibbs** (1899) described the overshoot; **Lipót Fejér** (1900, while still a student) proved Cesàro summability; **Henri Lebesgue**, **Frigyes Riesz** and **Ernst Fischer** gave the $L^2$ theory; **Michel Plancherel** (1910) the $L^2$ Fourier transform.
+- **Andrey Kolmogorov** (1923, 1926) found divergent $L^1$ Fourier series; **Norbert Wiener** developed generalised harmonic analysis and Tauberian theorems (1930s); **Lev Pontryagin** (1934) and **Egbert van Kampen** proved duality for locally compact abelian groups, with **André Weil** placing Fourier analysis on general locally compact groups.
+- **Lennart Carleson** (1966) proved almost-everywhere convergence for $L^2$, and **Richard Hunt** (1968) for $L^p$. The Calderón–Zygmund theory of singular integrals (**Alberto Calderón** and **Antoni Zygmund**, 1950s), **Elias Stein**'s school, and **Charles Fefferman**'s work shaped modern harmonic analysis; **Harish-Chandra** built harmonic analysis on semisimple Lie groups.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Elias M. Stein and Rami Shakarchi, *Fourier Analysis: An Introduction* (2003) — Fejér, Parseval, the transform on $\R$, Poisson summation, finite Fourier analysis; the proofs above follow its Chapters 2–5.
+- Yitzhak Katznelson, *An Introduction to Harmonic Analysis* (1968; 3rd ed. 2004) — the classical theory on $\mathbb T$ and $\R$, including divergence results.
+- T. W. Körner, *Fourier Analysis* (1988) — a wide-ranging, historically rich tour of applications.
+- Loukas Grafakos, *Classical Fourier Analysis* (2008; 3rd ed. 2014) — the graduate reference, including a proof of Carleson's theorem.
+- Gerald B. Folland, *A Course in Abstract Harmonic Analysis* (1995) — Haar measure, Pontryagin duality and Peter–Weyl.
+- Antoni Zygmund, *Trigonometric Series* (1935; 3rd ed. 2002) — the encyclopaedic classic.
+
+</Section>

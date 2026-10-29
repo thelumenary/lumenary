@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { LOCALES, LOCALE_META, type Locale } from "@/i18n/config";
 import { useI18n } from "@/i18n/client";
-import { href } from "@/lib/href";
+import { href, pageLocale } from "@/lib/href";
 
 const STATUS: Record<Locale, "canonical" | "machine-draft"> = {
   en: "canonical",
@@ -16,6 +16,12 @@ const STATUS: Record<Locale, "canonical" | "machine-draft"> = {
   "zh-Hans": "machine-draft",
   sw: "machine-draft",
 };
+
+/** For a page that does not exist in locale `l` (an untranslated lesson, a lab detail page), the nearest page that does. */
+function sectionHref(l: Locale, rest: string): string {
+  if (rest.startsWith("math/lessons/")) return href(l, "math");
+  return href(l, rest.split("/")[0]);
+}
 
 export function LanguageSelector() {
   const { locale, t } = useI18n();
@@ -67,7 +73,7 @@ export function LanguageSelector() {
               <li key={l}>
                 <Link
                   role="menuitem"
-                  href={`/${l}/${rest}`}
+                  href={pageLocale(l, rest) === l ? `/${l}/${rest}` : sectionHref(l, rest)}
                   hrefLang={l}
                   lang={l}
                   onClick={() => {

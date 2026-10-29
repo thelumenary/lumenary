@@ -1,0 +1,180 @@
+{
+  "lesson": "markov-chains",
+  "exercises": [
+    {
+      "id": "markov-chains-memoryless",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "A Markov chain $X_0, X_1, \\dots$ is often called *memoryless*. Which statement captures the Markov property?",
+      "options": [
+        { "id": "forget", "label": "$X_{n+1}$ is independent of $X_0, \\dots, X_n$.", "correct": false, "feedback": "That would make the chain a sequence of independent variables. The next state may depend strongly on the current one." },
+        { "id": "present", "label": "Given $X_n$, the next state $X_{n+1}$ is conditionally independent of $X_0, \\dots, X_{n-1}$.", "correct": true, "feedback": "Yes: the future depends on the past only through the present state." },
+        { "id": "uniform", "label": "From every state, all next states are equally likely.", "correct": false, "feedback": "The transition probabilities $p_{ij}$ can be anything (non-negative, rows summing to $1$)." },
+        { "id": "stationary", "label": "The distribution of $X_n$ does not change with $n$.", "correct": false, "feedback": "That describes a chain started in a stationary distribution, not the Markov property." }
+      ],
+      "hints": [
+        "\"Memoryless\" does not mean the present state is irrelevant.",
+        "The definition conditions on the whole past and finds that only the last state matters."
+      ],
+      "solution": "The Markov property: $P(X_{n+1} = j \\mid X_0, \\dots, X_n) = p_{X_n j}$. The chain's whole memory is its current state; given that, the earlier history adds nothing. Unconditionally, $X_{n+1}$ usually depends on $X_0$."
+    },
+    {
+      "id": "markov-chains-two-day-forecast",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "A weather chain on (dry, cloudy, rainy) has transition matrix $P = \\begin{pmatrix} 0.6 & 0.3 & 0.1 \\\\ 0.3 & 0.4 & 0.3 \\\\ 0.2 & 0.3 & 0.5 \\end{pmatrix}$. Today is dry. What is the probability, **in percent**, that the day after tomorrow is dry?",
+      "answer": 47,
+      "feedback": [
+        { "match": "36", "message": "$0.6 \\times 0.6 = 0.36$ counts only the path dry → dry → dry. Tomorrow could also be cloudy or rainy." },
+        { "match": "60", "message": "That is the one-step probability $p_{\\text{dry,dry}}$. Two steps need $(P^2)_{\\text{dry,dry}}$." }
+      ],
+      "hints": [
+        "Chapman–Kolmogorov: $p^{(2)}_{11} = \\sum_k p_{1k}p_{k1}$.",
+        "Add the three paths: via dry, via cloudy, via rainy."
+      ],
+      "solution": "$(P^2)_{11} = 0.6 \\cdot 0.6 + 0.3 \\cdot 0.3 + 0.1 \\cdot 0.2 = 0.36 + 0.09 + 0.02 = 0.47$, i.e. $47\\%$. (In the long run the chance of a dry day is $\\pi_1 = 7/18 \\approx 39\\%$.)"
+    },
+    {
+      "id": "markov-chains-stationary-two-state",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Find the stationary distribution of $P = \\begin{pmatrix} 0.9 & 0.1 \\\\ 0.5 & 0.5 \\end{pmatrix}$.",
+      "options": [
+        { "id": "a", "label": "$\\big(\\tfrac56, \\tfrac16\\big)$", "correct": true, "feedback": "Yes: with $a = 0.1$, $b = 0.5$, $\\pi = \\big(\\frac{b}{a+b}, \\frac{a}{a+b}\\big) = \\big(\\frac{0.5}{0.6}, \\frac{0.1}{0.6}\\big)$." },
+        { "id": "b", "label": "$\\big(\\tfrac16, \\tfrac56\\big)$", "correct": false, "feedback": "The components are swapped. State $1$ is very sticky ($p_{11} = 0.9$), so it should get most of the mass." },
+        { "id": "c", "label": "$\\big(\\tfrac12, \\tfrac12\\big)$", "correct": false, "feedback": "Uniform is stationary only for doubly stochastic matrices (columns also summing to $1$). Here the columns sum to $1.4$ and $0.6$." },
+        { "id": "d", "label": "$(0.9, 0.5)$", "correct": false, "feedback": "This is not even a distribution (it sums to $1.4$). Solve $\\pi P = \\pi$ with $\\pi_1 + \\pi_2 = 1$." }
+      ],
+      "hints": [
+        "Write $\\pi P = \\pi$: the first equation is $0.9\\pi_1 + 0.5\\pi_2 = \\pi_1$.",
+        "This gives $0.1\\pi_1 = 0.5\\pi_2$; combine with $\\pi_1 + \\pi_2 = 1$. (Detailed balance gives the same equation.)"
+      ],
+      "solution": "$0.1\\pi_1 = 0.5\\pi_2$ (detailed balance across the single edge) and $\\pi_1 + \\pi_2 = 1$ give $\\pi = (5/6, 1/6)$. Check: $\\frac56 \\cdot 0.9 + \\frac16 \\cdot 0.5 = 0.75 + 0.0833 = \\frac56$."
+    },
+    {
+      "id": "markov-chains-duration",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "In the fair gambler's ruin game you start with $3$ coins and play one-coin fair bets until you have $0$ or $10$ coins. What is the expected number of bets?",
+      "answer": 21,
+      "feedback": [
+        { "match": "30", "message": "$3 \\times 10 = 30$: the formula is $i(N - i)$, not $iN$." },
+        { "match": "7", "message": "That is $N - i$, the distance to the upper target. The expected duration is $i(N - i)$." }
+      ],
+      "hints": [
+        "The expected duration $m(i)$ satisfies $m(i) = 1 + \\frac12 m(i-1) + \\frac12 m(i+1)$, $m(0) = m(N) = 0$.",
+        "Check that $m(i) = i(N - i)$ solves this; evaluate at $i = 3$, $N = 10$."
+      ],
+      "solution": "$m(i) = i(N - i)$ solves the first-step equations with the boundary conditions (on a finite set the solution is unique), so $m(3) = 3 \\cdot 7 = 21$ bets. The probability of reaching $10$ is $3/10$."
+    },
+    {
+      "id": "markov-chains-classify",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "A chain on $\\{1, 2, 3, 4\\}$ has $p_{12} = 1$; $p_{21} = p_{23} = \\tfrac12$; $p_{33} = p_{34} = \\tfrac12$; $p_{43} = 1$. Which statements are true? (Choose all that apply.)",
+      "options": [
+        { "id": "closed", "label": "$\\{3, 4\\}$ is a closed class, and its states are recurrent.", "correct": true, "feedback": "Yes: from $3$ and $4$ the chain never leaves $\\{3, 4\\}$, and a finite closed class is recurrent." },
+        { "id": "transient", "label": "States $1$ and $2$ are transient.", "correct": true, "feedback": "Yes: from $2$ the chain moves to $3$ with probability $\\tfrac12$ and then never returns, so $P_1(T_1 < \\infty) = \\tfrac12 < 1$." },
+        { "id": "period", "label": "State $1$ has period $2$.", "correct": true, "feedback": "Yes: returns to $1$ go $1 \\to 2 \\to 1 \\to \\cdots$ and take an even number of steps." },
+        { "id": "irreducible", "label": "The chain is irreducible.", "correct": false, "feedback": "No: $1$ is not accessible from $3$. There are two classes, $\\{1, 2\\}$ and $\\{3, 4\\}$." },
+        { "id": "mass", "label": "The stationary distribution gives positive probability to state $1$.", "correct": false, "feedback": "Transient states get stationary probability $0$. The unique stationary distribution is $\\pi = (0, 0, \\tfrac23, \\tfrac13)$." }
+      ],
+      "hints": [
+        "Draw the directed graph of positive transitions and find the communicating classes.",
+        "Which classes are closed? A closed finite class is recurrent; a class from which the chain can escape for ever is transient."
+      ],
+      "solution": "Classes: $\\{1, 2\\}$ (not closed: $2 \\to 3$) and $\\{3, 4\\}$ (closed). So $1, 2$ are transient and $3, 4$ recurrent. Returns to $1$ have even length, so $d(1) = 2$; state $3$ is aperiodic because $p_{33} > 0$. On $\\{3, 4\\}$, $\\pi_3 \\cdot \\tfrac12 = \\pi_4 \\cdot 1$ gives $\\pi = (0, 0, \\tfrac23, \\tfrac13)$, the unique stationary distribution."
+    },
+    {
+      "id": "markov-chains-uniqueness-proof",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "The lesson proves uniqueness of the stationary distribution by showing that every harmonic function ($Ph = h$) is constant. Where exactly is **irreducibility** used?",
+      "options": [
+        { "id": "max", "label": "To show that $h$ attains a maximum.", "correct": false, "feedback": "A function on a finite set always attains its maximum; no irreducibility is needed." },
+        { "id": "spread", "label": "To pass from \"$h_j = M$ for every $j$ reachable in one step from a maximiser\" to \"$h_j = M$ for every state $j$\".", "correct": true, "feedback": "Yes: the set where $h = M$ is closed under one-step moves, and irreducibility says every state can be reached from it." },
+        { "id": "average", "label": "To show that $h_i = \\sum_j p_{ij}h_j$ is an average of the values $h_j$.", "correct": false, "feedback": "That holds for any stochastic matrix: the weights $p_{ij}$ are non-negative and sum to $1$." },
+        { "id": "rank", "label": "To show that $P - I$ and its transpose have the same rank.", "correct": false, "feedback": "Every matrix has the same rank as its transpose; this is pure linear algebra." }
+      ],
+      "hints": [
+        "Run the argument on a reducible chain, such as the identity matrix on two states. Which step fails?",
+        "For $P = I$, every function is harmonic."
+      ],
+      "solution": "Irreducibility is used only to spread the maximum: from a maximiser, the maximum propagates along every positive transition, and irreducibility guarantees that this reaches every state. For the reducible chain $P = I$ on two states, any $h$ is harmonic and any distribution is stationary."
+    },
+    {
+      "id": "markov-chains-period-cycle",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "A walker moves on the $6$ vertices of a hexagon, stepping to each of the two neighbouring vertices with probability $\\tfrac12$. What is the period of the chain?",
+      "answer": 2,
+      "feedback": [
+        { "match": "6", "message": "Going once around the hexagon takes $6$ steps, but you can also return in $2$ steps (out and back). The period is the gcd of all return times." },
+        { "match": "1", "message": "A return in an odd number of steps is impossible here: colour the vertices alternately black and white, and every step changes colour." }
+      ],
+      "hints": [
+        "List some possible return times to a vertex: $2$ (out and back), $4$, $6$ (around), …",
+        "Can the walker ever return in an odd number of steps?"
+      ],
+      "solution": "Every step changes the parity of the vertex's position, so return times are even; $2$ is possible. The period is $\\gcd\\{2, 4, 6, \\dots\\} = 2$, and $P(X_n = j)$ does not converge. On a pentagon the walker can return in $2$ and in $5$ steps, so the period is $1$ — a graph walk is aperiodic exactly when the graph is not bipartite."
+    },
+    {
+      "id": "markov-chains-polya",
+      "type": "choice",
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "Which statement about simple random walk is correct?",
+      "options": [
+        { "id": "z3", "label": "On $\\Z^3$ the walk returns to the origin with probability $1$, but the expected return time is infinite.", "correct": false, "feedback": "That describes $\\Z$ and $\\Z^2$ (null recurrence). On $\\Z^3$ the walk is transient: it returns with probability about $0.34$." },
+        { "id": "z2", "label": "On $\\Z^2$ the expected number of returns to the origin is infinite, so the walk returns with probability $1$.", "correct": true, "feedback": "Yes: $\\sum_n P(S_{2n} = 0) = \\sum_n a_n^2 = \\infty$ since $a_n^2 \\ge \\frac{1}{4n}$, and by the recurrence criterion the walk is recurrent." },
+        { "id": "z1", "label": "On $\\Z$ the walk has a stationary distribution, because it is recurrent.", "correct": false, "feedback": "Recurrence is not enough: the walk on $\\Z$ is null recurrent and has no stationary distribution (a uniform distribution on $\\Z$ does not exist)." },
+        { "id": "partial", "label": "Computing $\\sum_{n \\le 10^6} P(S_{2n} = 0)$ in $\\Z^2$ proves the series diverges.", "correct": false, "feedback": "A partial sum, however large the range, cannot prove divergence; in $\\Z^2$ the partial sums grow only like $\\ln n/\\pi$. A proof needs a lower bound such as $a_n^2 \\ge \\frac1{4n}$." }
+      ],
+      "hints": [
+        "Recall the recurrence criterion: recurrent if and only if $\\sum_n p_{00}^{(n)} = \\infty$.",
+        "Recurrence (returning with probability 1) is different from positive recurrence (finite mean return time)."
+      ],
+      "solution": "Only the $\\Z^2$ statement is right: via the $45°$ rotation, $P(S_{2n} = 0) = a_n^2 \\ge \\frac1{4n}$, whose sum diverges (formalised in Lean). The walk on $\\Z^3$ is transient; recurrence on $\\Z$ is null, so there is no stationary distribution; and numerical partial sums are evidence, not proof."
+    },
+    {
+      "id": "markov-chains-lean-detailed-balance",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "Which Lean statement formalises \"detailed balance implies stationarity\"? (`π ᵥ* P` is the row vector $\\pi P$.)",
+      "options": [
+        { "id": "a", "label": "`(hrow : ∀ i, ∑ j, P i j = 1) (hdb : ∀ i j, π i * P i j = π j * P j i) : π ᵥ* P = π`", "correct": true, "feedback": "Yes: rows sum to $1$ and the flows balance pairwise; the conclusion is $\\pi P = \\pi$. This is `Lumenary.MarkovChains.detailed_balance_stationary`." },
+        { "id": "b", "label": "`(hrow : ∀ i, ∑ j, P i j = 1) (hst : π ᵥ* P = π) : ∀ i j, π i * P i j = π j * P j i`", "correct": false, "feedback": "This is the converse, which is false: a chain circulating around a triangle has uniform stationary distribution without detailed balance." },
+        { "id": "c", "label": "`(hdb : ∀ i j, π i * P i j = π j * P j i) : π ᵥ* P = π`", "correct": false, "feedback": "Without the row sums the conclusion can fail: take $P = 2I$ and any $\\pi \\ne 0$; detailed balance holds but $\\pi P = 2\\pi$." },
+        { "id": "d", "label": "`(hrow : ∀ i, ∑ j, P i j = 1) (hdb : ∀ i j, π i * P i j = π j * P j i) : P *ᵥ π = π`", "correct": false, "feedback": "`P *ᵥ π` multiplies by a **column** vector, $P\\pi^\\top$; stationarity is about the row vector $\\pi P$. (For the all-ones vector $P\\mathbf 1 = \\mathbf 1$ always holds.)" }
+      ],
+      "hints": [
+        "The human proof uses $\\sum_i P_{ji} = 1$. Which hypotheses must therefore appear?",
+        "Distributions are row vectors: one step is `π ᵥ* P`."
+      ],
+      "solution": "Statement (a). (b) is the false converse, (c) drops the row-sum hypothesis the proof needs, and (d) multiplies on the wrong side."
+    },
+    {
+      "id": "markov-chains-python-stationary",
+      "type": "python",
+      "difficulty": "stretch",
+      "mode": "C",
+      "prompt": "Write `step(mu, P)` returning the row vector $\\mu P$ (lists of `Fraction`s), and `power_iterate(mu, P, n)` applying `step` $n$ times. Then write `is_stationary(pi, P)`. The tests use the two-state chain with $a = \\tfrac14$, $b = \\tfrac12$ and check that $\\mu P^n$ approaches $\\pi = (\\tfrac23, \\tfrac13)$ at the rate $|1 - a - b|^n = 4^{-n}$.",
+      "starter": "from fractions import Fraction\n\ndef step(mu, P):\n    # Return the row vector mu P.\n    return mu\n\ndef power_iterate(mu, P, n):\n    return mu\n\ndef is_stationary(pi, P):\n    return False\n",
+      "tests": "from fractions import Fraction as F\nP = [[F(3, 4), F(1, 4)], [F(1, 2), F(1, 2)]]\npi = [F(2, 3), F(1, 3)]\nassert step([F(1), F(0)], P) == [F(3, 4), F(1, 4)]\nassert is_stationary(pi, P)\nassert not is_stationary([F(1, 2), F(1, 2)], P)\nfor n in range(8):\n    mu = power_iterate([F(1), F(0)], P, n)\n    assert sum(mu) == 1\n    assert mu[0] - pi[0] == F(1, 3) * F(1, 4) ** n\nprint('All tests passed!')\n",
+      "hints": [
+        "$(\\mu P)_j = \\sum_i \\mu_i P_{ij}$: loop over columns $j$, summing down the rows.",
+        "`is_stationary` can simply compare `step(pi, P)` with `pi`; Fractions compare exactly."
+      ],
+      "solution": "```python\nfrom fractions import Fraction\n\ndef step(mu, P):\n    k = len(P)\n    return [sum(mu[i] * P[i][j] for i in range(k)) for j in range(k)]\n\ndef power_iterate(mu, P, n):\n    for _ in range(n):\n        mu = step(mu, P)\n    return mu\n\ndef is_stationary(pi, P):\n    return step(pi, P) == pi\n```\n\nFrom the closed form of $P^n$, $(P^n)_{11} = \\frac{b + a\\lambda^n}{a + b}$ with $\\lambda = 1 - a - b = \\tfrac14$, so $(P^n)_{11} - \\pi_1 = \\frac{a}{a + b}\\lambda^n = \\frac13 \\cdot 4^{-n}$ exactly — which the test checks in rational arithmetic."
+    }
+  ]
+}

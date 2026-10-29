@@ -1,0 +1,398 @@
+---
+slug: stable-infinity-categories
+topic: math.cat.stable-infinity-categories
+title: Stable ∞-categories
+subtitle: Where fibre sequences and cofibre sequences coincide — the homotopy-coherent enhancement of triangulated categories, in which cones finally become functorial.
+level: research
+ages: Research (graduate background)
+minutes: 120
+order: 8020
+objectives:
+  - Define fibres, cofibres, suspension and loops in a pointed ∞-category, and define stable ∞-categories
+  - Give examples — spectra, derived ∞-categories of rings, functor categories — and non-examples, and prove that no non-zero ordinary category is stable
+  - Explain why the homotopy category of a stable ∞-category is additive and triangulated, proving the abelian group structure via Eckmann–Hilton
+  - Show by an explicit example that cones in a triangulated category are not functorial, and explain how a stable ∞-category repairs this
+  - Describe what stable ∞-categories add to triangulated categories, and what is known about enhancements
+narrators: []
+lean:
+  - Lumenary.StableInfinityCategories.loop_square_isPullback
+  - Lumenary.StableInfinityCategories.suspension_square_isPushout
+  - Lumenary.StableInfinityCategories.isZero_of_loop_square_isPushout
+  - Lumenary.StableInfinityCategories.stable_one_category_trivial
+  - Lumenary.StableInfinityCategories.cone_fill_exists
+  - Lumenary.StableInfinityCategories.comp_zero_12
+  - Lumenary.StableInfinityCategories.comp_zero_23
+  - Lumenary.StableInfinityCategories.coyoneda_exact
+  - Lumenary.StableInfinityCategories.derived_triangulated
+compute: [stable_infinity_categories_cones]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="What triangulated categories cannot do">
+
+Derived categories of rings and sheaves, and the stable homotopy category of spectra, are **triangulated categories** (see <TopicLink id="math.cat.triangulated-categories">Triangulated categories</TopicLink>): additive categories with a shift functor and a class of distinguished triangles $X \to Y \to Z \to X[1]$ satisfying Verdier's axioms. They have been the language of homological algebra since the 1960s. They also have well-known defects:
+
+1. **Cones are not functorial.** Every morphism $f$ sits in a distinguished triangle with third term $\mathrm{Cone}(f)$, and a commutative square between two morphisms extends to a map of triangles (axiom TR3) — but the map on cones is **not unique**, so $f \mapsto \mathrm{Cone}(f)$ is not a functor. We will see an explicit example.
+2. **Homotopy limits and colimits are invisible.** A triangulated category has no good notion of limits of diagrams beyond biproducts; the colimit of a sequence of maps can be formed (Bökstedt–Neeman's homotopy colimit) only up to non-unique isomorphism.
+3. **Gluing and invariants.** Triangulated categories do not glue along open covers, and algebraic K-theory is not an invariant of a triangulated category: Schlichting (2002) found two exact categories whose derived categories are equivalent as triangulated categories but whose K-theories differ.
+
+All three defects have the same cause: passing to a triangulated category keeps morphisms up to homotopy but forgets the homotopies. A **stable ∞-category** keeps them. It is an ∞-category (see <TopicLink id="math.cat.infinity-categories">∞-categories</TopicLink>) with a zero object in which fibre sequences and cofibre sequences coincide; its homotopy category is automatically triangulated, and everything that was "up to non-unique isomorphism" becomes "up to a contractible space of choices".
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Linear algebra up to homotopy">
+
+Think of a stable ∞-category as a homotopy-theoretic version of an abelian group, or of linear algebra. Three intuitions, each made precise below:
+
+- **Kernels are cokernels, shifted.** For abelian groups, the kernel and cokernel of a map are different things. In a stable ∞-category the **fibre** of $g : Y \to Z$ and the **cofibre** of $f : X \to Y$ are related by a perfect duality: $X \to Y \to Z$ is a fibre sequence exactly when it is a cofibre sequence. The derived category explains why: the cofibre of a map of modules $f : M \to N$ is a complex whose $H_0$ is $\operatorname{coker} f$ and whose $H_1$ is $\ker f$ — kernels and cokernels are two homology groups of one object.
+- **Suspension is invertible.** The suspension $\Sigma X = 0 \sqcup_X 0$ and the loop object $\Omega X = 0 \times_X 0$ are inverse equivalences. For pointed spaces they are not ($\Omega\Sigma S^0 \simeq \Omega S^1 \simeq \Z$, a discrete space, which is not $S^0$); "stabilising" means formally inverting $\Sigma$, which is how spectra arise.
+- **Squares are symmetric.** In a stable ∞-category a commutative square is a pullback if and only if it is a pushout. Since squares are where homotopies live (a square commutes *via a chosen homotopy*), this is a statement about homotopies, which is why it is invisible in an ordinary category.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Fibres, cofibres and stability">
+
+Throughout, $\mathcal{C}$ is an ∞-category (a quasi-category). A commutative square in $\mathcal{C}$ is a map $\Delta[1] \times \Delta[1] \to \mathcal{C}$: four objects, four morphisms, a diagonal, and two 2-simplices witnessing that the two composites agree. Pullbacks and pushouts are ∞-categorical limits and colimits (Lurie, *Higher Topos Theory*, Chapter 4).
+
+<Definition term="pointed ∞-category, triangles, fibres and cofibres">
+
+$\mathcal{C}$ is **pointed** if it has a **zero object** $0$, both initial and terminal. A **triangle** in $\mathcal{C}$ is a commutative square
+
+$$
+\begin{array}{ccc} X & \xrightarrow{f} & Y \\ \downarrow & & \downarrow{\scriptstyle g} \\ 0 & \longrightarrow & Z \end{array}
+$$
+
+with a zero object in the lower left corner. It is a **fibre sequence** if the square is a pullback, and then $X$ is a **fibre** of $g$, written $X = \mathrm{fib}(g)$; it is a **cofibre sequence** if the square is a pushout, and then $Z$ is a **cofibre** of $f$, written $Z = \mathrm{cofib}(f)$. The **suspension** of $X$ is $\Sigma X = \mathrm{cofib}(X \to 0)$ and the **loop object** is $\Omega X = \mathrm{fib}(0 \to X)$.
+
+</Definition>
+
+<Definition term="stable ∞-category">
+
+A pointed ∞-category $\mathcal{C}$ is **stable** if every morphism has a fibre and a cofibre, and a triangle in $\mathcal{C}$ is a fibre sequence if and only if it is a cofibre sequence (Lurie, *Higher Algebra*, Definition 1.1.1.9). A functor between stable ∞-categories is **exact** if it preserves zero objects and fibre (equivalently, cofibre) sequences.
+
+</Definition>
+
+Equivalent characterisations (Lurie, *Higher Algebra*, §1.1.3 and §1.4.2): a pointed ∞-category with finite limits and colimits is stable if and only if a commutative square is a pullback exactly when it is a pushout; and a pointed ∞-category with finite colimits is stable if and only if $\Sigma : \mathcal{C} \to \mathcal{C}$ is an equivalence. Note that stability is a **property** of an ∞-category, whereas a triangulation is **extra structure** on a category.
+
+<Definition term="spectra">
+
+The ∞-category of **spectra** is the limit of the tower $\cdots \xrightarrow{\Omega} \mathcal{S}_* \xrightarrow{\Omega} \mathcal{S}_*$ of pointed spaces under the loop functor. Concretely, a spectrum is a sequence of pointed spaces $E_0, E_1, \dots$ with equivalences $E_n \simeq \Omega E_{n+1}$. Its homotopy groups $\pi_k E = \pi_{k+n} E_n$ (for $n$ large) are defined for all $k \in \Z$. Spectra $\mathrm{Sp}$ form the **stabilisation** of $\mathcal{S}_*$: the universal stable ∞-category with a finite-limit-preserving functor $\Omega^\infty : \mathrm{Sp} \to \mathcal{S}_*$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Spectra">
+
+$\mathrm{Sp}$ is stable, and its homotopy category is the classical stable homotopy category. The **sphere spectrum** $\mathbb{S}$ has $\pi_k \mathbb{S} = \pi_k^s$, the stable homotopy groups of spheres ($\pi_0^s = \Z$, $\pi_1^s = \Z/2$, $\pi_2^s = \Z/2$, $\pi_3^s = \Z/24$); an abelian group $A$ gives the **Eilenberg–MacLane spectrum** $HA$ with $\pi_0 HA = A$ and all other homotopy groups zero. Fibre sequences of spectra give long exact sequences of homotopy groups in *both* directions, which is the algebraic heart of stability.
+
+</Example>
+
+<Example title="Derived ∞-categories">
+
+For a ring $R$, the **derived ∞-category** $\mathcal{D}(R)$ is obtained from chain complexes of $R$-modules by inverting quasi-isomorphisms in the ∞-categorical sense (for instance as the dg-nerve of the dg-category of K-projective complexes). It is stable; its homotopy category is the classical derived category $D(R)$; the cofibre of a chain map is its mapping cone, and $\Sigma$ is the shift $[1]$. The same construction works for any abelian category with enough projectives or injectives, for quasi-coherent sheaves on a scheme, and for modules over a ring spectrum.
+
+</Example>
+
+<Example title="Constructions that preserve stability">
+
+If $\mathcal{C}$ is stable and $K$ is any simplicial set, the functor ∞-category $\mathrm{Fun}(K, \mathcal{C})$ is stable (fibres and cofibres are computed pointwise). In particular $\mathrm{Fun}(\Delta[1], \mathcal{C})$, the ∞-category of morphisms of $\mathcal{C}$, is stable — and the cofibre is a functor on it, as we explain below.
+
+</Example>
+
+<Example title="Non-examples">
+
+- **Pointed spaces** $\mathcal{S}_*$: pointed, with all limits and colimits, but $\Sigma$ is not an equivalence ($\Omega \Sigma S^0 \simeq \Z \not\simeq S^0$).
+- **Any non-zero ordinary category**, such as abelian groups or even the triangulated category $D(R)$ regarded as an ordinary category. Theorem 1 below shows that in an ordinary category with a zero object the 1-categorical loop object $0 \times_X 0$ is always $0$, so if fibre sequences were cofibre sequences every object would be zero. (In $D(R)$ the square with corners $X[-1], 0, 0, X$ commutes, but it is not a pullback *in the ordinary category* $D(R)$; it is one only in the ∞-category $\mathcal{D}(R)$.)
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central theorems">
+
+<Theorem name="Theorem 1 (stability is invisible to ordinary categories)">
+
+Let $\mathcal{C}$ be an ordinary category with a zero object. Then for every object $X$:
+
+1. the square with corners $0, 0, 0, X$ is a pullback, so the 1-categorical loop object $0 \times_X 0$ is $0$; dually the 1-categorical suspension $0 \sqcup_X 0$ is $0$;
+2. if that square is also a pushout, then $X \cong 0$.
+
+Consequently, if every fibre sequence in $\mathcal{C}$ is a cofibre sequence, then every object of $\mathcal{C}$ is zero. Since limits and colimits in the nerve $N(\mathcal{C})$ are ordinary limits and colimits, no non-zero ordinary category is a stable ∞-category.
+
+</Theorem>
+
+<Proof>
+
+(1) A cone over $0 \to X \leftarrow 0$ is an object $W$ with two maps $W \to 0$. There is exactly one map $W \to 0$, and it factors both legs, because any two maps into a zero object are equal; so $0$ with its identity legs is a limit. Dually, a cocone under $0 \leftarrow X \to 0$ is a pair of maps $0 \to W$, and the unique map $0 \to W$ is the unique factorisation.
+
+(2) Suppose the square $0 \to 0$, $0 \to X$ is a pushout. The maps $\mathrm{id}_X$ and $0 : X \to X$ agree after composing with each leg $0 \to X$, because any two maps out of a zero object are equal. By the uniqueness part of the universal property of the pushout, $\mathrm{id}_X = 0$, so $X$ is a zero object.
+
+For the consequence, apply the hypothesis to the triangle with $X$ replaced by $0$, $Y = 0$, $Z = X$: it is a fibre sequence by (1), hence a cofibre sequence, hence $X \cong 0$ by (2).
+
+</Proof>
+
+In a stable ∞-category the same square, with corners $\Omega X, 0, 0, X$, is both a pullback and a pushout, and $\Omega X$ is usually far from $0$: in $\mathcal{D}(R)$ it is $X[-1]$. The information lives in the **homotopy** that makes the square commute — two null-homotopies of the zero map $\Omega X \to X$, which together form a "loop" — and an ordinary category has no room for it.
+
+<Theorem name="Theorem 2 (the homotopy category is additive; Lurie, Higher Algebra §1.1.2)">
+
+If $\mathcal{C}$ is stable, then $h\mathcal{C}$ is additive: each $\mathrm{Hom}_{h\mathcal{C}}(X, Y)$ is an abelian group, composition is bilinear, and finite products and coproducts exist and agree.
+
+</Theorem>
+
+<Proof>
+
+We prove the key point, that $[X, Y] := \mathrm{Hom}_{h\mathcal{C}}(X, Y) = \pi_0 \mathrm{Map}(X, Y)$ is naturally an abelian group, and refer to Lurie for bilinearity and biproducts.
+
+The functor $\mathrm{Map}(-, Y)$ turns colimits in $\mathcal{C}$ into limits of spaces. Applied to the pushout $\Sigma A = 0 \sqcup_A 0$ it gives a pullback of spaces $\mathrm{Map}(\Sigma A, Y) \simeq \mathrm{Map}(0, Y) \times_{\mathrm{Map}(A, Y)} \mathrm{Map}(0, Y)$. Since $\mathrm{Map}(0, Y)$ is contractible (with image the zero map), this is the loop space $\Omega(\mathrm{Map}(A, Y), 0)$. Applying this twice,
+
+$$
+[\Sigma^2 A, Y] = \pi_0 \Omega^2 \mathrm{Map}(A, Y) = \pi_2\big(\mathrm{Map}(A, Y), 0\big),
+$$
+
+which is an abelian group by the Eckmann–Hilton argument (see <TopicLink id="math.cat.higher-categories">Higher categories</TopicLink>). In a stable ∞-category $\Sigma$ is an equivalence with inverse $\Omega$, so every $X$ is $\Sigma^2 A$ for $A = \Omega^2 X$, and $[X, Y] \cong \pi_2(\mathrm{Map}(\Omega^2 X, Y), 0)$ is an abelian group, naturally in $X$ and $Y$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (the homotopy category is triangulated; Lurie, Higher Algebra Theorem 1.1.2.14; stated)">
+
+Let $\mathcal{C}$ be stable. Then $h\mathcal{C}$, with shift functor $\Sigma$ and distinguished triangles the diagrams $X \xrightarrow{f} Y \xrightarrow{g} Z \xrightarrow{h} \Sigma X$ arising from a pair of pushout squares
+
+$$
+\begin{array}{ccccc} X & \xrightarrow{f} & Y & \longrightarrow & 0 \\ \downarrow & & \downarrow{\scriptstyle g} & & \downarrow \\ 0 & \longrightarrow & Z & \xrightarrow{h} & W \end{array}
+$$
+
+(the outer rectangle is a pushout, so $W \simeq \Sigma X$), is a triangulated category: it satisfies Verdier's axioms TR1–TR4, including the octahedral axiom.
+
+</Theorem>
+
+The axioms are inherited from the ∞-category: TR1 because cofibres exist; rotation (TR2) by pasting pushout squares; TR3 because any square in $h\mathcal{C}$ lifts to a square in $\mathcal{C}$ and cofibres are functorial there; the octahedral axiom (TR4) by taking cofibres of a composable pair, a diagram of shape $\Delta[2]$, all at once. The long exact sequences of a triangulated category are the shadows of the long exact sequences of homotopy groups of the fibre sequences of mapping spaces $\mathrm{Map}(W, X) \to \mathrm{Map}(W, Y) \to \mathrm{Map}(W, Z)$.
+
+<Theorem name="Theorem 4 (cofibres are functorial; stated)">
+
+In a stable ∞-category (indeed in any pointed ∞-category with cofibres) there is a functor $\mathrm{cofib} : \mathrm{Fun}(\Delta[1], \mathcal{C}) \to \mathcal{C}$ sending a morphism to its cofibre, well defined up to a contractible space of choices.
+
+</Theorem>
+
+The reason: cofibre sequences are left Kan extensions (colimits), and the ∞-category of cofibre sequences maps to $\mathrm{Fun}(\Delta[1], \mathcal{C})$ by a trivial fibration (Lurie, *Higher Topos Theory*, §4.3.2). The crucial difference from TR3 is the source category: a morphism in $\mathrm{Fun}(\Delta[1], \mathcal{C})$ from $f : X \to Y$ to $f' : X' \to Y'$ is not just a pair $(a, b)$ with $b f = f' a$ in $h\mathcal{C}$, but a pair together with a **chosen homotopy** $H : b f \simeq f' a$. Different homotopies induce different maps on cofibres.
+
+<Example title="Cones are not functorial in a triangulated category — and how the homotopy fixes it">
+
+Let $k$ be a field and work in $D(k)$, with the distinguished triangles
+
+$$
+T : \; k \to 0 \to k[1] \xrightarrow{-\mathrm{id}} k[1], \qquad T' : \; 0 \to k[1] \xrightarrow{\mathrm{id}} k[1] \to 0.
+$$
+
+($T$ is a rotation of the contractible triangle $k \to k \to 0 \to k[1]$; $T'$ is the cone triangle of $0 \to k[1]$.) Take $a = 0 : k \to 0$ and $b = 0 : 0 \to k[1]$; the square $b \circ f = f' \circ a$ commutes trivially. A morphism of triangles $(a, b, c)$ needs $c : k[1] \to k[1]$ with $c \circ g = g' \circ b$ and $h' \circ c = a[1] \circ h$. Here $g : 0 \to k[1]$ and $h' : k[1] \to 0$, so both conditions say $0 = 0$: **every** $c = \lambda \cdot \mathrm{id}$, $\lambda \in k$, completes the square. The map on cones is not determined.
+
+In $\mathcal{D}(k)$, the square $(a, b)$ comes with a homotopy $H : b f \simeq f' a$ between two maps $k \to k[1]$ (both zero). Homotopies from the zero map to itself form the loop space $\Omega \mathrm{Map}(k, k[1])$, whose components are $[k, \Omega k[1]] = [k, k] = k$. At the level of chain complexes, $H$ is a degree-one map $h : k \to k$ (from $X_0$ to $Y'_1$), the induced map on mapping cones is $(u, v) \mapsto (a u, b v + h u)$, and on $\mathrm{Cone}(f) = k[1] \to k[1] = \mathrm{Cone}(f')$ it is multiplication by $h = \lambda$. So each choice of homotopy picks out exactly one of the many TR3 fillers — the experiment below computes this with exact arithmetic.
+
+</Example>
+
+<Theorem name="Theorem 5 (enhancements; stated)">
+
+1. For a ring $R$ (more generally a Grothendieck abelian category), the classical derived category is the homotopy category of the stable ∞-category $\mathcal{D}(R)$ (Lurie, *Higher Algebra*, §1.3).
+2. Not every triangulated category is the homotopy category of a stable ∞-category: Muro, Schwede and Strickland (2007) constructed triangulated categories with no model.
+3. Enhancements can be unique: Schwede's rigidity theorem (2007) shows that any stable model category whose homotopy category is equivalent to the stable homotopy category, as a triangulated category, is Quillen equivalent to spectra; Lunts and Orlov (2010) and Canonaco and Stellari (2018) proved uniqueness of dg-enhancements for many derived categories of geometric origin.
+
+</Theorem>
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: what is known and what is open">
+
+**Established.** Stable ∞-categories are the standard setting for modern homological algebra and stable homotopy theory (Lurie, *Higher Algebra*, Chapter 1): t-structures and their abelian hearts, the derived ∞-categories of abelian categories, Brown representability, and the comparison with **pretriangulated dg-categories**, which over a field $k$ are equivalent, as a homotopy theory, to $k$-linear stable ∞-categories (Cohn, 2013). Algebraic K-theory has a universal characterisation as an invariant of small stable ∞-categories (Blumberg, Gepner and Tabuada, 2013), resolving the third defect of the motivation. Spectral algebraic geometry, noncommutative motives and the study of **localising invariants** (K-theory, topological Hochschild and cyclic homology) are built on this foundation.
+
+**Known limits.** There are triangulated categories without enhancements (Theorem 5), and triangulated categories with several inequivalent enhancements are known; when an enhancement is unique is understood in important cases but not in general.
+
+**Open problems that live here.** Many central open problems of stable homotopy theory are statements about the stable ∞-category of spectra: the structure of the stable homotopy groups of spheres (computed only in a finite range), and questions in chromatic homotopy theory about localisations of $\mathrm{Sp}$. Classifying the "thick subcategories" of a stable ∞-category, as Hopkins and Smith did for finite spectra (1998), is open for most examples.
+
+</Section>
+
+<Section id="formal" kind="formal" title="What Lean can say: the 1-categorical shadow">
+
+Mathlib has no stable ∞-categories (and no spectra as an ∞-category), but it has substantial triangulated-category theory: pretriangulated and triangulated categories with Verdier's axioms, the homotopy category of complexes and the derived category of an abelian category as triangulated categories, and t-structures. The formal side of this lesson therefore does two things: it proves Theorem 1 — *why* stability cannot happen in an ordinary category — and it records the triangulated shadow.
+
+Theorem 1, from the definitions of pullbacks and pushouts in Mathlib (`IsPullback`, `IsPushout`). The proofs are those of the lesson: maps into or out of a zero object are unique (`IsZero.eq_of_tgt`, `IsZero.eq_of_src`), and the uniqueness half of the pushout property (`IsPushout.hom_ext`) forces `𝟙 X = 0`:
+
+<Lean decl="Lumenary.StableInfinityCategories.loop_square_isPullback" />
+
+<Lean decl="Lumenary.StableInfinityCategories.suspension_square_isPushout" />
+
+<Lean decl="Lumenary.StableInfinityCategories.isZero_of_loop_square_isPushout" />
+
+<Lean decl="Lumenary.StableInfinityCategories.stable_one_category_trivial" />
+
+The triangulated shadow. Mathlib states TR3 as *existence* of a fill, exactly as in Verdier's axioms — there is no uniqueness to state, as the worked example shows:
+
+<Lean decl="Lumenary.StableInfinityCategories.cone_fill_exists" />
+
+<Lean decl="Lumenary.StableInfinityCategories.comp_zero_12" />
+
+<Lean decl="Lumenary.StableInfinityCategories.comp_zero_23" />
+
+<Lean decl="Lumenary.StableInfinityCategories.coyoneda_exact" />
+
+<Lean decl="Lumenary.StableInfinityCategories.derived_triangulated" />
+
+**What is not formalised.** Stable ∞-categories themselves, spectra, Theorems 2–5, and the functoriality of cofibres need ∞-categorical limits and colimits, which Mathlib does not yet have for quasi-categories. The worked example of non-unique fills is checked computationally below rather than in Lean.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Mapping cones with exact arithmetic">
+
+The experiment represents chain complexes of finite-dimensional rational vector spaces by matrices of fractions. It builds mapping cones, checks $d^2 = 0$, and confirms in three examples that a chain map is a quasi-isomorphism exactly when its cone is acyclic (the triangulated shadow of "a morphism is an equivalence iff its cofibre is zero"). Then it computes the worked example: for the square with $a = b = 0$ it constructs, for each homotopy $h$, the induced chain map of cones, checks that it is a chain map, and finds that it acts on $H_1$ as multiplication by $h$.
+
+<Python id="stable_infinity_categories_cones" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: squares, triangles and fills">
+
+The loop square. In a stable ∞-category it is a pullback *and* a pushout with $\Omega X \simeq X[-1]$; in an ordinary category, Theorem 1 forces the corner to be $0$.
+
+<CommutativeDiagram
+  objects={[
+    { id: "O", tex: "\\Omega X", row: 0, col: 0 },
+    { id: "A", tex: "0", row: 0, col: 1 },
+    { id: "B", tex: "0", row: 1, col: 0 },
+    { id: "X", tex: "X", row: 1, col: 1 }
+  ]}
+  arrows={[
+    { from: "O", to: "A", tex: "" },
+    { from: "O", to: "B", tex: "", labelSide: "right" },
+    { from: "A", to: "X", tex: "" },
+    { from: "B", to: "X", tex: "", labelSide: "right" }
+  ]}
+  size="sm"
+  caption="The square defining $\Omega X$. It commutes via a homotopy between two null-homotopies of $\Omega X \to X$ — the data that an ordinary category forgets."
+/>
+
+The worked example of non-functoriality. The top row is $T$, the bottom row $T'$; the dashed map can be multiplication by any scalar $\lambda$:
+
+<CommutativeDiagram
+  objects={[
+    { id: "a1", tex: "k", row: 0, col: 0 },
+    { id: "a2", tex: "0", row: 0, col: 1 },
+    { id: "a3", tex: "k[1]", row: 0, col: 2 },
+    { id: "a4", tex: "k[1]", row: 0, col: 3 },
+    { id: "b1", tex: "0", row: 1, col: 0 },
+    { id: "b2", tex: "k[1]", row: 1, col: 1 },
+    { id: "b3", tex: "k[1]", row: 1, col: 2 },
+    { id: "b4", tex: "0", row: 1, col: 3 }
+  ]}
+  arrows={[
+    { from: "a1", to: "a2", tex: "" },
+    { from: "a2", to: "a3", tex: "" },
+    { from: "a3", to: "a4", tex: "-\\mathrm{id}" },
+    { from: "b1", to: "b2", tex: "", labelSide: "right" },
+    { from: "b2", to: "b3", tex: "\\mathrm{id}", labelSide: "right" },
+    { from: "b3", to: "b4", tex: "", labelSide: "right" },
+    { from: "a1", to: "b1", tex: "a = 0", labelSide: "right" },
+    { from: "a2", to: "b2", tex: "b = 0", labelSide: "right" },
+    { from: "a3", to: "b3", tex: "\\lambda", style: "dashed", labelSide: "right" },
+    { from: "a4", to: "b4", tex: "", labelSide: "right" }
+  ]}
+  size="sm"
+  caption="Every $\lambda \in k$ gives a morphism of distinguished triangles in $D(k)$ extending the same square $(a, b) = (0, 0)$. In $\mathcal{D}(k)$ the square carries a homotopy, which determines $\lambda$."
+/>
+
+Things to check by hand: why does every square in this diagram commute, whatever $\lambda$ is? Which of the six conditions would fail if the bottom-left object were $k$ instead of $0$? (Then $b \circ f = f' \circ a$ becomes a genuine condition, and the ambiguity in $c$ is the image of $\mathrm{Hom}(\Sigma X, Y')$, which can still be non-zero.)
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Stable ∞-categories are triangulated categories under a new name."** A stable ∞-category carries strictly more information: functorial cones, homotopy limits and colimits, and mapping *spaces* rather than mapping groups. Some triangulated categories have no stable ∞-categorical enhancement at all (Muro–Schwede–Strickland), and invariants such as algebraic K-theory depend on the enhancement (Schlichting).
+
+</Misconception>
+
+<Misconception>
+
+**"A triangulation is a property of a category, like stability."** The other way round: stability is a *property* of an ∞-category (fibre sequences coincide with cofibre sequences), while a triangulation is *structure* on an additive category (a shift functor and a chosen class of triangles), and one category can carry different triangulations.
+
+</Misconception>
+
+<Misconception>
+
+**"The cofibre of $f$ is its cokernel."** In $\mathcal{D}(R)$, the cofibre of a map of modules $f : M \to N$ (viewed as complexes in degree 0) is the two-term complex $M \to N$ in degrees 1 and 0, with $H_0 = \operatorname{coker} f$ and $H_1 = \ker f$. It is the cokernel only when $f$ is injective, and the kernel (shifted) only when $f$ is surjective.
+
+</Misconception>
+
+<Misconception>
+
+**"An abelian category is stable because it has kernels and cokernels."** By Theorem 1, no non-zero ordinary category is stable. Abelian categories appear inside stable ∞-categories differently: as **hearts** of t-structures, for example $\mathrm{Mod}_R \subset \mathcal{D}(R)$ as the complexes with homology only in degree $0$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Spectra and generalised cohomology">
+
+Stability first appeared in topology. The Freudenthal suspension theorem (1937) says that $\pi_{n+k}(S^n)$ is independent of $n$ once $n > k + 1$: in a stable range, suspension is an isomorphism. Brown's representability theorem (1962) says that every generalised cohomology theory — ordinary cohomology, K-theory, cobordism — is represented by a spectrum $E$, with $E^n(X) = [\Sigma^\infty X, \Sigma^n E]$. In the stable ∞-category $\mathrm{Sp}$ these become structural facts: $\Sigma$ is an equivalence, and a cohomology theory is an exact functor out of spectra. See <TopicLink id="math.geom.stable-homotopy-theory">Stable homotopy theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Homological algebra without choices">
+
+For an algebraist, a stable ∞-category is the right home for derived functors. In $\mathcal{D}(R)$ the derived tensor product and derived Hom are functors of ∞-categories, the mapping cone is functorial (Theorem 4), and the long exact sequences of $\mathrm{Ext}$ and $\mathrm{Tor}$ are homotopy groups of fibre sequences of mapping spectra. Abelian categories reappear as hearts of t-structures, and $\mathrm{Ext}^n_R(M, N) = \pi_{-n}\,\mathrm{map}(M, N)$. The mapping-cone computation of the worked example is exactly the chain-level construction that dg-categories (Bondal–Kapranov, Keller) keep and triangulated categories forget. See <TopicLink id="math.cat.derived-categories">Derived categories</TopicLink> and <TopicLink id="math.algebra.homological-algebra">Homological algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Derived categories of varieties">
+
+Algebraic geometers study a variety $X$ through the stable ∞-category of (quasi-)coherent sheaves on it. Mukai (1981) showed that an abelian variety and its dual have equivalent derived categories, although they need not be isomorphic; Bondal and Orlov (2001) showed that a smooth projective variety with ample or anti-ample canonical bundle is determined by its derived category. Equivalences between derived categories of varieties are given by **Fourier–Mukai kernels**, and the ∞-categorical setting is what makes this precise in general: by a theorem of Ben-Zvi, Francis and Nadler (2010), for well-behaved derived stacks the colimit-preserving functors between their ∞-categories of quasi-coherent sheaves are exactly given by kernels on the product. Stable ∞-categories also *glue* along open covers, which triangulated categories cannot. See <TopicLink id="math.geom.algebraic-geometry">Algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Branes and homological mirror symmetry">
+
+In topological string theory, boundary conditions ("D-branes") and the open strings between them form a category whose morphism spaces are graded and only defined up to homotopy; bound states of branes are cones. Kontsevich's **homological mirror symmetry** conjecture (ICM 1994) proposes that, for mirror pairs of Calabi–Yau manifolds $X$ and $X^\vee$, the derived category of coherent sheaves on $X$ is equivalent to a derived Fukaya category of $X^\vee$ — an equivalence of triangulated categories that is naturally an equivalence of $A_\infty$ / stable ∞-categories. It has been proved in important cases (the elliptic curve by Polishchuk and Zaslow, 1998; the quartic surface by Seidel). The physical picture is heuristic; the mathematical statements are theorems or conjectures about stable ∞-categories. See <TopicLink id="math.geom.symplectic-geometry">Symplectic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Stability as a universal property">
+
+Categorically, stability is a completion: every pointed ∞-category with finite limits has a **stabilisation** $\mathrm{Sp}(\mathcal{C}) = \lim(\cdots \xrightarrow{\Omega} \mathcal{C} \xrightarrow{\Omega} \mathcal{C})$, universal among stable ∞-categories mapping to it, just as abelianisation is universal among abelian groups. Spectra are the stabilisation of spaces; Goodwillie's calculus of functors approximates a functor by a tower of "$n$-excisive" functors whose first stage is built from stabilisation, much as a Taylor series starts with the derivative. And stable ∞-categories are to spectra what additive categories are to abelian groups: every stable ∞-category is canonically enriched, in a homotopy-coherent sense, in spectra, just as every additive category is enriched in abelian groups.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1930s–1960s: stable phenomena in topology.** Hans Freudenthal (Netherlands) proved the suspension theorem (1937); Dieter Puppe (Germany) introduced the cofibre sequences now named after him (1958); Edgar Brown (USA) proved representability (1962); Michael Boardman (UK) constructed the stable homotopy category (1960s), and J. F. Adams's *Stable Homotopy and Generalised Homology* (1974) made it standard.
+- **1960s: triangulated and derived categories.** Jean-Louis Verdier, a student of Grothendieck in Paris, axiomatised triangulated categories and constructed derived categories (thesis 1967, published in full only in 1996), to support Grothendieck's duality theory; Puppe independently formulated similar axioms.
+- **1980s–1990s: enhancements.** Alexei Bondal and Mikhail Kapranov (Russia) introduced enhanced triangulated categories via dg-categories (1990); Bernhard Keller developed the theory of dg-categories; Amnon Neeman (Australia) wrote the standard text on triangulated categories (2001); Shigeru Mukai (Japan) and Dmitri Orlov (Russia) made derived categories central to algebraic geometry; models for spectra with a good smash product were constructed by Elmendorf, Kriz, Mandell and May (1997) and by Hovey, Shipley and Smith (2000).
+- **2000s: stable ∞-categories.** Jacob Lurie's "Stable infinity categories" (2006) and *Higher Algebra* defined stable ∞-categories and proved that their homotopy categories are triangulated; Blumberg, Gepner and Tabuada characterised K-theory on them (2013).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+A suggested path: Groth's short course for the definitions; Lurie's *Higher Algebra*, Chapter 1, for the theory; Neeman and Krause for the triangulated side; Keller for dg-categories.
+
+- Jacob Lurie, *Higher Algebra* (book-length manuscript distributed by the author), Chapter 1, "Stable ∞-categories".
+- Jacob Lurie, *Higher Topos Theory* (2009), Chapters 1–4.
+- Moritz Groth, "A short course on ∞-categories", in *Handbook of Homotopy Theory* (2020).
+- Amnon Neeman, *Triangulated Categories* (2001).
+- Henning Krause, *Homological Theory of Representations* (2021).
+- Bernhard Keller, "On differential graded categories", *Proceedings of the ICM 2006*.
+- Andrew Blumberg, David Gepner and Gonçalo Tabuada, "A universal characterization of higher algebraic K-theory", *Geometry & Topology* 17 (2013).
+- J. F. Adams, *Stable Homotopy and Generalised Homology* (1974).
+
+</Section>

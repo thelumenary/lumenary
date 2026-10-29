@@ -1,0 +1,418 @@
+---
+slug: formal-proof-lean
+topic: math.comp.formal-proof-lean
+title: Formalising mathematics in Lean and Mathlib
+subtitle: Writing undergraduate mathematics so that a computer can check every step — sets, functions, quantifiers and algebraic structures in Lean 4 with Mathlib, and what the check does and does not guarantee.
+level: ug1
+ages: Undergraduate (first or second year)
+minutes: 110
+order: 5020
+objectives:
+  - Formalise definitions and proofs about sets, functions and quantifiers in Lean, such as the facts that a composite of injections is injective and that images preserve unions
+  - Use structures, type classes and Mathlib's algebraic hierarchy to state and prove results about every monoid or group at once
+  - Search Mathlib for existing results, and explain the trade-off between citing a library lemma and proving a result from scratch
+  - Recognise the conventions and hidden hypotheses that formalisation exposes, such as $x/0 = 0$ and truncated subtraction on $\N$
+  - Explain what a machine check guarantees — and what it does not — using the kernel, `#print axioms`, and the need for definitions to match standard usage
+narrators: [gideon]
+lean:
+  - Lumenary.FormalProofLean.injective_comp
+  - Lumenary.FormalProofLean.injective_comp_library
+  - Lumenary.FormalProofLean.surjective_comp
+  - Lumenary.FormalProofLean.injective_of_comp
+  - Lumenary.FormalProofLean.image_union
+  - Lumenary.FormalProofLean.image_inter_subset
+  - Lumenary.FormalProofLean.image_inter_ne
+  - Lumenary.FormalProofLean.image_inter_of_injective
+  - Lumenary.FormalProofLean.preimage_inter
+  - Lumenary.FormalProofLean.exists_forall_imp
+  - Lumenary.FormalProofLean.forall_exists_not_imp
+  - Lumenary.FormalProofLean.ConvergesTo
+  - Lumenary.FormalProofLean.converges_one_div
+  - Lumenary.FormalProofLean.limit_unique
+  - Lumenary.FormalProofLean.convergesTo_iff_tendsto
+  - Lumenary.FormalProofLean.MyMonoid
+  - Lumenary.FormalProofLean.natAddMyMonoid
+  - Lumenary.FormalProofLean.MyMonoid.one_unique
+  - Lumenary.FormalProofLean.zero_unique_nat
+  - Lumenary.FormalProofLean.inv_unique
+  - Lumenary.FormalProofLean.comm_of_sq_eq_one
+  - Lumenary.FormalProofLean.add_sq_comm_ring
+  - Lumenary.FormalProofLean.div_zero_convention
+  - Lumenary.FormalProofLean.div_mul_cancel_of_ne
+  - Lumenary.FormalProofLean.div_mul_cancel_needs_hyp
+  - Lumenary.FormalProofLean.nat_sub_truncates
+  - Lumenary.FormalProofLean.nat_sub_add_cancel
+compute: [formal_proof_lean_finite_models, formal_proof_lean_proof_checker]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why let a computer check a proof?">
+
+In 1998 Thomas Hales announced a proof of the Kepler conjecture: no packing of equal spheres in space is denser than the familiar pyramid of oranges on a market stall. The proof combined hundreds of pages of argument with extensive computer calculations, and after years of work the referees said they were "99% certain" it was correct. Hales responded by leading the *Flyspeck* project, which by 2014 had checked the entire proof in the proof assistants HOL Light and Isabelle. In 2020 Peter Scholze challenged the community to check a difficult theorem of his and Dustin Clausen's in condensed mathematics; the *Liquid Tensor Experiment*, carried out in Lean by a team coordinated by Johan Commelin, completed the task in 2022, and Scholze reported that the work had improved his own understanding of the proof.
+
+A **proof assistant** is a program in which definitions, theorem statements and proofs are written in a precise formal language, and a small trusted core — the **kernel** — checks that every step follows from the rules. Mathematicians formalise to gain certainty about long or computer-assisted proofs, to build a searchable library of mathematics, and — increasingly — simply because it is a superb way to learn exactly what a proof needs.
+
+This lesson continues <TopicLink id="math.comp.intro-lean">first steps in Lean</TopicLink>, where you met `rfl`, `rw`, `simp` and induction. Here we formalise the everyday material of a first university course — sets and functions, quantifiers, limits, algebraic structures — in **Lean 4** with **Mathlib**, the community's mathematical library.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Statements are types, proofs are objects">
+
+In Lean every expression has a **type**. `3 : ℕ` says that $3$ is a natural number; `fun n => n + 1 : ℕ → ℕ` is a function. A mathematical statement is also a type, of the special sort `Prop`, and a **proof** of the statement is an object of that type. To prove $P \to Q$ is to construct a function that turns any proof of $P$ into a proof of $Q$; to prove $\forall x, P(x)$ is to construct a function sending each $x$ to a proof of $P(x)$; to prove $\exists x, P(x)$ is to supply a witness together with a proof about it. This correspondence between propositions and types is the **Curry–Howard correspondence**.
+
+Writing proof objects by hand is tedious, so we usually write **tactics**: instructions such as `intro`, `apply`, `rw`, `obtain` and `exact` that transform the current **goal** (what remains to be shown, with the hypotheses available) step by step, while Lean builds the proof object behind the scenes. Here is the proof that a composite of injections is injective; read it alongside the comments.
+
+<Lean decl="Lumenary.FormalProofLean.injective_comp" />
+
+After `intro x y h` the goal is `x = y`, with `h : (g ∘ f) x = (g ∘ f) y`. `apply hf` says: "it suffices to show `f x = f y`, since `f` is injective"; `apply hg` reduces that to `g (f x) = g (f y)`; and `exact h` finishes, because `(g ∘ f) x` *is by definition* `g (f x)`. The kernel then checks the finished proof object — however it was produced.
+
+<Narrator who="gideon">
+
+Notice the order: the proof uses `f`'s injectivity first in the text but peels off `g` first in the reasoning — `apply` works backwards from the goal. Formal proofs make that backwards-and-forwards dance of mathematical reasoning visible, line by line.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="proof assistant and kernel">
+
+A **proof assistant** is software for writing definitions, statements and proofs in a formal language and checking them mechanically. Its **kernel** is the small part that checks proof objects against the rules of the underlying logic; everything else (tactics, automation, the user interface) may contain bugs without endangering correctness, because the kernel re-checks the result. That a system's trustworthiness should rest on a small, independently checkable core is known as the **de Bruijn criterion**.
+
+</Definition>
+
+<Definition term="Mathlib">
+
+**Mathlib** is the community-maintained mathematical library for Lean 4: hundreds of thousands of definitions and theorems, from logic and set theory through algebra, topology, analysis, measure theory, number theory and category theory, written and reviewed by hundreds of contributors, with consistent naming and a single coherent hierarchy of structures.
+
+</Definition>
+
+<Definition term="structure and type class">
+
+A **structure** is a type whose elements bundle several fields, such as the operations and laws of a monoid. A **type class** is a structure that Lean finds automatically: once an **instance** such as "`ℕ` is a monoid under addition" is declared, **instance search** supplies it wherever the class is needed, so one theorem about all monoids applies to every instance.
+
+</Definition>
+
+<Definition term="definitional and propositional equality">
+
+Two expressions are **definitionally equal** if Lean can see they are equal by unfolding definitions and computing; then `rfl` proves them equal. **Propositional** equality `a = b` is a statement that may need a real proof. For example `(g ∘ f) x` and `g (f x)` are definitionally equal, while `a + b = b + a` for natural numbers needs induction.
+
+</Definition>
+
+<Definition term="axioms">
+
+Lean's logic is a dependent type theory with three standard axioms in Mathlib: **propositional extensionality** (`propext`: equivalent propositions are equal), **quotient soundness** (`Quot.sound`, which also yields function extensionality) and **choice** (`Classical.choice`, from which the law of excluded middle follows). The command `#print axioms T` lists the axioms that the proof of `T` depends on — and would list `sorryAx` if any step had been left unproved.
+
+</Definition>
+
+</Section>
+
+<Section id="sets-functions" kind="proof" title="Functions and sets">
+
+<Theorem name="Theorem 1 (composites)">
+
+Let $f : A \to B$ and $g : B \to C$. (a) If $f$ and $g$ are injective, so is $g \circ f$. (b) If $f$ and $g$ are surjective, so is $g \circ f$. (c) If $g \circ f$ is injective, then $f$ is injective.
+
+</Theorem>
+
+<Proof>
+
+(a) If $g(f(x)) = g(f(y))$, then $f(x) = f(y)$ because $g$ is injective, so $x = y$ because $f$ is injective. (b) Given $z \in C$, choose $y \in B$ with $g(y) = z$, then $x \in A$ with $f(x) = y$; then $(g \circ f)(x) = z$. (c) If $f(x) = f(y)$ then $g(f(x)) = g(f(y))$, so $x = y$ by injectivity of $g \circ f$.
+
+</Proof>
+
+<CommutativeDiagram objects={[{ id: "A", tex: "A", row: 0, col: 0 }, { id: "B", tex: "B", row: 0, col: 1 }, { id: "C", tex: "C", row: 1, col: 1 }]} arrows={[{ from: "A", to: "B", tex: "f", style: "hook" }, { from: "B", to: "C", tex: "g", style: "hook" }, { from: "A", to: "C", tex: "g \\circ f", style: "hook", labelSide: "right" }]} caption="Composites of injections (hooked arrows) are injections. Part (c) is a converse for the first map only." />
+
+In Lean, part (b) eliminates two existential statements with `obtain`, and the pattern `rfl` substitutes the equation it obtains; part (c) is the human proof almost word for word. Mathlib has part (a) already — the theorem is found by `exact?`, or by guessing its name from Mathlib's conventions (the conclusion `Injective (g ∘ f)` becomes `Injective.comp`):
+
+<Lean decl="Lumenary.FormalProofLean.surjective_comp" />
+
+<Lean decl="Lumenary.FormalProofLean.injective_of_comp" />
+
+<Lean decl="Lumenary.FormalProofLean.injective_comp_library" />
+
+**Sets.** In Mathlib a set of elements of type `α` is a predicate: `Set α` is `α → Prop`, and `x ∈ s` means `s x`. The image `f '' s` is the set of `y` for which `∃ x, x ∈ s ∧ f x = y`, and the preimage `f ⁻¹' t` is the set of `x` with `f x ∈ t`. Two sets are equal when they have the same elements (**extensionality**, the tactic `ext`).
+
+<Theorem name="Theorem 2 (images and preimages)">
+
+For $f : A \to B$, subsets $S, T \subseteq A$ and $U, V \subseteq B$: (a) $f(S \cup T) = f(S) \cup f(T)$; (b) $f(S \cap T) \subseteq f(S) \cap f(T)$, with equality for all $S, T$ if $f$ is injective, but not in general; (c) $f^{-1}(U \cap V) = f^{-1}(U) \cap f^{-1}(V)$.
+
+</Theorem>
+
+<Proof>
+
+(a) $y \in f(S \cup T)$ iff $y = f(x)$ for some $x$ in $S$ or in $T$, iff $y \in f(S)$ or $y \in f(T)$. (b) If $y = f(x)$ with $x \in S \cap T$, then $y \in f(S)$ and $y \in f(T)$. If $f$ is injective and $y = f(x_1) = f(x_2)$ with $x_1 \in S$, $x_2 \in T$, then $x_1 = x_2 \in S \cap T$. For the constant function $f = 0$ on $\N$ with $S = \{0\}$, $T = \{1\}$: $f(S \cap T) = \varnothing$ but $f(S) \cap f(T) = \{0\}$. (c) $x$ lies in either side iff $f(x) \in U$ and $f(x) \in V$.
+
+</Proof>
+
+<Lean decl="Lumenary.FormalProofLean.image_union" />
+
+<Lean decl="Lumenary.FormalProofLean.image_inter_subset" />
+
+<Lean decl="Lumenary.FormalProofLean.image_inter_ne" />
+
+<Lean decl="Lumenary.FormalProofLean.image_inter_of_injective" />
+
+<Lean decl="Lumenary.FormalProofLean.preimage_inter" />
+
+The `rintro` patterns in the first proof do a lot at once: `⟨x, hx | hx, rfl⟩` introduces a witness `x`, splits the "or" into two cases, and substitutes `y = f x`. Part (c) is true *by definition* — after unfolding, both sides are the same predicate — so its proof is `rfl`. That preimages behave better than images is a familiar fact in topology, and here the formal system shows exactly why.
+
+</Section>
+
+<Section id="quantifiers" kind="proof" title="Quantifiers, limits, and checking definitions">
+
+Every quantifier step has a tactic:
+
+| To … | in a goal | in a hypothesis `h` |
+| --- | --- | --- |
+| $\forall x, P(x)$ | `intro x` | `h a` (specialise to `a`) |
+| $\exists x, P(x)$ | `exact ⟨a, proof⟩` or `use a` | `obtain ⟨x, hx⟩ := h` |
+| $P \to Q$ | `intro hp` | `h hp` |
+| $P \wedge Q$ | `constructor` or `⟨hp, hq⟩` | `obtain ⟨hp, hq⟩ := h` |
+| $P \vee Q$ | `left` / `right` | `rcases h with hp \| hq` |
+| $\neg P$ | `intro hp` (then derive `False`) | `exact absurd hp h` |
+
+The order of quantifiers matters, and formalisation never lets you forget it.
+
+<Theorem name="Theorem 3 (swapping quantifiers)">
+
+$\exists x\, \forall y\, P(x, y)$ implies $\forall y\, \exists x\, P(x, y)$. The converse is false: in $\N$, $\forall n\, \exists m\; n < m$ holds but $\exists m\, \forall n\; n < m$ does not.
+
+</Theorem>
+
+<Proof>
+
+If one $x_0$ satisfies $P(x_0, y)$ for every $y$, then for each $y$ the witness $x_0$ works. For the counterexample, every $n$ has $n < n + 1$; but if $m$ were larger than every $n$, it would be larger than itself.
+
+</Proof>
+
+<Lean decl="Lumenary.FormalProofLean.exists_forall_imp" />
+
+<Lean decl="Lumenary.FormalProofLean.forall_exists_not_imp" />
+
+**Limits.** The definition of convergence is a $\forall\exists\forall$ statement. Written in Lean exactly as in an analysis course, it can be used to prove the standard first results — and the proofs have the same shape as on paper.
+
+<Theorem name="Theorem 4 (two first facts about limits)">
+
+(a) $\frac{1}{n+1} \to 0$. (b) A sequence has at most one limit.
+
+</Theorem>
+
+<Proof>
+
+(a) Given $\varepsilon > 0$, the Archimedean property gives $N > 1/\varepsilon$; for $n \ge N$, $\frac{1}{n+1} < \frac1N < \varepsilon$. (b) Suppose $a_n \to L$ and $a_n \to M$ with $L \ne M$, and let $\varepsilon = |L - M|/2 > 0$. For $n$ beyond both thresholds, $|L - M| \le |a_n - L| + |a_n - M| < 2\varepsilon = |L - M|$, a contradiction.
+
+</Proof>
+
+<Lean decl="Lumenary.FormalProofLean.ConvergesTo" />
+
+<Lean decl="Lumenary.FormalProofLean.converges_one_div" />
+
+<Lean decl="Lumenary.FormalProofLean.limit_unique" />
+
+But is `ConvergesTo` *the right definition*? Lean cannot answer that: it will happily check proofs about a definition that does not mean what you intended. Mathlib defines convergence differently — with **filters**, `Tendsto a atTop (𝓝 L)`, a single notion that covers limits of sequences, of functions at a point, at infinity, from one side, and in any topological space. The following theorem checks that the two definitions agree, so every Mathlib theorem about `Tendsto` applies to our definition:
+
+<Lean decl="Lumenary.FormalProofLean.convergesTo_iff_tendsto" />
+
+This is the most important habit of formalisation: **a formal library is useful only if its definitions match standard mathematical usage, and that match is checked by people** — by reading definitions, testing them on examples, and proving equivalences like this one.
+
+</Section>
+
+<Section id="structures" kind="proof" title="Structures, type classes and the algebraic hierarchy">
+
+A monoid is a set with an associative operation and a two-sided unit. In Lean that description becomes a **class** whose fields are the operations and the laws; an **instance** provides them for a particular type, and a theorem proved for an arbitrary instance holds for all of them.
+
+<Lean decl="Lumenary.FormalProofLean.MyMonoid" />
+
+<Lean decl="Lumenary.FormalProofLean.natAddMyMonoid" />
+
+<Theorem name="Proposition 5 (units and inverses are unique)">
+
+(a) In a monoid, if $e$ satisfies $ea = a = ae$ for all $a$, then $e = 1$. (b) If $ba = 1$ and $ac = 1$, then $b = c$.
+
+</Theorem>
+
+<Proof>
+
+(a) $e = e \cdot 1 = 1$, using first that $1$ is a unit and then that $e$ is. (b) $b = b(ac) = (ba)c = c$.
+
+</Proof>
+
+<Lean decl="Lumenary.FormalProofLean.MyMonoid.one_unique" />
+
+<Lean decl="Lumenary.FormalProofLean.zero_unique_nat" />
+
+<Lean decl="Lumenary.FormalProofLean.inv_unique" />
+
+In the last proof `Monoid` is **Mathlib's** class. Mathlib organises algebra as a hierarchy of classes — `Semigroup`, `Monoid`, `Group`, `CommGroup`, `Ring`, `CommRing`, `Field`, ordered and normed variants, modules and algebras — linked so that every group is automatically a monoid, every field a ring, and so on. A lemma proved at the most general level (here, any monoid) is available everywhere below it.
+
+<Theorem name="Proposition 6">
+
+If every element $x$ of a group satisfies $x^2 = 1$, the group is commutative.
+
+</Theorem>
+
+<Proof>
+
+From $xx = 1$ we get $x^{-1} = x$ for every $x$. Hence $ab = (ab)^{-1} = b^{-1}a^{-1} = ba$.
+
+</Proof>
+
+<Lean decl="Lumenary.FormalProofLean.comm_of_sq_eq_one" />
+
+For identities in commutative rings, the `ring` tactic does all the work by normalising both sides as polynomials; the theorem then holds in $\Z$, $\Q$, $\R$, $\Z/n\Z$ and every other commutative ring Mathlib knows:
+
+<Lean decl="Lumenary.FormalProofLean.add_sq_comm_ring" />
+
+</Section>
+
+<Section id="conventions" kind="proof" title="What formalisation exposes">
+
+A formal system must say what *every* expression means, including expressions mathematicians avoid. In Lean and Mathlib, `x / 0 = 0` and, for natural numbers, `2 - 3 = 0`. These are **conventions** that make division and subtraction total functions; they do not change mathematics, because the theorems that would be false without a hypothesis *carry* that hypothesis.
+
+<Lean decl="Lumenary.FormalProofLean.div_zero_convention" />
+
+<Lean decl="Lumenary.FormalProofLean.div_mul_cancel_of_ne" />
+
+<Lean decl="Lumenary.FormalProofLean.div_mul_cancel_needs_hyp" />
+
+<Lean decl="Lumenary.FormalProofLean.nat_sub_truncates" />
+
+<Lean decl="Lumenary.FormalProofLean.nat_sub_add_cancel" />
+
+So nothing false follows from $1/0 = 0$: to "cancel" $b$ in $a/b \cdot b = a$ you must supply a proof of $b \ne 0$. What the convention changes is *where* the hypothesis appears — on the cancellation law rather than on every use of division — which makes many statements shorter and some proofs easier.
+
+Formalisation exposes hidden assumptions of other kinds too. A paper proof may silently use that a set is non-empty, that a function is defined everywhere, that two copies of "the same" structure really are the same, or that a case is "similar". Lean asks for each one. Experience from projects such as the Liquid Tensor Experiment is that formalisation is rarely mere translation: it often clarifies statements, finds small gaps and occasionally real errors, and sometimes suggests better proofs.
+
+**Searching and reusing.** Before proving anything, look for it. Mathlib names follow conventions (`mul_comm`, `add_le_add`, `Function.Injective.comp`, `Set.image_union`); `exact?` searches the library for a lemma that closes the goal, `apply?` for lemmas whose conclusion fits, and `simp?` and `rw?` suggest rewrites; `#check` shows a statement. The documentation website and the Loogle search engine search by name and by the shape of a statement, and the Lean Zulip chat is where questions are answered. Citing a library lemma gives a short proof that inherits years of review and is maintained as the library changes; proving from scratch teaches you the argument and is necessary when the result is missing. This lesson's Lean file does both and labels each declaration accordingly.
+
+</Section>
+
+<Section id="formal" kind="formal" title="What the check guarantees">
+
+Everything displayed in this lesson was compiled by Lean, and the website shows exactly the code that compiled. What does that guarantee?
+
+- **Every step follows from the rules** of Lean's type theory and the axioms the proof uses. `#print axioms` makes the axioms visible. For this lesson's file it reports, for instance, that `injective_comp`, `surjective_comp` and `nat_sub_truncates` *depend on no axioms at all*; `comm_of_sq_eq_one` uses only `propext`; `image_inter_ne` uses `propext` and `Quot.sound`; and `limit_unique`, which argues by contradiction on real numbers, uses all three standard axioms, including `Classical.choice`. A proof with a gap would show `sorryAx`; the Lumenary's build refuses any.
+- **Not** that the statement means what you think. If a definition is wrong, or a hypothesis is accidentally contradictory, Lean checks a correct proof of the wrong statement. That is why we proved `convergesTo_iff_tendsto`, why exercises below ask which formal statement matches an informal one, and why the Lumenary labels every declaration as `independent`, `library` or `definition` rather than claiming more.
+- **Trust in the checker.** Lean's kernel is small, and independent re-implementations of kernel checkers exist for Lean 4 proofs; still, one trusts the kernel, the compiler that built it, and the hardware. This residual trust is far smaller than the trust needed in a long proof checked only by eye.
+
+The Lean exercises for this lesson (in `formal/LumenaryExercises/FormalProofLean.lean`) ask you to reprove `surjective_comp`, `exists_forall_imp` and `inv_unique` from their statements; the solutions are the declarations above.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: testing before proving, and a checker in miniature">
+
+Before trying to prove a statement it is wise to test it on small cases. The first experiment checks the claims of Theorems 1–3 on *every* function and relation between sets with at most three elements. An exhaustive search over a finite universe can refute a general claim — one counterexample suffices — but never prove it for all sets.
+
+<Python id="formal_proof_lean_finite_models" />
+
+How small can a proof checker be? The second experiment implements one for a Hilbert-style system of propositional logic (two axiom schemes and modus ponens) in about twenty lines, checks the classic five-line proof of $p \to p$, and rejects a faulty proof with a precise message. Checking a proof is a single pass over its lines; *finding* a proof is a search. That asymmetry is why proof assistants pair a small kernel with powerful tactics.
+
+<Python id="formal_proof_lean_proof_checker" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: truth tables versus proofs">
+
+A truth table settles a propositional formula by checking every assignment — a decision procedure, exactly what Lean's `decide` tactic does for finite questions. Peirce's law $((p \to q) \to p) \to p$ is a tautology, so classical logic proves it; but it cannot be derived from the axiom schemes K and S used in the second experiment, which capture only *intuitionistic* implication. In Lean, proving it requires classical reasoning (`by_cases`, ultimately `Classical.choice`). Compare it with the law of excluded middle below, and try your own formulas.
+
+<TruthTable formula="((p → q) → p) → p" compare="p ∨ ¬p" title="Peirce's law and excluded middle" subtitle="Both are tautologies; neither is provable without classical reasoning." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Formalisation is mere translation."** Turning a paper proof into Lean usually exposes hidden assumptions (non-emptiness, side conditions such as $b \ne 0$, which of two equal-looking objects is meant), forces choices of definitions, and sometimes reveals gaps or errors. It is closer to re-proving the result with every step made explicit.
+
+</Misconception>
+
+<Misconception>
+
+**"Lean's convention $x/0 = 0$ changes mathematics."** It is a definitional convenience that makes division a total function. Theorems where it matters carry hypotheses — `div_mul_cancel₀` needs `b ≠ 0` — and without them the familiar laws are simply not available, as `div_mul_cancel_needs_hyp` shows. No false statement about real numbers becomes provable.
+
+</Misconception>
+
+<Misconception>
+
+**"If Lean accepts it, the theorem I meant is proved."** Lean checks that the proof proves *the statement written*. A wrong definition, a missing hypothesis in the informal sense, or contradictory hypotheses (which make any conclusion provable) all pass the check. Statements and definitions must be read and tested by people.
+
+</Misconception>
+
+<Misconception>
+
+**"No `sorry` means no axioms."** A `sorry`-free proof may still use Lean's standard axioms, and many do (any proof by contradiction about real numbers uses `Classical.choice`). `#print axioms` tells you exactly which ones — and that is information, not a flaw.
+
+</Misconception>
+
+<Misconception>
+
+**"Automation makes formal proofs unreliable."** Tactics such as `simp`, `ring`, `omega` and `exact?` are search and decision procedures that *produce* proof objects; the kernel checks those objects like any other. Automation affects readability and speed, not soundness.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="logic" title="Propositions as types, and two foundations">
+
+Lean's logic is the **calculus of inductive constructions**, a dependent type theory. Under the **Curry–Howard correspondence** an implication $P \to Q$ is the type of functions from proofs of $P$ to proofs of $Q$, $\forall x : A,\, P(x)$ is a *dependent* function type ($\Pi$-type), and $\exists x : A,\, P(x)$ is a dependent pair. Natural numbers, lists and even the logical connectives are **inductive types**, each with its own induction principle. This differs from the set-theoretic foundation **ZFC**, where everything is a set and $2 \in 3$ is a meaningful (true) statement; in Lean every term has a type and such "junk" questions cannot even be asked. The two foundations are known to be closely related in strength: Lean's type theory with its axioms can model ZFC-style mathematics, and conversely it can be interpreted in ZFC with enough inaccessible cardinals (Carneiro, 2019). See <TopicLink id="math.found.type-theory">type theory</TopicLink> and <TopicLink id="math.found.zfc">ZFC</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Checking is decidable, finding is not">
+
+Given a proof object, checking it is an algorithm (type checking, which is decidable for Lean's kernel in practice); given only a statement, there is no algorithm that always finds a proof or reports that none exists. For first-order logic this is the Church–Turing theorem (1936) on the undecidability of the *Entscheidungsproblem*, and Gödel's incompleteness theorems show that for arithmetic some true statements have no proof at all. Proof assistants live in this gap: the kernel decides correctness, while tactics search heuristically, and decision procedures (`decide` for finite questions, `omega` for linear arithmetic over $\Z$ and $\N$, `ring` for commutative-ring identities) handle the fragments that *are* decidable. See <TopicLink id="math.comp.computability">computability</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The hierarchy as a design problem">
+
+How should "a ring is an additive group and a multiplicative monoid, linked by distributivity" be encoded so that a theorem about groups applies to rings, a theorem about ordered fields applies to $\R$, and Lean always finds *one* consistent structure? Mathlib uses type classes extending one another (`Ring` extends `Semiring`, `AddCommGroup` and `Monoid`), and must avoid **diamonds**: two inheritance paths giving two different, merely isomorphic structures on the same type (for example two topologies on a product of metric spaces). The solution — carrying the derived structure as data and proving the paths agree definitionally — is algebra in its own right: it mirrors the universal properties and forgetful functors that organise algebraic structures. See <TopicLink id="math.algebra.groups">groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Equality as a path; limits as filters">
+
+In **homotopy type theory** (HoTT) a proof of $a = b$ is viewed as a *path* from $a$ to $b$ in a space, proofs of equality between paths as homotopies, and Voevodsky's **univalence axiom** identifies equivalent types. This is a genuinely different foundation: Lean 4 has *definitional proof irrelevance* — any two proofs of the same proposition are equal — which forces all paths between two points to be equal and is incompatible with univalence. Topology enters Mathlib in another way: **filters** (generalised neighbourhood systems) express every kind of limit with one definition, `Tendsto f l₁ l₂`, so that "$a_n \to L$", "$f(x) \to L$ as $x \to a^+$" and "$f(x) \to \infty$" are all instances of a single concept, and continuity, compactness and uniform convergence are stated with the same tools. See <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink> and <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Types and functions as a category">
+
+Lean's types and functions form a category: composition is `∘`, identities are `id`, and the laws hold by `rfl` — as in <TopicLink id="math.cat.composition">composition</TopicLink>. Mathlib's category theory library builds on this, defining categories, functors, natural transformations, limits, adjunctions and abelian categories, with `Type` as a category among many. Category theory is also a guide to formalisation itself: a definition that satisfies the right universal property is usually the one that will be easiest to use. See <TopicLink id="math.cat.categories">categories</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Pioneers.** Nicolaas Govert de Bruijn began the **Automath** project in Eindhoven in 1967; by 1977 L. S. van Benthem Jutting had checked all of Edmund Landau's *Grundlagen der Analysis* in it. In Poland Andrzej Trybulec started **Mizar** in 1973, whose Mathematical Library is still one of the largest. Robin Milner's **LCF** (Stanford and Edinburgh, 1970s) introduced the idea of theorems as an abstract type that only the kernel's rules can create, and the programming language ML to go with it; its descendants include **HOL** (Mike Gordon), **HOL Light** (John Harrison) and **Isabelle** (Lawrence Paulson, 1986).
+- **Type theory.** Per Martin-Löf's intuitionistic type theory (1970s) and Thierry Coquand and Gérard Huet's calculus of constructions (1984–88) led to **Coq** (now called Rocq), developed in France from 1989. Georges Gonthier and colleagues used it to check the Four Colour Theorem (2005) and the Feit–Thompson odd order theorem (2012).
+- **Landmarks.** Thomas Hales's Flyspeck project completed a formal proof of the Kepler conjecture in 2014. **Lean** was launched by Leonardo de Moura at Microsoft Research in 2013; Lean 4, with Sebastian Ullrich, appeared from 2021. The community library **mathlib** began in 2017 for Lean 3 and was ported to Lean 4 as Mathlib by 2023. The Liquid Tensor Experiment (2020–22) checked a frontier result of Clausen and Scholze, and in 2023 the proof of the polynomial Freiman–Ruzsa conjecture by Gowers, Green, Manners and Tao was formalised in Lean within about three weeks of its announcement. Kevin Buzzard and Mohammad Pedramfar's *Natural Number Game* (2019) has introduced many students to Lean.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Jeremy Avigad and Patrick Massot, *Mathematics in Lean* (online book, continually updated) — the standard introduction to formalising undergraduate mathematics with Mathlib.
+- Jeremy Avigad, Leonardo de Moura, Soonho Kong and Sebastian Ullrich, *Theorem Proving in Lean 4* (online book) — Lean's logic, tactics and type classes in detail.
+- The mathlib Community, "The Lean mathematical library", *Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs* (CPP 2020).
+- Rob Nederpelt and Herman Geuvers, *Type Theory and Formal Proof: An Introduction* (2014) — the type theory beneath proof assistants.
+- John Harrison, *Handbook of Practical Logic and Automated Reasoning* (2009) — decision procedures, proof search and the design of LCF-style provers.
+- Kevin Buzzard and Mohammad Pedramfar, *The Natural Number Game* (2019) — an interactive first encounter with Lean.
+
+Next in the Lumenary: <TopicLink id="math.found.type-theory">type theory and propositions as types</TopicLink>, <TopicLink id="math.comp.formal-methods">formal methods</TopicLink> and <TopicLink id="math.comp.formalising-published-mathematics">formalising published mathematics</TopicLink>.
+
+</Section>

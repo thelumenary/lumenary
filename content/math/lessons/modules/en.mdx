@@ -1,0 +1,486 @@
+---
+slug: modules
+topic: math.algebra.modules
+title: Modules
+subtitle: Linear algebra over a ring — where bases can fail to exist, and one theorem classifies both finite abelian groups and Jordan normal forms.
+level: grad
+ages: Graduate
+minutes: 140
+order: 7009
+objectives:
+  - Work with module homomorphisms, submodules, quotients, kernels, cokernels and exact sequences, and recognise free, projective and injective modules
+  - Prove that free modules are projective, that projective means "direct summand of a free module", and that over a PID submodules of finite free modules are free
+  - Prove the Smith normal form and the structure theorem for finitely generated modules over a PID, including uniqueness of the invariant factors
+  - Deduce the classification of finitely generated abelian groups and the Jordan normal form
+  - Compute tensor products of modules, prove that $M \otimes_R -$ is right exact via the tensor–hom adjunction, and show that it is not exact in general
+narrators: []
+lean:
+  - Lumenary.Modules.int_two_exact
+  - Lumenary.Modules.zmod_two_not_free
+  - Lumenary.Modules.free_lifting
+  - Lumenary.Modules.projective_of_free
+  - Lumenary.Modules.projective_lifting
+  - Lumenary.Modules.submodule_free_pid
+  - Lumenary.Modules.structure_theorem
+  - Lumenary.Modules.abelian_groups
+  - Lumenary.Modules.tensor_hom
+  - Lumenary.Modules.tensor_right_exact
+  - Lumenary.Modules.tensor_not_left_exact
+compute: [modules_smith_normal_form, modules_jordan_via_invariant_factors]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="One theorem, two classical classifications">
+
+Two classification problems look unrelated.
+
+- **Finite abelian groups.** Every finite abelian group is a product of cyclic groups, for instance $\Z/2 \times \Z/6$ or $\Z/12$ — but which products are isomorphic? (Answer: $\Z/12 \cong \Z/4 \times \Z/3$, while $\Z/2 \times \Z/6$ is not cyclic.)
+- **Matrices up to similarity.** A complex square matrix is similar to a Jordan normal form, unique up to the order of the blocks. Why blocks, and why unique?
+
+Both are the same theorem. An abelian group is a module over the ring $\Z$; a vector space $V$ with a linear operator $T$ is a module over the polynomial ring $k[x]$, where $x$ acts as $T$. Both $\Z$ and $k[x]$ are **principal ideal domains**, and the **structure theorem for finitely generated modules over a PID** says that every such module is a direct sum of cyclic modules $R/(d)$, in an essentially unique way. For $R = \Z$ this is the classification of finitely generated abelian groups; for $R = \C[x]$, the cyclic pieces $\C[x]/((x - \lambda)^e)$ are exactly the Jordan blocks.
+
+Modules are the language in which much of modern algebra is written: ideals of a ring, representations of groups and quivers, homology groups of spaces, sections of vector bundles. This lesson builds the basic theory — exact sequences, free and projective modules, tensor products — and proves the structure theorem in full. It assumes <TopicLink id="math.algebra.quotients">quotient rings and the isomorphism theorems</TopicLink>, <TopicLink id="math.algebra.rings">PIDs and UFDs</TopicLink> and <TopicLink id="math.algebra.advanced-linear-algebra">advanced linear algebra</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Vector spaces whose scalars cannot always be divided">
+
+A module is a vector space in which the scalars come from a ring instead of a field. Everything that uses only addition and multiplication by scalars survives: submodules, quotients, homomorphisms, kernels, images, direct sums, the isomorphism theorems. Everything that uses *division* by scalars can fail:
+
+- **Bases.** In $\Z/2$ regarded as a $\Z$-module, $2 \cdot \bar 1 = 0$ is a non-trivial relation, so no non-empty subset is linearly independent: $\Z/2$ has no basis. Elements killed by non-zero scalars are called **torsion**, and torsion is the first obstruction to freeness.
+- **Extending independent sets.** In $\Z$, the set $\{2\}$ is linearly independent and cannot be enlarged, yet it is not a basis. The set $\{2, 3\}$ generates $\Z$ minimally, yet contains no basis.
+- **Complements.** The submodule $2\Z \subseteq \Z$ has no complement: $\Z$ is not $2\Z \oplus C$ for any $C$, because any two non-zero submodules of $\Z$ intersect.
+
+So short exact sequences $0 \to A \to B \to C \to 0$ need not **split**, and the central questions of module theory are about the ways in which they fail to. Free modules (those with a basis) behave like vector spaces; projective modules are the ones that behave well when mapped *out of*; the tensor product turns bilinear maps into linear ones but can destroy injectivity. Over a PID the damage is controlled: torsion is the *only* obstruction, and it is completely described by the structure theorem.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, rings have a $1$, and modules are left modules on which $1$ acts as the identity. From the section on PIDs onwards, $R$ is commutative.
+
+<Definition term="module, homomorphism, submodule, quotient">
+
+A (left) **module** over a ring $R$ is an abelian group $(M, +)$ with a map $R \times M \to M$, $(r, m) \mapsto rm$, such that for all $r, s \in R$ and $m, n \in M$:
+$$
+r(m + n) = rm + rn, \qquad (r + s)m = rm + sm, \qquad (rs)m = r(sm), \qquad 1m = m.
+$$
+Equivalently, a ring homomorphism $R \to \operatorname{End}(M)$ into the endomorphism ring of the abelian group $M$. A **homomorphism** ($R$-linear map) $f : M \to N$ is additive with $f(rm) = r f(m)$; they form an abelian group $\Hom_R(M, N)$. A **submodule** is a subgroup closed under the action; for a submodule $N \subseteq M$ the **quotient** $M/N$ is a module with $r(m + N) = rm + N$.
+
+</Definition>
+
+<Definition term="kernel, image, cokernel; exact sequence">
+
+For $f : M \to N$: $\ker f = \{m : f(m) = 0\}$, $\operatorname{im} f = f(M)$ and $\operatorname{coker} f = N / \operatorname{im} f$. A sequence $A \xrightarrow{f} B \xrightarrow{g} C$ is **exact at $B$** if $\operatorname{im} f = \ker g$. A **short exact sequence** is $0 \to A \xrightarrow{f} B \xrightarrow{g} C \to 0$ exact at $A$, $B$ and $C$: $f$ injective, $g$ surjective, $\operatorname{im} f = \ker g$, so $C \cong B / f(A)$. It **splits** if $g$ has a section $s : C \to B$ ($gs = \mathrm{id}_C$), equivalently $f$ has a retraction; then $B \cong A \oplus C$.
+
+</Definition>
+
+<Definition term="free module, rank, torsion">
+
+A family $(e_i)_{i \in I}$ in $M$ is a **basis** if every $m \in M$ is uniquely a finite combination $\sum r_i e_i$. A module with a basis is **free**; it is isomorphic to $R^{(I)} = \bigoplus_{i \in I} R$. **Universal property:** for any module $N$ and any elements $(n_i)_{i \in I}$ of $N$ there is a unique homomorphism $R^{(I)} \to N$ with $e_i \mapsto n_i$. For commutative $R \neq 0$, $R^m \cong R^n$ implies $m = n$ (tensor with $R/\mathfrak{m}$ for a maximal ideal $\mathfrak{m}$), and $n$ is the **rank**. If $R$ is a domain, $m \in M$ is **torsion** if $rm = 0$ for some $r \neq 0$; the torsion elements form the **torsion submodule** $T(M)$, and $M$ is **torsion-free** if $T(M) = 0$.
+
+</Definition>
+
+<Definition term="projective and injective modules">
+
+A module $P$ is **projective** if $\Hom_R(P, -)$ carries surjections to surjections: for every surjection $g : M \to N$ and every $f : P \to N$ there is $h : P \to M$ with $g \circ h = f$. Dually, $I$ is **injective** if $\Hom_R(-, I)$ carries injections to surjections: every homomorphism $A \to I$ extends along any injection $A \hookrightarrow B$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "P", tex: "P", row: 0, col: 1 },
+    { id: "M", tex: "M", row: 1, col: 0 },
+    { id: "N", tex: "N", row: 1, col: 1 },
+    { id: "z", tex: "0", row: 1, col: 2 },
+  ]}
+  arrows={[
+    { from: "P", to: "M", tex: "h", style: "dashed", labelSide: "right" },
+    { from: "P", to: "N", tex: "f" },
+    { from: "M", to: "N", tex: "g", style: "epi", labelSide: "right" },
+    { from: "N", to: "z" },
+  ]}
+  caption="$P$ is projective: every $f$ lifts through every surjection $g$, so that $g \circ h = f$ (the lift is usually not unique)."
+/>
+
+<Definition term="tensor product">
+
+Let $R$ be commutative and $M, N$ modules. A **tensor product** is a module $M \otimes_R N$ with an $R$-bilinear map $\otimes : M \times N \to M \otimes_R N$, $(m, n) \mapsto m \otimes n$, such that every bilinear map $\beta : M \times N \to P$ factors as $\beta(m, n) = \tilde\beta(m \otimes n)$ for a unique homomorphism $\tilde\beta : M \otimes_R N \to P$. It exists (take the free module on $M \times N$ modulo the bilinearity relations) and is unique up to unique isomorphism. Its elements are finite sums $\sum m_i \otimes n_i$, but not every element is a single **pure tensor** $m \otimes n$. For $f : M \to M'$ we write $f \otimes N : M \otimes N \to M' \otimes N$, $m \otimes n \mapsto f(m) \otimes n$.
+
+</Definition>
+
+<Definition term="principal ideal domain">
+
+A commutative domain $R$ is a **PID** if every ideal is $(a) = Ra$ for some $a$. Examples: $\Z$, $k[x]$ for a field $k$, the Gaussian integers $\Z[i]$. A PID is a UFD; any two elements have a gcd $g$, and $(a, b) = (g)$, so $g = xa + yb$ for some $x, y \in R$ (Bézout).
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Abelian groups, vector spaces, ideals">
+
+A $\Z$-module is exactly an abelian group ($nm = m + \cdots + m$ is forced), and $\Z$-linear maps are group homomorphisms. A module over a field $k$ is a vector space. Every ring is a module over itself; its submodules are its left ideals, and $R/I$ is a module. If $R \to S$ is a ring homomorphism, every $S$-module is an $R$-module by restriction of scalars: so $\Z/n$-modules are abelian groups killed by $n$.
+
+</Example>
+
+<Example title="Modules over k[x] are vector spaces with an operator">
+
+A $k[x]$-module is a $k$-vector space $V$ together with the linear map $T : v \mapsto xv$; conversely $(V, T)$ becomes a $k[x]$-module by $p(x) \cdot v = p(T)v$. Under this dictionary:
+
+- submodules are **$T$-invariant subspaces**;
+- homomorphisms $(V, T) \to (W, S)$ are linear maps $\varphi$ with $\varphi T = S \varphi$, and $(k^n, A) \cong (k^n, B)$ exactly when $A$ and $B$ are **similar**;
+- the cyclic module $k[x]/(f)$, for monic $f = x^n + a_{n-1}x^{n-1} + \cdots + a_0$, has basis $1, x, \dots, x^{n-1}$, in which $x$ acts by the **companion matrix** of $f$.
+
+So classifying finitely generated $k[x]$-modules that are finite-dimensional over $k$ means classifying square matrices up to similarity.
+
+</Example>
+
+<Example title="Modules without bases">
+
+- $\Z/n$ ($n \geq 2$) is not a free $\Z$-module: every element is torsion. (Formalised below.)
+- $\Q$ is a torsion-free $\Z$-module that is not free. Any two elements are linearly dependent, since $(rq)\tfrac{p}{q} - (ps)\tfrac{r}{s} = 0$, so a basis would have one element $x$; but $x/2 \notin \Z x$.
+- The ideal $(x, y)$ of $k[x, y]$ is not free: two elements $f, g$ always satisfy $g \cdot f - f \cdot g = 0$, so a basis would be a single generator, and $(x, y)$ is not principal.
+
+</Example>
+
+<Example title="Projective but not free">
+
+Let $R = \Z/6$. By the Chinese remainder theorem, $R \cong \Z/2 \times \Z/3$ as rings, so $R = P \oplus Q$ as $R$-modules with $P = 3R \cong \Z/2$ and $Q = 2R \cong \Z/3$. Each summand of a free module is projective (Proposition 1 below), but $P$ is not free: it has $2$ elements, while a non-zero free $R$-module has at least $6$. Over a PID this cannot happen for finitely generated modules (Theorem 2), and the number theorist's viewpoint below describes a deeper example, a non-principal ideal of $\Z[\sqrt{-5}]$.
+
+</Example>
+
+<Example title="Injective modules">
+
+Over a PID, a module is injective exactly when it is **divisible** ($rM = M$ for all $r \neq 0$) — a consequence of Baer's criterion (Baer, 1940): $I$ is injective if every homomorphism from an ideal $J \subseteq R$ to $I$ extends to $R$. So $\Q$ and $\Q/\Z$ are injective $\Z$-modules, while $\Z$ is not ($2\Z \to \Z$, $2 \mapsto 1$, does not extend to $\Z$). Every module embeds in an injective one; for abelian groups, $\bigoplus \Q/\Z$ suffices. Injective modules supply the resolutions used to compute $\mathrm{Ext}$ in <TopicLink id="math.algebra.homological-algebra">homological algebra</TopicLink>.
+
+</Example>
+
+<Example title="Tensor products">
+
+- $R^m \otimes_R R^n \cong R^{mn}$, with basis $e_i \otimes e_j$; so for vector spaces the tensor product is the familiar one.
+- $R/I \otimes_R M \cong M/IM$, by right exactness (Theorem 7) applied to $I \otimes M \to R \otimes M \to R/I \otimes M \to 0$.
+- $\Z/m \otimes_\Z \Z/n \cong \Z/\gcd(m, n)$: by the previous item it is $(\Z/n)/m(\Z/n) = \Z/(m, n)$. So $\Z/2 \otimes \Z/3 = 0$ and $\Z/12 \otimes \Z/18 \cong \Z/6$.
+- $\Q \otimes_\Z \Z/n = 0$: $q \otimes a = \tfrac{q}{n} \otimes na = \tfrac{q}{n} \otimes 0 = 0$. Tensoring can kill a module entirely.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The structure theory">
+
+<Theorem name="Proposition 1 (projective modules)">
+
+For a module $P$ the following are equivalent:
+
+1. $P$ is projective;
+2. every short exact sequence $0 \to A \to B \xrightarrow{g} P \to 0$ splits;
+3. $P$ is a direct summand of a free module.
+
+In particular, **free modules are projective**.
+
+</Theorem>
+
+<Proof>
+
+*Free modules are projective.* Let $F$ have basis $(e_i)$, $g : M \to N$ surjective and $f : F \to N$. Choose $m_i \in M$ with $g(m_i) = f(e_i)$ and let $h : F \to M$ be the homomorphism with $h(e_i) = m_i$ (universal property). Then $gh$ and $f$ agree on the basis, so $gh = f$.
+
+(1 ⇒ 2) Lift $\mathrm{id}_P$ along the surjection $g$: there is $s : P \to B$ with $gs = \mathrm{id}_P$.
+
+(2 ⇒ 3) Let $F$ be the free module on the set $P$ and $F \to P$ the surjection sending the basis vector $e_p$ to $p$. The sequence $0 \to K \to F \to P \to 0$ splits, so $F \cong K \oplus P$.
+
+(3 ⇒ 1) Let $F = P \oplus Q$ be free, with inclusion $\iota$ and projection $\pi$ onto $P$. Given $g : M \twoheadrightarrow N$ and $f : P \to N$, lift $f \pi : F \to N$ to $h' : F \to M$ (free modules are projective) and put $h = h' \iota$; then $g h = f \pi \iota = f$.
+
+</Proof>
+
+The functor $\Hom_R(P, -)$ is always **left exact**: it sends $0 \to A \to B \to C$ exact to $0 \to \Hom(P, A) \to \Hom(P, B) \to \Hom(P, C)$ exact. Projectivity says exactly that it also preserves surjectivity, so $P$ is projective iff $\Hom_R(P, -)$ is exact.
+
+<Theorem name="Theorem 2 (submodules of free modules over a PID)">
+
+Let $R$ be a PID and $N$ a submodule of $R^n$. Then $N$ is free of rank at most $n$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $n$. For $n = 0$ there is nothing to prove. For $n = 1$, $N$ is an ideal $(a)$: if $a = 0$ it is free of rank $0$, and otherwise $r \mapsto ra$ is an isomorphism $R \to (a)$ because $R$ is a domain. For $n \geq 2$, let $\pi : R^n \to R$ be the last coordinate, with kernel $R^{n-1}$. Then
+$$
+0 \to N \cap R^{n-1} \to N \xrightarrow{\ \pi\ } \pi(N) \to 0
+$$
+is exact. By induction $N \cap R^{n-1}$ is free of rank at most $n - 1$, and $\pi(N) \subseteq R$ is free of rank at most $1$ by the case $n = 1$. A free module is projective, so the sequence splits (Proposition 1) and $N \cong (N \cap R^{n-1}) \oplus \pi(N)$ is free of rank at most $n$.
+
+</Proof>
+
+(The same holds for submodules of free modules of any rank, by a transfinite version of this induction; see Lang, *Algebra*, III §7. It fails over non-PIDs: $2\Z/4 \subseteq \Z/4$, $(x, y) \subseteq k[x, y]$.)
+
+<Theorem name="Theorem 3 (Smith normal form)">
+
+Let $R$ be a PID and $A$ an $m \times n$ matrix over $R$. There are invertible matrices $P \in GL_m(R)$ and $Q \in GL_n(R)$ such that
+$$
+PAQ = \begin{pmatrix} D & 0 \\ 0 & 0 \end{pmatrix}, \qquad D = \operatorname{diag}(d_1, \dots, d_r), \qquad d_1 \mid d_2 \mid \cdots \mid d_r, \quad d_i \neq 0.
+$$
+
+</Theorem>
+
+<Proof>
+
+Since $R$ is a UFD, every non-zero $a \in R$ has a length $\ell(a)$, the number of prime factors counted with multiplicity; units have length $0$, and if $g \mid a$ but $g$ is not an associate of $a$ then $\ell(g) < \ell(a)$. Call two matrices *equivalent* if one is $PAQ$ for invertible $P, Q$. We induct on $m + n$; the case $A = 0$ is trivial.
+
+Among all matrices equivalent to $A$ with non-zero $(1,1)$ entry (there are some: permute a non-zero entry to the corner), choose $B$ whose $(1,1)$ entry $b$ has minimal length.
+
+*Step 1: $b$ divides every entry of the first column and the first row.* Suppose $b \nmid c = B_{i1}$. Let $g = \gcd(b, c) = xb + yc$, and write $b = gu$, $c = gv$, so that $xu + yv = 1$. The matrix $\left(\begin{smallmatrix} x & y \\ -v & u \end{smallmatrix}\right)$ has determinant $1$; applying it to rows $1$ and $i$ is an invertible row operation that puts $xb + yc = g$ in the corner. Since $b \nmid c$, $g$ is a proper divisor of $b$, so $\ell(g) < \ell(b)$, contradicting minimality. Columns are handled by the same argument applied to $B^{\mathsf T}$.
+
+*Step 2: clear.* Subtracting multiples of row $1$ and column $1$ gives an equivalent matrix $\left(\begin{smallmatrix} b & 0 \\ 0 & B' \end{smallmatrix}\right)$.
+
+*Step 3: $b$ divides every entry of $B'$.* If $b \nmid B'_{ij}$, add row $i$ to row $1$: the first row now contains an entry not divisible by $b$, and Step 1 gives a contradiction.
+
+By induction $B'$ is equivalent to $\operatorname{diag}(d_2, \dots, d_r, 0, \dots)$ with $d_2 \mid d_3 \mid \cdots$. Equivalent matrices generate the same ideal of entries (each entry of $PB'Q$ is a combination of entries of $B'$, and conversely), so $b$ divides $d_2$. Put $d_1 = b$.
+
+</Proof>
+
+Over a Euclidean domain such as $\Z$ or $k[x]$ the same steps become an algorithm: divide with remainder instead of using Bézout, and the norm of the corner entry decreases. For a $1 \times 2$ matrix $(a \ b)$ the algorithm *is* Euclid's algorithm, and the Smith form is $(\gcd(a, b) \ \ 0)$. The first experiment below implements it.
+
+<Theorem name="Theorem 4 (structure theorem for finitely generated modules over a PID)">
+
+Let $R$ be a PID and $M$ a finitely generated $R$-module. Then
+$$
+M \;\cong\; R^s \oplus R/(d_1) \oplus \cdots \oplus R/(d_k), \qquad d_1 \mid d_2 \mid \cdots \mid d_k,
+$$
+with the $d_i$ non-zero non-units (the **invariant factors**). Equivalently, by the Chinese remainder theorem, $M \cong R^s \oplus \bigoplus_j R/(p_j^{e_j})$ with $p_j$ prime and $e_j \geq 1$ (the **elementary divisors** $p_j^{e_j}$). The **rank** $s$, the ideals $(d_i)$ and the multiset of ideals $(p_j^{e_j})$ are uniquely determined by $M$.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* Choose generators $m_1, \dots, m_n$ and let $\varphi : R^n \to M$ send $e_i \mapsto m_i$. By Theorem 2, $K = \ker \varphi$ is free with a basis of $r \leq n$ elements; writing them as columns gives an $n \times r$ matrix $A$ with $M \cong \operatorname{coker}(A : R^r \to R^n)$. If $PAQ = D'$ is the Smith form, then $P$ and $Q$ are changes of basis in $R^n$ and $R^r$, so $\operatorname{coker} A \cong \operatorname{coker} D' \cong R/(d_1) \oplus \cdots \oplus R/(d_r) \oplus R^{n - r}$. Summands with $d_i$ a unit are $0$; drop them. For the elementary divisors, write $d = u\, p_1^{a_1} \cdots p_t^{a_t}$; the ideals $(p_i^{a_i})$ are pairwise comaximal, so $R/(d) \cong \prod_i R/(p_i^{a_i})$.
+
+*Uniqueness.* The torsion submodule is $T(M) \cong \bigoplus R/(d_i)$ and $M / T(M) \cong R^s$, so $s$ is the rank of the free module $M/T(M)$, which is well defined. For a prime $p$, the $p$-primary part $T_p = \{m : p^a m = 0 \text{ for some } a\}$ is the sum of the elementary divisor summands $R/(p^{e})$ at $p$. For $N = \bigoplus_{j=1}^{t} R/(p^{e_j})$, the quotient $p^a N / p^{a+1} N$ is a vector space over the field $R/(p)$ of dimension
+$$
+\dim_{R/(p)} \bigl(p^a N / p^{a+1} N\bigr) = \#\{\, j : e_j > a \,\},
+$$
+because $p^a R / p^{e} R \,\big/\, p^{a+1} R / p^e R \cong p^a R / p^{a+1} R \cong R/(p)$ when $a < e$, and it is $0$ when $a \geq e$. These dimensions depend only on $M$, and they determine the multiset of exponents $e_j$. The invariant factors are recovered from the elementary divisors: $d_k$ is the product of the largest power of each prime, $d_{k-1}$ of the next largest, and so on.
+
+</Proof>
+
+<Theorem name="Corollary 5 (finitely generated abelian groups)">
+
+Every finitely generated abelian group is isomorphic to $\Z^s \oplus \Z/d_1 \oplus \cdots \oplus \Z/d_k$ with $1 < d_1 \mid d_2 \mid \cdots \mid d_k$, for unique $s, d_1, \dots, d_k$. The number of abelian groups of order $n = \prod p^{a_p}$, up to isomorphism, is $\prod_p \mathrm{p}(a_p)$, where $\mathrm{p}(a)$ is the number of partitions of $a$.
+
+</Theorem>
+
+<Proof>
+
+Take $R = \Z$. A finite group has $s = 0$, and its elementary divisors at $p$ are $p^{e_1}, \dots, p^{e_t}$ with $e_1 + \cdots + e_t = a_p$, that is, a partition of $a_p$; by uniqueness, distinct choices of partitions give non-isomorphic groups.
+
+</Proof>
+
+For example, there are $\mathrm{p}(3)\,\mathrm{p}(2) = 3 \cdot 2 = 6$ abelian groups of order $72 = 2^3 \cdot 3^2$.
+
+<Theorem name="Corollary 6 (Jordan normal form)">
+
+Let $k$ be algebraically closed, $V$ a finite-dimensional $k$-vector space and $T : V \to V$ linear. Then $V$ has a basis in which $T$ is block diagonal with Jordan blocks $J_e(\lambda)$, and the multiset of blocks is unique. More generally, over any field $k$, $T$ has a unique **rational canonical form**: block diagonal with the companion matrices of its invariant factors $d_1 \mid \cdots \mid d_k$, where $d_k$ is the minimal polynomial and $d_1 \cdots d_k$ the characteristic polynomial.
+
+</Theorem>
+
+<Proof>
+
+$V$ is a finitely generated $k[x]$-module, and it is torsion: $V$ is finite-dimensional, so $1, T, T^2, \dots, T^{n^2}$ are linearly dependent in $\operatorname{End}(V)$ and some non-zero polynomial kills $V$. Hence $V \cong \bigoplus_j k[x]/(p_j^{e_j})$ by Theorem 4. Over an algebraically closed field the primes of $k[x]$ are the $x - \lambda$. On $k[x]/((x - \lambda)^e)$ take the basis $v_i = (x - \lambda)^{e - i}$, $i = 1, \dots, e$: then $(T - \lambda)v_1 = 0$ and $(T - \lambda) v_i = v_{i-1}$, so $T$ acts by the Jordan block $J_e(\lambda)$ (with $1$'s above the diagonal). Uniqueness of the blocks is uniqueness of the elementary divisors, because similar matrices give isomorphic modules. The rational canonical form uses the invariant factor decomposition and the companion matrix basis of $k[x]/(d_i)$. The minimal polynomial generates the annihilator of $V$, which is $(d_k)$; the characteristic polynomial of a companion matrix of $d$ is $d$, so that of $T$ is $d_1 \cdots d_k$.
+
+</Proof>
+
+The proof explains a classical fact: the characteristic polynomial does **not** determine a matrix up to similarity, but the list of invariant factors does. The two nilpotent $4 \times 4$ matrices with Jordan blocks of sizes $(2, 2)$ and $(3, 1)$ both have characteristic polynomial $x^4$, but invariant factors $x^2, x^2$ and $x, x^3$; the second experiment computes this.
+
+Now tensor products. We use one lemma about $\Hom$.
+
+<Theorem name="Lemma (exactness can be tested by Hom)">
+
+A sequence $A \xrightarrow{f} B \xrightarrow{g} C \to 0$ is exact if and only if for every module $P$ the sequence
+$$
+0 \to \Hom(C, P) \xrightarrow{\ g^*\ } \Hom(B, P) \xrightarrow{\ f^*\ } \Hom(A, P)
+$$
+is exact, where $g^*(\varphi) = \varphi g$ and $f^*(\psi) = \psi f$.
+
+</Theorem>
+
+<Proof>
+
+(⇒) If $g$ is surjective then $\varphi g = 0$ forces $\varphi = 0$. Clearly $f^* g^* = (gf)^* = 0$. If $\psi f = 0$, then $\psi$ vanishes on $\operatorname{im} f = \ker g$, so it factors through $B / \ker g \cong C$: $\psi = \varphi g$.
+
+(⇐) *$g$ is surjective:* the projection $\pi : C \to C/\operatorname{im} g$ satisfies $g^*(\pi) = \pi g = 0$, so $\pi = 0$. *$gf = 0$:* take $P = C$; $f^*(g^*(\mathrm{id}_C)) = gf = 0$. *$\ker g \subseteq \operatorname{im} f$:* take $P = B / \operatorname{im} f$ and the projection $\pi$; then $f^*(\pi) = 0$, so $\pi = \varphi g$ for some $\varphi$, and every $b \in \ker g$ has $\pi(b) = \varphi(g(b)) = 0$, that is, $b \in \operatorname{im} f$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (tensor–hom adjunction; right exactness)">
+
+Let $R$ be commutative. For all modules $M, N, P$ there is an isomorphism, natural in all three variables,
+$$
+\Hom_R(M \otimes_R N, P) \;\cong\; \Hom_R\bigl(M, \Hom_R(N, P)\bigr), \qquad \varphi \mapsto \bigl(m \mapsto (n \mapsto \varphi(m \otimes n))\bigr).
+$$
+Consequently, if $M' \to M \to M'' \to 0$ is exact, so is $M' \otimes N \to M \otimes N \to M'' \otimes N \to 0$: the functor $- \otimes_R N$ is **right exact**. It is **not exact** in general: $0 \to \Z \xrightarrow{2} \Z \to \Z/2 \to 0$ is exact, but after $- \otimes_\Z \Z/2$ the first map becomes the zero map $\Z/2 \to \Z/2$.
+
+</Theorem>
+
+<Proof>
+
+Both sides are the set of bilinear maps $M \times N \to P$: the left by the universal property of $\otimes$, the right because a bilinear map is the same as a linear map from $M$ to linear maps $N \to P$. Naturality is a direct check.
+
+For right exactness, fix $P$ and write $H = \Hom(N, P)$. Since $M' \to M \to M'' \to 0$ is exact, the lemma (⇒) gives exactness of $0 \to \Hom(M'', H) \to \Hom(M, H) \to \Hom(M', H)$. By the natural isomorphism, this is the sequence $0 \to \Hom(M'' \otimes N, P) \to \Hom(M \otimes N, P) \to \Hom(M' \otimes N, P)$. As this holds for every $P$, the lemma (⇐) gives exactness of $M' \otimes N \to M \otimes N \to M'' \otimes N \to 0$.
+
+For the counterexample, $\Z \otimes \Z/2 \cong \Z/2$ via $n \otimes a \mapsto na$, and $(2 \otimes \mathrm{id})(n \otimes a) = 2n \otimes a = n \otimes 2a = 0$.
+
+</Proof>
+
+A module $N$ for which $- \otimes_R N$ is exact is called **flat**. Free modules are flat (tensoring with $R^{(I)}$ is a direct sum of copies of the identity functor), hence so are projective modules (direct summands); $\Q$ is a flat $\Z$-module that is not projective; $\Z/2$ is not flat. The derived functors $\mathrm{Tor}_n^R(-, N)$ measure the failure of exactness: there, the kernel $\Z/2$ of the zero map above reappears as $\mathrm{Tor}_1^\Z(\Z/2, \Z/2)$. The adjunction also explains right exactness conceptually: $- \otimes N$ is a **left adjoint**, and left adjoints preserve all colimits, in particular cokernels (see <TopicLink id="math.cat.adjunctions">adjunctions</TopicLink>).
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: modules over ℝ[x] in the plane">
+
+A $2 \times 2$ real matrix $A$ makes $\R^2$ into an $\R[x]$-module, with $x$ acting by $A$. Its **one-dimensional submodules are exactly the invariant lines**, which the widget draws dashed (the real eigenvectors). Try the presets and read the module structure off the picture:
+
+- **Scaling** $\operatorname{diag}(2, 0.5)$: two invariant lines, and $\R^2 \cong \R[x]/(x - 2) \oplus \R[x]/(x - 0.5)$ — a direct sum of two simple modules.
+- **Shear** $\left(\begin{smallmatrix} 1 & 1 \\ 0 & 1 \end{smallmatrix}\right)$: a single invariant line. The module is $\R[x]/((x - 1)^2)$: it has a submodule (the line) with **no complementary submodule** — indecomposable but not simple, exactly like $2\Z \subseteq \Z$.
+- **Rotation** by $90^\circ$: no invariant line at all, so the module $\R[x]/(x^2 + 1)$ is **simple** although it has dimension $2$. Over $\C$ the polynomial $x^2 + 1$ factors and the module splits into two lines: the structure theorem depends on which polynomials are prime.
+
+<MatrixTransform matrix={[[1, 1], [0, 1]]} mode="single" presets={["scale", "shear", "rotation", "projection", "identity"]} title="An ℝ[x]-module structure on the plane" subtitle="The dashed invariant lines are the one-dimensional submodules." />
+
+The Smith normal form of a $1 \times 2$ integer matrix $(a \ \ b)$ is $(\gcd(a, b) \ \ 0)$, and the column operations that compute it are the steps of Euclid's algorithm. So $\Z / (a, b) \cong \Z/\gcd(a, b)$: below, each square cut from the rectangle is one column operation.
+
+<NumberGrid mode="gcd" a={36} b={15} title="Smith normal form of a 1 × 2 matrix" subtitle="Euclid's algorithm as column operations: Z/(36, 15) ≅ Z/3." />
+
+</Section>
+
+<Section id="formal" kind="formal" title="Modules in Lean and Mathlib">
+
+Mathlib's `Module R M` is exactly the definition above (for a semiring `R` and an additive commutative monoid `M`), and exactness of a pair of maps is `Function.Exact f g`, meaning `range f = ker g` pointwise. First, the short exact sequence of the counterexample is exact in the middle:
+
+<Lean decl="Lumenary.Modules.int_two_exact" />
+
+Next, the first failure of the vector-space analogy, proved from linear independence of a basis:
+
+<Lean decl="Lumenary.Modules.zmod_two_not_free" />
+
+The key step of Proposition 1, proved by the same argument as in the text — choose preimages of the images of basis vectors and extend linearly with `Finsupp.linearCombination` — followed by Mathlib's versions, "free ⇒ projective" and the lifting property:
+
+<Lean decl="Lumenary.Modules.free_lifting" />
+
+<Lean decl="Lumenary.Modules.projective_of_free" />
+
+<Lean decl="Lumenary.Modules.projective_lifting" />
+
+Theorem 2 and the structure theorem (in its elementary-divisor form) with the corollary for abelian groups are in Mathlib:
+
+<Lean decl="Lumenary.Modules.submodule_free_pid" />
+
+<Lean decl="Lumenary.Modules.structure_theorem" />
+
+<Lean decl="Lumenary.Modules.abelian_groups" />
+
+Finally, tensor products: the tensor–hom correspondence, right exactness, and the counterexample to left exactness, proved by computing on the pure tensor $1 \otimes 1$ and the isomorphism $\Z \otimes \Z/2 \cong \Z/2$:
+
+<Lean decl="Lumenary.Modules.tensor_hom" />
+
+<Lean decl="Lumenary.Modules.tensor_right_exact" />
+
+<Lean decl="Lumenary.Modules.tensor_not_left_exact" />
+
+**What is and is not formalised.** Proved here: exactness of $0 \to \Z \to \Z \to \Z/2 \to 0$ in the middle, that $\Z/2$ is not free, the lifting property of free modules, and the failure of left exactness of $- \otimes \Z/2$. From Mathlib: free ⇒ projective, the lifting property, Theorem 2, the structure theorem, the classification of finitely generated abelian groups, the tensor–hom correspondence and right exactness. Not formalised in this module: the Smith normal form proof (Mathlib has `Submodule.smithNormalForm` for submodules of free modules over a PID), the uniqueness argument of Theorem 4, the lemma testing exactness by $\Hom$, and the Jordan normal form as a corollary.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Smith normal forms, computed">
+
+The first experiment implements the Smith normal form over $\Z$, reads off the abelian group presented by a relation matrix, and checks two theorems on many matrices: the divisibility chain, and the **determinantal divisor identity** $d_1 d_2 \cdots d_k = $ (gcd of the $k \times k$ minors). The right-hand side is unchanged by invertible row and column operations, so the identity shows that the $d_i$ depend only on the matrix. It then counts abelian groups of order $n \leq 100$ in two independent ways — chains of invariant factors, and products of partition numbers — confirming Corollary 5 in that range.
+
+<Python id="modules_smith_normal_form" />
+
+The second experiment applies the same theory over $\Q[x]$: the invariant factors of the module $(\Q^n, A)$ are quotients of gcds of minors of $xI - A$, and their prime-power factors predict the Jordan blocks, which it compares with an independent Jordan form computation.
+
+<Python id="modules_jordan_via_invariant_factors" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Modules behave like vector spaces."** Many familiar facts fail: $\Z/2$ is a $\Z$-module with no basis; the independent set $\{2\} \subseteq \Z$ does not extend to a basis; the generating set $\{2, 3\}$ of $\Z$ contains no basis; the submodule $2\Z \subseteq \Z$ has no complement; and over non-noetherian rings a finitely generated module can have submodules that are not finitely generated. What survives is everything that does not divide by scalars.
+
+</Misconception>
+
+<Misconception>
+
+**"Tensoring preserves injective maps."** It preserves surjections and cokernels (right exactness) but not injections: multiplication by $2$ on $\Z$ is injective, and becomes the zero map on $\Z \otimes \Z/2 \cong \Z/2$. Modules that do preserve injections under tensoring are the flat ones; $\mathrm{Tor}_1$ measures the failure.
+
+</Misconception>
+
+<Misconception>
+
+**"Projective means free" and "torsion-free means free".** Both are true for finitely generated modules over a PID, and both fail in general: $\Z/2$ is a projective, non-free $\Z/6$-module; $\Q$ is a torsion-free, non-free $\Z$-module (it is not finitely generated); and a non-principal ideal of a Dedekind domain is a finitely generated, torsion-free, projective module that is not free. Over local rings projective modules are free (Kaplansky), and over polynomial rings $k[x_1, \dots, x_n]$ finitely generated projective modules are free (Quillen and Suslin, 1976) — deep theorems, not formalities.
+
+</Misconception>
+
+<Misconception>
+
+**"The characteristic polynomial determines a matrix up to similarity."** It is the product of the invariant factors, and different lists of invariant factors can have the same product: the nilpotent matrices with Jordan blocks $(2, 2)$ and $(3, 1)$ both have characteristic polynomial $x^4$. The complete invariant is the list $d_1 \mid \cdots \mid d_k$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="Projective modules are vector bundles">
+
+For a compact Hausdorff space $X$, let $C(X)$ be the ring of continuous real functions. The **Serre–Swan theorem** (Serre 1955 for algebraic varieties, Swan 1962 in this form) says that $E \mapsto \Gamma(X, E)$, sending a vector bundle to its module of continuous sections, is an equivalence between real vector bundles on $X$ and finitely generated projective $C(X)$-modules. Free modules correspond to **trivial** bundles, and "direct summand of a free module" is the statement that every bundle is a summand of a trivial one. On the circle, the Möbius line bundle gives a projective $C(S^1)$-module $P$ that is not free, while $P \oplus P \cong C(S^1)^2$ because the sum of two Möbius bundles is trivial. In algebraic geometry, finitely generated modules over $k[x_1, \dots, x_n]$ are coherent sheaves on affine space and projective ones are vector bundles; the Quillen–Suslin theorem says they are all trivial (see <TopicLink id="math.geom.vector-bundles-characteristic-classes">vector bundles</TopicLink> and <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Betti numbers, torsion and barcodes">
+
+The integral homology groups $H_n(X; \Z)$ of a finite cell complex are finitely generated $\Z$-modules, and the structure theorem splits each into a free part $\Z^{b_n}$ — the **Betti number** $b_n$ — and a torsion part, Poincaré's **torsion coefficients**. The real projective plane has $H_1(\R P^2; \Z) \cong \Z/2$: a loop that is not a boundary, although twice it is. In topological data analysis, a filtration of a space $X_0 \subseteq X_1 \subseteq \cdots$ gives homology groups $H_n(X_i; k)$ linked by maps, which together form a graded module over $k[t]$ ($t$ moves one step along the filtration). Zomorodian and Carlsson (2005) observed that the structure theorem for graded modules over the PID $k[t]$ decomposes it into shifted copies $\Sigma^a k[t]$ and $\Sigma^a k[t]/(t^{b})$ of $k[t]$ and $k[t]/(t^b)$: the **barcode** of features born at time $a$ and living forever or for $b$ steps. The same decomposition, in quiver language, is the classification of representations of a line in <TopicLink id="math.algebra.path-algebras">quivers and path algebras</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Ideals of number rings: projective but not free">
+
+In the ring of integers $\mathcal{O}_K$ of a number field — a Dedekind domain, but usually not a PID — every non-zero ideal $I$ is a projective module of rank $1$, and $I$ is free exactly when it is principal. So the **ideal class group** $\mathrm{Cl}(K)$ measures how far projective modules are from being free. In $\Z[\sqrt{-5}]$ the ideal $I = (2, 1 + \sqrt{-5})$ is not principal (no element has norm $2$, as $a^2 + 5b^2 = 2$ has no integer solutions), but $I^2 = (2)$; it is projective and not free. Steinitz (1911) showed that every finitely generated torsion-free $\mathcal{O}_K$-module is isomorphic to $\mathcal{O}_K^{n-1} \oplus J$ for an ideal $J$ whose class in $\mathrm{Cl}(K)$ is an invariant. Over $\Z$ itself, the structure theorem is the arithmetic statement that relation matrices can be diagonalised, which reduces linear systems of Diophantine equations to congruences (see <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="R-Mod as an abelian category; tensor as a left adjoint">
+
+$R\text{-}\cat{Mod}$ is the model abelian category (see <TopicLink id="math.cat.abelian-categories">abelian categories</TopicLink>). Projective objects are those $P$ for which $\Hom(P, -)$ is exact; there are **enough projectives** (free modules surject onto everything) and **enough injectives**, which makes derived functors possible. The tensor–hom isomorphism says $- \otimes_R N \dashv \Hom_R(N, -)$, so tensoring preserves colimits and $\Hom(N, -)$ preserves limits — right and left exactness are shadows of adjointness. The Eilenberg–Watts theorem (1960) says every right exact functor $R\text{-}\cat{Mod} \to S\text{-}\cat{Mod}$ that preserves direct sums is $B \otimes_R -$ for an $(S, R)$-bimodule $B$; and Morita theory shows that $R\text{-}\cat{Mod}$ and $M_n(R)\text{-}\cat{Mod}$ are equivalent, so the category remembers less than the ring.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Solving systems of linear equations by elimination is ancient: chapter 8 (*fangcheng*) of the Chinese *Nine Chapters on the Mathematical Art* (compiled by about the 1st century CE) reduces rectangular arrays of coefficients by column operations. The remainder problem of the *Sunzi Suanjing* (around the 3rd–5th century) is the earliest known instance of the Chinese remainder theorem, which in module language is $\Z/mn \cong \Z/m \oplus \Z/n$ for coprime $m, n$.
+- **Henry John Stephen Smith** (1861) diagonalised integer matrices by invertible row and column operations, in his work on systems of linear Diophantine equations. **Karl Weierstrass** (1868) introduced elementary divisors of matrix pencils, and **Camille Jordan**'s *Traité des substitutions* (1870) gave the canonical form now named after him. **Leopold Kronecker** (1870) proved the decomposition of finite abelian groups, and **Ferdinand Georg Frobenius** and **Ludwig Stickelberger** (1879) gave the full structure theorem for finitely generated abelian groups.
+- **Richard Dedekind** introduced the word *Modul* (for additive subgroups of number fields) and ideals in the 1870s. **Emmy Noether** and her school in the 1920s made modules over rings the unifying language, and **B. L. van der Waerden**'s *Moderne Algebra* (1930–31) spread it; the structure theorem over a PID took its modern form there.
+- **Hassler Whitney** (1938) defined tensor products of abelian groups; **Reinhold Baer** (1940) introduced injective modules; **Henri Cartan** and **Samuel Eilenberg**'s *Homological Algebra* (1956) introduced projective modules and made exactness central.
+- **Jean-Pierre Serre** (1955) related projective modules to vector bundles and asked whether projective modules over polynomial rings are free; **Daniel Quillen** and **Andrei Suslin** answered yes, independently, in 1976. **Richard Swan** (1962) proved the topological version of the correspondence.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- David S. Dummit and Richard M. Foote, *Abstract Algebra* (3rd ed., 2004) — Chapters 10–12: modules, tensor products, the structure theorem, rational and Jordan forms.
+- Serge Lang, *Algebra* (revised 3rd ed., 2002) — Chapters III and XVI: modules and tensor products.
+- Paolo Aluffi, *Algebra: Chapter 0* (2009) — Chapters III, VI and VIII: modules with a categorical outlook, Smith normal form.
+- M. F. Atiyah and I. G. Macdonald, *Introduction to Commutative Algebra* (1969) — Chapter 2: modules, exactness, tensor products, flatness.
+- Nathan Jacobson, *Basic Algebra I* (2nd ed., 1985) — Chapter 3: modules over a PID with full proofs.
+- T. Y. Lam, *Lectures on Modules and Rings* (1999) — projective, injective and flat modules in depth.
+
+</Section>

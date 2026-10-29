@@ -1,0 +1,472 @@
+---
+slug: products-coproducts
+topic: math.cat.products-coproducts
+title: Products, coproducts, initial and terminal objects
+subtitle: Pairs, disjoint unions, free products, meets and joins — one universal property and its mirror image, computed across mathematics.
+level: ug2
+ages: Undergraduate
+minutes: 100
+order: 6028
+objectives:
+  - Identify initial and terminal objects in $\cat{Set}$, $\cat{Grp}$, rings and posets, or show that none exist
+  - Compute products and coproducts in $\cat{Set}$ (disjoint union), $\cat{Grp}$ (free product), $\cat{Ab}$ (direct sum), $\cat{Top}$ and a poset (meet and join)
+  - Prove that products are unique up to unique isomorphism, that a product is a terminal cone, and that coproducts in $\mathcal{C}$ are products in $\mathcal{C}^{\mathrm{op}}$
+  - Use universal properties to prove structural facts, such as that $\Z * \Z$ is not abelian and that the box topology is not the product topology
+  - Recognise when a product or coproduct does not exist, for example in a poset or in the category of fields
+narrators: []
+lean:
+  - Lumenary.ProductsCoproducts.IsBinaryProduct
+  - Lumenary.ProductsCoproducts.IsBinaryProduct.hom_ext
+  - Lumenary.ProductsCoproducts.IsBinaryProduct.iso
+  - Lumenary.ProductsCoproducts.IsBinaryProduct.iso_unique
+  - Lumenary.ProductsCoproducts.ofHasBinaryProduct
+  - Lumenary.ProductsCoproducts.product_is_terminal_cone
+  - Lumenary.ProductsCoproducts.IsBinaryCoproduct
+  - Lumenary.ProductsCoproducts.IsBinaryCoproduct.desc
+  - Lumenary.ProductsCoproducts.IsBinaryCoproduct.inl_desc
+  - Lumenary.ProductsCoproducts.IsBinaryCoproduct.desc_unique
+  - Lumenary.ProductsCoproducts.terminal_unique
+  - Lumenary.ProductsCoproducts.typesProduct
+  - Lumenary.ProductsCoproducts.typesCoproduct
+  - Lumenary.ProductsCoproducts.types_terminal_initial
+  - Lumenary.ProductsCoproducts.infIsProduct
+  - Lumenary.ProductsCoproducts.product_eq_inf
+  - Lumenary.ProductsCoproducts.supIsCoproduct
+  - Lumenary.ProductsCoproducts.int_initial
+  - Lumenary.ProductsCoproducts.trivial_group_zero
+  - Lumenary.ProductsCoproducts.free_product_not_comm
+  - Lumenary.ProductsCoproducts.prod_comm
+compute: [products_coproducts_finite]
+trails: [products-by-maps]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="The same construction, everywhere">
+
+The Cartesian product of sets, the direct product of groups, the product of topological spaces, the greatest common divisor of two numbers and the logical "and" of two statements look like five unrelated constructions. So do their partners: the disjoint union of sets, the free product of groups, the direct sum of abelian groups, the least common multiple and the logical "or".
+
+They are not unrelated. Each of the first five is the answer to one question, asked in five different categories: *what is the most economical object that maps to both $A$ and $B$?* Each of the second five answers the mirror-image question: *what is the most economical object that both $A$ and $B$ map to?* The answers are called the **product** and the **coproduct**. When the pair is replaced by no objects at all, the same questions produce **terminal** and **initial** objects.
+
+This lesson defines these notions by their <TopicLink id="math.cat.universal-properties">universal properties</TopicLink>, proves that the definitions pin the objects down up to a unique isomorphism, and then computes them — sometimes with surprising answers. The coproduct of two copies of $\Z$ in the category of groups is a non-abelian group whose geometry is a tree; the coproduct of $\Z/2$ and $\Z/3$ in commutative rings is the zero ring; and two fields usually have no product at all.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Generalised elements and the best possible pair">
+
+In $\cat{Set}$, an element of $A \times B$ is the same thing as a pair (an element of $A$, an element of $B$). Category theory has no elements in general, but it has a replacement: a morphism $x : X \to A$ is a **generalised element** of $A$ "of shape $X$" (in $\cat{Set}$, a map $\{\ast\} \to A$ is an ordinary element). The product is then defined so that the slogan stays true for generalised elements:
+
+$$
+\text{morphisms } X \to A \times B \quad \longleftrightarrow \quad \text{pairs of morphisms } (X \to A,\; X \to B).
+$$
+
+The projections $\pi_1, \pi_2$ turn a morphism into a pair; the universal property says that this is a bijection, for every $X$. Existence of the inverse says $A \times B$ is *big enough* to hold every pair; uniqueness says it has *nothing superfluous*. The experiment below shows both conditions failing for wrong candidates: $A \times B \times \{0, 1\}$ is too big (two morphisms for each pair), and $A$ alone is too small (some pairs have none).
+
+The coproduct reverses every arrow: morphisms *out of* $A \sqcup B$ correspond to pairs of morphisms out of $A$ and out of $B$ — to define a map on $A \sqcup B$, you define it on each piece separately. That is **case analysis**, and it is exactly how one defines a function on a disjoint union.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $\mathcal{C}$ is a category and composition is written $g \circ f$.
+
+<Definition term="terminal and initial objects">
+
+An object $T$ is **terminal** if for every object $X$ there is exactly one morphism $X \to T$. An object $I$ is **initial** if for every object $X$ there is exactly one morphism $I \to X$. An object that is both initial and terminal is a **zero object**.
+
+</Definition>
+
+<Definition term="product">
+
+A **product** of objects $A$ and $B$ is an object $P$ with morphisms $\pi_1 : P \to A$ and $\pi_2 : P \to B$ (the **projections**) such that for every object $X$ and every pair of morphisms $f : X \to A$, $g : X \to B$ there is a **unique** morphism $h : X \to P$ with $\pi_1 \circ h = f$ and $\pi_2 \circ h = g$. We write $P = A \times B$ and $h = \langle f, g \rangle$.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "X", tex: "X", row: 0, col: 1 },
+    { id: "P", tex: "A \\times B", row: 1, col: 1 },
+    { id: "A", tex: "A", row: 1, col: 0 },
+    { id: "B", tex: "B", row: 1, col: 2 },
+  ]}
+  arrows={[
+    { from: "X", to: "A", tex: "f", labelSide: "right" },
+    { from: "X", to: "B", tex: "g" },
+    { from: "X", to: "P", tex: "\\langle f, g \\rangle", style: "dashed" },
+    { from: "P", to: "A", tex: "\\pi_1" },
+    { from: "P", to: "B", tex: "\\pi_2", labelSide: "right" },
+  ]}
+  caption="The universal property of the product: every pair $f, g$ factors through $A \times B$ by exactly one dashed arrow."
+/>
+
+More generally, a product of a family $(A_i)_{i \in I}$ is an object $\prod_i A_i$ with projections $\pi_i$ such that every family $f_i : X \to A_i$ factors as $f_i = \pi_i \circ h$ for a unique $h$. For $I = \varnothing$ the condition says: for every $X$ there is a unique $h : X \to P$. **A terminal object is an empty product.**
+
+<Definition term="opposite category and coproduct">
+
+The **opposite category** $\mathcal{C}^{\mathrm{op}}$ has the same objects and a morphism $f^{\mathrm{op}} : B \to A$ for each $f : A \to B$, with composition reversed. A **coproduct** of $A$ and $B$ in $\mathcal{C}$ is a product of $A$ and $B$ in $\mathcal{C}^{\mathrm{op}}$. Unpacked: an object $S = A \sqcup B$ with morphisms $\iota_1 : A \to S$, $\iota_2 : B \to S$ (the **injections**) such that for every pair $f : A \to Y$, $g : B \to Y$ there is a unique $[f, g] : S \to Y$ with $[f, g] \circ \iota_1 = f$ and $[f, g] \circ \iota_2 = g$. An initial object is an empty coproduct.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "Y", tex: "Y", row: 1, col: 1 },
+    { id: "S", tex: "A \\sqcup B", row: 0, col: 1 },
+    { id: "A", tex: "A", row: 0, col: 0 },
+    { id: "B", tex: "B", row: 0, col: 2 },
+  ]}
+  arrows={[
+    { from: "A", to: "Y", tex: "f", labelSide: "right" },
+    { from: "B", to: "Y", tex: "g" },
+    { from: "S", to: "Y", tex: "[f, g]", style: "dashed" },
+    { from: "A", to: "S", tex: "\\iota_1" },
+    { from: "B", to: "S", tex: "\\iota_2", labelSide: "right" },
+  ]}
+  caption="The coproduct: the same picture with every arrow reversed."
+/>
+
+<Definition term="cones over a pair">
+
+A **cone** over the pair $(A, B)$ is an object $X$ with morphisms $f : X \to A$, $g : X \to B$. A morphism of cones $(X, f, g) \to (X', f', g')$ is a morphism $h : X \to X'$ with $f' \circ h = f$ and $g' \circ h = g$. Cones and their morphisms form a category $\mathrm{Cone}(A, B)$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="A tour of products and coproducts">
+
+| Category | terminal | initial | $A \times B$ | $A \sqcup B$ |
+| --- | --- | --- | --- | --- |
+| $\cat{Set}$ | any one-point set | $\varnothing$ | pairs $(a, b)$ | disjoint union $A \times \{1\} \cup B \times \{2\}$ |
+| $\cat{Grp}$ | trivial group | trivial group | direct product | free product $A * B$ |
+| $\cat{Ab}$, $\cat{Vect}_k$ | $0$ | $0$ | direct sum $A \oplus B$ | the same $A \oplus B$ |
+| $\cat{Ring}$ (unital) | zero ring | $\Z$ | $R \times S$ | free product of rings |
+| $\cat{CRing}$ | zero ring | $\Z$ | $R \times S$ | tensor product $R \otimes_{\Z} S$ |
+| $\cat{Top}$ | one-point space | $\varnothing$ | product topology | disjoint union topology |
+| poset $(P, \le)$ | greatest element | least element | meet $a \wedge b$ | join $a \vee b$ |
+| $\cat{Field}$ | none | none | usually none | usually none |
+
+<Example title="Sets">
+
+$A \times B$ with the coordinate projections is a product: given $f, g$, the map $h(x) = (f(x), g(x))$ works, and any $h$ with $\pi_1 h = f$, $\pi_2 h = g$ has both coordinates determined. The disjoint union $A \sqcup B = (A \times \{1\}) \cup (B \times \{2\})$ is a coproduct: $[f, g](a, 1) = f(a)$, $[f, g](b, 2) = g(b)$, and this is forced. (The plain union $A \cup B$ is *not* a coproduct when $A \cap B \neq \varnothing$: for $A = B = \{\ast\}$, the maps $f = \mathrm{id}$ and $g$ constant at a different point cannot both be extended.) The empty set is initial (the empty function is the unique map $\varnothing \to X$) and every one-point set is terminal. The empty set is not terminal: there is no map $\{\ast\} \to \varnothing$.
+
+</Example>
+
+<Example title="Groups: the free product">
+
+The direct product $G \times H$ with componentwise multiplication is a product in $\cat{Grp}$, as in $\cat{Set}$ — the induced map $x \mapsto (f(x), g(x))$ is a homomorphism. The coproduct is the **free product** $G * H$: its elements are reduced words $x_1 x_2 \cdots x_n$ with letters alternately from $G \setminus \{e\}$ and $H \setminus \{e\}$, multiplied by concatenation followed by cancellation. Given $f : G \to K$ and $g : H \to K$, the map $[f, g]$ sends a word to the product of the images of its letters in $K$; it is the only homomorphism extending $f$ and $g$, because the letters generate $G * H$. (That reduced words multiply associatively is the normal form theorem for free products; see the reading list.) For example $\Z * \Z$ is the **free group on two generators**, and $\Z/2 * \Z/2$ is the infinite dihedral group.
+
+</Example>
+
+<Example title="Abelian groups: product and coproduct coincide">
+
+In $\cat{Ab}$ the direct sum $A \oplus B$ is a product (as in $\cat{Grp}$) **and** a coproduct with injections $a \mapsto (a, 0)$, $b \mapsto (0, b)$: given $f : A \to C$ and $g : B \to C$, the map $[f, g](a, b) = f(a) + g(b)$ is a homomorphism *because $C$ is abelian*, and it is the only one extending $f$ and $g$ since $(a, b) = (a, 0) + (0, b)$. The same holds in $\cat{Vect}_k$ and $R\text{-}\cat{Mod}$. For infinitely many factors the two notions separate: $\prod_{i \in \N} \Z$ is the product, while the coproduct $\bigoplus_{i \in \N} \Z$ is the subgroup of sequences with finitely many non-zero terms.
+
+</Example>
+
+<Example title="Rings">
+
+In the category of rings with identity (and homomorphisms preserving $1$), $\Z$ is initial: the only homomorphism $\Z \to R$ is $n \mapsto n \cdot 1_R$. The zero ring $\{0\}$ is terminal. They differ, so there is no zero object. In commutative rings the coproduct of $R$ and $S$ is $R \otimes_{\Z} S$, with $\iota_1(r) = r \otimes 1$ and $\iota_2(s) = 1 \otimes s$; for instance $\Z[x] \otimes \Z[y] \cong \Z[x, y]$, while $\Z/2 \otimes \Z/3 = 0$, because $1 \otimes 1 = 3(1 \otimes 1) - 2(1 \otimes 1) = 1 \otimes 3 - 2 \otimes 1 = 0$.
+
+</Example>
+
+<Example title="Posets: meets and joins">
+
+A poset $(P, \le)$ is a category with exactly one morphism $x \to y$ when $x \le y$ and none otherwise. All equations between morphisms hold automatically, so a product of $a$ and $b$ is just an element $p$ with $p \le a$, $p \le b$, and such that $x \le a$, $x \le b$ imply $x \le p$: a **greatest lower bound** (meet). Dually the coproduct is the **least upper bound** (join). In $(\N_{>0}, \mid)$, ordered by divisibility, the product of $12$ and $18$ is $\gcd = 6$ and the coproduct is $\operatorname{lcm} = 36$. In the power set $\mathcal{P}(X)$ they are intersection and union. In the four-element poset $\{2, 3, 12, 18\}$ under divisibility, $2$ and $3$ have two minimal upper bounds and no least one, so they have **no coproduct**:
+
+<Figure caption="The divisibility poset $\{2, 3, 12, 18\}$: each of $2, 3$ divides each of $12, 18$, but $12 \nmid 18$ and $18 \nmid 12$. The pair $2, 3$ has no join and the pair $12, 18$ has no meet.">
+<svg viewBox="0 0 240 150" role="img" aria-label="Hasse diagram with 2 and 3 at the bottom, 12 and 18 at the top, and all four edges between the levels">
+  <line x1="70" y1="115" x2="70" y2="35" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="70" y1="115" x2="170" y2="35" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="170" y1="115" x2="70" y2="35" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="170" y1="115" x2="170" y2="35" stroke="var(--ink-2)" strokeWidth="2" />
+  <circle cx="70" cy="115" r="16" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="170" cy="115" r="16" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="70" cy="35" r="16" fill="var(--sky-soft)" stroke="var(--gold)" strokeWidth="2" />
+  <circle cx="170" cy="35" r="16" fill="var(--sky-soft)" stroke="var(--gold)" strokeWidth="2" />
+  <text x="70" y="120" textAnchor="middle" fontSize="14" fill="var(--ink-2)">2</text>
+  <text x="170" y="120" textAnchor="middle" fontSize="14" fill="var(--ink-2)">3</text>
+  <text x="70" y="40" textAnchor="middle" fontSize="14" fill="var(--ink-2)">12</text>
+  <text x="170" y="40" textAnchor="middle" fontSize="14" fill="var(--ink-2)">18</text>
+</svg>
+</Figure>
+
+</Example>
+
+<Example title="Topological spaces">
+
+The product of spaces $X$ and $Y$ is $X \times Y$ with the **product topology**, generated by the boxes $U \times V$: it is the coarsest topology making $\pi_1, \pi_2$ continuous, and a map $h = \langle f, g \rangle : Z \to X \times Y$ is continuous exactly when $f$ and $g$ are, since $h^{-1}(U \times V) = f^{-1}(U) \cap g^{-1}(V)$. The coproduct is the disjoint union with the topology in which a set is open when its intersection with each piece is open. The one-point space is terminal, the empty space is initial.
+
+</Example>
+
+<Example title="Non-existence: fields">
+
+In the category of fields (with ring homomorphisms, which are automatically injective), $\mathbb{F}_2$ and $\mathbb{F}_3$ have **no product**: a product $P$ would come with homomorphisms $P \to \mathbb{F}_2$ and $P \to \mathbb{F}_3$, forcing $P$ to have characteristic $2$ and characteristic $3$ at once. They have no coproduct either (a field receiving maps from both would again have two characteristics), and the category of fields has neither an initial nor a terminal object (a terminal field would receive a map from fields of every characteristic). Universal properties characterise objects; whether such an object exists is a separate question.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems and proofs">
+
+<Theorem name="Theorem 1 (products are unique up to unique isomorphism)">
+
+Let $(P, \pi_1, \pi_2)$ and $(Q, \rho_1, \rho_2)$ both be products of $A$ and $B$. Then there is exactly one morphism $\varphi : P \to Q$ with $\rho_1 \circ \varphi = \pi_1$ and $\rho_2 \circ \varphi = \pi_2$, and it is an isomorphism.
+
+</Theorem>
+
+<Proof>
+
+First a lemma: **if $h, k : X \to P$ satisfy $\pi_1 h = \pi_1 k$ and $\pi_2 h = \pi_2 k$, then $h = k$.** Indeed both are morphisms whose composites with the projections are the pair $(\pi_1 h, \pi_2 h)$, and by the uniqueness clause there is only one such morphism.
+
+By the universal property of $Q$ applied to the pair $(\pi_1, \pi_2)$ there is a unique $\varphi = \langle \pi_1, \pi_2 \rangle_Q : P \to Q$ with $\rho_i \circ \varphi = \pi_i$; this is the uniqueness claim. Symmetrically there is $\psi : Q \to P$ with $\pi_i \circ \psi = \rho_i$. Then
+
+$$
+\pi_i \circ (\psi \circ \varphi) = \rho_i \circ \varphi = \pi_i = \pi_i \circ \mathrm{id}_P \qquad (i = 1, 2),
+$$
+
+so $\psi \circ \varphi = \mathrm{id}_P$ by the lemma, and likewise $\varphi \circ \psi = \mathrm{id}_Q$.
+
+</Proof>
+
+The proof never looked inside $P$ or $Q$ — no elements, no construction. That is why it applies verbatim in every category, and why we may speak of *the* product $A \times B$: any two choices are related by one canonical isomorphism, compatible with all the structure we care about. The same argument shows that terminal (and initial) objects are unique up to unique isomorphism: if $T, T'$ are terminal, the unique maps $T \to T' \to T$ compose to an endomorphism of $T$, which must be $\mathrm{id}_T$ since $T$ has only one.
+
+<Theorem name="Theorem 2 (a product is a terminal cone)">
+
+A cone $(P, \pi_1, \pi_2)$ over $(A, B)$ is a product of $A$ and $B$ if and only if it is a terminal object of the category $\mathrm{Cone}(A, B)$.
+
+</Theorem>
+
+<Proof>
+
+A morphism of cones $(X, f, g) \to (P, \pi_1, \pi_2)$ is precisely a morphism $h : X \to P$ with $\pi_1 h = f$ and $\pi_2 h = g$. "Exactly one such $h$ for every cone $(X, f, g)$" is the universal property of the product on the one hand and the definition of a terminal object of $\mathrm{Cone}(A, B)$ on the other.
+
+</Proof>
+
+So Theorem 1 is a special case of the uniqueness of terminal objects. This pattern — *a universal object is a terminal (or initial) object in a cleverly chosen category* — is the backbone of <TopicLink id="math.cat.limits-colimits">limits and colimits</TopicLink>.
+
+<Theorem name="Theorem 3 (duality)">
+
+A coproduct in $\mathcal{C}$ is a product in $\mathcal{C}^{\mathrm{op}}$, and an initial object of $\mathcal{C}$ is a terminal object of $\mathcal{C}^{\mathrm{op}}$. Consequently every theorem about products and terminal objects that holds in all categories yields a theorem about coproducts and initial objects: in particular, coproducts and initial objects are unique up to unique isomorphism.
+
+</Theorem>
+
+<Proof>
+
+A morphism $Y \to A$ in $\mathcal{C}^{\mathrm{op}}$ is a morphism $A \to Y$ in $\mathcal{C}$, and composition is reversed. Translating the universal property of a product of $A$ and $B$ in $\mathcal{C}^{\mathrm{op}}$, with projections $\iota_1^{\mathrm{op}}, \iota_2^{\mathrm{op}}$, word for word gives the universal property of a coproduct in $\mathcal{C}$ with injections $\iota_1, \iota_2$. Theorem 1, applied in the category $\mathcal{C}^{\mathrm{op}}$, then gives uniqueness of coproducts in $\mathcal{C}$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (the coproduct of groups is not the product)">
+
+The free product $\Z * \Z$ is not abelian; in particular it is not isomorphic to $\Z \times \Z$.
+
+</Theorem>
+
+<Proof>
+
+Let $x$ and $y$ be the generators of the two copies of $\Z$, i.e. $x = \iota_1(1)$, $y = \iota_2(1)$. In the symmetric group $S_3$ take the transpositions $\sigma = (1\,2)$ and $\tau = (2\,3)$; there are homomorphisms $\Z \to S_3$ with $1 \mapsto \sigma$ and $1 \mapsto \tau$. By the universal property of the coproduct there is a homomorphism $\varphi : \Z * \Z \to S_3$ with $\varphi(x) = \sigma$ and $\varphi(y) = \tau$. If $xy = yx$, then $\sigma\tau = \varphi(xy) = \varphi(yx) = \tau\sigma$. But $\sigma\tau = (1\,2\,3)$ and $\tau\sigma = (1\,3\,2)$. Hence $xy \neq yx$.
+
+</Proof>
+
+The proof used nothing about reduced words — only the universal property and one non-abelian group to map into. In $\cat{Ab}$, by contrast, the coproduct of $\Z$ and $\Z$ *is* $\Z \oplus \Z = \Z \times \Z$: the same two objects have different coproducts in different categories. Coproducts depend on the ambient category, which is the content of the misconception "coproducts look like products".
+
+<Theorem name="Theorem 5 (products and coproducts in posets)">
+
+In a poset regarded as a category, $a$ and $b$ have a product if and only if they have a greatest lower bound, and then the product is $a \wedge b$; dually for coproducts and least upper bounds. A least element is an initial object and a greatest element is a terminal object.
+
+</Theorem>
+
+<Proof>
+
+As in the example: all diagrams commute in a poset, so the universal property of a product reduces to "$p \le a$, $p \le b$, and every common lower bound is $\le p$", which is the definition of a greatest lower bound. Conversely, a product $p$ is a lower bound, and applying the universal property to the cone $a \wedge b$ gives $a \wedge b \le p$, so $p = a \wedge b$ by antisymmetry. Least and greatest elements are empty joins and meets.
+
+</Proof>
+
+<Theorem name="Theorem 6 (the product topology is forced)">
+
+Let $(X_i)_{i \in I}$ be topological spaces. The product topology on $\prod_i X_i$ — generated by the sets $\pi_i^{-1}(U)$, $U \subseteq X_i$ open — makes it a product in $\cat{Top}$. The box topology (generated by all $\prod_i U_i$, $U_i$ open) in general does **not**: for $X_i = \R$, $i \in \N$, the diagonal map $\Delta : \R \to \R^{\N}$, $t \mapsto (t, t, t, \dots)$, has continuous components but is not continuous for the box topology.
+
+</Theorem>
+
+<Proof>
+
+A map $h : Z \to \prod X_i$ is continuous for the product topology iff the preimages of the generating sets are open, i.e. iff every $\pi_i \circ h$ is continuous. So the continuous maps $Z \to \prod X_i$ correspond exactly to families of continuous maps $Z \to X_i$, which is the universal property (the underlying function is forced, as in $\cat{Set}$). For the box topology, $B = \prod_{n \ge 1} (-\tfrac1n, \tfrac1n)$ is open and $\Delta^{-1}(B) = \bigcap_n (-\tfrac1n, \tfrac1n) = \{0\}$ is not open in $\R$. Since $\Delta$ is continuous for the product topology (each $\pi_n \circ \Delta = \mathrm{id}$), the box topology on $\R^{\N}$ is strictly finer and fails the existence half of the universal property.
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Products and coproducts in Lean">
+
+We state the universal property by hand, in an arbitrary Mathlib category. Mathlib composes in diagrammatic order, so $\pi_1 \circ h$ is written `h ≫ π₁`.
+
+<Lean decl="Lumenary.ProductsCoproducts.IsBinaryProduct" />
+
+Theorem 1, exactly as proved above: the lemma (`hom_ext`), the comparison isomorphism, and its uniqueness.
+
+<Lean decl="Lumenary.ProductsCoproducts.IsBinaryProduct.hom_ext" />
+
+<Lean decl="Lumenary.ProductsCoproducts.IsBinaryProduct.iso" />
+
+<Lean decl="Lumenary.ProductsCoproducts.IsBinaryProduct.iso_unique" />
+
+Mathlib's own products (`A ⨯ B`, `prod.lift`) satisfy our definition, and Mathlib proves Theorem 2 for all limits:
+
+<Lean decl="Lumenary.ProductsCoproducts.ofHasBinaryProduct" />
+
+<Lean decl="Lumenary.ProductsCoproducts.product_is_terminal_cone" />
+
+Coproducts are *defined* as products in the opposite category (Theorem 3 becomes a definition), and then unpacked:
+
+<Lean decl="Lumenary.ProductsCoproducts.IsBinaryCoproduct" />
+
+<Lean decl="Lumenary.ProductsCoproducts.IsBinaryCoproduct.desc" />
+
+<Lean decl="Lumenary.ProductsCoproducts.IsBinaryCoproduct.inl_desc" />
+
+<Lean decl="Lumenary.ProductsCoproducts.IsBinaryCoproduct.desc_unique" />
+
+<Lean decl="Lumenary.ProductsCoproducts.terminal_unique" />
+
+In the category of types — Lean's counterpart of $\cat{Set}$ — pairs form a product and the sum type `A ⊕ B` a coproduct; one-element and empty types are terminal and initial.
+
+<Lean decl="Lumenary.ProductsCoproducts.typesProduct" />
+
+<Lean decl="Lumenary.ProductsCoproducts.typesCoproduct" />
+
+<Lean decl="Lumenary.ProductsCoproducts.types_terminal_initial" />
+
+Theorem 5, for posets with meets and joins:
+
+<Lean decl="Lumenary.ProductsCoproducts.infIsProduct" />
+
+<Lean decl="Lumenary.ProductsCoproducts.product_eq_inf" />
+
+<Lean decl="Lumenary.ProductsCoproducts.supIsCoproduct" />
+
+Initial and terminal objects in algebra, from Mathlib:
+
+<Lean decl="Lumenary.ProductsCoproducts.int_initial" />
+
+<Lean decl="Lumenary.ProductsCoproducts.trivial_group_zero" />
+
+And Theorem 4. Lean finds the contradiction $\sigma\tau = \tau\sigma$ in $S_3$ by evaluating both permutations (`decide`), after the universal property (`Monoid.Coprod.lift`) has transported the hypothetical equation $xy = yx$ to $S_3$.
+
+<Lean decl="Lumenary.ProductsCoproducts.free_product_not_comm" />
+
+<Lean decl="Lumenary.ProductsCoproducts.prod_comm" />
+
+Not formalised here: the description of free products by reduced words (Mathlib has it as `Monoid.CoprodI.Word`), coproducts of commutative rings as tensor products, and Theorem 6.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiment: testing universal properties by brute force">
+
+For finite sets the universal property is a finite statement, so a computer can check it: for every pair $f : X \to A$, $g : X \to B$ it counts the morphisms $h : X \to P$ with $\pi_1 h = f$ and $\pi_2 h = g$. The count must be exactly $1$ every time. In a finite poset, products and coproducts can be found by searching for greatest lower and least upper bounds — or found not to exist.
+
+<Python id="products_coproducts_finite" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: one pair, one map">
+
+Choose maps $f : Z \to A$ and $g : Z \to B$ between small finite sets, then try to build $h : Z \to A \times B$ with $\pi_1 \circ h = f$ and $\pi_2 \circ h = g$. Notice that at each point $z$ you have no freedom at all: $h(z)$ must be the pair $(f(z), g(z))$. That absence of choice is the uniqueness clause.
+
+<ProductMaps />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Coproducts look like products."** In $\cat{Set}$ the two look different but at least familiar; in $\cat{Grp}$ the coproduct $\Z * \Z$ is a non-abelian group, utterly unlike $\Z \times \Z$ (Theorem 4). In $\cat{CRing}$ the coproduct is a tensor product, and $\Z/2 \sqcup \Z/3$ is the zero ring. In $\cat{Ab}$ the finite products and coproducts coincide. There is no general recipe "coproduct = something like a sum": you must compute it from the universal property in the category at hand.
+
+</Misconception>
+
+<Misconception>
+
+**"Every category has products."** Many do not. A poset has a product of $a$ and $b$ only when $a \wedge b$ exists ($\{2, 3, 12, 18\}$ under divisibility lacks several); the category of fields has no product of $\mathbb{F}_2$ and $\mathbb{F}_3$; the category of finite sets has all finite products but not, for example, a product of countably many copies of $\{0, 1\}$ (its points would correspond to the uncountably many sequences). A universal property characterises an object — existence must be proved separately.
+
+</Misconception>
+
+<Misconception>
+
+**"The union is the coproduct of sets."** Only for disjoint sets. In general the coproduct needs the two sets to be made disjoint first ($A \times \{1\} \cup B \times \{2\}$), otherwise a map on $A \cup B$ cannot be defined independently on $A$ and on $B$.
+
+</Misconception>
+
+<Misconception>
+
+**"The product is defined as the set of pairs."** In $\cat{Set}$ the set of pairs *is* a product, but so is any set in bijection with it with the matching projections, and in other categories there may be no "pairs" at all (posets, $\cat{Set}^{\mathrm{op}}$). The definition is the universal property; the set of pairs is one construction satisfying it.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Tychonoff, wedges and van Kampen">
+
+The universal property *forces* the product topology (Theorem 6), and with it a deep theorem: **Tychonoff's theorem** says that any product of compact spaces is compact — a statement about the categorical product that is equivalent to the axiom of choice (Kelley, 1950). The box topology, which looks more natural to beginners, fails the universal property and is not compact even for $\{0, 1\}^{\N}$ (where it is discrete and infinite).
+
+In pointed spaces the coproduct is the **wedge** $X \vee Y$ (the disjoint union with base points identified), and the fundamental group turns it into the coproduct of groups: by the Seifert–van Kampen theorem, for path-connected spaces whose base points are deformation retracts of open neighbourhoods (for example CW complexes with a vertex as base point), $\pi_1(X \vee Y) \cong \pi_1(X) * \pi_1(Y)$. So the figure eight $S^1 \vee S^1$ has fundamental group $\Z * \Z$, while the torus $S^1 \times S^1$ has $\Z \times \Z$ — and indeed $\pi_1(X \times Y) \cong \pi_1(X) \times \pi_1(Y)$ always. Products go to products and (nice) coproducts to coproducts. See <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="A grid and a tree">
+
+Draw the Cayley graph of a group with respect to generators $x, y$: a vertex for each element, an edge from $g$ to $gx$ and to $gy$. For $\Z \times \Z$ it is the square grid in the plane — flat geometry, where $xy = yx$ closes every unit square. For $\Z * \Z$ it is the infinite **4-valent tree**: since no non-trivial reduced word equals the identity, there are no cycles at all, and the number of elements at distance $n$ from the identity is $4 \cdot 3^{n-1}$, growing exponentially, like the area of a disc in the hyperbolic plane. Geometric group theory takes such pictures seriously: free groups are the basic examples of hyperbolic groups, and a group acting freely on a tree is free (Serre's theory of groups acting on trees). The product and the coproduct of the same two groups live in different geometries.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Biproducts, tensor products and the infinite">
+
+In $\cat{Ab}$, $\cat{Vect}_k$ and $R\text{-}\cat{Mod}$, finite products and coproducts coincide: $A \oplus B$ carries both structures, and $\pi_1 \iota_1 = \mathrm{id}$, $\pi_2 \iota_2 = \mathrm{id}$, $\iota_1 \pi_1 + \iota_2 \pi_2 = \mathrm{id}$. Such an object is a **biproduct**, and categories where all finite biproducts exist and hom-sets are abelian groups are the additive categories underlying homological algebra (see <TopicLink id="math.cat.abelian-categories">abelian categories</TopicLink>). Infinite products and coproducts differ: $\Hom(\bigoplus_i A_i, B) \cong \prod_i \Hom(A_i, B)$, and for a vector space this is why the dual of a space with a countably infinite basis is so much larger than the space. In commutative rings, the coproduct $R \otimes_{\Z} S$ explains why tensor products are inevitable: the polynomial ring $\Z[x, y]$ is the coproduct $\Z[x] \sqcup \Z[y]$, and a pair of ring maps out of $R$ and $S$ is a ring map out of $R \otimes S$.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="And, or, true, false">
+
+Order propositions by entailment: $\varphi \le \psi$ when $\varphi \vdash \psi$. In this preorder the product of $\varphi$ and $\psi$ is $\varphi \wedge \psi$ (it entails both, and anything entailing both entails it), the coproduct is $\varphi \vee \psi$, the terminal object is $\top$ and the initial object is $\bot$ ("ex falso quodlibet" is the statement that $\bot$ is initial). Remembering *which* proof witnesses an entailment upgrades the preorder to a category whose morphisms are proofs; then the universal properties are the introduction and elimination rules of natural deduction: a proof of $\varphi \wedge \psi$ from $\chi$ is a pair of proofs, and $\vee$-elimination is the copairing $[f, g]$ — proof by cases. This is one face of the Curry–Howard correspondence (see <TopicLink id="math.cat.categorical-logic">categorical logic</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Algebraic data types">
+
+In a typed programming language, the product of types $A$ and $B$ is the type of pairs or records, with projections `fst` and `snd`; the coproduct is the **sum type** (tagged union, `Either A B`, or Lean's `A ⊕ B`), whose universal property is pattern matching: to define a function on `A ⊕ B`, give one branch for `inl a` and one for `inr b`. The unit type is terminal and the empty type initial. Counting confirms the names: for finite types $|A \times B| = |A|\,|B|$ and $|A + B| = |A| + |B|$, and type isomorphisms such as $A \times (B + C) \cong A \times B + A \times C$ are laws of arithmetic one level up. See <TopicLink id="math.comp.lambda-calculus">the λ-calculus</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="products-by-maps" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Products of sets are named after René Descartes, whose coordinates (1637) identify points of the plane with pairs of numbers. A purely set-theoretic definition of the ordered pair came much later: Norbert Wiener (1914) and Kazimierz Kuratowski (1921), whose $\{\{a\}, \{a, b\}\}$ is the one in use today.
+- **Andrey Tychonoff** introduced the product topology around 1930 and proved the compactness theorem that bears his name; John Kelley showed in 1950 that Tychonoff's theorem is equivalent to the axiom of choice.
+- Free products of groups grew out of combinatorial group theory: **Otto Schreier** studied amalgamated free products (1927), and **Alexander Kurosh** proved his subgroup theorem for free products (1934).
+- **Pierre Samuel** (1948) formulated "universal mapping problems", and **Saunders Mac Lane**'s "Duality for groups" (1950) characterised direct and free products by arrows alone and observed that the two are dual — the first appearance of products and coproducts as categorical notions. The modern names and the general theory of limits followed in the 1950s.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Tom Leinster, *Basic Category Theory* (2014), Sections 5.1–5.2 — products, coproducts and their duality with many examples.
+- Emily Riehl, *Category Theory in Context* (2016), Chapter 3.
+- Steve Awodey, *Category Theory* (2nd edition, 2010), Chapters 2 and 3 — products, then duality and coproducts.
+- Paolo Aluffi, *Algebra: Chapter 0* (2009), Chapters I–II — universal properties in $\cat{Set}$, $\cat{Grp}$ and $\cat{Ab}$, including free products.
+- James Munkres, *Topology* (2nd edition, 2000), Section 19 — product versus box topology.
+- Roger Lyndon and Paul Schupp, *Combinatorial Group Theory* (1977), Chapter IV — free products and the normal form theorem.
+
+</Section>

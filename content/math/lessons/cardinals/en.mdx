@@ -1,0 +1,617 @@
+---
+slug: cardinals
+topic: math.found.cardinals
+title: Ordinals and cardinals
+subtitle: Two ways of counting past infinity — by position and by size — and why $1 + \omega = \omega \neq \omega + 1$ while $\aleph_0 + 1 = \aleph_0$.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6004
+objectives:
+  - Define ordinals as transitive sets well-ordered by $\in$, and prove that any two ordinals are comparable and that there is no set of all ordinals
+  - Prove that every well-ordered set is isomorphic to exactly one ordinal
+  - Use transfinite induction and transfinite recursion to prove statements about, and define operations on, the ordinals
+  - Compute with ordinal arithmetic and explain why it is not commutative
+  - Prove Cantor's theorem and the Schröder–Bernstein theorem, and compute cardinal sums and products using $\kappa \cdot \kappa = \kappa$
+  - Distinguish ordinals from cardinals, and state precisely what the continuum hypothesis asserts
+narrators: []
+lean:
+  - Lumenary.Cardinals.le_apply_of_strictMono
+  - Lumenary.Cardinals.orderIso_unique
+  - Lumenary.Cardinals.no_embedding_into_initial_segment
+  - Lumenary.Cardinals.von_neumann_iso
+  - Lumenary.Cardinals.transfinite_induction
+  - Lumenary.Cardinals.one_add_omega
+  - Lumenary.Cardinals.add_not_comm
+  - Lumenary.Cardinals.mul_not_comm
+  - Lumenary.Cardinals.card_omega_add_one
+  - Lumenary.Cardinals.cantor_no_surjection
+  - Lumenary.Cardinals.cantor_card
+  - Lumenary.Cardinals.schroeder_bernstein
+  - Lumenary.Cardinals.schroeder_bernstein_library
+  - Lumenary.Cardinals.hessenberg
+  - Lumenary.Cardinals.add_eq_max
+compute: [cardinals_ordinal_arithmetic, cardinals_schroeder_bernstein]
+trails: [how-many-infinities]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Counting past infinity">
+
+"Three" answers two different questions. *How many* pebbles are in the bowl? Three. *Which* runner crossed the line after the second? The third. For finite collections the two answers always agree, so we rarely notice that they are different ideas. For infinite collections they come apart.
+
+Line up the natural numbers as usual, $0, 1, 2, 3, \dots$, and then line them up again, but with $0$ moved to the very end: $1, 2, 3, \dots, 0$. *How many* numbers are there? The same set, so the same number. But the two arrangements have different *shapes*: in the second there is a last element, standing after infinitely many others. Georg Cantor met such arrangements in the 1870s and 1880s while studying the sets on which a trigonometric series may misbehave: taking limit points of limit points of limit points, he needed to keep counting after all the finite stages — "$\infty$, $\infty + 1$, $\infty + 2$, …" — and he invented the **ordinal numbers** to do it.
+
+This lesson builds both kinds of infinite number inside <TopicLink id="math.found.zfc">ZFC</TopicLink>. **Ordinals** measure the shapes of well-ordered sets; **cardinals** measure sizes. We prove the basic theorems about both — including the Schröder–Bernstein theorem and Hessenberg's theorem $\kappa \cdot \kappa = \kappa$ — and meet the question about sizes that ZFC cannot answer, the **continuum hypothesis**. You should know <TopicLink id="math.found.order-theory">well-orders</TopicLink> and <TopicLink id="math.found.countability">countability and Cantor's diagonal argument</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Shapes of well-orders">
+
+A **well-order** is a linear order in which every non-empty subset has a least element. Every finite linear order is a well-order, and so is $(\N, \le)$; the integers and the rationals are not. Well-orders are exactly the orders along which we can "count": after any set of positions that is not everything, there is a *next* position — the least one not yet used.
+
+<Figure caption="Four well-orders on countably many points, drawn as tally marks that shrink towards a limit. The first is $\omega$, the shape of $0, 1, 2, \dots$. The second, $\omega + 1$, has one more point after all the others (gold). The third, $1 + \omega$, has one more point before them — and is the same shape as $\omega$. The last, $\omega \cdot 2 = \omega + \omega$, is two copies of $\omega$ one after the other.">
+<svg viewBox="0 0 330 245" role="img" aria-label="Four rows of tally marks: omega, omega plus one, one plus omega, and omega times two">
+  <line x1="70.0" y1="50" x2="70.0" y2="24.0" stroke="var(--human)" strokeWidth="2" />
+  <line x1="120.6" y1="50" x2="120.6" y2="27.1" stroke="var(--human)" strokeWidth="2" />
+  <line x1="160.1" y1="50" x2="160.1" y2="29.9" stroke="var(--human)" strokeWidth="2" />
+  <line x1="190.9" y1="50" x2="190.9" y2="32.3" stroke="var(--human)" strokeWidth="2" />
+  <line x1="214.9" y1="50" x2="214.9" y2="34.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="233.6" y1="50" x2="233.6" y2="36.3" stroke="var(--human)" strokeWidth="2" />
+  <line x1="248.2" y1="50" x2="248.2" y2="37.9" stroke="var(--human)" strokeWidth="2" />
+  <line x1="259.6" y1="50" x2="259.6" y2="39.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="268.5" y1="50" x2="268.5" y2="40.6" stroke="var(--human)" strokeWidth="2" />
+  <line x1="275.4" y1="50" x2="275.4" y2="41.8" stroke="var(--human)" strokeWidth="2" />
+  <line x1="280.8" y1="50" x2="280.8" y2="42.8" stroke="var(--human)" strokeWidth="2" />
+  <line x1="285.0" y1="50" x2="285.0" y2="43.6" stroke="var(--human)" strokeWidth="2" />
+  <line x1="288.3" y1="50" x2="288.3" y2="44.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="290.9" y1="50" x2="290.9" y2="45.1" stroke="var(--human)" strokeWidth="2" />
+  <line x1="292.9" y1="50" x2="292.9" y2="45.7" stroke="var(--human)" strokeWidth="2" />
+  <line x1="294.5" y1="50" x2="294.5" y2="46.2" stroke="var(--human)" strokeWidth="2" />
+  <line x1="70.0" y1="110" x2="70.0" y2="84.0" stroke="var(--human)" strokeWidth="2" />
+  <line x1="116.2" y1="110" x2="116.2" y2="87.1" stroke="var(--human)" strokeWidth="2" />
+  <line x1="152.2" y1="110" x2="152.2" y2="89.9" stroke="var(--human)" strokeWidth="2" />
+  <line x1="180.3" y1="110" x2="180.3" y2="92.3" stroke="var(--human)" strokeWidth="2" />
+  <line x1="202.3" y1="110" x2="202.3" y2="94.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="219.4" y1="110" x2="219.4" y2="96.3" stroke="var(--human)" strokeWidth="2" />
+  <line x1="232.7" y1="110" x2="232.7" y2="97.9" stroke="var(--human)" strokeWidth="2" />
+  <line x1="243.1" y1="110" x2="243.1" y2="99.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="251.2" y1="110" x2="251.2" y2="100.6" stroke="var(--human)" strokeWidth="2" />
+  <line x1="257.6" y1="110" x2="257.6" y2="101.8" stroke="var(--human)" strokeWidth="2" />
+  <line x1="262.5" y1="110" x2="262.5" y2="102.8" stroke="var(--human)" strokeWidth="2" />
+  <line x1="266.3" y1="110" x2="266.3" y2="103.6" stroke="var(--human)" strokeWidth="2" />
+  <line x1="269.3" y1="110" x2="269.3" y2="104.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="271.7" y1="110" x2="271.7" y2="105.1" stroke="var(--human)" strokeWidth="2" />
+  <line x1="273.5" y1="110" x2="273.5" y2="105.7" stroke="var(--human)" strokeWidth="2" />
+  <line x1="274.9" y1="110" x2="274.9" y2="106.2" stroke="var(--human)" strokeWidth="2" />
+  <line x1="300" y1="110" x2="300" y2="84" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="70" y1="170" x2="70" y2="144" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="85.0" y1="170" x2="85.0" y2="144.0" stroke="var(--human)" strokeWidth="2" />
+  <line x1="132.3" y1="170" x2="132.3" y2="147.1" stroke="var(--human)" strokeWidth="2" />
+  <line x1="169.2" y1="170" x2="169.2" y2="149.9" stroke="var(--human)" strokeWidth="2" />
+  <line x1="198.0" y1="170" x2="198.0" y2="152.3" stroke="var(--human)" strokeWidth="2" />
+  <line x1="220.4" y1="170" x2="220.4" y2="154.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="237.9" y1="170" x2="237.9" y2="156.3" stroke="var(--human)" strokeWidth="2" />
+  <line x1="251.6" y1="170" x2="251.6" y2="157.9" stroke="var(--human)" strokeWidth="2" />
+  <line x1="262.2" y1="170" x2="262.2" y2="159.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="270.5" y1="170" x2="270.5" y2="160.6" stroke="var(--human)" strokeWidth="2" />
+  <line x1="277.0" y1="170" x2="277.0" y2="161.8" stroke="var(--human)" strokeWidth="2" />
+  <line x1="282.1" y1="170" x2="282.1" y2="162.8" stroke="var(--human)" strokeWidth="2" />
+  <line x1="286.0" y1="170" x2="286.0" y2="163.6" stroke="var(--human)" strokeWidth="2" />
+  <line x1="289.1" y1="170" x2="289.1" y2="164.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="291.5" y1="170" x2="291.5" y2="165.1" stroke="var(--human)" strokeWidth="2" />
+  <line x1="293.4" y1="170" x2="293.4" y2="165.7" stroke="var(--human)" strokeWidth="2" />
+  <line x1="294.8" y1="170" x2="294.8" y2="166.2" stroke="var(--human)" strokeWidth="2" />
+  <line x1="70.0" y1="230" x2="70.0" y2="204.0" stroke="var(--human)" strokeWidth="2" />
+  <line x1="94.2" y1="230" x2="94.2" y2="207.1" stroke="var(--human)" strokeWidth="2" />
+  <line x1="113.1" y1="230" x2="113.1" y2="209.9" stroke="var(--human)" strokeWidth="2" />
+  <line x1="127.8" y1="230" x2="127.8" y2="212.3" stroke="var(--human)" strokeWidth="2" />
+  <line x1="139.3" y1="230" x2="139.3" y2="214.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="148.2" y1="230" x2="148.2" y2="216.3" stroke="var(--human)" strokeWidth="2" />
+  <line x1="155.2" y1="230" x2="155.2" y2="217.9" stroke="var(--human)" strokeWidth="2" />
+  <line x1="160.7" y1="230" x2="160.7" y2="219.4" stroke="var(--human)" strokeWidth="2" />
+  <line x1="164.9" y1="230" x2="164.9" y2="220.6" stroke="var(--human)" strokeWidth="2" />
+  <line x1="168.2" y1="230" x2="168.2" y2="221.8" stroke="var(--human)" strokeWidth="2" />
+  <line x1="170.8" y1="230" x2="170.8" y2="222.8" stroke="var(--human)" strokeWidth="2" />
+  <line x1="172.8" y1="230" x2="172.8" y2="223.6" stroke="var(--human)" strokeWidth="2" />
+  <line x1="190.0" y1="230" x2="190.0" y2="204.0" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="214.2" y1="230" x2="214.2" y2="207.1" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="233.1" y1="230" x2="233.1" y2="209.9" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="247.8" y1="230" x2="247.8" y2="212.3" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="259.3" y1="230" x2="259.3" y2="214.4" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="268.2" y1="230" x2="268.2" y2="216.3" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="275.2" y1="230" x2="275.2" y2="217.9" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="280.7" y1="230" x2="280.7" y2="219.4" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="284.9" y1="230" x2="284.9" y2="220.6" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="288.2" y1="230" x2="288.2" y2="221.8" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="290.8" y1="230" x2="290.8" y2="222.8" stroke="var(--formal)" strokeWidth="2" />
+  <line x1="292.8" y1="230" x2="292.8" y2="223.6" stroke="var(--formal)" strokeWidth="2" />
+  <text x="8" y="45" fontSize="13" fill="var(--ink-2)">ω</text>
+  <text x="8" y="105" fontSize="13" fill="var(--ink-2)">ω + 1</text>
+  <text x="8" y="165" fontSize="13" fill="var(--ink-2)">1 + ω</text>
+  <text x="8" y="225" fontSize="13" fill="var(--ink-2)">ω · 2</text>
+</svg>
+</Figure>
+
+The pictures already show the two main surprises. Adding a point *at the end* of $\omega$ changes its shape — $\omega + 1$ has a largest element, $\omega$ does not — but adding a point *at the beginning* does not: $1 + \omega$ is again "a first point, then a next, then a next, …", which is $\omega$. So ordinal addition will not be commutative. And yet all four orders have the same *size*: each is a countable set. Ordinals keep track of shape; cardinals forget everything except size.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="order isomorphism, initial segment">
+
+Linear orders $(A, <)$ and $(B, \prec)$ are **isomorphic** if there is a bijection $f : A \to B$ with $a < a' \iff f(a) \prec f(a')$. The **initial segment** of a linear order $W$ below $w$ is $W_w = \{x \in W \mid x < w\}$.
+
+</Definition>
+
+<Definition term="ordinal">
+
+A set $x$ is **transitive** if every element of $x$ is also a subset of $x$ (if $z \in y \in x$ then $z \in x$). An **ordinal** is a transitive set that is well-ordered by $\in$ — that is, the relation $\{(y, z) \mid y, z \in x,\ y \in z\}$ is a strict well-order of $x$. We write $\alpha < \beta$ for $\alpha \in \beta$ when $\alpha, \beta$ are ordinals, and $\mathrm{Ord}$ for the class of all ordinals.
+
+</Definition>
+
+The von Neumann natural numbers $0 = \varnothing$, $1 = \{0\}$, $2 = \{0, 1\}, \dots$ are ordinals, and so is $\omega = \{0, 1, 2, \dots\}$. Each ordinal is the set of the ordinals before it: $\alpha = \{\beta \in \mathrm{Ord} \mid \beta < \alpha\}$.
+
+<Definition term="successor and limit ordinals">
+
+The **successor** of an ordinal $\alpha$ is $\alpha + 1 = \alpha \cup \{\alpha\}$. An ordinal is a **successor ordinal** if it is $\beta + 1$ for some $\beta$, and a **limit ordinal** if it is neither $0$ nor a successor. The least limit ordinal is $\omega$.
+
+</Definition>
+
+<Definition term="comparing sizes">
+
+$|A| \le |B|$ means there is an injection $A \to B$; $|A| = |B|$ means there is a bijection $A \to B$; and $|A| < |B|$ means $|A| \le |B|$ but not $|A| = |B|$.
+
+</Definition>
+
+<Definition term="cardinal">
+
+A **cardinal** is an ordinal that is not in bijection with any smaller ordinal. If $A$ can be well-ordered, its **cardinality** $|A|$ is the least ordinal in bijection with $A$, which is a cardinal. The infinite cardinals are listed by the **alephs**: $\aleph_0 = \omega$, $\aleph_{\alpha + 1}$ is the least cardinal greater than $\aleph_\alpha$, and $\aleph_\lambda = \sup_{\beta < \lambda} \aleph_\beta$ for limit $\lambda$. (When the ordinal rather than the size is meant, $\aleph_\alpha$ is also written $\omega_\alpha$.)
+
+</Definition>
+
+So $\omega$, $\omega + 1$ and $\omega + \omega$ are three different ordinals but only one cardinal, $\aleph_0 = \omega$: the others are in bijection with the smaller ordinal $\omega$. Every finite ordinal is a cardinal, and every infinite cardinal is a limit ordinal.
+
+</Section>
+
+<Section id="ordinals" kind="proof" title="The ordinals are well-ordered">
+
+<Theorem name="Lemma 1">
+
+Every element of an ordinal is an ordinal.
+
+</Theorem>
+
+<Proof>
+
+Let $\alpha$ be an ordinal and $x \in \alpha$. Since $\alpha$ is transitive, $x \subseteq \alpha$, so $\in$ well-orders $x$ (a subset of a well-order is well-ordered). To see that $x$ is transitive, let $z \in y \in x$. Then $y \in \alpha$ and so $z \in \alpha$, by transitivity of $\alpha$. Now $z, y, x$ are elements of $\alpha$ with $z \in y$ and $y \in x$; since $\in$ is a transitive relation on $\alpha$ (it is an order), $z \in x$.
+
+</Proof>
+
+<Theorem name="Lemma 2">
+
+If $\gamma$ and $\beta$ are ordinals and $\gamma \subsetneq \beta$, then $\gamma \in \beta$.
+
+</Theorem>
+
+<Proof>
+
+Let $\xi$ be the $\in$-least element of the non-empty set $\beta \setminus \gamma$. We show $\xi = \gamma$. If $\eta \in \xi$, then $\eta \in \beta$ (transitivity of $\beta$) and $\eta \notin \beta \setminus \gamma$ by the minimality of $\xi$; so $\eta \in \gamma$. Conversely, let $\eta \in \gamma$. Then $\eta$ and $\xi$ are elements of $\beta$, which is linearly ordered by $\in$: so $\eta \in \xi$, $\eta = \xi$ or $\xi \in \eta$. The middle case is impossible because $\xi \notin \gamma$, and so is the last, since $\xi \in \eta \in \gamma$ would give $\xi \in \gamma$ by transitivity of $\gamma$. Hence $\eta \in \xi$. So $\xi = \gamma$, and $\gamma = \xi \in \beta$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (any two ordinals are comparable)">
+
+For ordinals $\alpha, \beta$, exactly one of $\alpha \in \beta$, $\alpha = \beta$, $\beta \in \alpha$ holds.
+
+</Theorem>
+
+<Proof>
+
+The set $\delta = \alpha \cap \beta$ is transitive (an intersection of transitive sets) and well-ordered by $\in$ (a subset of $\alpha$), so it is an ordinal. If $\delta \neq \alpha$ and $\delta \neq \beta$, then Lemma 2 gives $\delta \in \alpha$ and $\delta \in \beta$, so $\delta \in \alpha \cap \beta = \delta$; but $\in$ is irreflexive on $\alpha$, a contradiction. So $\delta = \alpha$, that is $\alpha \subseteq \beta$, and then $\alpha = \beta$ or $\alpha \in \beta$ by Lemma 2; or $\delta = \beta$ and symmetrically $\beta = \alpha$ or $\beta \in \alpha$. At most one case holds: $\alpha \in \beta$ together with $\alpha = \beta$ or with $\beta \in \alpha$ would give $\alpha \in \alpha$ (using transitivity of $\alpha$ in the second case), contradicting irreflexivity.
+
+</Proof>
+
+<Theorem name="Theorem 4 (least elements and suprema)">
+
+Every non-empty set $S$ of ordinals has a least element, which equals $\bigcap S$, and a least upper bound, namely $\bigcup S$, which is an ordinal.
+
+</Theorem>
+
+<Proof>
+
+Pick $\alpha \in S$. If no element of $S$ is below $\alpha$, then by Theorem 3 $\alpha$ is least. Otherwise $\alpha \cap S$ is a non-empty subset of the well-ordered set $\alpha$ and has a least element, which is then least in $S$ (anything below it would also be in $\alpha \cap S$). The least element $\alpha_0$ is a subset of every member of $S$ (for ordinals, $\alpha_0 \le \beta$ gives $\alpha_0 \subseteq \beta$ by transitivity) and is itself a member, so $\alpha_0 = \bigcap S$. For the supremum: $\bigcup S$ is a union of transitive sets, hence transitive; its elements are ordinals by Lemma 1; by Theorem 3 and the first part, $\in$ is a well-order on it. So $\bigcup S$ is an ordinal. It contains every $\beta \in S$ as a subset, so it is an upper bound (Lemma 2); and if $\gamma$ is any upper bound, every $\beta \in S$ is a subset of $\gamma$, so $\bigcup S \subseteq \gamma$, which by Lemma 2 means $\bigcup S \le \gamma$.
+
+</Proof>
+
+<Theorem name="Theorem 5 (Burali-Forti)">
+
+There is no set of all ordinals.
+
+</Theorem>
+
+<Proof>
+
+If $\Omega$ were the set of all ordinals, it would be transitive (Lemma 1) and well-ordered by $\in$ (Theorems 3 and 4), hence an ordinal; so $\Omega \in \Omega$, contradicting the irreflexivity of $\in$ on the ordinal $\Omega$.
+
+</Proof>
+
+<Theorem name="Theorem 6 (transfinite induction)">
+
+Let $\varphi$ be a property of ordinals. If, for every ordinal $\alpha$, "$\varphi(\beta)$ for all $\beta < \alpha$" implies $\varphi(\alpha)$, then $\varphi(\alpha)$ holds for every ordinal $\alpha$. Equivalently: if $\varphi(0)$; $\varphi(\alpha) \Rightarrow \varphi(\alpha + 1)$; and for limit $\lambda$, "$\varphi(\beta)$ for all $\beta < \lambda$" implies $\varphi(\lambda)$ — then $\varphi$ holds for all ordinals.
+
+</Theorem>
+
+<Proof>
+
+If $\varphi(\alpha)$ failed, the set $\{\beta \le \alpha \mid \neg\varphi(\beta)\}$ would be a non-empty set of ordinals with a least element $\beta_0$ (Theorem 4). Every $\beta < \beta_0$ satisfies $\varphi$, so the hypothesis gives $\varphi(\beta_0)$, a contradiction. The second form follows because every ordinal is $0$, a successor or a limit, and in each case its hypothesis supplies the induction step.
+
+</Proof>
+
+<Theorem name="Theorem 7 (transfinite recursion)">
+
+Let $G$ be a class function (given by a formula) defined on all sets. Then there is a unique class function $F$ on the ordinals with $F(\alpha) = G(F \restriction \alpha)$ for every $\alpha$, where $F \restriction \alpha$ is the set $\{(\beta, F(\beta)) \mid \beta < \alpha\}$.
+
+</Theorem>
+
+<Proof>
+
+(Sketch.) Call a function $f$ with domain an ordinal $\delta$ an *attempt* if $f(\beta) = G(f \restriction \beta)$ for all $\beta < \delta$. By transfinite induction, two attempts agree where both are defined. Again by transfinite induction, for every $\alpha$ there is an attempt with domain $\alpha + 1$: at a limit stage, **Replacement** collects the attempts on the smaller ordinals into a set, and their union is an attempt to which one more value can be added. Define $F(\alpha)$ as the value at $\alpha$ of any attempt defined there. Uniqueness is one more transfinite induction. (Full details: Enderton 1977, chapter 7; Kunen 1980, chapter I.)
+
+</Proof>
+
+Recursion is how the transfinite is used in practice: the stages $V_\alpha$ of the cumulative hierarchy, ordinal arithmetic, the aleph function and the iterated derived sets $P^{(\alpha)}$ of analysis are all defined by it.
+
+</Section>
+
+<Section id="well-orders" kind="proof" title="Every well-order is an ordinal">
+
+<Theorem name="Lemma 8 (well-orders are rigid)">
+
+Let $(W, <)$ be a well-order and $f : W \to W$ strictly increasing. Then $x \le f(x)$ for every $x \in W$.
+
+</Theorem>
+
+<Proof>
+
+Otherwise the set $\{x \mid f(x) < x\}$ is non-empty; let $m$ be its least element. Then $f(m) < m$, and since $f$ is strictly increasing, $f(f(m)) < f(m)$. So $f(m)$ also belongs to the set, and it is smaller than $m$ — a contradiction.
+
+</Proof>
+
+<Theorem name="Corollary 9">
+
+(a) A well-order is not isomorphic to any proper initial segment of itself. (b) Between two well-orders there is at most one isomorphism. (c) Distinct ordinals are not isomorphic.
+
+</Theorem>
+
+<Proof>
+
+(a) An isomorphism $f : W \to W_w$ would be strictly increasing with $f(w) < w$, contradicting Lemma 8. (b) If $f, g : W \to V$ are isomorphisms, then $g^{-1} \circ f$ and $f^{-1} \circ g$ are strictly increasing maps $W \to W$, so $x \le g^{-1}(f(x))$ and $x \le f^{-1}(g(x))$; applying $g$ and $f$ gives $g(x) \le f(x) \le g(x)$. (c) If $\alpha < \beta$, then $\alpha = \beta_\alpha$ is a proper initial segment of $\beta$, so (a) applies.
+
+</Proof>
+
+<Theorem name="Theorem 10 (order types)">
+
+Every well-ordered set $(W, <)$ is isomorphic to exactly one ordinal, its **order type** $\mathrm{type}(W)$.
+
+</Theorem>
+
+<Proof>
+
+Uniqueness is Corollary 9(c). For existence, let $W'$ be the set of $w \in W$ such that the initial segment $W_w$ is isomorphic to some ordinal; that ordinal is unique, call it $F(w)$. By **Replacement**, $A = \{F(w) \mid w \in W'\}$ is a set.
+
+- *$W'$ is closed downwards, and $F$ is strictly increasing.* If $w \in W'$ via $h : W_w \cong F(w)$ and $v < w$, then $h$ restricts to an isomorphism $W_v \cong h(v)$, where $h(v) \in F(w)$ is an ordinal (Lemma 1); so $v \in W'$ and $F(v) = h(v) \in F(w)$.
+- *$A$ is an ordinal.* It is a set of ordinals, and it is transitive: if $\beta \in F(w)$, then $\beta = h(v)$ for some $v < w$, and $\beta = F(v) \in A$ by the previous point. By Theorems 3 and 4, a transitive set of ordinals is an ordinal.
+- *$F : W' \to A$ is an isomorphism*, by the first point.
+- *$W' = W$.* Otherwise let $w$ be the least element of $W \setminus W'$. Since $W'$ is closed downwards, $W' = W_w$, and $F$ shows that $W_w$ is isomorphic to the ordinal $A$; so $w \in W'$, a contradiction.
+
+Hence $W = W' \cong A$.
+
+</Proof>
+
+The proof needs Replacement, and this is no accident: in Zermelo's system without Replacement one cannot prove that the ordinal $\omega + \omega$ exists, although the well-order "two copies of $\N$" obviously does.
+
+</Section>
+
+<Section id="arithmetic" kind="human" title="Ordinal arithmetic">
+
+Ordinal arithmetic can be defined in two equivalent ways. By **order types**: $\alpha + \beta$ is the type of a copy of $\alpha$ followed by a copy of $\beta$, and $\alpha \cdot \beta$ is the type of $\beta$ copies of $\alpha$ — the set $\alpha \times \beta$ ordered by comparing second coordinates first. Or by **transfinite recursion** on the second argument:
+
+$$
+\begin{aligned}
+\alpha + 0 &= \alpha, & \alpha + (\beta + 1) &= (\alpha + \beta) + 1, & \alpha + \lambda &= \textstyle\sup_{\beta < \lambda} (\alpha + \beta), \\
+\alpha \cdot 0 &= 0, & \alpha \cdot (\beta + 1) &= \alpha \cdot \beta + \alpha, & \alpha \cdot \lambda &= \textstyle\sup_{\beta < \lambda} \alpha \cdot \beta, \\
+\alpha^0 &= 1, & \alpha^{\beta + 1} &= \alpha^\beta \cdot \alpha, & \alpha^\lambda &= \textstyle\sup_{\beta < \lambda} \alpha^\beta \quad (\alpha \ge 1),
+\end{aligned}
+$$
+
+for limit ordinals $\lambda$. On the natural numbers these are the usual operations.
+
+<Example title="Order matters">
+
+- $1 + \omega = \sup_n (1 + n) = \omega$, but $\omega + 1 > \omega$ (it has a largest element).
+- $2 \cdot \omega = \sup_n 2n = \omega$ ("$\omega$ copies of $2$": $\bullet\bullet\ \bullet\bullet\ \bullet\bullet \cdots$ is just $\omega$), but $\omega \cdot 2 = \omega + \omega > \omega$.
+- $(\omega + 1) \cdot 2 = (\omega + 1) + (\omega + 1) = \omega + (1 + \omega) + 1 = \omega \cdot 2 + 1$, whereas $2 \cdot (\omega + 1) = 2 \cdot \omega + 2 = \omega + 2$.
+- $(1 + 1) \cdot \omega = 2 \cdot \omega = \omega$, but $1 \cdot \omega + 1 \cdot \omega = \omega \cdot 2$: the **right** distributive law fails.
+
+</Example>
+
+Some laws do survive, each proved by transfinite induction on the last variable: addition and multiplication are **associative**; the **left** distributive law $\alpha \cdot (\beta + \gamma) = \alpha \cdot \beta + \alpha \cdot \gamma$ holds; and $\beta < \gamma$ implies $\alpha + \beta < \alpha + \gamma$, while only $\beta + \alpha \le \gamma + \alpha$ holds on the other side ($1 < 2$ but $1 + \omega = 2 + \omega$).
+
+**Cantor normal form.** Every ordinal $\alpha > 0$ can be written uniquely as $\alpha = \omega^{\beta_1} c_1 + \omega^{\beta_2} c_2 + \cdots + \omega^{\beta_k} c_k$ with $\alpha \ge \beta_1 > \beta_2 > \cdots > \beta_k$ and positive integers $c_i$ — a "base-$\omega$ expansion". The ordinals $\omega, \omega^\omega, \omega^{\omega^\omega}, \dots$ have supremum $\varepsilon_0$, the least ordinal with $\omega^{\varepsilon_0} = \varepsilon_0$; below $\varepsilon_0$ the exponents $\beta_i$ are themselves smaller than $\alpha$, so normal forms can be written out completely. The computation section implements this arithmetic.
+
+</Section>
+
+<Section id="cardinals-proofs" kind="proof" title="Comparing sizes">
+
+<Theorem name="Theorem 11 (Cantor)">
+
+For every set $A$, there is no surjection $A \to \mathcal P(A)$. Hence $|A| < |\mathcal P(A)|$.
+
+</Theorem>
+
+<Proof>
+
+Let $f : A \to \mathcal P(A)$ and put $D = \{x \in A \mid x \notin f(x)\}$. If $D = f(a)$ for some $a$, then $a \in D \iff a \notin f(a) \iff a \notin D$, which is impossible. So $D$ is not a value of $f$. Since $a \mapsto \{a\}$ is an injection $A \to \mathcal P(A)$, we get $|A| \le |\mathcal P(A)|$ but not $|A| = |\mathcal P(A)|$.
+
+</Proof>
+
+<Theorem name="Theorem 12 (Schröder–Bernstein, provable in ZF)">
+
+If $|A| \le |B|$ and $|B| \le |A|$, then $|A| = |B|$.
+
+</Theorem>
+
+<Proof>
+
+Let $f : A \to B$ and $g : B \to A$ be injections. For $S \subseteq A$ put
+
+$$
+F(S) = A \setminus g\big[\, B \setminus f[S] \,\big].
+$$
+
+If $S \subseteq T$ then $f[S] \subseteq f[T]$, so $B \setminus f[S] \supseteq B \setminus f[T]$, and therefore $F(S) \subseteq F(T)$: $F$ is monotone.
+
+*A fixed point (Knaster–Tarski).* Let $S = \bigcap \{T \subseteq A \mid F(T) \subseteq T\}$ (the family contains $A$, so the intersection makes sense). For each such $T$, $S \subseteq T$ gives $F(S) \subseteq F(T) \subseteq T$; hence $F(S) \subseteq S$. Then $F(F(S)) \subseteq F(S)$, so $F(S)$ is one of the $T$'s and $S \subseteq F(S)$. Thus $F(S) = S$, which says exactly that
+
+$$
+A \setminus S = g\big[\, B \setminus f[S] \,\big].
+$$
+
+*The bijection.* Define $h : A \to B$ by $h(a) = f(a)$ for $a \in S$ and $h(a) = g^{-1}(a)$ for $a \notin S$; the second case makes sense because every $a \notin S$ is $g(b)$ for a unique $b \in B \setminus f[S]$.
+
+- $h$ is injective: on $S$ it is $f$, on $A \setminus S$ it is $g^{-1}$, both injective; and a value $f(a)$ with $a \in S$ lies in $f[S]$, while a value $g^{-1}(a')$ with $a' \notin S$ lies in $B \setminus f[S]$.
+- $h$ is surjective: a point $b \in f[S]$ is $h(a)$ for its preimage $a \in S$; a point $b \notin f[S]$ has $g(b) \in g[B \setminus f[S]] = A \setminus S$, so $h(g(b)) = g^{-1}(g(b)) = b$.
+
+</Proof>
+
+The proof uses no choice. The set $S$ has a concrete description: follow a point of $A$ backwards through $g^{-1}$, $f^{-1}$, $g^{-1}, \dots$ for as long as possible; $S$ consists of the points whose backward chain stops in $A$. The computation section builds $h$ this way.
+
+<Theorem name="Theorem 13 (Hartogs, provable in ZF)">
+
+For every set $A$ there is an ordinal $\alpha$ with no injection $\alpha \to A$. Consequently, for every ordinal $\alpha$ there is a cardinal greater than $\alpha$, and the alephs are defined for every ordinal index.
+
+</Theorem>
+
+<Proof>
+
+Every well-order of a subset of $A$ is a subset of $A \times A$, so these well-orders form a set (by Separation from $\mathcal P(A \times A)$), and by Replacement their order types form a set $H$. If $\beta \in H$ and $\gamma < \beta$, then $\gamma$ is the type of an initial segment, so $\gamma \in H$: $H$ is a transitive set of ordinals, hence an ordinal. An ordinal injects into $A$ if and only if it is the order type of a well-order of a subset of $A$, i.e. if and only if it belongs to $H$. Since $H \notin H$, the ordinal $\alpha = H$ does not inject into $A$. For the second statement apply this to $A = \alpha$: the least ordinal that does not inject into $\alpha$ is a cardinal greater than $\alpha$.
+
+</Proof>
+
+<Theorem name="Theorem 14 (Hessenberg)">
+
+For every infinite cardinal $\kappa$: $\ \kappa \cdot \kappa = \kappa$, that is, $|\kappa \times \kappa| = \kappa$.
+
+</Theorem>
+
+<Proof>
+
+Order $\kappa \times \kappa$ by **Gödel's ordering**: $(\alpha, \beta) \lhd (\gamma, \delta)$ if $\max(\alpha, \beta) < \max(\gamma, \delta)$, or the maxima are equal and $(\alpha, \beta)$ precedes $(\gamma, \delta)$ lexicographically. This is a well-order (a least element of a non-empty set is found by minimising the maximum first, then lexicographically). We prove the theorem by transfinite induction on infinite cardinals $\kappa$, assuming it for all smaller infinite cardinals.
+
+The initial segment below $(\alpha, \beta)$ is contained in $\mu \times \mu$, where $\mu = \max(\alpha, \beta) + 1 < \kappa$ (since $\kappa$ is a limit ordinal). If $\mu$ is finite then $\mu \times \mu$ is finite; if $\mu$ is infinite then $|\mu \times \mu| = |\mu| \cdot |\mu| = |\mu| < \kappa$ by the induction hypothesis applied to the cardinal $|\mu| < \kappa$. So every proper initial segment of $(\kappa \times \kappa, \lhd)$ has cardinality less than $\kappa$. Let $\theta$ be its order type. If $\theta > \kappa$, then $\kappa$ would be the order type of a proper initial segment, which has cardinality $|\kappa| = \kappa$ — impossible. So $\theta \le \kappa$, and $|\kappa \times \kappa| = |\theta| \le \kappa$. The reverse inequality $\kappa \le |\kappa \times \kappa|$ is clear, and Schröder–Bernstein finishes the proof.
+
+</Proof>
+
+Cardinal arithmetic is defined by $\kappa + \lambda = |\kappa \sqcup \lambda|$ (disjoint union), $\kappa \cdot \lambda = |\kappa \times \lambda|$ and $\kappa^\lambda = |\{\text{functions } \lambda \to \kappa\}|$.
+
+<Theorem name="Corollary 15">
+
+If $\kappa$ is infinite and $\lambda \le \kappa$, then $\kappa + \lambda = \kappa$; if moreover $\lambda \neq 0$, then $\kappa \cdot \lambda = \kappa$.
+
+</Theorem>
+
+<Proof>
+
+$\kappa \le \kappa + \lambda \le \kappa + \kappa = 2 \cdot \kappa \le \kappa \cdot \kappa = \kappa$, and $\kappa \le \kappa \cdot \lambda \le \kappa \cdot \kappa = \kappa$; Schröder–Bernstein turns the chains of inequalities into equalities.
+
+</Proof>
+
+<Example title="Cardinal computations">
+
+- $\aleph_0 + 1 = \aleph_0 + \aleph_0 = \aleph_0 \cdot \aleph_0 = \aleph_0$, while the *ordinals* $\omega$, $\omega + 1$, $\omega + \omega$ and $\omega \cdot \omega$ are all different.
+- $|\R| = |\mathcal P(\N)| = 2^{\aleph_0}$ (from the countability lesson), and $|\R^2| = 2^{\aleph_0} \cdot 2^{\aleph_0} = 2^{\aleph_0 + \aleph_0} = 2^{\aleph_0}$: the plane has as many points as the line. Cantor found this in 1877 and wrote to Dedekind, "I see it, but I don't believe it."
+- $|\N^\N| = \aleph_0^{\aleph_0}$ satisfies $2^{\aleph_0} \le \aleph_0^{\aleph_0} \le (2^{\aleph_0})^{\aleph_0} = 2^{\aleph_0 \cdot \aleph_0} = 2^{\aleph_0}$, so it equals $2^{\aleph_0}$.
+
+</Example>
+
+**The continuum hypothesis.** Cantor's theorem gives $2^{\aleph_0} > \aleph_0$, so $2^{\aleph_0} \ge \aleph_1$ (assuming $\R$ can be well-ordered, which follows from the <TopicLink id="math.found.axiom-of-choice">axiom of choice</TopicLink>). The **continuum hypothesis** (CH) is the statement $2^{\aleph_0} = \aleph_1$: every infinite set of reals is either countable or the same size as $\R$. Cantor posed it in 1878, and Hilbert put it first on his list of problems in 1900. Gödel (1938) showed that ZFC does not refute CH, and Cohen (1963) that it does not prove it — if ZFC is consistent, so is ZFC + $2^{\aleph_0} = \aleph_2$. By later work of Robert Solovay, $2^{\aleph_0}$ can consistently be any cardinal of uncountable cofinality (such as $\aleph_2$ or $\aleph_{\omega + 1}$), but by a theorem of Julius König (1905) it can never be $\aleph_\omega$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Ordinals and cardinals in Lean">
+
+Mathlib **defines** an ordinal as an isomorphism class of well-orders, and a cardinal as an equivalence class of types under bijection — the "order type" and "size" of the lesson, taken as primitive. The von Neumann picture is recovered inside Mathlib's model of ZFC: ordinals correspond exactly to the transitive sets well-ordered by $\in$, which is Theorem 10 in Mathlib's language.
+
+<Lean decl="Lumenary.Cardinals.von_neumann_iso" />
+
+The engine of Theorem 10 is the rigidity of well-orders, Lemma 8 and Corollary 9, which we prove exactly as in the lesson — the least counterexample $m$, and its image $f(m)$ as a smaller one:
+
+<Lean decl="Lumenary.Cardinals.le_apply_of_strictMono" />
+
+<Lean decl="Lumenary.Cardinals.orderIso_unique" />
+
+<Lean decl="Lumenary.Cardinals.no_embedding_into_initial_segment" />
+
+Transfinite induction in its zero / successor / limit form, from strong induction and the trichotomy "zero, successor or limit":
+
+<Lean decl="Lumenary.Cardinals.transfinite_induction" />
+
+Ordinal arithmetic is not commutative, while cardinality cannot see the difference between $\omega$ and $\omega + 1$:
+
+<Lean decl="Lumenary.Cardinals.one_add_omega" />
+
+<Lean decl="Lumenary.Cardinals.add_not_comm" />
+
+<Lean decl="Lumenary.Cardinals.mul_not_comm" />
+
+<Lean decl="Lumenary.Cardinals.card_omega_add_one" />
+
+Cantor's theorem, by the diagonal set, and its cardinal form from Mathlib:
+
+<Lean decl="Lumenary.Cardinals.cantor_no_surjection" />
+
+<Lean decl="Lumenary.Cardinals.cantor_card" />
+
+The Schröder–Bernstein theorem, following the Knaster–Tarski proof of Theorem 12 step by step (Mathlib's `OrderHom.lfp` supplies the fixed point; Lean's `Function.invFun` plays the role of $g^{-1}$). Mathlib's own proof uses the same idea:
+
+<Lean decl="Lumenary.Cardinals.schroeder_bernstein" />
+
+<Lean decl="Lumenary.Cardinals.schroeder_bernstein_library" />
+
+Hessenberg's theorem is taken from Mathlib, and Corollary 15 is derived from it with the same chain of inequalities as in the lesson:
+
+<Lean decl="Lumenary.Cardinals.hessenberg" />
+
+<Lean decl="Lumenary.Cardinals.add_eq_max" />
+
+**What is and is not formalised.** Proved here: rigidity of well-orders and its corollaries, transfinite induction, the non-commutativity examples, $|\omega + 1| = \aleph_0$, Cantor's theorem, Schröder–Bernstein and Corollary 15. Taken from Mathlib: the correspondence with von Neumann ordinals, $1 + \omega = \omega$, $\kappa < 2^\kappa$ and Hessenberg's theorem. Not formalised: Lemmas 1–2 and Theorems 3–5 for von Neumann ordinals (Mathlib has versions in `Mathlib.SetTheory.ZFC.Ordinal`), Hartogs' theorem, and anything about the independence of CH. Note also that Lean's logic includes choice, so the delicate "provable in ZF" claims of the lesson are not visible in these proofs (although `#print axioms` shows that our proof of Cantor's theorem uses no axioms at all).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Computing with infinite numbers">
+
+Ordinals below $\varepsilon_0$ have finite names — their Cantor normal forms — so a computer can do exact arithmetic with them. The first experiment implements addition and multiplication from the recursive definitions, confirms the non-commutativity examples, tests the associative and distributive laws on random triples, and then follows **Goodstein sequences**: write $n$ in "hereditary base $2$", replace every $2$ by $3$, subtract $1$, write the result in hereditary base $3$, replace every $3$ by $4$, subtract $1$, and so on. The numbers grow explosively — but replacing the base by $\omega$ turns each term into an ordinal, and these ordinals strictly decrease. Since there is no infinite decreasing sequence of ordinals, every Goodstein sequence reaches $0$ (Goodstein, 1944).
+
+<Python id="cardinals_ordinal_arithmetic" />
+
+The second experiment builds Schröder–Bernstein bijections by chasing chains: between $[0, 1]$ and $[0, 1)$, with $f(x) = x/2$ and $g(y) = y$, it rediscovers the classical bijection that halves $1, \tfrac12, \tfrac14, \dots$ and fixes every other point; and between $\N$ and $\Z$ it produces an explicit bijection from two injections.
+
+<Python id="cardinals_schroeder_bernstein" />
+
+Both are exact computations on finitely many objects. The random tests are experimental evidence for laws that are proved by transfinite induction, and the chain-chasing checks injectivity and surjectivity only on finite windows; the theorems are what cover every ordinal and every point.
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: the diagonal behind Cantor's theorem">
+
+For $A = \N$, a subset of $\N$ is an infinite sequence of $0$s and $1$s, and Cantor's diagonal set $D$ is obtained by flipping the diagonal of any proposed list.
+
+<DiagonalBuilder />
+
+Edit the list as you like and watch the flipped diagonal escape every row. Then reread the proof of Theorem 11: the set $D = \{x \mid x \notin f(x)\}$ is exactly "flip the diagonal" for an arbitrary set $A$ and an arbitrary $f : A \to \mathcal P(A)$, with no list and no numbering needed.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Confusing ordinal and cardinal arithmetic.** $\omega$ and $\omega + 1$ are different ordinals with the same cardinality $\aleph_0$; as cardinals, $\aleph_0 + 1 = \aleph_0$, but as ordinals $\omega + 1 \neq \omega$. Always ask whether a "$+$" adds shapes or sizes.
+
+</Misconception>
+
+<Misconception>
+
+**"Every set has an aleph as its cardinality."** Without the axiom of choice this fails: in ZF, a set has an aleph as its cardinality exactly when it can be well-ordered, and ZF does not prove that $\R$ can be well-ordered. With choice, every set is well-orderable and the alephs list all infinite cardinalities.
+
+</Misconception>
+
+<Misconception>
+
+**"$2^{\aleph_0} = \aleph_1$ is a theorem."** That is the continuum hypothesis, which ZFC neither proves nor refutes (if ZFC is consistent). What *is* a theorem is $2^{\aleph_0} > \aleph_0$.
+
+</Misconception>
+
+<Misconception>
+
+**"Schröder–Bernstein needs the axiom of choice."** It does not: the proof above defines the bijection explicitly from $f$ and $g$. What does need choice is *comparability* — that for any two sets $|A| \le |B|$ or $|B| \le |A|$; Hartogs showed in 1915 that this is equivalent to the axiom of choice.
+
+</Misconception>
+
+<Misconception>
+
+**"There is a largest infinity."** Cantor's theorem gives $|A| < |\mathcal P(A)|$ for every set, and Hartogs' theorem gives a larger cardinal than any ordinal. Like the ordinals, the cardinals do not form a set.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Ordinals as spaces">
+
+Every ordinal carries the **order topology**, generated by open intervals, and these spaces are a standard source of counterexamples in <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>. An ordinal $\alpha$ is compact exactly when it is $0$ or a successor, so $\omega_1 + 1 = [0, \omega_1]$ is a compact Hausdorff space. The space $[0, \omega_1)$ is **sequentially compact** — every sequence has a convergent subsequence, because a countable set of countable ordinals is bounded below $\omega_1$ — but **not compact**: the open sets $[0, \alpha)$, $\alpha < \omega_1$, cover it with no finite subcover. In $[0, \omega_1]$ the point $\omega_1$ lies in the closure of $[0, \omega_1)$ but is the limit of no sequence from it, so sequences cannot describe this topology. Gluing $\omega_1$ copies of $[0, 1)$ end to end gives the **long ray**, a connected space in which every point except the initial one has a neighbourhood homeomorphic to an open interval, but which is not metrisable.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Where ordinals were born: derived sets">
+
+For $P \subseteq \R$, let $P'$ be its set of limit points. Cantor proved in 1870 that a trigonometric series converging to $0$ everywhere has all coefficients $0$, and in 1872 that the same holds if convergence is only known off a set $P$ with $P^{(n)} = \varnothing$ for some finite $n$. To go further he iterated the derivative transfinitely, $P^{(\alpha + 1)} = (P^{(\alpha)})'$ and $P^{(\lambda)} = \bigcap_{\beta < \lambda} P^{(\beta)}$ — this is where the transfinite ordinals first appeared (1880). The process stabilises: the **Cantor–Bendixson theorem** says that for every closed $P \subseteq \R$ there is a countable ordinal $\alpha$ with $P^{(\alpha)} = P^{(\alpha + 1)}$, and $P$ is the union of the perfect set $P^{(\alpha)}$ and a countable set. In particular every uncountable closed set of reals contains a perfect set and so has cardinality $2^{\aleph_0}$: CH holds for closed sets.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Goodstein, hydras and unprovability">
+
+Goodstein's theorem is a statement about natural numbers — every Goodstein sequence reaches $0$ — whose natural proof assigns to each term an ordinal below $\varepsilon_0$ and uses that these ordinals cannot decrease forever. Laurence Kirby and Jeff Paris (1982) showed that the detour through infinite ordinals is unavoidable in a precise sense: Goodstein's theorem cannot be proved in Peano arithmetic. They gave a second example in the same paper, the **hydra game**, in which Hercules chops heads off a finite rooted tree that regrows ever more copies; Hercules always wins, but proving it needs transfinite induction up to $\varepsilon_0$. Ordinals thus measure the *strength* needed for finite combinatorial statements.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Dimension is a cardinal">
+
+All bases of a vector space have the same cardinality, and for infinite dimensions the proof is cardinal arithmetic. If $B$ and $B'$ are bases with $B$ infinite, each $b \in B$ is a combination of a finite set $F_b \subseteq B'$ (its support), and these finite sets must cover $B'$, since otherwise a vector of $B'$ outside them would lie in their span. So $|B'| \le |B| \cdot \aleph_0 = |B|$ by Corollary 15, and by symmetry and Schröder–Bernstein $|B| = |B'|$. For example $\dim_\Q \R = 2^{\aleph_0}$, because a $\Q$-vector space with a basis of infinite size $\kappa$ has exactly $\kappa$ elements. A theorem of Paul Erdős and Irving Kaplansky computes the dimension of the dual space of an infinite-dimensional space: $\dim V^* = |K|^{\dim V}$, which is always strictly larger than $\dim V$.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Independence and proof-theoretic strength">
+
+To a logician, CH is the paradigm of a statement independent of ZFC: Gödel's constructible universe $L$ satisfies it, and Cohen's forcing builds models where it fails (see <TopicLink id="math.found.forcing">forcing</TopicLink>). Ordinals also measure the strength of theories. Gerhard Gentzen (1936) proved the consistency of Peano arithmetic using transfinite induction up to $\varepsilon_0$, and later (1943) showed that PA proves transfinite induction up to each smaller ordinal but not up to $\varepsilon_0$ itself: $\varepsilon_0$ is the **proof-theoretic ordinal** of PA. Larger ordinals calibrate stronger theories (<TopicLink id="math.found.proof-theory">proof theory</TopicLink>), and larger cardinals calibrate stronger set theories (<TopicLink id="math.found.large-cardinals">large cardinals</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="how-many-infinities" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Thinkers in many traditions puzzled over infinite collections. Some **Jaina** texts from India, of the last centuries BCE and the first centuries CE, classify numbers as enumerable, innumerable and infinite and distinguish several kinds of infinity, though not by one-to-one correspondence. **Galileo Galilei** (*Two New Sciences*, 1638) observed that the perfect squares can be paired with all the natural numbers and concluded that "equal", "greater" and "less" do not apply to infinite quantities; **Bernard Bolzano**'s *Paradoxes of the Infinite* (1851) took the comparison of infinite sets further.
+- **Georg Cantor** introduced derived sets (1872), proved that $\R$ is uncountable (1874) and that $\R^2$ and $\R$ have the same cardinality (1877–78), introduced the transfinite ordinals (1880, systematically in his *Grundlagen* of 1883), and developed ordinal and cardinal arithmetic and the alephs in his *Beiträge* (1895–97). He formulated the continuum hypothesis in 1878.
+- The Schröder–Bernstein theorem was proved by **Richard Dedekind** in 1887 (unpublished), stated by Cantor, given a flawed proof by **Ernst Schröder** (1896) and proved by **Felix Bernstein** (1897), a student in Cantor's seminar; Émile Borel published Bernstein's proof in 1898. **Cesare Burali-Forti** published his paradox in 1897.
+- **Gerhard Hessenberg** proved $\kappa \cdot \kappa = \kappa$ for alephs in 1906; **Friedrich Hartogs**' theorem dates from 1915; **John von Neumann** gave the definition of ordinals used today in 1923. **Reuben Goodstein**'s theorem appeared in 1944, and **Kirby** and **Paris** proved its unprovability in Peano arithmetic in 1982.
+- **David Hilbert** made the continuum hypothesis the first of his 23 problems (Paris, 1900). **Kurt Gödel** (1938, published 1940) and **Paul Cohen** (1963) showed that ZFC neither refutes nor proves it.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Herbert B. Enderton, *Elements of Set Theory* (1977), chapters 6–8 — cardinals, orderings and ordinals at exactly this level.
+- Karel Hrbacek and Thomas Jech, *Introduction to Set Theory* (third edition, 1999).
+- Kenneth Kunen, *Set Theory: An Introduction to Independence Proofs* (1980), chapter I; and Thomas Jech, *Set Theory* (third millennium edition, 2003), chapters 2–5.
+- Yiannis Moschovakis, *Notes on Set Theory* (1994; second edition 2006) — fixed points, recursion and well-orders.
+- Georg Cantor, *Contributions to the Founding of the Theory of Transfinite Numbers*, translated by Philip Jourdain (1915) — Cantor's *Beiträge* in English.
+- Joseph W. Dauben, *Georg Cantor: His Mathematics and Philosophy of the Infinite* (1979) — the history.
+- Laurence Kirby and Jeff Paris, "Accessible independence results for Peano arithmetic", *Bulletin of the London Mathematical Society* (1982).
+
+</Section>

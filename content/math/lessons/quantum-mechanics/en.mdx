@@ -1,0 +1,472 @@
+---
+slug: quantum-mechanics
+topic: math.applied.quantum-mechanics
+title: Mathematical foundations of quantum mechanics
+subtitle: States are unit vectors, observables are self-adjoint operators, measured values lie in their spectra — and the functional analysis that makes $[X, P] = i\hbar$ mean something forces infinite dimensions and unbounded operators.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7043
+objectives:
+  - State the postulates of quantum mechanics in Hilbert-space language and compute measurement probabilities with the spectral theorem
+  - Explain why observables are modelled by self-adjoint, possibly unbounded, operators, why their domains matter, and why the canonical commutation relation has no bounded solution
+  - Derive unitary time evolution from the Schrödinger equation and state Stone's theorem
+  - Derive the Robertson–Heisenberg uncertainty relation from commutators and identify the states that saturate it
+  - Solve the quantum harmonic oscillator with ladder operators, including its eigenfunctions and their completeness
+narrators: []
+lean:
+  - Lumenary.QuantumMechanics.expectation_real
+  - Lumenary.QuantumMechanics.eigenvalue_real
+  - Lumenary.QuantumMechanics.eigenvectors_orthogonal
+  - Lumenary.QuantumMechanics.spectral_theorem_finite
+  - Lumenary.QuantumMechanics.robertson
+  - Lumenary.QuantumMechanics.uncertainty
+  - Lumenary.QuantumMechanics.number_raise
+  - Lumenary.QuantumMechanics.number_lower
+  - Lumenary.QuantumMechanics.raise_eigenvector
+  - Lumenary.QuantumMechanics.number_nonneg
+  - Lumenary.QuantumMechanics.no_finite_ccr
+  - Lumenary.QuantumMechanics.wintner_wielandt
+  - Lumenary.QuantumMechanics.no_bounded_ccr
+  - Lumenary.QuantumMechanics.evolution_group
+compute: [quantum_mechanics_oscillator_spectrum, quantum_mechanics_ladder_truncation]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why Hilbert spaces?">
+
+Heated hydrogen does not glow in all colours. It emits light at sharp wavelengths, which Johann Balmer (1885) fitted by $1/\lambda = R\,(1/4 - 1/n^2)$, $n = 3, 4, 5, \dots$ — a law no classical model of an electron orbiting a nucleus could explain, since such an electron should radiate continuously and spiral inwards. The energies of an atom are **discrete**, and the light it emits carries the differences.
+
+In 1925 Werner Heisenberg replaced electron orbits by arrays of transition amplitudes; Max Born and Pascual Jordan recognised the arrays as infinite matrices and found the rule $PQ - QP = \frac{h}{2\pi i} I$. In 1926 Erwin Schrödinger found a wave equation whose eigenvalues reproduce the energy levels. The two theories looked nothing alike, until John von Neumann (1932) showed that both are statements about operators on a **Hilbert space**: matrix mechanics lives on $\ell^2$, wave mechanics on $L^2(\R^3)$, and the two spaces are unitarily isomorphic. Energy levels are points of the spectrum of an operator.
+
+The commutation rule already shows that the mathematics must be infinite-dimensional and delicate. If $X$ and $P$ were $n \times n$ matrices, the trace of $XP - PX$ would be $0$, while the trace of $i\hbar I$ is $i\hbar n$. This lesson develops the framework — states, observables, spectra, unitary evolution — and the two most famous consequences: the uncertainty relation and the quantised harmonic oscillator.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A qubit, then a particle">
+
+**The smallest example.** A qubit (an electron's spin, a photon's polarisation) has state space $\C^2$. A state is a unit vector $\psi = \alpha e_0 + \beta e_1$ with $|\alpha|^2 + |\beta|^2 = 1$. Measuring "which basis vector" gives $0$ with probability $|\alpha|^2$ and $1$ with probability $|\beta|^2$. Observables are Hermitian matrices; the spin components are the Pauli matrices
+
+$$
+\sigma_z = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}, \qquad \sigma_x = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}, \qquad \sigma_y = \begin{pmatrix} 0 & -i \\ i & 0 \end{pmatrix}.
+$$
+
+Measuring $\sigma_z$ gives an eigenvalue $\pm 1$, with probability $|\langle v_\pm, \psi \rangle|^2$ for the unit eigenvectors $v_\pm$. The state $e_0$ has a sharp value of $\sigma_z$ ($+1$ with certainty) but gives $\pm 1$ with probability $\tfrac12$ each for $\sigma_x$, whose eigenvectors are $(e_0 \pm e_1)/\sqrt 2$. The matrices do not commute — $\sigma_x \sigma_z = -\sigma_z \sigma_x$ — and no state has sharp values for both. Multiplying $\psi$ by a phase $e^{i\theta}$ changes no probability, so states are really unit vectors up to phase; but *relative* phases matter: $(e_0 + e_1)/\sqrt 2$ and $(e_0 - e_1)/\sqrt 2$ have identical $\sigma_z$ statistics and opposite values of $\sigma_x$.
+
+**A particle on a line.** Now the state is a function $\psi \in L^2(\R)$ with $\int |\psi|^2 = 1$, and $|\psi(x)|^2$ is the probability density of the position. Position acts by multiplication, $(X\psi)(x) = x \psi(x)$, and momentum by differentiation, $P\psi = -i\hbar \psi'$; integrating by parts, $\langle \phi, XP\psi \rangle - \langle \phi, PX\psi \rangle = i\hbar \langle \phi, \psi \rangle$ for nice functions: $[X, P] = i\hbar$. Neither operator is defined on all of $L^2$ — $x\psi(x)$ need not be square-integrable, and $\psi$ need not be differentiable — and that is not a technicality to be ignored, but the source of real phenomena.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions and postulates">
+
+<Definition term="unbounded operators, adjoints, self-adjointness">
+
+Let $\mathcal H$ be a complex Hilbert space (inner product linear in the second slot). An **operator** $A$ on $\mathcal H$ is a linear map from a subspace $D(A)$, its **domain**, to $\mathcal H$; it is **densely defined** if $D(A)$ is dense. Its **adjoint** $A^*$ has domain $D(A^*) = \{\phi : \psi \mapsto \langle \phi, A\psi \rangle \text{ is bounded on } D(A)\}$ and is defined by $\langle A^*\phi, \psi \rangle = \langle \phi, A\psi \rangle$. The operator is **symmetric** if $\langle A\phi, \psi \rangle = \langle \phi, A\psi \rangle$ for all $\phi, \psi \in D(A)$ (that is, $A \subseteq A^*$), and **self-adjoint** if moreover $D(A^*) = D(A)$, i.e. $A = A^*$ *including domains*. Its **spectrum** $\sigma(A)$ is the set of $\lambda \in \C$ for which $A - \lambda$ is not a bijection from $D(A)$ onto $\mathcal H$ with bounded inverse.
+
+</Definition>
+
+For bounded operators defined everywhere, symmetric and self-adjoint mean the same thing (and are often called Hermitian). For unbounded operators they differ, and only self-adjoint operators have real spectrum and a spectral theorem. A basic criterion: a symmetric operator $A$ is self-adjoint if and only if $A \pm i$ are both surjective (Reed–Simon I, Thm VIII.3).
+
+<Definition term="projection-valued measure">
+
+A **projection-valued measure** on $\R$ assigns to each Borel set $B$ an orthogonal projection $E(B)$ on $\mathcal H$, with $E(\R) = I$, $E(B \cap C) = E(B) E(C)$, and $\psi \mapsto E(\cdot)\psi$ countably additive. For each unit vector $\psi$, $B \mapsto \langle \psi, E(B)\psi \rangle = \|E(B)\psi\|^2$ is then a Borel probability measure on $\R$.
+
+</Definition>
+
+<Definition term="the postulates of quantum mechanics">
+
+1. **States.** A pure state of a system is a unit vector $\psi$ in a separable complex Hilbert space $\mathcal H$, determined up to a phase: really a point of the projective space $\mathbb P(\mathcal H)$. (Mixed states are density operators: positive trace-class operators of trace $1$.)
+2. **Observables.** An observable is a self-adjoint operator $A$ on $\mathcal H$. By the spectral theorem it has a projection-valued measure $E_A$ with $A = \int_\R \lambda \, dE_A(\lambda)$.
+3. **Born's rule.** Measuring $A$ in the state $\psi$ gives a result in the Borel set $B$ with probability $\|E_A(B)\psi\|^2$. Results lie in $\sigma(A)$. If $\psi \in D(A)$, the expectation is $\langle A \rangle_\psi = \langle \psi, A\psi \rangle$ and the standard deviation is $\sigma_A = \|(A - \langle A \rangle_\psi)\psi\|$.
+4. **Dynamics.** There is a self-adjoint **Hamiltonian** $H$ (the energy) and states evolve by $\psi(t) = e^{-itH/\hbar}\psi(0)$; for $\psi(0) \in D(H)$ this is the **Schrödinger equation** $i\hbar \, \frac{d}{dt}\psi(t) = H\psi(t)$.
+5. **Composite systems** are described by the tensor product $\mathcal H_1 \otimes \mathcal H_2$.
+
+</Definition>
+
+<Definition term="position, momentum and the commutation relation">
+
+On $\mathcal H = L^2(\R)$, **position** is $(X\psi)(x) = x\psi(x)$ with $D(X) = \{\psi : x\psi \in L^2\}$, and **momentum** is $P\psi = -i\hbar\psi'$ with $D(P) = H^1(\R)$, the functions $\psi \in L^2$ that are absolutely continuous with $\psi' \in L^2$. Both are self-adjoint. With the unitary Fourier transform $\mathcal F$, $P = \mathcal F^{-1} M \mathcal F$ where $M$ multiplies by $\hbar k$. The **commutator** of two operators is $[A, B] = AB - BA$ on $D(AB) \cap D(BA)$; on the Schwartz space $\mathcal S(\R)$, which both $X$ and $P$ map into itself, $[X, P] = i\hbar$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="The Bloch sphere">
+
+Every unit vector of $\C^2$ is, up to phase, $\psi = \cos\frac\theta2 \, e_0 + e^{i\varphi} \sin\frac\theta2 \, e_1$, and $(\theta, \varphi)$ are spherical coordinates of a point $\mathbf n$ of the unit sphere $S^2$: the projective line $\mathbb P(\C^2)$ is a sphere. $\psi$ is the $+1$ eigenvector of the spin observable $\mathbf n \cdot \boldsymbol\sigma = n_x \sigma_x + n_y \sigma_y + n_z \sigma_z$, and measuring the spin along another unit vector $\mathbf m$ gives $+1$ with probability $\frac12 (1 + \mathbf n \cdot \mathbf m)$. Orthogonal states are antipodal points.
+
+</Example>
+
+<Example title="Momentum on an interval: the same formula, different observables">
+
+On $L^2(0, 1)$ (with $\hbar = 1$) let $P_0 = -i \frac{d}{dx}$ with domain $\{\psi \in H^1(0, 1) : \psi(0) = \psi(1) = 0\}$. Integration by parts shows $P_0$ is symmetric: $\langle P_0\phi, \psi \rangle - \langle \phi, P_0\psi \rangle = i\big[\overline\phi \psi\big]_0^1 = 0$. But its adjoint is $-i\frac{d}{dx}$ on all of $H^1(0, 1)$, with no boundary conditions, so $P_0$ is not self-adjoint; indeed every $\lambda \in \C$ is an eigenvalue of $P_0^*$ (eigenfunction $e^{i\lambda x}$), and the spectrum of $P_0$ is all of $\C$. For each $\theta \in [0, 2\pi)$, the operator $P_\theta = -i\frac{d}{dx}$ on $\{\psi \in H^1 : \psi(1) = e^{i\theta}\psi(0)\}$ *is* self-adjoint, with eigenfunctions $e^{ikx}$ for $k \in \theta + 2\pi\Z$. These are physically different observables — a particle on a ring threaded by a magnetic flux sees exactly this $\theta$ (the Aharonov–Bohm effect). Domains are part of the physics.
+
+</Example>
+
+<Example title="A Gaussian wave packet">
+
+Let $\psi(x) = (\pi s^2)^{-1/4} e^{-x^2/(2s^2)}$ with $s > 0$. Then $\langle X \rangle = \langle P \rangle = 0$, $\sigma_X^2 = \int x^2 |\psi|^2 = s^2/2$, and $\sigma_P^2 = \hbar^2 \int |\psi'|^2 = \hbar^2/(2s^2)$, so $\sigma_X \sigma_P = \hbar/2$ — the minimum allowed by the uncertainty relation below. Under the free Hamiltonian $H = P^2/2m$ the packet stays Gaussian but spreads: $\sigma_X(t)^2 = \frac{s^2}{2}\big(1 + \frac{\hbar^2 t^2}{m^2 s^4}\big)$, while $\sigma_P$ is constant (momentum is conserved). With $\hbar = m = s = 1$, $|\psi(x, t)|^2 = (\pi(1 + t^2))^{-1/2} e^{-x^2/(1 + t^2)}$.
+
+</Example>
+
+</Section>
+
+<Section id="observables" kind="proof" title="Observables, spectra and the commutation relation">
+
+<Theorem name="Theorem (observables have real values)">
+
+Let $A$ be symmetric. Then (a) $\langle \psi, A\psi \rangle$ is real for every $\psi \in D(A)$; (b) every eigenvalue of $A$ is real; (c) eigenvectors for different eigenvalues are orthogonal.
+
+</Theorem>
+
+<Proof>
+
+(a) $\overline{\langle \psi, A\psi \rangle} = \langle A\psi, \psi \rangle = \langle \psi, A\psi \rangle$. (b) If $A\psi = \lambda\psi$ with $\psi \ne 0$, then $\lambda \|\psi\|^2 = \langle \psi, A\psi \rangle$ is real by (a). (c) If $A v = \lambda v$ and $A w = \mu w$ with real $\lambda \ne \mu$, then $\lambda \langle v, w \rangle = \langle Av, w \rangle = \langle v, Aw \rangle = \mu \langle v, w \rangle$, so $\langle v, w \rangle = 0$.
+
+</Proof>
+
+<Theorem name="Spectral theorem and Born's rule in finite dimensions">
+
+If $A$ is a Hermitian operator on $\C^n$, there is an orthonormal basis $e_1, \dots, e_n$ of eigenvectors with real eigenvalues $\lambda_1, \dots, \lambda_n$. For a unit vector $\psi$, the numbers $p_i = |\langle e_i, \psi \rangle|^2$ are a probability distribution and $\sum_i \lambda_i p_i = \langle \psi, A\psi \rangle$.
+
+</Theorem>
+
+<Proof>
+
+Over $\C$ the characteristic polynomial has a root, so $A$ has an eigenvector $e_1$, normalised. Its orthogonal complement is invariant: if $\langle e_1, v \rangle = 0$ then $\langle e_1, Av \rangle = \langle Ae_1, v \rangle = \lambda_1 \langle e_1, v \rangle = 0$. Induct on the dimension, restricting $A$ to $e_1^\perp$; reality of the eigenvalues is part (b) above. Then $\psi = \sum_i \langle e_i, \psi \rangle e_i$, so $\sum_i p_i = \|\psi\|^2 = 1$ by Parseval and $\langle \psi, A\psi \rangle = \sum_i \lambda_i |\langle e_i, \psi \rangle|^2$.
+
+</Proof>
+
+Grouping equal eigenvalues, $A = \sum_\lambda \lambda E_\lambda$ with $E_\lambda$ the orthogonal projection onto the $\lambda$-eigenspace: the projection-valued measure of the postulates, concentrated on finitely many points.
+
+<Theorem name="Spectral theorem (self-adjoint operators)">
+
+Let $A$ be self-adjoint on a separable Hilbert space $\mathcal H$. Then there are a σ-finite measure space $(M, \mu)$, a measurable real function $a$ on $M$ and a unitary $U : \mathcal H \to L^2(M, \mu)$ such that $UAU^{-1}$ is multiplication by $a$, with domain $\{f : af \in L^2(M, \mu)\}$. Equivalently, there is a unique projection-valued measure $E_A$ on $\R$ with $A = \int \lambda \, dE_A(\lambda)$, and $\sigma(A)$ is the support of $E_A$, a closed subset of $\R$.
+
+</Theorem>
+
+We do not prove this here; see Hall, Ch. 10, or Reed–Simon I, §VIII.3. The theorem says that **every observable is a multiplication operator in suitable coordinates**: position already is one, and momentum becomes one after the Fourier transform. Both have spectrum $\R$ and **no eigenvectors** in $L^2$ — a "plane wave" $e^{ikx}$ is not a state — which is why the postulates are phrased with spectral measures rather than eigenvectors. The functional calculus $f(A) = \int f \, dE_A$ defines $e^{-itH/\hbar}$, $\sqrt{A}$ and indicator functions $E_A(B) = \mathbf 1_B(A)$.
+
+Why not allow unbounded operators everywhere on $\mathcal H$? Because there are none that are symmetric.
+
+<Theorem name="Hellinger–Toeplitz theorem (1910)">
+
+A symmetric operator defined on all of a Hilbert space is bounded.
+
+</Theorem>
+
+<Proof>
+
+By the closed graph theorem it suffices to show that the graph of $A$ is closed. Let $x_n \to x$ and $Ax_n \to y$. For every $z \in \mathcal H$, $\langle y, z \rangle = \lim \langle Ax_n, z \rangle = \lim \langle x_n, Az \rangle = \langle x, Az \rangle = \langle Ax, z \rangle$. Hence $y = Ax$.
+
+</Proof>
+
+<Theorem name="Wintner–Wielandt theorem (1947, 1949)">
+
+There are no bounded operators $X, P$ on a nonzero complex Banach space with $XP - PX = c I$ for a constant $c \ne 0$. In finite dimensions, no matrices satisfy it at all.
+
+</Theorem>
+
+<Proof>
+
+*Finite dimensions.* $\operatorname{tr}(XP - PX) = \operatorname{tr}(XP) - \operatorname{tr}(PX) = 0$, while $\operatorname{tr}(cI) = cn \ne 0$.
+
+*Bounded operators (Wielandt's proof).* Suppose $XP - PX = cI$. By induction on $n$,
+$$
+XP^{n+1} - P^{n+1}X = (XP^n - P^nX)P + P^n(XP - PX) = (n + 1) c \, P^n,
+$$
+using the inductive hypothesis $XP^n - P^nX = ncP^{n-1}$. No power of $P$ is zero: $P^0 = I \ne 0$, and if $P^{n+1} = 0$ the identity gives $(n+1)cP^n = 0$, so $P^n = 0$, and descending we would reach $I = 0$. Taking norms, with $\|P^{n+1}\| \le \|P^n\| \|P\|$,
+$$
+(n + 1) |c| \, \|P^n\| = \|XP^{n+1} - P^{n+1}X\| \le 2 \|X\| \|P\| \|P^n\|.
+$$
+Dividing by $\|P^n\| > 0$ gives $(n + 1)|c| \le 2\|X\| \|P\|$ for every $n$, which is absurd.
+
+</Proof>
+
+So the canonical commutation relation $[X, P] = i\hbar$ forces at least one of $X, P$ to be unbounded, and then by Hellinger–Toeplitz it cannot be defined on the whole space. **Domains are unavoidable** in quantum mechanics, and statements such as $[X, P] = i\hbar$ hold only on suitable dense subspaces. The Stone–von Neumann theorem (below) explains which representations of the commutation relation are the right ones.
+
+</Section>
+
+<Section id="dynamics" kind="proof" title="Unitary time evolution">
+
+<Theorem name="The Schrödinger equation generates a unitary group">
+
+Let $H$ be self-adjoint and $U(t) = e^{-itH/\hbar}$ (functional calculus). Then each $U(t)$ is unitary, $U(s + t) = U(s)U(t)$, $t \mapsto U(t)\psi$ is continuous for every $\psi$, and for $\psi \in D(H)$ the curve $\psi(t) = U(t)\psi$ stays in $D(H)$ and satisfies $i\hbar \, \psi'(t) = H\psi(t)$.
+
+</Theorem>
+
+<Proof>
+
+By the spectral theorem we may assume $H$ is multiplication by a real function $a$ on $L^2(M, \mu)$. Then $U(t)$ is multiplication by $e^{-ita/\hbar}$, which has modulus $1$: it is unitary with inverse $U(-t)$, and the group law is $e^{-i(s+t)a/\hbar} = e^{-isa/\hbar} e^{-ita/\hbar}$. Continuity: $\|U(t)\psi - U(t_0)\psi\|^2 = \int |e^{-ita/\hbar} - e^{-it_0 a/\hbar}|^2 |\psi|^2 \, d\mu \to 0$ by dominated convergence (the integrand is at most $4|\psi|^2$). For $\psi \in D(H)$, i.e. $a\psi \in L^2$, the difference quotient $\frac{e^{-iha/\hbar} - 1}{h} \psi$ is dominated by $|a\psi|/\hbar$ (as $|e^{i\theta} - 1| \le |\theta|$) and converges pointwise to $-\frac{i}{\hbar} a\psi$; by dominated convergence the derivative exists in $L^2$ and equals $-\frac i\hbar H U(t)\psi$.
+
+</Proof>
+
+<Theorem name="Stone's theorem (1932)">
+
+Conversely, if $(U(t))_{t \in \R}$ is a strongly continuous one-parameter group of unitary operators, there is a unique self-adjoint operator $A$ with $U(t) = e^{-itA}$. Its domain is the set of $\psi$ for which $\lim_{t \to 0} \frac{i}{t}(U(t)\psi - \psi)$ exists, and $A\psi$ is that limit.
+
+</Theorem>
+
+(Proof: Hall, Ch. 10; Reed–Simon I, §VIII.4.) Stone's theorem is the reason observables must be self-adjoint, not merely symmetric: symmetries of a quantum system that depend continuously on a parameter — time translation, space translation, rotation — are strongly continuous unitary groups, and their generators — energy, momentum, angular momentum — are self-adjoint operators. A symmetric operator with no self-adjoint extension generates no dynamics at all, and one with many self-adjoint extensions (like $P_0$ above) generates many different dynamics.
+
+Consequences: the norm $\|\psi(t)\| = 1$ is conserved, and so is the energy distribution, since $U(t)$ commutes with $E_H$. If $H\psi = E\psi$ then $\psi(t) = e^{-iEt/\hbar}\psi$, the same ray: energy eigenstates are **stationary**, and all their measurement statistics are constant in time. Superpositions of two eigenstates oscillate with angular frequency $(E_m - E_n)/\hbar$ — Bohr's frequency rule, which explains why spectral lines measure energy differences.
+
+</Section>
+
+<Section id="uncertainty" kind="proof" title="The uncertainty relation">
+
+<Theorem name="Robertson's uncertainty relation (1929)">
+
+Let $A, B$ be symmetric and let $\psi$ be a unit vector in $D(AB) \cap D(BA)$. Then
+
+$$
+\sigma_A \, \sigma_B \ge \tfrac12 \big|\langle \psi, [A, B]\psi \rangle\big|.
+$$
+
+More generally $\|(A - a)\psi\| \, \|(B - b)\psi\| \ge \frac12 |\langle \psi, [A, B]\psi \rangle|$ for all real $a, b$.
+
+</Theorem>
+
+<Proof>
+
+Let $u = (A - a)\psi$ and $w = (B - b)\psi$. The shifted operators are symmetric (as $a, b$ are real) and have the same commutator as $A, B$. By symmetry,
+
+$$
+\langle \psi, [A, B]\psi \rangle = \langle \psi, (A - a)(B - b)\psi \rangle - \langle \psi, (B - b)(A - a)\psi \rangle = \langle u, w \rangle - \langle w, u \rangle = 2i \operatorname{Im} \langle u, w \rangle.
+$$
+
+So $|\langle \psi, [A, B]\psi \rangle| \le 2|\langle u, w \rangle| \le 2\|u\| \|w\|$ by the Cauchy–Schwarz inequality. Taking $a = \langle A \rangle_\psi$ and $b = \langle B \rangle_\psi$ gives $\sigma_A \sigma_B$ on the right.
+
+</Proof>
+
+For position and momentum, $[X, P] = i\hbar$ on Schwartz functions gives the **Heisenberg–Kennard inequality** $\sigma_X \sigma_P \ge \hbar/2$ (Kennard, 1927); by approximation it holds for every unit $\psi \in D(X) \cap D(P)$. Equality requires equality in Cauchy–Schwarz, $(P - p_0)\psi = i\lambda (X - x_0)\psi$ with $\lambda > 0$ real, a first-order differential equation whose $L^2$ solutions are exactly the Gaussian wave packets $\psi(x) = C \exp\big(-\frac{\lambda (x - x_0)^2}{2\hbar} + \frac{i p_0 x}{\hbar}\big)$.
+
+**Domains matter here too.** On $L^2(0, 2\pi)$ take the angular momentum $L = -i\frac{d}{d\theta}$ on periodic functions and the angle $\Phi$ (multiplication by $\theta$). Formally $[\Phi, L] = i$, yet the eigenstate $\psi = e^{in\theta}/\sqrt{2\pi}$ has $\sigma_L = 0$, so the naive inequality $\sigma_\Phi \sigma_L \ge \frac12$ fails. The resolution: $\Phi\psi$ is not periodic, so $\psi \notin D(L\Phi)$ and Robertson's hypothesis is violated.
+
+What the inequality says is that **no state** has sharp values of two non-commuting observables: it constrains preparations, not the clumsiness of measuring devices. Relations between measurement error and disturbance are different, later theorems (Ozawa, 2003; Busch, Lahti and Werner, 2013).
+
+</Section>
+
+<Section id="oscillator" kind="proof" title="The harmonic oscillator">
+
+The Hamiltonian of a particle in a quadratic potential is $H = \frac{P^2}{2m} + \frac12 m\omega^2 X^2$. In units with $\hbar = m = \omega = 1$ it is $H = \frac12(P^2 + X^2)$ on $L^2(\R)$. Work on the Schwartz space $\mathcal S(\R)$, which is dense and mapped into itself by $X$, $P$ and the **ladder operators**
+
+$$
+a = \frac{1}{\sqrt 2}(X + iP) = \frac{1}{\sqrt 2}\Big(x + \frac{d}{dx}\Big), \qquad a^\dagger = \frac{1}{\sqrt 2}(X - iP) = \frac{1}{\sqrt 2}\Big(x - \frac{d}{dx}\Big).
+$$
+
+Here $\langle a^\dagger\phi, \psi \rangle = \langle \phi, a\psi \rangle$ on $\mathcal S$, and $[X, P] = i$ gives $[a, a^\dagger] = \frac12\big(-i[X, P] + i[P, X]\big) = 1$ and $H = a^\dagger a + \frac12 = N + \frac12$, with the **number operator** $N = a^\dagger a$.
+
+<Theorem name="Spectrum of the harmonic oscillator">
+
+The functions $h_n = (n!)^{-1/2} (a^\dagger)^n h_0$, $n = 0, 1, 2, \dots$, with $h_0(x) = \pi^{-1/4} e^{-x^2/2}$, form an orthonormal basis of $L^2(\R)$, and $Hh_n = (n + \frac12) h_n$. They are the only eigenfunctions of $H$ in $\mathcal S(\R)$, up to scalars. In physical units the energy levels are $E_n = \hbar\omega(n + \frac12)$.
+
+</Theorem>
+
+<Proof>
+
+*Step 1 (commutators).* From $[a, a^\dagger] = 1$: $Na^\dagger - a^\dagger N = a^\dagger(aa^\dagger - a^\dagger a) = a^\dagger$ and $Na - aN = (a^\dagger a - aa^\dagger)a = -a$. Hence if $N\psi = \lambda\psi$, then $N(a^\dagger\psi) = (\lambda + 1)a^\dagger\psi$ and $N(a\psi) = (\lambda - 1)a\psi$.
+
+*Step 2 (positivity).* $\langle \psi, N\psi \rangle = \langle a\psi, a\psi \rangle = \|a\psi\|^2 \ge 0$, so every eigenvalue of $N$ is $\ge 0$.
+
+*Step 3 (the ladder stops).* Let $N\psi = \lambda\psi$ with $\psi \in \mathcal S$ nonzero. The vectors $a^k\psi$ are eigenvectors with eigenvalue $\lambda - k$ unless they vanish; by Step 2 they cannot all be nonzero, so there is $k \ge 0$ with $\phi = a^k\psi \ne 0$ and $a\phi = 0$. The equation $a\phi = 0$ reads $\phi' = -x\phi$, so $\phi = Ce^{-x^2/2}$, an eigenvector of $N$ with eigenvalue $0$. Hence $\lambda = k$ is a non-negative integer, and the ground state $h_0$ is unique up to scalars.
+
+*Step 4 (going up).* For an eigenvector $\phi$ of $N$ with eigenvalue $k$, $\|a^\dagger\phi\|^2 = \langle \phi, aa^\dagger\phi \rangle = \langle \phi, (N + 1)\phi \rangle = (k + 1)\|\phi\|^2$. By induction $\|(a^\dagger)^n h_0\|^2 = n!$, so $h_n$ is a unit vector with $Nh_n = n h_n$; eigenvectors for different eigenvalues are orthogonal.
+
+*Step 5 (simplicity).* If $N\psi = n\psi$, then $a^n\psi = c\,h_0$ by Step 3, and since $a^\dagger a = N$ acts on the eigenvector $a^{j}\psi$ as multiplication by $n - j$, $(a^\dagger)^n a^n\psi = n! \, \psi$. So $\psi = \frac{c}{n!}(a^\dagger)^n h_0$, a multiple of $h_n$.
+
+*Step 6 (completeness).* $h_n = p_n(x) e^{-x^2/2}$ with $p_n$ a polynomial of degree exactly $n$, so the $h_n$ span the same space as the functions $x^k e^{-x^2/2}$. Suppose $f \in L^2(\R)$ is orthogonal to all of them, and let $g(\xi) = \int f(x) e^{-x^2/2} e^{-i\xi x} \, dx$. Because of the Gaussian factor we may differentiate under the integral any number of times, and $g$ is given by its everywhere-convergent Taylor series at $0$, whose coefficients are multiples of $\int f(x) x^k e^{-x^2/2} \, dx = 0$. So $g = 0$: the Fourier transform of the integrable function $f e^{-x^2/2}$ vanishes, hence $f e^{-x^2/2} = 0$ almost everywhere and $f = 0$.
+
+</Proof>
+
+Since the eigenvectors form an orthonormal basis, $H$ extends uniquely to a self-adjoint operator (essential self-adjointness on $\mathcal S$), namely $H = \sum_n (n + \frac12) \langle h_n, \cdot \rangle h_n$, with spectrum exactly $\{\frac12, \frac32, \frac52, \dots\}$. Explicitly $h_n(x) = (2^n n! \sqrt\pi)^{-1/2} H_n(x) e^{-x^2/2}$ with the Hermite polynomials $H_0 = 1$, $H_1 = 2x$, $H_2 = 4x^2 - 2$, $H_{n+1} = 2xH_n - H_n'$. The lowest energy is not $0$ but $\frac12\hbar\omega$: the **zero-point energy**, forced by the uncertainty relation, since $\langle H \rangle = \frac12(\sigma_P^2 + \sigma_X^2 + \langle P \rangle^2 + \langle X \rangle^2) \ge \sigma_X\sigma_P \ge \frac12$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Quantum mechanics in Lean and Mathlib">
+
+Mathlib works with bounded (everywhere-defined) operators, so the formal statements below are about symmetric linear maps `A : E →ₗ[ℂ] E` on a complex inner product space `E` (by Hellinger–Toeplitz these are automatically bounded on a Hilbert space) and about elements of normed algebras. Mathlib's inner product `⟪x, y⟫_ℂ` is, like the physicists', conjugate-linear in the first slot. First the basic facts about observables: real expectation values (proved here), real eigenvalues (Mathlib), orthogonality of eigenvectors (proved here, as in the lesson) and the finite-dimensional spectral theorem (Mathlib):
+
+<Lean decl="Lumenary.QuantumMechanics.expectation_real" />
+
+<Lean decl="Lumenary.QuantumMechanics.eigenvalue_real" />
+
+<Lean decl="Lumenary.QuantumMechanics.eigenvectors_orthogonal" />
+
+<Lean decl="Lumenary.QuantumMechanics.spectral_theorem_finite" />
+
+The uncertainty relation, proved from scratch exactly as in the human proof: symmetry turns $\langle \psi, [A, B]\psi \rangle$ into $\langle u, w \rangle - \langle w, u \rangle$, then the triangle and Cauchy–Schwarz inequalities finish. The second version allows arbitrary real shifts $a, b$; taking them to be the expectation values gives $\sigma_A \sigma_B \ge \frac12 |\langle [A, B] \rangle|$.
+
+<Lean decl="Lumenary.QuantumMechanics.robertson" />
+
+<Lean decl="Lumenary.QuantumMechanics.uncertainty" />
+
+The ladder-operator algebra holds in any ring (`noncomm_ring` verifies the commutator identities), the eigenvector-shifting property in any complex vector space, and positivity of the number operator in any inner product space where $a^\dagger$ is the adjoint of $a$:
+
+<Lean decl="Lumenary.QuantumMechanics.number_raise" />
+
+<Lean decl="Lumenary.QuantumMechanics.number_lower" />
+
+<Lean decl="Lumenary.QuantumMechanics.raise_eigenvector" />
+
+<Lean decl="Lumenary.QuantumMechanics.number_nonneg" />
+
+The two no-go theorems: the trace argument for matrices, Wielandt's proof for any nontrivial normed algebra (induction for the commutator with $p^{n+1}$, induction for $p^n \ne 0$, the norm estimate, and the Archimedean property), and its corollary for bounded operators on a nonzero normed space:
+
+<Lean decl="Lumenary.QuantumMechanics.no_finite_ccr" />
+
+<Lean decl="Lumenary.QuantumMechanics.wintner_wielandt" />
+
+<Lean decl="Lumenary.QuantumMechanics.no_bounded_ccr" />
+
+Finally, the bounded case of unitary evolution: in a C*-algebra, $\exp(itH)$ for self-adjoint $H$ is unitary and the evolution operators form a one-parameter group.
+
+<Lean decl="Lumenary.QuantumMechanics.evolution_group" />
+
+**Not formalised (and not yet in Mathlib):** unbounded operators with domains, self-adjointness in the unbounded sense, the spectral theorem for unbounded self-adjoint operators, Stone's theorem, position and momentum on $L^2(\R)$, and the completeness of the Hermite functions. The formal development covers the algebra and the bounded-operator theorems on which those analytic results build — and, in the Wintner–Wielandt theorem, proves formally *why* the unbounded theory is unavoidable.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: computing the oscillator">
+
+The first experiment replaces $H = -\frac12 \frac{d^2}{dx^2} + \frac12 x^2$ by a finite-difference matrix on a grid in $[-8, 8]$ and computes its lowest eigenvalues. They approach $n + \frac12$, and halving the grid spacing divides the error by about $4$ (a second-order method). The ground state's uncertainty product comes out as $\frac12$.
+
+<Python id="quantum_mechanics_oscillator_spectrum" />
+
+The second truncates the ladder operators to $N$ levels. The commutator $[a, a^\dagger]$ is then the identity *except in the last diagonal entry*, $1 - N$, so that its trace is $0$ — the trace argument made visible: truncation must break the commutation relation somewhere. The number operator still has eigenvalues $0, \dots, N - 1$, and Robertson's inequality holds for all states, with equality for the ground state.
+
+<Python id="quantum_mechanics_ladder_truncation" />
+
+Both are floating-point (or exact integer) computations with finite matrices: numerical evidence about the infinite-dimensional operators, whose spectrum is the theorem proved above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Seeing the oscillator and a spreading wave packet">
+
+The potential $\frac12 x^2$ and the first four eigenfunctions $h_n$, each drawn at the height of its energy $n + \frac12$. Count the nodes ($h_n$ has $n$ zeros), notice the even–odd alternation, and see that each eigenfunction leaks a little beyond the classical turning points where $\frac12 x^2 = n + \frac12$.
+
+<FunctionPlot
+  fns={["x^2/2", "0.5 + 0.8*pi^(-1/4)*exp(-x^2/2)", "1.5 + 0.8*pi^(-1/4)*sqrt(2)*x*exp(-x^2/2)", "2.5 + 0.8*pi^(-1/4)*(2*x^2 - 1)/sqrt(2)*exp(-x^2/2)", "3.5 + 0.8*pi^(-1/4)*(2*x^3 - 3*x)/sqrt(3)*exp(-x^2/2)"]}
+  labels={["V(x) = x²/2", "h₀ at E = 1/2", "h₁ at E = 3/2", "h₂ at E = 5/2", "h₃ at E = 7/2"]}
+  x={[-4.5, 4.5]}
+  y={[0, 4.6]}
+  editable={false}
+  title="Harmonic oscillator: energy levels and eigenfunctions"
+/>
+
+A free Gaussian wave packet ($\hbar = m = 1$, initial width $s = 1$): move the time slider and watch $|\psi(x, t)|^2$ spread while its area stays $1$. Its momentum distribution never changes; the spreading is the position uncertainty catching up with the momentum uncertainty.
+
+<FunctionPlot
+  fns={["exp(-x^2/(1 + u^2))/sqrt(pi*(1 + u^2))"]}
+  labels={["|ψ(x, t)|²"]}
+  params={[{ name: "u", min: 0, max: 5, step: 0.1, value: 0, label: "t" }]}
+  x={[-8, 8]}
+  y={[0, 0.65]}
+  shade={0}
+  shadeRange={[-8, 8]}
+  title="A free Gaussian wave packet spreading"
+/>
+
+The Pauli matrix $\sigma_x$ acting on real amplitudes is the reflection in the line $y = x$: its eigenvectors $(1, 1)$ and $(1, -1)$ are orthogonal with eigenvalues $\pm 1$, as for every observable. Try the other presets: a rotation (not symmetric) has no real eigenvectors at all.
+
+<MatrixTransform matrix={[[0, 1], [1, 0]]} mode="single" presets={["reflection", "rotation", "scale"]} title="An observable on a real qubit" subtitle="Symmetric matrices have orthogonal invariant lines." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Unbounded operators can be treated like matrices."** Formal manipulations ignore domains at their peril. A symmetric operator need not be self-adjoint (momentum with Dirichlet conditions on an interval has spectrum $\C$), different self-adjoint extensions describe different physics, and identities such as $[X, P] = i\hbar$ or Robertson's inequality hold only on suitable domains — the angle–angular momentum example violates the naive uncertainty relation. No symmetric operator defined everywhere is unbounded (Hellinger–Toeplitz), and the commutation relation has no bounded solution (Wintner–Wielandt).
+
+</Misconception>
+
+<Misconception>
+
+**"The uncertainty principle is about clumsy measurements disturbing the system."** Robertson's inequality is a statement about a single state: the spreads of the probability distributions of $A$ and of $B$ in that state, each obtainable by measuring many identically prepared copies, cannot both be small. It is a property of non-commuting operators — like the fact that a function and its Fourier transform cannot both be sharply concentrated — not of instruments. Error–disturbance relations exist, but they are different theorems.
+
+</Misconception>
+
+<Misconception>
+
+**"A state is a vector."** A state is a ray: $\psi$ and $e^{i\theta}\psi$ give identical predictions. The state space of a qubit is the sphere $\mathbb P(\C^2) \cong S^2$, not the unit sphere $S^3 \subset \C^2$. Relative phases between components *are* physical, which is why interference exists.
+
+</Misconception>
+
+<Misconception>
+
+**"The wave function is the probability density."** The density is $|\psi|^2$; $\psi$ itself is a complex amplitude, and amplitudes — not probabilities — add when alternatives are not distinguished. The double-slit pattern $|\psi_1 + \psi_2|^2 = |\psi_1|^2 + |\psi_2|^2 + 2\operatorname{Re}(\overline{\psi_1}\psi_2)$ is the cross term.
+
+</Misconception>
+
+<Misconception>
+
+**"The lowest energy of an oscillator is zero."** It is $\frac12\hbar\omega$: a state with energy $0$ would need $\langle X^2 \rangle = \langle P^2 \rangle = 0$, which the uncertainty relation forbids. Zero-point energy has measurable consequences, from the stability of liquid helium at absolute zero to the Casimir effect.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="analysis" title="Fourier duality and Hermite functions">
+
+Position and momentum are exchanged by the Fourier transform, $P = \mathcal F^{-1}(\hbar k)\mathcal F$, and the uncertainty relation is a theorem of harmonic analysis: for $f \in L^2(\R)$ with $\|f\|_2 = 1$, $\big(\int x^2 |f|^2\big)\big(\int \xi^2 |\hat f|^2\big) \ge \frac{1}{16\pi^2}$ with the normalisation $\hat f(\xi) = \int f(x) e^{-2\pi i x\xi} \, dx$ — a function and its Fourier transform cannot both be concentrated. The Hermite functions diagonalise the Fourier transform: $\mathcal F h_n = (-i)^n h_n$ (with the unitary normalisation $\frac{1}{\sqrt{2\pi}}\int e^{-ix\xi}$), because $\mathcal F$ commutes with $H = \frac12(P^2 + X^2)$. So the fractional powers $\mathcal F^\alpha = e^{-i\alpha\pi N/2}$ are the time evolution of the oscillator: the quantum oscillator rotates phase space, and its evolution over a quarter period is the Fourier transform, up to a phase. See <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink> and <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The Heisenberg group and the Stone–von Neumann theorem">
+
+The commutation relations define the **Heisenberg Lie algebra**, spanned by $X, P, I$ with $[X, P] = i\hbar I$; exponentiating gives the Weyl relations $e^{isX}e^{itP} = e^{-ist\hbar}e^{itP}e^{isX}$ between bounded unitary operators, which avoid domain problems. The **Stone–von Neumann theorem** (Stone 1930, von Neumann 1931) says that every irreducible strongly continuous unitary representation of the Weyl relations with $\hbar \ne 0$ is unitarily equivalent to the Schrödinger representation on $L^2(\R)$: matrix mechanics and wave mechanics *had* to agree. In infinitely many degrees of freedom (quantum field theory) uniqueness fails, and inequivalent representations describe different phases of matter. Abstractly, observables form a C*-algebra and states are positive normalised functionals on it; the Gelfand–Naimark–Segal construction recovers a Hilbert space from each state. See <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Projective Hilbert space and the Bloch sphere">
+
+Pure states form the projective space $\mathbb P(\mathcal H)$, a Kähler manifold with the Fubini–Study metric, and transition probabilities are geometric: $|\langle \phi, \psi \rangle|^2 = \cos^2 d(\phi, \psi)$, where $d$ is the Fubini–Study distance. For a qubit, $\mathbb P(\C^2) = \C P^1$ is the Riemann sphere, isometric (up to scale) to the Bloch sphere $S^2$, and unitary evolution acts by rotations: $SU(2)$ acting on $\C^2$ descends to $SO(3)$ acting on $S^2$. Schrödinger evolution is a Hamiltonian flow on $\mathbb P(\mathcal H)$ for the symplectic form of the Fubini–Study metric, with the expectation $\langle H \rangle$ as Hamiltonian function, and a state transported around a closed loop returns with a geometric phase equal to a symplectic area — the **Berry phase** (1984). The classical limit, and the passage from classical to quantum observables, is the subject of geometric quantisation on <TopicLink id="math.geom.symplectic-geometry">symplectic manifolds</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Born's rule and non-commutative probability">
+
+For a single observable $A$ and state $\psi$, the spectral theorem produces an ordinary probability measure $B \mapsto \|E_A(B)\psi\|^2$ on $\R$, and $A$ becomes a random variable. For commuting observables, a joint spectral measure gives a joint distribution. For non-commuting ones there is in general **no joint distribution** reproducing all their statistics: the Kochen–Specker theorem (1967) rules out non-contextual hidden variables in dimension $\ge 3$, and Bell's theorem (1964) shows that the correlations of entangled pairs violate inequalities that any local probabilistic model must satisfy (the CHSH bound $2$ is exceeded up to $2\sqrt 2$, Tsirelson's bound). Quantum theory is a genuinely **non-commutative probability theory**, whose "random variables" are self-adjoint operators and whose "expectation" is the state $A \mapsto \langle \psi, A\psi \rangle$. See <TopicLink id="math.prob.measure-theoretic-probability">measure-theoretic probability</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Spin and the double cover of the rotation group">
+
+Physical rotations form $SO(3)$, whose fundamental group is $\Z/2$: a rotation by $2\pi$ about an axis is a loop that cannot be contracted, though going around it twice can. Because states are rays, a symmetry need only act projectively, and Wigner's theorem plus Bargmann's analysis show that the projective representations of $SO(3)$ are exactly the representations of its universal (double) cover $SU(2) \cong S^3$. Those that do not descend to $SO(3)$ are the **half-integer spins**: rotating an electron's state by $2\pi$ multiplies it by $-1$, an effect observed in neutron interferometry (1975). The topology of the rotation group is therefore visible in the classification of particles into bosons and fermions. See <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink> and <TopicLink id="math.geom.lie-groups">Lie groups</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Max Planck** (1900) quantised the energy of radiation oscillators; **Albert Einstein** (1905) the light itself; **Niels Bohr** (1913) the atom, with the frequency rule. **Satyendra Nath Bose** (1924) found the statistics of photons and **Louis de Broglie** (1924) proposed matter waves.
+- **Werner Heisenberg** (1925) founded matrix mechanics, developed with **Max Born** and **Pascual Jordan**, who found the commutation relation; **Paul Dirac** (1925–1930) gave its algebraic form and the transformation theory; **Erwin Schrödinger** (1926) found wave mechanics and showed its equivalence with matrix mechanics; **Born** (1926) gave the probability interpretation.
+- **Heisenberg** (1927) stated the uncertainty principle; **Earle Kennard** (1927) proved $\sigma_X\sigma_P \ge \hbar/2$; **Hermann Weyl** (1927–1928) introduced the Weyl relations and group-theoretic methods; **Howard Percy Robertson** (1929) proved the general inequality.
+- **John von Neumann** (*Mathematische Grundlagen der Quantenmechanik*, 1932) created the theory of unbounded self-adjoint operators and their spectral theorem for this purpose; **Marshall Stone** (1930, 1932) proved his theorem on unitary groups and, with von Neumann, the uniqueness theorem. **Ernst Hellinger** and **Otto Toeplitz** (1910), **Aurel Wintner** (1947) and **Helmut Wielandt** (1949) proved the theorems on unboundedness; **Israel Gelfand, Mark Naimark** (1943) and **Irving Segal** (1947) founded the C*-algebraic approach.
+- **Tosio Kato** (1951) proved the self-adjointness of atomic Hamiltonians, putting the hydrogen atom and heavier atoms on rigorous ground; **John Bell** (1964) and **Simon Kochen and Ernst Specker** (1967) proved the no-go theorems that underlie today's quantum information science.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Brian C. Hall, *Quantum Theory for Mathematicians* (2013) — the closest match to this lesson: unbounded operators, the spectral theorem, Stone's theorem, the oscillator, with full proofs.
+- Leon A. Takhtajan, *Quantum Mechanics for Mathematicians* (2008) — from classical mechanics to quantisation, path integrals and more.
+- Michael Reed and Barry Simon, *Methods of Modern Mathematical Physics I: Functional Analysis* (1972) and *II: Fourier Analysis, Self-Adjointness* (1975) — the standard reference for the operator theory.
+- Gerald Teschl, *Mathematical Methods in Quantum Mechanics* (2nd ed., 2014) — concise, rigorous, freely available from the author.
+- John von Neumann, *Mathematical Foundations of Quantum Mechanics* (1932; English translation 1955) — the founding text.
+- P. A. M. Dirac, *The Principles of Quantum Mechanics* (4th ed., 1958) — the physicist's classic, for intuition and notation.
+
+</Section>

@@ -1,0 +1,499 @@
+---
+slug: riemannian-geometry
+topic: math.geom.riemannian-geometry
+title: Riemannian geometry
+subtitle: Curved spaces studied from the inside — how lengths and angles on each tangent space determine geodesics, curvature, and even the topology of the whole space.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7023
+objectives:
+  - Define Riemannian metrics, the Levi-Civita connection, parallel transport and geodesics, prove that the Levi-Civita connection exists and is unique, and compute Christoffel symbols and geodesics on spheres, hyperbolic space and surfaces of revolution
+  - Define the curvature tensor and sectional, Ricci and scalar curvature, prove the symmetries of the curvature tensor, and interpret curvature through Jacobi fields and the spreading of geodesics
+  - Prove the global Gauss–Bonnet theorem for closed oriented surfaces
+  - State the Hopf–Rinow theorem and prove the Bonnet–Myers theorem from the second variation formula
+narrators: []
+lean:
+  - Lumenary.RiemannianGeometry.pair_symmetry
+  - Lumenary.RiemannianGeometry.constCurv
+  - Lumenary.RiemannianGeometry.constCurv_symmetries
+  - Lumenary.RiemannianGeometry.sectional_constCurv
+  - Lumenary.RiemannianGeometry.ricci_constCurv
+  - Lumenary.RiemannianGeometry.jacobi_constant_curvature
+  - Lumenary.RiemannianGeometry.myers_index_form
+  - Lumenary.RiemannianGeometry.myers_index_negative
+  - Lumenary.RiemannianGeometry.semicircle_geodesic
+  - Lumenary.RiemannianGeometry.euclidean_riemannian_distance
+  - Lumenary.RiemannianGeometry.riemannian_triangle
+compute: [riemannian_geometry_curvature, riemannian_geometry_geodesics]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Measuring curvature from the inside">
+
+In the 1820s Carl Friedrich Gauss led a geodetic survey of the Kingdom of Hanover, triangulating the land with theodolites and measuring the angles of large triangles. Out of that work came a startling theorem: a two-dimensional creature living on a surface, measuring only lengths and angles within the surface, can determine its curvature. Gauss called it the *Theorema Egregium* — the remarkable theorem. A sheet of paper can be rolled into a cylinder without stretching, so the cylinder is "flat" to its inhabitants; no piece of a sphere can be flattened without distortion, which is why every map of the Earth distorts something.
+
+Riemann turned this into a programme (1854): describe a space of any dimension by an inner product on each tangent space — a way to measure infinitesimal lengths and angles — and derive everything else from it. Sixty years later Einstein used exactly this geometry, in its Lorentzian form, to describe gravity; today the equations of general relativity are corrected for in every GPS receiver. In pure mathematics, Riemannian geometry links local information (curvature) to global information (topology): the total curvature of a closed surface is $2\pi$ times its Euler characteristic, and a complete manifold whose Ricci curvature is bounded below by a positive constant must be compact.
+
+This lesson assumes <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink> and the classical <TopicLink id="math.geom.curves-surfaces">differential geometry of curves and surfaces</TopicLink>. For the Gauss–Bonnet theorem it uses the Poincaré–Hopf theorem from <TopicLink id="math.geom.differential-topology">differential topology</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Straight lines and their spreading">
+
+On a curved surface there are no straight lines, but there are **geodesics**: curves that are "as straight as possible", along which an ant walking forward never turns left or right. On a sphere they are the great circles. Two ants that leave the north pole walking straight ahead along different meridians move apart at first, and then — because the sphere curves — come together again at the south pole. On a saddle-shaped surface nearby geodesics spread apart faster than in the plane. That rate of spreading is curvature: positive curvature focuses geodesics, negative curvature disperses them.
+
+A second picture: carry a spear along a closed path, always keeping it "parallel to itself" — never rotating it within the surface. In the plane it returns pointing the same way. On the sphere, carry it from the north pole down a meridian to the equator, along the equator a quarter of the way round, and back up to the pole: it returns rotated by $90^\circ$, which is the area of the triangle you walked round (it covers one eighth of a sphere of area $4\pi$). Curvature is the infinitesimal rotation of parallel transport round small loops, and for geodesic triangles the total turn equals the angle excess $\alpha + \beta + \gamma - \pi$.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Metrics, connections, geodesics and curvature">
+
+<Definition term="Riemannian metric">
+
+A **Riemannian metric** $g$ on a smooth manifold $M$ is a choice of inner product $g_p = \langle\cdot,\cdot\rangle_p$ on each tangent space $T_pM$, depending smoothly on $p$: in a chart, $g = \sum_{i,j} g_{ij}\, dx^i\, dx^j$ with $(g_{ij})$ smooth, symmetric and positive definite. The **length** of a piecewise smooth curve is $L(\gamma) = \int_a^b |\gamma'(t)|\, dt$, and the **Riemannian distance** $d(p, q)$ is the infimum of lengths of curves from $p$ to $q$; it is a metric inducing the manifold topology. An **isometry** is a diffeomorphism preserving $g$.
+
+</Definition>
+
+Every smooth manifold admits Riemannian metrics (glue Euclidean metrics from charts with a partition of unity); a metric is extra structure, not something the manifold has automatically.
+
+<Definition term="connection, Levi-Civita connection">
+
+An (affine) **connection** is a map $(X, Y) \mapsto \nabla_X Y$ on vector fields that is $C^\infty(M)$-linear in $X$, $\R$-linear in $Y$, and satisfies the Leibniz rule $\nabla_X(fY) = (Xf)Y + f\nabla_X Y$. It is **torsion-free** if $\nabla_X Y - \nabla_Y X = [X, Y]$, and **compatible with $g$** if $X\langle Y, Z\rangle = \langle \nabla_X Y, Z\rangle + \langle Y, \nabla_X Z\rangle$. The **Levi-Civita connection** is a torsion-free connection compatible with $g$. In coordinates $\nabla_{\partial_i}\partial_j = \sum_k \Gamma^k_{ij}\partial_k$, with **Christoffel symbols** $\Gamma^k_{ij}$.
+
+</Definition>
+
+<Definition term="parallel transport, geodesic, exponential map">
+
+A connection differentiates vector fields $V(t)$ along a curve $\gamma$: $D_tV = \sum_k \big(\dot V^k + \sum_{i,j}\Gamma^k_{ij}\dot\gamma^i V^j\big)\partial_k$. $V$ is **parallel** if $D_tV = 0$; parallel transport along $\gamma$ is a linear isometry between tangent spaces (for the Levi-Civita connection). A **geodesic** is a curve with $D_t\dot\gamma = 0$, i.e.
+
+$$
+\ddot\gamma^k + \sum_{i,j}\Gamma^k_{ij}(\gamma)\,\dot\gamma^i\dot\gamma^j = 0 \qquad (k = 1, \dots, n).
+$$
+
+For $v \in T_pM$ let $\gamma_v$ be the geodesic with $\gamma_v(0) = p$, $\dot\gamma_v(0) = v$; the **exponential map** is $\exp_p(v) = \gamma_v(1)$, defined near $0 \in T_pM$.
+
+</Definition>
+
+<Definition term="curvature">
+
+The **curvature tensor** is $R(X, Y)Z = \nabla_X\nabla_Y Z - \nabla_Y\nabla_X Z - \nabla_{[X,Y]}Z$; it is $C^\infty(M)$-linear in all three arguments, so $R_p$ is a multilinear map on $T_pM$. Write $R(X, Y, Z, W) = \langle R(X, Y)Z, W\rangle$. For a $2$-plane $\sigma \subseteq T_pM$ spanned by $X, Y$, the **sectional curvature** is
+
+$$
+K(\sigma) = \frac{R(X, Y, Y, X)}{|X|^2|Y|^2 - \langle X, Y\rangle^2},
+$$
+
+independent of the basis. The **Ricci curvature** is $\operatorname{Ric}(Y, Z) = \sum_i R(e_i, Y, Z, e_i)$ for an orthonormal basis $(e_i)$, so $\operatorname{Ric}(v, v) = \sum_{i \ge 2} K(v, e_i)$ for a unit vector $v = e_1$; the **scalar curvature** is $\sum_i \operatorname{Ric}(e_i, e_i)$. On a surface all three carry the same information: the **Gaussian curvature** $K$.
+
+</Definition>
+
+<Definition term="Jacobi field, conjugate point">
+
+A **Jacobi field** along a geodesic $\gamma$ is a vector field $J$ along $\gamma$ satisfying the Jacobi equation $D_t^2 J + R(J, \dot\gamma)\dot\gamma = 0$. Jacobi fields are exactly the variation fields of families of geodesics. A point $\gamma(t_0)$ is **conjugate** to $\gamma(0)$ if a non-zero Jacobi field vanishes at both $t = 0$ and $t = t_0$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Model spaces and surfaces of revolution">
+
+<Example title="The three model geometries">
+
+- **Euclidean space** $\R^n$, $g = \sum (dx^i)^2$: all $\Gamma^k_{ij} = 0$, geodesics are straight lines, $R = 0$.
+- **The round sphere** $S^n \subset \R^{n+1}$ with the induced metric: geodesics are great circles; sectional curvature $\equiv 1$. The sphere of radius $r$ has $K \equiv 1/r^2$.
+- **Hyperbolic space**, for example the upper half-plane $\{(x, y) : y > 0\}$ with $g = (dx^2 + dy^2)/y^2$. Its non-zero Christoffel symbols are $\Gamma^x_{xy} = \Gamma^x_{yx} = -1/y$, $\Gamma^y_{xx} = 1/y$, $\Gamma^y_{yy} = -1/y$, so the geodesic equations are
+
+$$
+\ddot x - \frac{2}{y}\dot x\dot y = 0, \qquad \ddot y + \frac{\dot x^2 - \dot y^2}{y} = 0 .
+$$
+
+Vertical lines $t \mapsto (0, e^t)$ and semicircles centred on the real axis, such as $t \mapsto (\tanh t, \operatorname{sech} t)$, are unit-speed geodesics (Lean checks the semicircle below), and $K \equiv -1$.
+
+</Example>
+
+In each model space the curvature tensor is $R(X, Y)Z = k\big(\langle Y, Z\rangle X - \langle X, Z\rangle Y\big)$ with $k = 0, 1, -1$; then every sectional curvature is $k$ and $\operatorname{Ric} = (n - 1)k\, g$.
+
+<Example title="Surfaces of revolution and Clairaut's relation">
+
+Rotating a unit-speed profile curve $t \mapsto (f(t), z(t))$, $f > 0$, about the $z$-axis gives the metric $g = dt^2 + f(t)^2\, d\theta^2$. Meridians ($\theta$ constant) are geodesics; a parallel ($t = t_0$) is a geodesic exactly when $f'(t_0) = 0$ (the equator of a sphere, the outer and inner equators of a torus). The geodesic equation for $\theta$ is $\ddot\theta + 2(f'/f)\dot t\dot\theta = 0$, which says precisely that
+
+$$
+\frac{d}{ds}\big(f^2\dot\theta\big) = 2ff'\dot t\dot\theta + f^2\ddot\theta = 0 .
+$$
+
+For a unit-speed geodesic, $f\dot\theta = \cos\psi$ where $\psi$ is the angle with the parallel, so **Clairaut's relation** holds: $f\cos\psi$ is constant along every geodesic. A geodesic can therefore never reach the region where $f$ is smaller than this constant — it turns back at the latitude where $f = |f\cos\psi|$, as the second experiment shows on a torus.
+
+</Example>
+
+<Example title="A flat torus and a flat cylinder">
+
+$\R^2/\Z^2$ with the metric induced from $\R^2$ is a **flat torus**: $K \equiv 0$, and its closed geodesics are the images of lines with rational slope. The cylinder $S^1 \times \R$ is flat too — a rolled-up sheet of paper. The doughnut-shaped torus in $\R^3$ is diffeomorphic to the flat torus but not isometric to it: its curvature is $K = \cos v/\big(r(R + r\cos v)\big)$, positive on the outside and negative on the inside.
+
+</Example>
+
+</Section>
+
+<Section id="levi-civita" kind="proof" title="The fundamental theorem of Riemannian geometry">
+
+<Theorem name="Theorem 1 (Levi-Civita)">
+
+On every Riemannian manifold there is exactly one connection that is torsion-free and compatible with the metric. It is given by the **Koszul formula**
+
+$$
+2\langle \nabla_X Y, Z\rangle = X\langle Y, Z\rangle + Y\langle Z, X\rangle - Z\langle X, Y\rangle - \langle Y, [X, Z]\rangle - \langle X, [Y, Z]\rangle + \langle Z, [X, Y]\rangle,
+$$
+
+and in coordinates by $\Gamma^k_{ij} = \tfrac12 \sum_l g^{kl}\big(\partial_i g_{jl} + \partial_j g_{il} - \partial_l g_{ij}\big)$.
+
+</Theorem>
+
+<Proof>
+
+*Uniqueness.* Let $\nabla$ be torsion-free and compatible. Expand three instances of compatibility:
+
+$$
+X\langle Y, Z\rangle + Y\langle Z, X\rangle - Z\langle X, Y\rangle = \langle\nabla_X Y, Z\rangle + \langle Y, \nabla_X Z\rangle + \langle \nabla_Y Z, X\rangle + \langle Z, \nabla_Y X\rangle - \langle\nabla_Z X, Y\rangle - \langle X, \nabla_Z Y\rangle .
+$$
+
+Use torsion-freeness in the form $\nabla_X Z - \nabla_Z X = [X, Z]$, $\nabla_Y Z - \nabla_Z Y = [Y, Z]$ and $\nabla_Y X = \nabla_X Y - [X, Y]$: the right-hand side becomes $2\langle\nabla_X Y, Z\rangle + \langle Y, [X, Z]\rangle + \langle X, [Y, Z]\rangle - \langle Z, [X, Y]\rangle$, which is the Koszul formula. Its right-hand side does not involve $\nabla$, and since the metric is non-degenerate, $\langle \nabla_X Y, Z\rangle$ for all $Z$ determines $\nabla_X Y$. So there is at most one such connection.
+
+*Existence.* Define $\nabla_X Y$ by the Koszul formula: one checks that the right-hand side is $C^\infty(M)$-linear in $Z$, so by non-degeneracy it defines a vector field $\nabla_X Y$, and then that this is a connection, torsion-free and compatible — each a direct computation with the Leibniz rule $[X, fY] = (Xf)Y + f[X, Y]$. *Coordinates.* For $X = \partial_i$, $Y = \partial_j$, $Z = \partial_l$ all brackets vanish, leaving $2\sum_k\Gamma^k_{ij}g_{kl} = \partial_i g_{jl} + \partial_j g_{il} - \partial_l g_{ij}$; multiply by the inverse matrix $g^{kl}$. ∎
+
+</Proof>
+
+For the half-plane, $g_{ij} = y^{-2}\delta_{ij}$ and $\partial_y g_{ii} = -2y^{-3}$, which gives the Christoffel symbols listed in the examples; the first experiment computes them symbolically.
+
+</Section>
+
+<Section id="geodesics" kind="proof" title="Geodesics, the exponential map and completeness">
+
+Geodesics are solutions of a second-order ODE, so for each $p$ and $v \in T_pM$ there is a unique maximal geodesic $\gamma_v$, and $\gamma_{cv}(t) = \gamma_v(ct)$. The exponential map is smooth near $0$ with $d(\exp_p)_0 = \mathrm{id}$, so by the inverse function theorem it is a diffeomorphism from a ball $B_\varepsilon(0) \subset T_pM$ onto a **normal neighbourhood** of $p$.
+
+<Theorem name="Theorem 2 (geodesics minimise locally; stated)">
+
+(Gauss lemma) Radial geodesics from $p$ meet the geodesic spheres $\exp_p(\partial B_r(0))$ orthogonally. Consequently, if $\exp_p$ is a diffeomorphism on $B_\varepsilon(0)$, then for $|v| < \varepsilon$ the radial geodesic $t \mapsto \exp_p(tv)$, $0 \le t \le 1$, is the unique shortest curve (up to reparametrisation) from $p$ to $\exp_p(v)$. Conversely, every length-minimising curve parametrised by arc length is a geodesic.
+
+</Theorem>
+
+(Proofs: do Carmo, Chapter 3; Lee, *Introduction to Riemannian Manifolds*, Chapter 6.) Locally, then, geodesics are shortest paths. Globally they need not be: a great-circle arc of length greater than $\pi$ on the unit sphere is a geodesic, but the complementary arc is shorter. The obstruction is the conjugate point at distance $\pi$ (Theorem 5 below).
+
+<Theorem name="Theorem 3 (Hopf–Rinow; stated)">
+
+For a connected Riemannian manifold $M$ the following are equivalent: (a) $(M, d)$ is a complete metric space; (b) every geodesic is defined for all time; (c) $\exp_p$ is defined on all of $T_pM$ for some $p$; (d) closed bounded subsets of $M$ are compact. If they hold, any two points of $M$ are joined by a geodesic of length $d(p, q)$.
+
+</Theorem>
+
+(Proof: do Carmo, Chapter 7.) Compact manifolds are complete. $\R^2 \setminus \{0\}$ is not: the points $(1, 0)$ and $(-1, 0)$ have distance $2$, but no curve of length $2$ joins them.
+
+</Section>
+
+<Section id="curvature" kind="proof" title="The curvature tensor">
+
+<Theorem name="Theorem 4 (symmetries of the curvature tensor)">
+
+For all $X, Y, Z, W$: (i) $R(X,Y,Z,W) = -R(Y,X,Z,W)$; (ii) $R(X,Y,Z,W) = -R(X,Y,W,Z)$; (iii) $R(X,Y,Z,W) + R(Y,Z,X,W) + R(Z,X,Y,W) = 0$ (first Bianchi identity); and (iv) $R(X,Y,Z,W) = R(Z,W,X,Y)$.
+
+</Theorem>
+
+<Proof>
+
+(i) is clear from the definition. (ii) is metric compatibility: it suffices to show $R(X, Y, Z, Z) = 0$, and $XY\langle Z, Z\rangle = 2X\langle\nabla_Y Z, Z\rangle = 2\langle\nabla_X\nabla_Y Z, Z\rangle + 2\langle \nabla_Y Z, \nabla_X Z\rangle$; subtract the same with $X, Y$ exchanged and $[X, Y]\langle Z, Z\rangle = 2\langle\nabla_{[X,Y]}Z, Z\rangle$ to get $0 = (XY - YX - [X,Y])\langle Z, Z\rangle = 2R(X, Y, Z, Z)$. (iii) For coordinate fields (all brackets $0$) the cyclic sum is $\nabla_X(\nabla_Y Z - \nabla_Z Y) + \nabla_Y(\nabla_Z X - \nabla_X Z) + \nabla_Z(\nabla_X Y - \nabla_Y X) = 0$ by torsion-freeness, and $R$ is tensorial. (iv) follows from (i)–(iii) alone: write the Bianchi identity (iii) for the four cyclic arrangements $(X,Y,Z,W)$, $(Y,Z,W,X)$, $(Z,W,X,Y)$, $(W,X,Y,Z)$ and add them; using (i) and (ii), eight of the twelve terms cancel in pairs and the rest give $2R(X,Y,Z,W) - 2R(Z,W,X,Y) = 0$. ∎
+
+</Proof>
+
+Step (iv) is purely algebraic, and Lean checks it below for an arbitrary function $R$ satisfying (i)–(iii) — no linearity needed. By (i)–(iv), the quadratic form $(X, Y) \mapsto R(X, Y, Y, X)$ determines $R$, so the sectional curvatures determine the curvature tensor. In particular, if all sectional curvatures at $p$ equal $k$, then $R(X,Y,Z,W) = k\big(\langle Y, Z\rangle\langle X, W\rangle - \langle X, Z\rangle\langle Y, W\rangle\big)$ and $\operatorname{Ric} = (n-1)k\, g$.
+
+**Curvature of a surface from an orthonormal frame.** Let $(e_1, e_2)$ be a positively oriented orthonormal frame on an open set of an oriented surface, with dual coframe $(\theta^1, \theta^2)$, and let $\omega(X) = \langle\nabla_X e_1, e_2\rangle$ be its **connection $1$-form**; then $\nabla e_1 = \omega\otimes e_2$ and $\nabla e_2 = -\omega\otimes e_1$.
+
+<Theorem name="Lemma (structure equation)">
+
+$d\omega = -K\, dA$, where $dA = \theta^1\wedge\theta^2$ is the area form.
+
+</Theorem>
+
+<Proof>
+
+$d\omega(X, Y) = X\omega(Y) - Y\omega(X) - \omega([X, Y])$, and $X\omega(Y) = X\langle\nabla_Y e_1, e_2\rangle = \langle\nabla_X\nabla_Y e_1, e_2\rangle + \langle\nabla_Y e_1, \nabla_X e_2\rangle$. The last term is $\langle \omega(Y)e_2, -\omega(X)e_1\rangle = 0$. Hence $d\omega(X, Y) = \langle R(X, Y)e_1, e_2\rangle$, and $d\omega(e_1, e_2) = R(e_1, e_2, e_1, e_2) = -R(e_1, e_2, e_2, e_1) = -K$. ∎
+
+</Proof>
+
+<Example title="Curvature of dt² + f(t)² dθ²">
+
+Take $e_1 = \partial_t$, $e_2 = f^{-1}\partial_\theta$, so $\theta^1 = dt$, $\theta^2 = f\,d\theta$. From $d\theta^1 = 0$ and $d\theta^2 = f'\,dt\wedge d\theta$ (Cartan's first structure equations $d\theta^1 = \omega\wedge\theta^2$, $d\theta^2 = -\omega\wedge\theta^1$, which encode torsion-freeness) we find $\omega = f'\, d\theta$. Then $d\omega = f''\, dt\wedge d\theta = -K f\, dt \wedge d\theta$, so
+
+$$
+K = -\frac{f''}{f}.
+$$
+
+$f = \sin t$ (round sphere) gives $K = 1$; $f = t$ (the plane in polar coordinates) gives $0$; $f = \sinh t$ (hyperbolic plane in polar coordinates) gives $-1$. For a conformal metric $e^{2\varphi}(dx^2 + dy^2)$ a similar computation gives $K = -e^{-2\varphi}\Delta\varphi$; for the half-plane, $\varphi = -\log y$ and $K = -y^2 \cdot y^{-2} = -1$.
+
+</Example>
+
+Both formulas use only the metric, so the Gaussian curvature is intrinsic. For a surface in $\R^3$, Gauss's extrinsic curvature (the determinant of the shape operator) equals this $K$: that identification is the **Theorema Egregium**.
+
+</Section>
+
+<Section id="jacobi" kind="proof" title="Jacobi fields and conjugate points">
+
+If $\gamma_s$ is a smooth family of geodesics, the variation field $J = \partial_s\gamma_s|_{s=0}$ satisfies $D_t^2J = D_tD_s\dot\gamma = D_sD_t\dot\gamma + R(\dot\gamma, J)\dot\gamma = -R(J, \dot\gamma)\dot\gamma$, the Jacobi equation. So Jacobi fields describe how nearby geodesics spread.
+
+<Example title="Constant curvature">
+
+Let $\gamma$ be a unit-speed geodesic in a space of constant curvature $k$, $E(t)$ a parallel unit field orthogonal to $\dot\gamma$, and $J = u(t)E(t)$. Then $R(J, \dot\gamma)\dot\gamma = k\,u\,E$, and the Jacobi equation is $u'' + ku = 0$. With $u(0) = 0$, $u'(0) = 1$:
+
+$$
+u(t) = \frac{\sin(\sqrt k\, t)}{\sqrt k}\ (k > 0), \qquad u(t) = t\ (k = 0), \qquad u(t) = \frac{\sinh(\sqrt{-k}\, t)}{\sqrt{-k}}\ (k < 0).
+$$
+
+For $k > 0$ the Jacobi field vanishes again at $t = \pi/\sqrt k$: the point $\gamma(\pi/\sqrt k)$ is conjugate to $\gamma(0)$ — on the sphere of radius $1/\sqrt k$, the antipode. For $k \le 0$ there are no conjugate points.
+
+</Example>
+
+<Theorem name="Theorem 5 (Jacobi; stated)">
+
+A geodesic that contains a point conjugate to its starting point in its interior is not locally length-minimising: some nearby curve with the same endpoints is shorter.
+
+</Theorem>
+
+(Proof via the index form: do Carmo, Chapter 5, or Milnor, *Morse Theory*, §15.) For the unit sphere this explains the failure of great-circle arcs longer than $\pi$. In the other direction, **Cartan–Hadamard**: if $M$ is complete, simply connected and has $K \le 0$, then $\exp_p : T_pM \to M$ is a diffeomorphism, so $M$ is diffeomorphic to $\R^n$.
+
+</Section>
+
+<Section id="gauss-bonnet" kind="proof" title="The Gauss–Bonnet theorem">
+
+Two classical consequences of the structure equation, for a geodesic triangle $T$ (three geodesic sides, interior angles $\alpha, \beta, \gamma$) contained in a disc on an oriented surface:
+
+$$
+\int_T K\, dA = \alpha + \beta + \gamma - \pi \qquad \text{(local Gauss–Bonnet)}.
+$$
+
+(Sketch: $\int_T K\, dA = -\oint_{\partial T}\omega$ by Stokes; along a unit-speed boundary curve making angle $\phi$ with $e_1$, $\omega(\dot c) = \kappa_g - \dot\phi$ with $\kappa_g = 0$ on geodesic sides; and the total turning of the tangent round $\partial T$, $\oint d\phi$ plus the exterior angles $\pi - \alpha$, $\pi - \beta$, $\pi - \gamma$, is $2\pi$ by Hopf's Umlaufsatz.) The widget below measures both sides on the sphere and in the hyperbolic plane. The global theorem needs no triangulation if we use a vector field.
+
+<Theorem name="Theorem 6 (Gauss–Bonnet)">
+
+For every closed oriented Riemannian $2$-manifold $M$,
+
+$$
+\int_M K\, dA = 2\pi\,\chi(M).
+$$
+
+</Theorem>
+
+<Proof>
+
+(Following Chern.) Choose a smooth vector field $X$ on $M$ with finitely many zeros $p_1, \dots, p_k$ (for example the gradient of a Morse function). On $M^* = M \setminus \{p_1, \dots, p_k\}$ let $e_1 = X/|X|$, let $e_2$ complete it to a positive orthonormal frame, and let $\omega$ be the connection form, so $d\omega = -K\, dA$ on $M^*$. Let $B_i$ be small closed geodesic discs of radius $\varepsilon$ round $p_i$, and $M_\varepsilon = M \setminus \bigcup_i \operatorname{int} B_i$. Its boundary is $\bigcup_i \partial B_i$ with the orientation *opposite* to that of $\partial B_i$ as the boundary of $B_i$. By Stokes,
+
+$$
+\int_{M_\varepsilon} K\, dA = -\int_{M_\varepsilon} d\omega = -\int_{\partial M_\varepsilon}\omega = \sum_{i=1}^k \oint_{\partial B_i}\omega ,
+$$
+
+each circle now traversed anticlockwise. On the disc $B_i$ choose any positive orthonormal frame $(f_1, f_2)$, with connection form $\omega_f$, smooth on all of $B_i$. On $B_i \setminus \{p_i\}$ write $e_1 = \cos\phi\, f_1 + \sin\phi\, f_2$ with a locally defined angle $\phi$. Differentiating, $\nabla e_1 = (\omega_f + d\phi)\otimes e_2$, so $\omega = \omega_f + d\phi$. As we go once round $\partial B_i$, $\phi$ increases by $2\pi$ times the number of turns of $X$ relative to the frame $f$, which is $2\pi\operatorname{ind}_{p_i}(X)$. Hence
+
+$$
+\oint_{\partial B_i}\omega = \oint_{\partial B_i}\omega_f + 2\pi\operatorname{ind}_{p_i}(X).
+$$
+
+As $\varepsilon \to 0$, $\oint_{\partial B_i}\omega_f \to 0$ (a smooth form integrated over a curve of length $\to 0$) and $\int_{M_\varepsilon} K\, dA \to \int_M K\, dA$. Therefore $\int_M K\, dA = 2\pi\sum_i\operatorname{ind}_{p_i}(X) = 2\pi\chi(M)$ by the Poincaré–Hopf theorem. ∎
+
+</Proof>
+
+Consequences: a metric on the sphere must have positive curvature somewhere, and a metric on a surface of genus $g \ge 2$ must have negative curvature somewhere; a closed orientable surface with $K > 0$ everywhere is a sphere, and one with $K \equiv 0$ is a torus. The left-hand side is local geometry, the right-hand side global topology. Chern's generalisation (1944) expresses the Euler characteristic of a closed even-dimensional manifold as the integral of a polynomial in the curvature (the Pfaffian).
+
+</Section>
+
+<Section id="myers" kind="proof" title="The Bonnet–Myers theorem">
+
+We need one more tool. For a geodesic $\gamma : [0, L] \to M$ with unit speed and a proper variation $\gamma_s$ (endpoints fixed) with variation field $V \perp \dot\gamma$, the energy $E(c) = \frac12\int_0^L |\dot c|^2\, dt$ satisfies the **second variation formula** (do Carmo, Chapter 9):
+
+$$
+\frac{d^2}{ds^2}\Big|_{s=0} E(\gamma_s) = \int_0^L \Big( |D_tV|^2 - R(V, \dot\gamma, \dot\gamma, V)\Big)\, dt .
+$$
+
+<Theorem name="Theorem 7 (Bonnet–Myers)">
+
+Let $M$ be a complete connected Riemannian $n$-manifold ($n \ge 2$) with $\operatorname{Ric} \ge (n-1)k\, g$ for a constant $k > 0$. Then $\operatorname{diam} M \le \pi/\sqrt k$; hence $M$ is compact, and its fundamental group is finite.
+
+</Theorem>
+
+<Proof>
+
+Let $p, q \in M$. By Hopf–Rinow there is a unit-speed geodesic $\gamma : [0, L] \to M$ from $p$ to $q$ with $L = d(p, q)$. Suppose $L > \pi/\sqrt k$. Choose parallel fields $E_1, \dots, E_{n-1}$ along $\gamma$ that together with $\dot\gamma$ are orthonormal, and let $V_i(t) = \sin(\pi t/L)E_i(t)$, proper variation fields with $D_tV_i = (\pi/L)\cos(\pi t/L)E_i$. Summing the second variations,
+
+$$
+\sum_{i=1}^{n-1} E''_{V_i}(0) = \int_0^L \Big( (n-1)\frac{\pi^2}{L^2}\cos^2\frac{\pi t}{L} - \sin^2\frac{\pi t}{L}\,\operatorname{Ric}(\dot\gamma, \dot\gamma) \Big) dt \le (n - 1) \int_0^L \Big(\frac{\pi^2}{L^2}\cos^2\frac{\pi t}{L} - k\sin^2\frac{\pi t}{L}\Big) dt .
+$$
+
+The last integral equals $\frac{L}{2}\big(\frac{\pi^2}{L^2} - k\big)$, which is negative because $L > \pi/\sqrt k$. So some $E''_{V_i}(0) < 0$, and the variation $\gamma_s$ in the direction $V_i$ has $E(\gamma_s) < E(\gamma)$ for small $s \ne 0$. By Cauchy–Schwarz $L(\gamma_s)^2 \le 2L\,E(\gamma_s) < 2L\,E(\gamma) = L(\gamma)^2$, so $\gamma_s$ is a shorter curve from $p$ to $q$, contradicting $L = d(p, q)$. Hence $d(p, q) \le \pi/\sqrt k$ for all $p, q$.
+
+$M$ is complete and bounded, so it is compact by Hopf–Rinow (d). Its universal cover, with the pulled-back metric, is complete and satisfies the same Ricci bound, so it is compact too; a covering of a compact space by a compact space has finitely many sheets, so $\pi_1(M)$ is finite. ∎
+
+</Proof>
+
+The bound is sharp: the unit sphere has $\operatorname{Ric} = (n-1)g$ and diameter $\pi$ (Cheng's theorem says it is the only case of equality). The hypothesis needs a *positive lower bound*: the paraboloid $z = x^2 + y^2$ is complete with $K > 0$ everywhere but $K \to 0$ at infinity, and it is not compact. Bonnet–Myers is the first of the **comparison theorems** — Rauch, Toponogov, Bishop–Gromov — which compare a manifold with the model space of the same curvature bound.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Riemannian geometry in Lean and Mathlib">
+
+Mathlib's Riemannian geometry is young. It has Riemannian metrics on vector bundles, the class `IsRiemannianManifold I M` (the distance equals the infimum of lengths of $C^1$ paths), the Riemannian distance `riemannianEDist` and its basic properties, and the theorem that an inner product space is a Riemannian manifold. We cite two of these:
+
+<Lean decl="Lumenary.RiemannianGeometry.euclidean_riemannian_distance" />
+
+<Lean decl="Lumenary.RiemannianGeometry.riemannian_triangle" />
+
+The Levi-Civita connection of a general metric, geodesics, curvature tensors and the global theorems are not yet in Mathlib. What we formalise instead is the algebra and analysis that the lesson's proofs reduce to at a single point or along a single geodesic. First, Theorem 4(iv): pair symmetry follows from the two antisymmetries and the Bianchi identity, for any function $R$ whatsoever:
+
+<Lean decl="Lumenary.RiemannianGeometry.pair_symmetry" />
+
+Next, the model curvature tensors: their symmetries, their sectional curvature $k$ in every plane, and their Ricci curvature $(n-1)k\langle y, z\rangle$, computed by tracing over the standard orthonormal basis of $\R^n$:
+
+<Lean decl="Lumenary.RiemannianGeometry.constCurv" />
+
+<Lean decl="Lumenary.RiemannianGeometry.constCurv_symmetries" />
+
+<Lean decl="Lumenary.RiemannianGeometry.sectional_constCurv" />
+
+<Lean decl="Lumenary.RiemannianGeometry.ricci_constCurv" />
+
+The Jacobi equation $u'' + ku = 0$ in constant curvature $k > 0$, its solution $\sin(\sqrt k\,t)/\sqrt k$, and the first conjugate point at $\pi/\sqrt k$:
+
+<Lean decl="Lumenary.RiemannianGeometry.jacobi_constant_curvature" />
+
+The heart of the Bonnet–Myers proof — the value of the index-form integral and its negativity for $L > \pi/\sqrt k$:
+
+<Lean decl="Lumenary.RiemannianGeometry.myers_index_form" />
+
+<Lean decl="Lumenary.RiemannianGeometry.myers_index_negative" />
+
+And the example of the hyperbolic plane: the semicircle $(\tanh t, \operatorname{sech} t)$ lies on the unit circle, has hyperbolic speed $1$, and satisfies both geodesic equations (we prove each derivative, then each equation):
+
+<Lean decl="Lumenary.RiemannianGeometry.semicircle_geodesic" />
+
+**What is and is not formalised.** Proved here: Theorem 4(iv) (in the abstract form above), the curvature, sectional curvature and Ricci curvature of the model tensors, the constant-curvature Jacobi fields and conjugate points, the integral identity and inequality used in Theorem 7, and the geodesic equations for one hyperbolic geodesic. Cited from Mathlib: the Riemannian distance of Euclidean space and the triangle inequality. Not formalised: Theorem 1 (Mathlib has no Levi-Civita connection for a general metric yet), the geodesic flow and exponential map, Hopf–Rinow, the second variation formula, and the Gauss–Bonnet and Bonnet–Myers theorems themselves.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Curvature and geodesics, computed">
+
+The first program computes Christoffel symbols and the Gaussian curvature directly from the metric coefficients — never using an embedding in $\R^3$ — for the round sphere, the half-plane, the Poincaré disc and a torus of revolution. It then integrates $K\, dA$ over the sphere and the torus.
+
+<Python id="riemannian_geometry_curvature" />
+
+The totals $4\pi$ and $0$ are $2\pi\chi$ for $\chi = 2$ and $\chi = 0$. The torus integral vanishes because the positive curvature of the outer half exactly cancels the negative curvature of the inner half. This is exact computation for specific metrics, not a proof of Gauss–Bonnet.
+
+The second program integrates the geodesic equations numerically. Two geodesics leave one point at a tiny angle $\delta$; their distance after time $t$, divided by $\delta$, tracks the Jacobi fields $\sin t$ on the sphere and $\sinh t$ in the hyperbolic plane, refocusing at $t = \pi$ on the sphere. Then it follows a geodesic on a torus and checks Clairaut's conserved quantity.
+
+<Python id="riemannian_geometry_geodesics" />
+
+The smallest distance from the axis visited by the torus geodesic equals Clairaut's constant to four decimals: the geodesic oscillates between the outer equator and the latitude where $f = |f\cos\psi|$, exactly as the relation predicts. Numerical integration is evidence, not proof.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: angle sums and curvature">
+
+Drag the vertices of a geodesic triangle on the sphere and in the hyperbolic plane (the Poincaré disc, where geodesics are arcs meeting the boundary at right angles). The widget computes the angle sum exactly and the area independently, by numerical integration. Check that the angle excess $\alpha + \beta + \gamma - \pi$ equals $K \cdot \text{area}$: positive on the sphere ($K = 1$), negative in the hyperbolic plane ($K = -1$), zero in the plane. Try the preset triangle with three right angles: it covers one eighth of the sphere, area $\pi/2$, excess $3\pi/2 - \pi = \pi/2$. In the hyperbolic plane, push the vertices towards the boundary: the angles shrink to $0$, and the area of a triangle can never exceed $\pi$.
+
+<CurvedTriangles mode="sphere" vertices={[[90, 0], [0, 0], [0, 90]]} title="Local Gauss–Bonnet: angle excess = K × area" subtitle="Compare the three geometries: K = +1, 0 and −1." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Curvature needs an ambient space to bend into."** Gaussian curvature is intrinsic: Theorema Egregium. It is computed from the metric alone (the first experiment never mentions $\R^3$), and it makes sense for spaces that are not embedded anywhere, such as the hyperbolic plane — which, by Hilbert's theorem (1901), admits no smooth isometric immersion in $\R^3$ as a complete surface. Conversely, a surface can look bent in $\R^3$ and be intrinsically flat: a cylinder, or a rolled sheet of paper, has $K = 0$.
+
+</Misconception>
+
+<Misconception>
+
+**"A geodesic is the shortest path between its endpoints."** Only locally. On the unit sphere, a great-circle arc longer than $\pi$ is a geodesic but not minimising: it passes the conjugate point (the antipode of its start). On a flat cylinder, the helices through two points are all geodesics; at most one is shortest. Hopf–Rinow guarantees that *some* minimising geodesic exists in a complete manifold, not that every geodesic minimises.
+
+</Misconception>
+
+<Misconception>
+
+**"Positive curvature forces compactness."** Bonnet–Myers needs a *uniform* positive lower bound on Ricci curvature, and completeness. The paraboloid $z = x^2 + y^2$ is complete and has $K > 0$ everywhere, but $K \to 0$ at infinity and it is not compact. An open hemisphere has $K = 1$ and is not compact, because it is not complete.
+
+</Misconception>
+
+<Misconception>
+
+**"The exponential map is a global diffeomorphism."** It is a diffeomorphism near $0$, and globally when $M$ is complete, simply connected and $K \le 0$ (Cartan–Hadamard). On the unit sphere, $\exp_p$ maps the whole circle $|v| = \pi$ to the antipode: it is neither injective nor a local diffeomorphism there. The radius of the largest ball on which $\exp_p$ is a diffeomorphism is the **injectivity radius** at $p$.
+
+</Misconception>
+
+<Misconception>
+
+**"A circle of latitude is a geodesic, since it is a circle on the sphere."** A parallel at latitude $\lambda \ne 0$ curves towards the nearer pole within the sphere: its geodesic curvature is $\tan\lambda$ (on the unit sphere). Only great circles are geodesics: flying along the parallel from Sydney to Santiago (both near $33^\circ$ S) is much longer than the great-circle route, which swings south towards Antarctica.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Comparison geometry and synthetic curvature">
+
+The modern geometer compares. **Toponogov's theorem**: in a complete manifold with sectional curvature $\ge k$, geodesic triangles are "fatter" than triangles with the same side lengths in the model space of curvature $k$. This can be taken as a *definition* of curvature bounds for metric spaces with no smooth structure at all: **Alexandrov spaces** (curvature bounded below) and **CAT($k$) spaces** (curvature bounded above), in which the angle comparison is imposed on geodesic triangles. Gromov's compactness theorem says that manifolds of a fixed dimension with a lower Ricci bound and bounded diameter form a precompact family for the Gromov–Hausdorff distance, whose limits are the subject of Cheeger–Colding theory. Curvature thus survives as a property of distances alone.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Curvature constrains topology">
+
+Gauss–Bonnet, Bonnet–Myers and Cartan–Hadamard are all theorems of the form *a curvature condition forces a topological conclusion*: total curvature is $2\pi\chi$; $\operatorname{Ric} \ge (n-1)k > 0$ forces compactness and finite $\pi_1$; $K \le 0$ forces the universal cover to be $\R^n$, so all higher homotopy groups vanish. The **sphere theorem** (Rauch, Berger, Klingenberg; differentiable version by Brendle and Schoen, 2009) says that a complete simply connected manifold whose sectional curvatures lie strictly between $1/4$ and $1$ is homeomorphic — in fact diffeomorphic — to a sphere. And Hamilton's Ricci flow, completed by Perelman (2002–2003), used curvature to prove the Poincaré and geometrisation conjectures. See <TopicLink id="math.analysis.geometric-analysis">geometric analysis</TopicLink> and <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Geodesics as critical points, and the Laplacian">
+
+Geodesics are the critical points of the energy functional $E(c) = \frac12\int|\dot c|^2$ on the space of paths; the second variation formula is its Hessian, and Morse theory on path spaces relates conjugate points to the topology of loop spaces (Milnor, *Morse Theory*). A metric also has a **Laplace–Beltrami operator** $\Delta = \operatorname{div}\operatorname{grad}$, and curvature controls its spectrum: Lichnerowicz's theorem says that $\operatorname{Ric} \ge (n-1)k > 0$ forces the first non-zero eigenvalue to be at least $nk$. Kac asked whether one can "hear the shape of a drum": the spectrum determines dimension, volume and total scalar curvature (via the heat kernel expansion), but not the metric itself (Milnor's isospectral flat tori, 1964). Ricci flow, $\partial_t g = -2\operatorname{Ric}$, is a nonlinear heat equation for the metric.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Gravity is curvature">
+
+General relativity replaces the inner product by a **Lorentzian** metric of signature $(-, +, +, +)$ on a four-manifold. Freely falling bodies follow timelike geodesics; the Jacobi equation becomes the equation of **geodesic deviation**, which describes tidal forces — the relative acceleration of two nearby freely falling particles is $-R(J, \dot\gamma)\dot\gamma$; and matter curves spacetime through Einstein's equations $\operatorname{Ric} - \frac12 S\, g = 8\pi G\, T$. The focusing of geodesics by positive Ricci curvature, the mechanism of Bonnet–Myers, reappears in the Raychaudhuri equation and the Penrose–Hawking singularity theorems. These are theorems about Lorentzian manifolds; their application to the universe rests on physical models and measurements. See <TopicLink id="math.applied.relativity">relativity</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Groups that see curvature">
+
+The fundamental group of a closed manifold reflects its curvature. If $K < 0$, Preissman's theorem says every abelian subgroup of $\pi_1(M)$ is infinite cyclic, so $\Z^2 \not\subseteq \pi_1(M)$ — the torus cannot carry a metric of negative curvature. Milnor (1968) showed that the growth rate of $\pi_1(M)$ is exponential when $K < 0$ and polynomial when $\operatorname{Ric} \ge 0$. Gromov abstracted negative curvature into **hyperbolic groups**, and the **Švarc–Milnor lemma** — a group acting properly and cocompactly by isometries on a space is quasi-isometric to it — makes the large-scale geometry of the universal cover a property of the group. See <TopicLink id="math.geom.geometric-group-theory">geometric group theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Brownian motion and concentration">
+
+A Riemannian manifold carries a Brownian motion, generated by $\frac12\Delta$; its heat kernel $p_t(x, y)$ is the transition density, and for small $t$ it behaves like $(2\pi t)^{-n/2}e^{-d(x,y)^2/2t}$ (Varadhan's formula recovers the distance from the heat kernel). Curvature controls how random walks spread: lower Ricci bounds imply heat-kernel and isoperimetric estimates. The **Lévy–Gromov** theorem says that on a manifold with $\operatorname{Ric} \ge (n-1)$, Lipschitz functions are concentrated around their median at least as strongly as on the unit sphere — the geometric source of the concentration of measure phenomenon in high dimensions. Bakry–Émery and Lott–Sturm–Villani turned "Ricci curvature bounded below" into a property of optimal transport of probability measures.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Intrinsic geometry.** Carl Friedrich Gauss, *Disquisitiones generales circa superficies curvas* (1827): Gaussian curvature, the Theorema Egregium and the local Gauss–Bonnet formula for geodesic triangles. Pierre Ossian Bonnet extended it to curves with geodesic curvature (1848). Non-Euclidean geometry was developed independently by Nikolai Lobachevsky in Kazan (1829) and János Bolyai in Transylvania (1832); Eugenio Beltrami (1868) gave models showing it is consistent relative to Euclidean geometry.
+- **Riemann and the tensor calculus.** Bernhard Riemann's habilitation lecture (1854, published 1868) introduced Riemannian metrics and the curvature that bears his name. Elwin Christoffel (1869) introduced his symbols; Gregorio Ricci-Curbastro and Tullio Levi-Civita systematised the "absolute differential calculus" (1900), and Levi-Civita introduced parallel transport (1917). Albert Einstein, with the help of Marcel Grossmann, used this calculus for general relativity (1915).
+- **Global theorems.** Heinz Hopf and Willi Rinow proved their completeness theorem (1931); Sumner Myers proved the Ricci version of Bonnet's diameter bound (1941); Jacques Hadamard (1898, surfaces) and Élie Cartan (1928) proved the Cartan–Hadamard theorem. Shiing-Shen Chern's intrinsic proof of the Gauss–Bonnet theorem in all even dimensions (1944) opened the theory of characteristic classes.
+- **Comparison and flows.** Harry Rauch's comparison theorem (1951) and Victor Toponogov's triangle comparison (1959) founded comparison geometry, developed further by Aleksandr Alexandrov's school in Leningrad and by Mikhail Gromov. Shing-Tung Yau's solution of the Calabi conjecture (1976–78) made geometric PDE central. Richard Hamilton introduced Ricci flow (1982), and Grigori Perelman's papers of 2002–2003 used it to prove the Poincaré and geometrisation conjectures.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Manfredo P. do Carmo, *Riemannian Geometry* (1992) — the classic first course: connections, geodesics, curvature, Jacobi fields, Hopf–Rinow, variations of energy and Bonnet–Myers.
+- John M. Lee, *Introduction to Riemannian Manifolds* (2nd edition, 2018) — careful and complete, with Gauss–Bonnet and the comparison theorems.
+- Peter Petersen, *Riemannian Geometry* (3rd edition, 2016) — a more advanced text, through comparison geometry and convergence theory.
+- Sylvestre Gallot, Dominique Hulin and Jacques Lafontaine, *Riemannian Geometry* (3rd edition, 2004) — includes analysis on manifolds and the Laplacian.
+- Jeff Cheeger and David G. Ebin, *Comparison Theorems in Riemannian Geometry* (1975) — the comparison theorems in depth.
+- John Milnor, *Morse Theory* (1963) — Part III on the calculus of variations and geodesics.
+
+</Section>

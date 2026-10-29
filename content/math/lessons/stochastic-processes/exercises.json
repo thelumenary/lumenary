@@ -1,0 +1,342 @@
+{
+  "lesson": "stochastic-processes",
+  "exercises": [
+    {
+      "id": "stochastic-processes-covariance",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Let $B$ be a standard Brownian motion. Compute $\\operatorname{Var}(B_3 - B_1) + \\mathbb E[B_2 B_5]$.",
+      "answer": 4,
+      "feedback": [
+        {
+          "match": "7",
+          "message": "$\\mathbb E[B_2 B_5] = \\operatorname{Cov}(B_2, B_5) = \\min(2, 5)$, not $5$."
+        },
+        {
+          "match": "12",
+          "message": "Variances of increments are differences of times, $3 - 1$, and the covariance is $\\min(2, 5)$, not the product $2 \\cdot 5$."
+        },
+        {
+          "match": "6",
+          "message": "$\\operatorname{Var}(B_3 - B_1) = 3 - 1 = 2$: the variance of an increment is the length of the time interval, not $3 + 1$."
+        }
+      ],
+      "hints": [
+        "$B_t - B_s \\sim N(0, t - s)$.",
+        "$\\mathbb E[B_s B_t] = \\operatorname{Cov}(B_s, B_t) = \\min(s, t)$ because the means are $0$."
+      ],
+      "solution": "$\\operatorname{Var}(B_3 - B_1) = 3 - 1 = 2$, and $\\mathbb E[B_2 B_5] = \\mathbb E[B_2 (B_2 + (B_5 - B_2))] = \\mathbb E B_2^2 + 0 = 2 = \\min(2, 5)$. Total: $4$."
+    },
+    {
+      "id": "stochastic-processes-poisson-increment",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "Requests reach a server in Nairobi as a Poisson process of rate $2$ per minute. Given that exactly $10$ requests arrived in the first $5$ minutes, what is the expected number of requests in the first $8$ minutes?",
+      "answer": 16,
+      "feedback": [
+        {
+          "match": "10",
+          "message": "The process does not stop: requests keep arriving in minutes $5$ to $8$, at rate $2$."
+        },
+        {
+          "match": "6",
+          "message": "That is the expected number in minutes $5$ to $8$ alone. Add the $10$ already observed."
+        },
+        {
+          "match": "18",
+          "message": "That ignores the information: $\\mathbb E N_8 = 16$ happens to be the same here, but compute it as $10 + \\mathbb E[N_8 - N_5]$; did you use rate $2$ over $3$ minutes?"
+        }
+      ],
+      "hints": [
+        "Write $N_8 = N_5 + (N_8 - N_5)$.",
+        "$N_8 - N_5$ is independent of $N_5$ and Poisson with mean $2 \\cdot 3$."
+      ],
+      "solution": "$\\mathbb E[N_8 \\mid N_5 = 10] = 10 + \\mathbb E[N_8 - N_5] = 10 + 2 \\cdot 3 = 16$, using independent increments. (Coincidentally $\\mathbb E N_8 = 16$ too, because $10 = \\mathbb E N_5$.)"
+    },
+    {
+      "id": "stochastic-processes-martingales",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which of these processes are martingales with respect to the natural filtration of a standard Brownian motion $B$? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "label": "$B_t^2 - t$",
+          "correct": true,
+          "feedback": "Yes: $\\mathbb E[B_t^2 \\mid \\mathcal F_s] = B_s^2 + (t - s)$."
+        },
+        {
+          "id": "b",
+          "label": "$B_t^3 - 3 t B_t$",
+          "correct": true,
+          "feedback": "Yes. By Itô's formula $d(B^3 - 3tB) = (3B^2 - 3t) \\, dB + (3B - 3B) \\, dt$: the drift vanishes. (It is the third Hermite polynomial in $B_t$ and $t$.)"
+        },
+        {
+          "id": "c",
+          "label": "$\\exp(B_t - t/2)$",
+          "correct": true,
+          "feedback": "Yes: the exponential martingale with $\\theta = 1$, since $\\mathbb E e^{B_t - B_s} = e^{(t-s)/2}$."
+        },
+        {
+          "id": "d",
+          "label": "$\\exp(B_t)$",
+          "correct": false,
+          "feedback": "No: $\\mathbb E[e^{B_t} \\mid \\mathcal F_s] = e^{B_s + (t-s)/2} > e^{B_s}$. It is a submartingale; the drift $\\frac12 e^{B_t} \\, dt$ from Itô's formula must be removed."
+        },
+        {
+          "id": "e",
+          "label": "$B_t^2$",
+          "correct": false,
+          "feedback": "No: $\\mathbb E B_t^2 = t$ grows. Itô: $d(B^2) = 2B \\, dB + dt$ has drift $dt$."
+        },
+        {
+          "id": "f",
+          "label": "$B_t^3$",
+          "correct": false,
+          "feedback": "No: $d(B^3) = 3B^2 \\, dB + 3B \\, dt$, and the drift $3B_t \\, dt$ is not zero. Subtracting $3tB_t$ fixes it."
+        }
+      ],
+      "hints": [
+        "A process $f(t, B_t)$ is a martingale (under integrability) when the $dt$-term in Itô's formula vanishes: $\\partial_t f + \\frac12 \\partial_{xx} f = 0$.",
+        "Check each option: compute $\\partial_t f + \\frac12 \\partial_{xx} f$."
+      ],
+      "solution": "For $f(t, x)$ with $\\partial_t f + \\frac12 \\partial_{xx} f = 0$ (and enough integrability), $f(t, B_t)$ is a martingale. (a) $x^2 - t$: $-1 + 1 = 0$. (b) $x^3 - 3tx$: $-3x + 3x = 0$. (c) $e^{x - t/2}$: $-\\frac12 f + \\frac12 f = 0$. (d) $e^x$: $\\frac12 e^x \\ne 0$. (e) $x^2$: $1$. (f) $x^3$: $3x$. So (a), (b), (c) are martingales; (d), (e) are submartingales and (f) is neither."
+    },
+    {
+      "id": "stochastic-processes-ito-isometry",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Compute $\\mathbb E\\Big[\\Big(\\int_0^4 B_s \\, dB_s\\Big)^2\\Big]$.",
+      "answer": 8,
+      "feedback": [
+        {
+          "match": "16",
+          "message": "That is $(\\mathbb E B_4^2)^2 = 4^2$. Use the Itô isometry: the answer is $\\mathbb E \\int_0^4 B_s^2 \\, ds$."
+        },
+        {
+          "match": "4",
+          "message": "That is $\\mathbb E B_4^2$. The isometry gives $\\int_0^4 \\mathbb E B_s^2 \\, ds = \\int_0^4 s \\, ds$."
+        },
+        {
+          "match": "0",
+          "message": "The *mean* of an Itô integral is $0$, but here we want its second moment."
+        }
+      ],
+      "hints": [
+        "Itô isometry: $\\mathbb E (\\int_0^T H \\, dB)^2 = \\mathbb E \\int_0^T H_s^2 \\, ds$.",
+        "$\\mathbb E B_s^2 = s$; use Fubini to swap $\\mathbb E$ and $\\int ds$."
+      ],
+      "solution": "By the Itô isometry and Fubini, $\\mathbb E (\\int_0^4 B \\, dB)^2 = \\int_0^4 \\mathbb E B_s^2 \\, ds = \\int_0^4 s \\, ds = 8$. Check with $\\int_0^4 B \\, dB = \\frac12 (B_4^2 - 4)$: since $B_4^2 = 4Z^2$ with $Z$ standard normal, this is $2(Z^2 - 1)$, whose second moment is $4 \\operatorname{Var}(Z^2) = 4 \\cdot 2 = 8$."
+    },
+    {
+      "id": "stochastic-processes-ito-formula",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which equation is correct for $X_t = B_t^2$?",
+      "options": [
+        {
+          "id": "a",
+          "label": "$dX_t = 2 B_t \\, dB_t$",
+          "correct": false,
+          "feedback": "This is the ordinary chain rule. It would make $X$ a martingale with $\\mathbb E X_t = 0$, but $\\mathbb E B_t^2 = t$."
+        },
+        {
+          "id": "b",
+          "label": "$dX_t = 2 B_t \\, dB_t + dt$",
+          "correct": true,
+          "feedback": "Yes: $f(x) = x^2$, $f' = 2x$, $\\frac12 f'' = 1$. Integrated: $B_t^2 = 2\\int_0^t B \\, dB + t$."
+        },
+        {
+          "id": "c",
+          "label": "$dX_t = 2 B_t \\, dB_t + 2 \\, dt$",
+          "correct": false,
+          "feedback": "The correction is $\\frac12 f''(B_t) \\, dt = \\frac12 \\cdot 2 \\, dt$; don't forget the $\\frac12$."
+        },
+        {
+          "id": "d",
+          "label": "$dX_t = dt$",
+          "correct": false,
+          "feedback": "This keeps only the expectation: $\\mathbb E X_t = t$. The fluctuations $2 B_t \\, dB_t$ are missing."
+        }
+      ],
+      "hints": [
+        "Itô's formula: $df(B_t) = f'(B_t) \\, dB_t + \\frac12 f''(B_t) \\, dt$.",
+        "Take expectations of each candidate: which ones give $\\mathbb E B_t^2 = t$?"
+      ],
+      "solution": "With $f(x) = x^2$: $d(B_t^2) = 2B_t \\, dB_t + \\frac12 \\cdot 2 \\, dt = 2 B_t \\, dB_t + dt$. Integrating, $\\int_0^t B \\, dB = \\frac12 B_t^2 - \\frac12 t$, as proved in the lesson by the discrete Itô formula and the quadratic variation."
+    },
+    {
+      "id": "stochastic-processes-gbm-typical",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "A geometric Brownian motion has $\\mu = 0.05$ and $\\sigma = 0.4$, so $S_t = S_0 \\exp\\big((\\mu - \\sigma^2/2) t + \\sigma B_t\\big)$. Which statement is true as $t \\to \\infty$?",
+      "options": [
+        {
+          "id": "a",
+          "label": "$\\mathbb E S_t \\to \\infty$, and yet $S_t \\to 0$ almost surely.",
+          "correct": true,
+          "feedback": "Yes. $\\mathbb E S_t = S_0 e^{0.05 t}$, while $\\frac1t \\log S_t \\to \\mu - \\sigma^2/2 = -0.03 < 0$ almost surely."
+        },
+        {
+          "id": "b",
+          "label": "$S_t \\to \\infty$ almost surely, because $\\mu > 0$.",
+          "correct": false,
+          "feedback": "The growth rate of a typical path is $\\mu - \\sigma^2/2$, not $\\mu$: Itô's correction matters. Here it is negative."
+        },
+        {
+          "id": "c",
+          "label": "$\\mathbb E S_t \\to 0$, because typical paths tend to $0$.",
+          "correct": false,
+          "feedback": "Expectations are not typical values. $\\mathbb E S_t = S_0 e^{\\mu t}$ grows, carried by rare very large paths."
+        },
+        {
+          "id": "d",
+          "label": "$S_t$ oscillates between $0$ and $\\infty$ forever.",
+          "correct": false,
+          "feedback": "That happens only when $\\mu = \\sigma^2/2$ (then $\\log S_t$ is a Brownian motion plus a constant)."
+        }
+      ],
+      "hints": [
+        "Compute $\\mu - \\sigma^2/2$.",
+        "$B_t/t \\to 0$ almost surely, so $\\frac1t \\log S_t \\to \\mu - \\sigma^2/2$."
+      ],
+      "solution": "$\\mu - \\sigma^2/2 = 0.05 - 0.08 = -0.03$. Since $B_t/t \\to 0$ a.s., $\\log S_t = \\log S_0 - 0.03 t + 0.4 B_t \\to -\\infty$ a.s., so $S_t \\to 0$ almost surely. But $\\mathbb E S_t = S_0 e^{0.05 t} \\to \\infty$: the expectation is dominated by rare paths on which $B_t$ is exceptionally large."
+    },
+    {
+      "id": "stochastic-processes-infinite-variation",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "The proof that Brownian paths have infinite variation uses $\\sum_k (\\Delta B_k)^2 \\le \\max_k |\\Delta B_k| \\cdot \\sum_k |\\Delta B_k|$ along dyadic partitions of $[0, t]$. Which property of Brownian motion guarantees $\\max_k |\\Delta B_k| \\to 0$ for each path?",
+      "options": [
+        {
+          "id": "a",
+          "label": "Continuity of the paths (hence uniform continuity on $[0, t]$).",
+          "correct": true,
+          "feedback": "Yes: a continuous function on a compact interval is uniformly continuous, so its increments over intervals of length $t 2^{-n}$ tend to $0$ uniformly."
+        },
+        {
+          "id": "b",
+          "label": "Independence of the increments.",
+          "correct": false,
+          "feedback": "Independence is used to compute the variance of the quadratic variation sums, not to control the largest increment on a fixed path."
+        },
+        {
+          "id": "c",
+          "label": "The Gaussian distribution of the increments.",
+          "correct": false,
+          "feedback": "Gaussian tails do make large increments unlikely, but the deterministic statement for every path comes from continuity."
+        },
+        {
+          "id": "d",
+          "label": "The martingale property.",
+          "correct": false,
+          "feedback": "The martingale property says nothing about the size of increments of individual paths."
+        }
+      ],
+      "hints": [
+        "The statement is about one fixed path, not about probabilities.",
+        "What do you know about continuous functions on compact intervals?"
+      ],
+      "solution": "(a). Each path is continuous on $[0, t]$, hence uniformly continuous, so $\\max_k |B_{t_{k+1}} - B_{t_k}| \\to 0$ as the mesh tends to $0$. If the total variation $V$ were finite, the quadratic variation sums would tend to $0$; but they tend to $t > 0$ almost surely. The same argument shows that any continuous path of finite variation has zero quadratic variation."
+    },
+    {
+      "id": "stochastic-processes-lean-discrete-ito",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "For a real sequence `S : ℕ → ℝ`, which Lean statement is the **discrete Itô formula** proved in the lesson?",
+      "options": [
+        {
+          "id": "a",
+          "label": "`∑ k ∈ Finset.range n, S k * (S (k + 1) - S k) = (S n ^ 2 - S 0 ^ 2) / 2 - (∑ k ∈ Finset.range n, (S (k + 1) - S k) ^ 2) / 2`",
+          "correct": true,
+          "feedback": "Yes: left-point sum = half the change of the square minus half the quadratic variation."
+        },
+        {
+          "id": "b",
+          "label": "`∑ k ∈ Finset.range n, S k * (S (k + 1) - S k) = (S n ^ 2 - S 0 ^ 2) / 2`",
+          "correct": false,
+          "feedback": "That is the ordinary chain rule, false in general: try `S = fun k => (-1) ^ k` with `n = 2`. It is true for midpoint sums (the Stratonovich formula)."
+        },
+        {
+          "id": "c",
+          "label": "`∑ k ∈ Finset.range n, S k * (S (k + 1) - S k) = (S n ^ 2 - S 0 ^ 2) / 2 + (∑ k ∈ Finset.range n, (S (k + 1) - S k) ^ 2) / 2`",
+          "correct": false,
+          "feedback": "The sign is wrong: that is the formula for *right*-point sums `∑ S (k+1) * (S (k+1) - S k)`."
+        },
+        {
+          "id": "d",
+          "label": "`∑ k ∈ Finset.range n, S (k + 1) * (S (k + 1) - S k) = (S n ^ 2 - S 0 ^ 2) / 2 - (∑ k ∈ Finset.range n, (S (k + 1) - S k) ^ 2) / 2`",
+          "correct": false,
+          "feedback": "Right-point sums exceed left-point sums by exactly the quadratic variation, so their correction term has a plus sign."
+        }
+      ],
+      "hints": [
+        "Check each candidate on a single step `n = 1` with `S 0 = a`, `S 1 = b`.",
+        "Use $a(b - a) = \\frac12(b^2 - a^2) - \\frac12(b - a)^2$ and $b(b - a) = \\frac12(b^2 - a^2) + \\frac12(b - a)^2$."
+      ],
+      "solution": "(a). For one step, $a(b - a) = \\frac12 (b^2 - a^2) - \\frac12 (b - a)^2$; summing gives (a). Right-point sums use $b(b - a) = \\frac12(b^2 - a^2) + \\frac12 (b - a)^2$, so (c) would be correct for them, and (d) mixes the two. (b) is the Stratonovich (midpoint) identity applied to the wrong sum. In Lean the proof is induction on `n` with `Finset.sum_range_succ` and `ring`."
+    },
+    {
+      "id": "stochastic-processes-explosion",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "A pure birth chain on $\\{0, 1, 2, \\dots\\}$ jumps from $n$ to $n + 1$ at rate $\\lambda_n$ (so the holding time in state $n$ is exponential with mean $1/\\lambda_n$). For which rate sequences does the chain make infinitely many jumps in finite time (explode) with probability one? Select all that apply.",
+      "options": [
+        {
+          "id": "a",
+          "label": "$\\lambda_n = 3$ (a Poisson process)",
+          "correct": false,
+          "feedback": "No: $\\sum 1/3 = \\infty$. A Poisson process has finitely many arrivals in every bounded interval."
+        },
+        {
+          "id": "b",
+          "label": "$\\lambda_n = n + 1$",
+          "correct": false,
+          "feedback": "No: $\\sum 1/(n+1)$ diverges (harmonic series). This is the Yule process: it grows exponentially but never explodes."
+        },
+        {
+          "id": "c",
+          "label": "$\\lambda_n = (n + 1)^2$",
+          "correct": true,
+          "feedback": "Yes: the expected total time $\\sum 1/(n+1)^2 = \\pi^2/6$ is finite, so the total time is finite almost surely."
+        },
+        {
+          "id": "d",
+          "label": "$\\lambda_n = 2^n$",
+          "correct": true,
+          "feedback": "Yes: $\\sum 2^{-n} = 2 < \\infty$."
+        }
+      ],
+      "hints": [
+        "The explosion time is $\\zeta = \\sum_n E_n$ with independent $E_n \\sim \\mathrm{Exp}(\\lambda_n)$.",
+        "If $\\sum 1/\\lambda_n < \\infty$ then $\\mathbb E \\zeta < \\infty$. If $\\sum 1/\\lambda_n = \\infty$, compute $\\mathbb E e^{-\\zeta} = \\prod (1 + 1/\\lambda_n)^{-1}$."
+      ],
+      "solution": "The time of the $n$-th jump is $E_0 + \\dots + E_{n-1}$ with $E_k \\sim \\mathrm{Exp}(\\lambda_k)$ independent, so the chain explodes iff $\\zeta = \\sum_k E_k < \\infty$. If $\\sum 1/\\lambda_k < \\infty$, then $\\mathbb E \\zeta < \\infty$ and $\\zeta < \\infty$ a.s.: (c) and (d). If $\\sum 1/\\lambda_k = \\infty$, then $\\mathbb E e^{-\\zeta} = \\prod_k \\frac{\\lambda_k}{\\lambda_k + 1} = \\prod_k (1 + 1/\\lambda_k)^{-1} = 0$, so $\\zeta = \\infty$ a.s.: (a) and (b) do not explode."
+    },
+    {
+      "id": "stochastic-processes-python-ito-sums",
+      "type": "python",
+      "difficulty": "core",
+      "mode": "C",
+      "prompt": "A path is given by its values `path = [S_0, S_1, ..., S_n]` on a partition. Write `ito_sum(path)` (left-point sum of $S \\, dS$), `stratonovich_sum(path)` (midpoint sum, with $\\frac12(S_k + S_{k+1})$) and `quadratic_variation(path)`. The tests check them on exact rational paths and verify the discrete Itô and Stratonovich formulas.",
+      "starter": "def ito_sum(path):\n    # Replace: this uses the ordinary chain rule.\n    return (path[-1] ** 2 - path[0] ** 2) / 2\n\ndef stratonovich_sum(path):\n    return 0\n\ndef quadratic_variation(path):\n    return 0\n",
+      "tests": "from fractions import Fraction as F\nwalk = [0, 1, 0, -1, 0, 1, 2]\nassert quadratic_variation(walk) == 6, 'each +-1 step contributes 1'\nassert ito_sum(walk) == F(2 ** 2 - 6, 2), 'discrete Ito: (S_n^2 - n)/2'\nassert stratonovich_sum(walk) == F(2 ** 2, 2), 'Stratonovich telescopes'\npath = [F(1), F(3, 2), F(1, 3), F(2)]\nqv = quadratic_variation(path)\nassert ito_sum(path) == (path[-1] ** 2 - path[0] ** 2) / 2 - qv / 2\nassert stratonovich_sum(path) - ito_sum(path) == qv / 2\nassert quadratic_variation([5]) == 0 and ito_sum([5]) == 0\nprint('All tests passed!')\n",
+      "hints": [
+        "Pair consecutive values with `zip(path, path[1:])`.",
+        "Ito: `sum(a * (b - a) ...)`; Stratonovich: `sum((a + b) / 2 * (b - a) ...)` — with `Fraction` inputs the division stays exact; QV: `sum((b - a) ** 2 ...)`."
+      ],
+      "solution": "```python\nfrom fractions import Fraction\n\ndef ito_sum(path):\n    return sum(a * (b - a) for a, b in zip(path, path[1:]))\n\ndef stratonovich_sum(path):\n    return sum(Fraction(a + b) / 2 * (b - a) for a, b in zip(path, path[1:]))\n\ndef quadratic_variation(path):\n    return sum((b - a) ** 2 for a, b in zip(path, path[1:]))\n```\n\nFor each step $a(b - a) = \\frac12(b^2 - a^2) - \\frac12 (b - a)^2$ and $\\frac{a + b}2 (b - a) = \\frac12 (b^2 - a^2)$; summing gives the discrete Itô and Stratonovich formulas (formalised in Lean as `discrete_ito` and `discrete_stratonovich`). For a $\\pm1$ walk the quadratic variation is the number of steps, so the Itô sum is $(S_n^2 - n)/2$ — the discrete $\\int B \\, dB = \\frac12 (B_t^2 - t)$."
+    }
+  ]
+}

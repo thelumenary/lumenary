@@ -126,7 +126,7 @@ export default async function TrailPage({ params }: Params) {
               if (!topic) return null;
               return (
                 <li key={id}>
-                  <Link href={topic.lesson ? href(locale, `math/lessons/${topic.lesson}`) : href(locale, `math/topics/${id}`)} className="card block h-full p-4 hover:shadow-[var(--shadow-lg)]">
+                  <Link prefetch={false} href={topic.lesson ? href(locale, `math/lessons/${topic.lesson}`) : href(locale, `math/topics/${id}`)} className="card block h-full p-4 hover:shadow-[var(--shadow-lg)]">
                     <span className="text-xs font-semibold text-muted">
                       {t(`levels.${topic.level}`)} · {topic.status === "implemented" ? t("status.implemented") : t("status.planned")}
                     </span>
@@ -143,7 +143,7 @@ export default async function TrailPage({ params }: Params) {
           <Link href={returnHref} className="btn btn-primary">
             <ArrowLeft size={16} className="rtl:rotate-180" aria-hidden="true" /> {t("trail.return", { lesson: lesson.title })}
           </Link>
-          <Link href={href(locale, "math/trails")} className="btn btn-ghost">
+          <Link prefetch={false} href={href(locale, "math/trails")} className="btn btn-ghost">
             {t("trail.allTrails")}
           </Link>
         </div>

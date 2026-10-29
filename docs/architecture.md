@@ -17,7 +17,7 @@
 | Content | MDX via `@mdx-js/mdx` `evaluate` at build time | `remark-math` + `rehype-katex`; custom components for lesson blocks |
 | Mathematics | KaTeX 0.16 (HTML + MathML; pinned to the version rehype-katex uses so CSS and markup match) | Rendered on the server, so no maths JavaScript ships to the browser |
 | Code highlighting | Shiki (Lean 4, Python), server-side | Dual light/dark themes switched by CSS variables |
-| Formal | Lean 4.35.0, core only (Mathlib planned) | `formal/`, compiled by `scripts/verify-lean.mjs` |
+| Formal | Lean 4.35.0 + Mathlib (pinned tag `v4.35.0`) | `formal/`, compiled by `scripts/verify-lean.mjs`; K–8 modules use core Lean only |
 | Computation | Python + SymPy + NumPy, pinned to Pyodide 0.29.3 versions | `compute/`, tested by `compute/verify.py` |
 | Browser Python | Pyodide 0.29.3 from jsDelivr, in `public/workers/pyodide-worker.js` | Loaded lazily on first Run |
 | Validation | zod 4 | Schemas shared by the site and the tests |
@@ -46,9 +46,9 @@ Lean source shown on the site is extracted from the `.lean` files by region mark
 | `/[locale]/math/lessons/[slug]/` | Lesson reader |
 | `/[locale]/math/topics/[id]/` | Topic page for every graph node |
 | `/[locale]/math/trails/`, `…/[slug]/` | Wonder Trails |
-| `/[locale]/lab/` | Math laboratory (experiments, scratchpad) |
-| `/[locale]/formal/` | Formal laboratory (build report, library, exercises) |
-| `/[locale]/practice/` | Practice system |
+| `/[locale]/lab/`, `…/lab/[id]/` | Math laboratory (experiments by level, scratchpad) and one page per experiment |
+| `/[locale]/formal/`, `…/formal/[module]/` | Formal laboratory (build report, modules by level) and one page per Lean module (declarations, axioms, exercises) |
+| `/[locale]/practice/`, `…/practice/[slug]/` | Practice: lessons by level, and one practice page per lesson |
 | `/[locale]/progress/` | Optional local progress tracking |
 | `/[locale]/educators/`, `…/worksheets/[slug]/`, `…/overview/` | Educator resources and evaluation package |
 | `/[locale]/languages/` | Language and country registries |
@@ -57,15 +57,20 @@ Lean source shown on the site is extracted from the `.lean` files by region mark
 
 ## Lesson architecture
 
-A lesson is `content/math/lessons/<slug>/en.mdx`, with frontmatter validated by `LessonFrontmatter`. Its body is a sequence of `<Section id kind title>` blocks whose `kind` maps to the standard lesson architecture (motivation, intuition, definitions, examples, proof, formal, computation, visualization, exercises, misconceptions, trails, sets, categories, history, reading) and to a reasoning mode (H/F/C). Available components:
+A lesson is `content/math/lessons/<slug>/en.mdx`, with frontmatter validated by `LessonFrontmatter`. Its body is a sequence of `<Section id kind title>` blocks whose `kind` maps to the standard lesson architecture (motivation, intuition, definitions, examples, proof, formal, computation, visualization, exercises, misconceptions, viewpoints, trails, sets, categories, history, reading) and to a reasoning mode (H/F/C). From early undergraduate onwards a `viewpoints` section is required, showing the topic through other mathematicians' eyes as well as set theory and category theory (see `docs/curriculum/viewpoints.md`). The full contract for authors is `docs/authoring-guide.md`. Available components:
 
-- Blocks: `Definition`, `Theorem`, `Proof`, `Example`, `Misconception`, `Note`, `Analogy`, `Reflection` (optional Christian reflection, collapsed), `ForGrownUps`, `Narrator`
+- Blocks: `Definition`, `Theorem`, `Proof`, `Example`, `Misconception`, `Note`, `Analogy`, `Viewpoint` (one mathematician's view: topology, geometry, analysis, algebra, …), `Figure`, `Reflection` (optional Christian reflection, collapsed), `ForGrownUps`, `Narrator`
 - Verified content: `<Lean decl="…"/>`, `<Python id="…"/>`
 - Links: `<Trail slug="…"/>`, `<Exercises/>`
-- Interactive explorations: `SortingGame`, `VennExplorer`, `IntegerLine`, `ArrowDiagram`, `CompositionMachine` and the trail experiments
+- Links: `<TopicLink id="math.…">` links any topic (its lesson, or its topic page)
+- Interactive explorations: about thirty generic, configurable widgets registered in `src/components/widgets/registry-*.ts` and documented in `docs/widgets/*.md` (number, shape and data, analysis, discrete, topology), plus the original ones (`SortingGame`, `VennExplorer`, `IntegerLine`, `ArrowDiagram`, `CompositionMachine`, …). `src/components/lesson/widget-map.ts` collects them and defines the presets that Wonder Trails embed.
 
 Exercises live in `exercises.json` (types: `choice`, `integer`, `set`, `python`) and are rendered on the server into HTML (maths included), then hydrated as small client components.
 
 ## Extending to other subjects
 
 Topic ids are namespaced (`math.*`) and subjects/levels are data. A new subject adds its own graph file and content directory, reusing the lesson components, verification pipeline and i18n machinery.
+
+## Page weight
+
+Formulas are typeset at build time and travel as one HTML string each (`src/lib/rehype-katex-html.ts`), not as React element trees, so the React Server Components payload stays close to the size of the HTML. Lesson pages ship only the widget strings they use (`src/lib/widget-messages.ts`), and links to lessons, topics, labs and practice pages do not prefetch, so opening one page never downloads dozens of others in the background.

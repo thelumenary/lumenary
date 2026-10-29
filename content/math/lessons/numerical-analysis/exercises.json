@@ -1,0 +1,343 @@
+{
+  "lesson": "numerical-analysis",
+  "exercises": [
+    {
+      "id": "numerical-analysis-diagonal-condition",
+      "type": "integer",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "What is the condition number $\\kappa_\\infty(A) = \\|A\\|_\\infty\\|A^{-1}\\|_\\infty$ of $A = \\begin{pmatrix} 4 & 0 \\\\ 0 & 0.004 \\end{pmatrix}$?",
+      "answer": 1000,
+      "feedback": [
+        {
+          "match": "4",
+          "message": "That is $\\|A\\|_\\infty$ alone. Multiply by $\\|A^{-1}\\|_\\infty = 250$."
+        },
+        {
+          "match": "250",
+          "message": "That is $\\|A^{-1}\\|_\\infty$. Multiply by $\\|A\\|_\\infty = 4$."
+        },
+        {
+          "match": "1",
+          "message": "The determinant is not what matters; the ratio of the largest to the smallest diagonal entry is."
+        }
+      ],
+      "hints": [
+        "For a diagonal matrix, the $\\infty$-norm is the largest $|d_i|$.",
+        "$A^{-1} = \\mathrm{diag}(1/4, 250)$."
+      ],
+      "solution": "$\\|A\\|_\\infty = 4$ and $A^{-1} = \\mathrm{diag}(0.25, 250)$, so $\\|A^{-1}\\|_\\infty = 250$ and $\\kappa_\\infty(A) = 1000 = \\max|d_i|/\\min|d_i|$. Note that rescaling the second equation by $1000$ would make $\\kappa = 1$: diagonal ill-conditioning can often be removed by scaling."
+    },
+    {
+      "id": "numerical-analysis-forward-backward",
+      "type": "choice",
+      "difficulty": "warm-up",
+      "mode": "H",
+      "prompt": "A solver returns $\\hat x$ for $Ax = b$, and you find that $\\hat x$ is the *exact* solution of $(A + \\delta A)\\hat x = b$ with $\\|\\delta A\\| / \\|A\\| \\approx 10^{-16}$. What can you conclude?",
+      "options": [
+        {
+          "id": "backward",
+          "label": "The backward error is tiny; the forward error may still be as large as about $\\kappa(A) \\cdot 10^{-16}$.",
+          "correct": true,
+          "feedback": "Exactly: the solver did its job (backward stable). How much that tiny backward error is amplified depends on the problem's condition number."
+        },
+        {
+          "id": "accurate",
+          "label": "$\\hat x$ is accurate to about 16 digits.",
+          "correct": false,
+          "feedback": "Only if $\\kappa(A)$ is modest. For the Hilbert matrix of order 12 a backward error of $10^{-16}$ comes with a forward error near $1$."
+        },
+        {
+          "id": "solver-bad",
+          "label": "The solver is unstable.",
+          "correct": false,
+          "feedback": "A backward error of order $u$ is the best any algorithm working in double precision can achieve."
+        },
+        {
+          "id": "nothing",
+          "label": "Nothing at all about the error in $\\hat x$.",
+          "correct": false,
+          "feedback": "Theorem 2 converts the backward error into a forward-error bound: relative error $\\lesssim \\kappa(A) \\times 10^{-16}$."
+        }
+      ],
+      "hints": [
+        "Which of the two kinds of error does the statement describe?",
+        "Recall: forward error $\\lesssim$ condition number $\\times$ backward error."
+      ],
+      "solution": "The statement says the backward error is about $10^{-16}$, so the algorithm behaved in a backward-stable way. By Theorem 2 the relative forward error is at most about $\\kappa(A) \\cdot 10^{-16}$, which may be large if $A$ is ill conditioned."
+    },
+    {
+      "id": "numerical-analysis-digits-lost",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "You solve $Ax = b$ in IEEE double precision ($u \\approx 10^{-16}$) with a backward-stable method, and $\\kappa(A) \\approx 10^{10}$. Roughly how many correct significant decimal digits can you expect in the solution?",
+      "answer": 6,
+      "feedback": [
+        {
+          "match": "10",
+          "message": "$10$ is the number of digits *lost*. Start from about $16$ and subtract."
+        },
+        {
+          "match": "16",
+          "message": "That is the precision of the arithmetic; the condition number amplifies errors by $10^{10}$."
+        },
+        {
+          "match": "26",
+          "message": "Errors are multiplied by $\\kappa$, not divided: you lose digits."
+        }
+      ],
+      "hints": [
+        "Relative forward error $\\lesssim \\kappa(A)\\,u$.",
+        "$10^{10} \\times 10^{-16} = 10^{-6}$."
+      ],
+      "solution": "The relative error is about $\\kappa(A)u \\approx 10^{10} \\cdot 10^{-16} = 10^{-6}$: about $6$ correct significant digits. Rule of thumb: $\\kappa \\approx 10^k$ costs about $k$ of the $16$ digits."
+    },
+    {
+      "id": "numerical-analysis-no-lu",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Which of these invertible matrices has **no** factorisation $A = LU$ (with $L$ unit lower triangular and $U$ upper triangular) unless rows are swapped?",
+      "options": [
+        {
+          "id": "zero-pivot",
+          "label": "$\\begin{pmatrix} 0 & 1 \\\\ 1 & 1 \\end{pmatrix}$",
+          "correct": true,
+          "feedback": "Yes: its leading $1 \\times 1$ minor is $0$, so by Theorem 3 there is no LU factorisation — although the matrix is perfectly well conditioned. One row swap fixes it."
+        },
+        {
+          "id": "general",
+          "label": "$\\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}$",
+          "correct": false,
+          "feedback": "Leading minors $1$ and $-2$ are non-zero: $L = \\begin{pmatrix}1&0\\\\3&1\\end{pmatrix}$, $U = \\begin{pmatrix}1&2\\\\0&-2\\end{pmatrix}$."
+        },
+        {
+          "id": "spd",
+          "label": "$\\begin{pmatrix} 2 & 1 \\\\ 1 & 2 \\end{pmatrix}$",
+          "correct": false,
+          "feedback": "Symmetric positive definite matrices always have LU (indeed Cholesky) factorisations: minors $2$ and $3$."
+        },
+        {
+          "id": "upper",
+          "label": "$\\begin{pmatrix} 3 & 5 \\\\ 0 & 7 \\end{pmatrix}$",
+          "correct": false,
+          "feedback": "Already upper triangular: $L = I$, $U = A$."
+        }
+      ],
+      "hints": [
+        "Theorem 3: an LU factorisation exists exactly when all leading principal minors are non-zero.",
+        "Compute the top-left entry and the determinant of each matrix."
+      ],
+      "solution": "Only $\\begin{pmatrix}0&1\\\\1&1\\end{pmatrix}$ fails: its first pivot is $0$. With partial pivoting, $PA = \\begin{pmatrix}1&1\\\\0&1\\end{pmatrix}$ is already upper triangular. In floating point, a pivot that is merely *tiny* is just as dangerous, which is why partial pivoting chooses the largest available pivot."
+    },
+    {
+      "id": "numerical-analysis-inverse",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Why should you solve $Ax = b$ by LU with partial pivoting rather than by computing $A^{-1}$ and multiplying? Choose all correct reasons.",
+      "options": [
+        {
+          "id": "cost",
+          "label": "Forming $A^{-1}$ costs about $2n^3$ flops, three times the $\\frac23 n^3$ of LU.",
+          "correct": true,
+          "feedback": "Correct — and with several right-hand sides, LU factors are reused at $2n^2$ each, just like an inverse."
+        },
+        {
+          "id": "sparsity",
+          "label": "For a sparse matrix, $A^{-1}$ is usually dense, while LU factors can often be kept sparse.",
+          "correct": true,
+          "feedback": "Correct: e.g. the inverse of a tridiagonal matrix is typically full, but its LU factors are bidiagonal."
+        },
+        {
+          "id": "residual",
+          "label": "The residual $\\|b - A\\hat x\\|$ of $\\mathrm{fl}(A^{-1})b$ can be about $\\kappa(A)$ times larger: it is not backward stable.",
+          "correct": true,
+          "feedback": "Correct (Higham 2002, §14.1). The forward errors of the two approaches are comparable, but only LU gives a small backward error."
+        },
+        {
+          "id": "impossible",
+          "label": "$A^{-1}$ cannot be computed in floating point.",
+          "correct": false,
+          "feedback": "It can (e.g. by solving $AX = I$ with LU); it is just rarely what you need."
+        },
+        {
+          "id": "condition",
+          "label": "Computing $A^{-1}$ increases the condition number of the problem.",
+          "correct": false,
+          "feedback": "The condition number belongs to the problem, not the method: $\\kappa(A^{-1}) = \\kappa(A)$. The issues are cost, sparsity and backward stability."
+        }
+      ],
+      "hints": [
+        "Think about cost, structure and backward error.",
+        "The condition number of the problem is the same whatever method you use."
+      ],
+      "solution": "Cost (three times as many flops), sparsity (inverses fill in) and backward stability (the inverse-based solution can have a much larger residual) all favour LU. Inverses can be computed, and the problem's condition number does not depend on the method."
+    },
+    {
+      "id": "numerical-analysis-lean-perturbation",
+      "type": "choice",
+      "difficulty": "core",
+      "mode": "F",
+      "prompt": "Which Lean conclusion correctly expresses Theorem 1, $\\frac{\\|\\delta x\\|}{\\|x\\|} \\le \\kappa(A)\\frac{\\|\\delta b\\|}{\\|b\\|}$, without dividing by norms that might be zero?",
+      "options": [
+        {
+          "id": "right",
+          "label": "`‖δx‖ * ‖b‖ ≤ condNum A * ‖δb‖ * ‖x‖`",
+          "correct": true,
+          "feedback": "Correct: multiply both sides by $\\|x\\|\\|b\\|$. This is the conclusion of `relative_error_bound`, and it is meaningful even when $x = 0$ or $b = 0$."
+        },
+        {
+          "id": "swapped",
+          "label": "`‖δx‖ * ‖x‖ ≤ condNum A * ‖δb‖ * ‖b‖`",
+          "correct": false,
+          "feedback": "The roles of $\\|x\\|$ and $\\|b\\|$ are swapped; this does not follow from Theorem 1."
+        },
+        {
+          "id": "reversed",
+          "label": "`condNum A * ‖δb‖ * ‖x‖ ≤ ‖δx‖ * ‖b‖`",
+          "correct": false,
+          "feedback": "That reverses the inequality: it would say errors are always amplified *by at least* $\\kappa$, which is false (take $\\delta b$ along a well-conditioned direction)."
+        },
+        {
+          "id": "absolute",
+          "label": "`‖δx‖ ≤ condNum A * ‖δb‖`",
+          "correct": false,
+          "feedback": "This compares *absolute* errors, and it is false in general: for $A = 0.001\\,I$ we have $\\kappa(A) = 1$ but $\\delta x = 1000\\,\\delta b$. The condition number controls *relative* errors."
+        }
+      ],
+      "hints": [
+        "Multiply the human inequality by $\\|x\\|\\,\\|b\\|$.",
+        "Which norm ends up on which side?"
+      ],
+      "solution": "Multiplying $\\frac{\\|\\delta x\\|}{\\|x\\|} \\le \\kappa\\frac{\\|\\delta b\\|}{\\|b\\|}$ by $\\|x\\|\\|b\\|$ gives `‖δx‖ * ‖b‖ ≤ condNum A * ‖δb‖ * ‖x‖`, which is what `relative_error_bound` proves. Formal statements prefer this form because Lean's division by zero returns zero."
+    },
+    {
+      "id": "numerical-analysis-euler-steps",
+      "type": "integer",
+      "difficulty": "core",
+      "mode": "H",
+      "prompt": "Explicit Euler is applied to $y' = -200y$ on $[0, 1]$ with $N$ equal steps ($h = 1/N$). What is the **smallest** $N$ for which the numerical solution decays, i.e. $|1 + h\\lambda| < 1$?",
+      "answer": 101,
+      "feedback": [
+        {
+          "match": "100",
+          "message": "With $N = 100$, $h\\lambda = -2$ and $|1 + h\\lambda| = 1$: the numerical solution oscillates as $(-1)^n$ without decaying. You need strict inequality."
+        },
+        {
+          "match": "200",
+          "message": "The condition is $h|\\lambda| < 2$, not $h|\\lambda| < 1$ (that would avoid oscillation, a stronger requirement)."
+        },
+        {
+          "match": "50",
+          "message": "Check: with $N = 50$, $h\\lambda = -4$ and $|1 - 4| = 3 > 1$ — explosive growth."
+        }
+      ],
+      "hints": [
+        "Stability requires $h|\\lambda| < 2$ (proved in Lean as `explicit_euler_stable_iff`).",
+        "$\\frac{200}{N} < 2$ means $N > 100$."
+      ],
+      "solution": "We need $h \\cdot 200 < 2$, i.e. $h < 0.01$, i.e. $N > 100$: the smallest choice is $N = 101$. The solution itself, $e^{-200t}$, is negligible after $t = 0.05$, yet stability still forces more than $100$ steps — that is stiffness. Backward Euler is stable for every $N$."
+    },
+    {
+      "id": "numerical-analysis-python-rk4",
+      "type": "python",
+      "difficulty": "core",
+      "mode": "C",
+      "prompt": "Write `rk4(f, y0, t_end, n)` that applies $n$ steps of the classical fourth-order Runge–Kutta method to $y' = f(t, y)$, $y(0) = y_0$, with step $h = t_{\\text{end}}/n$, and returns the approximation to $y(t_{\\text{end}})$.",
+      "starter": "def rk4(f, y0, t_end, n):\n    h = t_end / n\n    t, y = 0.0, y0\n    for _ in range(n):\n        y = y + h * f(t, y)  # this is Euler, not RK4\n        t += h\n    return y\n",
+      "tests": "import math\ne20 = abs(rk4(lambda t, y: y, 1.0, 1.0, 20) - math.e)\ne40 = abs(rk4(lambda t, y: y, 1.0, 1.0, 40) - math.e)\nassert e20 < 1e-6, e20\nassert 14 < e20 / e40 < 18, 'halving h should divide the error by about 16'\nassert abs(rk4(lambda t, y: t ** 3, 0.0, 1.0, 2) - 0.25) < 1e-14, 'RK4 integrates cubics exactly'\nassert abs(rk4(lambda t, y: -2 * t * y, 1.0, 2.0, 100) - math.exp(-4)) < 1e-8\nprint('All tests passed!')\n",
+      "hints": [
+        "Compute four slopes: $k_1 = f(t, y)$, $k_2 = f(t + h/2, y + hk_1/2)$, $k_3 = f(t + h/2, y + hk_2/2)$, $k_4 = f(t + h, y + hk_3)$.",
+        "Update $y \\leftarrow y + \\frac h6(k_1 + 2k_2 + 2k_3 + k_4)$, then $t \\leftarrow t + h$."
+      ],
+      "solution": "```python\ndef rk4(f, y0, t_end, n):\n    h = t_end / n\n    t, y = 0.0, y0\n    for _ in range(n):\n        k1 = f(t, y)\n        k2 = f(t + h / 2, y + h * k1 / 2)\n        k3 = f(t + h / 2, y + h * k2 / 2)\n        k4 = f(t + h, y + h * k3)\n        y = y + h * (k1 + 2 * k2 + 2 * k3 + k4) / 6\n        t += h\n    return y\n```\n\nThe error ratio near $16 = 2^4$ when $h$ is halved is the signature of order $4$. When $f$ depends only on $t$, RK4 reduces to Simpson's rule, which is exact for cubics."
+    },
+    {
+      "id": "numerical-analysis-least-squares",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "Let $A \\in \\R^{m \\times n}$ ($m > n$) have full column rank and 2-norm condition number $\\kappa_2(A) = 10^8$. Which statements are true? Choose all that apply.",
+      "options": [
+        {
+          "id": "square",
+          "label": "$\\kappa_2(A^TA) = 10^{16}$, so the normal equations may lose all accuracy in double precision.",
+          "correct": true,
+          "feedback": "True: the singular values of $A^TA$ are $\\sigma_i^2$ (Theorem 5c). Läuchli's example shows $A^TA$ can even become exactly singular."
+        },
+        {
+          "id": "qr",
+          "label": "Householder QR followed by $Rx = Q^Tb$ is backward stable for the least-squares problem.",
+          "correct": true,
+          "feedback": "True (Higham 2002, ch. 19): it works with $A$ itself, using orthogonal transformations, which do not amplify errors."
+        },
+        {
+          "id": "unique",
+          "label": "The least-squares solution is unique.",
+          "correct": true,
+          "feedback": "True: with full column rank, $A^TA$ is positive definite (Theorem 5a)."
+        },
+        {
+          "id": "residual-zero",
+          "label": "The minimal residual $\\|Ax - b\\|_2$ is $0$.",
+          "correct": false,
+          "feedback": "False in general: with more equations than unknowns, $b$ is usually not in the column space of $A$. The residual is $0$ only if it is."
+        },
+        {
+          "id": "normal-faster-better",
+          "label": "The normal equations are both cheaper and more accurate than QR.",
+          "correct": false,
+          "feedback": "They are cheaper (about half the flops when $m \\gg n$), but less accurate when $A$ is ill conditioned. They are fine when $\\kappa(A)$ is small."
+        }
+      ],
+      "hints": [
+        "Recall Theorem 5: what does forming $A^TA$ do to the singular values?",
+        "When is a least-squares residual zero?"
+      ],
+      "solution": "True: $\\kappa_2(A^TA) = \\kappa_2(A)^2 = 10^{16}$; Householder QR is backward stable; the solution is unique under full rank. False: the minimal residual is generally non-zero, and the normal equations, though cheaper, are less accurate for ill-conditioned $A$."
+    },
+    {
+      "id": "numerical-analysis-a-stable",
+      "type": "choice",
+      "multiple": true,
+      "difficulty": "stretch",
+      "mode": "H",
+      "prompt": "Which of these methods are **A-stable**, i.e. $|R(z)| \\le 1$ for every complex $z$ with $\\operatorname{Re} z \\le 0$? Choose all that apply.",
+      "options": [
+        {
+          "id": "backward",
+          "label": "Backward Euler, $R(z) = \\frac{1}{1 - z}$",
+          "correct": true,
+          "feedback": "Yes: $|1 - z| \\ge 1$ when $\\operatorname{Re} z \\le 0$."
+        },
+        {
+          "id": "trapezoid",
+          "label": "The trapezoidal rule, $R(z) = \\frac{1 + z/2}{1 - z/2}$",
+          "correct": true,
+          "feedback": "Yes: for $\\operatorname{Re} z \\le 0$, $z/2$ is at least as close to $-1$ as to $1$, so $|1 + z/2| \\le |1 - z/2|$."
+        },
+        {
+          "id": "euler",
+          "label": "Explicit Euler, $R(z) = 1 + z$",
+          "correct": false,
+          "feedback": "No: $|1 + z| \\le 1$ only on the disc of radius $1$ centred at $-1$; e.g. $z = -3$ gives $|R| = 2$."
+        },
+        {
+          "id": "rk4",
+          "label": "Classical RK4",
+          "correct": false,
+          "feedback": "No: $R$ is a polynomial of degree $4$, unbounded as $z \\to -\\infty$. Its real stability interval is only about $(-2.785, 0)$."
+        }
+      ],
+      "hints": [
+        "A non-constant polynomial is unbounded on the negative real axis.",
+        "For the rational functions, compare distances from $z$ (or $z/2$) to $\\pm 1$."
+      ],
+      "solution": "Backward Euler and the trapezoidal rule are A-stable (Theorem 7a). Explicit Euler and RK4 are not, and no explicit Runge–Kutta method can be, because its stability function is a polynomial (Theorem 7b). Dahlquist's barrier adds that A-stable linear multistep methods have order at most $2$."
+    }
+  ]
+}

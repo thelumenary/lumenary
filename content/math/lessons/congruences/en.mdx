@@ -1,0 +1,501 @@
+---
+slug: congruences
+topic: math.number.congruences
+title: Congruences
+subtitle: Arithmetic that only remembers remainders — enough to solve a fourth-century puzzle, to compute $7^{2026}$ in your head, and to tell primes from impostors (almost).
+level: ug1
+ages: Undergraduate (first year)
+minutes: 110
+order: 5003
+objectives:
+  - Prove that congruence modulo $n$ is an equivalence relation compatible with addition and multiplication, and use it to compute with remainders
+  - Decide when $a$ has an inverse modulo $n$ and solve linear congruences $ax \equiv b \pmod n$ using Euclid's algorithm
+  - State and prove the Chinese remainder theorem, and solve systems of congruences with coprime moduli
+  - Prove Fermat's little theorem, Euler's theorem and Wilson's theorem, and use them to compute large powers modulo $n$
+  - Explain why the converse of Fermat's theorem fails, using the Carmichael number $561$
+narrators: []
+lean:
+  - Lumenary.Congruences.modEq_iff_dvd_sub
+  - Lumenary.Congruences.modEq_equivalence
+  - Lumenary.Congruences.modEq_add
+  - Lumenary.Congruences.modEq_mul
+  - Lumenary.Congruences.cancel_fails
+  - Lumenary.Congruences.exists_inverse_iff_isCoprime
+  - Lumenary.Congruences.exists_inverse_iff_gcd
+  - Lumenary.Congruences.cancel_of_isCoprime
+  - Lumenary.Congruences.crt_exists
+  - Lumenary.Congruences.crt_unique
+  - Lumenary.Congruences.pow_prime_eq_self
+  - Lumenary.Congruences.fermat_little
+  - Lumenary.Congruences.fermat_library
+  - Lumenary.Congruences.euler_totient
+  - Lumenary.Congruences.wilson
+  - Lumenary.Congruences.big_power
+  - Lumenary.Congruences.carmichael_561
+compute: [congruences_crt_solver, congruences_fermat_test]
+trails: [clock-arithmetic, remainder-families]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A puzzle from the Sunzi Suanjing">
+
+The *Sunzi Suanjing* ("Master Sun's Mathematical Manual"), a Chinese text from roughly the third to fifth century CE, contains this problem:
+
+> There are certain things whose number is unknown. Counted by threes, two are left over; counted by fives, three are left over; counted by sevens, two are left over. How many things are there?
+
+The answer given is $23$. But why $23$, how would you find it, are there other answers, and would the method work for any remainders and any divisors? Questions about remainders are everywhere: which day of the week 1 January 2050 falls on (remainders on division by $7$), whether a mobile-money account number has been mistyped (check digits use remainders on division by $10$ or $11$), and — the subject of the <TopicLink id="math.applied.cryptography">cryptography</TopicLink> lesson — how a phone in Lagos and a server in Singapore can agree on a secret key in public. This lesson develops the arithmetic of remainders, which Gauss called **congruences**, and proves its four great theorems: the Chinese remainder theorem and the theorems of Fermat, Euler and Wilson.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Wrapping the number line around a circle">
+
+Fix a positive integer $n$ and wrap the number line around a circle of circumference $n$. Integers that land on the same spot differ by a multiple of $n$ and have the same remainder on division by $n$. There are exactly $n$ landing spots, labelled $0, 1, \dots, n - 1$: the integers fall into $n$ **families**.
+
+The remarkable fact is that we can calculate with whole families. If you add any member of the family of $1$ to any member of the family of $2$ (modulo $3$), the answer always lies in the family of $0$: $1 + 2 = 3$, $4 + 5 = 9$, $-2 + 8 = 6$. Try it below: draw random members of two families and watch their sum always land in the same family.
+
+<RemainderColors />
+
+That "the answer does not depend on which members we chose" is a theorem, not an accident. It fails for other operations — for division, for instance — and much of the lesson is about understanding exactly when arithmetic on families works.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $n$ is a positive integer, the **modulus**. Recall that $n \mid m$ ("$n$ divides $m$") means $m = nk$ for some integer $k$ (see <TopicLink id="math.number.divisibility-gcd">divisibility and Euclid's algorithm</TopicLink>).
+
+<Definition term="congruence modulo n">
+
+Integers $a$ and $b$ are **congruent modulo $n$**, written $a \equiv b \pmod n$, if $n \mid a - b$. Equivalently, $a$ and $b$ leave the same remainder on division by $n$. For instance $23 \equiv 2 \pmod 3$, $-1 \equiv 6 \pmod 7$ and $100 \equiv 1 \pmod{9}$.
+
+</Definition>
+
+<Definition term="residue classes and Z/nZ">
+
+The **residue class** of $a$ modulo $n$ is $[a] = \{\dots, a - 2n, a - n, a, a + n, a + 2n, \dots\}$, the set of integers congruent to $a$. The set of residue classes is written $\Z/n\Z$. Any choice of one integer from each class, such as $\{0, 1, \dots, n - 1\}$, is a **complete residue system**.
+
+</Definition>
+
+<Definition term="inverse modulo n, Euler's totient">
+
+An **inverse of $a$ modulo $n$** is an integer $b$ with $ab \equiv 1 \pmod n$. **Euler's totient** $\varphi(n)$ is the number of integers in $\{1, \dots, n\}$ that are coprime to $n$. For example $\varphi(12) = 4$ (the numbers $1, 5, 7, 11$) and $\varphi(p) = p - 1$ for a prime $p$.
+
+</Definition>
+
+<Definition term="linear congruence, system of congruences">
+
+A **linear congruence** is a condition $ax \equiv b \pmod n$ on an unknown integer $x$. A **system of congruences** asks for $x$ satisfying several conditions $x \equiv a_i \pmod{n_i}$ at once — Sunzi's problem is the system $x \equiv 2 \pmod 3$, $x \equiv 3 \pmod 5$, $x \equiv 2 \pmod 7$.
+
+</Definition>
+
+</Section>
+
+<Section id="arithmetic" kind="proof" title="Arithmetic with congruences">
+
+<Theorem name="Theorem 1 (congruence is an equivalence relation)">
+
+Congruence modulo $n$ is reflexive, symmetric and transitive. Its equivalence classes are exactly the $n$ classes $[0], [1], \dots, [n - 1]$.
+
+</Theorem>
+
+<Proof>
+
+Reflexive: $n \mid 0 = a - a$. Symmetric: if $a - b = nk$ then $b - a = n(-k)$. Transitive: if $a - b = nk$ and $b - c = nl$ then $a - c = (a - b) + (b - c) = n(k + l)$.
+
+By the division algorithm every integer $a$ can be written $a = qn + r$ with $0 \le r < n$, and then $a \equiv r$; so every class is one of $[0], \dots, [n - 1]$. These are distinct: if $0 \le r < r' < n$ then $0 < r' - r < n$, which is not a multiple of $n$.
+
+</Proof>
+
+<Theorem name="Theorem 2 (congruences can be added and multiplied)">
+
+If $a \equiv b$ and $c \equiv d \pmod n$, then $a + c \equiv b + d$ and $ac \equiv bd \pmod n$. Consequently $a^k \equiv b^k$ for every $k \geq 0$, and $f(a) \equiv f(b)$ for every polynomial $f$ with integer coefficients.
+
+</Theorem>
+
+<Proof>
+
+$(a + c) - (b + d) = (a - b) + (c - d)$ is a sum of two multiples of $n$. For the product, add and subtract $ad$:
+
+$$
+ac - bd = a(c - d) + d(a - b),
+$$
+
+again a sum of multiples of $n$. Powers follow by induction on $k$ ($a^{k+1} = a^k a \equiv b^k b$), and polynomials by combining sums, products and powers.
+
+</Proof>
+
+Theorem 2 is precisely the statement that the operations $[a] + [c] = [a + c]$ and $[a][c] = [ac]$ on residue classes are **well defined** — the answer does not depend on the representatives — so $\Z/n\Z$ becomes a commutative ring (see <TopicLink id="math.algebra.algebraic-structures">algebraic structures</TopicLink>).
+
+<Example title="Casting out nines, and the last digit of a power">
+
+Since $10 \equiv 1 \pmod 9$, Theorem 2 gives $10^k \equiv 1$, so a number is congruent modulo $9$ to the sum of its digits: $8\,174 \equiv 8 + 1 + 7 + 4 = 20 \equiv 2 \pmod 9$. Since $10 \equiv -1 \pmod{11}$, a number is congruent modulo $11$ to the alternating sum of its digits, read from the right: $8\,174 \equiv 4 - 7 + 1 - 8 = -10 \equiv 1 \pmod{11}$.
+
+For the last digit of $7^{2026}$, compute modulo $10$: $7^2 = 49 \equiv 9$, $7^4 \equiv 81 \equiv 1$. As $2026 = 4 \cdot 506 + 2$, we get $7^{2026} = (7^4)^{506} \cdot 7^2 \equiv 1 \cdot 49 \equiv 9 \pmod{10}$. The last digit is $9$.
+
+</Example>
+
+Division is the delicate operation. Since $2 \cdot 3 = 6$ and $2 \cdot 9 = 18$, we have $2 \cdot 3 \equiv 2 \cdot 9 \pmod{12}$ — yet $3 \not\equiv 9 \pmod{12}$. Cancelling the $2$ is wrong, because $2$ shares a factor with $12$. The cure is the following theorem.
+
+<Theorem name="Theorem 3 (inverses modulo n)">
+
+An integer $a$ has an inverse modulo $n$ if and only if $\gcd(a, n) = 1$. In that case the inverse is unique modulo $n$, and $ca \equiv cb \pmod n$ with $\gcd(c, n) = 1$ implies $a \equiv b \pmod n$.
+
+</Theorem>
+
+<Proof>
+
+If $ab \equiv 1$, then $ab - 1 = nk$ for some $k$, so $ab - nk = 1$, and every common divisor of $a$ and $n$ divides $1$; thus $\gcd(a, n) = 1$. Conversely, if $\gcd(a, n) = 1$, Bézout's identity gives integers $u, v$ with $ua + vn = 1$, and then $au \equiv 1 \pmod n$.
+
+If $b$ and $b'$ are both inverses, then $b \equiv b(ab') = (ba)b' \equiv b' \pmod n$. Finally, if $u$ is an inverse of $c$ and $ca \equiv cb$, multiply by $u$: $a \equiv (uc)a = u(ca) \equiv u(cb) = (uc)b \equiv b$.
+
+</Proof>
+
+The proof is constructive: Euclid's algorithm, run backwards, produces $u$. For $a = 7$, $n = 26$: $26 = 3 \cdot 7 + 5$, $7 = 1 \cdot 5 + 2$, $5 = 2 \cdot 2 + 1$, so $1 = 5 - 2 \cdot 2 = 3 \cdot 5 - 2 \cdot 7 = 3 \cdot 26 - 11 \cdot 7$, and the inverse of $7$ modulo $26$ is $-11 \equiv 15$.
+
+<Theorem name="Theorem 4 (linear congruences)">
+
+Let $d = \gcd(a, n)$. The congruence $ax \equiv b \pmod n$ has a solution if and only if $d \mid b$. In that case it has exactly $d$ solutions modulo $n$, namely $x_0, x_0 + \tfrac nd, x_0 + 2\tfrac nd, \dots, x_0 + (d - 1)\tfrac nd$ for any one solution $x_0$.
+
+</Theorem>
+
+<Proof>
+
+$ax \equiv b \pmod n$ means $ax + ny = b$ for some integer $y$. Every number of the form $ax + ny$ is a multiple of $d$, and by Bézout every multiple of $d$ has this form. So a solution exists exactly when $d \mid b$.
+
+Suppose $d \mid b$ and write $a = da'$, $b = db'$, $n = dn'$ with $\gcd(a', n') = 1$. Then $n \mid ax - b$ if and only if $n' \mid a'x - b'$, so the solutions are those of $a'x \equiv b' \pmod{n'}$. By Theorem 3 this has exactly one solution $x_0$ modulo $n'$, i.e. the solutions form the single class $x_0 + n'\Z$. That class splits into the $d$ classes $x_0 + kn'$, $0 \le k < d$, modulo $n = dn'$.
+
+</Proof>
+
+For example $6x \equiv 4 \pmod{10}$ has $\gcd(6, 10) = 2$ solutions modulo $10$, namely $x \equiv 4$ and $x \equiv 9$, while $6x \equiv 5 \pmod{10}$ has none: $6x$ is even and $10y + 5$ is odd.
+
+</Section>
+
+<Section id="crt" kind="proof" title="The Chinese remainder theorem">
+
+<Theorem name="Theorem 5 (Chinese remainder theorem)">
+
+If $\gcd(m, n) = 1$, then for all integers $a, b$ the system
+
+$$
+x \equiv a \pmod m, \qquad x \equiv b \pmod n
+$$
+
+has a solution, and any two solutions are congruent modulo $mn$.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* By Bézout there are $u, v$ with $um + vn = 1$. Then $vn = 1 - um \equiv 1 \pmod m$ and $vn \equiv 0 \pmod n$, while $um \equiv 0 \pmod m$ and $um \equiv 1 \pmod n$. So
+
+$$
+x = a \cdot vn + b \cdot um
+$$
+
+satisfies $x \equiv a \cdot 1 + b \cdot 0 = a \pmod m$ and $x \equiv a \cdot 0 + b \cdot 1 = b \pmod n$.
+
+*Uniqueness.* If $x$ and $y$ are both solutions, then $m \mid x - y$ and $n \mid x - y$. Write $x - y = mk$. Since $n \mid mk$ and $\gcd(m, n) = 1$, $n \mid k$ (by Euclid's lemma in its general form, itself a consequence of Bézout: $k = k(um + vn) = u(mk) + (vk)n$ is a multiple of $n$). So $mn \mid x - y$.
+
+</Proof>
+
+By induction the theorem extends to any number of **pairwise coprime** moduli $n_1, \dots, n_k$: a system $x \equiv a_i \pmod{n_i}$ has a solution, unique modulo $n_1 n_2 \cdots n_k$. (Combine the first two congruences into one modulo $n_1 n_2$, which is coprime to each remaining $n_i$, and repeat.)
+
+<Example title="Sunzi's problem">
+
+Solve $x \equiv 2 \pmod 3$, $x \equiv 3 \pmod 5$, $x \equiv 2 \pmod 7$. Combine the first two: $2 \cdot 3 - 1 \cdot 5 = 1$, so with $u = 2$, $v = -1$ the formula gives $x = 2 \cdot (-5) + 3 \cdot 6 = 8$, and indeed $8 \equiv 2 \pmod 3$, $8 \equiv 3 \pmod 5$. So $x \equiv 8 \pmod{15}$. Now combine $x \equiv 8 \pmod{15}$ with $x \equiv 2 \pmod 7$: $1 \cdot 15 - 2 \cdot 7 = 1$, so $x = 8 \cdot (-14) + 2 \cdot 15 = -82 \equiv 23 \pmod{105}$. The solutions are exactly the integers $23 + 105k$ — that is, $\dots, -82, 23, 128, 233, \dots$ — and $23$ is the smallest positive one, as the *Sunzi Suanjing* says.
+
+</Example>
+
+The theorem has a structural reading. The map
+
+$$
+\Z/mn\Z \longrightarrow \Z/m\Z \times \Z/n\Z, \qquad [x] \mapsto ([x]_m, [x]_n)
+$$
+
+is well defined and preserves sums and products; uniqueness says it is injective, so (both sides having $mn$ elements) it is a bijection — a **ring isomorphism**. Units correspond to pairs of units, so $\varphi(mn) = \varphi(m)\varphi(n)$ when $\gcd(m, n) = 1$. Since $\varphi(p^k) = p^k - p^{k-1}$ (only the multiples of $p$ fail to be coprime to $p^k$), this gives the formula
+
+$$
+\varphi(n) = n \prod_{p \mid n} \Big(1 - \frac1p\Big), \qquad \text{e.g. } \varphi(100) = 100 \cdot \tfrac12 \cdot \tfrac45 = 40.
+$$
+
+Without coprimality the theorem fails: $x \equiv 1 \pmod 4$ forces $x$ odd and $x \equiv 2 \pmod 6$ forces $x$ even, so the system has no solution. In general, $x \equiv a \pmod m$, $x \equiv b \pmod n$ is solvable exactly when $a \equiv b \pmod{\gcd(m, n)}$, and the solution is then unique modulo $\operatorname{lcm}(m, n)$.
+
+</Section>
+
+<Section id="fermat-euler-wilson" kind="proof" title="Fermat, Euler and Wilson">
+
+<Theorem name="Theorem 6 (Fermat's little theorem)">
+
+Let $p$ be prime. For every integer $a$, $a^p \equiv a \pmod p$. If $p \nmid a$, then $a^{p-1} \equiv 1 \pmod p$.
+
+</Theorem>
+
+We give two proofs. The first is the one formalised in Lean below; the second generalises to Euler's theorem.
+
+<Proof>
+
+*First proof (binomial theorem and induction).* For $0 < k < p$ the binomial coefficient $\binom pk = \frac{p!}{k!\,(p - k)!}$ is divisible by $p$: the prime $p$ divides the numerator $p!$, but none of the factors $1, \dots, k$ and $1, \dots, p - k$ of the denominator, so by Euclid's lemma it does not divide the denominator, and it must survive in the integer $\binom pk$. Hence, by the binomial theorem,
+
+$$
+(a + 1)^p = a^p + \sum_{k=1}^{p-1} \binom pk a^k + 1 \equiv a^p + 1 \pmod p.
+$$
+
+Now induct on $a \geq 0$: $0^p = 0$, and if $a^p \equiv a$ then $(a + 1)^p \equiv a^p + 1 \equiv a + 1$. Every integer is congruent to some $a \geq 0$, so $a^p \equiv a$ for all $a$ (Theorem 2). If $p \nmid a$, then $\gcd(a, p) = 1$ and we may cancel one factor $a$ from $a \cdot a^{p-1} \equiv a \cdot 1$ (Theorem 3).
+
+*Second proof (rearranging residues).* Suppose $p \nmid a$. The numbers $a, 2a, \dots, (p - 1)a$ are non-zero modulo $p$ (by Euclid's lemma) and pairwise incongruent (if $ia \equiv ja$ then $i \equiv j$ by cancellation). So modulo $p$ they are just $1, 2, \dots, p - 1$ in some order, and multiplying them all together,
+
+$$
+a^{p-1}\,(p - 1)! \equiv (p - 1)! \pmod p.
+$$
+
+Since $(p - 1)!$ is coprime to $p$, we may cancel it: $a^{p-1} \equiv 1$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (Euler's theorem)">
+
+If $\gcd(a, n) = 1$, then $a^{\varphi(n)} \equiv 1 \pmod n$.
+
+</Theorem>
+
+<Proof>
+
+Let $r_1, \dots, r_{\varphi(n)}$ be the integers in $\{1, \dots, n\}$ coprime to $n$. The products $ar_1, \dots, ar_{\varphi(n)}$ are again coprime to $n$ and pairwise incongruent modulo $n$ (cancel $a$, Theorem 3), so modulo $n$ they are the $r_i$ in some order. Multiplying, $a^{\varphi(n)} R \equiv R \pmod n$ with $R = r_1 \cdots r_{\varphi(n)}$, and $R$ is coprime to $n$, so we may cancel it.
+
+</Proof>
+
+For $n = p$ prime, $\varphi(p) = p - 1$ and Euler's theorem is Fermat's. In the language of groups, the classes coprime to $n$ form the group $(\Z/n\Z)^\times$ of order $\varphi(n)$, and Euler's theorem is a special case of Lagrange's theorem — the order of every element divides the order of the group (see <TopicLink id="math.algebra.groups">groups</TopicLink>).
+
+<Example title="Large powers without large numbers">
+
+- $3^{100} \bmod 7$: by Fermat $3^6 \equiv 1$, and $100 = 6 \cdot 16 + 4$, so $3^{100} \equiv 3^4 = 81 \equiv 4 \pmod 7$.
+- The last two digits of $7^{2026}$: $\varphi(100) = 40$, so Euler gives $7^{40} \equiv 1 \pmod{100}$. In fact already $7^4 = 2401 \equiv 1 \pmod{100}$, so $7^{2026} = (7^4)^{506} \cdot 7^2 \equiv 49$. The last two digits are $49$.
+
+The exponent may be reduced modulo $\varphi(n)$ (or modulo any $k$ with $a^k \equiv 1$) — never modulo $n$, and only when $\gcd(a, n) = 1$.
+
+</Example>
+
+<Theorem name="Theorem 8 (Wilson's theorem)">
+
+For every prime $p$, $(p - 1)! \equiv -1 \pmod p$. Conversely, if $n > 1$ and $(n - 1)! \equiv -1 \pmod n$, then $n$ is prime.
+
+</Theorem>
+
+<Proof>
+
+For $p = 2$: $1! = 1 \equiv -1 \pmod 2$. Let $p$ be an odd prime. Each $a \in \{1, \dots, p - 1\}$ has a unique inverse in the same range (Theorem 3). An element is its own inverse when $a^2 \equiv 1$, i.e. $p \mid (a - 1)(a + 1)$, which by Euclid's lemma means $a \equiv 1$ or $a \equiv -1$. All the other factors of $(p - 1)!$ pair off with their inverses, each pair contributing $1$ to the product. So $(p - 1)! \equiv 1 \cdot (p - 1) \equiv -1 \pmod p$.
+
+Conversely, suppose $n$ is composite, with a divisor $d$ such that $1 < d < n$. Then $d$ is one of the factors of $(n - 1)!$, so $d \mid (n - 1)!$. If $(n - 1)! \equiv -1 \pmod n$, then $d \mid n \mid (n - 1)! + 1$ as well, so $d$ divides the difference $1$ — impossible.
+
+</Proof>
+
+Wilson's theorem characterises the primes, but computing $(n - 1)!$ is far too slow to be a practical test.
+
+</Section>
+
+<Section id="converse" kind="human" title="The converse of Fermat's theorem fails">
+
+Fermat's theorem gives a quick way to *prove* a number composite without finding a factor: if $a^{n-1} \not\equiv 1 \pmod n$ for some $a$ coprime to $n$, then $n$ is not prime. For example $2^{14} = 16\,384 \equiv 4 \pmod{15}$, so $15$ is composite. Is the converse true — if $a^{n-1} \equiv 1$ for all $a$ coprime to $n$, must $n$ be prime?
+
+No. The number $561 = 3 \cdot 11 \cdot 17$ is composite, yet:
+
+<Theorem name="Proposition 9 (561 is a Carmichael number)">
+
+For every integer $a$ coprime to $561$, $a^{560} \equiv 1 \pmod{561}$.
+
+</Theorem>
+
+<Proof>
+
+Since $\gcd(a, 561) = 1$, $a$ is coprime to each of $3$, $11$ and $17$. By Fermat, $a^2 \equiv 1 \pmod 3$, $a^{10} \equiv 1 \pmod{11}$ and $a^{16} \equiv 1 \pmod{17}$. Now $560 = 2 \cdot 280 = 10 \cdot 56 = 16 \cdot 35$, so
+
+$$
+a^{560} = (a^2)^{280} \equiv 1 \pmod 3, \qquad a^{560} = (a^{10})^{56} \equiv 1 \pmod{11}, \qquad a^{560} = (a^{16})^{35} \equiv 1 \pmod{17}.
+$$
+
+The moduli $3$, $11$, $17$ are pairwise coprime, so by the uniqueness part of the Chinese remainder theorem $a^{560} \equiv 1 \pmod{3 \cdot 11 \cdot 17}$.
+
+</Proof>
+
+Composite numbers with this property are called **Carmichael numbers**. The same argument proves **Korselt's criterion** in one direction: a squarefree composite $n$ such that $p - 1 \mid n - 1$ for every prime $p \mid n$ is a Carmichael number (and the converse holds too). The next ones are $1105$ and $1729$. Alford, Granville and Pomerance proved in 1994 that there are infinitely many. Practical primality tests, such as the Miller–Rabin test, strengthen Fermat's test so that no composite number fools it for more than a quarter of the bases.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Congruences in Lean and Mathlib">
+
+Mathlib writes `a ≡ b [ZMOD n]` for congruence of integers (`[MOD n]` for natural numbers) and *defines* it as "same remainder", `a % n = b % n`. The first declaration shows that this agrees with the lesson's definition $n \mid a - b$; after that, the proofs work with divisibility, exactly as on paper.
+
+**Equivalence and compatibility (Theorems 1 and 2).** Each proof exhibits the same decomposition as the human proof — $(a - b) + (b - c)$ for transitivity, $a(c - d) + d(a - b)$ for products.
+
+<Lean decl="Lumenary.Congruences.modEq_iff_dvd_sub" />
+
+<Lean decl="Lumenary.Congruences.modEq_equivalence" />
+
+<Lean decl="Lumenary.Congruences.modEq_add" />
+
+<Lean decl="Lumenary.Congruences.modEq_mul" />
+
+**Inverses and cancellation (Theorem 3).** Mathlib's `IsCoprime a n` means "$ua + vn = 1$ for some $u, v$" — Bézout's form of coprimality — and `Int.isCoprime_iff_gcd_eq_one` connects it to the gcd. The `linear_combination` tactic checks that one equation is a linear combination of others, which is exactly how the two directions are proved on paper.
+
+<Lean decl="Lumenary.Congruences.cancel_fails" />
+
+<Lean decl="Lumenary.Congruences.exists_inverse_iff_isCoprime" />
+
+<Lean decl="Lumenary.Congruences.exists_inverse_iff_gcd" />
+
+<Lean decl="Lumenary.Congruences.cancel_of_isCoprime" />
+
+**The Chinese remainder theorem (Theorem 5),** both halves, with the explicit solution $a \cdot vn + b \cdot um$.
+
+<Lean decl="Lumenary.Congruences.crt_exists" />
+
+<Lean decl="Lumenary.Congruences.crt_unique" />
+
+**Fermat (Theorem 6), by the first proof.** In `ZMod p` the binomial step is Mathlib's `add_pow_char` — "$(x + y)^p = x^p + y^p$ in characteristic $p$", whose proof is the divisibility of $\binom pk$ by $p$. The induction is ours. Mathlib's own version of Fermat is cited for comparison, followed by Euler and Wilson, which we cite rather than prove.
+
+<Lean decl="Lumenary.Congruences.pow_prime_eq_self" />
+
+<Lean decl="Lumenary.Congruences.fermat_little" />
+
+<Lean decl="Lumenary.Congruences.fermat_library" />
+
+<Lean decl="Lumenary.Congruences.euler_totient" />
+
+<Lean decl="Lumenary.Congruences.wilson" />
+
+**Computations.** Lean can also simply check arithmetic. `decide` evaluates a decidable statement; `decide +kernel` asks Lean's trusted kernel to do the evaluation, which it does efficiently for large natural numbers. Neither proves anything general: the general facts are the theorems above.
+
+<Lean decl="Lumenary.Congruences.big_power" />
+
+<Lean decl="Lumenary.Congruences.carmichael_561" />
+
+**Not formalised here:** Theorem 4 on linear congruences, the multiplicativity of $\varphi$ (Mathlib: `Nat.totient_mul`), the converse of Wilson's theorem (Mathlib: `Nat.prime_iff_fac_equiv_neg_one`), and Proposition 9 for *all* bases coprime to $561$ (only base $2$ is checked).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Solving congruences, and hunting impostors">
+
+The extended Euclidean algorithm is the engine behind Theorems 3, 4 and 5. The first experiment uses it to compute inverses, to solve linear congruences (watch $6x \equiv 4$ have two solutions modulo $10$ and $6x \equiv 5$ none) and to solve Sunzi's problem; it also checks that reduction $\Z/105\Z \to \Z/3\Z \times \Z/5\Z \times \Z/7\Z$ is a bijection, while $\Z/24\Z \to \Z/4\Z \times \Z/6\Z$ is not.
+
+<Python id="congruences_crt_solver" />
+
+The second experiment checks Fermat, Euler and Wilson on every case in a range, then goes hunting for composite numbers that pass Fermat's test. Many composites pass for the single base $2$ — the first is $341 = 11 \cdot 31$ — but are exposed by another base. Only seven below $10\,000$ fool *every* coprime base.
+
+<Python id="congruences_fermat_test" />
+
+Both experiments are exhaustive within their ranges, and exact. They illustrate the theorems; they do not prove them, and the Carmichael numbers they find show why no amount of checking Fermat's condition proves a number prime.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: inverses on a clock, and Euclid's algorithm">
+
+On the "multiply" tab, pick a modulus $k$ and look for the classes with a partner — a $b$ with $ab \equiv 1$. Check that they are exactly the $a$ with $\gcd(a, k) = 1$, so that there are $\varphi(k)$ of them.
+
+<ClockLab />
+
+Euclid's algorithm on $26$ and $7$, drawn as squares cut from a rectangle. Reading the steps backwards gives $1 = 3 \cdot 26 - 11 \cdot 7$, so $7^{-1} \equiv -11 \equiv 15 \pmod{26}$.
+
+<NumberGrid mode="gcd" a={26} b={7} title="Euclid's algorithm finds inverses" subtitle="When the last square has side 1, the two numbers are coprime and inverses exist." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Cancelling a factor that is not coprime to $n$.** $2 \cdot 3 \equiv 2 \cdot 9 \pmod{12}$, but $3 \not\equiv 9 \pmod{12}$. A factor $c$ may be cancelled when $\gcd(c, n) = 1$. In general, $ca \equiv cb \pmod n$ only gives $a \equiv b \pmod{n/\gcd(c, n)}$: here $3 \equiv 9 \pmod 6$.
+
+</Misconception>
+
+<Misconception>
+
+**Assuming the converse of Fermat's theorem.** $a^{n-1} \equiv 1 \pmod n$ for one base, or even for every base coprime to $n$, does not make $n$ prime: $561 = 3 \cdot 11 \cdot 17$ satisfies $a^{560} \equiv 1 \pmod{561}$ for every $a$ coprime to $561$. Fermat's test can prove a number composite; on its own it can never prove a number prime.
+
+</Misconception>
+
+<Misconception>
+
+**Reducing exponents modulo $n$.** $2^5 = 32 \equiv 2 \pmod 5$, but $2^{5 \bmod 5} = 2^0 = 1$. Bases may be reduced modulo $n$ (Theorem 2); exponents may be reduced modulo $\varphi(n)$, and only for bases coprime to $n$ (Euler).
+
+</Misconception>
+
+<Misconception>
+
+**"The Chinese remainder theorem works for any moduli."** It needs coprime moduli. $x \equiv 1 \pmod 4$ and $x \equiv 2 \pmod 6$ have no common solution (one makes $x$ odd, the other even). With non-coprime moduli the system is solvable exactly when the remainders agree modulo the gcd.
+
+</Misconception>
+
+<Misconception>
+
+**"$a \equiv b \pmod n$ means $b$ is the remainder of $a$."** Congruence is a symmetric relation between two integers, and either may be negative or larger than $n$: $-1 \equiv 6 \pmod 7$ and $20 \equiv 13 \pmod 7$ are both true. (Programming languages also disagree about the remainder of a negative number: in some, $-1 \,\%\, 7$ is $6$, in others $-1$. Congruence does not care.)
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="Quotient rings and an isomorphism">
+
+The multiples of $n$ form an ideal $n\Z$ of the ring $\Z$, and $\Z/n\Z$ is the **quotient ring**: reduction modulo $n$ is a surjective ring homomorphism $\Z \to \Z/n\Z$ with kernel $n\Z$ (see <TopicLink id="math.algebra.quotients">quotients</TopicLink>). Theorem 2 is the statement that this quotient exists. The Chinese remainder theorem is the ring isomorphism $\Z/mn\Z \cong \Z/m\Z \times \Z/n\Z$ for coprime $m, n$, and the same statement holds in any commutative ring for coprime ideals $I + J = R$. Euler's theorem is Lagrange's theorem for the group $(\Z/n\Z)^\times$. A deeper fact due to Gauss: this group is **cyclic** — it has an element, a *primitive root*, whose powers give every unit — exactly when $n$ is $1, 2, 4, p^k$ or $2p^k$ for an odd prime $p$. For example $3$ is a primitive root modulo $7$: its powers are $3, 2, 6, 4, 5, 1$.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Wrapping a line around a circle, and walking on a torus">
+
+The map $\R \to S^1$, $t \mapsto e^{2\pi i t}$, wraps the real line around the circle, sending two numbers to the same point exactly when they differ by an integer: $S^1 \cong \R/\Z$. It is the basic example of a **covering map**. Reduction modulo $n$ is its discrete shadow: $a \mapsto e^{2\pi i a/n}$ is a group isomorphism from $(\Z/n\Z, +)$ to the $n$-th roots of unity, the corners of a regular $n$-gon inscribed in the circle. The Chinese remainder theorem has a picture too. $\Z/m\Z \times \Z/n\Z$ is an $m \times n$ grid whose opposite edges are glued — a discrete **torus** — and the element $(1, 1)$ walks diagonally across it. The walk returns to its start after $\operatorname{lcm}(m, n)$ steps, so it visits all $mn$ cells exactly when $\gcd(m, n) = 1$: the same reason a line of rational slope $n/m$ on a torus closes up, and covers a lot of it when $m$ and $n$ are coprime.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Congruence as closeness: the p-adic numbers">
+
+Fix a prime $p$ and call two integers *close* when their difference is divisible by a high power of $p$: the **$p$-adic absolute value** $|x|_p = p^{-k}$, where $p^k$ is the largest power of $p$ dividing $x \neq 0$, makes $x \equiv y \pmod{p^k}$ equivalent to $|x - y|_p \le p^{-k}$. A sequence of congruences modulo $p, p^2, p^3, \dots$, each refining the last, is then a Cauchy sequence, and completing $\Z$ for this metric gives the **$p$-adic integers** $\Z_p$ — exactly as completing $\Q$ for the usual absolute value gives $\R$ (see <TopicLink id="math.number.number-system-constructions">constructing the number systems</TopicLink>). Newton's method has a $p$-adic version, **Hensel's lemma**: if $f(x_0) \equiv 0 \pmod p$ and $f'(x_0) \not\equiv 0 \pmod p$, the root lifts uniquely modulo every $p^k$. For instance $3^2 \equiv 2 \pmod 7$ lifts to $10^2 = 100 \equiv 2 \pmod{49}$, and so on for ever: $2$ has a square root in $\Z_7$.
+
+</Viewpoint>
+
+<Viewpoint lens="combinatorics" title="Fermat's theorem by counting necklaces">
+
+Here is a third proof of $a^p \equiv a \pmod p$, for $a \geq 1$. Count the strings of $p$ beads, each in one of $a$ colours: there are $a^p$. Exactly $a$ of them are single-coloured. Rotating a string by one place generates a group of $p$ rotations acting on the strings, and a string's orbit has size dividing $p$ — so size $1$ or $p$, since $p$ is prime. Size $1$ means the string is unchanged by rotation, i.e. single-coloured. So the $a^p - a$ multi-coloured strings fall into orbits of exactly $p$ strings each (the distinct necklaces), and $p \mid a^p - a$. The argument fails for composite $p$: a string such as `ABAB` has an orbit of size $2$ under the four rotations.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Fast powers and the security of the internet">
+
+Computing $a^e \bmod n$ by multiplying $a$ by itself $e - 1$ times is hopeless when $e$ has hundreds of digits. **Repeated squaring** — $a^{2k} = (a^k)^2$, $a^{2k+1} = (a^k)^2 a$, reducing modulo $n$ at every step — needs only about $2\log_2 e$ multiplications of numbers below $n$. Together with Euclid's algorithm for inverses, this makes it fast to compute with congruences modulo numbers with hundreds of digits, which is what RSA and Diffie–Hellman key exchange do (see <TopicLink id="math.applied.cryptography">cryptography</TopicLink>). Computers also use the Chinese remainder theorem to speed up arithmetic: a computation modulo $pq$ can be done separately modulo $p$ and modulo $q$ and the results recombined, and RSA implementations decrypt this way (see <TopicLink id="math.comp.algorithms-and-efficiency">algorithms and efficiency</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="clock-arithmetic" />
+
+<Trail slug="remainder-families" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **China.** The remainder problem above appears in the *Sunzi Suanjing* (third to fifth century CE). Qin Jiushao's *Shushu Jiuzhang* ("Mathematical Treatise in Nine Sections", 1247) gave a general algorithm, the *dayan qiuyi shu* ("great extension method of finding one"), for solving systems of congruences, including the step of finding an inverse modulo a number.
+- **India.** Āryabhaṭa's *Āryabhaṭīya* (499 CE) describes the *kuṭṭaka* ("pulveriser"), a method for solving linear equations $ax + c = by$ in integers by repeated division — Euclid's algorithm run backwards, the heart of Theorems 3 and 4. Brahmagupta and Bhāskara II developed it further.
+- **The Islamic world.** Ibn al-Haytham (around 1000 CE) solved problems of the Sunzi type, finding numbers that leave remainder $1$ on division by $2, 3, 4, 5, 6$ and are divisible by $7$, in a way that suggests he knew the statement now called Wilson's theorem.
+- **Europe.** Pierre de Fermat stated his little theorem in a letter to Frénicle de Bessy in 1640, without proof. Gottfried Wilhelm Leibniz wrote a proof that he did not publish; Leonhard Euler published proofs from 1736 and in 1763 proved the generalisation with $\varphi(n)$. Edward Waring published Wilson's theorem in 1770, attributing it to his student John Wilson, and Joseph-Louis Lagrange proved it in 1771. Carl Friedrich Gauss introduced the word *congruence* and the symbol $\equiv$ in his *Disquisitiones Arithmeticae* (1801).
+- **Impostors.** Václav Šimerka listed the first seven Carmichael numbers in 1885; Alwin Korselt gave his criterion in 1899; Robert Carmichael found $561$ independently in 1910. Alford, Granville and Pomerance proved in 1994 that there are infinitely many.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Kenneth Ireland and Michael Rosen, *A Classical Introduction to Modern Number Theory* (1982; 2nd ed. 1990) — congruences, primitive roots and far beyond.
+- Carl Friedrich Gauss, *Disquisitiones Arithmeticae* (1801; English translation by Arthur A. Clarke, 1966) — where the theory of congruences began.
+- G. H. Hardy and E. M. Wright, *An Introduction to the Theory of Numbers* (1938; 6th ed. 2008) — chapters 5–8 on congruences.
+- Ivan Niven, Herbert S. Zuckerman and Hugh L. Montgomery, *An Introduction to the Theory of Numbers* (5th ed. 1991) — a standard undergraduate text.
+- Joseph H. Silverman, *A Friendly Introduction to Number Theory* (1997; 4th ed. 2012) — gentle, with a chapter on cryptography.
+
+</Section>

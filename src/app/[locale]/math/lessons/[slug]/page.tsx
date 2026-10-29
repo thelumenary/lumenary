@@ -7,9 +7,10 @@ import { Messages } from "@/i18n/Messages";
 import { getT, resolveLocale } from "@/i18n/server";
 import { deriveVerification, getLesson, getLessonList, getTopic, lessonSlugs } from "@/lib/content";
 import { renderExercises } from "@/lib/exercises";
-import { href } from "@/lib/href";
+import { href, pageLocale } from "@/lib/href";
 import { mdInline } from "@/lib/markdown";
 import { extractToc, renderMdx } from "@/lib/mdx";
+import { widgetMessageNamespaces } from "@/lib/widget-messages";
 import { makeMdxComponents } from "@/components/lesson/mdx-components";
 import { LensArticle, RecordVisit, Toc } from "@/components/lesson/LessonChrome";
 import { TranslationNotice } from "@/components/lesson/TranslationNotice";
@@ -19,7 +20,8 @@ import { VerificationBadge } from "@/components/ui/Badges";
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return LOCALES.flatMap((locale) => lessonSlugs().map((slug) => ({ locale, slug })));
+  // English, plus the locales a lesson is translated into (links elsewhere point to English).
+  return LOCALES.flatMap((locale) => lessonSlugs().filter((slug) => pageLocale(locale, `math/lessons/${slug}`) === locale).map((slug) => ({ locale, slug })));
 }
 
 type Params = { params: Promise<{ locale: string; slug: string }> };
@@ -45,6 +47,9 @@ export default async function LessonPage({ params }: Params) {
   const index = list.findIndex((l) => l.frontmatter.slug === slug);
   const prev = list[index - 1]?.frontmatter;
   const next = list[index + 1]?.frontmatter;
+  // The sidebar lists the lessons of this level; prev/next walk the whole curriculum in order.
+  const levelList = list.filter((l) => l.frontmatter.level === fm.level);
+  const levelIndex = levelList.findIndex((l) => l.frontmatter.slug === slug);
   const topic = getTopic(fm.topic);
   const prereqs = (topic?.prerequisites ?? []).map((id) => getTopic(id)).filter(Boolean);
   const v = deriveVerification(fm.lean, fm.compute);
@@ -52,7 +57,7 @@ export default async function LessonPage({ params }: Params) {
   const contentLang = { lang: lesson.locale, dir: LOCALE_META[lesson.locale].dir };
 
   return (
-    <Messages locale={locale} ns={["exercise", "python", "w", "lesson"]}>
+    <Messages locale={locale} ns={["exercise", "python", "lesson", ...widgetMessageNamespaces(lesson.body)]}>
     <div>
       <RecordVisit kind="lesson" slug={slug} />
       {/* Lesson header */}
@@ -64,10 +69,12 @@ export default async function LessonPage({ params }: Params) {
               {t("curriculum.title")}
             </Link>
             <span aria-hidden="true">/</span>
-            <span>{t("lesson.sequence")}</span>
+            <Link href={`${href(locale, "math")}?level=${fm.level}`} className="hover:text-ink">
+              {t(`levels.${fm.level}`)}
+            </Link>
             <span aria-hidden="true">/</span>
             <span className="text-ink-2">
-              {index + 1} · {fm.title}
+              {levelIndex + 1} · {fm.title}
             </span>
           </nav>
           <div className="mt-6 grid gap-10 lg:grid-cols-[1.5fr_1fr]">
@@ -117,7 +124,7 @@ export default async function LessonPage({ params }: Params) {
                 <ul className="mt-2 flex flex-wrap gap-1.5">
                   {prereqs.map((p) => (
                     <li key={p!.id}>
-                      <Link href={p!.lesson ? href(locale, `math/lessons/${p!.lesson}`) : href(locale, `math/topics/${p!.id}`)} className="chip hover:border-line-2 hover:text-ink">
+                      <Link prefetch={false} href={p!.lesson ? href(locale, `math/lessons/${p!.lesson}`) : href(locale, `math/topics/${p!.id}`)} className="chip hover:border-line-2 hover:text-ink">
                         {p!.title}
                         {p!.status !== "implemented" && <span className="text-muted">· {t("status.planned")}</span>}
                       </Link>
@@ -137,14 +144,14 @@ export default async function LessonPage({ params }: Params) {
         {/* Sidebar */}
         <aside className="no-print hidden lg:block">
           <div className="sticky top-24 space-y-8">
-            <nav aria-label={t("lesson.sequence")}>
-              <p className="eyebrow mb-3">{t("lesson.sequence")}</p>
-              <ol className="space-y-1">
-                {list.map((l, i) => {
+            <nav aria-label={t(`levels.${fm.level}`)}>
+              <p className="eyebrow mb-3">{t(`levels.${fm.level}`)}</p>
+              <ol className="max-h-[50vh] space-y-1 overflow-y-auto pe-1">
+                {levelList.map((l, i) => {
                   const current = l.frontmatter.slug === slug;
                   return (
                     <li key={l.frontmatter.slug}>
-                      <Link
+                      <Link prefetch={false}
                         href={href(locale, `math/lessons/${l.frontmatter.slug}`)}
                         aria-current={current ? "page" : undefined}
                         className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm ${current ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2"}`}
@@ -158,7 +165,7 @@ export default async function LessonPage({ params }: Params) {
               </ol>
             </nav>
             <Toc entries={toc} title={t("lesson.contents")} />
-            <Link href={href(locale, `educators/worksheets/${slug}`)} className="btn btn-ghost btn-sm">
+            <Link prefetch={false} href={href(locale, `educators/worksheets/${slug}`)} className="btn btn-ghost btn-sm">
               <Printer size={14} aria-hidden="true" /> {t("lesson.printable")}
             </Link>
           </div>
@@ -168,7 +175,7 @@ export default async function LessonPage({ params }: Params) {
           <LensArticle>{content}</LensArticle>
           <nav className="no-print mt-12 grid gap-3 border-t border-line pt-8 sm:grid-cols-2" aria-label={t("lesson.sequence")}>
             {prev ? (
-              <Link href={href(locale, `math/lessons/${prev.slug}`)} className="card group flex items-center gap-3 p-4 hover:shadow-[var(--shadow-lg)]">
+              <Link prefetch={false} href={href(locale, `math/lessons/${prev.slug}`)} className="card group flex items-center gap-3 p-4 hover:shadow-[var(--shadow-lg)]">
                 <ArrowLeft size={18} className="text-muted transition-transform group-hover:-translate-x-0.5 rtl:rotate-180" aria-hidden="true" />
                 <span>
                   <span className="block text-xs text-muted">{t("lesson.previous")}</span>
@@ -179,7 +186,7 @@ export default async function LessonPage({ params }: Params) {
               <span />
             )}
             {next && (
-              <Link href={href(locale, `math/lessons/${next.slug}`)} className="card group flex items-center justify-end gap-3 p-4 text-end hover:shadow-[var(--shadow-lg)]">
+              <Link prefetch={false} href={href(locale, `math/lessons/${next.slug}`)} className="card group flex items-center justify-end gap-3 p-4 text-end hover:shadow-[var(--shadow-lg)]">
                 <span>
                   <span className="block text-xs text-muted">{t("lesson.next")}</span>
                   <span className="font-display text-lg font-semibold text-ink">{next.title}</span>

@@ -1,0 +1,542 @@
+---
+slug: graph-theory
+topic: math.discrete.graph-theory
+title: Graph theory
+subtitle: When can everyone be matched? Which networks can be drawn without crossings? How much order is unavoidable? Hall's theorem, planarity, colouring, extremal graphs and Ramsey theory.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6024
+objectives:
+  - Prove Hall's marriage theorem and apply it, including König's theorem and perfect matchings in regular bipartite graphs
+  - Prove Euler's formula $V - E + F = 2$ for connected plane graphs and deduce that $K_5$ and $K_{3,3}$ are not planar; state Kuratowski's theorem
+  - Prove the five colour theorem and state the four colour theorem accurately, including how it was proved
+  - Prove Mantel's theorem and state Turán's theorem
+  - Prove that $R(3, 3) = 6$, the bound $R(s, t) \le \binom{s+t-2}{s-1}$, and Erdős's lower bound $R(k, k) > 2^{k/2}$
+narrators: []
+lean:
+  - Lumenary.GraphTheory.handshake
+  - Lumenary.GraphTheory.hall_necessary
+  - Lumenary.GraphTheory.hall
+  - Lumenary.GraphTheory.planar_edge_bound
+  - Lumenary.GraphTheory.planar_edge_bound_bipartite
+  - Lumenary.GraphTheory.k5_k33_too_many_edges
+  - Lumenary.GraphTheory.mantel
+  - Lumenary.GraphTheory.turan
+  - Lumenary.GraphTheory.pentagon
+  - Lumenary.GraphTheory.pentagon_no_mono_triangle
+  - Lumenary.GraphTheory.three_of_five
+  - Lumenary.GraphTheory.ramsey_three_three
+compute: [graph_theory_hall, graph_theory_ramsey]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Three questions about networks">
+
+**Matching.** A university in Lagos offers final-year projects; each student lists the projects they would accept, and each project takes one student. Can every student get a project? If not, there must be a reason — and the reason, it turns out, is always the simplest one imaginable: some group of $k$ students who, between them, accept fewer than $k$ projects.
+
+**Drawing.** Three houses each need a connection to three utilities — water, gas and electricity. Can the nine pipes be laid in a flat field without crossing? Circuit designers ask the same question about wires on a chip. The answer is no, and Euler's formula from 1752 explains why.
+
+**Unavoidable order.** At any gathering of six people there are three who all know one another or three who are all strangers. At a gathering of five there need not be. In 1930 Frank Ramsey proved that this is a universal phenomenon: complete disorder is impossible — every sufficiently large structure contains a large orderly piece.
+
+These are three of the central themes of graph theory: **matchings**, **planarity and colouring**, and **extremal and Ramsey theory**. This lesson builds on <TopicLink id="math.discrete.graph-basics">graphs</TopicLink> (degrees, paths, trees, Euler circuits) and <TopicLink id="math.discrete.combinatorics">combinatorics</TopicLink> (binomial coefficients and the pigeonhole principle).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Obstacles and their converses">
+
+Each theorem in this lesson has the same shape: there is an obvious **obstacle** to a property, and the theorem says that the obvious obstacle is the **only** one.
+
+- A matching covering every student is impossible if some $k$ students accept fewer than $k$ projects. **Hall's theorem**: if no such group exists, a matching exists.
+- A crossing-free drawing is impossible if the graph contains a copy of $K_5$ or $K_{3,3}$, possibly with edges subdivided by extra vertices. **Kuratowski's theorem**: these are the only obstacles.
+- In Ramsey theory there is not even an obstacle: no colouring of the edges of $K_6$ in two colours avoids a one-coloured triangle.
+
+Theorems of this kind are useful in both directions. Exhibiting the obstacle **certifies** that the property fails, and the theorem guarantees such a certificate always exists — a pattern you will meet again in duality theorems of optimisation and in <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink>.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+A **graph** $G = (V, E)$ here is finite and simple: $E$ is a set of 2-element subsets $\{u, v\}$ of $V$, written $uv$. The **degree** $d(v)$ is the number of edges at $v$, and $N(v)$ is the set of neighbours of $v$; for $S \subseteq V$, $N(S) = \bigcup_{v \in S} N(v)$. The **handshake lemma** says $\sum_v d(v) = 2|E|$, since every edge has two ends.
+
+<Definition term="bipartite graph, matching, vertex cover">
+
+$G$ is **bipartite** with parts $A$ and $B$ if $V = A \sqcup B$ and every edge joins $A$ to $B$. A **matching** is a set of edges no two of which share a vertex; it **covers** a vertex set $X$ if every vertex of $X$ lies on one of its edges, and it is **perfect** if it covers $V$. A **vertex cover** is a set $C \subseteq V$ meeting every edge. We write $\nu(G)$ for the largest size of a matching and $\tau(G)$ for the smallest size of a vertex cover.
+
+</Definition>
+
+<Definition term="planar graph, plane graph, faces">
+
+A graph is **planar** if it can be drawn in the plane with vertices as distinct points and edges as arcs that meet only at common endpoints. Such a drawing is a **plane graph**; the connected regions of the complement of the drawing are its **faces**, one of which is unbounded. A **subdivision** of a graph replaces edges by paths through new vertices of degree 2.
+
+</Definition>
+
+<Definition term="colouring, chromatic number">
+
+A **proper $k$-colouring** assigns one of $k$ colours to each vertex so that adjacent vertices receive different colours. The **chromatic number** $\chi(G)$ is the least $k$ for which one exists. The **clique number** $\omega(G)$ is the largest size of a set of pairwise adjacent vertices; clearly $\chi(G) \ge \omega(G)$.
+
+</Definition>
+
+<Definition term="Ramsey number, extremal number">
+
+The **Ramsey number** $R(s, t)$ is the least $n$ such that every colouring of the edges of $K_n$ in red and blue contains a red $K_s$ or a blue $K_t$. (That such an $n$ exists is Ramsey's theorem.) The **extremal number** $\mathrm{ex}(n, H)$ is the largest number of edges of a graph on $n$ vertices containing no copy of $H$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Hall's obstacle">
+
+In the bipartite graph below, every vertex on the left has a neighbour, yet no matching covers the left side: the three highlighted vertices $a_1, a_2, a_4$ have only two neighbours between them, $b_1$ and $b_3$. This graph was found by the experiment later in the lesson.
+
+<Figure caption="A bipartite graph violating Hall's condition: S = {a1, a2, a4} (gold) has N(S) = {b1, b3} (red), so |N(S)| = 2 < 3 = |S|.">
+<svg viewBox="0 0 320 280" role="img" aria-label="Bipartite graph with five vertices a0 to a4 on the left and b0 to b4 on the right; a1, a2, a4 are highlighted and their neighbours b1 and b3 are marked">
+  <g stroke="var(--ink-2)" strokeWidth="1.5">
+    <line x1="70" y1="40" x2="250" y2="140" />
+    <line x1="70" y1="40" x2="250" y2="190" />
+    <line x1="70" y1="90" x2="250" y2="190" />
+    <line x1="70" y1="140" x2="250" y2="90" />
+    <line x1="70" y1="140" x2="250" y2="190" />
+    <line x1="70" y1="190" x2="250" y2="190" />
+    <line x1="70" y1="190" x2="250" y2="240" />
+    <line x1="70" y1="240" x2="250" y2="90" />
+  </g>
+  <g stroke="var(--ink-2)" strokeWidth="1.5">
+    <circle cx="70" cy="40" r="11" fill="var(--sky-soft)" />
+    <circle cx="70" cy="90" r="11" fill="var(--gold)" />
+    <circle cx="70" cy="140" r="11" fill="var(--gold)" />
+    <circle cx="70" cy="190" r="11" fill="var(--sky-soft)" />
+    <circle cx="70" cy="240" r="11" fill="var(--gold)" />
+    <circle cx="250" cy="40" r="11" fill="var(--sky-soft)" />
+    <circle cx="250" cy="90" r="11" fill="var(--human)" />
+    <circle cx="250" cy="140" r="11" fill="var(--sky-soft)" />
+    <circle cx="250" cy="190" r="11" fill="var(--human)" />
+    <circle cx="250" cy="240" r="11" fill="var(--sky-soft)" />
+  </g>
+  <g fill="var(--ink-2)" fontSize="14" textAnchor="end">
+    <text x="50" y="45">a0</text>
+    <text x="50" y="95">a1</text>
+    <text x="50" y="145">a2</text>
+    <text x="50" y="195">a3</text>
+    <text x="50" y="245">a4</text>
+  </g>
+  <g fill="var(--ink-2)" fontSize="14">
+    <text x="270" y="45">b0</text>
+    <text x="270" y="95">b1</text>
+    <text x="270" y="145">b2</text>
+    <text x="270" y="195">b3</text>
+    <text x="270" y="245">b4</text>
+  </g>
+</svg>
+</Figure>
+
+</Example>
+
+<Example title="Planar and non-planar graphs">
+
+$K_4$ is planar (draw a triangle with a vertex in the middle), and so is the cube graph $Q_3$. $K_5$ and $K_{3,3}$ — the utilities graph — are not (Corollary 6). The **Petersen graph** is not planar either: deleting one vertex and suppressing the resulting vertices of degree 2 reveals a subdivision of $K_{3,3}$. A graph may have drawings with crossings and still be planar: the usual picture of $K_4$ as a square with both diagonals has a crossing, but moving one diagonal outside removes it.
+
+</Example>
+
+<Example title="Chromatic numbers">
+
+Bipartite graphs with at least one edge have $\chi = 2$; odd cycles have $\chi = 3$; $\chi(K_n) = n$. The wheel $W_5$ (a 5-cycle plus a hub joined to all of it) has $\chi = 4$ although it contains no $K_4$: the odd rim needs three colours and the hub a fourth. The Petersen graph has $\chi = 3$. In general $\chi(G)$ can be much larger than $\omega(G)$: Mycielski (1955) built triangle-free graphs of every chromatic number.
+
+</Example>
+
+<Example title="A colouring of K5 with no monochromatic triangle">
+
+Colour the five sides of a regular pentagon red and the five diagonals (a pentagram) blue. Each colour class is a 5-cycle, which contains no triangle. So $R(3, 3) > 5$.
+
+</Example>
+
+</Section>
+
+<Section id="hall" kind="proof" title="Matchings: Hall's and König's theorems">
+
+<Theorem name="Theorem 1 (Hall's marriage theorem, 1935)">
+
+Let $G$ be a bipartite graph with parts $A$ and $B$. There is a matching covering $A$ if and only if
+
+$$
+|N(S)| \ge |S| \quad \text{for every } S \subseteq A. \qquad \text{(Hall's condition)}
+$$
+
+</Theorem>
+
+<Proof>
+
+**Necessity.** If a matching covers $A$, the partners of the vertices of $S$ are $|S|$ distinct vertices of $N(S)$.
+
+**Sufficiency**, by strong induction on $|A|$. If $|A| = 1$, Hall's condition gives the single vertex a neighbour. Let $|A| \ge 2$ and assume the theorem for smaller $A$. There are two cases.
+
+*Case 1: every nonempty proper subset $S \subsetneq A$ has $|N(S)| \ge |S| + 1$.* Pick any $a \in A$ and any neighbour $b$ of $a$ (one exists since $|N(\{a\})| \ge 1$). Delete $a$ and $b$. In the remaining graph, a nonempty $S \subseteq A \setminus \{a\}$ has lost at most the one neighbour $b$, so it still has at least $|S| + 1 - 1 = |S|$ neighbours. By induction, $A \setminus \{a\}$ can be matched without using $b$; adding the edge $ab$ covers $A$.
+
+*Case 2: some nonempty proper $S_0 \subsetneq A$ has $|N(S_0)| = |S_0|$.* The subgraph on $S_0 \cup N(S_0)$ satisfies Hall's condition (neighbourhoods of subsets of $S_0$ lie inside $N(S_0)$), so by induction $S_0$ can be matched into $N(S_0)$. Now consider the graph $G'$ on $(A \setminus S_0) \cup (B \setminus N(S_0))$. For $T \subseteq A \setminus S_0$, its neighbours in $G'$ are $N(T) \setminus N(S_0)$, and
+
+$$
+|N(T) \setminus N(S_0)| = |N(T \cup S_0)| - |N(S_0)| \ge |T \cup S_0| - |S_0| = |T|.
+$$
+
+So $G'$ satisfies Hall's condition and, by induction, $A \setminus S_0$ can be matched into $B \setminus N(S_0)$. The two matchings use disjoint vertex sets; together they cover $A$.
+
+</Proof>
+
+The proof is a good example of the obstacle principle: when no subset is "tight", we have room to make a greedy choice; when a tight subset exists, it splits the problem into two independent smaller ones.
+
+<Theorem name="Corollary 2 (regular bipartite graphs)">
+
+Every $k$-regular bipartite graph with $k \ge 1$ has a perfect matching.
+
+</Theorem>
+
+<Proof>
+
+Counting edges from each side gives $k|A| = |E| = k|B|$, so $|A| = |B|$. For $S \subseteq A$, the $k|S|$ edges leaving $S$ all end in $N(S)$, and the vertices of $N(S)$ receive at most $k|N(S)|$ edges in total. So $k|S| \le k|N(S)|$, Hall's condition holds, and a matching covering $A$ — hence perfect — exists.
+
+</Proof>
+
+For example, every $r \times n$ Latin rectangle on $n$ symbols with $r < n$ can be extended by another row to an $(r + 1) \times n$ Latin rectangle: the bipartite graph joining each column to the symbols still missing from it is $(n - r)$-regular, and a perfect matching in it is the new row.
+
+<Theorem name="Theorem 3 (König 1931, Egerváry 1931)">
+
+In a bipartite graph, the largest size of a matching equals the smallest size of a vertex cover: $\nu(G) = \tau(G)$.
+
+</Theorem>
+
+<Proof>
+
+$\nu \le \tau$ in every graph: a vertex cover must contain an endpoint of each edge of a matching, and these endpoints are distinct.
+
+For $\nu \ge \tau$, let $C$ be a minimum vertex cover, $C_A = C \cap A$ and $C_B = C \cap B$. Let $H_1$ be the bipartite graph of edges between $C_A$ and $B \setminus C_B$. If some $S \subseteq C_A$ had fewer than $|S|$ neighbours in $H_1$, then $(C \setminus S) \cup N_{H_1}(S)$ would be a smaller vertex cover: an edge at a vertex of $S$ ends either in $C_B$ or in $N_{H_1}(S)$. So $H_1$ satisfies Hall's condition for $C_A$, and $C_A$ can be matched into $B \setminus C_B$. Symmetrically, $C_B$ can be matched into $A \setminus C_A$. The two matchings share no vertex, and together they have $|C_A| + |C_B| = \tau$ edges.
+
+</Proof>
+
+König's theorem is a first example of **linear-programming duality** in combinatorics, and the matching it promises can be found efficiently by augmenting paths.
+
+</Section>
+
+<Section id="planarity" kind="proof" title="Planarity and colouring">
+
+<Theorem name="Theorem 4 (Euler's formula)">
+
+A connected plane graph with $V$ vertices, $E$ edges and $F$ faces satisfies $V - E + F = 2$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $E$. If $G$ is a tree, then $E = V - 1$, and a tree drawn in the plane does not separate it, so $F = 1$: $V - (V - 1) + 1 = 2$.
+
+Otherwise $G$ contains a cycle; let $e$ be an edge on it. The cycle is drawn as a simple closed curve, which by the **Jordan curve theorem** separates the plane into an inside and an outside, and $e$ has the inside on one side and the outside on the other. So the faces on the two sides of $e$ are different, and deleting $e$ merges them into one. The graph $G - e$ is still connected (the rest of the cycle joins the ends of $e$) and has $V$ vertices, $E - 1$ edges and $F - 1$ faces. By induction $V - (E - 1) + (F - 1) = 2$, which is the same equation.
+
+</Proof>
+
+The proof uses two facts from plane topology — that a tree does not separate the plane, and the Jordan curve theorem — which are intuitive but not trivial; for drawings with polygonal edges they have elementary proofs.
+
+<Theorem name="Corollary 5">
+
+A simple planar graph with $V \ge 3$ vertices has $E \le 3V - 6$. If it has no triangles, $E \le 2V - 4$. Every simple planar graph has a vertex of degree at most $5$.
+
+</Theorem>
+
+<Proof>
+
+We may assume $G$ is connected: otherwise join its components one at a time by new edges, drawn in the outer face. Each new edge joins two different components, so the graph stays simple, planar and (if it was) triangle-free, and $E$ only increases — so the inequalities for the new graph imply them for $G$. Walk around the boundary of each face and count the edges met, an edge counted twice if the face lies on both its sides. Every edge is counted exactly twice in total, so the face lengths add up to $2E$. In a simple graph with at least three vertices, every face has length at least $3$; hence $3F \le 2E$. Substituting $F = 2 - V + E$ from Euler's formula gives $E \le 3V - 6$. Without triangles every face has length at least $4$, so $4F \le 2E$ and $E \le 2V - 4$. Finally, if every degree were at least $6$ then $2E = \sum d(v) \ge 6V$, contradicting $E \le 3V - 6$.
+
+</Proof>
+
+<Theorem name="Corollary 6">
+
+$K_5$ and $K_{3,3}$ are not planar.
+
+</Theorem>
+
+<Proof>
+
+$K_5$ has $V = 5$ and $E = 10 > 9 = 3V - 6$. $K_{3,3}$ is bipartite, so it has no triangles, and $E = 9 > 8 = 2V - 4$.
+
+</Proof>
+
+A subdivision of a non-planar graph is non-planar, so no planar graph contains a subdivision of $K_5$ or $K_{3,3}$. The converse is the deep part:
+
+<Theorem name="Theorem 7 (Kuratowski 1930)">
+
+A graph is planar if and only if it contains no subdivision of $K_5$ or of $K_{3,3}$.
+
+</Theorem>
+
+We omit the proof (Diestel, chapter 4, gives a complete one). Wagner's 1937 version says: planar if and only if neither $K_5$ nor $K_{3,3}$ is a **minor** (obtained by deleting and contracting edges). Robertson and Seymour's graph minor theorem (completed in 2004) vastly generalises this: every minor-closed family of graphs is characterised by finitely many excluded minors.
+
+<Theorem name="Theorem 8 (Heawood 1890: the five colour theorem)">
+
+Every planar graph is 5-colourable.
+
+</Theorem>
+
+<Proof>
+
+Induction on the number of vertices. Let $G$ be a plane graph and $v$ a vertex of degree at most $5$ (Corollary 5). Colour $G - v$ with five colours by induction. If the neighbours of $v$ use at most four colours, give $v$ the fifth. Otherwise $v$ has five neighbours $v_1, \dots, v_5$, in this cyclic order around $v$ in the drawing, coloured $1, \dots, 5$.
+
+Let $H_{13}$ be the subgraph induced by the vertices coloured $1$ or $3$ (a **Kempe chain** subgraph). If $v_1$ and $v_3$ lie in different components of $H_{13}$, swap colours $1$ and $3$ in the component of $v_1$: the colouring stays proper, $v_1$ now has colour $3$, and colour $1$ is free for $v$. Otherwise a path in $H_{13}$ joins $v_1$ to $v_3$, and together with the edges $v v_1$ and $v v_3$ it forms a cycle. By the cyclic order, this cycle separates $v_2$ from $v_4$ (Jordan curve theorem again), and every vertex on it has colour $1$ or $3$, or is $v$. So no path coloured $2$ and $4$ can join $v_2$ to $v_4$: they lie in different components of $H_{24}$. Swap colours $2$ and $4$ in the component of $v_2$; now colour $2$ is free for $v$.
+
+</Proof>
+
+<Theorem name="Theorem 9 (the four colour theorem: Appel and Haken 1976)">
+
+Every planar graph is 4-colourable.
+
+</Theorem>
+
+The four colour problem was posed by Francis Guthrie in 1852. Alfred Kempe published a "proof" in 1879 using the chains above; Percy Heawood found the gap in 1890 and salvaged five colours. The proof by Kenneth Appel and Wolfgang Haken (1976) shows that every planar graph contains one of a finite list of **unavoidable** configurations (1,936 in the original proof, later reduced to 1,476), each of which is **reducible** (a colouring of the rest extends), and it checks reducibility by computer. Robertson, Sanders, Seymour and Thomas (1997) gave a simpler proof with 633 configurations, still computer-assisted; Georges Gonthier and Benjamin Werner formalised a complete proof in the Coq proof assistant (2005), removing doubts about the correctness of the programs. **No proof checkable by hand is known.** Deciding whether a planar graph is 3-colourable, by contrast, is NP-complete.
+
+</Section>
+
+<Section id="extremal" kind="proof" title="Extremal graphs and Ramsey numbers">
+
+<Theorem name="Theorem 10 (Mantel 1907)">
+
+A triangle-free graph on $n$ vertices has at most $\lfloor n^2/4 \rfloor$ edges. The complete bipartite graph $K_{\lfloor n/2 \rfloor, \lceil n/2 \rceil}$ shows that this is best possible.
+
+</Theorem>
+
+<Proof>
+
+Let $G$ be triangle-free. For every edge $uv$, the neighbourhoods $N(u)$ and $N(v)$ are disjoint — a common neighbour would close a triangle — so $d(u) + d(v) \le n$. Summing over all edges, and noting that each vertex $w$ appears in the sum once for each of its $d(w)$ edges,
+
+$$
+\sum_{w \in V} d(w)^2 = \sum_{uv \in E} \big(d(u) + d(v)\big) \le n |E|.
+$$
+
+By the Cauchy–Schwarz inequality and the handshake lemma, $(2|E|)^2 = \big(\sum_w d(w)\big)^2 \le n \sum_w d(w)^2 \le n^2 |E|$. So $|E| \le n^2/4$, and since $|E|$ is an integer, $|E| \le \lfloor n^2/4 \rfloor$. Finally $K_{\lfloor n/2 \rfloor, \lceil n/2 \rceil}$ is bipartite, hence triangle-free, with $\lfloor n/2 \rfloor \lceil n/2 \rceil = \lfloor n^2/4 \rfloor$ edges.
+
+</Proof>
+
+<Theorem name="Theorem 11 (Turán 1941)">
+
+A graph on $n$ vertices with no $K_{r+1}$ has at most as many edges as the **Turán graph** $T(n, r)$, the complete $r$-partite graph with parts of sizes as equal as possible; and $T(n, r)$ is the only extremal graph. In particular $|E| \le \left(1 - \frac{1}{r}\right) \frac{n^2}{2}$.
+
+</Theorem>
+
+One proof (Zykov's symmetrisation) shows that a $K_{r+1}$-free graph with the most edges must be complete multipartite — if two non-adjacent vertices had different degrees, replacing the one of smaller degree by a copy of the other would add edges without creating a $K_{r+1}$ — and then that the parts must be balanced. Mantel's theorem is the case $r = 2$. The Erdős–Stone theorem (1946), in the form noted by Erdős and Simonovits (1966), extends Turán's theorem asymptotically to every forbidden graph $H$: $\mathrm{ex}(n, H) = \left(1 - \frac{1}{\chi(H) - 1} + o(1)\right) \frac{n^2}{2}$.
+
+<Theorem name="Theorem 12 (R(3, 3) = 6)">
+
+Every red–blue colouring of the edges of $K_6$ contains a monochromatic triangle, and some colouring of $K_5$ does not.
+
+</Theorem>
+
+<Proof>
+
+The pentagon colouring above handles $K_5$. In a colouring of $K_6$, fix a vertex $v$. It has five edges, so by the pigeonhole principle at least three of them, say $vx$, $vy$, $vz$, have the same colour — red, say. If any of $xy$, $xz$, $yz$ is red, it forms a red triangle with $v$. If none is, then $xyz$ is a blue triangle.
+
+</Proof>
+
+<Theorem name="Theorem 13 (Ramsey 1930; Erdős and Szekeres 1935)">
+
+For $s, t \ge 2$, $R(s, t)$ exists and $R(s, t) \le R(s - 1, t) + R(s, t - 1)$. Consequently $R(s, t) \le \binom{s + t - 2}{s - 1}$, and in particular $R(k, k) \le \binom{2k - 2}{k - 1} < 4^k$.
+
+</Theorem>
+
+<Proof>
+
+First, $R(s, 2) = s$ and $R(2, t) = t$: a colouring of $K_s$ has a blue edge or is entirely red. Now suppose $R(s - 1, t)$ and $R(s, t - 1)$ exist, let $n = R(s - 1, t) + R(s, t - 1)$, and colour the edges of $K_n$. A vertex $v$ has $n - 1$ edges, so it has at least $R(s - 1, t)$ red neighbours or at least $R(s, t - 1)$ blue neighbours (otherwise $n - 1 \le R(s-1,t) - 1 + R(s,t-1) - 1$). In the first case, the red neighbours contain a blue $K_t$, or a red $K_{s-1}$ which together with $v$ is a red $K_s$. The second case is symmetric. So $R(s, t) \le n$.
+
+The binomial bound follows by induction on $s + t$, since $\binom{s+t-3}{s-2} + \binom{s+t-3}{s-1} = \binom{s+t-2}{s-1}$ (Pascal's rule) and the base cases agree: $\binom{s}{s-1} = s$, $\binom{t}{1} = t$.
+
+</Proof>
+
+<Theorem name="Theorem 14 (Erdős 1947)">
+
+For $k \ge 3$, $R(k, k) > 2^{k/2}$.
+
+</Theorem>
+
+<Proof>
+
+Let $n = \lfloor 2^{k/2} \rfloor$ and colour each edge of $K_n$ red or blue independently with probability $\tfrac12$. A fixed set of $k$ vertices spans $\binom{k}{2}$ edges, so it is monochromatic with probability $2 \cdot 2^{-\binom{k}{2}}$. By linearity of expectation, the expected number of monochromatic $K_k$'s is
+
+$$
+\binom{n}{k} 2^{1 - \binom{k}{2}} < \frac{n^k}{k!} \, 2^{1 - \frac{k(k-1)}{2}} \le \frac{2^{k^2/2}}{k!} \, 2^{1 - \frac{k^2}{2} + \frac{k}{2}} = \frac{2^{1 + k/2}}{k!} < 1 \quad (k \ge 3).
+$$
+
+A random variable taking non-negative integer values with mean less than $1$ is $0$ with positive probability. So some colouring of $K_n$ has no monochromatic $K_k$, and $R(k, k) > n$.
+
+</Proof>
+
+The proof shows that most colourings work, yet nobody knows how to construct one explicitly that comes close to $2^{k/2}$. So $\sqrt 2^k < R(k, k) < 4^k$; in 2023 Campos, Griffiths, Morris and Sahasrabudhe lowered the upper base from $4$ to $4 - \varepsilon$ for a small $\varepsilon > 0$, the first exponential improvement in decades. The exact values $R(3, 3) = 6$ and $R(4, 4) = 18$ (Greenwood and Gleason, 1955) are known; $R(5, 5)$ is known only to lie between $43$ and $46$.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Graph theory in Lean and Mathlib">
+
+Mathlib's `SimpleGraph V` is a symmetric, irreflexive adjacency relation on a type `V`, with finite edge sets `G.edgeFinset` when `V` is finite. The handshake lemma comes from the library:
+
+<Lean decl="Lumenary.GraphTheory.handshake" />
+
+**Hall's theorem** is stated in Mathlib for a family of finite sets `t : ι → Finset α` — the neighbourhoods of the vertices of $A$ — and a matching is an injective choice function. The easy direction is proved here, mirroring the proof above; the full theorem is quoted from Mathlib, which proves it for any index type, even an infinite one (that needs a compactness argument; see the logician's viewpoint below):
+
+<Lean decl="Lumenary.GraphTheory.hall_necessary" />
+
+<Lean decl="Lumenary.GraphTheory.hall" />
+
+**Planarity.** Mathlib does not yet define plane embeddings, so Euler's formula cannot be stated there. What can be formalised is the counting step of Corollaries 5 and 6, with Euler's formula as a hypothesis:
+
+<Lean decl="Lumenary.GraphTheory.planar_edge_bound" />
+
+<Lean decl="Lumenary.GraphTheory.planar_edge_bound_bipartite" />
+
+<Lean decl="Lumenary.GraphTheory.k5_k33_too_many_edges" />
+
+**Mantel and Turán** from Mathlib, whose proof of Turán's theorem shows that a $K_{r+1}$-free graph with the most edges is isomorphic to the Turán graph:
+
+<Lean decl="Lumenary.GraphTheory.mantel" />
+
+<Lean decl="Lumenary.GraphTheory.turan" />
+
+**R(3, 3) = 6**, both halves proved here. Edges are unordered pairs `s(a, b) : Sym2 (Fin n)`, so a colouring is any function `Sym2 (Fin n) → Bool`. The lower bound is checked by evaluation; the upper bound follows the pigeonhole proof of Theorem 12:
+
+<Lean decl="Lumenary.GraphTheory.pentagon" />
+
+<Lean decl="Lumenary.GraphTheory.pentagon_no_mono_triangle" />
+
+<Lean decl="Lumenary.GraphTheory.three_of_five" />
+
+<Lean decl="Lumenary.GraphTheory.ramsey_three_three" />
+
+What is **not** formalised here: Euler's formula and Kuratowski's theorem (no plane embeddings in Mathlib yet), the five and four colour theorems (the four colour theorem is formalised in Coq), König's theorem, the general Ramsey bounds and Erdős's probabilistic lower bound.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Checking every colouring, and testing Hall">
+
+There are only $2^{15} = 32\,768$ red–blue colourings of $K_6$, so a computer can check Theorem 12 directly — and find more: every colouring has at least **two** monochromatic triangles (a theorem of Goodman, 1959). It also confirms that the twelve colourings of $K_5$ without a monochromatic triangle are exactly the pentagon–pentagram colourings, and tabulates the lower bounds that Erdős's argument gives.
+
+<Python id="graph_theory_ramsey" />
+
+The exhaustive part is a computer-assisted proof, as trustworthy as the code; the Lean proof above is the same theorem with a machine-checked proof. Exhaustive search does not scale: $K_{18}$ has $2^{153}$ colourings, and even $R(5, 5)$ is out of reach.
+
+The second program tests Hall's theorem on random bipartite graphs: it compares Hall's condition, checked on all subsets, with the result of the augmenting-path algorithm, and also checks the **deficiency** form of Hall's theorem, $\nu(G) = |A| - \max_{S \subseteq A} (|S| - |N(S)|)$, and König's theorem.
+
+<Python id="graph_theory_hall" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: degrees, colourings and the two forbidden graphs">
+
+<GraphExplorer presets={["k5", "k33", "petersen", "cube", "wheel", "k4"]} preset="k33" modes={["colour", "degrees", "walk"]} title="Planarity, colouring and degrees" />
+
+Things to try:
+
+- On $K_{3,3}$ and $K_5$, use the degree tab to read off $V$ and $E$ and check them against $E \le 2V - 4$ and $E \le 3V - 6$.
+- Colour the wheel with as few colours as you can; then ask for "Fewest possible?". Why can the odd rim not be done with two colours?
+- The Petersen graph is 3-regular with 10 vertices: check the handshake lemma, then find a 3-colouring by hand. Does it have a perfect matching? (Yes — try to find five disjoint edges. Petersen's theorem (1891) says every bridgeless 3-regular graph has one.)
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A graph is planar if the drawing in front of me has no crossings — or non-planar if it has some."** Planarity is about **some** drawing. The square-with-diagonals picture of $K_4$ has a crossing, yet $K_4$ is planar. To prove non-planarity you need an argument covering every drawing, such as Euler's formula or Kuratowski's theorem.
+
+</Misconception>
+
+<Misconception>
+
+**"The four colour theorem has a short proof that can be checked by hand."** No such proof is known. All known proofs rely on computer verification of hundreds of configurations; the computations were themselves verified in a formal proof assistant (Coq) in 2005. The five colour theorem, by contrast, has the short proof above.
+
+</Misconception>
+
+<Misconception>
+
+**"Hall's condition only needs to be checked for single vertices."** Every vertex having a neighbour is far from enough: in the example above every left vertex has a neighbour, but three of them share only two. The condition must hold for every subset — which is why checking it directly takes exponential time, while augmenting paths find a matching in polynomial time.
+
+</Misconception>
+
+<Misconception>
+
+**"R(3, 3) = 6 means that six people always include three mutual friends."** It means three mutual friends **or** three mutual strangers. Either alternative alone can fail: if nobody knows anybody, there are no friends at all.
+
+</Misconception>
+
+<Misconception>
+
+**"$\chi(G)$ is determined by the largest clique."** $\chi(G) \ge \omega(G)$, but the gap can be arbitrarily large: there are triangle-free graphs ($\omega = 2$) of any chromatic number (Mycielski 1955; Erdős 1959 showed there are even graphs with no short cycles at all and huge chromatic number).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="Euler characteristic and graphs on surfaces">
+
+A graph is a 1-dimensional cell complex, and Euler's formula is the statement that the sphere has Euler characteristic $V - E + F = 2$. On a closed orientable surface of genus $g$ (a sphere with $g$ handles), a graph drawn so that every face is a disc satisfies $V - E + F = 2 - 2g$, and the argument of Corollary 5 gives $E \le 3V - 6 + 6g$. From this Heawood (1890) derived that every graph embeddable on that surface can be coloured with $\left\lfloor \tfrac{7 + \sqrt{1 + 48 g}}{2} \right\rfloor$ colours when $g \ge 1$, and Ringel and Youngs (1968) proved the bound is attained — so the "map colour problem" was solved for every surface except the sphere before the four colour theorem. Even the graph itself carries topology: its first Betti number $E - V + c$ ($c$ = number of components) counts independent cycles, and the fundamental group of a connected graph is free of that rank. See <TopicLink id="math.geom.surfaces-euler-characteristic">surfaces and Euler characteristic</TopicLink> and <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Straight lines, circles and polyhedra">
+
+Planarity is more geometric than it looks. **Fáry's theorem** (Wagner 1936, Fáry 1948): every planar graph can be drawn with straight-line edges. The **Koebe–Andreev–Thurston circle packing theorem**: every planar graph is the tangency graph of a family of interior-disjoint discs in the plane. **Steinitz's theorem** (1922): the graphs of convex polyhedra in $\R^3$ are exactly the 3-connected planar graphs. In the other direction, geometry produces hard graph problems: the **Hadwiger–Nelson problem** asks for the chromatic number of the graph on all points of the plane with edges between points at distance $1$. It is known to be $5$, $6$ or $7$; the lower bound $5$ is due to Aubrey de Grey (2018), via a unit-distance graph with 1,581 vertices whose non-4-colourability was checked by computer. See <TopicLink id="math.geom.euclidean-geometry">Euclidean geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Matrices that know about graphs">
+
+Linear algebra sees a graph through its adjacency matrix $A$: the entry $(A^k)_{uv}$ counts walks of length $k$, and $\operatorname{tr}(A^3) = 6 \times (\text{number of triangles})$. Its eigenvalues bound combinatorial quantities — for a $d$-regular graph with smallest eigenvalue $\lambda_{\min}$, Hoffman's bound says every independent set has at most $n \cdot \frac{-\lambda_{\min}}{d - \lambda_{\min}}$ vertices. Kirchhoff's **matrix-tree theorem** (1847) counts spanning trees as a determinant of the Laplacian with a row and column deleted. And matchings are algebra too: Tutte (1947) showed that a graph has a perfect matching iff its **Tutte matrix** — skew-symmetric, with an indeterminate $x_{uv}$ for each edge — has non-zero determinant. Substituting random numbers gives Lovász's fast randomised matching test (1979). In a bipartite graph the corresponding determinant is the Edmonds matrix, and the *permanent* of its 0–1 version counts perfect matchings. See <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random graphs and the probabilistic method">
+
+Erdős's proof of Theorem 14 founded the **probabilistic method**: to show an object exists, show a random one has the property with positive probability. Erdős and Rényi (1959–60) then studied the random graph $G(n, p)$, with each edge present independently with probability $p$, and found sharp **thresholds**: if $p = (\ln n + c)/n$, the probability that $G(n, p)$ is connected tends to $e^{-e^{-c}}$, so connectivity switches on abruptly around $p = \ln n / n$; and a "giant component" appears at $p = 1/n$. Random graphs give the best known lower bounds for Ramsey numbers and many extremal problems, and they are a model for networks of every kind. See <TopicLink id="math.discrete.probabilistic-method">the probabilistic method</TopicLink> and <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="From finite to infinite: compactness">
+
+Do the theorems survive for infinite graphs? The **de Bruijn–Erdős theorem** (1951): an infinite graph is $k$-colourable if and only if every finite subgraph is. Its proof is an application of the compactness theorem of first-order logic (or of Tychonoff's theorem for products of finite sets), and it needs a weak form of the axiom of choice; so, by the four colour theorem, every infinite planar graph is 4-colourable too. Hall's theorem extends in the same way to infinite families of **finite** sets (Marshall Hall, 1948), which is how Mathlib proves it. It fails without finiteness: the family $A_0 = \{1, 2, 3, \dots\}$, $A_i = \{i\}$ for $i \ge 1$ satisfies Hall's condition for every finite subfamily, but has no system of distinct representatives. **Ramsey's theorem** itself was proved in a paper on logic ("On a problem of formal logic", 1930), and has an infinite version: every 2-colouring of the pairs of $\N$ has an infinite monochromatic set. Paris and Harrington (1977) found a mild strengthening of the finite Ramsey theorem that is true but **unprovable in Peano arithmetic** — the first natural example of Gödel incompleteness. See <TopicLink id="math.found.completeness-theorem">compactness</TopicLink> and <TopicLink id="math.found.incompleteness">incompleteness</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Which graph problems are easy?">
+
+Matchings are easy: augmenting paths give $\nu(G)$ in polynomial time for bipartite graphs (Hopcroft–Karp runs in $O(E\sqrt V)$), and Edmonds's blossom algorithm (1965) handles general graphs. Planarity can be tested in linear time (Hopcroft and Tarjan, 1974). Colouring is hard: deciding 3-colourability is NP-complete, even for planar graphs, while 4-colourability of planar graphs is trivial to decide — the answer is always yes, by the four colour theorem — and a 4-colouring can be found in quadratic time by the method of Robertson, Sanders, Seymour and Thomas. Hall's theorem explains why bipartite matching is easy: a violated Hall condition is a short certificate that no matching exists, so the problem is in $\mathrm{NP} \cap \mathrm{coNP}$, the typical home of polynomial-time problems with min–max theorems. See <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink> and <TopicLink id="math.comp.algorithm-design">algorithm design</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Early tours.** Knight's tours of the chessboard — Hamiltonian paths in the knight's-move graph — appear in Arabic chess manuscripts and in the 9th-century Sanskrit poetics of Rudraṭa, as verse patterns. Leonhard Euler's solution of the Königsberg bridges problem (1736) is usually taken as the beginning of graph theory; his formula for polyhedra followed in 1752 (a related result is found in notes of René Descartes from around 1630).
+- **Trees, circuits and maps.** Gustav Kirchhoff's work on electrical networks (1847) contains the matrix-tree theorem; Arthur Cayley counted trees ($n^{n-2}$ labelled trees on $n$ vertices, 1889). Francis Guthrie posed the four colour problem in 1852; Kempe's flawed proof (1879) and Heawood's five colour theorem (1890) followed.
+- **The Hungarian school.** Dénes Kőnig wrote the first book on graph theory (1936). Kőnig and Jenő Egerváry proved the min–max theorem for bipartite matchings (1931); Harold Kuhn later named his assignment algorithm the "Hungarian method" in their honour (1955). Pál Turán found his theorem in 1941 while in a forced labour camp. Paul Erdős, with collaborators all over the world, founded extremal graph theory, random graphs and the probabilistic method.
+- **Matchings and planarity.** Philip Hall proved his theorem in 1935 for sets of representatives. Kazimierz Kuratowski characterised planar graphs in 1930 (Frink and Smith found the theorem independently, and Pontryagin had obtained it earlier without publishing).
+- **Ramsey theory.** Frank Ramsey (1903–1930) proved his theorem as a lemma in logic shortly before his death at 26. Erdős and George Szekeres rediscovered it in 1935 in a geometric problem (the "happy ending problem" on convex polygons). Greenwood and Gleason found $R(4, 4) = 18$ in 1955.
+- **The computer era.** Appel and Haken proved the four colour theorem in 1976; Robertson, Sanders, Seymour and Thomas simplified it in 1997; Gonthier and Werner formalised it in 2005. Robertson and Seymour completed the graph minor theorem in a series of twenty papers published 1983–2004.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Reinhard Diestel, *Graph Theory* (5th edition 2017) — rigorous and complete; chapters 2 (matchings), 4 (planarity), 5 (colouring), 7 (extremal) and 9 (Ramsey).
+- J. A. Bondy and U. S. R. Murty, *Graph Theory with Applications* (1976), and *Graph Theory* (2008).
+- Douglas B. West, *Introduction to Graph Theory* (2nd edition 2001) — the standard undergraduate text.
+- Béla Bollobás, *Modern Graph Theory* (1998).
+- Noga Alon and Joel Spencer, *The Probabilistic Method* (4th edition 2016) — for Erdős's method and random graphs.
+- Robin Wilson, *Four Colours Suffice* (2002) — the history of the four colour problem, for a general reader.
+
+Next steps in the Lumenary: <TopicLink id="math.comp.complexity-theory">computational complexity</TopicLink> (3-colouring and other NP-complete graph problems), <TopicLink id="math.discrete.probabilistic-method">the probabilistic method</TopicLink>, and <TopicLink id="math.discrete.additive-extremal-combinatorics">extremal and additive combinatorics</TopicLink>.
+
+</Section>

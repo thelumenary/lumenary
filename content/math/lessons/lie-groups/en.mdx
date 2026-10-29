@@ -1,0 +1,539 @@
+---
+slug: lie-groups
+topic: math.geom.lie-groups
+title: Lie groups and Lie algebras
+subtitle: Continuous symmetry, linearised — how a curved group is captured by a vector space with a bracket, and why $\mathfrak{sl}(2, \C)$ has exactly one irreducible representation in each dimension.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7022
+objectives:
+  - Define Lie groups and Lie algebras, and compute the Lie algebras of the classical groups $GL(n)$, $SL(n)$, $O(n)$, $SO(n)$, $U(n)$ and $SU(n)$
+  - Use the exponential map and one-parameter subgroups, prove that homomorphisms are determined by their differentials on connected groups, and state the Lie correspondence between connected Lie subgroups and Lie subalgebras
+  - Prove that the exponential map of $SL(2, \R)$ is not surjective, and explain why $SU(2)$ and $SO(3)$ have isomorphic Lie algebras but are not isomorphic
+  - Prove complete reducibility for compact groups from the existence of Haar measure
+  - Classify the finite-dimensional irreducible representations of $\mathfrak{sl}(2, \C)$, and describe the root system of $\mathfrak{sl}(3, \C)$
+narrators: []
+lean:
+  - Lumenary.LieGroups.units_lie_group
+  - Lumenary.LieGroups.circle_lie_group
+  - Lumenary.LieGroups.commutator_jacobi
+  - Lumenary.LieGroups.lie_jacobi_library
+  - Lumenary.LieGroups.exp_one_parameter
+  - Lumenary.LieGroups.exp_skew_orthogonal
+  - Lumenary.LieGroups.hat
+  - Lumenary.LieGroups.hat_bracket
+  - Lumenary.LieGroups.su2Basis
+  - Lumenary.LieGroups.su2_brackets
+  - Lumenary.LieGroups.neg_one_mem_su2
+  - Lumenary.LieGroups.sl2E
+  - Lumenary.LieGroups.sl2F
+  - Lumenary.LieGroups.sl2H
+  - Lumenary.LieGroups.sl2_triple
+  - Lumenary.LieGroups.e_f_pow
+  - Lumenary.LieGroups.highest_weight_nat
+  - Lumenary.LieGroups.primitive_vector_nat
+  - Lumenary.LieGroups.sl2_sq_scalar
+  - Lumenary.LieGroups.haar_measure
+  - Lumenary.LieGroups.haar_finite_compact
+compute: [lie_groups_exponential, lie_groups_sl2_representations]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Continuous symmetry">
+
+The rotations of space form a group: do one rotation and then another, and the result is a rotation. Unlike the symmetries of a crystal, they form a *continuum* — a three-dimensional manifold $SO(3)$ — and the group operations are smooth. Such **Lie groups** are everywhere: the rotations of a satellite, the Lorentz transformations of special relativity, the unitary groups $U(1)$, $SU(2)$, $SU(3)$ of the Standard Model, the symplectic groups of classical mechanics, the groups $SL(2, \R)$ and $SL(2, \Z)$ of hyperbolic geometry and number theory.
+
+Sophus Lie's discovery, in the 1870s, was that a Lie group is almost completely determined by its *infinitesimal* elements — its tangent space at the identity — together with one algebraic operation, the bracket $[X, Y]$ that measures how far infinitesimal motions fail to commute. This turns hard nonlinear questions about curved groups into linear algebra. The trade is not perfect, and the lesson is partly about what is lost: the exponential map need not be onto, and different groups ($SU(2)$ and $SO(3)$) can share a Lie algebra. But the gains are enormous: the representations of $SU(2)$ — the spins of quantum mechanics — come from a short algebraic argument about three matrices $e, f, h$.
+
+This lesson builds on <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink> and on <TopicLink id="math.geom.matrix-groups">matrix groups</TopicLink> (the matrix exponential, quaternions and $SU(2) \to SO(3)$). It leads to <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink> and, through root systems and dual groups, towards <TopicLink id="math.number.langlands-programme">the Langlands programme</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Infinitesimal rotations and their commutators">
+
+A rotation by a small angle $t$ about the axis $a$ moves a point $v$ by approximately $t\, a \times v$. So the infinitesimal rotations are the maps $v \mapsto a \times v$, given by skew-symmetric matrices $\hat a$; the rotation itself is recovered by "integrating", $R = \exp(t\hat a) = I + t\hat a + t^2\hat a^2/2 + \cdots$.
+
+Rotations do not commute, and the bracket measures the failure at second order. Rotate by a small angle about $x$, then $y$, then back about $x$, then back about $y$: you do not return home. You have rotated, approximately, by $t^2$ about the $z$-axis. In general,
+
+$$
+e^{tX}e^{tY}e^{-tX}e^{-tY} = I + t^2[X, Y] + O(t^3), \qquad [X, Y] = XY - YX,
+$$
+
+and for rotations $[\hat a, \hat b] = \widehat{a \times b}$. The vector space of infinitesimal elements, with this bracket, is the **Lie algebra**. Most of the group's structure is encoded in it: whether the group is commutative near the identity, which subgroups it has, how it can act linearly.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Lie groups, Lie algebras and the exponential map">
+
+<Definition term="Lie group">
+
+A **Lie group** is a group $G$ that is also a smooth manifold, such that multiplication $G \times G \to G$ and inversion $G \to G$ are smooth. A **Lie group homomorphism** is a smooth group homomorphism.
+
+</Definition>
+
+<Definition term="Lie algebra">
+
+A **Lie algebra** over a field $k$ is a vector space $\mathfrak g$ with a bilinear bracket $[\cdot,\cdot]$ that is alternating ($[X, X] = 0$) and satisfies the **Jacobi identity** $[X, [Y, Z]] + [Y, [Z, X]] + [Z, [X, Y]] = 0$. Every associative algebra is a Lie algebra under the commutator $[X, Y] = XY - YX$; for example $\mathfrak{gl}(n, k) = M_n(k)$. A **representation** of $\mathfrak g$ on a vector space $V$ is a Lie algebra homomorphism $\mathfrak g \to \mathfrak{gl}(V)$.
+
+</Definition>
+
+<Definition term="the Lie algebra of a Lie group">
+
+A vector field $X$ on $G$ is **left-invariant** if $d(L_g)X = X \circ L_g$ for all $g$, where $L_g(h) = gh$. The map $X \mapsto X_e$ identifies left-invariant vector fields with $T_eG$, and the Lie bracket of vector fields preserves left-invariance. So $\mathfrak g = T_eG$ inherits a bracket: the **Lie algebra** of $G$, of dimension $\dim G$. A homomorphism $\varphi : G \to H$ has a differential $d\varphi_e : \mathfrak g \to \mathfrak h$, which is a Lie algebra homomorphism.
+
+</Definition>
+
+<Definition term="exponential map, adjoint representation">
+
+For $X \in \mathfrak g$ the integral curve of the left-invariant field $X$ through $e$ is a **one-parameter subgroup** $t \mapsto \gamma_X(t)$, $\gamma_X(s + t) = \gamma_X(s)\gamma_X(t)$, and $\exp X = \gamma_X(1)$. For matrix groups, $\exp X = \sum_{k \ge 0} X^k/k!$. The **adjoint representation** is $\operatorname{Ad} : G \to GL(\mathfrak g)$, the differential at $e$ of conjugation $h \mapsto ghg^{-1}$; for matrix groups $\operatorname{Ad}(g)X = gXg^{-1}$, and its differential is $\operatorname{ad}(X)Y = [X, Y]$.
+
+</Definition>
+
+For a matrix group $G \subseteq GL(n, \R)$ — a closed subgroup — all this becomes concrete: $\mathfrak g = \{X \in M_n(\R) : e^{tX} \in G \text{ for all } t\}$ with the commutator bracket (Theorem 1). Throughout the lesson, $e^X$ and $\exp X$ mean the matrix exponential.
+
+</Section>
+
+<Section id="examples" kind="examples" title="The classical groups and their Lie algebras">
+
+<Example title="The classical Lie algebras">
+
+Using $\det(e^X) = e^{\operatorname{tr} X}$ and $(e^X)^{\mathsf T} = e^{X^{\mathsf T}}$, $(e^X)^* = e^{X^*}$:
+
+| group | Lie algebra | dimension |
+| --- | --- | --- |
+| $GL(n, \R)$ | all of $M_n(\R)$ | $n^2$ |
+| $SL(n, \R)$ | $\mathfrak{sl}(n, \R)$: $\operatorname{tr} X = 0$ | $n^2 - 1$ |
+| $O(n)$, $SO(n)$ | $\mathfrak{so}(n)$: $X^{\mathsf T} = -X$ | $n(n-1)/2$ |
+| $U(n)$ | $\mathfrak u(n)$: $X^* = -X$ | $n^2$ |
+| $SU(n)$ | $\mathfrak{su}(n)$: $X^* = -X$, $\operatorname{tr} X = 0$ | $n^2 - 1$ |
+| $Sp(2n, \R)$ | $X^{\mathsf T}J + JX = 0$ | $n(2n+1)$ |
+
+For instance $X \in \mathfrak{so}(n)$ gives $(e^{tX})^{\mathsf T}e^{tX} = e^{-tX}e^{tX} = I$. Conversely, if $e^{tX}$ is orthogonal for all $t$, differentiating $(e^{tX})^{\mathsf T}e^{tX} = I$ at $t = 0$ gives $X^{\mathsf T} + X = 0$.
+
+</Example>
+
+<Example title="so(3), su(2) and the cross product">
+
+Let $L_k = \hat e_k \in \mathfrak{so}(3)$. Then $[L_1, L_2] = L_3$, $[L_2, L_3] = L_1$, $[L_3, L_1] = L_2$: the map $a \mapsto \hat a$ is an isomorphism from $(\R^3, \times)$ to $\mathfrak{so}(3)$. In $\mathfrak{su}(2)$, the matrices $X_k = -\tfrac i2\sigma_k$ built from the Pauli matrices
+
+$$
+\sigma_1 = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}, \quad \sigma_2 = \begin{pmatrix} 0 & -i \\ i & 0 \end{pmatrix}, \quad \sigma_3 = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}
+$$
+
+satisfy the same relations $[X_1, X_2] = X_3$ and cyclically. So $\mathfrak{su}(2) \cong \mathfrak{so}(3)$ (Lean checks both sets of relations below). Complexifying, both become $\mathfrak{sl}(2, \C)$, with basis
+
+$$
+e = \begin{pmatrix} 0 & 1 \\ 0 & 0 \end{pmatrix}, \quad f = \begin{pmatrix} 0 & 0 \\ 1 & 0 \end{pmatrix}, \quad h = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}, \qquad [h, e] = 2e, \; [h, f] = -2f, \; [e, f] = h .
+$$
+
+</Example>
+
+<Example title="More Lie groups, and some non-examples">
+
+- $\R^n$ under addition, the circle $S^1 = U(1)$, tori $T^n = \R^n/\Z^n$ (abelian, with zero bracket); every countable discrete group (dimension $0$).
+- The **Heisenberg group** of upper unitriangular $3 \times 3$ real matrices; its Lie algebra has $[X, Y] = Z$ with $Z$ central — the commutation relation of position and momentum.
+- The group of affine maps $x \mapsto ax + b$, $a > 0$: two-dimensional, non-abelian, with $[X, Y] = Y$.
+- **The irrational line on the torus**: $t \mapsto (e^{it}, e^{i\sqrt2 t}) \in T^2$ is an injective homomorphism from $\R$ whose image is dense. The image is a Lie subgroup (an *immersed* submanifold) that is not closed, illustrating why the Lie correspondence (Theorem 4) speaks of immersed subgroups.
+- **Not Lie groups:** the $p$-adic integers $\Z_p$ (compact, but totally disconnected and uncountable, so not a manifold of any dimension); $\Q$ with the topology from $\R$ (not locally Euclidean). By the work of Gleason, Montgomery–Zippin and Yamabe (1952–53) on **Hilbert's fifth problem**, a locally compact group is a Lie group exactly when some neighbourhood of the identity contains no non-trivial subgroup.
+
+</Example>
+
+</Section>
+
+<Section id="structure" kind="proof" title="The Lie algebra and the exponential map">
+
+<Theorem name="Theorem 1 (the Lie algebra of a matrix group)">
+
+Let $G \subseteq GL(n, \R)$ be a closed subgroup and $\mathfrak g = \{X \in M_n(\R) : e^{tX} \in G \text{ for all } t \in \R\}$. Then (a) $\mathfrak g$ is a linear subspace; (b) $gXg^{-1} \in \mathfrak g$ for $g \in G$, $X \in \mathfrak g$; (c) $[X, Y] \in \mathfrak g$ for $X, Y \in \mathfrak g$. So $\mathfrak g$ is a Lie algebra under the commutator.
+
+</Theorem>
+
+<Proof>
+
+(a) Clearly $\mathfrak g$ is closed under scalar multiples. For sums, use the **Lie product formula** $e^{X+Y} = \lim_{k\to\infty}\big(e^{X/k}e^{Y/k}\big)^k$: indeed $e^{X/k}e^{Y/k} = I + (X + Y)/k + O(1/k^2)$, so for large $k$ it equals $e^{(X+Y)/k + O(1/k^2)}$ (the matrix logarithm is defined near $I$), and its $k$-th power is $e^{X + Y + O(1/k)}$. Each $\big(e^{tX/k}e^{tY/k}\big)^k$ lies in $G$, and $G$ is closed, so $e^{t(X+Y)} \in G$.
+
+(b) $e^{t\,gXg^{-1}} = g\, e^{tX} g^{-1} \in G$, by applying conjugation term by term to the exponential series.
+
+(c) By (b), the curve $c(t) = e^{tX}Ye^{-tX}$ lies in $\mathfrak g$, a linear (hence closed) subspace of $M_n(\R)$, so its derivative at $t = 0$ does too: $c'(0) = XY - YX$. ∎
+
+</Proof>
+
+Cartan's **closed subgroup theorem** says more: every closed subgroup of a Lie group is an embedded Lie subgroup, and its Lie algebra (the tangent space at $I$) is exactly this $\mathfrak g$. That the commutator satisfies the Jacobi identity is a direct expansion (checked in Lean below).
+
+<Theorem name="Theorem 2 (one-parameter subgroups)">
+
+If $\varphi : \R \to GL(n, \R)$ is a differentiable homomorphism, then $\varphi(t) = e^{tX}$ with $X = \varphi'(0)$. (Every continuous homomorphism is automatically smooth; Hall, Theorem 2.14.)
+
+</Theorem>
+
+<Proof>
+
+From $\varphi(t + h) = \varphi(t)\varphi(h) = \varphi(h)\varphi(t)$ we get $\varphi'(t) = \varphi(t)X = X\varphi(t)$. Let $\psi(t) = e^{-tX}\varphi(t)$. Then $\psi'(t) = e^{-tX}\big(-X\varphi(t) + \varphi'(t)\big) = 0$, so $\psi(t) = \psi(0) = I$. ∎
+
+</Proof>
+
+Conversely $t \mapsto e^{tX}$ is a homomorphism, because $sX$ and $tX$ commute (formalised below). The exponential map is a local diffeomorphism at $0$ ($d\exp_0 = \mathrm{id}$), and:
+
+<Theorem name="Theorem 3 (homomorphisms are determined by their differentials)">
+
+Let $\varphi : G \to H$ be a Lie group homomorphism. Then $\varphi(\exp X) = \exp\big(d\varphi(X)\big)$ for all $X \in \mathfrak g$. If $G$ is connected, it is generated by $\exp(U)$ for any neighbourhood $U$ of $0$, so $\varphi$ is determined by $d\varphi$.
+
+</Theorem>
+
+<Proof>
+
+$t \mapsto \varphi(\exp tX)$ is a one-parameter subgroup of $H$ with velocity $d\varphi(X)$ at $t = 0$, so by uniqueness of one-parameter subgroups (Theorem 2 for matrix groups; integral curves in general) it equals $t \mapsto \exp\big(t\, d\varphi(X)\big)$. For the second claim, let $V = \exp(U)$, a neighbourhood of $e$, and let $G_0$ be the subgroup generated by $V$. It is open: it contains the neighbourhood $gV$ of each of its elements $g$. Its complement is a union of cosets $gG_0$, each open, so $G_0$ is also closed. As $G$ is connected, $G_0 = G$. ∎
+
+</Proof>
+
+<Theorem name="Theorem 4 (the Lie correspondence; stated)">
+
+(a) For a Lie group $G$ with Lie algebra $\mathfrak g$, $H \mapsto \mathfrak h$ is a bijection between connected Lie subgroups (immersed) and Lie subalgebras of $\mathfrak g$. (b) **Lie's third theorem**: every finite-dimensional real Lie algebra is the Lie algebra of a simply connected Lie group $\tilde G$, unique up to isomorphism. (c) If $\tilde G$ is simply connected, every Lie algebra homomorphism $\mathfrak g \to \mathfrak h$ is the differential of a unique homomorphism $\tilde G \to H$. (d) The connected Lie groups with Lie algebra $\mathfrak g$ are exactly the quotients $\tilde G/\Gamma$ by discrete central subgroups $\Gamma$.
+
+</Theorem>
+
+(a) follows from the Frobenius theorem applied to the left-invariant distribution spanned by $\mathfrak h$; (b) from Ado's theorem (every finite-dimensional Lie algebra is a matrix Lie algebra) and (a). See Hall, Chapter 5, or Warner, Chapter 3.
+
+</Section>
+
+<Section id="caveats" kind="proof" title="What the Lie algebra does not see">
+
+<Theorem name="Theorem 5 (SU(2) and SO(3))">
+
+$\mathfrak{su}(2) \cong \mathfrak{so}(3)$, but $SU(2) \not\cong SO(3)$. In fact $\operatorname{Ad} : SU(2) \to SO(\mathfrak{su}(2)) \cong SO(3)$ is a surjective homomorphism with kernel $\{\pm I\}$, $SU(2)$ is diffeomorphic to $S^3$ and simply connected, and $SO(3) \cong SU(2)/\{\pm I\} \cong \R P^3$ has $\pi_1 = \Z/2$.
+
+</Theorem>
+
+<Proof>
+
+The Lie algebras are isomorphic by the matching relations above. $SU(2) = \{\begin{pmatrix} \alpha & -\bar\beta \\ \beta & \bar\alpha\end{pmatrix} : |\alpha|^2 + |\beta|^2 = 1\}$ is the unit sphere $S^3 \subset \C^2$, simply connected. $\operatorname{Ad}(g)$ preserves the inner product $\langle X, Y\rangle = -\operatorname{tr}(XY)$ on $\mathfrak{su}(2)$, so it lies in $O(3)$, and in $SO(3)$ since $SU(2)$ is connected. Its kernel consists of the $g$ commuting with all of $\mathfrak{su}(2)$, hence with all of $M_2(\C)$ (which $\mathfrak{su}(2)$ spans over $\C$): the scalars in $SU(2)$, namely $\pm I$. Its differential $\operatorname{ad}$ is injective (since $\mathfrak{su}(2)$ has trivial centre), so $\operatorname{Ad}$ is a local diffeomorphism, its image is an open — hence closed — subgroup of the connected $SO(3)$, i.e. all of it. Finally the centre of $SU(2)$ is $\{\pm I\}$ while the centre of $SO(3)$ is trivial, so the groups are not isomorphic. ∎
+
+</Proof>
+
+So $SU(2)$ is the simply connected group $\tilde G$ of Theorem 4(b) for $\mathfrak{so}(3)$, and $SO(3) = \tilde G/\{\pm I\}$. Physically: a rotation by $2\pi$ is the identity in $SO(3)$ but $-I$ in $SU(2)$, which is why the wave function of an electron changes sign under a full turn.
+
+<Theorem name="Theorem 6 (exp is not onto SL(2, ℝ))">
+
+Every $\exp X$ with $X \in \mathfrak{sl}(2, \R)$ has trace $\ge -2$, with equality only for $\exp X = -I$. Consequently $A = \operatorname{diag}(-2, -\tfrac12) \in SL(2, \R)$ is not the exponential of any $X \in \mathfrak{sl}(2, \R)$.
+
+</Theorem>
+
+<Proof>
+
+For a trace-zero $2 \times 2$ matrix, Cayley–Hamilton gives $X^2 = -\det(X)\, I = \delta I$ with $\delta = -\det X$. Splitting the exponential series into even and odd powers,
+
+$$
+e^X = \Big(\sum_{m} \frac{\delta^m}{(2m)!}\Big) I + \Big(\sum_m \frac{\delta^m}{(2m+1)!}\Big) X .
+$$
+
+If $\delta = \mu^2 > 0$ this is $\cosh\mu\, I + \frac{\sinh\mu}{\mu}X$, of trace $2\cosh\mu \ge 2$. If $\delta = 0$ it is $I + X$, of trace $2$. If $\delta = -\theta^2 < 0$ it is $\cos\theta\, I + \frac{\sin\theta}{\theta}X$, of trace $2\cos\theta \ge -2$; equality forces $\theta \in \pi + 2\pi\Z$, so $\sin\theta = 0$ and $e^X = -I$. Since $\operatorname{tr} A = -5/2 < -2$, $A$ is not an exponential. ∎
+
+</Proof>
+
+$A$ is nevertheless a product of two exponentials: $A = e^{\pi(f - e)}e^{(\log 2)h} = (-I)\operatorname{diag}(2, \tfrac12)$, as Theorem 3 guarantees for the connected group $SL(2, \R)$. On the other hand, for a **compact connected** Lie group the exponential map *is* onto: a bi-invariant Riemannian metric exists (average any inner product on $\mathfrak g$ over $\operatorname{Ad}(G)$), its geodesics through $e$ are the one-parameter subgroups, and the Hopf–Rinow theorem of <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink> joins $e$ to every point by a geodesic.
+
+</Section>
+
+<Section id="compact" kind="proof" title="Compact groups, Haar measure and complete reducibility">
+
+<Theorem name="Theorem 7 (Haar, 1933; stated)">
+
+Every locally compact group $G$ has a non-zero left-invariant regular Borel measure, unique up to a positive scalar. If $G$ is compact, it is finite (and also right-invariant), and can be normalised to total mass $1$.
+
+</Theorem>
+
+<Theorem name="Theorem 8 (complete reducibility)">
+
+Every finite-dimensional continuous representation $\rho : G \to GL(V)$ of a compact group $G$ on a real or complex vector space is a direct sum of irreducible representations.
+
+</Theorem>
+
+<Proof>
+
+Let $\langle\cdot,\cdot\rangle_0$ be any inner product on $V$ and $dg$ the normalised Haar measure. Define
+
+$$
+\langle u, v\rangle = \int_G \langle \rho(g)u, \rho(g)v\rangle_0 \, dg .
+$$
+
+It is an inner product (positivity: the integrand is positive and continuous when $u = v \ne 0$), and it is $G$-invariant: $\langle\rho(h)u, \rho(h)v\rangle = \int_G \langle\rho(gh)u, \rho(gh)v\rangle_0\, dg = \langle u, v\rangle$ by right invariance of $dg$. If $W \subseteq V$ is invariant, so is $W^\perp$: for $u \in W^\perp$, $w \in W$, $\langle\rho(g)u, w\rangle = \langle u, \rho(g)^{-1}w\rangle = 0$. Hence $V = W \oplus W^\perp$ as representations, and induction on $\dim V$ finishes the proof. ∎
+
+</Proof>
+
+For finite groups the integral is the average $\frac{1}{|G|}\sum_g$, and this is Maschke's theorem. The theorem fails for non-compact groups: the representation of $(\R, +)$ by $t \mapsto \begin{pmatrix} 1 & t \\ 0 & 1\end{pmatrix}$ has the invariant line $\R e_1$ but no invariant complement. Weyl's **unitarian trick** transfers complete reducibility from $SU(n)$ to $\mathfrak{sl}(n, \C)$, whose complex representations are the same as those of $\mathfrak{su}(n)$ (complexification). The **Peter–Weyl theorem** goes further: the matrix coefficients of irreducible representations are dense in $L^2(G)$, generalising Fourier series (the case $G = U(1)$).
+
+</Section>
+
+<Section id="sl2" kind="proof" title="The representations of sl(2, ℂ)">
+
+For each $n \ge 0$, let $V_n$ have basis $v_0, \dots, v_n$ and define
+
+$$
+h v_k = (n - 2k) v_k, \qquad f v_k = v_{k+1} \;(v_{n+1} = 0), \qquad e v_k = k(n - k + 1) v_{k-1} .
+$$
+
+<Theorem name="Theorem 9 (classification)">
+
+$V_n$ is an irreducible representation of $\mathfrak{sl}(2, \C)$ of dimension $n + 1$, and every finite-dimensional irreducible complex representation of $\mathfrak{sl}(2, \C)$ is isomorphic to exactly one $V_n$.
+
+</Theorem>
+
+<Proof>
+
+*Key identity.* In any representation (indeed in any ring with $hf - fh = -2f$ and $ef - fe = h$),
+
+$$
+e f^{k+1} - f^{k+1} e = (k + 1) f^k (h - k) \qquad (k \ge 0).
+$$
+
+For $k = 0$ it is $[e, f] = h$. Inductively, $ef^{k+2} - f^{k+2}e = (ef^{k+1} - f^{k+1}e)f + f^{k+1}(ef - fe) = (k+1)f^k(h - k)f + f^{k+1}h$, and $(h - k)f = f(h - k - 2)$ by $hf = f(h - 2)$; so it equals $f^{k+1}\big((k+1)(h - k - 2) + h\big) = (k + 2) f^{k+1}(h - k - 1)$.
+
+*Highest weight vectors.* Let $V$ be finite-dimensional and irreducible. Since $\C$ is algebraically closed, $h$ has an eigenvector $w$, $hw = \lambda w$. From $he = e(h + 2)$, each $e^jw$ is either $0$ or an eigenvector with eigenvalue $\lambda + 2j$; these eigenvalues are distinct, and $V$ has finitely many, so for some $j$, $v = e^jw \ne 0$ and $ev = 0$. Write $hv = \mu v$.
+
+*The string.* Let $v_k = f^kv$. As above, $hv_k = (\mu - 2k)v_k$, so the non-zero $v_k$ are linearly independent; let $n$ be largest with $v_n \ne 0$, so $v_{n+1} = 0$. By the key identity applied to $v$, $ev_{k+1} = (k+1)(\mu - k)v_k$.
+
+*The weight is an integer.* $0 = ev_{n+1} = (n + 1)(\mu - n)v_n$, and $v_n \ne 0$, so $\mu = n$.
+
+*Irreducibility gives the rest.* $\operatorname{span}(v_0, \dots, v_n)$ is non-zero and invariant under $e$, $f$, $h$, so it is $V$; in this basis $e$, $f$, $h$ act by the formulas defining $V_n$. Hence $V \cong V_n$, and $n = \dim V - 1$ is determined by $V$.
+
+*Existence.* The formulas define a representation: $[h, e]$ and $[h, f]$ are clear, and $[e, f]v_k = (k+1)(n - k)v_k - k(n - k + 1)v_k = (n - 2k)v_k = hv_k$. It is irreducible: an invariant subspace contains an eigenvector of $h$, i.e. some $v_k$; applying $e$ repeatedly gives $v_0$ (the coefficients $k(n - k + 1)$ are non-zero for $1 \le k \le n$), and applying $f$ gives all $v_k$. ∎
+
+</Proof>
+
+Concretely, $V_n \cong \operatorname{Sym}^n(\C^2)$, the homogeneous polynomials of degree $n$ in $x, y$, with $e = x\partial_y$, $f = y\partial_x$, $h = x\partial_x - y\partial_y$; $V_1 = \C^2$ is the defining representation and $V_2 \cong \mathfrak{sl}(2, \C)$ is the adjoint representation. The **Casimir** element $C = ef + fe + \tfrac12h^2$ commutes with $\mathfrak{sl}(2)$ and acts on $V_n$ by $n(n+2)/2$. Since $SU(2)$ is simply connected, every $V_n$ integrates to a representation of $SU(2)$ (Theorem 4(c)); it descends to $SO(3)$ exactly when $-I$ acts trivially, i.e. when $n$ is even. In physics $V_n$ is the spin-$n/2$ representation; the "half-integer spins" are the representations of $SU(2)$ that are not representations of $SO(3)$.
+
+Tensor products decompose by **Clebsch–Gordan**: the weights of $V_m \otimes V_n$ are the sums of weights, and peeling off highest weights gives
+
+$$
+V_m \otimes V_n \cong V_{m+n} \oplus V_{m+n-2} \oplus \cdots \oplus V_{|m-n|} .
+$$
+
+</Section>
+
+<Section id="roots" kind="examples" title="A first look at root systems: sl(3, ℂ)">
+
+<Example title="The roots of sl(3, ℂ)">
+
+Let $\mathfrak h \subset \mathfrak{sl}(3, \C)$ be the diagonal trace-zero matrices $H = \operatorname{diag}(h_1, h_2, h_3)$, a maximal abelian subalgebra of semisimple elements (a **Cartan subalgebra**). The elementary matrices $E_{ij}$ ($i \ne j$) are simultaneous eigenvectors of $\operatorname{ad}(H)$:
+
+$$
+[H, E_{ij}] = (h_i - h_j)E_{ij} .
+$$
+
+So $\mathfrak{sl}(3, \C) = \mathfrak h \oplus \bigoplus_{i \ne j}\C E_{ij}$ (dimensions $2 + 6 = 8$), and the six linear functionals $\alpha_{ij} = \varepsilon_i - \varepsilon_j$ on $\mathfrak h$ are the **roots**. In the plane $\{x_1 + x_2 + x_3 = 0\}$ they form a regular hexagon, all of the same length; the **simple roots** $\alpha_1 = \varepsilon_1 - \varepsilon_2$, $\alpha_2 = \varepsilon_2 - \varepsilon_3$ make an angle of $120^\circ$, every root is $\pm\alpha_1$, $\pm\alpha_2$ or $\pm(\alpha_1 + \alpha_2)$, and the **Cartan matrix** $\big(2(\alpha_i, \alpha_j)/(\alpha_j, \alpha_j)\big)$ is $\begin{pmatrix} 2 & -1 \\ -1 & 2\end{pmatrix}$. The **Weyl group**, generated by the reflections in the roots, is $S_3$ permuting the coordinates.
+
+</Example>
+
+<Figure caption="The root system $A_2$ of $\mathfrak{sl}(3, \C)$: six roots $\varepsilon_i - \varepsilon_j$ forming a regular hexagon. The simple roots $\alpha_1$ and $\alpha_2$ are drawn in gold; their sum $\alpha_1 + \alpha_2 = \varepsilon_1 - \varepsilon_3$ lies between them.">
+<svg viewBox="0 0 260 240" role="img" aria-label="Six arrows from a centre point forming a regular hexagon of roots, two of them highlighted">
+  <line x1="130" y1="120" x2="220" y2="120" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="130" y1="120" x2="40" y2="120" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="130" y1="120" x2="175" y2="42" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="130" y1="120" x2="85" y2="198" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="130" y1="120" x2="85" y2="42" stroke="var(--gold)" strokeWidth="3" />
+  <line x1="130" y1="120" x2="175" y2="198" stroke="var(--ink-2)" strokeWidth="2" />
+  <polygon points="220,120 175,42 85,42 40,120 85,198 175,198" fill="none" stroke="var(--formal)" strokeWidth="1" strokeDasharray="4 4" />
+  <circle cx="130" cy="120" r="3.5" fill="var(--ink-2)" />
+  <text x="226" y="124" fontSize="13" fill="var(--ink-2)">α₁</text>
+  <text x="62" y="36" fontSize="13" fill="var(--ink-2)">α₂</text>
+  <text x="178" y="36" fontSize="13" fill="var(--ink-2)">α₁+α₂</text>
+</svg>
+</Figure>
+
+Each pair $\pm\alpha$ gives an $\mathfrak{sl}(2)$-triple ($E_{ij}$, $E_{ji}$, $E_{ii} - E_{jj}$), so every representation of $\mathfrak{sl}(3)$ restricts to representations of three copies of $\mathfrak{sl}(2)$ — and Theorem 9 forces the weights to be integral on the coroots. This is the start of the general theory: Killing (1888–90) and Cartan (1894) classified the complex simple Lie algebras by their root systems — the four infinite families $A_n$ ($\mathfrak{sl}(n+1)$), $B_n$ ($\mathfrak{so}(2n+1)$), $C_n$ ($\mathfrak{sp}(2n)$), $D_n$ ($\mathfrak{so}(2n)$) and five exceptional algebras $E_6, E_7, E_8, F_4, G_2$ — and the irreducible representations by their highest weights (Cartan, Weyl).
+
+</Section>
+
+<Section id="formal" kind="formal" title="Lie groups in Lean and Mathlib">
+
+Mathlib defines a Lie group as a group with a manifold structure for which multiplication and inversion are smooth, and provides the basic examples. We cite two: the units of a complete normed algebra (such as $GL(n, \R)$) and the circle.
+
+<Lean decl="Lumenary.LieGroups.units_lie_group" />
+
+<Lean decl="Lumenary.LieGroups.circle_lie_group" />
+
+Mathlib also equips the tangent space at the identity of any Lie group with the bracket of left-invariant vector fields (`GroupLieAlgebra`, an instance of `LieAlgebra`), exactly as in our definition. On the algebraic side, the commutator makes every associative ring a Lie ring; the Jacobi identity is an expansion of twelve products, which we prove directly and also cite in Mathlib's form:
+
+<Lean decl="Lumenary.LieGroups.commutator_jacobi" />
+
+<Lean decl="Lumenary.LieGroups.lie_jacobi_library" />
+
+The matrix exponential is `NormedSpace.exp`. Two independent results from Theorems 1 and 2: $t \mapsto e^{tX}$ is a one-parameter subgroup, and the exponential of a skew-symmetric matrix is orthogonal:
+
+<Lean decl="Lumenary.LieGroups.exp_one_parameter" />
+
+<Lean decl="Lumenary.LieGroups.exp_skew_orthogonal" />
+
+Theorem 5's Lie algebra half: $\mathfrak{so}(3)$ is $\R^3$ with the cross product, and the basis $X_k = -\frac i2\sigma_k$ of $\mathfrak{su}(2)$ has the same structure constants. The group half begins with $-I$, a non-trivial central element of $SU(2)$:
+
+<Lean decl="Lumenary.LieGroups.hat" />
+
+<Lean decl="Lumenary.LieGroups.hat_bracket" />
+
+<Lean decl="Lumenary.LieGroups.su2Basis" />
+
+<Lean decl="Lumenary.LieGroups.su2_brackets" />
+
+<Lean decl="Lumenary.LieGroups.neg_one_mem_su2" />
+
+The matrices $e, f, h$ form an $\mathfrak{sl}_2$-triple in Mathlib's sense:
+
+<Lean decl="Lumenary.LieGroups.sl2E" />
+
+<Lean decl="Lumenary.LieGroups.sl2F" />
+
+<Lean decl="Lumenary.LieGroups.sl2H" />
+
+<Lean decl="Lumenary.LieGroups.sl2_triple" />
+
+The heart of Theorem 9 — the key identity, proved by induction in an arbitrary ring, and the step "the highest weight is the length of the string" for operators on a complex vector space — and Mathlib's own, more general version for finite-dimensional representations:
+
+<Lean decl="Lumenary.LieGroups.e_f_pow" />
+
+<Lean decl="Lumenary.LieGroups.highest_weight_nat" />
+
+<Lean decl="Lumenary.LieGroups.primitive_vector_nat" />
+
+The algebraic core of Theorem 6, Cayley–Hamilton on $\mathfrak{sl}(2)$:
+
+<Lean decl="Lumenary.LieGroups.sl2_sq_scalar" />
+
+And the existence of Haar measure, with its finiteness on compact groups, from Mathlib's measure theory (Theorem 7):
+
+<Lean decl="Lumenary.LieGroups.haar_measure" />
+
+<Lean decl="Lumenary.LieGroups.haar_finite_compact" />
+
+**What is and is not formalised.** Proved here: the Jacobi identity for commutators, the one-parameter subgroup property, $\exp(\mathfrak{so}(n)) \subseteq O(n)$, the brackets of $\mathfrak{so}(3)$ and $\mathfrak{su}(2)$, $-I \in SU(2)$, the $\mathfrak{sl}_2$ relations, the key identity and the integrality of highest weights (the decisive steps of Theorem 9), and $X^2 = -\det(X) I$ on $\mathfrak{sl}(2)$. Cited from Mathlib: the Lie group structures on $GL$ and $S^1$, the Jacobi identity in Lie rings, Mathlib's theorem on primitive vectors, and Haar measure. Not formalised: Theorems 1 and 4 in general, the isomorphism $SU(2)/\{\pm I\} \cong SO(3)$ and the triviality of the centre of $SO(3)$, the series computation and conclusion of Theorem 6, Theorem 8 (Mathlib lacks the integral of a representation against Haar measure in this form), and root systems (Mathlib has a theory of root pairings, not used here). Mathlib lists $\det(e^X) = e^{\operatorname{tr} X}$ as future work.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Exponentials and representations, computed">
+
+The first program computes matrix exponentials by scaling and squaring: the exponential of a skew-symmetric matrix is a rotation matching Rodrigues' formula; $\det e^X = e^{\operatorname{tr}X}$; the group commutator $e^{tX}e^{tY}e^{-tX}e^{-tY}$ differs from $I + t^2[X, Y]$ by $O(t^3)$; and thousands of random elements of $\exp(\mathfrak{sl}(2, \R))$ never have trace below $-2$.
+
+<Python id="lie_groups_exponential" />
+
+For $e$ and $f$ the ratio error$/t^3$ is $1.000$ at every scale, so the commutator really is a second-order effect with a definite third-order correction. Part 4 is sampling: it cannot prove Theorem 6, but it would quickly reveal a counterexample if the theorem were false.
+
+The second program builds the representations $V_n$ with exact integers, checks the relations and the Casimir, decomposes tensor products by peeling off highest weights, and computes the roots of $\mathfrak{sl}(3)$ as eigenvalues of $\operatorname{ad}(H)$.
+
+<Python id="lie_groups_sl2_representations" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: one-parameter subgroups of SL(2, ℝ)">
+
+A matrix $X \in \mathfrak{sl}(2, \R)$ generates the flow $v \mapsto e^{tX}v$ on the plane, whose trajectories are the orbits of the one-parameter subgroup. Theorem 6 sorts them by $\delta = -\det X$. For $X = f - e$ ($\delta < 0$) the flow is **elliptic**: closed orbits, a centre, and $e^{tX}$ is a rotation with $|\operatorname{tr}| \le 2$. For $X = h$ ($\delta > 0$) it is **hyperbolic**: a saddle, $\operatorname{tr} e^{tX} = 2\cosh t > 2$. Change the equations to $x' = y$, $y' = 0$ ($X = e$, $\delta = 0$) to see the **parabolic** shear flow. In the trace–determinant diagram, every trace-zero matrix sits on the vertical axis.
+
+<VectorField mode="phase" f="-y" g="x" title="Elliptic: X = f − e" subtitle="exp(tX) is rotation by t; orbits are circles." />
+
+<VectorField mode="phase" f="x" g="-y" title="Hyperbolic: X = h" subtitle="exp(tX) = diag(eᵗ, e⁻ᵗ); orbits are hyperbolas xy = const." />
+
+Non-commutativity in the group: compose a rotation and a shear in both orders.
+
+<MatrixTransform mode="compose" matrix={[[0, -1], [1, 0]]} matrix2={[[1, 1], [0, 1]]} title="AB ≠ BA in SL(2, ℝ)" subtitle="Rotation by 90° and a shear: both have determinant 1, and their two composites differ." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The exponential map is always surjective."** It is onto for compact connected groups and for $GL(n, \C)$, but not in general. In $SL(2, \R)$ every exponential has trace $\ge -2$, so $\operatorname{diag}(-2, -\tfrac12)$ is not an exponential (Theorem 6), even though $SL(2, \R)$ is connected. What is true is that the image of $\exp$ generates any connected Lie group (Theorem 3).
+
+</Misconception>
+
+<Misconception>
+
+**"A Lie algebra determines its Lie group."** It determines the simply connected group $\tilde G$ and, through it, the group *up to a discrete central quotient*. $SU(2)$ and $SO(3)$ have isomorphic Lie algebras but different centres ($\{\pm I\}$ versus trivial) and different fundamental groups ($0$ versus $\Z/2$). Likewise $\R$ and $S^1$ share the Lie algebra $\R$.
+
+</Misconception>
+
+<Misconception>
+
+**"$e^{X+Y} = e^Xe^Y$."** Only when $X$ and $Y$ commute. In general $\log(e^Xe^Y) = X + Y + \tfrac12[X, Y] + \tfrac1{12}\big([X, [X, Y]] + [Y, [Y, X]]\big) + \cdots$ (the Baker–Campbell–Hausdorff formula), whose correction terms are all brackets — one more sign that the bracket carries the group's multiplication.
+
+</Misconception>
+
+<Misconception>
+
+**"Every Lie subgroup is closed."** The image of the line of irrational slope in the torus $T^2$ is a one-dimensional Lie subgroup whose closure is the whole torus. The Lie correspondence matches subalgebras with *immersed* connected subgroups; closed subgroups are automatically embedded (Cartan's theorem), but not every Lie subgroup is closed.
+
+</Misconception>
+
+<Misconception>
+
+**"Representations of a Lie algebra are the same as representations of the group."** They are for simply connected groups. For $SO(3)$, only the $V_n$ with $n$ even integrate; the spin-$\frac12$ representation $V_1$ of $\mathfrak{so}(3) \otimes \C$ is a representation of $SU(2)$ but only a "projective representation" of $SO(3)$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Homogeneous spaces and Klein's programme">
+
+Klein's Erlangen programme (1872) defines a geometry by its group of symmetries, and Lie groups make this precise: a **homogeneous space** $G/H$ (with $H$ closed) is a manifold on which $G$ acts transitively, and the geometry is the study of $G$-invariants. The sphere is $SO(n+1)/SO(n)$, hyperbolic space is $SO^+(n, 1)/SO(n)$, and the hyperbolic plane is $SL(2, \R)/SO(2)$ — the upper half-plane, on which $SL(2, \R)$ acts by Möbius transformations $z \mapsto (az + b)/(cz + d)$, isometries of the metric $(dx^2 + dy^2)/y^2$. The elliptic, parabolic and hyperbolic one-parameter subgroups of the visualization are rotations about a point, horocyclic translations and translations along a geodesic. Cartan's **symmetric spaces** are the homogeneous spaces whose geodesic symmetries are isometries; he classified them using Lie theory.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="The topology of groups">
+
+A Lie group is a very special manifold. Its fundamental group is abelian; its tangent bundle is trivial (left translation of a basis of $\mathfrak g$), so by Poincaré–Hopf its Euler characteristic, if it is compact, is $0$ — hence $S^2$ is not a Lie group, while $S^1$ and $S^3 = SU(2)$ are (they are the only spheres of positive dimension that are). Hopf (1941) showed that the real cohomology of a compact connected Lie group is an exterior algebra on generators of odd degree: for $SU(2) = S^3$ one generator in degree $3$, for $SU(n)$ generators in degrees $3, 5, \dots, 2n - 1$. Every connected Lie group deformation retracts onto a maximal compact subgroup ($SL(2, \R)$ onto $SO(2)$, so $\pi_1(SL(2, \R)) = \Z$), and Bott periodicity computes the homotopy groups of $U(n)$ and $O(n)$ in a stable range. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Structure theory of Lie algebras">
+
+The algebraist studies $\mathfrak g$ on its own. **Engel's** and **Lie's** theorems describe nilpotent and solvable Lie algebras (strictly upper triangular and upper triangular matrices); the **Levi decomposition** writes every finite-dimensional real Lie algebra as a solvable ideal plus a semisimple subalgebra. **Cartan's criterion** characterises semisimplicity by the non-degeneracy of the Killing form $B(X, Y) = \operatorname{tr}(\operatorname{ad}X\operatorname{ad}Y)$, and semisimple complex Lie algebras are classified by root systems and Dynkin diagrams. Mathlib formalises much of this: Engel's theorem, the Killing form, Cartan subalgebras and root pairings. Representation theory continues through the universal enveloping algebra, Verma modules and the Weyl character formula.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Harmonic analysis on groups">
+
+Haar measure makes analysis on groups possible. For $G = U(1)$, the Peter–Weyl theorem is the completeness of Fourier series $\sum c_ne^{in\theta}$; for compact $G$, $L^2(G)$ decomposes as $\bigoplus_\pi \pi \otimes \pi^*$ over the irreducible representations. For non-compact groups the story becomes the subject of Harish-Chandra's work: the Plancherel formula for $SL(2, \R)$ involves both a discrete series and a continuous series of infinite-dimensional unitary representations. The Laplacian of a Riemannian symmetric space is built from the Casimir operator, so its spectral theory is representation theory. See <TopicLink id="math.analysis.harmonic-analysis">harmonic analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Spin, angular momentum and gauge symmetry">
+
+In quantum mechanics a symmetry group acts by unitary operators on a Hilbert space of states, so states come in representations. The components of angular momentum satisfy $[J_x, J_y] = i\hbar J_z$ — up to a factor $i\hbar$, the relations of $\mathfrak{so}(3)$ — and the raising and lowering operators $J_\pm = J_x \pm iJ_y$ play the roles of $e$ and $f$. Theorem 9 is the quantisation of angular momentum: a spin-$j$ particle has $2j + 1$ states, with $j \in \frac12\Z_{\ge 0}$. Gell-Mann and Ne'eman's "eightfold way" (1961) arranged hadrons in representations of $SU(3)$, the octet being the adjoint representation, whose weight diagram is the hexagon of roots above plus two weights at the centre. The Standard Model is a gauge theory with group $U(1) \times SU(2) \times SU(3)$. These are physical models whose success is empirical; the mathematics of their representations is exact. See <TopicLink id="math.applied.gauge-theory">gauge theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Arithmetic groups and the Langlands dual">
+
+Number theory meets Lie groups through **arithmetic subgroups** such as $SL(2, \Z) \subset SL(2, \R)$. Modular forms are functions on $SL(2, \Z)\backslash SL(2, \R)$ with prescribed behaviour, and the Laplacian on $SL(2, \Z)\backslash\mathbb H$ has a continuous spectrum, described by Eisenstein series whose constant terms involve the Riemann zeta function, and a discrete spectrum (Maass forms) related to the lengths of closed geodesics by the Selberg trace formula. In the Langlands programme, each reductive group $G$ has a **dual group** $G^\vee$ whose root system exchanges roots and coroots — so $SO(2n+1)$ (type $B_n$) is dual to $Sp(2n, \C)$ (type $C_n$), $GL(n)$ is its own dual and $SL(n)$ is dual to $PGL(n)$ — and automorphic representations of $G$ are conjecturally parametrised by representations of the Galois group into $G^\vee$. See <TopicLink id="math.number.langlands-programme">the Langlands programme</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Lie's continuous groups.** Sophus Lie, in Christiania (Oslo) and later Leipzig, developed "continuous transformation groups" from the 1870s to solve differential equations by symmetry, working closely with Felix Klein, whose Erlangen programme (1872) put groups at the centre of geometry. Lie and Friedrich Engel's *Theorie der Transformationsgruppen* (1888–93) set out the infinitesimal theory.
+- **Classification.** Wilhelm Killing classified the complex simple Lie algebras (1888–90), discovering the exceptional algebras, with some gaps; Élie Cartan's thesis (1894) completed and corrected the classification, and he later classified the real forms (1914) and the symmetric spaces (1926). Eugene Dynkin's diagrams (1946–47) gave the classification its modern combinatorial form.
+- **Representations and compact groups.** Hermann Weyl's papers of 1925–26 created the representation theory of compact Lie groups, with the character formula and the unitarian trick; the Peter–Weyl theorem followed in 1927. Alfréd Haar constructed invariant measures in 1933, and John von Neumann proved their uniqueness. Claude Chevalley's *Theory of Lie Groups* (1946) gave the global, manifold-theoretic foundations.
+- **Hilbert's fifth problem and beyond.** Andrew Gleason, Deane Montgomery and Leo Zippin (1952), with Hidehiko Yamabe's extension (1953), characterised Lie groups among topological groups. Harish-Chandra, working in the United States after training in India and Cambridge, developed the harmonic analysis of semisimple Lie groups from the 1950s to the 1970s. Robert Langlands's letter to André Weil (1967) began the programme that bears his name.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Brian C. Hall, *Lie Groups, Lie Algebras, and Representations: An Elementary Introduction* (2nd edition, 2015) — matrix Lie groups first, with complete proofs; the model for this lesson.
+- James E. Humphreys, *Introduction to Lie Algebras and Representation Theory* (1972) — the standard algebraic treatment: $\mathfrak{sl}(2)$, root systems, classification, highest weights.
+- William Fulton and Joe Harris, *Representation Theory: A First Course* (1991) — $\mathfrak{sl}(2)$, $\mathfrak{sl}(3)$ and the classical groups through examples.
+- John Stillwell, *Naive Lie Theory* (2008) — a gentle undergraduate route through the classical groups and their Lie algebras.
+- Theodor Bröcker and Tammo tom Dieck, *Representations of Compact Lie Groups* (1985) — Haar measure, Peter–Weyl, maximal tori.
+- Frank W. Warner, *Foundations of Differentiable Manifolds and Lie Groups* (1971) — the manifold-theoretic foundations, including the Lie correspondence.
+
+</Section>

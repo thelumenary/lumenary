@@ -1,0 +1,443 @@
+---
+slug: commutative-algebra
+topic: math.algebra.commutative-algebra
+title: Commutative algebra
+subtitle: Rings as spaces of functions — prime ideals as points, localisation as zooming in, and Hilbert's theorems that make polynomial equations finite and geometric.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7010
+objectives:
+  - Work with prime and maximal ideals, the spectrum $\operatorname{Spec} R$ and its Zariski topology, and the nilradical and Jacobson radical
+  - Localise rings and modules, describe the primes of $S^{-1}R$, and use localisation to reduce questions to local rings
+  - Prove that Noetherian means "every ideal is finitely generated", prove Hilbert's basis theorem, and show that $k[x_1, x_2, \dots]$ is not Noetherian
+  - Prove Nakayama's lemma by the determinant trick and use it for minimal generators over a local ring
+  - Prove the Nullstellensatz over $\C$ and use it to match radical ideals with algebraic sets; state the dimension theorem $\dim k[x_1, \dots, x_n] = n$
+narrators: []
+lean:
+  - Lumenary.CommutativeAlgebra.zero_prime_not_maximal
+  - Lumenary.CommutativeAlgebra.maximal_is_prime
+  - Lumenary.CommutativeAlgebra.hilbert_basis
+  - Lumenary.CommutativeAlgebra.hilbert_basis_mv
+  - Lumenary.CommutativeAlgebra.infinitely_many_variables_not_noetherian
+  - Lumenary.CommutativeAlgebra.nakayama
+  - Lumenary.CommutativeAlgebra.nakayama_library
+  - Lumenary.CommutativeAlgebra.localization_primes
+  - Lumenary.CommutativeAlgebra.localization_local
+  - Lumenary.CommutativeAlgebra.x_sq_not_radical
+  - Lumenary.CommutativeAlgebra.nullstellensatz
+  - Lumenary.CommutativeAlgebra.maximal_ideals_are_points
+  - Lumenary.CommutativeAlgebra.krull_dim_polynomial
+compute: [commutative_algebra_nullstellensatz, commutative_algebra_spec_zmod]
+trails: [inverses-and-structure]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Equations, ideals and points">
+
+A system of polynomial equations $f_1 = \cdots = f_r = 0$ in $n$ unknowns has the same solutions as every equation $\sum h_i f_i = 0$ obtained from it, so what really matters is the **ideal** $I = (f_1, \dots, f_r) \subseteq k[x_1, \dots, x_n]$. Three questions arise at once.
+
+1. **Finiteness.** Is every system of polynomial equations — possibly infinitely many — equivalent to a finite one? Hilbert's **basis theorem** (1890) says yes: every ideal of $k[x_1, \dots, x_n]$ is finitely generated.
+2. **Geometry.** When does an ideal have solutions, and which polynomials vanish on all of them? Hilbert's **Nullstellensatz** (1893) answers both over an algebraically closed field: solutions exist unless $1 \in I$, and $f$ vanishes on all solutions exactly when some power $f^m$ lies in $I$. So radical ideals and algebraic sets determine each other.
+3. **Local behaviour.** How do we study a curve near one point — say the crossing point of the nodal cubic $y^2 = x^2(x + 1)$ — ignoring the rest? By **localising**: allowing division by functions that do not vanish at the point.
+
+**Commutative algebra** is the theory of commutative rings and their modules that answers such questions. It is the algebraic foundation of algebraic geometry and of algebraic number theory, where $\Z$ and the rings of integers of number fields play the role of rings of functions on "arithmetic curves". This lesson assumes <TopicLink id="math.algebra.modules">modules</TopicLink> and <TopicLink id="math.algebra.quotients">quotient rings</TopicLink>; all rings are commutative with $1$.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Elements are functions; prime ideals are points">
+
+The guiding picture, due in this generality to Grothendieck, treats every commutative ring $R$ as a ring of functions on a space, $\operatorname{Spec} R$, whose points are the prime ideals.
+
+- The **value** of $f \in R$ at the point $\mathfrak{p}$ is the image of $f$ in the field $\kappa(\mathfrak{p}) = \operatorname{Frac}(R/\mathfrak{p})$. For $R = \Z$: the integer $6$ has value $0$ at the points $(2)$ and $(3)$, value $1$ at $(5)$ (in $\mathbb{F}_5$), and value $6 \in \Q$ at the "generic point" $(0)$. So $f$ **vanishes at $\mathfrak{p}$** exactly when $f \in \mathfrak{p}$.
+- An ideal $I$ cuts out the closed set $V(I) = \{\mathfrak{p} : \mathfrak{p} \supseteq I\}$ of points where all of $I$ vanishes.
+- A **nilpotent** $f$ ($f^m = 0$) vanishes at every point but need not be $0$: it records infinitesimal information. In $k[x]/(x^2)$ the class of $x$ is a non-zero function with value $0$ at the only point — it remembers the direction of a tangent (see the widget below).
+- **Localising at $\mathfrak{p}$** allows denominators that do not vanish at $\mathfrak{p}$, like passing from polynomials to rational functions defined near a point. Everything that happens away from $\mathfrak{p}$ is forgotten.
+
+For $k[x_1, \dots, x_n]$ with $k = \C$, the Nullstellensatz will show that the maximal ideals are exactly the points of $\C^n$, while the other primes correspond to irreducible subvarieties (curves, surfaces, …), each a "generic point" of its variety.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="prime and maximal ideals; the spectrum">
+
+An ideal $\mathfrak{p} \neq R$ is **prime** if $ab \in \mathfrak{p}$ implies $a \in \mathfrak{p}$ or $b \in \mathfrak{p}$; equivalently $R/\mathfrak{p}$ is an integral domain. An ideal $\mathfrak{m} \neq R$ is **maximal** if no ideal lies strictly between $\mathfrak{m}$ and $R$; equivalently $R/\mathfrak{m}$ is a field. The **spectrum** $\operatorname{Spec} R$ is the set of prime ideals, with the **Zariski topology** whose closed sets are the $V(I) = \{\mathfrak{p} : \mathfrak{p} \supseteq I\}$. A ring homomorphism $\varphi : R \to S$ induces a continuous map $\operatorname{Spec} S \to \operatorname{Spec} R$, $\mathfrak{q} \mapsto \varphi^{-1}(\mathfrak{q})$.
+
+</Definition>
+
+<Definition term="radicals">
+
+The **radical** of $I$ is $\sqrt{I} = \{f : f^m \in I \text{ for some } m \geq 1\}$, and $I$ is **radical** if $I = \sqrt I$. The **nilradical** $\sqrt{0}$ is the set of nilpotent elements; it equals the intersection of all prime ideals. The **Jacobson radical** $J(R)$ is the intersection of all maximal ideals; $x \in J(R)$ if and only if $1 + xy$ is a unit for every $y \in R$.
+
+</Definition>
+
+<Definition term="localisation">
+
+A subset $S \subseteq R$ is **multiplicative** if $1 \in S$ and $S$ is closed under products. The **localisation** $S^{-1}R$ consists of fractions $r/s$ ($r \in R$, $s \in S$) with $r/s = r'/s'$ if and only if $t(rs' - r's) = 0$ for some $t \in S$, added and multiplied as fractions. The map $R \to S^{-1}R$, $r \mapsto r/1$, sends $S$ to units and is **universal** with this property: every ring homomorphism $R \to T$ sending $S$ to units factors uniquely through $S^{-1}R$. For a module $M$, $S^{-1}M$ is defined in the same way, and $S^{-1}M \cong S^{-1}R \otimes_R M$. Important cases: $R_f = S^{-1}R$ for $S = \{1, f, f^2, \dots\}$, and $R_\mathfrak{p} = S^{-1}R$ for $S = R \setminus \mathfrak{p}$ with $\mathfrak{p}$ prime.
+
+</Definition>
+
+<Definition term="local ring">
+
+A ring is **local** if it has exactly one maximal ideal $\mathfrak{m}$; then $R \setminus \mathfrak{m}$ is the set of units, and $k = R/\mathfrak{m}$ is its **residue field**.
+
+</Definition>
+
+<Definition term="Noetherian ring and module">
+
+A module is **Noetherian** if every ascending chain of submodules $N_1 \subseteq N_2 \subseteq \cdots$ is eventually constant, and a ring is Noetherian if it is Noetherian as a module over itself (ascending chains of ideals stabilise).
+
+</Definition>
+
+<Definition term="integral extension; Krull dimension">
+
+If $A \subseteq B$ are rings, $b \in B$ is **integral** over $A$ if it satisfies a monic polynomial $b^n + a_{n-1}b^{n-1} + \cdots + a_0 = 0$ with $a_i \in A$; $B$ is integral over $A$ if every element is. The **Krull dimension** $\dim R$ is the supremum of the lengths $n$ of chains of prime ideals $\mathfrak{p}_0 \subsetneq \mathfrak{p}_1 \subsetneq \cdots \subsetneq \mathfrak{p}_n$.
+
+</Definition>
+
+<Definition term="algebraic sets">
+
+For a field $k$ and $T \subseteq k[x_1, \dots, x_n]$, the **algebraic set** $V(T) = \{a \in k^n : f(a) = 0 \text{ for all } f \in T\}$; for $X \subseteq k^n$, the ideal $I(X) = \{f : f(a) = 0 \text{ for all } a \in X\}$. Always $I(X)$ is radical, $T \subseteq I(V(T))$ and $V(I(V(T))) = V(T)$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Spec ℤ and Spec k[x]">
+
+The primes of $\Z$ are $(0)$ and $(p)$ for primes $p$; the $(p)$ are maximal and $(0)$ is not, since $(0) \subsetneq (2) \subsetneq \Z$. So $\dim \Z = 1$. The closed sets are $\operatorname{Spec}\Z$ and the finite sets of non-zero primes; the point $(0)$ is dense — a **generic point**. Likewise for $k$ algebraically closed, $\operatorname{Spec} k[x] = \{(x - a) : a \in k\} \cup \{(0)\}$: the affine line plus a generic point. In any PID, every non-zero prime is maximal.
+
+</Example>
+
+<Example title="Spec k[x, y]">
+
+For $k$ algebraically closed the primes of $k[x, y]$ are: the maximal ideals $(x - a, y - b)$ (points of the plane, by the Nullstellensatz); the principal ideals $(f)$ with $f$ irreducible (irreducible curves, such as $(y - x^2)$); and $(0)$. The chain $(0) \subsetneq (x) \subsetneq (x, y)$ shows that $(x)$ is **prime but not maximal**: $k[x,y]/(x) \cong k[y]$ is a domain, not a field. So $\dim k[x, y] \geq 2$, with equality by the dimension theorem.
+
+</Example>
+
+<Example title="Localisations">
+
+- $\Z_{(p)} = \{a/b : p \nmid b\}$ is local with maximal ideal $p\Z_{(p)}$; its primes are $(0)$ and $(p)$ — all other primes of $\Z$ became units.
+- $\Z[1/2] = R_f$ for $R = \Z$, $f = 2$, has the primes $(0)$ and $(p)$ for odd $p$: the point $(2)$ has been removed from $\operatorname{Spec} \Z$, an open subset.
+- $S^{-1}R = 0$ exactly when $0 \in S$: inverting a nilpotent kills the ring, since $1/1 = f^m/f^m = 0$.
+- For $n = p^e m$ with $p \nmid m$, $(\Z/n)_{(p)} \cong \Z/p^e$: by the Chinese remainder theorem $\Z/n \cong \Z/p^e \times \Z/m$, the element $s = (1, 0)$ lies outside $(p)$ and kills the second factor, and every $a$ with $p \nmid a$ is already a unit modulo $p^e$. The second experiment checks this from the definition for all $n \leq 60$.
+
+</Example>
+
+<Example title="Rings that are not Noetherian">
+
+- $k[x_1, x_2, x_3, \dots]$: the chain $(x_1) \subsetneq (x_1, x_2) \subsetneq \cdots$ never stabilises (formalised below), and the ideal $(x_1, x_2, \dots)$ is not finitely generated. It is a subring of the Noetherian field $k(x_1, x_2, \dots)$, so **subrings of Noetherian rings need not be Noetherian**.
+- The ring of continuous functions $C([0, 1])$: the ideals $I_n = \{f : f = 0 \text{ on } [0, 1/n]\}$ increase strictly.
+- The ring $\overline{\Z}$ of all algebraic integers: $(2) \subsetneq (2^{1/2}) \subsetneq (2^{1/4}) \subsetneq \cdots$.
+
+</Example>
+
+<Example title="Integral extensions">
+
+$\Z[i]$ is integral over $\Z$ ($i^2 + 1 = 0$, and sums and products of integral elements are integral). $\Q$ is not integral over $\Z$: a rational root of a monic integer polynomial is an integer (rational root theorem). The subring $A = k[t^2, t^3] \subseteq k[t]$, the coordinate ring of the cusp $y^2 = x^3$ (with $x = t^2$, $y = t^3$), has $k[t]$ integral over it ($t$ is a root of $T^2 - t^2$), and $t = t^3/t^2$ lies in the fraction field of $A$ but not in $A$: the cusp is not **normal**, and $k[t]$ is its **normalisation**.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The main theorems">
+
+<Theorem name="Proposition 1 (primes, maximals, radicals)">
+
+1. $\mathfrak{m}$ is maximal iff $R/\mathfrak{m}$ is a field; $\mathfrak{p}$ is prime iff $R/\mathfrak{p}$ is a domain. Hence every maximal ideal is prime.
+2. Every proper ideal is contained in a maximal ideal (using Zorn's lemma).
+3. The nilradical is the intersection of all prime ideals.
+
+</Theorem>
+
+<Proof>
+
+(1) Ideals of $R/\mathfrak{m}$ correspond to ideals of $R$ containing $\mathfrak{m}$; a non-zero ring is a field iff its only ideals are $0$ and itself. The statement for primes is the definition read in $R/\mathfrak{p}$. A field is a domain.
+
+(2) The proper ideals containing $I$, ordered by inclusion, form a non-empty set in which every chain has an upper bound (its union, which is proper because it does not contain $1$); Zorn's lemma gives a maximal element.
+
+(3) A nilpotent $f$ satisfies $f^m = 0 \in \mathfrak{p}$, so $f \in \mathfrak{p}$ for every prime. Conversely, if $f$ is not nilpotent then $S = \{1, f, f^2, \dots\}$ does not contain $0$, so $R_f \neq 0$ has a maximal ideal $\mathfrak{n}$ by (2), and its preimage in $R$ is a prime not containing $f$.
+
+</Proof>
+
+<Theorem name="Proposition 2 (primes of a localisation; local properties)">
+
+Let $S \subseteq R$ be multiplicative and $\iota : R \to S^{-1}R$.
+
+1. $\mathfrak{q} \mapsto \iota^{-1}(\mathfrak{q})$ is an inclusion-preserving bijection from the primes of $S^{-1}R$ to the primes of $R$ disjoint from $S$, with inverse $\mathfrak{p} \mapsto S^{-1}\mathfrak{p}$. In particular $R_\mathfrak{p}$ is local with maximal ideal $\mathfrak{p}R_\mathfrak{p}$, and its primes correspond to the primes of $R$ contained in $\mathfrak{p}$.
+2. Localisation is **exact**: if $M' \to M \to M''$ is exact, so is $S^{-1}M' \to S^{-1}M \to S^{-1}M''$.
+3. For a module $M$, $M = 0$ if and only if $M_\mathfrak{m} = 0$ for every maximal ideal $\mathfrak{m}$.
+
+</Theorem>
+
+<Proof>
+
+(1) The preimage of a prime is a prime, and it misses $S$ because $\iota(S)$ consists of units. Conversely, let $\mathfrak{p}$ be prime with $\mathfrak{p} \cap S = \varnothing$. Then $S^{-1}\mathfrak{p} = \{a/s : a \in \mathfrak{p}\}$ is a proper ideal: if $a/s = 1$ then $t(a - s) = 0$ for some $t \in S$, so $ts = ta \in \mathfrak{p}$, impossible as $ts \in S$. It is prime: if $(a/s)(b/s') = c/s''$ with $c \in \mathfrak{p}$ then $t(abs'' - css') = 0$, so $tabs'' \in \mathfrak{p}$ and, since $t, s'' \notin \mathfrak{p}$, $a \in \mathfrak{p}$ or $b \in \mathfrak{p}$. The same computation shows $\iota^{-1}(S^{-1}\mathfrak{p}) = \mathfrak{p}$, and every ideal $J$ of $S^{-1}R$ satisfies $J = S^{-1}\iota^{-1}(J)$ (if $a/s \in J$ then $a/1 \in J$). For $S = R \setminus \mathfrak{p}$, the primes of $R_\mathfrak{p}$ correspond to primes contained in $\mathfrak{p}$, and the largest, $\mathfrak{p}R_\mathfrak{p}$, is the unique maximal ideal.
+
+(2) If $g \circ f = 0$ then the localised composite is $0$. Let $m/s \in S^{-1}M$ map to $0$: then $t\,g(m) = g(tm) = 0$ for some $t \in S$, so $tm = f(m')$, and $m/s = f(m')/(ts)$.
+
+(3) Suppose $M \neq 0$ and pick $m \neq 0$. Its annihilator $\{r : rm = 0\}$ is a proper ideal, contained in some maximal $\mathfrak{m}$. Then $m/1 \neq 0$ in $M_\mathfrak{m}$, because $tm = 0$ would put $t \in \operatorname{Ann}(m) \subseteq \mathfrak{m}$.
+
+</Proof>
+
+Part (3), with exactness, is the **local–global principle**: injectivity, surjectivity and exactness of maps of modules can all be checked after localising at every maximal ideal. This is how problems are reduced to local rings, where Nakayama's lemma is available.
+
+<Theorem name="Proposition 3 (Noetherian rings)">
+
+For a ring $R$ the following are equivalent: (a) $R$ is Noetherian; (b) every ideal of $R$ is finitely generated; (c) every non-empty set of ideals has a maximal element. Quotients and localisations of Noetherian rings are Noetherian, and finitely generated modules over a Noetherian ring are Noetherian.
+
+</Theorem>
+
+<Proof>
+
+(a ⇒ c) If a non-empty set $\Sigma$ had no maximal element, we could choose $I_1 \subsetneq I_2 \subsetneq \cdots$ in $\Sigma$ (dependent choice). (c ⇒ b) Among the finitely generated ideals contained in $I$ choose a maximal one, $J$; if $a \in I \setminus J$ then $J + (a)$ is larger and finitely generated, so $J = I$. (b ⇒ a) Given a chain $I_1 \subseteq I_2 \subseteq \cdots$, the union $I$ is an ideal, generated by finitely many elements, which all lie in some $I_n$; then $I_n = I_{n+1} = \cdots = I$. Ideals of $R/I$ are ideals of $R$ containing $I$, and ideals of $S^{-1}R$ are $S^{-1}J$ by Proposition 2, so (b) passes to both. For modules: $R^n$ is Noetherian by induction using $0 \to R^{n-1} \to R^n \to R \to 0$ (a chain in $R^n$ stabilises if its intersections with $R^{n-1}$ and its images in $R$ do), and quotients of Noetherian modules are Noetherian.
+
+</Proof>
+
+<Theorem name="Theorem 4 (Hilbert's basis theorem)">
+
+If $R$ is Noetherian, then so is $R[x]$. Hence $R[x_1, \dots, x_n]$ — in particular $k[x_1, \dots, x_n]$ and $\Z[x_1, \dots, x_n]$ — and every finitely generated $R$-algebra are Noetherian.
+
+</Theorem>
+
+<Proof>
+
+Let $I \subseteq R[x]$ be an ideal; we show it is finitely generated. For $d \geq 0$ let $L_d \subseteq R$ be the set of leading coefficients of polynomials in $I$ of degree $d$, together with $0$. Each $L_d$ is an ideal (sums and multiples of leading coefficients of degree-$d$ elements are leading coefficients of degree-$d$ elements, or $0$), and $L_d \subseteq L_{d+1}$ (multiply by $x$). Since $R$ is Noetherian, the chain stabilises at some $L_N$, and each of $L_0, \dots, L_N$ is finitely generated. For each $d \leq N$ and each generator of $L_d$, choose a polynomial in $I$ of degree $d$ with that leading coefficient; let $J \subseteq I$ be the ideal generated by these finitely many polynomials.
+
+We show by induction on degree that every $f \in I$ lies in $J$. If $f = 0$ there is nothing to do. Let $\deg f = d$ with leading coefficient $a \in L_d$. If $d \leq N$, write $a = \sum r_i a_i$ with $a_i$ the chosen generators of $L_d$ and $g_i \in J$ the chosen polynomials of degree $d$; then $f - \sum r_i g_i \in I$ has degree less than $d$. If $d > N$, then $a \in L_d = L_N$, so $a = \sum r_i a_i$ with $a_i$ the generators of $L_N$, and $f - \sum r_i x^{d - N} g_i \in I$ has degree less than $d$. By induction this difference lies in $J$, so $f \in J$. The statements about several variables follow by induction, since $R[x_1, \dots, x_n] = R[x_1, \dots, x_{n-1}][x_n]$, and finitely generated algebras are quotients of polynomial rings.
+
+</Proof>
+
+The proof is non-constructive — it does not say how to find generators — which famously troubled Paul Gordan. Gröbner bases (see the computation lens below) make it effective for polynomial rings over a field.
+
+<Theorem name="Theorem 5 (Nakayama's lemma)">
+
+Let $M$ be a finitely generated $R$-module and $I$ an ideal contained in the Jacobson radical $J(R)$. If $IM = M$ then $M = 0$. In particular, over a local ring $(R, \mathfrak{m})$: if $\mathfrak{m}M = M$ then $M = 0$; and elements $m_1, \dots, m_n \in M$ generate $M$ if and only if their images span the $R/\mathfrak{m}$-vector space $M/\mathfrak{m}M$.
+
+</Theorem>
+
+<Proof>
+
+*The determinant trick.* Let $m_1, \dots, m_n$ generate $M$. Since $M = IM$, each $m_i = \sum_j a_{ij} m_j$ with $a_{ij} \in I$. So the matrix $A = (a_{ij})$ satisfies $(\mathrm{Id} - A)\,\mathbf{m} = 0$, where $\mathbf{m} = (m_1, \dots, m_n)^{\mathsf T}$. Multiplying by the adjugate of $\mathrm{Id} - A$ gives $\det(\mathrm{Id} - A)\, m_i = 0$ for every $i$. Expanding the determinant, $r = \det(\mathrm{Id} - A) = 1 + x$ with $x \in I$. So $r M = 0$ with $r - 1 \in I$.
+
+*Conclusion.* Since $x = r - 1 \in J(R)$, the element $r = 1 + x$ is a unit, and $M = r^{-1} r M = 0$.
+
+*Generators over a local ring.* If the images of $m_1, \dots, m_n$ span $M/\mathfrak{m}M$, let $N = Rm_1 + \cdots + Rm_n$. Then $M = N + \mathfrak{m}M$, so the finitely generated module $M/N$ satisfies $\mathfrak{m}(M/N) = M/N$, hence $M/N = 0$. The converse is clear.
+
+</Proof>
+
+So over a local ring, all minimal generating sets of a finitely generated module have the same size, $\dim_k M/\mathfrak{m}M$ — a basis-free substitute for dimension. Finite generation is essential: $\Q$ is a $\Z_{(p)}$-module with $p\Q = \Q \neq 0$.
+
+<Theorem name="Theorem 6 (Hilbert's Nullstellensatz)">
+
+Let $k$ be an algebraically closed field.
+
+1. (**Weak form**) The maximal ideals of $k[x_1, \dots, x_n]$ are exactly the ideals $\mathfrak{m}_a = (x_1 - a_1, \dots, x_n - a_n)$, $a \in k^n$. Consequently, if $I$ is a proper ideal then $V(I) \neq \varnothing$.
+2. (**Strong form**) For every ideal $I$, $\;I(V(I)) = \sqrt{I}$.
+
+Hence $V$ and $I$ are mutually inverse, inclusion-reversing bijections between radical ideals of $k[x_1, \dots, x_n]$ and algebraic subsets of $k^n$; prime ideals correspond to irreducible algebraic sets, and maximal ideals to points.
+
+</Theorem>
+
+<Proof>
+
+We prove it for $k = \C$ (the same argument works for every *uncountable* algebraically closed field); the general case needs Zariski's lemma — a field that is finitely generated as a $k$-algebra is a finite extension of $k$ — proved in Atiyah–Macdonald, Chapters 5 and 7, or Eisenbud, Theorem 4.19.
+
+*Weak form.* Each $\mathfrak{m}_a$ is maximal, being the kernel of the surjection $f \mapsto f(a)$ onto the field $\C$. Conversely let $\mathfrak{m}$ be maximal and $K = \C[x_1, \dots, x_n]/\mathfrak{m}$, a field containing $\C$. As a $\C$-vector space, $K$ is spanned by the images of the countably many monomials. Suppose some $t \in K$ is not in $\C$. If $t$ were transcendental over $\C$, the uncountably many elements $1/(t - c)$, $c \in \C$, would be linearly independent: a relation $\sum_{i=1}^{r} \lambda_i/(t - c_i) = 0$ with distinct $c_i$ gives, after clearing denominators, $\sum_i \lambda_i \prod_{j \neq i}(t - c_j) = 0$, a polynomial identity in the transcendental $t$, and substituting $c_i$ for $t$ in that polynomial gives $\lambda_i = 0$. This contradicts countable dimension. So $t$ is algebraic: $p(t) = 0$ for some non-zero $p \in \C[T]$, which factors as $p = c\prod (T - c_j)$; since $K$ is a field, $t = c_j$ for some $j$, a contradiction. Hence $K = \C$, and if $a_i \in \C$ is the image of $x_i$, then $x_i - a_i \in \mathfrak{m}$ for all $i$, so $\mathfrak{m}_a \subseteq \mathfrak{m}$, and equality holds because $\mathfrak{m}_a$ is maximal. Finally, a proper ideal $I$ lies in some maximal $\mathfrak{m}_a$ (Proposition 1), and then every element of $I$ vanishes at $a$.
+
+*Strong form (Rabinowitsch's trick).* Clearly $\sqrt{I} \subseteq I(V(I))$. Conversely, let $f$ vanish on $V(I)$. By Theorem 4, $I = (g_1, \dots, g_r)$. In $\C[x_1, \dots, x_n, t]$ consider $J = (g_1, \dots, g_r, 1 - tf)$. It has no zeros: at a common zero $(a, b)$ of the $g_i$ we have $f(a) = 0$, so $1 - bf(a) = 1$. By the weak form $J$ is not proper: $1 = \sum_i h_i\, g_i + h\,(1 - tf)$ for some polynomials $h_i, h$. Substitute $t = 1/f$ in the field $\C(x_1, \dots, x_n)$ (if $f = 0$ there is nothing to prove): $1 = \sum_i h_i(x, 1/f)\, g_i(x)$. Multiplying by a high power $f^N$ clears all denominators and gives $f^N = \sum_i \tilde h_i g_i \in I$.
+
+The bijection follows: $V(I(X)) = X$ for algebraic sets and $I(V(I)) = I$ for radical ideals. $X$ is irreducible iff $I(X)$ is prime, by the usual argument with $X \subseteq V(f) \cup V(g) = V(fg)$.
+
+</Proof>
+
+The hypothesis "algebraically closed" is essential: over $\R$, the ideal $(x^2 + 1)$ of $\R[x]$ is maximal (with $\R[x]/(x^2 + 1) \cong \C$) but not of the form $\mathfrak{m}_a$, and $V(x^2 + 1) = \varnothing$ although $1 \notin (x^2 + 1)$.
+
+<Theorem name="Theorem 7 (dimension; stated)">
+
+Let $k$ be a field. Then $\dim k[x_1, \dots, x_n] = n$. More generally, if $A$ is a finitely generated $k$-algebra and a domain, then $\dim A$ equals the transcendence degree of $\operatorname{Frac}(A)$ over $k$, and every maximal chain of primes in $A$ has this length.
+
+</Theorem>
+
+*Proof sketch.* The chain $0 \subsetneq (x_1) \subsetneq (x_1, x_2) \subsetneq \cdots \subsetneq (x_1, \dots, x_n)$ consists of primes (each quotient is a polynomial ring, a domain), so $\dim \geq n$. For $\leq n$ one uses **Noether normalisation** — $A$ is integral over a polynomial subring $k[y_1, \dots, y_d]$ with $d = \operatorname{trdeg}$ — and the theorems of **lying over, going up and incomparability** (Cohen–Seidenberg) for integral extensions, which show that $A$ and $k[y_1, \dots, y_d]$ have the same dimension; then induct on $d$. See Atiyah–Macdonald, Chapters 5 and 11, or Eisenbud, Chapters 8–13. Mathlib proves $\dim R[x_1, \dots, x_n] = \dim R + n$ for every Noetherian $R$ (see the formal section).
+
+<Theorem name="Theorem 8 (primary decomposition; stated)">
+
+In a Noetherian ring every ideal is a finite intersection of **primary** ideals ($\mathfrak{q}$ is primary if $ab \in \mathfrak{q}$ and $a \notin \mathfrak{q}$ imply $b^m \in \mathfrak{q}$ for some $m$). In a minimal decomposition $I = \mathfrak{q}_1 \cap \cdots \cap \mathfrak{q}_s$ the primes $\sqrt{\mathfrak{q}_i}$ are distinct and uniquely determined by $I$ (Lasker 1905 for polynomial rings, Noether 1921).
+
+</Theorem>
+
+For example, in $k[x, y]$, $(x^2, xy) = (x) \cap (x^2, y)$. The zero set is the line $x = 0$, but the decomposition also records an **embedded** primary component at the origin: $x$ vanishes on the line, $x \notin (x^2, xy)$, yet $x^2 \in (x^2, xy)$, and $y$ times the nilpotent $x$ is $0$ — the ideal remembers a fuzzy point stuck to the line. The first experiment detects exactly this with Gröbner bases.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: tangency is a nilpotent">
+
+The parabola $y = x^2$ meets the horizontal line $y = c$ where $x^2 = c$. Algebraically, the intersection is described by the ring
+$$
+k[x, y]/(y - x^2,\; y - c) \;\cong\; k[x]/(x^2 - c).
+$$
+Move the slider. For $c > 0$ there are two intersection points $(\pm\sqrt{c}, c)$, and $k[x]/(x^2 - c) \cong k \times k$ (Chinese remainder theorem): two reduced points. As $c \to 0$ they merge, and at $c = 0$ the ring becomes $k[x]/(x^2)$, which is **not reduced**: the class of $x$ is a non-zero nilpotent, remembering that the two points collided along the $x$-direction — the line is tangent. For $c < 0$ there are no real points, but over $\C$ there are still two, at $x = \pm i\sqrt{-c}$: this is why the Nullstellensatz needs an algebraically closed field.
+
+<FunctionPlot
+  fns={["x^2", "c"]}
+  labels={["y = x²", "y = c"]}
+  params={[{ name: "c", min: -1, max: 2, step: 0.05, value: 1 }]}
+  points={[["sqrt(c)", "c", "P"], ["-sqrt(c)", "c", "Q"]]}
+  x={[-2, 2]}
+  y={[-1.5, 3]}
+  title="Two points merging into a double point"
+  subtitle="At c = 0 the intersection ring k[x]/(x²) has a nilpotent: the line is tangent."
+/>
+
+The first experiment confirms this: $x \notin (y - x^2, y)$ but $x^2 \in (y - x^2, y)$, whereas for the secant $y = 1$ the ideal is already radical.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Commutative algebra in Lean and Mathlib">
+
+Mathlib's commutative algebra library is large. We start with the difference between prime and maximal ideals, proved directly, and the library fact that maximal ideals are prime:
+
+<Lean decl="Lumenary.CommutativeAlgebra.zero_prime_not_maximal" />
+
+<Lean decl="Lumenary.CommutativeAlgebra.maximal_is_prime" />
+
+Hilbert's basis theorem is in Mathlib, proved via leading coefficients as above. We prove that the hypothesis "finitely many variables" in the corollary cannot be dropped, using Mathlib's characterisation of Noetherian modules by stabilising chains (`monotone_stabilizes_iff_noetherian`) and an evaluation homomorphism:
+
+<Lean decl="Lumenary.CommutativeAlgebra.hilbert_basis" />
+
+<Lean decl="Lumenary.CommutativeAlgebra.hilbert_basis_mv" />
+
+<Lean decl="Lumenary.CommutativeAlgebra.infinitely_many_variables_not_noetherian" />
+
+Nakayama's lemma, proved here from Mathlib's determinant trick exactly as in the text — the only extra step is that $1 + x$ is a unit when $x$ lies in the Jacobson radical (`Ideal.mem_jacobson_bot`) — and Mathlib's own statement:
+
+<Lean decl="Lumenary.CommutativeAlgebra.nakayama" />
+
+<Lean decl="Lumenary.CommutativeAlgebra.nakayama_library" />
+
+Localisation at a prime, through the predicate `IsLocalization.AtPrime S p` ("$S$ is a localisation of $R$ at $\mathfrak{p}$"), which lets every construction of $R_\mathfrak{p}$ be used interchangeably:
+
+<Lean decl="Lumenary.CommutativeAlgebra.localization_primes" />
+
+<Lean decl="Lumenary.CommutativeAlgebra.localization_local" />
+
+The Nullstellensatz: first, why the radical is needed; then Mathlib's strong and weak forms (stated for finitely many variables over an algebraically closed field); and the dimension of polynomial rings:
+
+<Lean decl="Lumenary.CommutativeAlgebra.x_sq_not_radical" />
+
+<Lean decl="Lumenary.CommutativeAlgebra.nullstellensatz" />
+
+<Lean decl="Lumenary.CommutativeAlgebra.maximal_ideals_are_points" />
+
+<Lean decl="Lumenary.CommutativeAlgebra.krull_dim_polynomial" />
+
+**What is and is not formalised.** Proved here: $(0) \subseteq \Z$ is prime but not maximal; $k[x_0, x_1, \dots]$ is not Noetherian; Nakayama's lemma from the determinant trick; $(x^2)$ is not radical. From Mathlib: maximal ⇒ prime, Hilbert's basis theorem, the determinant trick, the primes of a localisation and locality of $R_\mathfrak{p}$, both forms of the Nullstellensatz (for all algebraically closed fields, via Jacobson rings rather than our countability argument), and $\dim k[x_1, \dots, x_n] = n$. Not formalised here: Proposition 2(3) and the local–global principle, the countability proof of the Nullstellensatz for $\C$, primary decomposition (Mathlib proves the Lasker–Noether theorem for Noetherian modules as `Submodule.isLasker`), Noether normalisation (Mathlib: `exists_finite_inj_algHom_of_fg`), and lying over and going up (Mathlib: `Ideal.exists_ideal_over_prime_of_isIntegral` and its relatives).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Radicals and spectra, computed">
+
+The first experiment decides ideal membership in $\Q[x, y]$ with **Gröbner bases**, finds the least $m$ with $f^m \in I$ in several tangency examples (parabola and tangent line, circle and tangent line, the cusp $y^2 = x^3$ and its tangent), and checks the answer against Rabinowitsch's single test $1 \in (I, 1 - tf)$ from the proof of Theorem 6.
+
+<Python id="commutative_algebra_nullstellensatz" />
+
+The second experiment works in the finite rings $\Z/n$ for $n \leq 60$, where everything can be checked by listing elements: primes coincide with maximal ideals (finite domains are fields, so $\dim \Z/n = 0$), the nilradical equals the Jacobson radical, $\Z/n$ is local exactly when $n$ is a prime power, localisation at $(p)$ — computed from the definition of $S^{-1}R$ — gives $\Z/p^e$, and Nakayama's lemma holds for every ideal of every local $\Z/p^e$.
+
+<Python id="commutative_algebra_spec_zmod" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every ring is Noetherian."** The rings met first — fields, $\Z$, $k[x_1, \dots, x_n]$, their quotients and localisations — are Noetherian, but $k[x_1, x_2, x_3, \dots]$ is not (the chain $(x_1) \subsetneq (x_1, x_2) \subsetneq \cdots$ never stops), and neither are $C([0, 1])$ or the ring of all algebraic integers. A subring of a Noetherian ring need not be Noetherian: $k[x_1, x_2, \dots] \subseteq k(x_1, x_2, \dots)$.
+
+</Misconception>
+
+<Misconception>
+
+**"Prime and maximal ideals are the same thing."** Every maximal ideal is prime, but not conversely: $(0) \subseteq \Z$ and $(x) \subseteq k[x, y]$ are prime and not maximal. Geometrically, maximal ideals are closed points, and non-maximal primes are generic points of positive-dimensional subvarieties. They do coincide in rings of dimension $0$, such as finite rings and $\Z/n$.
+
+</Misconception>
+
+<Misconception>
+
+**"An ideal is determined by its zero set."** Only its radical is: $(x)$ and $(x^2)$ in $k[x]$ have the same zero set $\{0\}$. The Nullstellensatz gives $I(V(I)) = \sqrt{I}$, not $I$, and the difference — nilpotents in $R/I$ — carries real information, such as tangency and multiplicity.
+
+</Misconception>
+
+<Misconception>
+
+**"The Nullstellensatz holds over any field" and "Nakayama holds for any module."** Over $\R$, $(x^2 + 1)$ is a proper ideal with no real zeros, so the weak form fails; algebraic closure is essential. Nakayama needs finite generation: $\Q$ is a module over the local ring $\Z_{(p)}$ with $p\Q = \Q$, yet $\Q \neq 0$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="The algebra–geometry dictionary">
+
+The Nullstellensatz turns geometry into algebra: algebraic sets in $\C^n$ correspond to radical ideals, irreducible ones to primes, points to maximal ideals, and polynomial maps $X \to Y$ between algebraic sets to $\C$-algebra homomorphisms $\C[Y] \to \C[X]$ of coordinate rings, reversing arrows. Local geometry is local algebra: the local ring $\mathcal{O}_{X,a} = \C[X]_{\mathfrak{m}_a}$ consists of rational functions defined near $a$, and the **Zariski cotangent space** $\mathfrak{m}/\mathfrak{m}^2$ (with $\mathfrak{m}$ the maximal ideal of $\mathcal{O}_{X,a}$) has dimension equal to $\dim X$ exactly at smooth points. For the nodal cubic $y^2 = x^2(x + 1)$ at the origin, $\mathfrak{m}/\mathfrak{m}^2$ is $2$-dimensional on a $1$-dimensional curve: the origin is singular. Smoothness becomes an algebraic property — **regularity** of the local ring — and Grothendieck's schemes extend the dictionary to all commutative rings (see <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="The Zariski topology: compact, rarely Hausdorff">
+
+$\operatorname{Spec} R$ with the Zariski topology is always quasi-compact (if $\bigcap V(I_\alpha) = \varnothing$ then $\sum I_\alpha = R$, so $1$ is a finite sum and finitely many $V(I_\alpha)$ already have empty intersection), but rarely Hausdorff: the closure of the generic point $(0)$ of $\operatorname{Spec} \Z$ is everything. Its topology is coarse but meaningful. Irreducible components of $\operatorname{Spec} R$ correspond to minimal primes; **connected components** to idempotents — $\operatorname{Spec} R$ is disconnected exactly when $R \cong R_1 \times R_2$ non-trivially, as for $\Z/6 \cong \Z/2 \times \Z/3$, whose spectrum is two points; and a Noetherian ring has a **Noetherian** spectrum, in which every closed set is a finite union of irreducible ones (the geometric face of primary decomposition). Principal open sets $D(f) = \operatorname{Spec} R \setminus V(f) \cong \operatorname{Spec} R_f$ form a basis, so localisation literally is restriction to an open subset (see <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Spec ℤ as an arithmetic curve">
+
+$\Z$ and the ring of integers $\mathcal{O}_K$ of a number field are Noetherian, integrally closed domains of dimension $1$ — **Dedekind domains** — and in them every non-zero ideal factors uniquely into prime ideals, which is what Kummer's "ideal numbers" were invented to restore. The inclusion $\Z \subseteq \Z[i]$ is integral, and lying over is the statement that every prime $p$ has primes of $\Z[i]$ above it: $(2) = (1 + i)^2$ ramifies, $(5) = (2 + i)(2 - i)$ splits, $(3)$ stays prime. Localising at $p$ — and then completing to the $p$-adic integers $\Z_p$ — studies a number "near the prime $p$", just as one studies a function near a point. The resulting **analogy** between number fields and function fields of curves over finite fields (Dedekind–Weber, Weil) is a guiding heuristic, not a theorem; it has repeatedly predicted true results, such as the Weil conjectures proved by Deligne (see <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Gröbner bases: deciding ideal membership">
+
+For polynomial rings over a field, Hilbert's existence proofs became algorithms with **Gröbner bases**, introduced by Bruno Buchberger in his 1965 thesis (supervised by Wolfgang Gröbner). A Gröbner basis of $I$ for a monomial order makes division with remainder unique, so $f \in I$ iff the remainder of $f$ is $0$. With it one can decide membership, compute $\sqrt I$-membership by Rabinowitsch's trick, eliminate variables (the elimination theorem: a lex Gröbner basis of $I$ contains one of $I \cap k[x_{j}, \dots, x_n]$), compute Hilbert polynomials and hence dimension, and find primary decompositions. The cost can be enormous: Mayr and Meyer (1982) showed that ideal membership for polynomials with rational coefficients is EXPSPACE-hard, yet Gröbner bases are routine in practice for small systems and power computer algebra systems such as Singular and Macaulay2. The first experiment uses sympy's implementation.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trail">
+
+Localisation is the systematic answer to the question this trail asks for the integers: which elements can be given inverses, and what happens to the ring when we insist? Inverting all non-zero integers gives $\Q$; inverting only the powers of $2$ gives $\Z[1/2]$; inverting a nilpotent destroys the ring.
+
+<Trail slug="inverses-and-structure" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Ernst Kummer** introduced "ideal numbers" in the 1840s to restore unique factorisation in cyclotomic integers; **Richard Dedekind** replaced them by ideals (1871), and **Leopold Kronecker** developed a parallel theory of divisors.
+- **David Hilbert** proved the basis theorem (1890) and the Nullstellensatz (1893) in his work on invariant theory; **J. L. Rabinowitsch** gave the one-page trick for the strong form (1929). **Emanuel Lasker** (also a world chess champion) proved primary decomposition in polynomial rings (1905).
+- **Emmy Noether**'s "Idealtheorie in Ringbereichen" (1921) introduced the ascending chain condition and proved primary decomposition in what are now called Noetherian rings; her school in Göttingen made abstract commutative algebra a subject.
+- **Wolfgang Krull** developed dimension theory, local rings and localisation in the 1920s–30s. **Oscar Zariski** and **André Weil** rebuilt algebraic geometry on commutative algebra in the 1940s; **Masayoshi Nagata** found fundamental counterexamples, including a Noetherian ring of infinite Krull dimension (1962). The lemma named after **Tadasi Nakayama** was also found by **Wolfgang Krull** and **Gorô Azumaya**, and Nakayama himself credited it to them.
+- **Alexander Grothendieck** (*Éléments de géométrie algébrique*, from 1960) made $\operatorname{Spec} R$ of an arbitrary ring a geometric space, unifying algebraic geometry and number theory. **Bruno Buchberger** (1965) introduced Gröbner bases, making much of the theory computable.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- M. F. Atiyah and I. G. Macdonald, *Introduction to Commutative Algebra* (1969) — the classic concise course: localisation (Ch. 3), primary decomposition (Ch. 4), integral dependence and the Nullstellensatz (Ch. 5, 7), dimension theory (Ch. 11).
+- David Eisenbud, *Commutative Algebra with a View Toward Algebraic Geometry* (1995) — comprehensive, with geometric motivation and Gröbner bases.
+- Miles Reid, *Undergraduate Commutative Algebra* (1995) — a gentle first pass, very geometric.
+- Hideyuki Matsumura, *Commutative Ring Theory* (1986) — the standard reference for dimension theory and local rings.
+- David Cox, John Little and Donal O'Shea, *Ideals, Varieties, and Algorithms* (4th ed., 2015) — Gröbner bases and computational algebraic geometry.
+- Robin Hartshorne, *Algebraic Geometry* (1977) — Chapters I–II build varieties and schemes on this lesson's commutative algebra.
+
+</Section>

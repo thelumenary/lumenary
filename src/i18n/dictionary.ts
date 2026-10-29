@@ -62,6 +62,16 @@ export const CORE_NAMESPACES = ["meta", "nav", "theme", "language", "modes", "co
 /** A subset of the catalogue, so each page only ships the strings its client components use. */
 export function pickMessages(messages: Messages, namespaces: readonly string[]): Partial<Messages> {
   const out: Record<string, unknown> = {};
-  for (const ns of namespaces) if (ns in messages) out[ns] = (messages as Record<string, unknown>)[ns];
+  const all = messages as Record<string, unknown>;
+  for (const ns of namespaces) {
+    // "w.fractions" picks one sub-namespace, so pages ship only the widget strings they use.
+    const [top, sub] = ns.split(".", 2);
+    if (!(top in all)) continue;
+    if (sub === undefined) out[top] = all[top];
+    else {
+      const node = all[top] as Record<string, unknown>;
+      if (node && sub in node) out[top] = { ...((out[top] as Record<string, unknown>) ?? {}), [sub]: node[sub] };
+    }
+  }
   return out as Partial<Messages>;
 }

@@ -1,0 +1,458 @@
+---
+slug: monoidal-categories
+topic: math.cat.monoidal-categories
+title: Monoidal categories
+subtitle: Composition puts processes in sequence; a tensor product puts them side by side — and the laws of "side by side" are pentagons, hexagons and braids.
+level: grad
+ages: Graduate
+minutes: 120
+order: 7038
+objectives:
+  - Verify that $(\cat{Set}, \times, 1)$, $(\cat{Set}, \sqcup, \varnothing)$ and $(\cat{Vect}_k, \otimes, k)$ are symmetric monoidal categories
+  - State Mac Lane's coherence theorem, compute with string diagrams, and prove that $\mathrm{End}(I)$ is commutative
+  - Prove the Eckmann–Hilton argument and use it to explain why braidings exist only "one dimension up"
+  - Distinguish braided from symmetric monoidal categories, with the braid groups and quantum-group representations as examples
+  - Define monoid objects and identify them in examples — monoids, rings, $k$-algebras, and monads as monoids of endofunctors
+narrators: []
+lean:
+  - Lumenary.MonoidalCategories.pentagon
+  - Lumenary.MonoidalCategories.triangle
+  - Lumenary.MonoidalCategories.unitors_equal
+  - Lumenary.MonoidalCategories.end_unit_comm
+  - Lumenary.MonoidalCategories.eckmann_hilton
+  - Lumenary.MonoidalCategories.coherence
+  - Lumenary.MonoidalCategories.types_symmetric
+  - Lumenary.MonoidalCategories.monoid_objects_in_types
+  - Lumenary.MonoidalCategories.monads_are_monoids
+  - Lumenary.MonoidalCategories.carryCochain
+  - Lumenary.MonoidalCategories.carry_pentagon
+  - Lumenary.MonoidalCategories.naive_not_cocycle
+compute: [monoidal_categories_pentagon, monoidal_categories_braiding]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Side by side">
+
+Composition $g \circ f$ puts two processes **in sequence**. Much of mathematics and physics also needs to put things **in parallel**: two independent choices form a pair $(x, y) \in X \times Y$; a quantum system made of two subsystems has state space $V \otimes W$; two electrical circuits sit next to each other on a board; two strands of a braid hang side by side; two programs run on separate inputs. Each situation has a binary operation on objects *and* on morphisms, $f \otimes g : A \otimes B \to A' \otimes B'$, together with a "do nothing" object $I$.
+
+Such an operation is almost never associative on the nose. The sets $(X \times Y) \times Z$ and $X \times (Y \times Z)$ are different (their elements are $((x, y), z)$ and $(x, (y, z))$), though canonically isomorphic. A **monoidal category** keeps these canonical isomorphisms as data and asks for exactly the right laws between them: Mac Lane's **pentagon** and **triangle**. The surprise is that two small diagrams are enough to make *every* formal diagram built from these canonical isomorphisms commute — the coherence theorem. Asking for "commutativity up to isomorphism" leads to **braidings**, the **hexagon** axioms, and a genuine fork in the road: braidings that square to the identity (symmetric) and braidings that do not, the latter governed by Artin's braid groups and found in quantum groups, knot invariants and anyonic physics.
+
+This lesson builds on <TopicLink id="math.cat.natural-transformations">natural transformations</TopicLink> and <TopicLink id="math.cat.products-coproducts">products and coproducts</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Strings, boxes and bracketings">
+
+Draw an object as a vertical **string** and a morphism $f : A \to B$ as a **box** on a string, read from bottom to top. Composition stacks boxes vertically; the tensor product places strings and boxes **side by side**; the unit $I$ is drawn as *no string at all*. Functoriality of $\otimes$, the **interchange law**
+
+$$
+(g \otimes g') \circ (f \otimes f') = (g \circ f) \otimes (g' \circ f'),
+$$
+
+says that boxes on different strings slide freely past each other in height. A **braiding** $c_{A,B} : A \otimes B \to B \otimes A$ is drawn as a crossing of two strings — and whether $c_{B,A} \circ c_{A,B}$ is the identity is the question of whether a doubly-crossed pair of strings can be pulled straight.
+
+<Figure caption="String diagrams, read bottom to top. Left: the interchange law — boxes on different strings slide past each other, so both pictures equal f ⊗ g. Right: a braiding is a crossing; braiding twice need not equal the identity (straight strings), which is the difference between braided and symmetric.">
+<svg viewBox="0 0 640 210" role="img" aria-label="Two string diagrams of the interchange law, then a single crossing, a double crossing and two straight strands">
+  <g stroke="var(--ink-2)" strokeWidth="2.2" fill="none">
+    <line x1="40" y1="20" x2="40" y2="190" />
+    <line x1="100" y1="20" x2="100" y2="190" />
+    <line x1="180" y1="20" x2="180" y2="190" />
+    <line x1="240" y1="20" x2="240" y2="190" />
+  </g>
+  <rect x="22" y="120" width="36" height="30" rx="4" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="2" />
+  <rect x="82" y="55" width="36" height="30" rx="4" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="2" />
+  <rect x="162" y="55" width="36" height="30" rx="4" fill="var(--sky-soft)" stroke="var(--human)" strokeWidth="2" />
+  <rect x="222" y="120" width="36" height="30" rx="4" fill="var(--sky-soft)" stroke="var(--formal)" strokeWidth="2" />
+  <text x="40" y="140" textAnchor="middle" fontSize="15" fill="var(--ink-2)">f</text>
+  <text x="100" y="75" textAnchor="middle" fontSize="15" fill="var(--ink-2)">g</text>
+  <text x="180" y="75" textAnchor="middle" fontSize="15" fill="var(--ink-2)">f</text>
+  <text x="240" y="140" textAnchor="middle" fontSize="15" fill="var(--ink-2)">g</text>
+  <text x="140" y="110" textAnchor="middle" fontSize="22" fill="var(--ink-2)">=</text>
+  <g stroke="var(--ink-2)" strokeWidth="2.2" fill="none">
+    <path d="M330 190 C330 110 390 100 390 20" />
+    <path d="M390 190 C390 158 380.4 137.2 368.9 118.6" />
+    <path d="M351.1 91.4 C339.6 72.8 330 52 330 20" />
+    <path d="M440 190 C440 150 500 145 500 105" />
+    <path d="M500 190 C500 174 490.4 163.6 478.9 154.3" />
+    <path d="M461.1 140.7 C449.6 131.4 440 121 440 105" />
+    <path d="M440 105 C440 65 500 60 500 20" />
+    <path d="M500 105 C500 89 490.4 78.6 478.9 69.3" />
+    <path d="M461.1 55.7 C449.6 46.4 440 36 440 20" />
+    <line x1="570" y1="20" x2="570" y2="190" />
+    <line x1="620" y1="20" x2="620" y2="190" />
+  </g>
+  <text x="360" y="205" textAnchor="middle" fontSize="13" fill="var(--ink-2)">braiding</text>
+  <text x="470" y="205" textAnchor="middle" fontSize="13" fill="var(--ink-2)">twice</text>
+  <text x="535" y="110" textAnchor="middle" fontSize="22" fill="var(--gold)">≠</text>
+  <text x="595" y="205" textAnchor="middle" fontSize="13" fill="var(--ink-2)">identity</text>
+</svg>
+</Figure>
+
+Bracketings are the other half of the picture. A word $A_1 \otimes \cdots \otimes A_n$ can be bracketed in $C_{n-1}$ ways (the Catalan numbers $1, 1, 2, 5, 14, 42, \dots$), and single applications of the associator connect them into a graph: for $n = 4$ it is a **pentagon**, for $n = 5$ the 1-skeleton of a 3-dimensional polytope with 14 vertices and 21 edges (Stasheff's associahedron; the underlying order is Tamari's lattice). Coherence says that if the pentagon commutes, then every 2-dimensional face of every associahedron does, so any two paths of associators between two bracketings agree.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Monoidal, braided and symmetric">
+
+<Definition term="monoidal category">
+
+A **monoidal category** $(\mathcal{C}, \otimes, I, \alpha, \lambda, \rho)$ is a category $\mathcal{C}$ with a functor $\otimes : \mathcal{C} \times \mathcal{C} \to \mathcal{C}$, an object $I$ (the **unit**), and natural isomorphisms
+
+$$
+\alpha_{A,B,C} : (A \otimes B) \otimes C \xrightarrow{\ \cong\ } A \otimes (B \otimes C), \qquad \lambda_A : I \otimes A \xrightarrow{\ \cong\ } A, \qquad \rho_A : A \otimes I \xrightarrow{\ \cong\ } A
+$$
+
+(the **associator** and the left and right **unitors**) such that the pentagon and triangle diagrams below commute for all objects. It is **strict** if $\alpha$, $\lambda$, $\rho$ are identities.
+
+</Definition>
+
+<CommutativeDiagram
+  objects={[
+    { id: "a", tex: "((W \\otimes X) \\otimes Y) \\otimes Z", row: 0, col: 2 },
+    { id: "b", tex: "(W \\otimes (X \\otimes Y)) \\otimes Z", row: 1.2, col: 0 },
+    { id: "e", tex: "(W \\otimes X) \\otimes (Y \\otimes Z)", row: 1.2, col: 4 },
+    { id: "c", tex: "W \\otimes ((X \\otimes Y) \\otimes Z)", row: 2.6, col: 0.4 },
+    { id: "d", tex: "W \\otimes (X \\otimes (Y \\otimes Z))", row: 2.6, col: 3.6 }
+  ]}
+  arrows={[
+    { from: "a", to: "b", tex: "\\alpha_{W,X,Y} \\otimes Z", labelSide: "right" },
+    { from: "b", to: "c", tex: "\\alpha_{W,X \\otimes Y,Z}", labelSide: "right" },
+    { from: "c", to: "d", tex: "W \\otimes \\alpha_{X,Y,Z}", labelSide: "right" },
+    { from: "a", to: "e", tex: "\\alpha_{W \\otimes X,Y,Z}" },
+    { from: "e", to: "d", tex: "\\alpha_{W,X,Y \\otimes Z}" }
+  ]}
+  caption="The pentagon axiom: the two ways of moving all brackets to the right agree."
+/>
+
+<CommutativeDiagram
+  objects={[
+    { id: "a", tex: "(X \\otimes I) \\otimes Y", row: 0, col: 0 },
+    { id: "b", tex: "X \\otimes (I \\otimes Y)", row: 0, col: 2 },
+    { id: "c", tex: "X \\otimes Y", row: 1, col: 1 }
+  ]}
+  arrows={[
+    { from: "a", to: "b", tex: "\\alpha_{X,I,Y}" },
+    { from: "a", to: "c", tex: "\\rho_X \\otimes Y", labelSide: "right" },
+    { from: "b", to: "c", tex: "X \\otimes \\lambda_Y" }
+  ]}
+  caption="The triangle axiom."
+/>
+
+<Definition term="monoidal functor">
+
+A **(strong) monoidal functor** $(F, \phi, \phi_0) : \mathcal{C} \to \mathcal{D}$ is a functor with natural isomorphisms $\phi_{A,B} : FA \otimes FB \to F(A \otimes B)$ and $\phi_0 : I \to FI$ compatible with the associators and unitors. If $\phi, \phi_0$ are merely morphisms it is **lax monoidal**. A **monoidal equivalence** is a strong monoidal functor that is an equivalence of categories.
+
+</Definition>
+
+<Definition term="braiding; symmetric monoidal category">
+
+A **braiding** on a monoidal category is a natural isomorphism $c_{A,B} : A \otimes B \to B \otimes A$ satisfying the two **hexagon axioms**; with the associators suppressed they read
+
+$$
+c_{A, B \otimes C} = (B \otimes c_{A,C}) \circ (c_{A,B} \otimes C), \qquad c_{A \otimes B, C} = (c_{A,C} \otimes B) \circ (A \otimes c_{B,C}),
+$$
+
+i.e. moving $A$ past $B \otimes C$ is moving it past $B$ then past $C$, and likewise on the other side. A braided monoidal category is **symmetric** if $c_{B,A} \circ c_{A,B} = \mathrm{id}_{A \otimes B}$ for all $A, B$.
+
+</Definition>
+
+<Definition term="monoid object">
+
+A **monoid object** in a monoidal category is an object $M$ with morphisms $\mu : M \otimes M \to M$ and $\eta : I \to M$ such that $\mu \circ (\mu \otimes M) = \mu \circ (M \otimes \mu) \circ \alpha_{M,M,M}$ and $\mu \circ (\eta \otimes M) = \lambda_M$, $\mu \circ (M \otimes \eta) = \rho_M$. A morphism of monoid objects is a morphism commuting with $\mu$ and $\eta$.
+
+</Definition>
+
+<Definition term="closed monoidal category">
+
+A monoidal category is **(right) closed** if every functor $- \otimes A$ has a right adjoint $[A, -]$, the **internal hom**: $\mathcal{C}(B \otimes A, C) \cong \mathcal{C}(B, [A, C])$ naturally in $B$ and $C$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Cartesian: (Set, ×, 1)">
+
+$X \otimes Y = X \times Y$, $I = \{*\}$, $\alpha((x, y), z) = (x, (y, z))$, $\lambda(*, x) = x$, $\rho(x, *) = x$, and the braiding $c(x, y) = (y, x)$. More generally any category with finite products is monoidal under $\times$ with the terminal object as unit (a **cartesian** monoidal category), and symmetric. It is closed: $[Y, Z] = Z^Y$ and currying is the adjunction.
+
+</Example>
+
+<Example title="Cocartesian: (Set, ⊔, ∅)">
+
+$X \otimes Y = X \sqcup Y$ (disjoint union, e.g. $X \times \{0\} \cup Y \times \{1\}$), $I = \varnothing$; the associator and unitors are the evident relabellings, and the braiding swaps the tags $0, 1$. Any category with finite coproducts is monoidal under $\sqcup$ with the initial object as unit. This structure is *not* closed: $- \sqcup Y$ does not preserve the initial object (for $Y \neq \varnothing$), so it has no right adjoint.
+
+</Example>
+
+<Example title="Linear: (Vect_k, ⊗, k)">
+
+$V \otimes W$ is the tensor product over a field $k$, $I = k$, $\alpha((u \otimes v) \otimes w) = u \otimes (v \otimes w)$, $\lambda(c \otimes v) = cv$, and the braiding $c(v \otimes w) = w \otimes v$, all defined on pure tensors and extended linearly (well defined by the universal property). It is symmetric and closed with $[V, W] = \mathrm{Hom}_k(V, W)$. Here $\otimes$ is **not** a categorical product: a linear map $U \to V \otimes W$ is not a pair of maps, and there are no natural projections $V \otimes W \to V$. The same holds for $(\cat{Ab}, \otimes_{\Z}, \Z)$, for $R$-modules over a commutative ring, and for $(\cat{Hilb}, \otimes, \C)$.
+
+</Example>
+
+<Example title="Endofunctors: a strict, non-symmetric monoidal category">
+
+For any category $\mathcal{C}$, the functor category $[\mathcal{C}, \mathcal{C}]$ is strict monoidal with $F \otimes G = F \circ G$ and $I = \mathrm{id}_{\mathcal{C}}$; on natural transformations $\otimes$ is horizontal composition. It is usually not braided: $F \circ G \not\cong G \circ F$ in general. Monoid objects here are exactly **monads** (see <TopicLink id="math.cat.monads">monads</TopicLink>).
+
+</Example>
+
+<Example title="Graded vector spaces with a twisted associator">
+
+Let $G$ be a group and $\omega : G^3 \to k^\times$ a function. $\mathrm{Vec}_G^\omega$ is the category of finite-dimensional $G$-graded vector spaces with $(V \otimes W)_g = \bigoplus_{hh' = g} V_h \otimes W_{h'}$, unit the one-dimensional space $\delta_e$ in degree $e$, and associator acting on $V_a \otimes V_b \otimes V_c$ as multiplication by $\omega(a, b, c)$. On the simple objects $\delta_a$ the pentagon axiom becomes the **3-cocycle condition**
+
+$$
+\omega(b, c, d)\, \omega(a, bc, d)\, \omega(a, b, c) = \omega(ab, c, d)\, \omega(a, b, cd),
+$$
+
+and the triangle axiom (with identity unitors) the normalisation $\omega(a, e, c) = 1$. For $G = \Z/n$ and $\zeta = e^{2\pi i/n}$, the cochains $\omega_p(a, b, c) = \zeta^{\,p\, a\, \mathrm{carry}(b, c)}$, where $\mathrm{carry}(b, c) = 1$ if $b + c \ge n$ (for representatives $0 \le b, c \lt n$) and $0$ otherwise, are 3-cocycles. *Proof:* write the condition additively in exponents. The number of wrap-arounds in computing $b + c + d$ does not depend on the bracketing, so $\mathrm{carry}(b, c) + \mathrm{carry}(b + c, d) = \mathrm{carry}(c, d) + \mathrm{carry}(b, c + d)$; substituting, the two sides differ by $p\,(a + b - [a + b])\,\mathrm{carry}(c, d) = p\,n\,\mathrm{carry}(a, b)\,\mathrm{carry}(c, d) \equiv 0 \pmod n$. These cochains represent all of $H^3(\Z/n, \C^\times) \cong \Z/n$: up to changing the tensor-product isomorphisms by a 2-cochain, there are exactly $n$ associators on $\Z/n$-graded vector spaces with $\delta_a \otimes \delta_b = \delta_{a+b}$.
+
+</Example>
+
+<Example title="Representations">
+
+For a group $G$, finite-dimensional representations form a symmetric monoidal category $\mathrm{Rep}(G)$ with $g \cdot (v \otimes w) = gv \otimes gw$ and the trivial representation as unit. For a Hopf algebra $H$ the comultiplication makes $\mathrm{Rep}(H)$ monoidal, and an $R$-matrix (a quasi-triangular structure) makes it braided. For the quantum group $U_q(\mathfrak{sl}_2)$ at generic $q$ the resulting braiding is **not** symmetric (see the second experiment).
+
+</Example>
+
+<Example title="Braids">
+
+The braid category $\mathcal{B}$ has objects $0, 1, 2, \dots$, morphisms $n \to n$ the elements of Artin's braid group $B_n$ (none between different $n$), and $m \otimes n = m + n$ by placing braids side by side. The crossing $\sigma \in B_2$ is a braiding $1 \otimes 1 \to 1 \otimes 1$. Since $B_2 \cong \Z$ is generated by $\sigma$, $\sigma^2 \neq \mathrm{id}$: $\mathcal{B}$ is braided but not symmetric. By a theorem of Joyal and Street, $\mathcal{B}$ is the free braided monoidal category on one object.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Theorems">
+
+<Theorem name="Proposition 1 ((Set, ×, 1) is symmetric monoidal)">
+
+With the structure maps above, $(\cat{Set}, \times, \{*\})$ satisfies the pentagon, triangle and hexagon axioms, and $c_{Y,X} \circ c_{X,Y} = \mathrm{id}$.
+
+</Theorem>
+
+<Proof>
+
+Naturality of $\alpha, \lambda, \rho, c$ is immediate from the formulas. Pentagon: both composites send $(((w, x), y), z)$ to $(w, (x, (y, z)))$ — the upper path via $((w, x), (y, z))$, the lower via $((w, (x, y)), z)$ and $(w, ((x, y), z))$. Triangle: both sides send $((x, *), y)$ to $(x, y)$. Hexagon (first form, associators included): both sides send $((x, y), z)$ to $(y, (z, x))$; the second is similar. Symmetry: $c(c(x, y)) = c(y, x) = (x, y)$. The same element-chasing proves the claims for $(\cat{Set}, \sqcup, \varnothing)$, and for $(\cat{Vect}_k, \otimes, k)$ it suffices to check on pure tensors $u \otimes v \otimes w$, which span.
+
+</Proof>
+
+The next result is the first sign that "commutativity" is forced one dimension up.
+
+<Theorem name="Theorem 2 (Eckmann–Hilton)">
+
+Let $X$ be a set with two binary operations $\cdot$ and $\ast$, with units $1_\cdot$ and $1_\ast$, satisfying the **interchange law** $(a \ast b) \cdot (c \ast d) = (a \cdot c) \ast (b \cdot d)$. Then $1_\cdot = 1_\ast$, the two operations coincide, and they are commutative (and associative).
+
+</Theorem>
+
+<Proof>
+
+Put $a = d = 1_\ast$, $b = c = 1_\cdot$: the left side is $(1_\ast \ast 1_\cdot) \cdot (1_\cdot \ast 1_\ast) = 1_\cdot \cdot 1_\cdot = 1_\cdot$ and the right side is $(1_\ast \cdot 1_\cdot) \ast (1_\cdot \cdot 1_\ast) = 1_\ast \ast 1_\ast = 1_\ast$. Call the common unit $1$. Then
+
+$$
+a \cdot b = (a \ast 1) \cdot (1 \ast b) = (a \cdot 1) \ast (1 \cdot b) = a \ast b, \qquad a \cdot b = (1 \ast a) \cdot (b \ast 1) = (1 \cdot b) \ast (a \cdot 1) = b \ast a = b \cdot a .
+$$
+
+Associativity follows similarly: $(a \cdot b) \cdot c = (a \ast b) \cdot (1 \ast c) = (a \cdot 1) \ast (b \cdot c) = a \cdot (b \cdot c)$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (End(I) is commutative; Kelly, Kelly–Laplaza)">
+
+In any monoidal category, $\lambda_I = \rho_I : I \otimes I \to I$, and the monoid $\mathrm{End}(I)$ is commutative.
+
+</Theorem>
+
+<Proof>
+
+That $\lambda_I = \rho_I$ follows from the pentagon and triangle axioms (Kelly 1964; the commutativity of $\mathrm{End}(I)$ is recorded by Kelly and Laplaza, 1980); a proof is in Etingof–Gelaki–Nikshych–Ostrik, *Tensor Categories*, §2.2, and Mathlib proves it as `unitors_equal`. Write $u = \lambda_I = \rho_I$. For $f, g \in \mathrm{End}(I)$, naturality of $\lambda$ and $\rho$ gives
+
+$$
+u \circ (I \otimes g) = g \circ u, \qquad u \circ (f \otimes I) = f \circ u ,
+$$
+
+and the interchange law gives $(f \otimes I) \circ (I \otimes g) = f \otimes g = (I \otimes g) \circ (f \otimes I)$. Hence
+
+$$
+g \circ f \circ u = g \circ u \circ (f \otimes I) = u \circ (I \otimes g) \circ (f \otimes I) = u \circ (f \otimes I) \circ (I \otimes g) = f \circ u \circ (I \otimes g) = f \circ g \circ u ,
+$$
+
+and since $u$ is invertible, $g \circ f = f \circ g$.
+
+</Proof>
+
+This is Eckmann–Hilton in disguise: on $\mathrm{End}(I)$, composition and $\otimes$ (transported along $u$) are two unital operations satisfying interchange. For example, $\mathrm{End}(I) = k$ in $\cat{Vect}_k$, and in $[\mathcal{C}, \mathcal{C}]$ it is the commutative monoid of natural transformations $\mathrm{id} \Rightarrow \mathrm{id}$ (the centre of $\mathcal{C}$).
+
+<Theorem name="Theorem 4 (Mac Lane's coherence theorem, 1963)">
+
+(a) In a monoidal category, every formal diagram built from components of $\alpha$, $\lambda$, $\rho$, their inverses, identities and $\otimes$ commutes. Precisely: in the free monoidal category on a set of objects, any two parallel morphisms are equal. (b) Every monoidal category is monoidally equivalent to a strict monoidal category.
+
+</Theorem>
+
+*Proof sketch and reference.* For (a), send every bracketed word to its normal form (all brackets to the right, units deleted); one shows that the canonical map from a word to its normal form is well defined, using the pentagon to commute any two associator moves and the triangle to handle units. Then any two canonical paths $w \to w'$ both factor through the normal form, hence agree. Mac Lane's original argument contains this; a careful account is in Mac Lane, *CWM*, VII.2 (coherence) and XI.3 (strictification), and Mathlib formalises (a) (`FreeMonoidalCategory.subsingleton_hom`). For (b), replace $\mathcal{C}$ by the category of finite lists of objects of $\mathcal{C}$, with concatenation as a strict tensor product and morphisms computed after tensoring out (EGNO, §2.8). Coherence is about **formal** diagrams: in $(\cat{Set}, \times)$ the swap $X \times X \to X \times X$ and the identity are both "canonical", yet different — they come from different formal expressions.
+
+For braided categories the analogue is that formal diagrams commute *when their underlying braids are equal* (Joyal–Street); for symmetric ones, when their underlying permutations are equal.
+
+<Theorem name="Proposition 5 (monoid objects)">
+
+Monoid objects in $(\cat{Set}, \times, 1)$ are monoids; in $(\cat{Ab}, \otimes_{\Z}, \Z)$ they are rings; in $(\cat{Vect}_k, \otimes, k)$ they are $k$-algebras; in $([\mathcal{C}, \mathcal{C}], \circ, \mathrm{id})$ they are monads; in $(\cat{Set}, \sqcup, \varnothing)$ every object has exactly one monoid structure.
+
+</Theorem>
+
+<Proof>
+
+In $\cat{Set}$, $\mu : M \times M \to M$ is a binary operation and $\eta : \{*\} \to M$ picks an element; the axioms, evaluated on elements, are associativity and the unit laws. In $\cat{Ab}$, a homomorphism $\mu : M \otimes M \to M$ is the same as a **biadditive** map $M \times M \to M$ (universal property of $\otimes$), i.e. a multiplication distributing over addition, and $\eta : \Z \to M$ is determined by $1 := \eta(1)$; the axioms (checked on pure tensors) are associativity and the unit laws, so $M$ is a ring. Replacing $\Z$ by $k$ gives $k$-algebras. In endofunctors, $\mu : T \circ T \Rightarrow T$ and $\eta : \mathrm{id} \Rightarrow T$, and the axioms are the monad laws. In $(\cat{Set}, \sqcup, \varnothing)$, $\eta : \varnothing \to M$ is unique and the unit laws force $\mu : M \sqcup M \to M$ to be the identity on each copy (the **codiagonal**); it is associative.
+
+</Proof>
+
+<Theorem name="Proposition 6 (monoids in monoids are commutative)">
+
+A monoid object in the cartesian monoidal category $(\cat{Mon}, \times, 1)$ is a commutative monoid, and its two multiplications coincide.
+
+</Theorem>
+
+<Proof>
+
+A monoid object in $\cat{Mon}$ is a monoid $(M, \cdot, 1)$ whose multiplication $\ast : M \times M \to M$ and unit are monoid homomorphisms. "$\ast$ is a homomorphism" is exactly the interchange law $(a \cdot c) \ast (b \cdot d) = (a \ast b) \cdot (c \ast d)$, so Eckmann–Hilton applies: $\ast = \cdot$ and both are commutative.
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Monoidal categories in Lean">
+
+Mathlib's `MonoidalCategory` has the pentagon and triangle as fields. Mathlib writes composition in diagrammatic order, `f ≫ g` for $g \circ f$, and uses **whiskering**: `X ◁ g` is $X \otimes g$ and `f ▷ Y` is $f \otimes Y$.
+
+<Lean decl="Lumenary.MonoidalCategories.pentagon" />
+
+<Lean decl="Lumenary.MonoidalCategories.triangle" />
+
+<Lean decl="Lumenary.MonoidalCategories.unitors_equal" />
+
+The proof of Theorem 3 is formalised step by step: naturality of the unitors, the interchange law (Mathlib's `whisker_exchange`), and cancellation of the isomorphism $u$.
+
+<Lean decl="Lumenary.MonoidalCategories.end_unit_comm" />
+
+<Lean decl="Lumenary.MonoidalCategories.eckmann_hilton" />
+
+Mac Lane's coherence theorem is in Mathlib for the free monoidal category:
+
+<Lean decl="Lumenary.MonoidalCategories.coherence" />
+
+<Lean decl="Lumenary.MonoidalCategories.types_symmetric" />
+
+<Lean decl="Lumenary.MonoidalCategories.monoid_objects_in_types" />
+
+<Lean decl="Lumenary.MonoidalCategories.monads_are_monoids" />
+
+Finally, the twisted associator on $\Z/3$-graded vector spaces. We record the exponent of $\zeta = e^{2\pi i/3}$, so the multiplicative cocycle condition becomes an additive identity in $\Z/3$ that Lean checks in all 243 cases; a naive alternative fails.
+
+<Lean decl="Lumenary.MonoidalCategories.carryCochain" />
+
+<Lean decl="Lumenary.MonoidalCategories.carry_pentagon" />
+
+<Lean decl="Lumenary.MonoidalCategories.naive_not_cocycle" />
+
+**What is and is not formalised.** Independently proved: the commutativity of $\mathrm{End}(I)$ (from Kelly's identity, which is taken from Mathlib), Eckmann–Hilton, symmetry of the cartesian braiding on types, and the cocycle computations for $\Z/3$. From Mathlib: the axioms, Kelly's identity, coherence for free monoidal categories, monoid objects in types, and monads as monoids. Not formalised here: strictification, the general cocycle identity for $\Z/n$ (proved above in prose), the construction of $\mathrm{Vec}_G^\omega$ itself, and braided-but-not-symmetric examples.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Associahedra, cocycles and R-matrices">
+
+The first experiment builds the associahedra (bracketings and associator moves) for up to six objects, checks the cocycle condition for the carry cochains on $\Z/n$ for $n \le 6$, and then tests coherence directly: for every grading of five simple objects in $\mathrm{Vec}_{\Z/3}^\omega$, all paths of associators between bracketings carry the same total twist — and for a naive twist, many gradings fail.
+
+<Python id="monoidal_categories_pentagon" />
+
+The second experiment checks, symbolically in $q$, that the $U_q(\mathfrak{sl}_2)$ R-matrix satisfies the braid relation and the Hecke relation, and squares to the identity only for $q = \pm 1$.
+
+<Python id="monoidal_categories_braiding" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Every braided monoidal category is symmetric."** A braiding need not square to the identity. In the braid category $\sigma^2 \neq \mathrm{id}$ because $B_2 \cong \Z$; in $\mathrm{Rep}(U_q(\mathfrak{sl}_2))$ at generic $q$ the R-matrix satisfies $R^2 = 1 + (q - q^{-1})R \neq 1$. Symmetric is a property; braided is extra structure, and a monoidal category may carry several braidings.
+
+</Misconception>
+
+<Misconception>
+
+**"The monoidal product is the cartesian product."** $\otimes$ in $\cat{Vect}_k$, $\cat{Ab}$ or $\cat{Hilb}$ is not a product: there are no natural projections $V \otimes W \to V$ and no natural diagonal $V \to V \otimes V$ (copying $v + w$ would give $(v + w) \otimes (v + w) \neq v \otimes v + w \otimes w$ — the linear-algebra core of the quantum no-cloning theorem). Cartesian monoidal categories are a special case, characterised by natural diagonals and projections.
+
+</Misconception>
+
+<Misconception>
+
+**"Coherence means every diagram commutes."** Only *formal* diagrams built from $\alpha, \lambda, \rho$ commute. If two different formal expressions happen to evaluate to the same object (e.g. $X \otimes X$), the canonical maps between them may differ: the symmetry of $X \times X$ is not the identity.
+
+</Misconception>
+
+<Misconception>
+
+**"By strictification we may always assume the associator is the identity and the category is skeletal."** Every monoidal category is equivalent to a strict one, but not always to one that is both strict and skeletal: an observation of Isbell (discussed in Mac Lane's book) shows that the skeleton of $(\cat{Set}, \times)$ cannot be made strict. Likewise in $\mathrm{Vec}_{\Z/n}^{\omega_p}$ with $p \not\equiv 0 \pmod n$ the associator cannot be made the identity while keeping one object per isomorphism class: a strict model needs many isomorphic copies of each simple object.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="topology" title="Loops, configuration spaces and E_n">
+
+Eckmann and Hilton found their argument for **homotopy groups**: for $n \ge 2$, $\pi_n(X)$ has two composition laws (concatenate in the first or the second coordinate of $[0,1]^n$) satisfying interchange, so $\pi_n(X)$ is abelian, while $\pi_1$ need not be. The same mechanism stratifies monoidal structures: a monoidal category is an "$E_1$-algebra" in categories (objects can be multiplied along a line), a braided monoidal category an $E_2$-algebra (in the plane, where points can circle each other), and for $n \ge 3$ an $E_n$-structure on a 1-category is just a symmetric monoidal structure. The braid group $B_n$ is the fundamental group of the space of $n$ unordered distinct points in $\R^2$ (Fox–Neuwirth 1962); in $\R^3$ that fundamental group is the symmetric group $S_n$, because a double exchange can be undone in three dimensions. This is the topological reason why braidings are "2-dimensional" and symmetries "3-dimensional and up" (see <TopicLink id="math.geom.fundamental-group">the fundamental group</TopicLink> and <TopicLink id="math.geom.homotopy-theory">homotopy theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="String diagrams and knot invariants">
+
+Joyal and Street (1991) proved that string diagrams are a sound and complete calculus: an equation between morphisms of the free monoidal category on a set of generating boxes holds if and only if the corresponding planar diagrams are isotopic (in the plane, keeping endpoints fixed). For braided categories the diagrams live in 3-dimensional space and isotopy is of braids and tangles; for symmetric categories strings may pass through each other. Adding duals and a twist gives **ribbon categories**, whose diagrams are framed tangles; Reshetikhin and Turaev (1990) turned this into invariants of framed links and 3-manifolds from quantum groups — the Jones polynomial arises from the R-matrix of $U_q(\mathfrak{sl}_2)$ in the second experiment (see <TopicLink id="math.geom.knot-theory">knot theory</TopicLink> and <TopicLink id="math.geom.low-dimensional-topology">low-dimensional topology</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Composite systems, no-cloning and anyons">
+
+In quantum mechanics the state space of a composite system is $\mathcal{H}_1 \otimes \mathcal{H}_2$, and entangled states are exactly the elements that are not pure tensors — a phenomenon impossible in a cartesian category, where every map into $A \times B$ is a pair. Abramsky and Coecke (2004) recast quantum protocols such as teleportation as calculations in symmetric monoidal categories with duals, drawn with string diagrams (see <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>). Exchange statistics are a braiding: in three spatial dimensions exchanging two identical particles twice is trivial, giving bosons and fermions (the symmetric case, with the sign rule of super vector spaces for fermions); in two spatial dimensions it need not be, and quasiparticles called **anyons** are described by braided (modular) tensor categories (Leinaas and Myrheim 1977; Wilczek 1982). Kitaev (2003) proposed using non-abelian anyons for fault-tolerant quantum computation.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Cohomology, Hopf algebras and Tannaka duality">
+
+The associators on $G$-graded vector spaces with $\delta_g \otimes \delta_h = \delta_{gh}$ are classified by $H^3(G, k^\times)$, so group cohomology measures exactly how non-associative (up to coherent isomorphism) such a category can be; braidings on them are classified by Eilenberg–Mac Lane's abelian cohomology. For an algebra $H$, monoidal structures on $\mathrm{Rep}(H)$ compatible with the forgetful functor correspond to bialgebra structures, and braidings to R-matrices (Drinfeld). Conversely, **Tannaka–Krein duality** recovers a group from its symmetric monoidal category of representations with the forgetful functor; Deligne (2002) showed that, over an algebraically closed field of characteristic 0, symmetric tensor categories of moderate growth are representation categories of affine supergroups (see <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="One object, one dimension up">
+
+A monoidal category is a bicategory with one object: objects of $\mathcal{C}$ become 1-cells, $\otimes$ becomes composition of 1-cells, and morphisms become 2-cells. Iterating: a braided monoidal category is a tricategory with one object and one 1-cell, and the Eckmann–Hilton argument explains why one-object, one-1-cell 2-categories are commutative monoids. Monoidal categories are also the natural bases for **enrichment**: replacing hom-sets by hom-objects in a monoidal category $\mathcal{V}$ gives additive categories, 2-categories and Lawvere's metric spaces (see <TopicLink id="math.cat.enriched-categories">enriched categories</TopicLink> and <TopicLink id="math.cat.higher-categories">higher categories</TopicLink>).
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- Products of spaces, tensor products of modules and convolution of functions were used long before the axioms; the interchange law appeared in **Beno Eckmann** and **Peter Hilton**'s work on group-like structures (1962), and the bracketings of a product were studied by **Dov Tamari** (1951) and, as cell complexes, by **Jim Stasheff** (1963) in his theory of $A_\infty$-spaces.
+- **Jean Bénabou** (1963, "catégories avec multiplication") and **Saunders Mac Lane** (1963, "Natural associativity and commutativity") introduced monoidal categories; Mac Lane proved the coherence theorem and found the pentagon and hexagon. **G. Max Kelly** (1964) showed that some of Mac Lane's axioms were redundant, and with **Samuel Eilenberg** developed closed categories (1966).
+- **André Joyal** and **Ross Street** introduced braided monoidal categories (circulated 1986, published 1993) and the geometry of string diagrams (1991). **Vladimir Drinfeld** and **Michio Jimbo** introduced quantum groups (1985–86), and **Nicolai Reshetikhin** and **Vladimir Turaev** (1990–91) built link and 3-manifold invariants from their braided categories of representations, following **Vaughan Jones**'s discovery of his polynomial (1984).
+- **Samson Abramsky** and **Bob Coecke** (2004) began categorical quantum mechanics; **Alexei Kitaev** (2003) and **Michael Freedman** and collaborators connected braided categories to topological quantum computation.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Pavel Etingof, Shlomo Gelaki, Dmitri Nikshych and Victor Ostrik, *Tensor Categories* (2015) — the standard modern reference, Chapters 1–2 and 8.
+- Saunders Mac Lane, *Categories for the Working Mathematician* (2nd edition, 1998), Chapters VII and XI — monoidal categories and coherence.
+- André Joyal and Ross Street, "Braided tensor categories", *Advances in Mathematics* 102 (1993), and "The geometry of tensor calculus I", *Advances in Mathematics* 88 (1991).
+- Christian Kassel, *Quantum Groups* (1995) — braided categories, R-matrices and knot invariants.
+- Chris Heunen and Jamie Vicary, *Categories for Quantum Theory* (2019) — monoidal categories and string diagrams for physics.
+- Emily Riehl, *Category Theory in Context* (2016), for the background on functors and adjunctions.
+
+</Section>

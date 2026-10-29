@@ -53,7 +53,7 @@ export function ProgressPanel({ lessons, trails, exerciseCount }: { lessons: { s
               <ul className="mt-3 space-y-1.5 text-sm">
                 {lessons.map((l) => (
                   <li key={l.slug} className="flex items-center justify-between">
-                    <Link href={href(locale, `math/lessons/${l.slug}`)} className="link">
+                    <Link prefetch={false} href={href(locale, `math/lessons/${l.slug}`)} className="link">
                       {l.title}
                     </Link>
                     <span className="text-muted">{store.lessons[l.slug] ? "✓" : "—"}</span>
@@ -66,7 +66,7 @@ export function ProgressPanel({ lessons, trails, exerciseCount }: { lessons: { s
               <ul className="mt-3 space-y-1.5 text-sm">
                 {trails.map((l) => (
                   <li key={l.slug} className="flex items-center justify-between">
-                    <Link href={href(locale, `math/trails/${l.slug}`)} className="link">
+                    <Link prefetch={false} href={href(locale, `math/trails/${l.slug}`)} className="link">
                       {l.title}
                     </Link>
                     <span className="text-muted">{store.trails[l.slug] ? "✓" : "—"}</span>

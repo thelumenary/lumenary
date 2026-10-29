@@ -1,0 +1,647 @@
+---
+slug: advanced-linear-algebra
+topic: math.algebra.advanced-linear-algebra
+title: Advanced linear algebra
+subtitle: How simple can a matrix be made? Orthonormal eigenbases for symmetric operators, the Jordan form of every complex matrix, and the dual spaces and tensor products that let linear algebra speak without coordinates.
+level: ug2
+ages: Undergraduate
+minutes: 130
+order: 6006
+objectives:
+  - Prove the spectral theorem for self-adjoint operators (real symmetric and complex Hermitian matrices) and for complex normal operators, and orthogonally diagonalise symmetric matrices
+  - Prove the Cayley–Hamilton theorem, compute minimal polynomials, and decide diagonalisability from them
+  - Compute Jordan normal forms from the ranks of powers of $A - \lambda I$, and prove existence and uniqueness of the Jordan form
+  - Define dual spaces and dual maps, and explain why $V \cong V^{**}$ is natural while $V \cong V^*$ depends on a choice
+  - Define the tensor product by its universal property, compute with the basis $e_i \otimes f_j$, and show that not every tensor is a pure tensor
+narrators: []
+lean:
+  - Lumenary.AdvancedLinearAlgebra.eigenvalue_real
+  - Lumenary.AdvancedLinearAlgebra.eigenvectors_orthogonal
+  - Lumenary.AdvancedLinearAlgebra.spectral_theorem
+  - Lumenary.AdvancedLinearAlgebra.symmetric_matrix_eigenbasis
+  - Lumenary.AdvancedLinearAlgebra.complex_symmetric_nilpotent
+  - Lumenary.AdvancedLinearAlgebra.cayley_hamilton_two
+  - Lumenary.AdvancedLinearAlgebra.cayley_hamilton
+  - Lumenary.AdvancedLinearAlgebra.jordanBlock3
+  - Lumenary.AdvancedLinearAlgebra.jordan_block3_nilpotent
+  - Lumenary.AdvancedLinearAlgebra.jordan_block3_sq_ne_zero
+  - Lumenary.AdvancedLinearAlgebra.generalized_eigenspace_decomposition
+  - Lumenary.AdvancedLinearAlgebra.eval_natural
+  - Lumenary.AdvancedLinearAlgebra.eval_bijective
+  - Lumenary.AdvancedLinearAlgebra.dual_finrank
+  - Lumenary.AdvancedLinearAlgebra.tensor_universal
+  - Lumenary.AdvancedLinearAlgebra.finrank_tensor
+  - Lumenary.AdvancedLinearAlgebra.coord
+  - Lumenary.AdvancedLinearAlgebra.not_pure_tensor
+compute: [advanced_linear_algebra_jordan, advanced_linear_algebra_spectral]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Three questions a first course leaves open">
+
+A structural engineer in Nairobi models the stress at a point of a concrete beam by a symmetric $3 \times 3$ matrix. She needs the **principal stresses** — directions in which the material is pulled or pushed straight, with no shear — and she is confident that there are exactly three of them, at right angles to each other. Why should a symmetric matrix always have three mutually perpendicular eigenvector directions, when a general matrix need not have any real eigenvectors at all? The same question, asked by a statistician in São Paulo about a covariance matrix, is the foundation of principal component analysis.
+
+A student in Hanoi solves the differential equation $x'' - 2x' + x = 0$ and finds the solutions $e^t$ and $t\,e^t$. Where does the factor $t$ come from? Writing the equation as a system $\mathbf x' = A\mathbf x$ with $A = \begin{pmatrix} 0 & 1 \\ -1 & 2 \end{pmatrix}$, the answer is that $A$ cannot be diagonalised. Something replaces diagonalisation for such matrices, and it is just as computable.
+
+Finally, a physicist writes the state of two entangled photons as $\tfrac{1}{\sqrt2}(\lvert 0 \rangle \otimes \lvert 0 \rangle + \lvert 1 \rangle \otimes \lvert 1 \rangle)$, and insists that it cannot be written as (state of photon 1) $\otimes$ (state of photon 2). What kind of object is $\otimes$, and why is that impossible?
+
+The <TopicLink id="math.algebra.linear-algebra">first course in linear algebra</TopicLink> stated the spectral theorem and mentioned the Jordan form. This lesson proves them, and builds the coordinate-free tools — dual spaces and tensor products — that answer the third question and underlie most of higher mathematics.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Choosing coordinates well">
+
+A linear operator $T : V \to V$ has a different matrix in every basis; changing basis replaces $A$ by $P^{-1}AP$. So the real question about $T$ is: **in which basis does its matrix look simplest?** Two answers organise the lesson.
+
+- If $V$ has an inner product and $T$ is **self-adjoint** (symmetric, in an orthonormal basis), we may insist on an *orthonormal* basis and still make the matrix *diagonal*, with *real* entries. Geometrically: $T$ maps the unit sphere to an ellipsoid, and the axes of the ellipsoid are perpendicular eigenvector directions. That is the **spectral theorem**.
+- For an arbitrary operator on a complex vector space we cannot always diagonalise, but we can always reach the **Jordan normal form**: block diagonal, each block having one eigenvalue on its diagonal and $1$s just above it. The $1$s record exactly how far $T$ is from being diagonalisable, and they are what produce the $t\,e^t$.
+
+The second half of the lesson goes the other way and removes coordinates altogether. A **linear functional** — a linear map $V \to k$ — is the coordinate-free version of a row vector; they form the **dual space** $V^*$. A **tensor product** $V \otimes W$ is the space in which bilinear expressions in $v$ and $w$ become linear. Both are defined by what they *do*, not by a choice of basis, and the difference between "natural" and "chosen" identifications turns out to be mathematics in its own right.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $k$ is a field and vector spaces are finite-dimensional unless said otherwise.
+
+<Definition term="inner product space">
+
+A **real inner product space** is a real vector space $V$ with a map $\langle \cdot, \cdot \rangle : V \times V \to \R$ that is bilinear, **symmetric** ($\langle v, w \rangle = \langle w, v \rangle$) and **positive definite** ($\langle v, v \rangle > 0$ for $v \neq 0$). A **complex** inner product is instead **sesquilinear**: conjugate-linear in the first slot and linear in the second, with $\langle w, v \rangle = \overline{\langle v, w \rangle}$ and $\langle v, v \rangle > 0$ for $v \ne 0$. (Physicists and Mathlib use this convention; many algebra texts put the conjugate in the second slot. Nothing below depends on the choice.) We write $\|v\| = \sqrt{\langle v, v \rangle}$. Vectors are **orthogonal** if $\langle v, w \rangle = 0$, and $U^\perp = \{ v : \langle u, v \rangle = 0 \text{ for all } u \in U \}$.
+
+</Definition>
+
+<Definition term="adjoint, self-adjoint, normal, unitary">
+
+The **adjoint** of $T : V \to V$ is the unique operator $T^*$ with $\langle Tv, w \rangle = \langle v, T^* w \rangle$ for all $v, w$. (It exists: for fixed $w$, the map $v \mapsto \langle w, Tv \rangle$ is a linear functional, so by the Riesz representation of Theorem 13 it equals $\langle u, \cdot \rangle$ for a unique $u$; conjugating, $\langle Tv, w \rangle = \langle v, u \rangle$, and we set $T^* w = u$.) In an orthonormal basis, the matrix of $T^*$ is the conjugate transpose $\overline{A}^{\mathsf T}$ of the matrix $A$ of $T$. The operator $T$ is **self-adjoint** if $T^* = T$ (a **symmetric** matrix $A^{\mathsf T} = A$ over $\R$, a **Hermitian** matrix $\overline{A}^{\mathsf T} = A$ over $\C$), **normal** if $TT^* = T^*T$, and **unitary** (**orthogonal** over $\R$) if $T^*T = I$.
+
+</Definition>
+
+<Definition term="minimal polynomial">
+
+The **minimal polynomial** $m_T$ of $T$ is the monic polynomial of least degree with $m_T(T) = 0$. (It exists because $I, T, T^2, \dots, T^{n^2}$ are $n^2 + 1$ vectors in the $n^2$-dimensional space of operators, hence dependent.) The **characteristic polynomial** is $\chi_T(x) = \det(xI - T)$.
+
+</Definition>
+
+<Definition term="generalised eigenspace, Jordan block">
+
+For an eigenvalue $\lambda$ of $T$ on an $n$-dimensional space, the **generalised eigenspace** is $G_\lambda = \ker (T - \lambda I)^n$. The **Jordan block** $J_m(\lambda)$ is the $m \times m$ matrix with $\lambda$ on the diagonal, $1$ directly above the diagonal and $0$ elsewhere:
+
+$$
+J_3(\lambda) = \begin{pmatrix} \lambda & 1 & 0 \\ 0 & \lambda & 1 \\ 0 & 0 & \lambda \end{pmatrix}.
+$$
+
+A matrix is in **Jordan normal form** if it is block diagonal with Jordan blocks on the diagonal. An operator $N$ is **nilpotent** if $N^r = 0$ for some $r$.
+
+</Definition>
+
+<Definition term="dual space, dual basis, dual map">
+
+The **dual space** of $V$ is $V^* = \Hom(V, k)$, the space of linear functionals. If $e_1, \dots, e_n$ is a basis of $V$, the **dual basis** $e_1^*, \dots, e_n^*$ of $V^*$ is defined by $e_i^*(e_j) = 1$ if $i = j$ and $0$ otherwise. A linear map $f : V \to W$ has a **dual map** (transpose) $f^* : W^* \to V^*$, $f^*(\varphi) = \varphi \circ f$; note that it goes *backwards*. The **evaluation map** $\mathrm{ev}_V : V \to V^{**}$ sends $v$ to the functional "evaluate at $v$": $\mathrm{ev}_V(v)(\varphi) = \varphi(v)$.
+
+</Definition>
+
+<Definition term="tensor product">
+
+A map $B : V \times W \to U$ is **bilinear** if it is linear in each variable when the other is fixed. A **tensor product** of $V$ and $W$ is a vector space $V \otimes W$ with a bilinear map $\otimes : V \times W \to V \otimes W$, $(v, w) \mapsto v \otimes w$, such that **every bilinear map $B : V \times W \to U$ factors uniquely** as $B(v, w) = \varphi(v \otimes w)$ for a linear map $\varphi : V \otimes W \to U$. Elements of the form $v \otimes w$ are called **pure** (or simple, or rank-one) tensors.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Principal axes of a quadratic form">
+
+The quadratic form $q(x, y) = 5x^2 + 4xy + 2y^2$ is $q(\mathbf x) = \mathbf x^{\mathsf T} A \mathbf x$ with the symmetric matrix $A = \begin{pmatrix} 5 & 2 \\ 2 & 2 \end{pmatrix}$. Its characteristic polynomial is $\lambda^2 - 7\lambda + 6 = (\lambda - 6)(\lambda - 1)$, with eigenvectors $(2, 1)$ for $6$ and $(1, -2)$ for $1$ — orthogonal, as the spectral theorem promises. With the orthonormal coordinates $u = (2x + y)/\sqrt5$ and $v = (x - 2y)/\sqrt5$,
+
+$$
+5x^2 + 4xy + 2y^2 = 6u^2 + v^2,
+$$
+
+as one checks by expanding: $6(2x + y)^2 + (x - 2y)^2 = 25x^2 + 20xy + 10y^2$. So the curve $q = 6$ is an ellipse with semi-axis $1$ along $(2, 1)$ and semi-axis $\sqrt6$ along $(1, -2)$. The cross term $4xy$ only says that we were using the wrong axes.
+
+<FunctionPlot
+  mode="parametric"
+  fns={[["(2*cos(t) + sqrt(6)*sin(t))/sqrt(5)", "(cos(t) - 2*sqrt(6)*sin(t))/sqrt(5)"], ["2*(t - pi)/(pi*sqrt(5))", "(t - pi)/(pi*sqrt(5))"], ["sqrt(6)*(t - pi)/(pi*sqrt(5))", "-2*sqrt(6)*(t - pi)/(pi*sqrt(5))"]]}
+  labels={["5x² + 4xy + 2y² = 6", "semi-axis 1 along (2, 1)", "semi-axis √6 along (1, −2)"]}
+  t={[0, "2*pi"]}
+  x={[-3, 3]}
+  y={[-3, 3]}
+  editable={false}
+  title="The ellipse and its principal axes"
+/>
+
+</Example>
+
+<Example title="Normal but not symmetric; neither normal nor diagonalisable">
+
+The rotation $R = \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix}$ is orthogonal, hence normal ($RR^{\mathsf T} = I = R^{\mathsf T}R$), but not symmetric. It has no real eigenvalues, so it is not diagonalisable over $\R$; over $\C$ it has eigenvalues $\pm i$ with orthogonal eigenvectors $(1, \mp i)$ and is *unitarily* diagonalisable, as Theorem 6 predicts. The shear $S = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$ is not normal ($SS^{\mathsf T} \ne S^{\mathsf T}S$) and not diagonalisable over any field: it is the Jordan block $J_2(1)$. And beware: the complex matrix $\begin{pmatrix} 1 & i \\ i & -1 \end{pmatrix}$ is *symmetric* but squares to $0$, so it is nilpotent and not diagonalisable. Over $\C$ the right condition is Hermitian, not symmetric.
+
+</Example>
+
+<Example title="A Jordan form, worked">
+
+Let $A = \begin{pmatrix} 1 & 1 & 0 \\ -1 & 3 & 0 \\ 0 & 0 & 2 \end{pmatrix}$. Then $\chi_A(x) = \big((x - 1)(x - 3) + 1\big)(x - 2) = (x - 2)^3$, so $2$ is the only eigenvalue. Put $N = A - 2I = \begin{pmatrix} -1 & 1 & 0 \\ -1 & 1 & 0 \\ 0 & 0 & 0 \end{pmatrix}$: it has rank $1$, and $N^2 = 0$. By the rank formula of Theorem 12, the number of Jordan blocks of size at least $1$ is $3 - 1 = 2$, and of size at least $2$ is $1 - 0 = 1$. So the blocks have sizes $2$ and $1$:
+
+$$
+A \sim J_2(2) \oplus J_1(2) = \begin{pmatrix} 2 & 1 & 0 \\ 0 & 2 & 0 \\ 0 & 0 & 2 \end{pmatrix}, \qquad m_A(x) = (x - 2)^2 \ne \chi_A(x).
+$$
+
+To find the basis: pick $v = e_1$ with $Nv = (-1, -1, 0) \ne 0$; then $N(Nv) = 0$. In the basis $(Nv, v, e_3)$ we have $A(Nv) = 2\,Nv$, $Av = 2v + Nv$ and $Ae_3 = 2e_3$, which is the matrix above.
+
+</Example>
+
+<Example title="The ODE with a repeated root">
+
+The companion matrix $A = \begin{pmatrix} 0 & 1 \\ -1 & 2 \end{pmatrix}$ of $x'' - 2x' + x = 0$ has $\chi_A(x) = (x - 1)^2$ and $A - I \neq 0$, so $A \sim J_2(1) = I + N$ with $N^2 = 0$. Since $I$ and $N$ commute, $e^{tJ_2(1)} = e^t e^{tN} = e^t (I + tN) = \begin{pmatrix} e^t & t e^t \\ 0 & e^t \end{pmatrix}$. The $1$ above the diagonal is the $t\,e^t$.
+
+</Example>
+
+<Example title="A dual basis depends on the whole basis">
+
+In $V = \R^2$ take the basis $b_1 = (1, 0)$, $b_2 = (1, 1)$. Its dual basis is $b_1^*(x, y) = x - y$ and $b_2^*(x, y) = y$: check that $b_1^*(b_1) = 1$, $b_1^*(b_2) = 0$, $b_2^*(b_1) = 0$, $b_2^*(b_2) = 1$. Although $b_1$ is the standard vector $e_1$, its dual $b_1^*$ is *not* the standard functional $e_1^*(x, y) = x$. There is no such thing as "the dual of a vector" — only the dual of a basis.
+
+</Example>
+
+<Example title="Tensors as matrices; a tensor that is not pure">
+
+$\R^2 \otimes \R^3$ has basis $e_i \otimes f_j$, so it is $6$-dimensional, and sending $e_i \otimes f_j$ to the matrix unit $E_{ij}$ identifies it with the $2 \times 3$ matrices. Under this identification $v \otimes w \mapsto v\,w^{\mathsf T}$; for example $(1, 2) \otimes (1, 0, 1) \mapsto \begin{pmatrix} 1 & 0 & 1 \\ 2 & 0 & 2 \end{pmatrix}$, a matrix of rank $1$. Pure tensors are exactly the matrices of rank at most $1$. Hence $e_1 \otimes e_1 + e_2 \otimes e_2 \in \R^2 \otimes \R^2$, which corresponds to the identity matrix of rank $2$, is **not** a pure tensor. In the same way $k[x] \otimes k[y] \cong k[x, y]$ via $x^i \otimes y^j \mapsto x^i y^j$, pure tensors are products $f(x) g(y)$, and $x + y$ is not one: if $f(x)g(y) = x + y$, setting $y = 0$ gives $g(0) \neq 0$ and $f(0) = 0$, while setting $x = 0$ gives $f(0) \neq 0$.
+
+</Example>
+
+</Section>
+
+<Section id="spectral" kind="proof" title="The spectral theorem">
+
+Let $V$ be a finite-dimensional real or complex inner product space and $T$ a self-adjoint operator on it.
+
+<Theorem name="Lemma 1 (eigenvalues are real)">
+
+Every eigenvalue of a self-adjoint operator is real.
+
+</Theorem>
+
+<Proof>
+
+If $Tv = \mu v$ with $v \neq 0$, then $\overline{\mu}\langle v, v \rangle = \langle Tv, v \rangle = \langle v, Tv \rangle = \mu \langle v, v \rangle$, and $\langle v, v \rangle \neq 0$, so $\overline\mu = \mu$.
+
+</Proof>
+
+<Theorem name="Lemma 2 (orthogonality of eigenvectors)">
+
+Eigenvectors of a self-adjoint operator for distinct eigenvalues are orthogonal.
+
+</Theorem>
+
+<Proof>
+
+If $Tv = av$ and $Tw = bw$ with $a \neq b$ (both real by Lemma 1), then $a\langle v, w \rangle = \langle Tv, w \rangle = \langle v, Tw \rangle = b\langle v, w \rangle$, so $(a - b)\langle v, w \rangle = 0$ and $\langle v, w \rangle = 0$.
+
+</Proof>
+
+<Theorem name="Lemma 3 (invariant complements)">
+
+If $T$ is self-adjoint and $T(U) \subseteq U$ for a subspace $U$, then $T(U^\perp) \subseteq U^\perp$.
+
+</Theorem>
+
+<Proof>
+
+Let $w \in U^\perp$ and $u \in U$. Then $\langle u, Tw \rangle = \langle Tu, w \rangle = 0$ because $Tu \in U$. So $Tw \in U^\perp$.
+
+</Proof>
+
+<Theorem name="Lemma 4 (an eigenvector exists)">
+
+A self-adjoint operator on a non-zero space has an eigenvector.
+
+</Theorem>
+
+<Proof>
+
+Over $\C$ this is the fundamental theorem of algebra applied to $\chi_T$. Over $\R$ we give a proof that uses no complex numbers. The **Rayleigh quotient** $q(v) = \langle Tv, v \rangle$ is continuous on the unit sphere $S = \{ \|v\| = 1 \}$, which is compact, so $q$ attains a maximum at some $v_0 \in S$. Let $w \perp v_0$ and put $f(t) = q\big((v_0 + tw)/\|v_0 + tw\|\big)$, which has a maximum at $t = 0$. Using $\langle Tw, v_0 \rangle = \langle w, Tv_0 \rangle$,
+
+$$
+f(t) = \frac{\langle Tv_0, v_0 \rangle + 2t\langle Tv_0, w \rangle + t^2 \langle Tw, w \rangle}{1 + t^2\|w\|^2},
+$$
+
+so $0 = f'(0) = 2\langle Tv_0, w \rangle$. Thus $Tv_0$ is orthogonal to every $w \perp v_0$, which means $Tv_0 \in (v_0^\perp)^\perp = \R v_0$: $v_0$ is an eigenvector, with eigenvalue $\lambda_{\max} = \max_S q$.
+
+</Proof>
+
+<Theorem name="Theorem 5 (spectral theorem)">
+
+If $T$ is a self-adjoint operator on a finite-dimensional real or complex inner product space $V$, then $V$ has an orthonormal basis of eigenvectors of $T$, and all eigenvalues are real. Equivalently: every real symmetric matrix is $A = Q\Lambda Q^{\mathsf T}$ with $Q$ orthogonal and $\Lambda$ real diagonal, and every Hermitian matrix is $A = U \Lambda U^*$ with $U$ unitary and $\Lambda$ real diagonal. Conversely, a real operator with an orthonormal eigenbasis is symmetric.
+
+</Theorem>
+
+<Proof>
+
+Induction on $n = \dim V$; the case $n = 0$ is empty. For $n \geq 1$, Lemma 4 gives a unit eigenvector $v_1$, with real eigenvalue by Lemma 1. The line $U = k v_1$ is $T$-invariant, so by Lemma 3 so is $W = U^\perp$, which has dimension $n - 1$. The restriction $T|_W$ is still self-adjoint (the defining identity holds for vectors of $W$), so by induction $W$ has an orthonormal basis $v_2, \dots, v_n$ of eigenvectors. Then $v_1, \dots, v_n$ is an orthonormal eigenbasis of $V$. In matrix terms, the columns of $Q$ are the $v_i$: $Q$ is orthogonal (or unitary) and $Q^{-1}AQ = \Lambda$. Conversely, if $A = Q\Lambda Q^{\mathsf T}$ with $\Lambda$ real diagonal, then $A^{\mathsf T} = Q\Lambda^{\mathsf T}Q^{\mathsf T} = A$.
+
+</Proof>
+
+The proof of Lemma 4 gives more: $\lambda_{\max} = \max_{\|v\| = 1} \langle Tv, v \rangle$, and repeating it on $v_1^\perp$ yields every eigenvalue as a constrained maximum (the **Courant–Fischer minimax principle**). For complex operators that are not self-adjoint the best possible statement is this.
+
+<Theorem name="Theorem 6 (complex spectral theorem)">
+
+An operator $T$ on a finite-dimensional complex inner product space has an orthonormal basis of eigenvectors if and only if $T$ is normal.
+
+</Theorem>
+
+<Proof>
+
+If $T$ is diagonal in an orthonormal basis, so is $T^*$ (with conjugated entries), and diagonal matrices commute: $T$ is normal. Conversely, over $\C$ every operator has an upper triangular matrix in *some* basis $u_1, \dots, u_n$ (induct, using an eigenvector and the quotient space), which says the subspaces $\operatorname{span}(u_1, \dots, u_j)$ are $T$-invariant. Gram–Schmidt produces an orthonormal basis with the same spans, so $T$ is upper triangular in an orthonormal basis — this is **Schur's theorem**. Now suppose $T$ is normal with upper triangular matrix $(a_{ij})$ in the orthonormal basis $e_1, \dots, e_n$. For every $v$, $\|Tv\|^2 = \langle v, T^*Tv \rangle = \langle v, TT^*v \rangle = \|T^*v\|^2$. With $v = e_1$: $\|Te_1\|^2 = |a_{11}|^2$, while $\|T^* e_1\|^2 = \sum_j |a_{1j}|^2$, since the first row of $A$ is the conjugated first column of $A^*$. Hence $a_{12} = \dots = a_{1n} = 0$. Repeating with $e_2, e_3, \dots$ shows that every off-diagonal entry vanishes.
+
+</Proof>
+
+</Section>
+
+<Section id="jordan" kind="proof" title="Cayley–Hamilton, minimal polynomials and the Jordan form">
+
+<Theorem name="Theorem 7 (Cayley–Hamilton)">
+
+For every $n \times n$ matrix $A$ over a commutative ring, $\chi_A(A) = 0$.
+
+</Theorem>
+
+<Proof>
+
+The tempting argument "$\chi_A(A) = \det(AI - A) = \det 0 = 0$" is not valid: inside the determinant, $x$ multiplies the *entries* of $I$, so substituting a matrix for $x$ is meaningless. Instead, let $B(x) = \operatorname{adj}(xI - A)$. Its entries are polynomials of degree at most $n - 1$, so $B(x) = \sum_{k=0}^{n-1} B_k x^k$ with matrices $B_k$. The adjugate identity gives $(xI - A)B(x) = \chi_A(x) I$. Write $\chi_A(x) = \sum_{k=0}^n c_k x^k$ and compare coefficients of $x^k$, with $B_{-1} = B_n = 0$:
+
+$$
+B_{k-1} - AB_k = c_k I \qquad (0 \le k \le n).
+$$
+
+Multiply the $k$-th equation on the left by $A^k$ and add them up. The right-hand side is $\sum_k c_k A^k = \chi_A(A)$; the left-hand side $\sum_k (A^k B_{k-1} - A^{k+1}B_k)$ telescopes to $A^0B_{-1} - A^{n+1}B_n = 0$.
+
+</Proof>
+
+<Theorem name="Proposition 8 (minimal polynomial)">
+
+If $p(T) = 0$ then $m_T$ divides $p$; in particular $m_T \mid \chi_T$. The roots of $m_T$ are exactly the eigenvalues of $T$.
+
+</Theorem>
+
+<Proof>
+
+Divide: $p = q\,m_T + r$ with $\deg r < \deg m_T$. Then $r(T) = p(T) - q(T)m_T(T) = 0$, so $r = 0$ by minimality. If $Tv = \lambda v$ with $v \ne 0$ then $0 = m_T(T)v = m_T(\lambda)v$, so $m_T(\lambda) = 0$. Conversely, if $m_T(\lambda) = 0$ write $m_T = (x - \lambda)q$; since $\deg q < \deg m_T$ there is $w$ with $v = q(T)w \ne 0$, and $(T - \lambda)v = m_T(T)w = 0$.
+
+</Proof>
+
+<Theorem name="Lemma 9 (kernel lemma)">
+
+If $p = p_1 p_2$ with $\gcd(p_1, p_2) = 1$ and $p(T) = 0$, then $V = \ker p_1(T) \oplus \ker p_2(T)$, and both summands are $T$-invariant.
+
+</Theorem>
+
+<Proof>
+
+By Bézout there are polynomials $a, b$ with $a p_1 + b p_2 = 1$, so $v = a(T)p_1(T)v + b(T)p_2(T)v$ for every $v$. The first term lies in $\ker p_2(T)$ because $p_2(T)a(T)p_1(T)v = a(T)p(T)v = 0$, and likewise the second lies in $\ker p_1(T)$. If $v$ is in both kernels, the same identity gives $v = 0$. Invariance holds because $T$ commutes with $p_i(T)$.
+
+</Proof>
+
+<Theorem name="Theorem 10 (diagonalisability)">
+
+$T$ is diagonalisable if and only if $m_T$ is a product of *distinct* linear factors.
+
+</Theorem>
+
+<Proof>
+
+If $T$ is diagonal with distinct eigenvalues $\lambda_1, \dots, \lambda_r$, then $\prod (T - \lambda_i)$ kills every basis vector, so $m_T$ divides $\prod(x - \lambda_i)$. Conversely, if $m_T = \prod_{i=1}^r (x - \lambda_i)$ with distinct $\lambda_i$, repeated use of Lemma 9 gives $V = \bigoplus_i \ker(T - \lambda_i)$, a direct sum of eigenspaces.
+
+</Proof>
+
+Applied to $\chi_T = \prod_\lambda (x - \lambda)^{a_\lambda}$ over an algebraically closed field, Lemma 9 and Cayley–Hamilton split $V$ into the generalised eigenspaces, $V = \bigoplus_\lambda \ker(T - \lambda)^{a_\lambda} = \bigoplus_\lambda G_\lambda$, and on $G_\lambda$ the operator $T - \lambda$ is nilpotent. So everything reduces to nilpotent operators.
+
+<Theorem name="Theorem 11 (structure of nilpotent operators)">
+
+If $N$ is nilpotent on $V$, there are vectors $v_1, \dots, v_m$ and integers $k_1, \dots, k_m \geq 1$ such that the vectors $N^j v_i$ ($1 \le i \le m$, $0 \le j < k_i$) form a basis of $V$ and $N^{k_i} v_i = 0$. In this basis (each chain listed as $N^{k_i - 1}v_i, \dots, Nv_i, v_i$) the matrix of $N$ is $J_{k_1}(0) \oplus \dots \oplus J_{k_m}(0)$.
+
+</Theorem>
+
+<Proof>
+
+Induction on $\dim V$. If $N = 0$, any basis works with all $k_i = 1$. Otherwise $U = N(V)$ is a proper subspace (a nilpotent operator is not surjective) that $N$ maps into itself, so by induction $U$ has a basis $N^j u_i$ ($0 \le j < k_i$) with $N^{k_i} u_i = 0$. Choose $v_i$ with $Nv_i = u_i$, and let $S$ be the list of vectors $N^j v_i$ for $0 \le j \le k_i$ (one longer chain each).
+
+*$S$ is independent.* Suppose $\sum_{i,j} a_{ij} N^j v_i = 0$. Applying $N$ gives $\sum_{i, j < k_i} a_{ij} N^j u_i = 0$ (the terms with $j = k_i$ die), so $a_{ij} = 0$ for $j < k_i$. What is left is $\sum_i a_{ik_i} N^{k_i - 1} u_i = 0$, again a sub-list of a basis, so all $a_{ik_i} = 0$.
+
+*Extending.* Extend $S$ to a basis of $V$ by vectors $w_1, \dots, w_p$. Each $Nw_l$ lies in $U$, which is spanned by $N$ applied to vectors of $S$, so $Nw_l = Nx_l$ with $x_l \in \operatorname{span} S$. Replace $w_l$ by $w_l - x_l$: we still have a basis, and now $N(w_l - x_l) = 0$, so each $w_l - x_l$ is a chain of length $1$.
+
+</Proof>
+
+<Theorem name="Theorem 12 (Jordan normal form)">
+
+Let $T$ be an operator on a finite-dimensional vector space over an algebraically closed field (such as $\C$). Then $T$ has a matrix in Jordan normal form, and this form is unique up to the order of the blocks. Precisely, for each eigenvalue $\lambda$ and $k \geq 1$,
+
+$$
+\#\{\text{blocks } J_m(\lambda) \text{ with } m \ge k\} = \operatorname{rank}(T - \lambda)^{k-1} - \operatorname{rank}(T - \lambda)^k.
+$$
+
+</Theorem>
+
+<Proof>
+
+*Existence.* Decompose $V = \bigoplus_\lambda G_\lambda$ as above, apply Theorem 11 to the nilpotent operator $T - \lambda$ on each $G_\lambda$, and add $\lambda I$: a nilpotent Jordan block becomes $J_m(\lambda)$.
+
+*Uniqueness.* For a single block, $\operatorname{rank} J_m(0)^j = \max(m - j, 0)$: each power shifts the chain by one more step. For $\mu \ne \lambda$ the block $J_m(\mu) - \lambda I$ is invertible, so its powers keep full rank $m$. Adding over blocks, $\operatorname{rank}(T - \lambda)^{k-1} - \operatorname{rank}(T - \lambda)^k$ counts the blocks for $\lambda$ whose rank still drops at step $k$, that is, those of size at least $k$. These numbers depend only on $T$, not on the basis, so they determine the multiset of blocks.
+
+</Proof>
+
+So the **minimal polynomial** is $\prod_\lambda (x - \lambda)^{s_\lambda}$ with $s_\lambda$ the size of the *largest* block for $\lambda$, while the characteristic polynomial records the *total* size $a_\lambda$, and the number of blocks for $\lambda$ is $\dim \ker(T - \lambda)$, the geometric multiplicity. Over a field that is not algebraically closed (such as $\Q$ or $\R$) the same theory, phrased with irreducible polynomials, gives the **rational canonical form**: every operator is similar to a block diagonal matrix of companion matrices of polynomials $d_1 \mid d_2 \mid \dots \mid d_r$ (the invariant factors, with $d_r = m_T$ and $d_1 \cdots d_r = \chi_T$), uniquely. We state it without proof: it is the structure theorem for finitely generated modules over the principal ideal domain $k[x]$ (see the algebra viewpoint below).
+
+</Section>
+
+<Section id="duality" kind="proof" title="Dual spaces: natural and unnatural isomorphisms">
+
+<Theorem name="Theorem 13 (dual basis)">
+
+If $e_1, \dots, e_n$ is a basis of $V$, then $e_1^*, \dots, e_n^*$ is a basis of $V^*$; so $\dim V^* = \dim V$. Every $\varphi \in V^*$ is $\varphi = \sum_i \varphi(e_i)\,e_i^*$. If $V$ has an inner product, every $\varphi \in V^*$ is $\varphi = \langle u, \cdot \rangle$ for a unique $u \in V$ (the **Riesz representation**).
+
+</Theorem>
+
+<Proof>
+
+Both sides of $\varphi = \sum_i \varphi(e_i) e_i^*$ are linear and agree on each $e_j$, so they are equal; this shows the $e_i^*$ span. If $\sum_i c_i e_i^* = 0$, evaluating at $e_j$ gives $c_j = 0$. For the Riesz statement, take an orthonormal basis and $u = \sum_i \overline{\varphi(e_i)}\,e_i$; then $\langle u, e_j \rangle = \varphi(e_j)$ for all $j$. Uniqueness: if $\langle u - u', \cdot \rangle = 0$, take the argument to be $u - u'$.
+
+</Proof>
+
+So $V \cong V^*$ for finite-dimensional $V$ — but every isomorphism we can write down uses a basis or an inner product. The double dual is different.
+
+<Theorem name="Theorem 14 (the double dual)">
+
+The evaluation map $\mathrm{ev}_V : V \to V^{**}$ is linear and injective, hence an isomorphism when $V$ is finite-dimensional. It is **natural**: for every linear map $f : V \to W$, $f^{**} \circ \mathrm{ev}_V = \mathrm{ev}_W \circ f$.
+
+</Theorem>
+
+<Proof>
+
+Linearity is clear. If $v \neq 0$, extend $v$ to a basis $v = e_1, e_2, \dots$; then $e_1^*(v) = 1$, so $\mathrm{ev}_V(v) \neq 0$. Since $\dim V^{**} = \dim V^* = \dim V$, an injective linear map $V \to V^{**}$ is bijective. Naturality: for $\varphi \in W^*$, $\big(f^{**}(\mathrm{ev}_V v)\big)(\varphi) = \mathrm{ev}_V(v)(f^* \varphi) = (\varphi \circ f)(v) = \mathrm{ev}_W(f v)(\varphi)$.
+
+</Proof>
+
+<CommutativeDiagram
+  objects={[
+    { id: "V", tex: "V", row: 0, col: 0 },
+    { id: "Vss", tex: "V^{**}", row: 0, col: 1 },
+    { id: "W", tex: "W", row: 1, col: 0 },
+    { id: "Wss", tex: "W^{**}", row: 1, col: 1 },
+  ]}
+  arrows={[
+    { from: "V", to: "Vss", tex: "\\mathrm{ev}_V" },
+    { from: "V", to: "W", tex: "f", labelSide: "right" },
+    { from: "Vss", to: "Wss", tex: "f^{**}" },
+    { from: "W", to: "Wss", tex: "\\mathrm{ev}_W", labelSide: "right" },
+  ]}
+  caption="Naturality of the double dual: the square commutes for every linear map $f$, and no basis was chosen."
+/>
+
+<Theorem name="Proposition 15 (no natural isomorphism with the dual)">
+
+Let $k$ be a field with more than three elements. There is no family of isomorphisms $\eta_V : V \to V^*$, one for each finite-dimensional $V$, such that $\eta_V = f^* \circ \eta_W \circ f$ for every isomorphism $f : V \to W$.
+
+</Theorem>
+
+<Proof>
+
+The condition is the only sensible notion of naturality here: $V^*$ depends *contravariantly* on $V$, so $f$ must be used on both sides. Take $V = W = k$ and $f = c \cdot \mathrm{id}$ with $c^2 \neq 1$, which exists since $x^2 = 1$ has at most two roots and $k$ has more than three elements. Then $f^* = c \cdot \mathrm{id}$ as well, so the condition reads $\eta_k = c^2 \eta_k$, forcing $\eta_k = 0$, which is not an isomorphism.
+
+</Proof>
+
+The same conclusion holds over every field, using $V = k^3$ instead of $k$: the condition says that the bilinear form $b(v, w) = \eta(v)(w)$ satisfies $b(Av, Aw) = b(v, w)$ for all $A \in GL_3(k)$. Since $GL_3(k)$ moves any pair of independent vectors to any other, $b(u, v) = c$ for all independent $u, v$ and $b(v, v) = d$ for all $v \ne 0$; then $c = b(u, v + w) = 2c$ and $c = b(v, v + w) = d + c$ (for independent $u, v, w$) force $c = d = 0$, so $b = 0$. An inner product *does* give an isomorphism $V \to V^*$, $u \mapsto \langle u, \cdot \rangle$ (Theorem 13), natural with respect to the maps that preserve the inner product — this is the physicists' "raising and lowering of indices". In infinite dimensions $V \not\cong V^*$ in general: $V = k[x]$ has countable dimension, $V^*$ can be identified with the power series $k[[x]]$, and when $k$ is countable $V^*$ has uncountable dimension (a theorem of Erdős and Kaplansky), so $\mathrm{ev}_V$ is injective but not surjective.
+
+</Section>
+
+<Section id="tensors" kind="proof" title="Tensor products and multilinear algebra">
+
+<Theorem name="Theorem 16 (existence, uniqueness and dimension)">
+
+The tensor product $V \otimes W$ exists and is unique up to a unique isomorphism compatible with $\otimes$. If $(e_i)$ is a basis of $V$ and $(f_j)$ a basis of $W$, then $(e_i \otimes f_j)$ is a basis of $V \otimes W$; in particular $\dim(V \otimes W) = \dim V \cdot \dim W$.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* Let $T$ be the vector space with basis symbols $t_{ij}$ and define $v \otimes w = \sum_{i,j} a_i b_j t_{ij}$ for $v = \sum a_i e_i$, $w = \sum b_j f_j$; this is bilinear. Given a bilinear $B$, a linear $\varphi$ with $\varphi(v \otimes w) = B(v, w)$ must satisfy $\varphi(t_{ij}) = \varphi(e_i \otimes f_j) = B(e_i, f_j)$, which determines $\varphi$ on a basis; conversely this $\varphi$ works, by bilinearity of $B$. So $T$ is a tensor product and $e_i \otimes f_j = t_{ij}$ is a basis.
+
+*Uniqueness.* If $(P, \otimes)$ and $(P', \otimes')$ both have the universal property, the bilinear map $\otimes'$ factors as $\alpha \circ \otimes$ and $\otimes$ as $\beta \circ \otimes'$. Then $\beta\alpha \circ \otimes = \otimes = \mathrm{id} \circ \otimes$, and uniqueness in the universal property gives $\beta \alpha = \mathrm{id}$; likewise $\alpha \beta = \mathrm{id}$.
+
+</Proof>
+
+<Theorem name="Proposition 17 (tensors as linear maps)">
+
+For finite-dimensional $V, W$ the linear map $V^* \otimes W \to \Hom(V, W)$ induced by $(\varphi, w) \mapsto (v \mapsto \varphi(v)\,w)$ is an isomorphism. A tensor is pure exactly when the corresponding map has rank at most $1$, and every tensor $t$ is a sum of $r$ pure tensors, where $r = \operatorname{rank}$ of the corresponding map, and no fewer.
+
+</Theorem>
+
+<Proof>
+
+The map sends the basis $e_i^* \otimes f_j$ to the map $e_i \mapsto f_j$, other basis vectors $\mapsto 0$ — the matrix unit $E_{ji}$ — so it sends a basis to a basis. A pure tensor $\varphi \otimes w$ goes to $v \mapsto \varphi(v)w$, whose image lies in the line through $w$. A map of rank $r$ is a sum of $r$ maps of rank $1$ (choose a basis $w_1, \dots, w_r$ of its image and write it as $v \mapsto \sum_l \varphi_l(v)w_l$), and a sum of fewer than $r$ rank-one maps has rank less than $r$.
+
+</Proof>
+
+**Multilinear algebra and the determinant.** Tensor powers $V^{\otimes p} \otimes (V^*)^{\otimes q}$ hold the objects of physics and geometry (vectors, covectors, bilinear forms, stress and curvature tensors), and dividing out by symmetries gives the **symmetric powers** $S^pV$ (polynomials) and the **exterior powers** $\Lambda^p V$. Their most famous use is a coordinate-free determinant: if $\dim V = n$, the alternating $n$-linear forms on $V$ form a *one-dimensional* space (such a form is fixed by its value on a basis, since expanding $\omega(\sum a_{i1}e_i, \dots)$ by multilinearity kills repeated vectors and turns permutations into signs, and the Leibniz formula gives a non-zero one). So for any non-zero alternating form $\omega$ there is a unique scalar $\det T$ with $\omega(Tv_1, \dots, Tv_n) = \det T \cdot \omega(v_1, \dots, v_n)$, independent of $\omega$. Then $\det(ST) = \det S \det T$ is immediate: apply the definition twice.
+
+</Section>
+
+<Section id="formal" kind="formal" title="The theorems in Lean and Mathlib">
+
+Mathlib's `InnerProductSpace 𝕜 E` works over `𝕜 = ℝ` or `ℂ` at once (the class `RCLike`), and `T.IsSymmetric` means $\langle Tx, y \rangle = \langle x, Ty \rangle$. As in the lesson, the inner product is conjugate-linear in the first slot. Lemmas 1 and 2, proved here exactly as above:
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.eigenvalue_real" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.eigenvectors_orthogonal" />
+
+The spectral theorem (Theorem 5) and its matrix form are in Mathlib. Its proof shows that the eigenspaces are orthogonal and together span $E$ — a variant of the induction above:
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.spectral_theorem" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.symmetric_matrix_eigenbasis" />
+
+Why the hypothesis over $\C$ must be *Hermitian*, not merely symmetric:
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.complex_symmetric_nilpotent" />
+
+Cayley–Hamilton: a direct computation for $2 \times 2$ matrices, and the general theorem from Mathlib, proved there with the adjugate as in Theorem 7.
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.cayley_hamilton_two" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.cayley_hamilton" />
+
+A Jordan block and its minimal polynomial: $N = J_3(\mu) - \mu I$ satisfies $N^3 = 0$ but $N^2 \ne 0$, so $m = (x - \mu)^3$.
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.jordanBlock3" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.jordan_block3_nilpotent" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.jordan_block3_sq_ne_zero" />
+
+The first half of the Jordan normal form theorem, the decomposition into generalised eigenspaces:
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.generalized_eigenspace_decomposition" />
+
+Duality. Naturality of $V \to V^{**}$ is true *by definition* — Lean accepts `rfl` — which is a precise sense in which no choice was made. The isomorphism itself, and $\dim V^* = \dim V$, come from Mathlib:
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.eval_natural" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.eval_bijective" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.dual_finrank" />
+
+Tensor products. Mathlib *defines* $V \otimes W$ by a quotient construction and proves its universal property; existence and uniqueness of the factorisation are `TensorProduct.lift` and `TensorProduct.ext'`:
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.tensor_universal" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.finrank_tensor" />
+
+Finally, the misconception "every tensor is pure", refuted with coordinate functionals built from the universal property:
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.coord" />
+
+<Lean decl="Lumenary.AdvancedLinearAlgebra.not_pure_tensor" />
+
+**What is and is not formalised.** Independent: Lemmas 1 and 2, the complex symmetric counterexample, Cayley–Hamilton for $2 \times 2$ matrices, the minimal polynomial of $J_3(\mu)$, naturality of $\mathrm{ev}$, and the non-pure tensor. From Mathlib: Theorem 5, Theorem 7, the generalised eigenspace decomposition, Theorem 14's isomorphism, $\dim V^* = \dim V$ and Theorem 16. Not formalised: the Jordan normal form as a statement about block matrices (Mathlib has the generalised eigenspace decomposition and the Jordan–Chevalley decomposition $T = S + N$, not yet the block form or Theorem 11), the rational canonical form, Theorem 6 and Proposition 15. The Lean exercises ask you to reprove Lemma 2 and the $2 \times 2$ Cayley–Hamilton identity.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Jordan forms exactly, spectra numerically">
+
+The rank formula of Theorem 12 is an algorithm. The first program builds an integer $5 \times 5$ matrix, computes the ranks of $(A - \lambda I)^k$ in exact rational arithmetic, reads off the Jordan blocks, checks them against SymPy's `jordan_form`, verifies $\chi_A(A) = 0$ and the minimal polynomial, and finally shows two $4 \times 4$ matrices with the same characteristic *and* minimal polynomials that are nevertheless not similar.
+
+<Python id="advanced_linear_algebra_jordan" />
+
+Exact arithmetic is essential here. The second program shows why: in floating point, the spectral theorem is beautifully stable — computed eigenvectors are orthonormal to $10^{-15}$, and a perturbation of size $\varepsilon$ moves the eigenvalues of a symmetric matrix by at most $\varepsilon$ (Weyl's inequality) — but the Jordan form is not. Changing one entry of $J_8(0)$ by $\varepsilon = 10^{-10}$ moves its eigenvalues to modulus $\varepsilon^{1/8} \approx 0.056$, because the characteristic polynomial becomes $x^8 - \varepsilon$.
+
+<Python id="advanced_linear_algebra_spectral" />
+
+The first program's checks are exact verifications for its matrices (trusting SymPy); the second is floating-point evidence. Neither proves the general theorems, which is what the proofs above are for. The moral, well known to numerical analysts since Golub and Wilkinson's 1976 survey: compute Schur forms and singular value decompositions, which are stable, and treat the Jordan form as a theoretical tool.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: orthogonal axes, skewed axes, one axis">
+
+A symmetric matrix maps the unit circle to an ellipse whose axes are its eigenvector lines, and they are perpendicular. Drag the off-diagonal entries apart (making the matrix non-symmetric) and watch the dashed invariant lines stop being perpendicular. Then pick the shear preset: a Jordan block has a *single* invariant line.
+
+<MatrixTransform matrix={[[2, 1], [1, 2]]} mode="single" presets={["shear", "scale", "rotation", "projection"]} title="Symmetric: perpendicular eigenvectors" subtitle="Make the two off-diagonal entries different. When do the dashed lines stop being perpendicular?" />
+
+Here the matrix is upper triangular with distinct eigenvalues $1$ and $2$: diagonalisable, but its eigenvectors meet at about $34°$. Slide the top-right entry towards $0$ (the angle opens to $90°$) and towards large values (the eigenvectors nearly coincide — the matrix is close to a Jordan block in the numerical sense, and its eigenvectors become ill-conditioned).
+
+<MatrixTransform matrix={[[1, 1.5], [0, 2]]} mode="single" presets={["shear", "identity"]} title="Non-normal: skewed eigenvectors" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"$V$ and $V^*$ are canonically the same."** They have the same dimension, so they are isomorphic, but every isomorphism depends on a choice — a basis (sending $e_i$ to $e_i^*$) or an inner product. Proposition 15 makes this precise: no choice-free family of isomorphisms $V \to V^*$ is compatible with all isomorphisms. The double dual is different: $V \to V^{**}$ is natural (Theorem 14). The worked example of a dual basis shows the dependence concretely: $b_1 = e_1$ but $b_1^* \ne e_1^*$.
+
+</Misconception>
+
+<Misconception>
+
+**"Every element of $V \otimes W$ has the form $v \otimes w$."** Pure tensors span $V \otimes W$, but most elements are sums of them. $e_1 \otimes e_1 + e_2 \otimes e_2$ corresponds to the identity matrix of rank $2$ and is not pure (Proposition 17, and the Lean theorem `not_pure_tensor`). In quantum mechanics the non-pure tensors are the **entangled** states.
+
+</Misconception>
+
+<Misconception>
+
+**"Symmetric matrices are diagonalisable over every field."** The spectral theorem is about *real* symmetric matrices, or complex *Hermitian* ones, and its proof uses positivity of the inner product. The complex symmetric matrix $\begin{pmatrix} 1 & i \\ i & -1 \end{pmatrix}$ is non-zero with square $0$, and over $\mathbb F_2$ the symmetric matrix $\begin{pmatrix} 1 & 1 \\ 1 & 1 \end{pmatrix}$ also squares to $0$.
+
+</Misconception>
+
+<Misconception>
+
+**"$\chi_A(A) = \det(AI - A) = 0$ proves Cayley–Hamilton."** Substituting a matrix for $x$ inside a determinant is not legitimate: in $\det(xI - A)$, $x$ multiplies scalar entries, and $AI - A$ would be a matrix with matrix entries. The theorem is true, but needs an argument such as the adjugate proof of Theorem 7.
+
+</Misconception>
+
+<Misconception>
+
+**"The characteristic and minimal polynomials determine the matrix up to similarity."** They do for $n \le 3$, but not in general: $J_2(0) \oplus J_2(0)$ and $J_2(0) \oplus J_1(0) \oplus J_1(0)$ both have $\chi = x^4$ and $m = x^2$, yet ranks $2$ and $1$. The complete invariant is the list of ranks of $(A - \lambda I)^k$ — equivalently the Jordan form.
+
+</Misconception>
+
+<Misconception>
+
+**"Eigenvectors are always orthogonal."** Only for normal operators (Theorem 6). The eigenvectors $(1, 0)$ and $(10, 1)$ of $\begin{pmatrix} 1 & 10 \\ 0 & 2 \end{pmatrix}$ meet at under $6°$, as the second experiment measures.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Ellipsoids, quadrics and the singular value decomposition">
+
+The spectral theorem is the **principal axes theorem**: every quadric $\mathbf x^{\mathsf T} A \mathbf x = 1$ in $\R^n$ becomes $\sum \lambda_i u_i^2 = 1$ in suitable orthonormal coordinates, so the signs of the eigenvalues classify ellipsoids and hyperboloids (Sylvester's law of inertia says the number of positive and negative $\lambda_i$ cannot be changed by any change of basis, orthogonal or not). For an arbitrary real matrix $M$, applying the theorem to the symmetric matrix $M^{\mathsf T}M$ gives the **singular value decomposition** $M = U\Sigma V^{\mathsf T}$: every linear map takes the unit sphere to an ellipsoid, rotating the sphere first and the ellipsoid afterwards, with semi-axes the singular values. In mechanics, the same theorem gives a rigid body's **principal axes of inertia**, about which it can spin without wobbling. See <TopicLink id="math.geom.conic-sections">conic sections</TopicLink> and <TopicLink id="math.geom.matrix-groups">matrix groups</TopicLink>, where the orthogonal and unitary matrices $Q$, $U$ become groups.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Similarity classes, closures and generic matrices">
+
+Similarity classes of complex $n \times n$ matrices are orbits of the group $GL_n(\C)$ acting on $\C^{n^2}$ by conjugation, and their topology mirrors the Jordan form. The orbit of $J_2(0)$ is not closed: $\begin{pmatrix} 0 & t \\ 0 & 0 \end{pmatrix}$ is similar to $J_2(0)$ for every $t \ne 0$ but tends to $0$. In general the closure of the orbit of a nilpotent matrix is a union of orbits of "smaller" Jordan types (ordered by dominance of partitions). Conversely, matrices with distinct eigenvalues form an open dense set, so the map "matrix $\mapsto$ Jordan form" is wildly discontinuous — the topological face of the $\varepsilon^{1/n}$ phenomenon in the second experiment. On the other hand, the eigenvalues, as an unordered list, depend continuously on the matrix (roots of a polynomial depend continuously on its coefficients). This also gives an analyst's proof of Cayley–Hamilton over $\C$: $A \mapsto \chi_A(A)$ is continuous, vanishes on diagonalisable matrices, and these are dense.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Infinite dimensions: compact operators, Fourier series and the spectrum">
+
+On infinite-dimensional Hilbert spaces the spectral theorem survives for **compact self-adjoint operators**: there is an orthonormal basis of eigenvectors with real eigenvalues tending to $0$ (Hilbert and Schmidt, 1904–1907, in the study of integral equations). Fourier series are an instance: the functions $e^{inx}$ are eigenfunctions of $-d^2/dx^2$ on the circle, with eigenvalues $n^2$, and expanding a function in Fourier series is diagonalising that operator (whose inverse on functions with mean zero is compact). For general bounded self-adjoint operators eigenvectors may not exist at all — multiplication by $x$ on $L^2[0, 1]$ has none — and the theorem becomes a statement about projection-valued measures (von Neumann, 1929). Duality also changes: for normed spaces one uses only *continuous* functionals, and a space with $V \to V^{**}$ onto is called **reflexive** ($\ell^2$ is, $\ell^1$ is not). See <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Canonical forms are the structure theorem for modules over k[x]">
+
+An operator $T$ on $V$ makes $V$ into a module over the polynomial ring $k[x]$, with $x$ acting as $T$; similar operators give isomorphic modules. Because $k[x]$ is a principal ideal domain, every finitely generated module is a direct sum of cyclic modules $k[x]/(p)$ — the same theorem that classifies finitely generated abelian groups as sums of $\Z/n$. Choosing the invariant-factor decomposition $\bigoplus k[x]/(d_i)$ gives the **rational canonical form** (on $k[x]/(d)$, $x$ acts by the companion matrix of $d$); choosing the elementary-divisor decomposition $\bigoplus k[x]/((x - \lambda)^m)$ over an algebraically closed field gives the **Jordan form** (on $k[x]/((x - \lambda)^m)$ with basis $(x - \lambda)^{m-1}, \dots, 1$, $x$ acts as $J_m(\lambda)$). Cayley–Hamilton says $\chi_T$ lies in the annihilator ideal $(m_T)$. See <TopicLink id="math.algebra.modules">modules</TopicLink> and <TopicLink id="math.algebra.rings">rings</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Covariance matrices and principal components">
+
+The covariance matrix $\Sigma = \mathbb E[(X - \mu)(X - \mu)^{\mathsf T}]$ of a random vector $X$ in $\R^n$ is symmetric and positive semidefinite, since $\mathbf u^{\mathsf T}\Sigma\mathbf u = \operatorname{Var}(\mathbf u^{\mathsf T} X) \ge 0$. By the spectral theorem its orthonormal eigenvectors are uncorrelated directions, and by the variational characterisation (Lemma 4) the top eigenvector is the direction of greatest variance. This is **principal component analysis**. The level sets of a multivariate normal density are the ellipsoids $(\mathbf x - \mu)^{\mathsf T}\Sigma^{-1}(\mathbf x - \mu) = c$, whose axes are those eigenvectors. Random matrix theory studies the eigenvalues of large random symmetric matrices, whose histogram approaches Wigner's semicircle law. See <TopicLink id="math.prob.statistics">statistics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Observables, composite systems and entanglement">
+
+In quantum mechanics a measurable quantity is a self-adjoint operator on a complex Hilbert space; the possible outcomes of a measurement are its eigenvalues (real, by Lemma 1) and outcomes for different eigenvalues are perfectly distinguishable because the eigenvectors are orthogonal (Lemma 2). Two observables can be measured simultaneously exactly when the operators commute, which is when they share an orthonormal eigenbasis. The state space of a composite system is the **tensor product** of the state spaces of its parts, and a state that is not a pure tensor — such as the Bell state $\tfrac{1}{\sqrt2}(\lvert 00 \rangle + \lvert 11 \rangle)$ of the motivation, which corresponds to a rank-two matrix — is **entangled**. The rank in Proposition 17 is the Schmidt rank, a basic measure of entanglement. See <TopicLink id="math.applied.quantum-mechanics">quantum mechanics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Naturality, monoidal structure and the tensor–hom adjunction">
+
+Eilenberg and Mac Lane introduced categories, functors and natural transformations (1945) to make precise exactly the distinction in Theorem 14 and Proposition 15: $V \mapsto V^{**}$ is a covariant functor and $\mathrm{ev}$ is a natural isomorphism from the identity functor, while $V \mapsto V^*$ is contravariant, so a natural isomorphism to it cannot even be stated (see <TopicLink id="math.cat.natural-transformations">natural transformations</TopicLink>). The universal property of $\otimes$ is an adjunction: $\Hom(V \otimes W, U) \cong \Hom(V, \Hom(W, U))$, naturally in all three spaces. With $\otimes$ and unit $k$, finite-dimensional vector spaces form a **symmetric monoidal category** in which every object has a dual, with $V^* \otimes W \cong \Hom(V, W)$ (Proposition 17); the trace is then a composite $V^* \otimes V \to k$ of structure maps. See <TopicLink id="math.cat.monoidal-categories">monoidal categories</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Principal axes and secular equations.** Euler (1765) found the principal axes of a rotating rigid body, and Lagrange and Laplace studied the "secular equation" $\det(A - \lambda I) = 0$ for the long-term (secular) perturbations of planetary orbits. **Augustin-Louis Cauchy** proved in 1829 that the roots of this equation are real for symmetric $A$, and that the principal axes are orthogonal, in a paper on exactly that astronomical problem.
+- **Inertia and matrices.** **James Joseph Sylvester** proved his law of inertia for quadratic forms (1852) and coined the word *matrix* (1850). **Arthur Cayley**'s *Memoir on the theory of matrices* (1858) stated the Cayley–Hamilton theorem, verified it for $2 \times 2$ matrices and reported checking $3 \times 3$; **William Rowan Hamilton** had proved an instance for linear functions of quaternions (1853). **Ferdinand Georg Frobenius** gave the first general proof (1878) and introduced the minimal polynomial.
+- **Canonical forms.** **Karl Weierstrass** (1868) developed elementary divisors for pairs of bilinear forms, and **Camille Jordan**'s *Traité des substitutions* (1870) gave the canonical form, originally over finite fields, in his study of groups. Henry Smith's normal form for integer matrices (1861) is the $\Z$-analogue.
+- **Infinite dimensions.** **David Hilbert**'s work on integral equations (1904–1910) introduced the word *spectrum* into analysis, Erhard Schmidt developed the orthogonalisation now named after him and Gram, and **John von Neumann** proved the spectral theorem for unbounded self-adjoint operators (1929–1932) to put quantum mechanics on a rigorous footing.
+- **Tensors.** The tensor calculus of **Gregorio Ricci-Curbastro** and **Tullio Levi-Civita** (1900) was the language of Einstein's general relativity; Woldemar Voigt's crystal physics (1898) gave the word *tensor* its modern meaning. The algebraic tensor product of modules was introduced by **Hassler Whitney** (1938), and Bourbaki's *Algèbre multilinéaire* (1948) made the universal-property definition standard.
+- **Naturality.** **Samuel Eilenberg** and **Saunders Mac Lane**'s *General theory of natural equivalences* (1945) began category theory, with the double dual as a guiding example.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Sheldon Axler, *Linear Algebra Done Right* (1996; 4th ed. 2024) — spectral theorems, generalised eigenspaces and Jordan form; Theorem 11's proof follows Axler.
+- Paul R. Halmos, *Finite-Dimensional Vector Spaces* (1942; 2nd ed. 1958) — the classic coordinate-free treatment of duality and tensor products, written with Hilbert space in mind.
+- Kenneth Hoffman and Ray Kunze, *Linear Algebra* (2nd ed. 1971) — rational and Jordan canonical forms via modules over $k[x]$.
+- Roger A. Horn and Charles R. Johnson, *Matrix Analysis* (1985; 2nd ed. 2013) — Schur's theorem, the minimax principle, Weyl's inequalities.
+- Steven Roman, *Advanced Linear Algebra* (1992; 3rd ed. 2008) — modules over a PID, multilinear algebra and tensor products.
+- Lloyd N. Trefethen and David Bau, *Numerical Linear Algebra* (1997) — why the Schur form and the SVD, not the Jordan form, are computed in practice.
+
+</Section>

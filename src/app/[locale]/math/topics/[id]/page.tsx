@@ -38,7 +38,7 @@ export default async function TopicPage({ params }: Params) {
     const x = getTopic(tid);
     if (!x) return null;
     return (
-      <Link href={x.lesson ? href(locale, `math/lessons/${x.lesson}`) : href(locale, `math/topics/${x.id}`)} className={`chip hover:border-line-2 hover:text-ink ${x.status === "implemented" ? "border-gold/50 bg-gold-soft text-ink" : ""}`}>
+      <Link prefetch={false} href={x.lesson ? href(locale, `math/lessons/${x.lesson}`) : href(locale, `math/topics/${x.id}`)} className={`chip hover:border-line-2 hover:text-ink ${x.status === "implemented" ? "border-gold/50 bg-gold-soft text-ink" : ""}`}>
         {x.title}
       </Link>
     );
@@ -80,7 +80,7 @@ export default async function TopicPage({ params }: Params) {
 
       <div className="mt-6 flex flex-wrap gap-2">
         {topic.lesson && (
-          <Link href={href(locale, `math/lessons/${topic.lesson}`)} className="btn btn-primary">
+          <Link prefetch={false} href={href(locale, `math/lessons/${topic.lesson}`)} className="btn btn-primary">
             {t("curriculum.openLesson")} <ArrowRight size={16} className="rtl:rotate-180" />
           </Link>
         )}
@@ -131,7 +131,7 @@ export default async function TopicPage({ params }: Params) {
                 <li key={d.to} className="text-sm text-ink-2">
                   <TopicLink tid={d.to} /> {d.note && <span className="ms-1">{d.note}</span>}
                   {d.trail && (
-                    <Link href={href(locale, `math/trails/${d.trail}`)} className="link ms-2">
+                    <Link prefetch={false} href={href(locale, `math/trails/${d.trail}`)} className="link ms-2">
                       {t("trail.badge")} →
                     </Link>
                   )}

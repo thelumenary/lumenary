@@ -1,0 +1,518 @@
+---
+slug: yoneda
+topic: math.cat.yoneda
+title: The Yoneda lemma
+subtitle: A natural transformation out of $\Hom(A, -)$ is decided by where it sends $\id_A$ — and from this one-line idea, every object is determined by the arrows around it.
+level: ug2
+ages: Undergraduate
+minutes: 110
+order: 6031
+objectives:
+  - State and prove the Yoneda lemma $\mathrm{Nat}(\Hom(A, -), F) \cong F(A)$, including its naturality in $A$ and $F$
+  - Deduce that the Yoneda embedding $\mathcal{C} \to [\mathcal{C}^{\mathrm{op}}, \cat{Set}]$ is full and faithful, and that $\Hom(-, A) \cong \Hom(-, B)$ implies $A \cong B$
+  - Apply the lemma to recover Cayley's theorem, the down-set embedding of a poset and the natural operations on groups
+  - Prove that every presheaf on a small category is a colimit of representable presheaves
+  - Explain the functor-of-points idea and why an object is determined by the arrows into it, not by its elements
+narrators: []
+lean:
+  - Lumenary.Yoneda.toElement
+  - Lumenary.Yoneda.ofElement
+  - Lumenary.Yoneda.ofElement_toElement
+  - Lumenary.Yoneda.toElement_ofElement
+  - Lumenary.Yoneda.yonedaBijection
+  - Lumenary.Yoneda.toElement_natural_functor
+  - Lumenary.Yoneda.toElement_natural_object
+  - Lumenary.Yoneda.nat_trans_representables
+  - Lumenary.Yoneda.iso_of_corepresentable_iso
+  - Lumenary.Yoneda.yoneda_lemma_library
+  - Lumenary.Yoneda.yoneda_fully_faithful
+  - Lumenary.Yoneda.iso_of_representable_iso
+  - Lumenary.Yoneda.density
+  - Lumenary.Yoneda.cayley
+  - Lumenary.Yoneda.cayley_injective
+  - Lumenary.Yoneda.equivariant_eq_cayley
+  - Lumenary.Yoneda.cayley_library
+  - Lumenary.Yoneda.le_iff_forall_le
+  - Lumenary.Yoneda.eq_of_same_lower
+compute: [yoneda_finite_check]
+trails: [products-by-maps]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Known by your relationships">
+
+In 1854 Arthur Cayley observed that every group is a group of permutations: an element $g$ of $G$ can be *replaced* by the permutation $x \mapsto gx$ of $G$, and nothing is lost. In a partially ordered set, an element $x$ is completely determined by the set $\{z \mid z \le x\}$ of elements below it. In linear algebra, a finite-dimensional vector space can be recovered from its dual, the linear maps out of it.
+
+But "determined by its relationships" needs care. A topological space is *not* determined by its points: the sets $\{0, 1\}$ with the discrete and with the indiscrete topology have the same points — the same continuous maps from a one-point space — but they are different spaces. One kind of probe is not enough.
+
+The **Yoneda lemma** says what *is* enough: probe an object $A$ with **all** objects, recording every arrow $X \to A$ and how the arrows compose. Then nothing is lost — $A$ can be recovered up to isomorphism, and arrows between objects are recovered exactly. The lemma itself is short and its proof is a single idea, but it is the reason universal properties determine objects, the reason Grothendieck could treat geometric spaces as functors, and the reason so many constructions in mathematics are "the same". This lesson builds on <TopicLink id="math.cat.representable-functors">representable functors</TopicLink> and <TopicLink id="math.cat.natural-transformations">natural transformations</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Follow the identity">
+
+Fix an object $A$ and a functor $F : \mathcal{C} \to \cat{Set}$. A natural transformation $\alpha : \Hom(A, -) \Rightarrow F$ consists of a function $\alpha_X : \Hom(A, X) \to F(X)$ for every object $X$ — a huge amount of data, one function per object.
+
+But among all arrows out of $A$ there is one special one: $\id_A$. Every arrow $f : A \to X$ is obtained from it by composing, $f = f \circ \id_A$. Naturality says that $\alpha$ commutes with composing, so $\alpha_X(f)$ must be obtained from $\alpha_A(\id_A)$ by applying $F(f)$. All the data of $\alpha$ is packed into the single element
+$$
+\alpha_A(\id_A) \in F(A),
+$$
+and any element of $F(A)$ can be unpacked into a natural transformation. The identity arrow is a **generic element**: the most general $A$-shaped thing, of which every other is a specialisation.
+
+<CommutativeDiagram
+  objects={[
+    { id: "HA", tex: "\\Hom(A, A)", row: 0, col: 0 },
+    { id: "FA", tex: "F(A)", row: 0, col: 1 },
+    { id: "HX", tex: "\\Hom(A, X)", row: 1, col: 0 },
+    { id: "FX", tex: "F(X)", row: 1, col: 1 }
+  ]}
+  arrows={[
+    { from: "HA", to: "FA", tex: "\\alpha_A" },
+    { from: "HA", to: "HX", tex: "f \\circ -", labelSide: "right" },
+    { from: "FA", to: "FX", tex: "F(f)" },
+    { from: "HX", to: "FX", tex: "\\alpha_X", labelSide: "right" }
+  ]}
+  caption="Naturality along $f : A \to X$, applied to $\id_A$: going down then across gives $\alpha_X(f)$, going across then down gives $F(f)(\alpha_A(\id_A))$."
+/>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+Throughout, $\mathcal{C}$ is **locally small**: every $\Hom(A, B)$ is a set. For functors $F, G$ we write $\mathrm{Nat}(F, G)$ for the collection of natural transformations $F \Rightarrow G$.
+
+<Definition term="presheaf">
+
+A **presheaf** on $\mathcal{C}$ is a functor $P : \mathcal{C}^{\mathrm{op}} \to \cat{Set}$. Presheaves and natural transformations form the **presheaf category** $\widehat{\mathcal{C}} = [\mathcal{C}^{\mathrm{op}}, \cat{Set}]$. When $\mathcal{C}$ is **small** (its objects and arrows form sets), $\widehat{\mathcal{C}}$ is locally small.
+
+</Definition>
+
+<Definition term="Yoneda embedding">
+
+The **Yoneda embedding** $y : \mathcal{C} \to \widehat{\mathcal{C}}$ sends an object $A$ to the representable presheaf $y(A) = \Hom(-, A)$ and an arrow $f : A \to B$ to the natural transformation $y(f) = f \circ - : \Hom(-, A) \Rightarrow \Hom(-, B)$.
+
+</Definition>
+
+<Definition term="the Yoneda map">
+
+For $F : \mathcal{C} \to \cat{Set}$ and an object $A$, define
+$$
+\Phi : \mathrm{Nat}(\Hom(A, -), F) \to F(A), \qquad \Phi(\alpha) = \alpha_A(\id_A),
+$$
+and, in the other direction, for $x \in F(A)$ let $\Psi(x) : \Hom(A, -) \Rightarrow F$ have components $\Psi(x)_X(f) = F(f)(x)$.
+
+</Definition>
+
+Some examples of the objects involved:
+
+- A **group** $G$ is a category $\mathbf{B}G$ with one object $\ast$, one arrow for each $g \in G$, and composition $g \circ h = gh$. A functor $\mathbf{B}G \to \cat{Set}$ is a set with a left $G$-action, a presheaf on $\mathbf{B}G$ is a set with a right action, and natural transformations are equivariant maps. The representable presheaf $y(\ast)$ is $G$ acting on itself by right multiplication.
+- A **directed graph** is a functor $G : \mathbb{E} \to \cat{Set}$, where $\mathbb{E}$ has two objects $E, V$ and two arrows $s, t : E \to V$ besides identities: $G(E)$ is the set of edges, $G(V)$ the set of vertices, $G(s)$ and $G(t)$ give the source and target. Natural transformations are graph homomorphisms. The representable $\Hom(E, -)$ is the **walking edge** (one edge, from $s$ to $t$), and $\Hom(V, -)$ is a single vertex.
+- A **poset** $(P, \le)$ is a category with an arrow $x \to y$ exactly when $x \le y$. The representable $\Hom(-, x)$ is, in effect, the down-set $\downarrow x = \{z \mid z \le x\}$.
+- A **simplicial set** is a presheaf on the category $\Delta$ of finite ordinals $[n] = \{0 < 1 < \dots < n\}$ and order-preserving maps; the representable $\Delta[n] = \Hom_\Delta(-, [n])$ is the standard $n$-simplex.
+
+</Section>
+
+<Section id="theorems" kind="proof" title="The Yoneda lemma and its consequences">
+
+<Theorem name="Theorem 1 (the Yoneda lemma)">
+
+Let $\mathcal{C}$ be locally small, $F : \mathcal{C} \to \cat{Set}$ a functor and $A$ an object. Then $\Psi(x)$ is a natural transformation for every $x \in F(A)$, and $\Phi$ and $\Psi$ are mutually inverse bijections
+$$
+\mathrm{Nat}(\Hom(A, -), F) \;\cong\; F(A).
+$$
+
+</Theorem>
+
+<Proof>
+
+*$\Psi(x)$ is natural.* For $g : X \to Y$ and $f : A \to X$, functoriality of $F$ gives
+$$
+\Psi(x)_Y(g \circ f) = F(g \circ f)(x) = F(g)\big(F(f)(x)\big) = F(g)\big(\Psi(x)_X(f)\big).
+$$
+
+*$\Phi \circ \Psi = \id$.* $\Phi(\Psi(x)) = \Psi(x)_A(\id_A) = F(\id_A)(x) = x$.
+
+*$\Psi \circ \Phi = \id$.* Let $\alpha : \Hom(A, -) \Rightarrow F$ and $f : A \to X$. Naturality of $\alpha$ along $f$ says $\alpha_X(f \circ h) = F(f)(\alpha_A(h))$ for every $h : A \to A$. Take $h = \id_A$:
+$$
+\alpha_X(f) = \alpha_X(f \circ \id_A) = F(f)\big(\alpha_A(\id_A)\big) = \Psi(\Phi(\alpha))_X(f).
+$$
+So $\Psi(\Phi(\alpha))$ and $\alpha$ agree at every component, at every arrow.
+
+</Proof>
+
+A remark on size: even when $\mathcal{C}$ is large, so that a natural transformation is a "large" family, the lemma shows that $\mathrm{Nat}(\Hom(A, -), F)$ is in bijection with a set.
+
+<Theorem name="Theorem 2 (naturality of the Yoneda bijection)">
+
+The bijection $\Phi$ is natural in both $F$ and $A$:
+
+1. for a natural transformation $\beta : F \Rightarrow G$, $\;\Phi(\beta \circ \alpha) = \beta_A(\Phi(\alpha))$;
+2. for an arrow $f : A \to A'$, $\;\Phi\big(\alpha \circ \Hom(f, -)\big) = F(f)(\Phi(\alpha))$, where $\Hom(f, -) : \Hom(A', -) \Rightarrow \Hom(A, -)$ is precomposition with $f$.
+
+So $\Phi$ is a natural isomorphism between the two functors $\mathcal{C} \times [\mathcal{C}, \cat{Set}] \to \cat{Set}$ given by $(A, F) \mapsto \mathrm{Nat}(\Hom(A, -), F)$ and $(A, F) \mapsto F(A)$.
+
+</Theorem>
+
+<Proof>
+
+(1) $\Phi(\beta \circ \alpha) = (\beta \circ \alpha)_A(\id_A) = \beta_A(\alpha_A(\id_A))$, by the definition of vertical composition.
+
+(2) $\Phi(\alpha \circ \Hom(f, -)) = \alpha_{A'}\big(\Hom(f, -)_{A'}(\id_{A'})\big) = \alpha_{A'}(\id_{A'} \circ f) = \alpha_{A'}(f)$, and by the last step of the proof of Theorem 1, $\alpha_{A'}(f) = F(f)(\alpha_A(\id_A))$.
+
+</Proof>
+
+Applying Theorem 1 to $\mathcal{C}^{\mathrm{op}}$ gives the form used for presheaves.
+
+<Theorem name="Corollary 3 (contravariant form)">
+
+For a presheaf $P : \mathcal{C}^{\mathrm{op}} \to \cat{Set}$ and an object $A$, the map $\alpha \mapsto \alpha_A(\id_A)$ is a bijection $\mathrm{Nat}(\Hom(-, A), P) \cong P(A)$, natural in $A$ and $P$. Its inverse sends $x \in P(A)$ to the transformation $f \mapsto P(f)(x)$, for $f : X \to A$.
+
+</Theorem>
+
+<Theorem name="Corollary 4 (the Yoneda embedding is full and faithful)">
+
+For all objects $A, B$, the map $f \mapsto y(f)$ is a bijection $\Hom(A, B) \cong \mathrm{Nat}(y(A), y(B))$.
+
+</Theorem>
+
+<Proof>
+
+Take $P = y(B) = \Hom(-, B)$ in Corollary 3: $\mathrm{Nat}(y(A), y(B)) \cong \Hom(A, B)$. The inverse bijection sends $f : A \to B$ to the transformation $g \mapsto y(B)(g)(f) = f \circ g$, which is exactly $y(f)$. So $f \mapsto y(f)$ is a bijection.
+
+</Proof>
+
+<Theorem name="Corollary 5 (the Yoneda principle)">
+
+If $\Hom(-, A) \cong \Hom(-, B)$ as presheaves, then $A \cong B$. More precisely, every natural isomorphism $\theta : y(A) \cong y(B)$ is $y(\varphi)$ for a unique isomorphism $\varphi : A \to B$. Dually, $\Hom(A, -) \cong \Hom(B, -)$ implies $A \cong B$.
+
+</Theorem>
+
+<Proof>
+
+By Corollary 4, $\theta = y(\varphi)$ and $\theta^{-1} = y(\psi)$ for unique arrows $\varphi : A \to B$ and $\psi : B \to A$. Since $y$ is a functor, $y(\psi \circ \varphi) = \theta^{-1} \circ \theta = \id_{y(A)} = y(\id_A)$, and since $y$ is faithful, $\psi \circ \varphi = \id_A$. Likewise $\varphi \circ \psi = \id_B$. The dual statement is the same argument for the covariant embedding $A \mapsto \Hom(A, -)$ of $\mathcal{C}^{\mathrm{op}}$, using Theorem 1.
+
+</Proof>
+
+This is why every universal property determines its object up to a unique isomorphism: a universal property says that some object represents a given functor, and two representing objects have isomorphic hom functors.
+
+<Theorem name="Corollary 6 (Cayley's theorem)">
+
+For a group $G$, the map $g \mapsto \lambda_g$, $\lambda_g(x) = gx$, is an injective group homomorphism $G \to \mathrm{Sym}(G)$. Its image consists exactly of the permutations $\sigma$ with $\sigma(xh) = \sigma(x)h$ for all $x, h$.
+
+</Theorem>
+
+<Proof>
+
+Apply Corollary 4 to $\mathbf{B}G$. The presheaf $y(\ast)$ is the set $G$, on which an arrow $h$ acts by precomposition, $x \mapsto x \circ h = xh$. A natural transformation $y(\ast) \Rightarrow y(\ast)$ is therefore a map $\sigma : G \to G$ with $\sigma(xh) = \sigma(x)h$, and $y(g)$ is post-composition $x \mapsto g \circ x = gx$, which is $\lambda_g$. Full faithfulness says every such $\sigma$ is $\lambda_g$ for exactly one $g$ (concretely, $g = \sigma(e)$, because $\sigma(x) = \sigma(e\,x) = \sigma(e)\,x$). Functoriality of $y$ says $\lambda_{gh} = \lambda_g \circ \lambda_h$ and $\lambda_e = \id$. So $g \mapsto \lambda_g$ is an injective homomorphism into $\mathrm{Sym}(G)$, with the stated image.
+
+</Proof>
+
+<Theorem name="Corollary 7 (Yoneda for posets)">
+
+In a poset, $x \le y$ if and only if every $z \le x$ also satisfies $z \le y$, i.e. $\downarrow x \subseteq \downarrow y$. In particular $\downarrow x = \downarrow y$ implies $x = y$.
+
+</Theorem>
+
+<Proof>
+
+This is Corollary 4 for a thin category, where a hom-set has at most one element: a natural transformation $\Hom(-, x) \Rightarrow \Hom(-, y)$ exists exactly when $\downarrow x \subseteq \downarrow y$, and an arrow $x \to y$ exists exactly when $x \le y$. Directly: if $x \le y$ and $z \le x$ then $z \le y$ by transitivity; conversely take $z = x$. The second claim follows by antisymmetry.
+
+</Proof>
+
+<Theorem name="Corollary 8 (natural operations on groups)">
+
+Let $U : \cat{Grp} \to \cat{Set}$ be the forgetful functor. Every natural transformation $\theta : U \Rightarrow U$ is $g \mapsto g^n$ for a unique $n \in \Z$. Every natural transformation $U \times U \Rightarrow U$ is $(g, h) \mapsto w(g, h)$ for a unique word $w$ in the free group $F_2 = \langle a, b \rangle$.
+
+</Theorem>
+
+<Proof>
+
+$U \cong \Hom(\Z, -)$ with universal element $1$, and $U \times U \cong \Hom(F_2, -)$ with universal element $(a, b)$. By Theorem 1, $\mathrm{Nat}(\Hom(\Z, -), U) \cong U(\Z) = \Z$; the element $n$ corresponds to $\theta_G(g) = U(\varphi_g)(n) = g^n$, where $\varphi_g : \Z \to G$ is the homomorphism with $1 \mapsto g$. Similarly $\mathrm{Nat}(\Hom(F_2, -), U) \cong U(F_2)$: the word $w$ corresponds to $(g, h) \mapsto w(g, h)$, the image of $w$ under the homomorphism $a \mapsto g$, $b \mapsto h$.
+
+</Proof>
+
+So the only operations that make sense uniformly in *all* groups and commute with *all* homomorphisms are words: $g^{-1}$, $g^2 h^{-3}$, the commutator $ghg^{-1}h^{-1}$, and so on. "Conjugate by a fixed element" is not one of them — there is no fixed element common to all groups.
+
+<Theorem name="Theorem 9 (density: presheaves are colimits of representables)">
+
+Let $\mathcal{C}$ be small and $P$ a presheaf on $\mathcal{C}$. Let $\int P$ be its **category of elements**: objects are pairs $(c, x)$ with $x \in P(c)$, and an arrow $(c, x) \to (c', x')$ is an arrow $f : c \to c'$ with $P(f)(x') = x$. Then $P$ is the colimit of the diagram $\int P \to \widehat{\mathcal{C}}$, $(c, x) \mapsto y(c)$, with coprojections $\lambda_{(c, x)} : y(c) \Rightarrow P$ the transformations corresponding to $x$ under Corollary 3.
+
+</Theorem>
+
+<Proof>
+
+Write $\Phi(\alpha) = \alpha_c(\id_c)$ for $\alpha : y(c) \Rightarrow Q$, so that $\Phi(\lambda_{(c, x)}) = x$. Corollary 3 with its naturality gives, for $f : c' \to c$ and $\beta : Q \Rightarrow R$,
+$$
+\Phi(\alpha \circ y(f)) = Q(f)(\Phi(\alpha)), \qquad \Phi(\beta \circ \alpha) = \beta_c(\Phi(\alpha)).
+$$
+
+*Cocone.* For an arrow $f : (c, x) \to (c', x')$ of $\int P$: $\Phi(\lambda_{(c', x')} \circ y(f)) = P(f)(x') = x = \Phi(\lambda_{(c, x)})$, so $\lambda_{(c', x')} \circ y(f) = \lambda_{(c, x)}$ because $\Phi$ is injective.
+
+*Factorisation.* Let $\mu_{(c, x)} : y(c) \Rightarrow Q$ be another cocone. Define $\tau_c : P(c) \to Q(c)$ by $\tau_c(x) = \Phi(\mu_{(c, x)})$. It is natural: for $f : c' \to c$ and $x \in P(c)$, $f$ is an arrow $(c', P(f)(x)) \to (c, x)$ of $\int P$, so $\mu_{(c, x)} \circ y(f) = \mu_{(c', P(f)(x))}$ and
+$$
+\tau_{c'}\big(P(f)(x)\big) = \Phi\big(\mu_{(c, x)} \circ y(f)\big) = Q(f)\big(\Phi(\mu_{(c, x)})\big) = Q(f)\big(\tau_c(x)\big).
+$$
+And $\Phi(\tau \circ \lambda_{(c, x)}) = \tau_c(x) = \Phi(\mu_{(c, x)})$, so $\tau \circ \lambda_{(c, x)} = \mu_{(c, x)}$.
+
+*Uniqueness.* If also $\tau' \circ \lambda_{(c, x)} = \mu_{(c, x)}$ for all $(c, x)$, then $\tau'_c(x) = \tau'_c(\Phi(\lambda_{(c, x)})) = \Phi(\tau' \circ \lambda_{(c, x)}) = \Phi(\mu_{(c, x)}) = \tau_c(x)$.
+
+Since $\mathcal{C}$ is small, so is $\int P$, and this is a small colimit.
+
+</Proof>
+
+For a simplicial set $X$ this says that $X$ is glued from standard simplices $\Delta[n]$, one for each $n$-simplex of $X$ — and Corollary 3 says that the $n$-simplices of $X$ *are* the maps $\Delta[n] \to X$. In the <TopicLink id="math.cat.kan-extensions">Kan extensions</TopicLink> lesson, density is the starting point for extending functors from $\mathcal{C}$ to all presheaves.
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Edges and vertices of a graph">
+
+Let $G$ be a directed graph, viewed as a functor $\mathbb{E} \to \cat{Set}$. A graph homomorphism from the walking edge $\Hom(E, -)$ to $G$ is determined by where it sends the edge $\id_E$; by Theorem 1 it can send it to any edge of $G$, and the endpoints $s, t$ must then go to that edge's source and target. So $\mathrm{Nat}(\Hom(E, -), G) \cong G(E)$, the edges. Likewise homomorphisms from the one-vertex graph are the vertices. "The edges of $G$ are the maps from an edge" is the Yoneda lemma.
+
+</Example>
+
+<Example title="Cayley's theorem for $S_3$">
+
+Write $S_3 = \{e, r, r^2, s, rs, r^2 s\}$ with $r^3 = s^2 = e$ and $srs^{-1} = r^{-1}$. Left multiplication by $r$ permutes the six elements as two 3-cycles, $(e\ \ r\ \ r^2)(s\ \ rs\ \ r^2 s)$; that is the permutation $\lambda_r$. Of the $6! = 720$ permutations of $S_3$, exactly six commute with every right multiplication, and they are $\lambda_e, \lambda_r, \dots$ — the computation section finds them by brute force. Corollary 6 explains why: a permutation commuting with right multiplications is determined by where it sends $e$.
+
+</Example>
+
+<Example title="Divisibility">
+
+In $(\N_{\ge 1}, \mid)$, $a \mid b$ exactly when every divisor of $a$ divides $b$ (Corollary 7). Two numbers with the same set of divisors are equal. Nothing deep — but it is the same theorem as Cayley's.
+
+</Example>
+
+<Example title="Proving an isomorphism by Yoneda">
+
+For objects with products, $(A \times B) \times C \cong A \times (B \times C)$. Instead of building the isomorphism by hand, compute hom-sets: naturally in $X$,
+$$
+\Hom(X, (A \times B) \times C) \cong \Hom(X, A) \times \Hom(X, B) \times \Hom(X, C) \cong \Hom(X, A \times (B \times C)).
+$$
+So $y((A \times B) \times C) \cong y(A \times (B \times C))$, and Corollary 5 gives the isomorphism. The same technique proves $A \times B \cong B \times A$ and, in a cartesian closed category, $(C^B)^A \cong C^{A \times B}$.
+
+</Example>
+
+<Example title="A natural operation that is not a power">
+
+Inversion $g \mapsto g^{-1}$ is natural on groups: it is the power $n = -1$. On the category of *abelian* groups, $U \cong \Hom(\Z, -)$ still, so the natural operations are again $g \mapsto ng$. But on *rings*, $U \cong \Hom(\Z[x], -)$, and the natural unary operations are the integer polynomials: $r \mapsto r^2 + 3r - 1$, and so on, one for each element of $\Z[x]$.
+
+</Example>
+
+</Section>
+
+<Section id="formal" kind="formal" title="The Yoneda lemma in Lean">
+
+Mathlib's `yoneda : C ⥤ (Cᵒᵖ ⥤ Type)` sends `A` to `Hom(−, A)`, and `coyoneda` sends `A` to `Hom(A, −)`. Composition `f ≫ g` means "first `f`, then `g`" (so $g \circ f$ is `f ≫ g`).
+
+**Theorem 1, independently.** The two maps of the proof, then the two composites. The key step `ofElement_toElement` is the human proof's last line as a `calc` block: naturality applied to the identity, then `𝟙 A ≫ f = f`.
+
+<Lean decl="Lumenary.Yoneda.toElement" />
+
+<Lean decl="Lumenary.Yoneda.ofElement" />
+
+<Lean decl="Lumenary.Yoneda.ofElement_toElement" />
+
+<Lean decl="Lumenary.Yoneda.toElement_ofElement" />
+
+<Lean decl="Lumenary.Yoneda.yonedaBijection" />
+
+**Theorem 2: naturality in $F$ and in $A$.**
+
+<Lean decl="Lumenary.Yoneda.toElement_natural_functor" />
+
+<Lean decl="Lumenary.Yoneda.toElement_natural_object" />
+
+**Full faithfulness and the Yoneda principle**, proved from Theorem 1 for the covariant embedding $A \mapsto \Hom(A, -)$:
+
+<Lean decl="Lumenary.Yoneda.nat_trans_representables" />
+
+<Lean decl="Lumenary.Yoneda.iso_of_corepresentable_iso" />
+
+**Mathlib's versions** of Corollaries 3, 4 and 5 for the contravariant embedding, and the density theorem (Theorem 9):
+
+<Lean decl="Lumenary.Yoneda.yoneda_lemma_library" />
+
+<Lean decl="Lumenary.Yoneda.yoneda_fully_faithful" />
+
+<Lean decl="Lumenary.Yoneda.iso_of_representable_iso" />
+
+<Lean decl="Lumenary.Yoneda.density" />
+
+**Cayley's theorem (Corollary 6).** The faithful half is `cayley_injective` and the full half — every permutation commuting with right multiplications is a left multiplication — is `equivariant_eq_cayley`, whose `calc` block is the one-line Yoneda argument $\sigma(x) = \sigma(1 \cdot x) = \sigma(1)\,x$. Mathlib's version follows.
+
+<Lean decl="Lumenary.Yoneda.cayley" />
+
+<Lean decl="Lumenary.Yoneda.cayley_injective" />
+
+<Lean decl="Lumenary.Yoneda.equivariant_eq_cayley" />
+
+<Lean decl="Lumenary.Yoneda.cayley_library" />
+
+**Posets (Corollary 7).**
+
+<Lean decl="Lumenary.Yoneda.le_iff_forall_le" />
+
+<Lean decl="Lumenary.Yoneda.eq_of_same_lower" />
+
+**What is and is not formalised.** Theorems 1 and 2, full faithfulness of the covariant embedding and the Yoneda principle are proved independently in every locally small category; Corollaries 3–5 for the contravariant embedding and Theorem 9 are cited from Mathlib; Corollaries 6 and 7 are proved independently. Corollary 8 (natural operations on groups) is not formalised here.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting natural transformations">
+
+For finite categories and finite sets, the Yoneda lemma is a *counting* statement: among all families of functions $\Hom(A, X) \to F(X)$, exactly $|F(A)|$ are natural. The experiment lists every family and tests naturality directly — for a directed graph (a functor on $\mathbb{E}$), for actions of the four-element monoid of all maps $\{0, 1\} \to \{0, 1\}$, and for $\Z/3$ acting on six points. Then it finds, among all $720$ permutations of $S_3$, those that commute with right multiplication.
+
+<Python id="yoneda_finite_check" />
+
+What to notice: the number of candidates grows fast ($4^4 = 256$ for the monoid acting on the four subsets of $\{0, 1\}$), but the natural ones always number exactly $|F(A)|$, and $\alpha \mapsto \alpha_A(\id_A)$ hits each element of $F(A)$ once. For $S_3$ the six survivors are precisely the left multiplications. These are exhaustive checks of finitely many cases; the lemma itself is proved above for every locally small category, and in Lean.
+
+</Section>
+
+<Section id="pictures" kind="visualization" title="Seeing Cayley's theorem">
+
+Draw the six elements of $S_3$ and join $x$ to $xr$ by a solid arrow and $x$ to $xs$ by a dashed edge (right multiplication by the generators). This is the **Cayley graph** of $S_3$. Left multiplication by any $g$ maps it to itself, preserving both kinds of edge, because $g(xr) = (gx)r$ — and Corollary 6 says these six maps are the *only* permutations of the vertices that preserve every edge and its style.
+
+<Figure caption="The Cayley graph of S₃ for the generators r (solid arrows, x → xr) and s (dashed, x — xs). Its edge-preserving symmetries are exactly the six left multiplications: a symmetry is determined by where it sends e.">
+
+<svg viewBox="0 0 340 220" role="img" aria-label="Cayley graph of the symmetric group S3: an outer triangle e, r, r squared with solid arrows, an inner triangle s, rs, r squared s with solid arrows the other way, and dashed spokes joining e to s, r to r s, and r squared to r squared s.">
+  <polygon points="170,20 300,195 40,195" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <polygon points="170,80 228,165 112,165" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <line x1="170" y1="20" x2="170" y2="80" stroke="var(--formal)" strokeWidth="2" strokeDasharray="6 4" />
+  <line x1="300" y1="195" x2="228" y2="165" stroke="var(--formal)" strokeWidth="2" strokeDasharray="6 4" />
+  <line x1="40" y1="195" x2="112" y2="165" stroke="var(--formal)" strokeWidth="2" strokeDasharray="6 4" />
+  <polygon points="239,112 227,106 235,100" fill="var(--human)" />
+  <polygon points="164,195 176,190 176,200" fill="var(--human)" />
+  <polygon points="109,103 105,115 97,109" fill="var(--human)" />
+  <polygon points="138,127 140,115 149,120" fill="var(--human)" />
+  <polygon points="176,165 164,170 164,160" fill="var(--human)" />
+  <polygon points="196,118 207,125 198,130" fill="var(--human)" />
+  <circle cx="170" cy="20" r="13" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="300" cy="195" r="13" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="40" cy="195" r="13" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="170" cy="80" r="13" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="228" cy="165" r="13" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="112" cy="165" r="13" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <text x="170" y="25" fontSize="12" textAnchor="middle" fill="var(--ink-2)">e</text>
+  <text x="300" y="200" fontSize="12" textAnchor="middle" fill="var(--ink-2)">r</text>
+  <text x="40" y="200" fontSize="12" textAnchor="middle" fill="var(--ink-2)">r²</text>
+  <text x="170" y="85" fontSize="12" textAnchor="middle" fill="var(--ink-2)">s</text>
+  <text x="228" y="170" fontSize="11" textAnchor="middle" fill="var(--ink-2)">rs</text>
+  <text x="112" y="170" fontSize="11" textAnchor="middle" fill="var(--ink-2)">r²s</text>
+</svg>
+
+</Figure>
+
+Try it: pick a vertex, say $r$, and decide to send $e$ there. Following the solid and dashed edges out of $e$ forces where every other vertex must go — you will have built $\lambda_r$. With $e \mapsto e$ you are forced to the identity. That forcing is the proof of the Yoneda lemma, drawn.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"Yoneda says an object *is* its set of elements."** It says an object is determined by the arrows into it from **all** objects, together with how they compose — not by its points $\Hom(1, A)$. The discrete and indiscrete topologies on $\{0, 1\}$ have the same points but different continuous maps from, say, the Sierpiński space; their presheaves $\Hom(-, A)$ differ, and so do the spaces.
+
+</Misconception>
+
+<Misconception>
+
+**"The lemma must be hard to prove."** The proof is three lines: build $\Psi$, check two composites, and the only real step is naturality applied to $\id_A$. Its power comes from how widely it applies — to groups, posets, graphs, spaces, schemes, programs — not from difficulty.
+
+</Misconception>
+
+<Misconception>
+
+**"Any bijection $\mathrm{Nat}(\Hom(A, -), F) \cong F(A)$ will do."** The lemma provides a *specific* bijection, $\alpha \mapsto \alpha_A(\id_A)$, and its naturality in $A$ and $F$ (Theorem 2) is what the applications use — for instance in the proof of density and in Corollary 5.
+
+</Misconception>
+
+<Misconception>
+
+**"$\Hom(X, A) \cong \Hom(X, B)$ for each $X$ is enough."** The Yoneda principle needs these bijections to be **natural in $X$**: compatible with all arrows $X' \to X$. An unnatural family of bijections carries no information about arrows between the probes and in general does not produce an isomorphism $A \to B$.
+
+</Misconception>
+
+<Misconception>
+
+**Mixing up the two embeddings.** $A \mapsto \Hom(-, A)$ is a covariant functor $\mathcal{C} \to [\mathcal{C}^{\mathrm{op}}, \cat{Set}]$; $A \mapsto \Hom(A, -)$ is covariant from $\mathcal{C}^{\mathrm{op}}$, i.e. it *reverses* arrows: $f : A \to B$ gives $\Hom(B, -) \Rightarrow \Hom(A, -)$. In Cayley's theorem this is the difference between left multiplications forming a homomorphism $g \mapsto \lambda_g$ and right multiplications forming an anti-homomorphism.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="The functor of points">
+
+Grothendieck's reformulation of algebraic geometry is the Yoneda embedding applied to schemes. A scheme $X$ gives the presheaf $T \mapsto X(T) = \Hom(T, X)$ of "$T$-valued points", and by Corollary 4 no information is lost: morphisms of schemes are exactly natural transformations of their functors of points, and (restricting to affine $T = \operatorname{Spec} R$) a scheme is determined by the solutions of its equations in all commutative rings. Yoneda also transports *structure*: a group structure on $X$ (making it a group scheme) is the same thing as a group structure on each $X(T)$, natural in $T$. The multiplicative group $\mathbb{G}_m$ is the functor $R \mapsto R^\times$ and $\mathrm{GL}_n$ is $R \mapsto \mathrm{GL}_n(R)$; the group laws are verified pointwise, where they are just the familiar laws for matrices. See <TopicLink id="math.geom.algebraic-geometry">algebraic geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Simplices, cohomology operations and homotopy">
+
+A simplicial set is a combinatorial model of a space, and Corollary 3 says its $n$-simplices are exactly the maps $\Delta[n] \to X$ from the standard simplex; density (Theorem 9) says $X$ is glued from simplices, and geometric realisation glues the corresponding topological simplices. In cohomology, representability by Eilenberg–MacLane spaces, $H^n(X; G) \cong [X, K(G, n)]$, combined with Yoneda in the homotopy category, shows that natural transformations $H^n(-; G) \Rightarrow H^m(-; G')$ — **cohomology operations** — correspond to elements of $H^m(K(G, n); G')$. The Steenrod squares $\mathrm{Sq}^i$ are such elements of $H^{n+i}(K(\Z/2, n); \Z/2)$. The fundamental group itself is Yoneda-flavoured: loops are maps from the circle, $\pi_1(X, x_0) = [(S^1, \ast), (X, x_0)]$. See <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Operations are words: Cayley and beyond">
+
+Corollaries 6 and 8 are the algebraist's Yoneda. Cayley's theorem realises every group inside a symmetric group; its linear cousin realises every group inside $\mathrm{GL}(k[G])$ through the regular representation, and every ring $R$ inside the ring of additive endomorphisms of $R$, by $r \mapsto (x \mapsto rx)$ — the image being exactly the endomorphisms that commute with right multiplications, as in Corollary 6. Corollary 8 says the natural $n$-ary operations on groups are the elements of the free group $F_n$, and on commutative rings the elements of $\Z[x_1, \dots, x_n]$. Lawvere's functorial semantics turns this around: an algebraic theory *is* (the opposite of) the category of its finitely generated free algebras, and its models are the product-preserving functors from it to $\cat{Set}$.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Continuations and the Yoneda trick in programming">
+
+In a typed functional language, a polymorphic function of type `∀ r. (a → r) → F r`, for a functor `F`, corresponds to a value of type `F a` — Theorem 1 with types as objects, assuming the functions are *parametric* (they cannot inspect the type `r`). With `F` the identity, `∀ r. (a → r) → r ≅ a`: a value is the same as the ability to hand it to any continuation, the basis of **continuation-passing style**. Compilers and libraries use the wrapped form to fuse repeated `fmap`s into one pass (`fmap f . fmap g = fmap (f . g)` becomes automatic). The correspondence relies on parametricity (Reynolds, Wadler), a theorem about the language, not on category theory alone.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Leibniz, identity types and path induction">
+
+Corollary 7 is Leibniz's principle in order-theoretic form: two things with the same "properties" (here: the same elements below them) are equal. In type theory, the Leibniz-style characterisation of equality — $x = y$ if and only if every predicate true of $x$ is true of $y$ — is provable, and Martin-Löf's identity types satisfy a Yoneda-like induction principle: to prove something about all $y$ and all $p : x = y$ it suffices to prove it for $y = x$ and $p = \mathrm{refl}_x$. In <TopicLink id="math.found.homotopy-type-theory">homotopy type theory</TopicLink> this **path induction** is often described as the Yoneda lemma for identity types: $\mathrm{refl}_x$ plays the role of $\id_A$, the generic element from which every other is transported.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="categories" kind="categories" title="Presheaves as free colimits">
+
+The Yoneda embedding $y : \mathcal{C} \to \widehat{\mathcal{C}}$ is full and faithful (Corollary 4), and every presheaf is a colimit of representables (Theorem 9). Together these make $\widehat{\mathcal{C}}$ the **free cocompletion** of a small category $\mathcal{C}$: for any cocomplete category $\mathcal{E}$, functors $\mathcal{C} \to \mathcal{E}$ extend, uniquely up to isomorphism, to colimit-preserving functors $\widehat{\mathcal{C}} \to \mathcal{E}$, by left Kan extension along $y$. So presheaves are "formal colimits of objects of $\mathcal{C}$", just as a free vector space consists of formal linear combinations. The proof is in the <TopicLink id="math.cat.kan-extensions">Kan extensions</TopicLink> lesson.
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trail">
+
+The product $A \times B$ is determined by its maps: the trail explores, with finite sets, the universal property that the Yoneda principle turns into uniqueness.
+
+<Trail slug="products-by-maps" />
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Arthur Cayley**'s paper "On the theory of groups, as depending on the symbolic equation $\theta^n = 1$" (1854) gave the first abstract definition of a group and observed that a group can be represented by permutations of its own elements.
+- **Nobuo Yoneda** (1930–1996), a Japanese mathematician who later turned to computer science, used the lemma in his work on homological algebra, published as "On the homology theory of modules" (*Journal of the Faculty of Science, University of Tokyo*, 1954), the paper that also introduced the description of $\mathrm{Ext}$ by extensions now called Yoneda Ext. Saunders Mac Lane recalled learning the lemma from Yoneda in conversation at the Gare du Nord in Paris in 1954, and it was Mac Lane who made it widely known under Yoneda's name.
+- **Alexander Grothendieck** made the embedding of a category into its presheaves central to algebraic geometry from about 1960, treating spaces through their functors of points and developing topos theory from categories of sheaves.
+- **F. William Lawvere**'s thesis (1963) used the same circle of ideas for universal algebra, and **John C. Reynolds** (1983) and **Philip Wadler** (1989) developed the parametricity that connects the lemma to typed programs.
+- Today the lemma has versions for enriched categories, 2-categories and ∞-categories, and it is a basic tool in algebraic geometry, homotopy theory, logic and programming-language semantics.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Emily Riehl, *Category Theory in Context* (2016), Chapter 2 — the Yoneda lemma with many applications; Chapter 6 for density and Kan extensions.
+- Tom Leinster, *Basic Category Theory* (2014), Chapter 4 — representables and the Yoneda lemma, very clearly motivated.
+- Saunders Mac Lane, *Categories for the Working Mathematician* (1971; 2nd edition 1998), Section III.2.
+- Saunders Mac Lane and Ieke Moerdijk, *Sheaves in Geometry and Logic* (1992), Chapter I — presheaves, the Yoneda embedding and colimits of representables.
+- David Eisenbud and Joe Harris, *The Geometry of Schemes* (2000), Chapter VI — the functor of points.
+- Nobuo Yoneda, "On the homology theory of modules", *J. Fac. Sci. Univ. Tokyo Sect. I* 7 (1954) — the original source.
+
+</Section>

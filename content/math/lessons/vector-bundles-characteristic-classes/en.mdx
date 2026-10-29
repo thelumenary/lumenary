@@ -1,0 +1,464 @@
+---
+slug: vector-bundles-characteristic-classes
+topic: math.geom.vector-bundles-characteristic-classes
+title: Vector bundles and characteristic classes
+subtitle: Families of vector spaces that are products locally but twisted globally — why you cannot comb a hairy ball, which projective spaces are parallelisable, and how curvature integrates to topology.
+level: grad
+ages: Graduate
+minutes: 150
+order: 7024
+objectives:
+  - Define vector bundles, sections, pullbacks and Whitney sums, and recognise the tangent bundle, tautological bundles and the Möbius line bundle
+  - Prove that a rank-$k$ bundle is trivial exactly when it has $k$ everywhere independent sections, and decide triviality for the Möbius bundle and the tangent bundles of $S^2$ and $S^3$
+  - Describe bundles by transition functions and clutching, and state the classification of bundles by maps into Grassmannians
+  - Define Stiefel–Whitney and Chern classes axiomatically and use them to obstruct sections, parallelisability and immersions
+  - Use Chern–Weil theory to express characteristic classes through curvature, and state the Gauss–Bonnet–Chern theorem
+narrators: []
+lean:
+  - Lumenary.VectorBundlesCharacteristicClasses.mobius_section_vanishes
+  - Lumenary.VectorBundlesCharacteristicClasses.mobius_not_trivial
+  - Lumenary.VectorBundlesCharacteristicClasses.reInner
+  - Lumenary.VectorBundlesCharacteristicClasses.odd_sphere_vector_field
+  - Lumenary.VectorBundlesCharacteristicClasses.dot4
+  - Lumenary.VectorBundlesCharacteristicClasses.frameI
+  - Lumenary.VectorBundlesCharacteristicClasses.frameJ
+  - Lumenary.VectorBundlesCharacteristicClasses.frameK
+  - Lumenary.VectorBundlesCharacteristicClasses.s3_parallelizable
+  - Lumenary.VectorBundlesCharacteristicClasses.frobenius_two
+  - Lumenary.VectorBundlesCharacteristicClasses.sw_rp2
+  - Lumenary.VectorBundlesCharacteristicClasses.trivial_bundle
+  - Lumenary.VectorBundlesCharacteristicClasses.pullback_bundle
+  - Lumenary.VectorBundlesCharacteristicClasses.whitney_sum
+  - Lumenary.VectorBundlesCharacteristicClasses.tangent_bundle
+compute: [vector_bundles_characteristic_classes_stiefel_whitney]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Combing, twisting and curvature">
+
+You cannot comb the hair on a ball flat without leaving a cowlick: every continuous tangent vector field on the sphere $S^2$ vanishes somewhere. On a doughnut you can. On the circle $S^1$ there is a nowhere-zero tangent field, and on $S^3$ there are *three* that are orthonormal at every point. Why these differences?
+
+The tangent spaces of a manifold form a family of vector spaces parametrised by the manifold — a **vector bundle**. Locally it is a product, but globally it may twist, just as a Möbius band is locally a strip $(a, b) \times \R$ but is not the cylinder $S^1 \times \R$. **Characteristic classes** are cohomology classes of the base that measure this twisting. They obstruct sections ("is there a nowhere-zero vector field?"), frames ("is the manifold parallelisable?") and embeddings ("does $\R P^4$ immerse in $\R^6$?"), and, through **Chern–Weil theory**, they are computed by integrating curvature. The prototype is Gauss–Bonnet: for every metric on a closed surface, $\int_M K \, dA = 2\pi \chi(M)$ — geometry on the left, topology on the right.
+
+This lesson builds on <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink> (cohomology, degree), <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink> and <TopicLink id="math.geom.differential-forms">differential forms</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Local products, global twists">
+
+Take a strip $[0, 1] \times \R$ and glue its ends. Glue $(0, v)$ to $(1, v)$ and you get a cylinder; glue $(0, v)$ to $(1, -v)$ and you get the (infinite) Möbius band. Both are lines over a circle, and both look the same over any proper arc. The difference is global, and a **section** — a continuous choice of a vector in each fibre — detects it: the cylinder has the nowhere-zero section $v = 1$, but any section of the Möbius band starting at height $v$ must come back at height $-v$, so it crosses zero.
+
+<Figure caption="Left: the cylinder (sides glued the same way) carries a section that never meets the zero section (dashed). Right: on the Möbius band (sides glued with a flip) a section leaving the left edge at height +h must arrive at the right edge at height −h, so it crosses zero.">
+<svg viewBox="0 0 360 170" role="img" aria-label="Two squares with a dashed horizontal midline. On the left square both vertical sides have upward arrows and a gold curve stays above the midline. On the right square the arrows point opposite ways and a gold curve goes from above the midline on the left to below it on the right, crossing the midline.">
+  <rect x="30" y="25" width="120" height="120" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="30" y1="85" x2="150" y2="85" stroke="var(--ink-2)" strokeWidth="1.5" strokeDasharray="5 4" />
+  <line x1="30" y1="25" x2="30" y2="145" stroke="var(--human)" strokeWidth="3" />
+  <line x1="150" y1="25" x2="150" y2="145" stroke="var(--human)" strokeWidth="3" />
+  <path d="M 24 70 L 30 58 L 36 70" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <path d="M 144 70 L 150 58 L 156 70" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <path d="M 30 55 C 70 40, 110 70, 150 55" fill="none" stroke="var(--gold)" strokeWidth="3" />
+  <rect x="210" y="25" width="120" height="120" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="1.5" />
+  <line x1="210" y1="85" x2="330" y2="85" stroke="var(--ink-2)" strokeWidth="1.5" strokeDasharray="5 4" />
+  <line x1="210" y1="25" x2="210" y2="145" stroke="var(--human)" strokeWidth="3" />
+  <line x1="330" y1="25" x2="330" y2="145" stroke="var(--human)" strokeWidth="3" />
+  <path d="M 204 70 L 210 58 L 216 70" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <path d="M 324 100 L 330 112 L 336 100" fill="none" stroke="var(--human)" strokeWidth="2.5" />
+  <path d="M 210 55 C 250 50, 290 120, 330 115" fill="none" stroke="var(--gold)" strokeWidth="3" />
+  <circle cx="268" cy="85" r="4" fill="var(--formal)" />
+</svg>
+</Figure>
+
+Characteristic classes generalise this sign-flip. A bundle can be described by **transition functions** on overlaps of trivialising open sets, valued in $GL_k$; the cohomology of the base records how they fail to be undone. The Möbius band has transition function $-1$ on one overlap: the non-trivial element of $H^1(S^1; \Z/2)$, its first Stiefel–Whitney class.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="vector bundle">
+
+A **real vector bundle of rank $k$** over a space $B$ is a map $p : E \to B$ with a real vector space structure on each fibre $E_b = p^{-1}(b)$, such that every point of $B$ has an open neighbourhood $U$ and a homeomorphism $\varphi : p^{-1}(U) \to U \times \R^k$ (a **local trivialisation**) mapping each fibre $E_b$ linearly isomorphically onto $\{b\} \times \R^k$. Complex bundles are defined with $\C^k$. A **morphism** of bundles over $B$ is a continuous map $E \to E'$ over $B$ that is linear on fibres; an **isomorphism** is a morphism with an inverse morphism.
+
+</Definition>
+
+<Definition term="trivial bundle; section; frame">
+
+The **trivial bundle** is $\varepsilon^k = B \times \R^k$; a bundle is **trivial** if it is isomorphic to it. A **section** is a continuous $s : B \to E$ with $p \circ s = \mathrm{id}_B$; every bundle has the zero section. A **frame** over $U$ is a family of sections $s_1, \dots, s_k$ that form a basis of $E_b$ for every $b \in U$. A manifold is **parallelisable** if its tangent bundle is trivial.
+
+</Definition>
+
+<Definition term="pullback; Whitney sum">
+
+For a bundle $E \to B$ and a map $f : B' \to B$, the **pullback** $f^*E = \{ (b', v) \in B' \times E : f(b') = p(v) \}$ is a bundle over $B'$ with fibre $E_{f(b')}$ over $b'$. The **Whitney sum** $E \oplus E'$ of two bundles over $B$ has fibres $E_b \oplus E'_b$; it is the pullback of $E \times E' \to B \times B$ along the diagonal. Tensor products, duals, $\operatorname{Hom}(E, E')$ and exterior powers are defined fibrewise in the same way.
+
+</Definition>
+
+<Definition term="transition functions">
+
+If $\varphi_\alpha$ and $\varphi_\beta$ are trivialisations over $U_\alpha$ and $U_\beta$, then $\varphi_\alpha \circ \varphi_\beta^{-1}(b, v) = (b, g_{\alpha\beta}(b) v)$ for continuous **transition functions** $g_{\alpha\beta} : U_\alpha \cap U_\beta \to GL_k(\R)$, satisfying the **cocycle condition** $g_{\alpha\beta}\, g_{\beta\gamma} = g_{\alpha\gamma}$ on triple overlaps. Conversely, any cocycle defines a bundle by gluing the pieces $U_\alpha \times \R^k$. A bundle is **orientable** if the cocycle can be chosen with values in $GL_k^+(\R)$ (positive determinant).
+
+</Definition>
+
+<Definition term="tangent, normal and tautological bundles">
+
+The **tangent bundle** $TM$ of a smooth $n$-manifold has fibres $T_xM$; its transition functions are the Jacobians of the chart changes. For $M \subset \R^N$, the **normal bundle** $\nu$ has fibres $(T_xM)^\perp$, and $TM \oplus \nu \cong \varepsilon^N$. The **Grassmannian** $\mathrm{Gr}_k(\R^n)$ is the space of $k$-dimensional subspaces of $\R^n$, and the **tautological bundle** $\gamma_k$ over it has fibre over a plane the plane itself. For $k = 1$ this is the tautological line bundle $\gamma$ over $\R P^{n-1}$; over $\R P^1 = S^1$ it is the Möbius bundle. Letting $n \to \infty$ gives $\mathrm{Gr}_k(\R^\infty) = BO(k)$, and in the complex case $\mathrm{Gr}_k(\C^\infty) = BU(k)$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Spheres">
+
+$TS^n = \{ (x, v) \in S^n \times \R^{n+1} : v \perp x \}$, with normal bundle $\{ (x, tx) \}$ trivialised by the section $x \mapsto x$. So $TS^n \oplus \varepsilon^1 \cong \varepsilon^{n+1}$: the tangent bundle of a sphere is **stably trivial**. Yet $TS^2$ is not trivial (Theorem 4): adding a trivial bundle can untwist a bundle.
+
+</Example>
+
+<Example title="Line bundles over the circle">
+
+A real line bundle over $S^1$ can be trivialised over two arcs whose intersection has two components; the transition function is a non-zero constant on each, and only the signs matter. Up to isomorphism there are exactly two line bundles: the trivial one and the Möbius bundle. This is the first case of the clutching construction (Theorem 5).
+
+</Example>
+
+<Example title="Projective spaces">
+
+$T\R P^n \oplus \varepsilon^1 \cong (n+1)\gamma$, the sum of $n + 1$ copies of the tautological line bundle (Milnor–Stasheff, Lemma 4.4): a tangent vector at a line $L$ is a linear map $L \to L^\perp$, so $T\R P^n \cong \operatorname{Hom}(\gamma, \gamma^\perp)$, and adding the trivial bundle $\operatorname{Hom}(\gamma, \gamma) \cong \varepsilon^1$ gives $\operatorname{Hom}(\gamma, \varepsilon^{n+1}) \cong (n+1)\gamma^* \cong (n+1)\gamma$. Similarly $T\C P^n \oplus \varepsilon^1_\C \cong (n+1)\,\overline{\gamma}$ for the complex tautological bundle.
+
+</Example>
+
+</Section>
+
+<Section id="sections" kind="proof" title="Sections, frames and the hairy ball">
+
+<Theorem name="Proposition 1 (frames trivialise)">
+
+A rank-$k$ bundle $E \to B$ is trivial if and only if it has $k$ sections $s_1, \dots, s_k$ that are linearly independent at every point. In particular, a line bundle is trivial if and only if it has a nowhere-zero section.
+
+</Theorem>
+
+<Proof>
+
+A trivialisation $E \cong B \times \R^k$ gives the frame $s_i(b) = (b, e_i)$. Conversely, given a frame, define $\Phi : B \times \R^k \to E$ by $\Phi(b, t) = \sum_i t_i s_i(b)$. It is continuous, linear and bijective on each fibre. To see that $\Phi^{-1}$ is continuous, work in a local trivialisation over $U$: there $\Phi$ becomes $(b, t) \mapsto (b, A(b) t)$, where the columns of the matrix $A(b)$ are the coordinates of the $s_i(b)$, so $A : U \to GL_k(\R)$ is continuous, and $(b, v) \mapsto (b, A(b)^{-1} v)$ is continuous because matrix inversion is (Cramer's rule). So $\Phi$ is an isomorphism.
+
+</Proof>
+
+<Theorem name="Theorem 2 (the Möbius bundle is not trivial)">
+
+Every section of the Möbius bundle vanishes somewhere; hence the Möbius bundle is not trivial.
+
+</Theorem>
+
+<Proof>
+
+Realise the Möbius bundle as the quotient of $\R \times \R$ by $(t, v) \sim (t + 1, -v)$, over $S^1 = \R/\Z$. A section is the same as a continuous function $s : \R \to \R$ with $s(t + 1) = -s(t)$ (its graph is invariant under the identification). Then $s(0)$ and $s(1) = -s(0)$ are either both zero or of opposite signs, and the intermediate value theorem gives $t \in [0, 1]$ with $s(t) = 0$. By Proposition 1 the bundle is not trivial.
+
+</Proof>
+
+<Theorem name="Theorem 3 (odd spheres can be combed; S³ is parallelisable)">
+
+(a) For every $m \ge 1$, $S^{2m-1}$ carries a nowhere-zero tangent vector field. (b) $S^1$ and $S^3$ are parallelisable.
+
+</Theorem>
+
+<Proof>
+
+(a) Regard $S^{2m-1} \subset \C^m$ and set $v(z) = iz$, i.e. $(x_1, y_1, \dots, x_m, y_m) \mapsto (-y_1, x_1, \dots, -y_m, x_m)$. Then $\langle z, iz \rangle = \sum_k \operatorname{Re}(\bar z_k \cdot i z_k) = \sum_k \operatorname{Re}(i |z_k|^2) = 0$, so $v(z)$ is tangent, and $|v(z)| = |z| = 1$. (b) For $S^1$ this single field is a frame. For $S^3 \subset \mathbb{H} = \R^4$, the quaternions, let $v_1(x) = ix$, $v_2(x) = jx$, $v_3(x) = kx$. Left multiplication by a unit quaternion is an isometry of $\R^4$, and $1, i, j, k$ are orthonormal; so $x, ix, jx, kx$ are orthonormal for every unit $x$ (they are the images of $1, i, j, k$ under right multiplication by $x$, also an isometry). Thus $v_1, v_2, v_3$ form an orthonormal tangent frame, and $TS^3$ is trivial by Proposition 1. The octonions give $S^7$ the same way.
+
+</Proof>
+
+<Theorem name="Theorem 4 (hairy ball theorem; Poincaré, Brouwer)">
+
+If $n$ is even, every continuous tangent vector field on $S^n$ vanishes somewhere. In particular $TS^2$ is not trivial.
+
+</Theorem>
+
+<Proof>
+
+Suppose $v$ is a tangent field on $S^n$ with no zero; replacing $v(x)$ by $v(x)/|v(x)|$ we may assume $|v(x)| = 1$ and $v(x) \perp x$. Define $H(x, t) = \cos(\pi t)\, x + \sin(\pi t)\, v(x)$. Since $x$ and $v(x)$ are orthonormal, $|H(x, t)| = 1$, so $H$ is a homotopy in $S^n$ from the identity ($t = 0$) to the antipodal map $x \mapsto -x$ ($t = 1$). Homotopic maps have equal degree, but $\deg(\mathrm{id}) = 1$ and the antipodal map, a composite of $n + 1$ reflections, has degree $(-1)^{n+1} = -1$ for $n$ even. Contradiction.
+
+</Proof>
+
+So whether $S^n$ can be combed depends only on the parity of $n$. Parallelisability is much subtler: $S^n$ is parallelisable only for $n = 0, 1, 3, 7$ (Bott–Milnor and Kervaire, 1958), and J. F. Adams (1962) determined exactly how many independent vector fields $S^{n-1}$ carries: $\rho(n) - 1$, where $\rho(2^{4a+b} \cdot \text{odd}) = 2^b + 8a$ for $0 \le b \le 3$ are the Radon–Hurwitz numbers.
+
+</Section>
+
+<Section id="classification" kind="human" title="Clutching and classifying spaces">
+
+<Theorem name="Theorem 5 (clutching)">
+
+Every bundle over $S^n$ is trivial over the two closed hemispheres $D^n_\pm$, and is determined up to isomorphism by the **clutching function** $f : S^{n-1} \to GL_k$ comparing the two trivialisations along the equator. This gives a bijection between isomorphism classes of rank-$k$ complex bundles over $S^n$ and $[S^{n-1}, GL_k(\C)] \cong \pi_{n-1}(U(k))$; for oriented real bundles one gets $[S^{n-1}, SO(k)] \cong \pi_{n-1}(SO(k))$ (for a connected topological group, free and based homotopy classes of maps from a sphere agree).
+
+</Theorem>
+
+Bundles over a disc are trivial (the disc is contractible: Theorem 6 below), and homotopic clutching functions give isomorphic bundles (Hatcher, *Vector Bundles and K-Theory*, Proposition 1.11). Examples: real line bundles over $S^1$ correspond to $\pi_0(GL_1(\R)) = \{\pm 1\}$ — trivial and Möbius; complex line bundles over $S^2$ correspond to $\pi_1(U(1)) = \Z$, and the integer is the first Chern class; $TS^2$ is clutched by a map of degree $2$, matching $\chi(S^2) = 2$.
+
+<Theorem name="Theorem 6 (classification)">
+
+Let $B$ be paracompact. (a) Homotopic maps $f \simeq g : B' \to B$ pull back isomorphic bundles; so bundles over a contractible paracompact space are trivial. (b) The map $[B, \mathrm{Gr}_k(\R^\infty)] \to \operatorname{Vect}^k_\R(B)$, $f \mapsto f^*\gamma_k$, is a bijection, and likewise $[B, BU(k)] \cong \operatorname{Vect}^k_\C(B)$ with $BU(k) = \mathrm{Gr}_k(\C^\infty)$.
+
+</Theorem>
+
+See Milnor–Stasheff, Theorems 5.6 and 5.7, and Hatcher, *VBKT*, Theorem 1.16. Since $\R P^\infty = K(\Z/2, 1)$ and $\C P^\infty = K(\Z, 2)$ are Eilenberg–MacLane spaces (see <TopicLink id="math.geom.homotopy-theory">homotopy theory</TopicLink>), it follows that real line bundles over a CW complex correspond to $H^1(B; \Z/2)$ and complex line bundles to $H^2(B; \Z)$ — via the classes $w_1$ and $c_1$ defined next.
+
+<Definition term="characteristic class">
+
+A **characteristic class** of rank-$k$ real bundles with coefficients in $R$ assigns to each bundle $E \to B$ a class $c(E) \in H^\bullet(B; R)$ depending only on the isomorphism class of $E$ and **natural** under pullback: $c(f^*E) = f^* c(E)$. By Theorem 6 these are exactly the elements of $H^\bullet(BO(k); R)$ (evaluate on the tautological bundle); for complex bundles, of $H^\bullet(BU(k); R)$.
+
+</Definition>
+
+</Section>
+
+<Section id="classes" kind="proof" title="Stiefel–Whitney, Chern, Euler and Pontryagin classes">
+
+<Theorem name="Theorem 7 (Stiefel–Whitney classes)">
+
+There are unique classes $w_i(E) \in H^i(B; \Z/2)$, $i \ge 0$, for real vector bundles over paracompact spaces, such that: (1) $w_0 = 1$ and $w_i(E) = 0$ for $i > \operatorname{rank} E$; (2) naturality: $w_i(f^*E) = f^* w_i(E)$; (3) **Whitney sum formula**: $w(E \oplus E') = w(E)\, w(E')$ for the total class $w = 1 + w_1 + w_2 + \cdots$; (4) normalisation: $w_1$ of the Möbius bundle over $\R P^1$ is non-zero.
+
+</Theorem>
+
+Existence and uniqueness are Milnor–Stasheff, §4 and §8: $H^\bullet(BO(k); \Z/2) = \Z/2[w_1, \dots, w_k]$, and the classes can be built from the Thom isomorphism and Steenrod squares. Immediate consequences: a trivial bundle has $w = 1$ (it is pulled back from a point), so $w(E \oplus \varepsilon^m) = w(E)$; $E$ is orientable if and only if $w_1(E) = 0$; if $E$ has $m$ everywhere independent sections then $E \cong E' \oplus \varepsilon^m$ and $w_i(E) = 0$ for $i > k - m$. The tautological line bundle over $\R P^n$ has $w(\gamma) = 1 + a$, where $a$ generates $H^1(\R P^n; \Z/2)$ and $H^\bullet(\R P^n; \Z/2) = \Z/2[a]/(a^{n+1})$.
+
+<Theorem name="Theorem 8 (Stiefel–Whitney classes of projective space)">
+
+$w(T\R P^n) = (1 + a)^{n+1} = \sum_{i=0}^{n} \binom{n+1}{i} a^i$. Consequently: (a) if $\R P^n$ is parallelisable, then $n + 1$ is a power of $2$; (b) if $n = 2^r$, then $\R P^n$ does not immerse in $\R^{2n-2}$.
+
+</Theorem>
+
+<Proof>
+
+From $T\R P^n \oplus \varepsilon^1 \cong (n+1)\gamma$, the Whitney sum formula and $w(\varepsilon^1) = 1$ give $w(T\R P^n) = w(\gamma)^{n+1} = (1 + a)^{n+1}$.
+
+(a) If $\R P^n$ is parallelisable then $w = 1$, so $\binom{n+1}{i}$ is even for $1 \le i \le n$. Write $n + 1 = 2^r m$ with $m$ odd. In characteristic $2$, $(1 + a)^{2^r} = 1 + a^{2^r}$, so $(1 + a)^{n+1} = (1 + a^{2^r})^m = 1 + m\, a^{2^r} + \cdots$. If $m > 1$ then $2^r \le n$, so the coefficient $m \equiv 1$ of $a^{2^r}$ is a non-zero class: contradiction. Hence $m = 1$.
+
+(b) If $M^n$ immerses in $\R^{n+k}$, its normal bundle $\nu$ has rank $k$ and $TM \oplus \nu \cong \varepsilon^{n+k}$, so $w(\nu) = w(TM)^{-1} =: \bar w(M)$ and $\bar w_i(M) = 0$ for $i > k$ (**Whitney duality**). For $n = 2^r$: $(1 + a)^{n+1} = (1 + a)(1 + a^n)$, so $\bar w = (1 + a)^{-1} (1 + a^n)^{-1} = \big( \sum_{i=0}^{n} a^i \big)(1 + a^n) = \sum_{i=0}^{n-1} a^i$ in $\Z/2[a]/(a^{n+1})$. Thus $\bar w_{n-1} \neq 0$, and an immersion into $\R^{n+k}$ needs $k \ge n - 1$.
+
+</Proof>
+
+Whitney proved that every $n$-manifold immerses in $\R^{2n-1}$ (for $n \ge 2$), so (b) is sharp. Bott–Milnor and Kervaire (1958) showed that only $\R P^1$, $\R P^3$ and $\R P^7$ are parallelisable; the characteristic-class argument alone leaves $\R P^{15}, \R P^{31}, \dots$ undecided.
+
+<Theorem name="Theorem 9 (Chern, Euler and Pontryagin classes)">
+
+(a) For complex bundles there are unique **Chern classes** $c_i(E) \in H^{2i}(B; \Z)$ with the analogous axioms: $c_0 = 1$, $c_i = 0$ for $i > \operatorname{rank}_\C E$, naturality, $c(E \oplus E') = c(E) c(E')$, and $c_1$ of the tautological line bundle $\gamma$ over $\C P^1$ satisfying $\langle c_1(\gamma), [\C P^1] \rangle = -1$ (with the standard orientation conventions). Then $c(T\C P^n) = (1 + x)^{n+1}$, where $x = -c_1(\gamma)$ generates $H^2(\C P^n; \Z)$. (b) An oriented rank-$k$ real bundle has an **Euler class** $e(E) \in H^k(B; \Z)$, natural, multiplicative under Whitney sum, zero if $E$ has a nowhere-zero section, reducing mod $2$ to $w_k$, and equal to $c_k$ for the underlying real bundle of a complex rank-$k$ bundle. (c) The **Pontryagin classes** of a real bundle are $p_i(E) = (-1)^i c_{2i}(E \otimes \C) \in H^{4i}(B; \Z)$.
+
+</Theorem>
+
+See Milnor–Stasheff, §9, §14 and §15. The decisive link between the Euler class and the topology of a manifold is the **Poincaré–Hopf theorem**: for a closed oriented manifold, $\langle e(TM), [M] \rangle = \chi(M)$, and for a vector field with isolated zeros the sum of their indices is $\chi(M)$ (Milnor–Stasheff, Corollary 11.12). For instance $\langle c_n(T\C P^n), [\C P^n] \rangle = n + 1 = \chi(\C P^n)$. Pontryagin numbers are oriented-cobordism invariants; Hirzebruch's signature theorem gives $\operatorname{sign}(M^4) = \tfrac13 \langle p_1(TM), [M] \rangle$, and Milnor (1956) used it to discover exotic smooth structures on $S^7$.
+
+</Section>
+
+<Section id="chern-weil" kind="human" title="Curvature computes characteristic classes">
+
+Let $E \to M$ be a smooth complex vector bundle with a **connection** $\nabla$ (a rule for differentiating sections along vector fields). In a local frame, $\nabla = d + A$ with $A$ a matrix of $1$-forms, and the **curvature** $F = dA + A \wedge A$ is a matrix of $2$-forms which transforms by conjugation, $F \mapsto g^{-1} F g$, under a change of frame. It satisfies the **Bianchi identity** $dF = F \wedge A - A \wedge F$.
+
+<Theorem name="Theorem 10 (Chern–Weil)">
+
+For every polynomial $P$ on $\mathfrak{gl}_k(\C)$ invariant under conjugation, $P(F)$ is a well-defined closed even-degree form on $M$, and its de Rham class does not depend on the connection. The total Chern class is represented by
+
+$$
+c(E) = \Big[ \det\Big( I + \frac{i}{2\pi} F \Big) \Big] \in H^\bullet(M; \R), \qquad c_1(E) = \Big[ \frac{i}{2\pi} \operatorname{tr} F \Big].
+$$
+
+</Theorem>
+
+*Why:* invariance under conjugation makes $P(F)$ independent of the frame. Closedness follows from the Bianchi identity, since $d\,\operatorname{tr}(F^j) = j\, \operatorname{tr}(F^{j-1}(F \wedge A - A \wedge F)) = 0$ by cyclicity of the trace. For two connections $\nabla_0, \nabla_1$, the path $\nabla_t = (1 - t)\nabla_0 + t\nabla_1$ gives an explicit **transgression form** whose exterior derivative is $P(F_1) - P(F_0)$. That these de Rham classes are the images of the integral Chern classes is proved by checking the axioms (Milnor–Stasheff, Appendix C; Bott–Tu, §20 for the splitting principle).
+
+<Example title="The Dirac monopole and the tautological bundle over the sphere">
+
+The tautological line bundle over $\C P^1 = S^2$, with the connection induced from $\C^2$, has curvature $F$ with $\frac{i}{2\pi} \int_{S^2} F = -1$. In physics this is the magnetic monopole of unit charge: the connection is the vector potential, $F$ is the field strength, and the integrality of $\int c_1$ is **Dirac's quantisation condition**. The integral of the curvature of any connection on this bundle is the same — a topological charge.
+
+</Example>
+
+For an oriented Riemannian $2m$-manifold with Levi-Civita connection and curvature matrix $\Omega$ in an oriented orthonormal frame, the **Pfaffian** $\operatorname{Pf}(\Omega)$ (the polynomial with $\operatorname{Pf}(X)^2 = \det X$ on skew-symmetric matrices) is an invariant $2m$-form representing $(2\pi)^m e(TM)$.
+
+<Theorem name="Theorem 11 (Gauss–Bonnet–Chern; Allendoerfer–Weil 1943, Chern 1944)">
+
+For a closed oriented Riemannian manifold $M$ of even dimension $n = 2m$,
+
+$$
+\int_M \operatorname{Pf}(\Omega) = (2\pi)^{m}\, \chi(M).
+$$
+
+For $n = 2$, $\operatorname{Pf}(\Omega) = \Omega_{12} = K \, dA$ (with the usual sign conventions), and this is the Gauss–Bonnet theorem $\int_M K\, dA = 2\pi \chi(M)$.
+
+</Theorem>
+
+Chern's intrinsic proof (1944) transgresses $\operatorname{Pf}(\Omega)$ on the unit sphere bundle and reduces the theorem to Poincaré–Hopf. In dimension two there is also an elementary argument, sketched here: assume the **local Gauss–Bonnet formula** $\alpha + \beta + \gamma - \pi = \int_T K\, dA$ for a geodesic triangle $T$ with angles $\alpha, \beta, \gamma$, and a triangulation of $M$ by $F$ geodesic triangles with $E$ edges and $V$ vertices. Summing over triangles, the angles around each vertex add up to $2\pi$, so
+
+$$
+\int_M K \, dA = 2\pi V - \pi F = 2\pi V - 2\pi E + 2\pi F = 2\pi \chi(M),
+$$
+
+using $3F = 2E$. Curvature integrates to an Euler characteristic.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Sections, frames and Stiefel–Whitney arithmetic in Lean">
+
+Mathlib has topological vector bundles (`VectorBundle`), with the trivial bundle, pullbacks, Whitney sums (fibrewise products `E₁ ×ᵇ E₂`) and the tangent bundle of a manifold as instances. We cite these to connect the lesson's definitions to the library:
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.trivial_bundle" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.pullback_bundle" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.whitney_sum" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.tangent_bundle" />
+
+Theorem 2 is formalised independently in the form used in its proof: sections of the Möbius bundle are continuous antiperiodic functions. The identification of sections with such functions is the one step done on paper.
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.mobius_section_vanishes" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.mobius_not_trivial" />
+
+Theorem 3 is formalised by explicit computation: the field $iz$ on odd spheres, and the quaternionic frame on $S^3$ written in coordinates, with all nine orthogonality and length relations checked.
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.reInner" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.odd_sphere_vector_field" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.dot4" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.frameI" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.frameJ" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.frameK" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.s3_parallelizable" />
+
+Finally, the polynomial arithmetic in the proof of Theorem 8 happens in $\Z/2[a]$: the Frobenius identity $(1 + a)^{2^k} = 1 + a^{2^k}$ (from Mathlib) and the computation $w(T\R P^2) = 1 + a + a^2$.
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.frobenius_two" />
+
+<Lean decl="Lumenary.VectorBundlesCharacteristicClasses.sw_rp2" />
+
+**What is and is not formalised.** Formalised independently: the vanishing of Möbius sections and hence the absence of a nowhere-zero one; the tangent field on odd spheres; the orthonormal frame on $S^3$; and the mod-$2$ arithmetic of Theorem 8 for $\R P^2$. From Mathlib: vector bundle structures on trivial bundles, pullbacks, Whitney sums and tangent bundles. Not formalised: Proposition 1 as a statement about Mathlib's bundles, the identification of the abstract Möbius bundle's sections with antiperiodic functions, the hairy ball theorem (Mathlib has no degree theory for spheres yet), clutching and classification, characteristic classes themselves (Mathlib does not yet have the cohomology ring needed to define them), Chern–Weil theory and Gauss–Bonnet–Chern.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Stiefel–Whitney classes by machine">
+
+Theorem 8 turns questions about projective spaces into arithmetic in $\Z/2[a]/(a^{n+1})$. The experiment expands $(1 + a)^{n+1}$ for $n \le 16$, inverts it to get the dual classes $\bar w$, and reads off the consequences.
+
+<Python id="vector_bundles_characteristic_classes_stiefel_whitney" />
+
+The computation is exact, but it is only as strong as its two inputs, the formula $w(T\R P^n) = (1 + a)^{n+1}$ and Whitney duality. It shows *which* projective spaces might be parallelisable ($n = 1, 3, 7, 15, \dots$); it cannot show that one is. That $\R P^{15}$ is not parallelisable needs the deeper methods of Bott–Milnor–Kervaire or Adams.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: curvature and indices">
+
+Local Gauss–Bonnet on the sphere: drag the vertices of a geodesic triangle and compare the angle excess with the area. Summing exactly this identity over a triangulation is the proof sketch of Theorem 11 in dimension two.
+
+<CurvedTriangles mode="sphere" modes={["sphere", "plane", "hyperbolic"]} subtitle="Angle sum − π = K · area: the building block of Gauss–Bonnet." />
+
+The index of a vector field around a loop counts how many times the arrow turns. The field $(x^2 - y^2, 2xy)$, i.e. $z \mapsto z^2$, has a single zero of index $2$. Extended to the Riemann sphere as the vector field $z^2 \, \partial/\partial z$, it has no other zero (in the coordinate $u = 1/z$ it becomes $-\partial/\partial u$), so its indices add up to $2 = \chi(S^2)$, as Poincaré–Hopf predicts. Try the source, sink and saddle presets too: indices $1$, $1$ and $-1$.
+
+<VectorField mode="field" preset="dipole" title="A single zero of index 2" subtitle="Drag the loop around the origin and watch the index." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"If every piece looks like a product, the bundle is a product."** Local triviality never implies global triviality: the Möbius band is a product over every proper arc of the circle, and $TS^2$ is trivial over each hemisphere. The twisting lives in how the pieces are glued, which is exactly what transition functions and characteristic classes record.
+
+</Misconception>
+
+<Misconception>
+
+**"The tangent bundle of a round sphere is trivial, because the sphere is so symmetric."** $TS^n$ is trivial only for $n = 0, 1, 3, 7$. For even $n$ there is not even a nowhere-zero vector field (Theorem 4); for odd $n \ne 1, 3, 7$ there is one, but not a full frame. Symmetry gives stable triviality ($TS^n \oplus \varepsilon^1 \cong \varepsilon^{n+1}$), not triviality.
+
+</Misconception>
+
+<Misconception>
+
+**"A nowhere-zero section makes a bundle trivial."** Only for line bundles. $TS^5$ has a nowhere-zero section $iz$ but is not trivial. For rank $k$ one needs $k$ independent sections (Proposition 1).
+
+</Misconception>
+
+<Misconception>
+
+**"Orientable bundles are trivial."** Orientability is the vanishing of $w_1$ only. $TS^2$ is orientable but not trivial ($e(TS^2) = 2 \ne 0$), and the tautological complex line bundle over $\C P^1$ is orientable (every complex bundle is) with $c_1 \ne 0$.
+
+</Misconception>
+
+<Misconception>
+
+**"Curvature is local, so its integral cannot know the global shape."** Chern–Weil says the opposite: the *cohomology class* of a curvature form is independent of the connection, so integrals such as $\int K\, dA$ or $\int c_1$ are topological invariants, however the metric or connection is deformed.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Viewpoints">
+
+<Viewpoint lens="geometry" title="Curvature, connections and holonomy">
+
+A connection lets one parallel-transport vectors along curves; transporting around a small loop rotates a vector by approximately the curvature times the enclosed area, and around a geodesic triangle on the unit sphere by its angle excess. Chern–Weil theory turns this local holonomy into global invariants: $c_1$ is the integral of the curvature of a line bundle, the Euler class is the Pfaffian of the Riemann curvature, and Pontryagin forms appear in Hirzebruch's signature formula. Flat bundles ($F = 0$) have vanishing real characteristic classes but can still be non-trivial, detected by their holonomy representation of $\pi_1$.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Classifying spaces and K-theory">
+
+By Theorem 6, bundles are homotopy theory: maps into $BO(k)$ or $BU(k)$, and characteristic classes are the cohomology of these spaces, $H^\bullet(BU(k); \Z) = \Z[c_1, \dots, c_k]$. Forming formal differences of bundles gives **topological K-theory**, the first generalised cohomology theory; **Bott periodicity** $\tilde K(S^{n+2}) \cong \tilde K(S^n)$ comes from $\pi_{n}(U) \cong \pi_{n+2}(U)$, and Adams used K-theory and its operations to settle the vector fields problem on spheres. See <TopicLink id="math.geom.stable-homotopy-theory">stable homotopy theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Modules of sections">
+
+The **Serre–Swan theorem** says that for a compact Hausdorff space $X$, taking global sections gives an equivalence between vector bundles over $X$ and finitely generated projective modules over the ring $C(X)$; trivial bundles correspond to free modules, and $TS^2 \oplus \varepsilon^1 \cong \varepsilon^3$ becomes a projective module that is stably free but not free. In algebraic geometry, vector bundles are locally free sheaves, line bundles form the **Picard group** $H^1(X, \mathcal{O}_X^\times)$, and $c_1$ is the connecting map of the exponential sequence — see <TopicLink id="math.geom.sheaves">sheaves</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="The index theorem">
+
+The Gauss–Bonnet–Chern theorem is the first case of the **Atiyah–Singer index theorem** (1963): the analytic index of an elliptic operator on a closed manifold (dimension of its kernel minus that of its cokernel) equals a topological expression in characteristic classes. For the operator $d + d^*$ from even to odd forms, the index is $\chi(M)$ and the formula is Gauss–Bonnet–Chern; for the signature operator it is Hirzebruch's signature theorem; for the Dolbeault operator it is Hirzebruch–Riemann–Roch.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Gauge fields are connections">
+
+In gauge theory a field such as the electromagnetic potential is a connection on a principal bundle, its curvature is the field strength, and gauge transformations are changes of local trivialisation. Characteristic numbers are topological charges: $\int c_1$ is the magnetic charge of a monopole (Dirac, 1931), and $\int c_2$ over $S^4$ is the instanton number of a Yang–Mills field. The Aharonov–Bohm effect shows physically that a *flat* connection can have non-trivial holonomy. These correspondences are dictionaries between mathematical theorems and physical models, not derivations of physics — see <TopicLink id="math.applied.gauge-theory">gauge theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Bernoulli numbers in topology">
+
+Hirzebruch's $L$-polynomials and $\hat A$-polynomials, which express the signature and the index of the Dirac operator in Pontryagin classes, have coefficients built from Bernoulli numbers, so integrality theorems become divisibility statements: the $\hat A$-genus of a spin manifold is an integer. The **J-homomorphism** sends $\pi_{4k-1}(SO)$, which classifies vector bundles over spheres, into the stable homotopy groups of spheres, and its image is cyclic of order the denominator of $B_{2k}/4k$ (Adams, with the Adams conjecture proved by Quillen and by Sullivan): for $k = 1, 2$ this gives $24$ and $240$, the orders of $\pi_3^s$ and $\pi_7^s$.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Vector fields.** Henri Poincaré (1885) proved that the indices of a vector field on a closed surface sum to its Euler characteristic, so the sphere cannot be combed; L. E. J. Brouwer (1912) proved the hairy ball theorem in all even dimensions; Heinz Hopf (1926) proved the general Poincaré–Hopf theorem.
+- **The first characteristic classes.** Eduard Stiefel, in his 1935 Zürich thesis on independent vector fields, and Hassler Whitney, in work on sphere bundles (1935–37), introduced what are now Stiefel–Whitney classes; Whitney proved the sum formula and duality theorem. Lev Pontryagin defined his classes in the 1940s.
+- **Chern.** Shiing-Shen Chern, born in Jiaxing, China, studied at Nankai and Tsinghua universities and then in Hamburg and in Paris with Élie Cartan. At the Institute for Advanced Study in 1943–44 he gave an intrinsic proof of the higher-dimensional Gauss–Bonnet theorem, after Carl Allendoerfer and André Weil's proof via embeddings (1943), and in 1946 he introduced Chern classes using curvature. He was acting director of the Institute of Mathematics of Academia Sinica (founded 1946–47), and later the founding director of the Mathematical Sciences Research Institute in Berkeley (1981) and of the Nankai Institute of Mathematics in Tianjin (1985). The Chern–Weil homomorphism was developed by Chern and Weil in the late 1940s.
+- **Fibre bundles as a theory.** Norman Steenrod's *The Topology of Fibre Bundles* (1951) set out classification and obstruction theory; Friedrich Hirzebruch's signature and Riemann–Roch theorems (1954) and John Milnor's exotic $7$-spheres (1956) showed the power of characteristic numbers.
+- **K-theory and index theory.** Michael Atiyah and Friedrich Hirzebruch created topological K-theory (1959–61) from Raoul Bott's periodicity theorem (1957–59); J. F. Adams solved the vector fields problem on spheres (1962); Atiyah and Isadore Singer announced the index theorem in 1963. Milnor and James Stasheff's lecture notes, published in 1974, became the standard text.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- John Milnor and James D. Stasheff, *Characteristic Classes* (1974) — the classic; §1–9 and §14–15 cover this lesson, Appendix C Chern–Weil theory.
+- Raoul Bott and Loring W. Tu, *Differential Forms in Algebraic Topology* (1982) — Thom isomorphism, Euler class, splitting principle and Chern classes via forms.
+- Allen Hatcher, *Vector Bundles and K-Theory* (book in progress, versions since 2003) — clutching, classification and K-theory with many pictures.
+- Dale Husemoller, *Fibre Bundles* (1966) and Norman Steenrod, *The Topology of Fibre Bundles* (1951).
+- Ib Madsen and Jørgen Tornehave, *From Calculus to Cohomology* (1997) — de Rham cohomology to Chern–Weil and Gauss–Bonnet at an advanced-undergraduate pace.
+- Shiing-Shen Chern, "A simple intrinsic proof of the Gauss–Bonnet formula for closed Riemannian manifolds", *Annals of Mathematics* 45 (1944).
+- Mikio Nakahara, *Geometry, Topology and Physics* (1990; 2nd ed. 2003) — bundles, connections and characteristic classes for physicists.
+
+Reading path: Milnor–Stasheff §1–8 alongside this lesson, Bott–Tu for the de Rham side, then Hatcher's K-theory notes or <TopicLink id="math.applied.gauge-theory">gauge theory</TopicLink>.
+
+</Section>

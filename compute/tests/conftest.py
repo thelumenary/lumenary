@@ -22,23 +22,6 @@ for path in (EXPERIMENTS_DIR, COMPUTE_DIR):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
-#: The experiment ids the website references. Keep in sync with docs/compute.md.
-EXPECTED_IDS = [
-    "collections_sorting",
-    "set_identities",
-    "integer_inverses",
-    "sign_rules",
-    "counting_functions",
-    "composition_check",
-    "clock_arithmetic",
-    "remainder_families",
-    "euler_polynomial",
-    "exact_vs_numerical",
-    "cantor_diagonal",
-    "random_walk_statistics",
-]
-
-
 def experiment_ids():
     """Ids of every experiment file present on disk, sorted."""
     return sorted(p.stem for p in EXPERIMENTS_DIR.glob("*.py") if not p.name.startswith("_"))

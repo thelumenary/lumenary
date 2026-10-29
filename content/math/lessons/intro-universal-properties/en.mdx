@@ -1,0 +1,491 @@
+---
+slug: intro-universal-properties
+topic: math.cat.intro-universal-properties
+title: "Products by maps: a first universal property"
+subtitle: A journey on a map is just two functions — latitude and longitude. Turning that observation around describes the set of pairs $A \times B$ without ever looking inside it.
+level: g9-12
+ages: Ages 14–18
+minutes: 60
+order: 4023
+objectives:
+  - 'Given $f : X \to A$ and $g : X \to B$, construct the pairing $\langle f, g \rangle : X \to A \times B$ and prove it is the only $h$ with $\pi_A \circ h = f$ and $\pi_B \circ h = g$'
+  - Draw the commuting diagram of the universal property and explain what "exactly one" means, with examples where existence or uniqueness fails
+  - Prove that functions $X \to A \times B$ correspond one-to-one with pairs of functions, and deduce $|A \times B|^{|X|} = |A|^{|X|} \cdot |B|^{|X|}$
+  - Prove that any set $P$ with maps to $A$ and $B$ having the same property is in bijection with $A \times B$ by exactly one bijection compatible with the maps
+  - Recognise products described by maps in other settings, such as coordinates, continuous maps and greatest common divisors
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.IntroUniversalProperties.pair
+  - Lumenary.IntroUniversalProperties.fst_comp_pair
+  - Lumenary.IntroUniversalProperties.snd_comp_pair
+  - Lumenary.IntroUniversalProperties.pair_unique
+  - Lumenary.IntroUniversalProperties.mapsIntoProdEquiv
+  - Lumenary.IntroUniversalProperties.mapsIntoProdEquivLibrary
+  - Lumenary.IntroUniversalProperties.card_maps_into_prod
+  - Lumenary.IntroUniversalProperties.IsProduct
+  - Lumenary.IntroUniversalProperties.prod_isProduct
+  - Lumenary.IntroUniversalProperties.swap_isProduct
+  - Lumenary.IntroUniversalProperties.eq_id_of_isProduct
+  - Lumenary.IntroUniversalProperties.isProduct_bijective
+  - Lumenary.IntroUniversalProperties.not_isProduct_empty
+  - Lumenary.IntroUniversalProperties.not_isProduct_bool
+compute: [intro_universal_properties_count_maps]
+trails: [products-by-maps, arrows-that-compose]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="A journey is two functions">
+
+A minibus leaves Kampala's old taxi park at 7:00 and heads for Entebbe. A phone on the dashboard records where it is every minute: a **latitude** and a **longitude**. So the journey is one function
+
+$$
+\text{time} \;\longrightarrow\; \text{latitude} \times \text{longitude}, \qquad t \longmapsto \big(\text{lat}(t), \text{lon}(t)\big),
+$$
+
+whose outputs are *pairs*. But the phone could equally store two separate columns in a spreadsheet: one function $t \mapsto \text{lat}(t)$ and another $t \mapsto \text{lon}(t)$. Nothing is lost either way. One function into pairs is the same information as two functions.
+
+That modest observation — true for every journey, every spreadsheet with two columns, every point moving in a plane — turns out to describe the set of pairs completely. Mathematicians call this kind of description a **universal property**, and it is one of the central ideas of modern mathematics. This lesson is your first meeting with one.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Describing a set from the outside">
+
+Usually we describe a set by listing or characterising its **elements**: $A \times B$ is the set of ordered pairs $(a, b)$ with $a \in A$ and $b \in B$.
+
+A universal property describes it instead by how it **connects** to everything else through functions. For $A \times B$ the connections are:
+
+1. Two functions *out* of it, the **projections**, which read off the first and second coordinates.
+2. A rule for functions *into* it: whenever you have a function to $A$ and a function to $B$ from the same set $X$, they combine into **exactly one** function from $X$ to $A \times B$ that "projects back" to them.
+
+<Narrator who="chloe">
+
+It's a bit like recognising a friend's voice on the phone without seeing them. We never peek at the elements — only at how maps go in and out. The surprise of this lesson is that this is enough to pin $A \times B$ down. Not *exactly* — but in the best possible sense of "up to relabelling".
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Projections, pairing and the universal property">
+
+Throughout, $A$ and $B$ are sets. Recall from <TopicLink id="math.cat.composition">Composition</TopicLink> that $g \circ f$ means "first $f$, then $g$".
+
+<Definition term="projections">
+
+The **projections** of $A \times B$ are the functions
+
+$$
+\pi_A : A \times B \to A, \quad \pi_A(a, b) = a, \qquad\qquad \pi_B : A \times B \to B, \quad \pi_B(a, b) = b.
+$$
+
+</Definition>
+
+<Definition term="pairing">
+
+Let $X$ be a set, and let $f : X \to A$ and $g : X \to B$. Their **pairing** is the function
+
+$$
+\langle f, g \rangle : X \to A \times B, \qquad \langle f, g \rangle(x) = \big(f(x), g(x)\big).
+$$
+
+</Definition>
+
+Feeding the pairing into a projection gives back the original functions: for every $x \in X$,
+
+$$
+(\pi_A \circ \langle f, g \rangle)(x) = \pi_A\big(f(x), g(x)\big) = f(x), \qquad (\pi_B \circ \langle f, g \rangle)(x) = g(x).
+$$
+
+So $\pi_A \circ \langle f, g \rangle = f$ and $\pi_B \circ \langle f, g \rangle = g$. A function $h : X \to P$ that satisfies equations like these is called **compatible** with $f$ and $g$.
+
+<Definition term="product (universal property)">
+
+Let $P$ be a set with two functions $p : P \to A$ and $q : P \to B$. We say that $(P, p, q)$ is a **product of $A$ and $B$**, or **has the universal property of the product**, if:
+
+for every set $X$ and every pair of functions $f : X \to A$, $g : X \to B$, there is **exactly one** function $h : X \to P$ with
+
+$$
+p \circ h = f \qquad \text{and} \qquad q \circ h = g.
+$$
+
+</Definition>
+
+"Exactly one" packs in two demands. **Existence**: at least one such $h$. **Uniqueness**: no more than one. Both matter, as the non-examples below show.
+
+A **universal property**, in general, describes an object by how it relates, through maps, to *all* other objects of the same kind. The product is the first and simplest example; you will meet many more.
+
+</Section>
+
+<Section id="picture" kind="visualization" title="The picture, and two explorations">
+
+The universal property is usually drawn as a diagram. The dashed arrow is the one whose existence and uniqueness are claimed; the two triangles **commute**, meaning that following the arrows along either route gives the same function.
+
+<CommutativeDiagram
+  objects={[
+    { id: "X", tex: "X", row: 0, col: 1 },
+    { id: "P", tex: "A \\times B", row: 1, col: 1 },
+    { id: "A", tex: "A", row: 1, col: 0 },
+    { id: "B", tex: "B", row: 1, col: 2 },
+  ]}
+  arrows={[
+    { from: "X", to: "A", tex: "f", labelSide: "right" },
+    { from: "X", to: "B", tex: "g" },
+    { from: "X", to: "P", tex: "\\langle f, g \\rangle", style: "dashed" },
+    { from: "P", to: "A", tex: "\\pi_A" },
+    { from: "P", to: "B", tex: "\\pi_B", labelSide: "right" },
+  ]}
+  caption="For every $X$, $f$ and $g$ there is exactly one dashed arrow making both triangles commute: $\pi_A \circ \langle f, g \rangle = f$ and $\pi_B \circ \langle f, g \rangle = g$."
+/>
+
+In the first exploration, $Z$ has three elements, $A$ is a set of two colours and $B = \{1, 2, 3\}$. Choose $f$ and $g$, then try to build a function $h : Z \to A \times B$ that projects back to them. Try hard to find a *second* one that works. Why can't you?
+
+<ProductMaps />
+
+In the second, a point moves in the plane. Its position at time $t$ is the pair $\big(\cos(at), \sin(bt)\big)$: one function of $t$ into $\R \times \R$, built by pairing two functions of $t$ into $\R$. Change $a$ and $b$ and watch how the two coordinate functions together determine the whole curve — and how the curve determines them back.
+
+<FunctionPlot
+  mode="parametric"
+  fns={[["cos(a*t)", "sin(b*t)"]]}
+  labels={["t ↦ (cos at, sin bt)"]}
+  params={[
+    { name: "a", min: 1, max: 5, step: 1, value: 1 },
+    { name: "b", min: 1, max: 5, step: 1, value: 2 },
+  ]}
+  t={[0, "2*pi"]}
+  x={[-1.2, 1.2]}
+  y={[-1.2, 1.2]}
+  title="One curve = two coordinate functions"
+/>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples and non-examples">
+
+<Example title="Computing a pairing">
+
+Let $X = \{1, 2, 3\}$, $A = \{\text{red}, \text{blue}\}$ and $B = \Z$. Define $f(1) = \text{red}$, $f(2) = f(3) = \text{blue}$, and $g(n) = n^2$. Then
+
+$$
+\langle f, g \rangle(1) = (\text{red}, 1), \qquad \langle f, g \rangle(2) = (\text{blue}, 4), \qquad \langle f, g \rangle(3) = (\text{blue}, 9).
+$$
+
+Projecting the three pairs onto their first coordinates gives back red, blue, blue — the values of $f$ — and onto their second coordinates gives $1, 4, 9$ — the values of $g$.
+
+</Example>
+
+<Example title="A curve in the plane">
+
+The unit circle traced at constant speed is $\gamma : \R \to \R \times \R$, $\gamma(t) = (\cos t, \sin t)$. In the language of this lesson, $\gamma = \langle \cos, \sin \rangle$, and $\pi_1 \circ \gamma = \cos$, $\pi_2 \circ \gamma = \sin$. Every parametric curve in the plane is the pairing of its two coordinate functions — that is exactly what "parametric" means.
+
+</Example>
+
+<Example title="A product that is not made of pairs">
+
+Let $A = \{\text{red}, \text{blue}\}$ and $B = \{1, 2, 3\}$, and let $P = \{1, 2, 3, 4, 5, 6\}$ with
+
+$$
+p(k) = \begin{cases} \text{red} & k \le 3 \\ \text{blue} & k \ge 4 \end{cases} \qquad\qquad q(k) = \text{the remainder of } k - 1 \text{ on division by } 3, \text{ plus } 1.
+$$
+
+The table of $(p(k), q(k))$ is $1 \mapsto (\text{red}, 1)$, $2 \mapsto (\text{red}, 2)$, $3 \mapsto (\text{red}, 3)$, $4 \mapsto (\text{blue}, 1)$, $5 \mapsto (\text{blue}, 2)$, $6 \mapsto (\text{blue}, 3)$: every combination of a colour and a number occurs for **exactly one** $k$. So, given $f : X \to A$ and $g : X \to B$, the only compatible $h$ sends $x$ to the unique $k$ with $p(k) = f(x)$ and $q(k) = g(x)$. Hence $(P, p, q)$ is a product of $A$ and $B$ — even though its elements are numbers, not pairs.
+
+</Example>
+
+<Example title="Swapping the order">
+
+$B \times A$, with $p(b, a) = a$ and $q(b, a) = b$, is also a product of $A$ and $B$: the unique compatible $h$ is $x \mapsto \big(g(x), f(x)\big)$. A product is not "the set of pairs in a particular order"; it is any set with two maps that behave correctly.
+
+</Example>
+
+<Example title="Non-example: existence fails">
+
+Take $P = A$, with $p = \mathrm{id}_A$ and $q$ the constant function with value $1$. If $g : X \to B$ ever takes a value other than $1$, there is no compatible $h$ at all, because $q \circ h$ is always constant $1$. Too few elements: some pairs of maps cannot be combined.
+
+</Example>
+
+<Example title="Non-example: uniqueness fails">
+
+Take $P = A \times B \times \{0, 1\}$, with $p$ and $q$ reading off the first and second coordinates and ignoring the extra bit. Now every pair $f, g$ has a compatible $h$ — but not just one: at each point $x$ we may choose the extra bit freely. If $X$ has $3$ elements, there are $2^3 = 8$ compatible maps. Too many elements: the combination is not determined.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="The theorems, with proofs">
+
+<Theorem name="Theorem 1 (the product of sets)">
+
+$A \times B$, with the projections $\pi_A$ and $\pi_B$, is a product of $A$ and $B$. For $f : X \to A$ and $g : X \to B$, the unique compatible function is $\langle f, g \rangle$.
+
+</Theorem>
+
+<Proof>
+
+*Existence.* We computed above that $\pi_A \circ \langle f, g \rangle = f$ and $\pi_B \circ \langle f, g \rangle = g$.
+
+*Uniqueness.* Suppose $h : X \to A \times B$ also satisfies $\pi_A \circ h = f$ and $\pi_B \circ h = g$. Fix $x \in X$. The element $h(x)$ is some pair $(a, b)$. Then $a = \pi_A(h(x)) = f(x)$ and $b = \pi_B(h(x)) = g(x)$, so $h(x) = (f(x), g(x)) = \langle f, g \rangle(x)$. As this holds for every $x$, $h = \langle f, g \rangle$.
+
+</Proof>
+
+The uniqueness proof used one fact about pairs: **a pair is determined by its two coordinates**. That is the whole content of the universal property.
+
+<Theorem name="Theorem 2 (maps into a product)">
+
+For every set $X$, the rule $h \mapsto (\pi_A \circ h, \; \pi_B \circ h)$ is a bijection from the set of functions $X \to A \times B$ to the set of pairs of functions $(X \to A, \; X \to B)$. Its inverse is $(f, g) \mapsto \langle f, g \rangle$.
+
+</Theorem>
+
+<Proof>
+
+Starting from a pair $(f, g)$, pairing and then projecting gives $(\pi_A \circ \langle f, g \rangle, \pi_B \circ \langle f, g \rangle) = (f, g)$. Starting from $h$, projecting and then pairing gives $\langle \pi_A \circ h, \pi_B \circ h \rangle$, which is compatible with $\pi_A \circ h$ and $\pi_B \circ h$ — and so is $h$ itself. By the uniqueness in Theorem 1, $\langle \pi_A \circ h, \pi_B \circ h \rangle = h$. Both round trips are the identity, so the two rules are inverse bijections.
+
+</Proof>
+
+<Theorem name="Corollary (counting)">
+
+If $X$, $A$ and $B$ are finite, then $|A \times B|^{|X|} = |A|^{|X|} \cdot |B|^{|X|}$.
+
+</Theorem>
+
+<Proof>
+
+A function from a set with $n$ elements to a set with $m$ elements chooses one of $m$ outputs for each of the $n$ inputs, so there are $m^n$ of them. The left side counts functions $X \to A \times B$; the right side counts pairs of functions $X \to A$ and $X \to B$. Theorem 2 matches them up one-to-one, so the two numbers are equal.
+
+</Proof>
+
+Of course $|A \times B|^{|X|} = (|A|\,|B|)^{|X|} = |A|^{|X|} |B|^{|X|}$ also follows from the rule $(mn)^k = m^k n^k$. The point is that the universal property *explains* this algebra: the familiar exponent law is a shadow of a bijection between sets of functions.
+
+Now the main theorem: the universal property determines the product **up to a unique compatible bijection**. We first isolate the key trick.
+
+<Theorem name="Lemma (the only compatible self-map)">
+
+Let $(P, p, q)$ be a product of $A$ and $B$, and let $k : P \to P$ satisfy $p \circ k = p$ and $q \circ k = q$. Then $k = \mathrm{id}_P$.
+
+</Theorem>
+
+<Proof>
+
+Apply the universal property of $P$ with $X = P$, $f = p$ and $g = q$: there is exactly one $h : P \to P$ with $p \circ h = p$ and $q \circ h = q$. Both $k$ and $\mathrm{id}_P$ have this property. Since there is only one such map, $k = \mathrm{id}_P$.
+
+</Proof>
+
+<Theorem name="Theorem 3 (uniqueness up to unique bijection)">
+
+Let $(P, p, q)$ be a product of $A$ and $B$. Then $\varphi = \langle p, q \rangle : P \to A \times B$ is a bijection with $\pi_A \circ \varphi = p$ and $\pi_B \circ \varphi = q$, and it is the **only** function $P \to A \times B$ compatible with $p$ and $q$.
+
+</Theorem>
+
+<Proof>
+
+$\varphi$ is compatible with $p$ and $q$ by the definition of pairing, and by Theorem 1 (applied with $X = P$) it is the only compatible function $P \to A \times B$. It remains to show that $\varphi$ is a bijection; we do this by finding an inverse.
+
+Apply the universal property of $P$ to the set $X = A \times B$ and the projections $\pi_A$, $\pi_B$: there is a function $\psi : A \times B \to P$ with $p \circ \psi = \pi_A$ and $q \circ \psi = \pi_B$.
+
+- $\psi \circ \varphi : P \to P$ is compatible with $p$ and $q$: $\;p \circ (\psi \circ \varphi) = (p \circ \psi) \circ \varphi = \pi_A \circ \varphi = p$, and likewise $q \circ (\psi \circ \varphi) = q$. By the Lemma, $\psi \circ \varphi = \mathrm{id}_P$.
+- $\varphi \circ \psi : A \times B \to A \times B$ is compatible with $\pi_A$ and $\pi_B$: $\;\pi_A \circ (\varphi \circ \psi) = (\pi_A \circ \varphi) \circ \psi = p \circ \psi = \pi_A$, and likewise for $\pi_B$. The identity of $A \times B$ is also compatible, so by the uniqueness in Theorem 1 (with $X = A \times B$), $\varphi \circ \psi = \mathrm{id}_{A \times B}$.
+
+So $\psi$ is a two-sided inverse of $\varphi$, and $\varphi$ is a bijection.
+
+</Proof>
+
+<Narrator who="chloe">
+
+Look at what the proof never used: what the elements of $P$ are. Only arrows, compositions, and the word "exactly". That's why the same argument works for groups, for spaces, for propositions — anywhere there are arrows that compose.
+
+</Narrator>
+
+<Note>
+
+**Testing one point at a time.** Take $X = \{\star\}$, a set with one element. A function $\{\star\} \to P$ is just a choice of an element of $P$. So the universal property for this one $X$ says: for every $a \in A$ and $b \in B$ there is exactly one $u \in P$ with $p(u) = a$ and $q(u) = b$ — that is, $\langle p, q \rangle$ is a bijection. Conversely, if $\langle p, q \rangle$ is a bijection, the universal property holds for every $X$ (choose $h(x)$ point by point). So for **sets**, it is enough to test one-element sets. In other settings, such as groups, "points" do not see everything and the property must really be tested on every $X$.
+
+</Note>
+
+</Section>
+
+<Section id="formal" kind="formal" title="The universal property in Lean">
+
+In Lean we work with **types** and functions, the type-theoretic counterpart of sets and functions. The product type `A × B` comes with `Prod.fst` and `Prod.snd`, our $\pi_A$ and $\pi_B$. Here is the pairing and the two equations, which hold *by computation* (`rfl`):
+
+<Lean decl="Lumenary.IntroUniversalProperties.pair" />
+
+<Lean decl="Lumenary.IntroUniversalProperties.fst_comp_pair" />
+
+<Lean decl="Lumenary.IntroUniversalProperties.snd_comp_pair" />
+
+Uniqueness follows the human proof line by line: compare at each `x`, and use that a pair is determined by its coordinates (`Prod.ext`).
+
+<Lean decl="Lumenary.IntroUniversalProperties.pair_unique" />
+
+Theorem 2 becomes an **equivalence** — Lean's word for a bijection packaged with its inverse and the two round-trip proofs. Mathlib already contains it, and the counting corollary follows by comparing cardinalities:
+
+<Lean decl="Lumenary.IntroUniversalProperties.mapsIntoProdEquiv" />
+
+<Lean decl="Lumenary.IntroUniversalProperties.mapsIntoProdEquivLibrary" />
+
+<Lean decl="Lumenary.IntroUniversalProperties.card_maps_into_prod" />
+
+Now the universal property itself, as a definition. `∃!` is Lean's "there exists exactly one".
+
+<Lean decl="Lumenary.IntroUniversalProperties.IsProduct" />
+
+<Lean decl="Lumenary.IntroUniversalProperties.prod_isProduct" />
+
+<Lean decl="Lumenary.IntroUniversalProperties.swap_isProduct" />
+
+And the main theorem, in two steps exactly as in the proof above:
+
+<Lean decl="Lumenary.IntroUniversalProperties.eq_id_of_isProduct" />
+
+<Lean decl="Lumenary.IntroUniversalProperties.isProduct_bijective" />
+
+Finally, the two fake products. Each one fails one half of "exactly one":
+
+<Lean decl="Lumenary.IntroUniversalProperties.not_isProduct_empty" />
+
+<Lean decl="Lumenary.IntroUniversalProperties.not_isProduct_bool" />
+
+<Narrator who="gideon">
+
+What exactly is checked here? Everything in Theorems 1–3 and the counting corollary, for types in a fixed universe — independently, except the line marked as Mathlib's `Equiv.arrowProdEquivProdArrow`, which we use only to compare with our own `mapsIntoProdEquiv`. What is *not* here: products in other settings (groups, spaces), which Mathlib treats with its category-theory library, under the name `BinaryFan.IsLimit`.
+
+</Narrator>
+
+</Section>
+
+<Section id="computation" kind="computation" title="Counting compatible maps">
+
+<Narrator who="margaret">
+
+Let me test four candidate products by brute force. For every pair $f, g$ I list *all* maps $h : X \to P$ and count the compatible ones. A real product should give exactly $1$, every single time.
+
+</Narrator>
+
+<Python id="intro_universal_properties_count_maps" />
+
+The two genuine products give $1$ for all $36$ pairs. The candidate with too few elements gives $0$ for most pairs (existence fails); the one with an extra bit gives $4 = 2^2$ for every pair (uniqueness fails; with $|X| = 2$ there are two free bits). This is **exhaustive-finite** evidence: complete for these particular small sets, silent about all others. The proofs above are what cover every $X$.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The universal property defines some new object, different from $A \times B$."** It describes $A \times B$ by its behaviour. The set of ordered pairs has the property (Theorem 1), and anything else with the property is matched with it by exactly one compatible bijection (Theorem 3).
+
+</Misconception>
+
+<Misconception>
+
+**Forgetting the uniqueness part.** "There is a compatible $h$" is not enough: $A \times B \times \{0, 1\}$ has compatible maps for every $f, g$ but is not a product. Uniqueness is what makes the proof of Theorem 3 work — the Lemma is nothing but uniqueness.
+
+</Misconception>
+
+<Misconception>
+
+**"Only the set of ordered pairs is really a product."** Any set with two maps having the property serves equally well, like $\{1, \dots, 6\}$ in the examples, or $B \times A$ with swapped maps. Even "ordered pair" itself is defined in more than one way in set theory (see below); the universal property is what all the definitions agree on.
+
+</Misconception>
+
+<Misconception>
+
+**Confusing $\langle f, g \rangle$ with $f \times g$.** For $f : X \to A$ and $g : Y \to B$, the map $f \times g : X \times Y \to A \times B$ sends $(x, y)$ to $(f(x), g(y))$: two inputs, processed separately. The pairing $\langle f, g \rangle : X \to A \times B$ takes *one* input and feeds it to both. They are related by $\langle f, g \rangle = (f \times g) \circ \Delta$, where $\Delta(x) = (x, x)$ (when $Y = X$).
+
+</Misconception>
+
+<Misconception>
+
+**"Unique up to bijection" means "equal".** $\{1, \dots, 6\}$ and $A \times B$ are different sets. What is unique is the *compatible bijection between them* — so we may treat them as interchangeable, as long as we use that bijection to translate.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="The same idea, seen by others">
+
+<Viewpoint lens="geometry" title="Coordinates are projections">
+
+When Descartes and Fermat put coordinates on the plane, they identified it with $\R \times \R$: a point *is* its pair of coordinates, and the two coordinate functions are the projections. A curve $\gamma : I \to \R^2$ is the pairing of its coordinate functions, and every statement about the curve can be translated into two statements about real functions. In three dimensions $\R^3 = \R \times \R \times \R$ has three projections, and a path in space is three functions of time — exactly what a GPS receiver records (adding altitude).
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Continuity, one coordinate at a time">
+
+A map $\gamma : \R \to \R^2$ is continuous **if and only if** both coordinate functions $\pi_1 \circ \gamma$ and $\pi_2 \circ \gamma$ are continuous. So $t \mapsto (\cos t, \sin t)$ is continuous because $\cos$ and $\sin$ are. This is the universal property again, now for continuous maps: for spaces $A$ and $B$, the **product topology** on $A \times B$ is chosen precisely so that continuous maps $X \to A \times B$ correspond to pairs of continuous maps $X \to A$, $X \to B$. (It is the coarsest topology making both projections continuous.) See <TopicLink id="math.geom.point-set-topology">point-set topology</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Direct products of groups">
+
+For groups $G$ and $H$, the set $G \times H$ with componentwise operation $(g, h)(g', h') = (gg', hh')$ is again a group, and a homomorphism $K \to G \times H$ is the same as a pair of homomorphisms $K \to G$ and $K \to H$. For example, $n \mapsto (n \bmod 2, \, n \bmod 3)$ pairs two homomorphisms $\Z \to \Z/2$ and $\Z \to \Z/3$; it sends exactly the multiples of $6$ to $(0, 0)$, and this leads to the Chinese remainder theorem $\Z/6 \cong \Z/2 \times \Z/3$, an isomorphism you can check in <TopicLink id="math.cat.structure-preserving-maps">structure-preserving maps</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random vectors, and a warning">
+
+Two random variables $X, Y : \Omega \to \R$ on the same sample space pair up into one random vector $(X, Y) : \Omega \to \R^2$, and every random vector arises this way. But the *distributions* of $X$ and $Y$ do **not** determine the distribution of $(X, Y)$. Toss a fair coin: let $X = 1$ for heads and $0$ for tails, and compare $Y = X$ with $Y = 1 - X$. In both cases $Y$ is a fair $0/1$ variable, yet $(X, Y)$ takes the values $(0,0), (1,1)$ in the first case and $(0,1), (1,0)$ in the second. The universal property is about *functions on the same $\Omega$*, not about distributions — which is exactly why independence and correlation are interesting (<TopicLink id="math.prob.probability-rules">conditional probability and independence</TopicLink>).
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="'And' has the same property">
+
+Order propositions by implication. Then $P \wedge Q$ behaves exactly like a product: $R \Rightarrow P \wedge Q$ holds if and only if both $R \Rightarrow P$ and $R \Rightarrow Q$ hold, and $P \wedge Q$ implies each of $P$ and $Q$ (the "projections"). In a proof assistant such as Lean this is literal: a proof of $P \wedge Q$ is a *pair* of proofs, written `⟨hp, hq⟩`. See <TopicLink id="math.comp.intro-lean">First steps in Lean</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+<Trail slug="products-by-maps" />
+
+<Trail slug="arrows-that-compose" />
+
+</Section>
+
+<Section id="sets" kind="sets" title="Set-theoretic connection: what is an ordered pair?">
+
+In set theory everything is a set, so an ordered pair must be one too. The standard choice, due to Kazimierz Kuratowski (1921), is
+
+$$
+(a, b) = \{\{a\}, \{a, b\}\}.
+$$
+
+One proves that $(a, b) = (a', b')$ exactly when $a = a'$ and $b = b'$ — the one fact our uniqueness proof used. But this is not the only choice: Norbert Wiener proposed a different encoding in 1914, and others work too. Each encoding produces a different set "$A \times B$", but every one of them satisfies the universal property, so by Theorem 3 they are all matched by unique compatible bijections. The encoding is an implementation; the universal property is the specification.
+
+</Section>
+
+<Section id="categories" kind="categories" title="Products in any category">
+
+In a category (see <TopicLink id="math.cat.composition">Composition</TopicLink>), a **product** of objects $A$ and $B$ is an object $P$ with arrows $p : P \to A$, $q : P \to B$ such that for every object $X$ and arrows $f : X \to A$, $g : X \to B$ there is exactly one arrow $h : X \to P$ with $p \circ h = f$ and $q \circ h = g$. Our definition is the case of the category of sets, and the proof of Theorem 3 works word for word in every category: **any two products of $A$ and $B$ are isomorphic by a unique isomorphism compatible with the projections**.
+
+The same words describe very different things:
+
+- In **sets**: the Cartesian product. In **groups**: the direct product. In **spaces**: the product space.
+- In the positive integers ordered by divisibility (an arrow $x \to y$ means $x$ divides $y$), a product of $12$ and $18$ is a number that divides both, and is divisible by every number dividing both: $\gcd(12, 18) = 6$.
+- In the subsets of a set ordered by $\subseteq$, the product of $A$ and $B$ is $A \cap B$.
+
+Turning all the arrows around gives the **coproduct**: in sets, the disjoint union; for divisibility, the least common multiple. These ideas continue in <TopicLink id="math.cat.universal-properties">universal properties</TopicLink>, <TopicLink id="math.cat.products-coproducts">products and coproducts</TopicLink> and, eventually, the <TopicLink id="math.cat.yoneda">Yoneda lemma</TopicLink>, which says that *every* object is determined up to isomorphism by the maps into it.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Coordinates.** Describing a position by two numbers is ancient. Ptolemy's *Geography* (2nd century, Alexandria) listed places by longitude and latitude; in 9th-century Baghdad, al-Khwārizmī's *Book of the Description of the Earth* tabulated coordinates for thousands of places; in 3rd-century China, the cartographer Pei Xiu set out principles of mapmaking that included a scale and a rectangular grid. In 17th-century France, René Descartes (*La Géométrie*, 1637) and Pierre de Fermat turned coordinates into a method for geometry.
+- **Ordered pairs as sets.** Norbert Wiener (1914) and Kazimierz Kuratowski (1921) showed how to define ordered pairs inside set theory.
+- **Universal properties.** In the late 1940s, mathematicians began describing constructions by their maps rather than their elements. Pierre Samuel's 1948 paper *On universal mappings and free topological groups* used "universal mappings"; Saunders Mac Lane's papers on duality for groups (1948–1950) characterised products and free products by such properties, building on the theory of categories that he and Samuel Eilenberg had introduced in 1945. The style was taken up by the Bourbaki group and by Daniel Kan's adjoint functors (1958), and is now everywhere.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- F. William Lawvere and Stephen H. Schanuel, *Conceptual Mathematics: A First Introduction to Categories* (1997; 2nd edition 2009) — products appear early, with many pictures.
+- Eugenia Cheng, *The Joy of Abstraction* (2022) — a gentle, carefully explained route to universal properties.
+- Tom Leinster, *Basic Category Theory* (2014) — universal properties in the introduction, products in chapter 5.
+- Saunders Mac Lane, *Categories for the Working Mathematician* (1971; 2nd edition 1998), for the professional account.
+
+</Section>

@@ -1,0 +1,459 @@
+---
+slug: counting-principles
+topic: math.discrete.counting-principles
+title: Counting principles
+subtitle: How to count ten thousand PINs, or every shuffle of a deck, without listing them — and how not to count the same thing twice.
+level: g6-8
+ages: Ages 11–14
+minutes: 55
+order: 3015
+objectives:
+  - Apply the addition and multiplication principles to count outcomes, and explain why each works
+  - Count arrangements of $n$ objects ($n!$) and ordered selections of $k$ objects from $n$ ($\tfrac{n!}{(n-k)!}$)
+  - Use complementary counting, for example to count passwords containing at least one digit
+  - Correct for overlapping cases with $|A \cup B| = |A| + |B| - |A \cap B|$
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.CountingPrinciples.addition_principle
+  - Lumenary.CountingPrinciples.pairs
+  - Lumenary.CountingPrinciples.multiplication_principle
+  - Lumenary.CountingPrinciples.complement_principle
+  - Lumenary.CountingPrinciples.overlap_rule
+  - Lumenary.CountingPrinciples.fact
+  - Lumenary.CountingPrinciples.perm
+  - Lumenary.CountingPrinciples.perm_mul_fact
+  - Lumenary.CountingPrinciples.perm_self
+  - Lumenary.CountingPrinciples.perm_eq_zero
+  - Lumenary.CountingPrinciples.insertAll
+  - Lumenary.CountingPrinciples.arrangements
+  - Lumenary.CountingPrinciples.length_insert_all
+  - Lumenary.CountingPrinciples.mem_arrangements_length
+  - Lumenary.CountingPrinciples.length_arrangements
+  - Lumenary.CountingPrinciples.arrangements_three
+  - Lumenary.CountingPrinciples.arrangements_four_distinct
+  - Lumenary.CountingPrinciples.lesson_counts
+  - Lumenary.CountingPrinciples.at_least_one_seven
+compute: [counting_principles_brute_force, counting_principles_factorial_growth]
+trails: [how-many-infinities, products-by-maps]
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Counting without listing">
+
+Many mobile-money services protect an account with a 4-digit PIN. How many different PINs are there? You could start listing them — 0000, 0001, 0002, … — but there is a quicker way.
+
+- At a school sports day in Addis Ababa, 8 runners race. In how many different ways can the gold, silver and bronze medals be awarded?
+- A website asks for a 4-character password made of capital letters and digits, with **at least one digit**. How many passwords are allowed?
+- How many different orders can a deck of 52 cards be shuffled into?
+
+Listing works for small problems, and the lesson on <TopicLink id="math.discrete.systematic-listing">systematic listing</TopicLink> showed how to list without missing anything. But for these questions, listing would take hours, years — or, for the deck of cards, far longer than the age of the universe. We need **principles** that count without listing, and proofs that they give the right answer.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Branches that multiply">
+
+Neha has 3 shirts (red, blue, green) and 2 pairs of trousers (black, grey). How many outfits can she make? A **tree diagram** shows every choice:
+
+<Figure caption="Three choices of shirt, each followed by two choices of trousers: $3 \times 2 = 6$ outfits. Every outfit is one path from the root to a leaf.">
+
+<svg viewBox="0 0 520 240" role="img" aria-label="Tree diagram: three shirt branches, each splitting into two trouser branches, giving six outfits">
+  <circle cx="30" cy="120" r="6" fill="var(--ink-2)" />
+  <line x1="30" y1="120" x2="150" y2="40" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="30" y1="120" x2="150" y2="120" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="30" y1="120" x2="150" y2="200" stroke="var(--ink-2)" strokeWidth="2" />
+  <text x="160" y="45" fontSize="15" fill="var(--human)">red</text>
+  <text x="160" y="125" fontSize="15" fill="var(--human)">blue</text>
+  <text x="160" y="205" fontSize="15" fill="var(--human)">green</text>
+  <line x1="205" y1="40" x2="300" y2="20" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="205" y1="40" x2="300" y2="60" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="205" y1="120" x2="300" y2="100" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="205" y1="120" x2="300" y2="140" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="215" y1="200" x2="300" y2="180" stroke="var(--ink-2)" strokeWidth="2" />
+  <line x1="215" y1="200" x2="300" y2="220" stroke="var(--ink-2)" strokeWidth="2" />
+  <text x="308" y="25" fontSize="14" fill="var(--ink-2)">black → red + black</text>
+  <text x="308" y="65" fontSize="14" fill="var(--ink-2)">grey → red + grey</text>
+  <text x="308" y="105" fontSize="14" fill="var(--ink-2)">black → blue + black</text>
+  <text x="308" y="145" fontSize="14" fill="var(--ink-2)">grey → blue + grey</text>
+  <text x="308" y="185" fontSize="14" fill="var(--ink-2)">black → green + black</text>
+  <text x="308" y="225" fontSize="14" fill="var(--ink-2)">grey → green + grey</text>
+</svg>
+
+</Figure>
+
+Each of the 3 shirt branches splits into 2 trouser branches, so there are $3 \times 2 = 6$ leaves. Add 4 pairs of shoes and every leaf splits again into 4: $3 \times 2 \times 4 = 24$ outfits.
+
+But suppose Neha is choosing **either** a shirt **or** a hat (she has 5 hats) to give to her cousin. Now there is no second stage — she makes one choice from $3 + 5 = 8$ items.
+
+<Narrator who="chloe">
+
+So “and then” multiplies and “either … or” adds. That feels right — but what exactly makes it right? And what if the choices overlap, or the second choice depends on the first?
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+We write $|A|$ for the number of elements of a finite set $A$, as in the lesson on <TopicLink id="math.found.sets">sets</TopicLink>. Two sets are **disjoint** if they have no element in common. The **Cartesian product** $A \times B$ is the set of ordered pairs $(a, b)$ with $a \in A$ and $b \in B$.
+
+<Definition term="factorial">
+
+For a whole number $n \ge 1$, **$n$ factorial** is $n! = n \times (n - 1) \times \cdots \times 2 \times 1$. We also define $0! = 1$.
+
+</Definition>
+
+So $1! = 1$, $2! = 2$, $3! = 6$, $4! = 24$, $5! = 120$, and $n! = n \times (n - 1)!$.
+
+<Definition term="arrangement (permutation)">
+
+An **arrangement**, or **permutation**, of a collection of different objects is an ordering of all of them in a row. An **ordered selection** of $k$ objects from $n$ different objects is a row of $k$ of them, all different, in which order matters. We write $P(n, k)$ for the number of ordered selections of $k$ objects from $n$.
+
+</Definition>
+
+<Definition term="complement">
+
+If $A$ is a subset of a set $S$, its **complement** in $S$ is $S \setminus A$, the elements of $S$ that are not in $A$.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="Or, and">
+
+A café in Hanoi offers 4 rice dishes and 3 noodle dishes, and 5 drinks.
+
+- Choose **one** main dish: $4 + 3 = 7$ ways (addition principle: the two kinds of dish don't overlap).
+- Choose a rice dish **and** a drink: $4 \times 5 = 20$ ways (multiplication principle).
+- Choose a main dish **and** a drink: $7 \times 5 = 35$ ways.
+
+</Example>
+
+<Example title="PINs">
+
+- Any 4-digit PIN: 10 choices for each of 4 digits, so $10 \times 10 \times 10 \times 10 = 10^4 = 10\,000$.
+- PINs with **no repeated digit**: 10 choices for the first digit, then 9 for the second (anything except the first), 8, then 7: $10 \times 9 \times 8 \times 7 = 5040$.
+- PINs with **at least one repeated digit**: everything else. $10\,000 - 5040 = 4960$ (complementary counting).
+
+</Example>
+
+<Example title="Medals and bookshelves">
+
+- Gold, silver and bronze among 8 runners: $8 \times 7 \times 6 = 336$ ways. That is $P(8, 3) = \tfrac{8!}{5!} = \tfrac{40\,320}{120} = 336$.
+- Five different books on a shelf: $5 \times 4 \times 3 \times 2 \times 1 = 5! = 120$ orders.
+
+</Example>
+
+<Example title="Passwords with at least one digit">
+
+There are $26 + 10 = 36$ symbols, so $36^4 = 1\,679\,616$ four-character passwords in all. Those with **no** digit use only letters: $26^4 = 456\,976$. So $1\,679\,616 - 456\,976 = 1\,222\,640$ passwords contain at least one digit.
+
+Counting “at least one digit” directly would mean adding the cases “exactly one digit”, “exactly two”, “exactly three” and “four” — possible, but slower and easier to get wrong.
+
+</Example>
+
+<Example title="The most restricted position first">
+
+How many two-digit numbers have two different digits? The first digit can't be $0$: 9 choices. The second can be any digit except the first: also 9 choices. So $9 \times 9 = 81$.
+
+If we chose the second digit first, the number of choices left for the first digit would depend on whether the second digit was $0$ — the multiplication principle would not apply directly. Deal with the most restricted position first.
+
+</Example>
+
+<Example title="Overlapping cases">
+
+How many numbers from 1 to 100 are divisible by 2 or by 5? There are 50 multiples of 2 and 20 multiples of 5, but $50 + 20 = 70$ is **wrong**: the multiples of 10 (there are 10 of them) were counted twice. The answer is $50 + 20 - 10 = 60$.
+
+</Example>
+
+</Section>
+
+<Section id="proof" kind="proof" title="Why the principles are true">
+
+<Theorem name="Theorem 1 (addition principle)">
+
+If $A$ and $B$ are disjoint finite sets, then $|A \cup B| = |A| + |B|$.
+
+</Theorem>
+
+<Proof>
+
+Count the elements of $A$ as $1, 2, \ldots, |A|$, then carry on counting the elements of $B$ as $|A| + 1, \ldots, |A| + |B|$. Every element of $A \cup B$ receives exactly one number: it is in $A$ or in $B$, and not in both, because the sets are disjoint. So $A \cup B$ has $|A| + |B|$ elements.
+
+</Proof>
+
+<Theorem name="Theorem 2 (multiplication principle)">
+
+For finite sets $A$ and $B$, $|A \times B| = |A| \cdot |B|$.
+
+</Theorem>
+
+<Proof>
+
+Split the pairs by their first entry. For each $a \in A$, the pairs $(a, b)$ form a “row” with exactly $|B|$ elements, one for each $b \in B$. Different rows are disjoint, because their pairs have different first entries. By the addition principle, used again and again, $|A \times B| = |B| + |B| + \cdots + |B|$, with one term for each element of $A$, which is $|A| \cdot |B|$.
+
+</Proof>
+
+So multiplication of whole numbers really is repeated addition — of the rows of a rectangle of pairs.
+
+<Theorem name="Theorem 3 (multiplication principle in stages)">
+
+Suppose a choice is made in $k$ stages: there are $n_1$ options at stage 1; whatever was chosen at stage 1, there are $n_2$ options at stage 2; and so on, up to $n_k$ options at stage $k$. Then there are $n_1 \times n_2 \times \cdots \times n_k$ ways to make the whole choice.
+
+</Theorem>
+
+<Proof>
+
+By induction on the number of stages $k$. For $k = 1$ there is nothing to prove. For more stages, sort the complete choices by what was chosen at stage 1. That makes $n_1$ disjoint groups. In each group, the remaining $k - 1$ stages offer $n_2, \ldots, n_k$ options, so by the induction hypothesis each group has $n_2 \times \cdots \times n_k$ choices. By the addition principle, the total is $n_1 \times (n_2 \times \cdots \times n_k)$.
+
+</Proof>
+
+Notice what the theorem requires: the **options** at a stage may depend on earlier choices (which digits are still unused), but their **number** must not.
+
+<Theorem name="Theorem 4 (arrangements)">
+
+$n$ different objects can be arranged in a row in exactly $n!$ ways.
+
+</Theorem>
+
+<Proof>
+
+Fill the positions one at a time. The first position can hold any of the $n$ objects; the second, any of the $n - 1$ objects not yet used; the third, any of $n - 2$; …; the last position, the $1$ object left. By Theorem 3 there are $n \times (n - 1) \times \cdots \times 1 = n!$ arrangements.
+
+</Proof>
+
+Why is $0! = 1$? There is exactly one way to arrange no objects at all: the empty row. The definition also makes the next formula work when $k = n$.
+
+<Theorem name="Theorem 5 (ordered selections)">
+
+For $0 \le k \le n$, the number of ordered selections of $k$ objects from $n$ different objects is
+
+$$
+P(n, k) = n \times (n - 1) \times \cdots \times (n - k + 1) = \frac{n!}{(n - k)!}.
+$$
+
+</Theorem>
+
+<Proof>
+
+There are $n$ choices for the first object, $n - 1$ for the second, …, and $n - k + 1$ for the $k$-th; multiply by Theorem 3. Multiplying this product by $(n - k)! = (n - k) \times \cdots \times 1$ completes it to $n!$, which gives the second form.
+
+</Proof>
+
+<Theorem name="Theorem 6 (complementary counting)">
+
+If $A \subseteq S$ and $S$ is finite, then $|S \setminus A| = |S| - |A|$.
+
+</Theorem>
+
+<Proof>
+
+Every element of $S$ is either in $A$ or in $S \setminus A$, and not both. By the addition principle, $|S| = |A| + |S \setminus A|$.
+
+</Proof>
+
+<Theorem name="Theorem 7 (overlapping cases)">
+
+For finite sets $A$ and $B$, $|A \cup B| = |A| + |B| - |A \cap B|$.
+
+</Theorem>
+
+<Proof>
+
+$A \cup B$ is the disjoint union of $A$ and $B \setminus A$, so $|A \cup B| = |A| + |B \setminus A|$. Also $B$ is the disjoint union of $A \cap B$ and $B \setminus A$, so $|B \setminus A| = |B| - |A \cap B|$. Substitute.
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Counting in Lean">
+
+In Lean we model a finite collection as a list, so “how many?” is the length of a list. The addition principle is a library fact about joining lists; the multiplication principle is proved from it by induction, just as in Theorem 2.
+
+<Lean decl="Lumenary.CountingPrinciples.addition_principle" />
+
+<Lean decl="Lumenary.CountingPrinciples.pairs" />
+
+<Lean decl="Lumenary.CountingPrinciples.multiplication_principle" />
+
+Complements (Theorem 6) and overlaps (Theorem 7), each proved by going through the list one item at a time:
+
+<Lean decl="Lumenary.CountingPrinciples.complement_principle" />
+
+<Lean decl="Lumenary.CountingPrinciples.overlap_rule" />
+
+Factorials and ordered selections are defined by recursion, mirroring “choose the first, then the rest”. Theorem 5 is stated without division, as $P(n, k) \cdot (n - k)! = n!$; division of whole numbers in Lean rounds down, so the multiplied-out form is the honest one.
+
+<Lean decl="Lumenary.CountingPrinciples.fact" />
+
+<Lean decl="Lumenary.CountingPrinciples.perm" />
+
+<Lean decl="Lumenary.CountingPrinciples.perm_mul_fact" />
+
+<Lean decl="Lumenary.CountingPrinciples.perm_self" />
+
+<Lean decl="Lumenary.CountingPrinciples.perm_eq_zero" />
+
+Theorem 4, done the way a computer would: build the actual list of arrangements by inserting the first object into every position of every arrangement of the rest, and prove that the list has $n!$ entries.
+
+<Lean decl="Lumenary.CountingPrinciples.insertAll" />
+
+<Lean decl="Lumenary.CountingPrinciples.arrangements" />
+
+<Lean decl="Lumenary.CountingPrinciples.length_insert_all" />
+
+<Lean decl="Lumenary.CountingPrinciples.mem_arrangements_length" />
+
+<Lean decl="Lumenary.CountingPrinciples.length_arrangements" />
+
+<Lean decl="Lumenary.CountingPrinciples.arrangements_three" />
+
+<Lean decl="Lumenary.CountingPrinciples.arrangements_four_distinct" />
+
+<Narrator who="gideon">
+
+`length_arrangements` proves the list has $n!$ entries for every $n$. That they are all *different* arrangements we checked by computation for four objects; the general proof that nothing is repeated exists (Mathlib has it for its own `List.permutations`) but is longer, so we do not claim it here.
+
+</Narrator>
+
+Finally, the counts from the examples, and a brute-force check of complementary counting over all 1000 three-digit codes:
+
+<Lean decl="Lumenary.CountingPrinciples.lesson_counts" />
+
+<Lean decl="Lumenary.CountingPrinciples.at_least_one_seven" />
+
+</Section>
+
+<Section id="computation" kind="computation" title="Formulas against brute force">
+
+<Narrator who="margaret">
+
+A formula is a prediction. Let me check each one by listing every case — ten thousand PINs, all 46,656 three-symbol codes — and counting them one by one.
+
+</Narrator>
+
+<Python id="counting_principles_brute_force" />
+
+Every formula agrees with the listing. The last lines show a trap: the principles of this lesson are for **different** objects. Rearranging the tiles of LETTER gives $6! = 720$ orders, but swapping the two Es or the two Ts changes nothing you can see, so there are only $\tfrac{720}{2 \times 2} = 180$ different words.
+
+<Narrator who="margaret">
+
+How big do factorials get? Let me compare them with powers, and work out how long it would take to list every shuffle of a deck of cards.
+
+</Narrator>
+
+<Python id="counting_principles_factorial_growth" />
+
+The number of shuffles, $52!$, has 68 digits. A shuffled deck is almost certainly in an order that no deck has ever been in before. Here exact integer arithmetic (the factorials) sits beside floating-point estimates (the years, and Stirling's approximation, a theorem from analysis that we quote but do not prove).
+
+</Section>
+
+<Section id="explore" kind="visualization" title="Explore: counting overlaps">
+
+<NumberGrid mode="multiples" k={2} k2={5} size={100} title="Multiples of 2 or 5 up to 100" />
+
+The circles mark multiples of $2$ and the squares multiples of $5$; numbers with both marks are counted twice by $50 + 20$. How many are there, and what do they have in common? Change the second number to $3$, then to $4$: predict the size of the overlap before you look. (For $2$ and $4$ the overlap is all the multiples of $4$!)
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**Adding where you should multiply, or multiplying where you should add.** “A rice dish **and** a drink” is a two-stage choice: multiply ($4 \times 5$). “A rice dish **or** a noodle dish” is one choice from two separate groups: add ($4 + 3$). Ask: is it one choice, or one choice followed by another?
+
+</Misconception>
+
+<Misconception>
+
+**Counting overlapping cases twice.** Multiples of 2 or 5 up to 100 number $50 + 20 - 10 = 60$, not $70$. The addition principle needs **disjoint** groups; when groups overlap, subtract the overlap once.
+
+</Misconception>
+
+<Misconception>
+
+**“The multiplication principle needs the same options at every stage.”** It needs the same **number** of options. In a PIN with no repeated digit, the 9 digits available for the second place depend on the first digit, but there are always 9 of them.
+
+</Misconception>
+
+<Misconception>
+
+**“$0! = 0$.”** $0! = 1$: there is one way to arrange nothing, and it keeps $P(n, n) = \tfrac{n!}{0!} = n!$ true.
+
+</Misconception>
+
+<Misconception>
+
+**Forgetting whether order matters.** A podium (gold, silver, bronze) is an ordered selection: $8 \times 7 \times 6 = 336$. Choosing 3 runners for a relay team, where order doesn't matter, gives fewer: each team of 3 was counted $3! = 6$ times, so there are $\tfrac{336}{6} = 56$ teams. Selections without order are the subject of <TopicLink id="math.discrete.combinatorics">combinatorics</TopicLink>.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Other ways of seeing">
+
+<Viewpoint lens="algebra" title="The laws of arithmetic are counting facts">
+
+Why is $a \times b = b \times a$? Because swapping the entries of each pair, $(x, y) \mapsto (y, x)$, matches $A \times B$ with $B \times A$ one-to-one, so they have the same size. Why is $a \times (b + c) = a \times b + a \times c$? Because if $B$ and $C$ are disjoint, the pairs in $A \times (B \cup C)$ are exactly the pairs in $A \times B$ together with those in $A \times C$. Proving an equation by showing that both sides count the same set is called a **combinatorial proof** — a favourite tool of combinatorialists.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="When brute force is hopeless">
+
+A delivery driver must visit $n$ towns and return home. Trying every route means checking $\tfrac{(n - 1)!}{2}$ routes: for $n = 20$ that is about $6 \times 10^{16}$, more than a fast computer can check in a reasonable time. Counting tells computer scientists *before* they write any code that listing everything won't work, and sends them looking for cleverer algorithms. This “travelling salesperson problem” is one of the most studied problems in <TopicLink id="math.comp.algorithms-and-efficiency">algorithms and efficiency</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Counting gives probabilities">
+
+When outcomes are equally likely, a probability is a count divided by a count. A randomly guessed 4-digit PIN is right with probability $\tfrac{1}{10\,000}$; a random PIN has no repeated digit with probability $\tfrac{5040}{10\,000} \approx 0.5$ — less than you might guess. See <TopicLink id="math.prob.probability-intro">probability</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="trails" kind="trails" title="Wonder Trails">
+
+Counting finite sets is the start of a long road: what does it mean to count an *infinite* set, and can products be described without counting at all? Both trails are optional.
+
+<Trail slug="how-many-infinities" />
+
+<Trail slug="products-by-maps" />
+
+</Section>
+
+<Section id="sets" kind="sets" title="Set-theoretic connection">
+
+To say a set $A$ has $n$ elements is to say there is a one-to-one correspondence — a <TopicLink id="math.found.functions">bijection</TopicLink> — between $A$ and $\{1, 2, \ldots, n\}$: counting *is* pairing objects with numbers. The proof of the addition principle builds exactly such a pairing. And an arrangement of $n$ objects is a bijection from the positions $\{1, \ldots, n\}$ to the objects, so Theorem 4 says: there are $n!$ bijections between two sets of size $n$.
+
+</Section>
+
+<Section id="categories" kind="categories" title="A glimpse of structure">
+
+In the world of finite sets and functions, the disjoint union $A \sqcup B$ and the Cartesian product $A \times B$ are the two most basic ways of combining sets — category theorists call them the **coproduct** and the **product**. Counting turns them into $+$ and $\times$: $|A \sqcup B| = |A| + |B|$ and $|A \times B| = |A| \cdot |B|$. Even powers appear: the number of functions from $B$ to $A$ is $|A|^{|B|}$, which is why $10^4$ counts PINs (a PIN is a function from the 4 positions to the 10 digits). The *Products by maps* trail describes $A \times B$ without counting at all.
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **India.** The medical text *Suśruta Saṃhitā* (compiled over many centuries, from the first millennium BCE) counts $63$ combinations of six basic tastes. Piṅgala's work on poetic metre (around the 3rd–2nd century BCE) counts the patterns of long and short syllables, and Jain texts discuss combinations too. Bhāskara II's *Līlāvatī* (1150) gives rules for counting the arrangements of digits, including the product $n \times (n-1) \times \cdots \times 1$.
+- **The Middle East and North Africa.** The Hebrew *Sefer Yetzirah* (of uncertain date, early first millennium CE) counts arrangements of letters: “two stones build two houses, three build six houses, four build twenty-four…”. In 8th-century Basra, al-Khalīl ibn Aḥmad planned the first Arabic dictionary by counting the possible arrangements of letters in words. In 13th-century Marrakesh, Ibn Munʿim developed systematic counting methods.
+- **Europe.** Levi ben Gershon, in France, proved formulas for arrangements and selections in 1321 using an early form of induction. Christian Kramp introduced the notation $n!$ in 1808.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Ivan Niven, *Mathematics of Choice: How to Count Without Counting* (1965) — written for school students.
+- Arthur T. Benjamin and Jennifer J. Quinn, *Proofs That Really Count* (2003), on combinatorial proofs.
+- Richard A. Brualdi, *Introductory Combinatorics* (1977).
+- Robin Wilson and John J. Watkins (eds.), *Combinatorics: Ancient and Modern* (2013), for the history.
+
+</Section>

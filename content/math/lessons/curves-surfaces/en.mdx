@@ -1,0 +1,522 @@
+---
+slug: curves-surfaces
+topic: math.geom.curves-surfaces
+title: Differential geometry of curves and surfaces
+subtitle: How sharply does a road bend, or an eggshell? Gauss discovered that the curvature of a surface can be measured by an ant that never leaves it — and that its total is fixed by topology.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6012
+objectives:
+  - Compute arc length, curvature and torsion of space curves using the Frenet–Serret frame
+  - Compute the first and second fundamental forms and the principal, Gaussian and mean curvatures of standard surfaces
+  - State and explain Gauss's Theorema Egregium, and deduce that no map of a region of the sphere to the plane preserves distances
+  - State the Gauss–Bonnet theorem, prove its spherical case (Girard's theorem), and check it on spheres and tori
+  - Distinguish the curvature of a curve from the Gaussian curvature of a surface, and intrinsic from extrinsic quantities
+narrators: []
+lean:
+  - Lumenary.CurvesSurfaces.hasDerivAt_cos_div
+  - Lumenary.CurvesSurfaces.circle_velocity
+  - Lumenary.CurvesSurfaces.circle_unit_speed
+  - Lumenary.CurvesSurfaces.circle_acceleration
+  - Lumenary.CurvesSurfaces.circle_curvature
+  - Lumenary.CurvesSurfaces.helix_velocity
+  - Lumenary.CurvesSurfaces.helix_tangent_deriv
+  - Lumenary.CurvesSurfaces.helix_binormal_deriv
+  - Lumenary.CurvesSurfaces.helix_frenet
+  - Lumenary.CurvesSurfaces.gaussCurvature
+  - Lumenary.CurvesSurfaces.sphere
+  - Lumenary.CurvesSurfaces.sphere_dTheta
+  - Lumenary.CurvesSurfaces.sphere_dPhi
+  - Lumenary.CurvesSurfaces.sphere_first_form
+  - Lumenary.CurvesSurfaces.sphere_second_form
+  - Lumenary.CurvesSurfaces.sphere_gauss_curvature
+  - Lumenary.CurvesSurfaces.torus_gauss_curvature
+  - Lumenary.CurvesSurfaces.cylinder_gauss_curvature
+  - Lumenary.CurvesSurfaces.integral_cos_library
+  - Lumenary.CurvesSurfaces.gauss_bonnet_sphere
+  - Lumenary.CurvesSurfaces.gauss_bonnet_torus
+compute: [curves_surfaces_total_curvature, curves_surfaces_theorema_egregium]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why every flat map lies">
+
+Every flat map of the Earth distorts something. Gerardus Mercator's projection (1569) keeps angles right, which is why sailors loved it, but it makes Greenland look as large as Africa, which is about fourteen times bigger. Other projections keep areas right and bend shapes instead. No cartographer has ever made a flat map of a region of the globe on which all distances are to scale, and none ever will. In 1827 Carl Friedrich Gauss, who was directing the geodetic survey of the Kingdom of Hanover, proved why. The sphere has a kind of curvature that cannot be changed by bending without stretching, and the plane has none.
+
+You can feel the same theorem in your hands. Pick up a slice of pizza and it droops. Fold the crust into a slight U and the slice becomes stiff: bending it one way stops it from bending the other way. A sheet of paper rolls into a cylinder or a cone without stretching, but no amount of care will wrap it smoothly onto a ball.
+
+Engineers meet curvature too. Highways and railway lines from Mumbai to Madrid do not join a straight stretch directly to a circular arc. A car or a train would feel a sudden jolt of sideways force, because the curvature would jump from $0$ to $1/r$. Instead, designers insert **transition curves** (clothoids, also called Euler spirals) along which the curvature grows steadily. This lesson makes "curvature" precise: first for curves, then for surfaces, where Gauss's two great theorems — the *Theorema Egregium* and the Gauss–Bonnet theorem — connect it to intrinsic measurement and to topology.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="How fast does the direction turn?">
+
+Walk along a curve at unit speed. Your direction of travel is a unit vector $T$. On a straight road it never changes. On a curve it turns, and the **curvature** $\kappa$ is the rate at which it turns per unit distance. On a circle of radius $r$, going once around ($2\pi r$ of distance) turns your direction through $2\pi$, so $\kappa = 1/r$: small circles bend sharply. At each point of a curve, the circle that fits it best — the **osculating circle** — has radius $1/\kappa$. In space a curve can also twist out of its plane of bending, and the rate of that twisting is the **torsion** $\tau$. A helix, like the thread of a screw or the backbone of DNA, has constant curvature and constant torsion.
+
+For a surface, stand at a point with the unit normal $n$ pointing "up", and slice the surface with planes containing $n$. Each slice is a curve, curving up or down with some curvature. As the slicing plane turns, this **normal curvature** varies between a maximum $k_1$ and a minimum $k_2$, the **principal curvatures**. Their product is the **Gaussian curvature** $K = k_1 k_2$:
+
+- a sphere of radius $R$ bends the same way in every direction: $k_1 = k_2 = 1/R$, so $K = 1/R^2 > 0$;
+- a cylinder of radius $r$ bends around ($1/r$) but not along (0): $K = 0$;
+- a saddle or a mountain pass bends up in one direction and down in the other: $K \lt 0$.
+
+Gauss's surprise was that $K$, defined through bending in space, can be measured *from inside the surface*. An ant on the surface can draw a circle of radius $\rho$ (all points at distance $\rho$ along the surface) and measure its circumference. It finds
+
+$$
+C(\rho) = 2\pi\rho - \frac{\pi}{3} K \rho^3 + O(\rho^4),
+$$
+
+shorter than $2\pi\rho$ on a sphere and longer on a saddle. Or it can draw a triangle of shortest paths and add up the angles: the excess over $\pi$ is approximately $K$ times the area. Curvature is not only how the surface sits in space; it is in the surface's own geometry.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Curves, surfaces and their curvatures">
+
+<Definition term="regular curve, arc length">
+
+A **regular curve** is a smooth map $\gamma : I \to \R^3$ with $\gamma'(t) \ne 0$ for all $t$. Its **arc length** from $t_0$ is $s(t) = \int_{t_0}^t |\gamma'(u)|\,du$. Since $s'(t) = |\gamma'(t)| > 0$, the function $s$ can be inverted, and every regular curve can be reparametrised by arc length, after which $|\gamma'(s)| = 1$ (**unit speed**).
+
+</Definition>
+
+<Definition term="curvature, Frenet frame, torsion">
+
+For a unit-speed curve, $T = \gamma'$ is the **unit tangent** and the **curvature** is $\kappa = |T'| = |\gamma''|$. Where $\kappa > 0$, the **principal normal** is $N = T'/\kappa$, the **binormal** is $B = T \times N$, and $(T, N, B)$ is the **Frenet frame**, an orthonormal basis at each point. The **torsion** $\tau$ is defined by $B' = -\tau N$ (Theorem 1 shows $B'$ is a multiple of $N$). For a regular curve at arbitrary speed,
+
+$$
+\kappa = \frac{|\gamma' \times \gamma''|}{|\gamma'|^3}, \qquad \tau = \frac{\det(\gamma', \gamma'', \gamma''')}{|\gamma' \times \gamma''|^2}.
+$$
+
+For a plane curve $(x(t), y(t))$ the **signed curvature** is $\kappa = (x'y'' - y'x'')/(x'^2 + y'^2)^{3/2}$, positive when the curve turns left.
+
+</Definition>
+
+<Definition term="regular surface, first fundamental form">
+
+A **parametrised surface** is a smooth map $X : U \to \R^3$, $U \subseteq \R^2$ open, with $X_u \times X_v \ne 0$ (so $X_u$, $X_v$ span the **tangent plane**). The **first fundamental form** is the inner product restricted to the tangent plane, with coefficients
+
+$$
+E = X_u \cdot X_u, \qquad F = X_u \cdot X_v, \qquad G = X_v \cdot X_v .
+$$
+
+The length of a curve $X(u(t), v(t))$ is $\int \sqrt{E u'^2 + 2F u' v' + G v'^2}\, dt$, and the **area element** is $dA = |X_u \times X_v|\,du\,dv = \sqrt{EG - F^2}\, du\, dv$. A quantity is **intrinsic** if it can be computed from $E, F, G$ alone.
+
+</Definition>
+
+<Definition term="second fundamental form, shape operator">
+
+Let $n = X_u \times X_v / |X_u \times X_v|$ be the unit normal. The **second fundamental form** has coefficients
+
+$$
+L = X_{uu} \cdot n, \qquad M = X_{uv} \cdot n, \qquad N = X_{vv} \cdot n .
+$$
+
+(Some books write $e, f, g$.) The **shape operator** (Weingarten map) $S = -dn$ is the linear map of the tangent plane sending a tangent vector $v$ to minus the derivative of $n$ in the direction $v$. In the basis $X_u, X_v$ its matrix is $\begin{pmatrix} E & F \\ F & G \end{pmatrix}^{-1} \begin{pmatrix} L & M \\ M & N \end{pmatrix}$.
+
+</Definition>
+
+<Definition term="principal, Gaussian and mean curvature">
+
+The **principal curvatures** $k_1, k_2$ are the eigenvalues of $S$. The **Gaussian curvature** and **mean curvature** are
+
+$$
+K = k_1 k_2 = \det S = \frac{LN - M^2}{EG - F^2}, \qquad H = \frac{k_1 + k_2}{2} = \frac{EN - 2FM + GL}{2(EG - F^2)} .
+$$
+
+Reversing $n$ changes the signs of $L, M, N, k_1, k_2$ and $H$, but not $K$.
+
+</Definition>
+
+<Definition term="geodesic">
+
+A curve on a surface is a **geodesic** if its acceleration is everywhere normal to the surface: an ant walking along it never turns left or right. Shortest paths on a surface are geodesics. On a sphere the geodesics are the great circles; on a cylinder they are the helices, circles and straight lines that become straight lines when the cylinder is unrolled.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Worked examples">
+
+<Example title="The circle and the helix">
+
+The circle $\gamma(s) = (r\cos(s/r), r\sin(s/r))$ has $\gamma'(s) = (-\sin(s/r), \cos(s/r))$, a unit vector, so $s$ is arc length; and $\gamma''(s) = -\tfrac1r(\cos(s/r), \sin(s/r))$, so $\kappa = 1/r$.
+
+For the helix $\gamma(s) = (a\cos(s/c), a\sin(s/c), bs/c)$ with $a > 0$ and $c = \sqrt{a^2 + b^2}$:
+
+$$
+T = \Big(-\tfrac{a}{c}\sin\tfrac{s}{c},\ \tfrac{a}{c}\cos\tfrac{s}{c},\ \tfrac{b}{c}\Big), \quad T' = \tfrac{a}{c^2} \Big(-\cos\tfrac{s}{c}, -\sin\tfrac{s}{c}, 0\Big), \quad B = \Big(\tfrac{b}{c}\sin\tfrac{s}{c}, -\tfrac{b}{c}\cos\tfrac{s}{c}, \tfrac{a}{c}\Big).
+$$
+
+So $|T| = 1$ (since $a^2 + b^2 = c^2$), $\kappa = a/c^2$, $N = (-\cos, -\sin, 0)$ points to the axis, and $B' = \tfrac{b}{c^2}(\cos, \sin, 0) = -\tfrac{b}{c^2} N$, so $\tau = b/c^2$. A right-handed helix ($b > 0$) has positive torsion. All of this is checked in Lean below.
+
+</Example>
+
+<Example title="The sphere">
+
+With longitude $\theta$ and latitude $\varphi$, $X(\theta, \varphi) = (R\cos\varphi\cos\theta, R\cos\varphi\sin\theta, R\sin\varphi)$:
+
+$$
+X_\theta = (-R\cos\varphi\sin\theta, R\cos\varphi\cos\theta, 0), \qquad X_\varphi = (-R\sin\varphi\cos\theta, -R\sin\varphi\sin\theta, R\cos\varphi),
+$$
+
+so $E = R^2\cos^2\varphi$, $F = 0$, $G = R^2$. With the outward normal $n = X/R$, the second derivatives give $L = -R\cos^2\varphi$, $M = 0$, $N = -R$. Hence
+
+$$
+K = \frac{(-R\cos^2\varphi)(-R) - 0}{R^2\cos^2\varphi \cdot R^2 - 0} = \frac{1}{R^2}, \qquad H = -\frac{1}{R}.
+$$
+
+(The sign of $H$ reflects the choice of the outward normal.) The parametrisation fails to be regular at the poles, where $\cos\varphi = 0$; a different chart shows that $K = 1/R^2$ there too.
+
+</Example>
+
+<Example title="Cylinder, torus, saddle, catenoid and helicoid">
+
+- **Cylinder** $X = (r\cos\theta, r\sin\theta, z)$: $E = r^2$, $F = 0$, $G = 1$, $L = -r$, $M = N = 0$. So $K = 0$ and $|H| = 1/(2r)$; the principal curvatures are $1/r$ and $0$.
+- **Torus** $X = ((R + r\cos\varphi)\cos\theta, (R + r\cos\varphi)\sin\theta, r\sin\varphi)$, $0 \lt r \lt R$: $E = (R + r\cos\varphi)^2$, $F = 0$, $G = r^2$, $L = -(R + r\cos\varphi)\cos\varphi$, $M = 0$, $N = -r$, so $K = \dfrac{\cos\varphi}{r(R + r\cos\varphi)}$. This is positive on the outer half, negative on the inner half, and zero on the top and bottom circles.
+- **Saddle** $z = xy$, i.e. $X = (u, v, uv)$: $K = -1/(1 + u^2 + v^2)^2$, which is $-1$ at the origin.
+- **Catenoid** $X = (\cosh u\cos v, \cosh u \sin v, u)$ and **helicoid** $X = (\sinh u \cos v, \sinh u \sin v, v)$: both have $E = G = \cosh^2 u$, $F = 0$, and $K = -1/\cosh^4 u$. They look nothing alike — one is a surface of revolution, the other a spiral ramp — yet one can be bent onto the other without stretching. Both are **minimal surfaces** ($H = 0$), shapes of soap films.
+
+</Example>
+
+</Section>
+
+<Section id="curve-proofs" kind="proof" title="The Frenet–Serret equations">
+
+<Theorem name="Theorem 1 (Frenet–Serret)">
+
+For a unit-speed curve with $\kappa > 0$,
+
+$$
+T' = \kappa N, \qquad N' = -\kappa T + \tau B, \qquad B' = -\tau N .
+$$
+
+</Theorem>
+
+<Proof>
+
+The first equation is the definition of $N$. Since $(T, N, B)$ is orthonormal, $B = T \times N$ and $N = B \times T$.
+
+Differentiate $B = T \times N$: $B' = T' \times N + T \times N' = \kappa N \times N + T \times N' = T \times N'$, which is perpendicular to $T$. Differentiating $B \cdot B = 1$ gives $B' \cdot B = 0$. So $B'$ is perpendicular to $T$ and $B$, hence a multiple of $N$; this justifies the definition $B' = -\tau N$.
+
+Differentiate $N = B \times T$: $N' = B' \times T + B \times T' = -\tau N \times T + \kappa B \times N = \tau B - \kappa T$, using $N \times T = -B$ and $B \times N = -T$.
+
+</Proof>
+
+In matrix form, $(T, N, B)' = (T, N, B)\, \Omega$ with $\Omega$ antisymmetric: an infinitesimal rotation. The **fundamental theorem of curves** (stated here, not proved) says that for any smooth functions $\kappa > 0$ and $\tau$ on an interval there is a unit-speed curve with these curvature and torsion, unique up to a rigid motion. The proof applies the existence and uniqueness theorem for linear ODEs to the Frenet–Serret system. In particular, a curve with constant $\kappa > 0$ and $\tau = 0$ is a circle, and one with both constant (and $\tau \ne 0$) is a helix.
+
+</Section>
+
+<Section id="surface-proofs" kind="proof" title="Curvature of surfaces, and Gauss's remarkable theorem">
+
+<Theorem name="Proposition 2 (normal curvature and Euler's formula)">
+
+Let $\gamma$ be a unit-speed curve on the surface with $\gamma'(0) = v$. Then $\gamma''(0) \cdot n = \langle S v, v\rangle$, the **normal curvature** $k_n(v)$; it depends only on $v$. The operator $S$ is self-adjoint, so it has an orthonormal eigenbasis $e_1, e_2$ with eigenvalues $k_1 \ge k_2$. For $v = \cos\theta\, e_1 + \sin\theta\, e_2$,
+
+$$
+k_n(v) = k_1 \cos^2\theta + k_2 \sin^2\theta ,
+$$
+
+so $k_1$ and $k_2$ are the largest and smallest normal curvatures.
+
+</Theorem>
+
+<Proof>
+
+Along $\gamma$, $\gamma' \cdot n = 0$. Differentiating, $\gamma'' \cdot n = -\gamma' \cdot (n \circ \gamma)' = -v \cdot dn(v) = \langle Sv, v\rangle$ at $t = 0$. Self-adjointness: $\langle S X_u, X_v \rangle = -n_u \cdot X_v = n \cdot X_{uv}$ (differentiate $n \cdot X_v = 0$ in $u$), which is symmetric in $u$ and $v$. The spectral theorem for self-adjoint operators on a 2-dimensional inner product space gives the eigenbasis, and $\langle Sv, v\rangle = k_1\cos^2\theta + k_2\sin^2\theta$ by expanding.
+
+</Proof>
+
+The same computation, with $v = X_u$ or $X_v$, shows $\langle S X_u, X_u\rangle = L$, $\langle S X_u, X_v \rangle = M$ and $\langle S X_v, X_v\rangle = N$. That is why $S$ has the matrix $I^{-1} II$ given in the definitions, and why $K = \det S = (LN - M^2)/(EG - F^2)$.
+
+<Theorem name="Theorem 3 (Gauss's Theorema Egregium, 1827 — proof sketched)">
+
+The Gaussian curvature $K$ can be computed from $E, F, G$ and their first and second derivatives alone. In particular, if $F = 0$,
+
+$$
+K = -\frac{1}{2\sqrt{EG}} \left[ \frac{\partial}{\partial u}\!\left( \frac{G_u}{\sqrt{EG}} \right) + \frac{\partial}{\partial v}\!\left( \frac{E_v}{\sqrt{EG}} \right) \right].
+$$
+
+So $K$ is preserved by **local isometries** — maps that preserve the lengths of curves.
+
+</Theorem>
+
+*Proof sketch.* Write the second derivatives of $X$ in the moving frame $(X_u, X_v, n)$:
+
+$$
+X_{uu} = \Gamma^1_{11} X_u + \Gamma^2_{11} X_v + L\, n, \quad X_{uv} = \Gamma^1_{12} X_u + \Gamma^2_{12} X_v + M\, n, \quad X_{vv} = \Gamma^1_{22} X_u + \Gamma^2_{22} X_v + N\, n .
+$$
+
+Taking inner products with $X_u$ and $X_v$ shows that the **Christoffel symbols** $\Gamma^k_{ij}$ are determined by $E, F, G$ and their first derivatives. For instance, $X_{uu} \cdot X_u = \tfrac12 E_u$ and $X_{uu} \cdot X_v = F_u - \tfrac12 E_v$. Now use the symmetry of third derivatives, $(X_{uu})_v = (X_{uv})_u$. Expand both sides in the frame, using the Weingarten equations for $n_u, n_v$ (whose coefficients are those of $S$), and compare the coefficients of $X_v$. The result is the **Gauss equation**
+
+$$
+E\,K = (\Gamma^2_{11})_v - (\Gamma^2_{12})_u + \Gamma^1_{11}\Gamma^2_{12} + \Gamma^2_{11}\Gamma^2_{22} - \Gamma^1_{12}\Gamma^2_{11} - (\Gamma^2_{12})^2 .
+$$
+
+Its right-hand side involves only $E, F, G$ and their derivatives. Carried out in full (do Carmo 1976, §4-3), this gives Brioschi's formula for $K$ in terms of $E, F, G$, and the displayed formula when $F = 0$. For the sphere, $\sqrt{EG} = R^2\cos\varphi$, $G_\theta = 0$ and $E_\varphi/\sqrt{EG} = -2\sin\varphi$. So $K = -\frac{1}{2R^2\cos\varphi}(-2\cos\varphi) = 1/R^2$, agreeing with the extrinsic computation. The second experiment below checks Brioschi's formula symbolically on five surfaces.
+
+<Theorem name="Corollary 4 (no perfect map)">
+
+No region of a sphere can be mapped onto a region of the plane so that all distances along the surfaces are preserved.
+
+</Theorem>
+
+<Proof>
+
+Such a map would be a local isometry. Parametrising the region of the sphere by $X$ and its image by the composite with the map, the two parametrisations have the same $E, F, G$, because lengths of curves determine $E, F, G$ (differentiate the length of $t \mapsto X(u_0 + t, v_0)$ to get $\sqrt E$, and similarly for $G$ and $F$). By the Theorema Egregium they have the same $K$. But $K = 1/R^2$ on the sphere and $K = 0$ on the plane.
+
+</Proof>
+
+The converse direction explains the pizza. A slice is (nearly) flat, $K = 0$, and bending does not change $K$. If you curve the crust into a U, one principal curvature becomes non-zero, so the other must stay $0$ — the slice cannot droop along its length. The cylinder and the cone are flat in Gauss's sense ($K = 0$), which is why paper rolls onto them.
+
+</Section>
+
+<Section id="gauss-bonnet" kind="proof" title="The Gauss–Bonnet theorem">
+
+On a sphere, triangles made of great-circle arcs have angle sums greater than $\pi$. The excess measures the area.
+
+<Theorem name="Theorem 5 (Girard's theorem, 1629)">
+
+A triangle on a sphere of radius $R$ whose sides are great-circle arcs, with angles $\alpha, \beta, \gamma$, has area $R^2(\alpha + \beta + \gamma - \pi)$. Equivalently, $\alpha + \beta + \gamma - \pi = \iint_\Delta K\, dA$.
+
+</Theorem>
+
+<Proof>
+
+Two great circles through a vertex with angle $\alpha$ cut the sphere into four **lunes**: two opposite ones with angle $\alpha$ and two with angle $\pi - \alpha$. A lune's area is proportional to its angle, and the whole sphere ($4\pi R^2$) corresponds to angle $2\pi$, so a lune of angle $\alpha$ has area $2\alpha R^2$, and the pair of opposite lunes of angle $\alpha$ has area $4\alpha R^2$.
+
+The three great circles through the sides of the triangle $\Delta$ give three such pairs of lunes, one for each vertex. Together they cover the sphere: every point lies in exactly one of them, except the points of $\Delta$ and of the antipodal triangle $-\Delta$, which lie in all three. Adding up areas,
+
+$$
+4R^2(\alpha + \beta + \gamma) = 4\pi R^2 + 2\,\mathrm{Area}(\Delta) + 2\,\mathrm{Area}(-\Delta) = 4\pi R^2 + 4\,\mathrm{Area}(\Delta).
+$$
+
+Hence $\mathrm{Area}(\Delta) = R^2(\alpha + \beta + \gamma - \pi)$. Since $K = 1/R^2$ is constant, $\iint_\Delta K\,dA = \mathrm{Area}(\Delta)/R^2$.
+
+</Proof>
+
+The triangle with vertices at the North Pole and two points on the equator a quarter-turn apart has three right angles. Its area is $R^2(3\pi/2 - \pi) = \pi R^2/2$, one eighth of the sphere, as it should be. Gauss proved the same formula for geodesic triangles on any surface. With a boundary term for curves that are not geodesics, this is the **local Gauss–Bonnet theorem** (Bonnet, 1848): for a region $D$ homeomorphic to a disc, with piecewise smooth boundary of geodesic curvature $k_g$ and exterior angles $\theta_i$ at the corners,
+
+$$
+\iint_D K\, dA + \int_{\partial D} k_g\, ds + \sum_i \theta_i = 2\pi .
+$$
+
+For a proof see do Carmo (1976), §4-5.
+
+<Theorem name="Theorem 6 (global Gauss–Bonnet)">
+
+For a compact oriented surface $S$ without boundary,
+
+$$
+\iint_S K\, dA = 2\pi \chi(S),
+$$
+
+where $\chi(S) = V - E + F$ is the Euler characteristic of any triangulation (for the surface of genus $g$, $\chi = 2 - 2g$).
+
+</Theorem>
+
+*Proof, from the local theorem.* Triangulate $S$ into small triangles with $V$ vertices, $E$ edges and $F$ faces, and apply the local theorem to each triangle. Each edge lies in two triangles, traversed in opposite directions, so the boundary integrals $\int k_g\,ds$ cancel in pairs. For each triangle, $\sum_i \theta_i = 3\pi - (\text{sum of interior angles})$. Summing over all triangles gives
+
+$$
+\iint_S K\, dA = 2\pi F - 3\pi F + (\text{sum of all interior angles}) = -\pi F + 2\pi V ,
+$$
+
+because the angles around each vertex add up to $2\pi$. Every face has three edges and every edge lies on two faces, so $3F = 2E$, and $-\pi F + 2\pi V = 2\pi V - 2\pi E + 2\pi F = 2\pi \chi(S)$. (That $\chi$ does not depend on the triangulation is a theorem of topology; here it even follows, since the left side does not depend on it.)
+
+**Checks.** Sphere: $K = 1/R^2$, area $4\pi R^2$, total $4\pi = 2\pi \cdot 2$. Torus: $K\,dA = \cos\varphi\, d\theta\, d\varphi$, and $\int_0^{2\pi}\!\!\int_0^{2\pi} \cos\varphi\, d\varphi\, d\theta = 0 = 2\pi \cdot 0$. Both computations are formalised in Lean below. An ellipsoid, or any sphere-shaped surface however bumpy, also has total curvature exactly $4\pi$. The first experiment integrates it numerically.
+
+<Theorem name="Corollary 7">
+
+(a) A compact surface in $\R^3$ has a point where $K > 0$. (b) Every torus in $\R^3$ has points where $K \lt 0$. (c) A compact orientable surface with $K > 0$ everywhere is homeomorphic to a sphere.
+
+</Theorem>
+
+<Proof>
+
+(a) Let $p$ be a point of the surface farthest from the origin, at distance $\rho$. The surface lies inside the sphere of radius $\rho$ through $p$ and touches it at $p$, so every normal section at $p$ curves at least as much as that sphere: $k_1, k_2 \ge 1/\rho$ in absolute value, with the same sign. So $K(p) \ge 1/\rho^2 > 0$. (b) A torus has $\chi = 0$, so $\iint K\, dA = 0$; by (a) $K > 0$ somewhere, so $K \lt 0$ somewhere else. (c) $2\pi\chi = \iint K\, dA > 0$ forces $\chi = 2 - 2g > 0$, so $g = 0$; by the classification of surfaces, $S$ is a sphere.
+
+</Proof>
+
+</Section>
+
+<Section id="formal" kind="formal" title="Curvature in Lean">
+
+Mathlib's calculus is extensive, but at this version it has no differential geometry of curves and surfaces in $\R^3$: no Frenet frame, no fundamental forms, no Gaussian curvature. The Lean module therefore works with explicit parametrisations and writes vectors of $\R^3$ as triples. It computes derivatives with Mathlib's rules (`HasDerivAt.comp`, `HasDerivAt.prodMk`) and verifies the lesson's formulas. This formalises the **examples** of the lesson, not the general theorems.
+
+The circle: a chain-rule lemma, the velocity and unit speed, the acceleration, and $\kappa = 1/r$:
+
+<Lean decl="Lumenary.CurvesSurfaces.hasDerivAt_cos_div" />
+
+<Lean decl="Lumenary.CurvesSurfaces.circle_velocity" />
+
+<Lean decl="Lumenary.CurvesSurfaces.circle_unit_speed" />
+
+<Lean decl="Lumenary.CurvesSurfaces.circle_acceleration" />
+
+<Lean decl="Lumenary.CurvesSurfaces.circle_curvature" />
+
+The helix: its velocity, the derivatives of $T$ and $B$, and the Frenet data $|T| = 1$, $T' = \kappa N$ with $\kappa = a/c^2$, $B = T \times N$ and $B' = -\tau N$ with $\tau = b/c^2$:
+
+<Lean decl="Lumenary.CurvesSurfaces.helix_velocity" />
+
+<Lean decl="Lumenary.CurvesSurfaces.helix_tangent_deriv" />
+
+<Lean decl="Lumenary.CurvesSurfaces.helix_binormal_deriv" />
+
+<Lean decl="Lumenary.CurvesSurfaces.helix_frenet" />
+
+Surfaces: the formula $K = (LN - M^2)/(EG - F^2)$ as a definition, the sphere's partial derivatives and fundamental forms, and the curvatures of the sphere, the torus and the cylinder:
+
+<Lean decl="Lumenary.CurvesSurfaces.gaussCurvature" />
+
+<Lean decl="Lumenary.CurvesSurfaces.sphere" />
+
+<Lean decl="Lumenary.CurvesSurfaces.sphere_dTheta" />
+
+<Lean decl="Lumenary.CurvesSurfaces.sphere_dPhi" />
+
+<Lean decl="Lumenary.CurvesSurfaces.sphere_first_form" />
+
+<Lean decl="Lumenary.CurvesSurfaces.sphere_second_form" />
+
+<Lean decl="Lumenary.CurvesSurfaces.sphere_gauss_curvature" />
+
+<Lean decl="Lumenary.CurvesSurfaces.torus_gauss_curvature" />
+
+<Lean decl="Lumenary.CurvesSurfaces.cylinder_gauss_curvature" />
+
+Gauss–Bonnet on the sphere and the torus, as iterated integrals of $K\,dA$, using Mathlib's $\int_a^b \cos = \sin b - \sin a$:
+
+<Lean decl="Lumenary.CurvesSurfaces.integral_cos_library" />
+
+<Lean decl="Lumenary.CurvesSurfaces.gauss_bonnet_sphere" />
+
+<Lean decl="Lumenary.CurvesSurfaces.gauss_bonnet_torus" />
+
+**What is and is not formalised.** Formalised (independently): all the derivative computations for the circle, the helix and the sphere; the fundamental forms of the sphere; the Gaussian curvature formulas for the sphere, torus and cylinder, *given* their fundamental forms (for the torus and cylinder the forms are stated, not derived); the Frenet data of the helix; and the two Gauss–Bonnet integrals. Cited from Mathlib: $\int \cos$. Not formalised: regular surfaces in general, the shape operator, Theorem 1 in general, the Theorema Egregium, Girard's theorem, and the Gauss–Bonnet theorem in general.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Total curvature and the Theorema Egregium by computer">
+
+The first program integrates curvature around closed curves. For plane curves, $\int \kappa\, ds$ is $2\pi$ times the **turning number**: Hopf's *Umlaufsatz* (1935) says it is $\pm 1$ for simple closed curves. For space curves, the total curvature $\int |\kappa|\, ds$ is at least $2\pi$ (Fenchel, 1929), with equality only for convex plane curves. It exceeds $4\pi$ for every knotted curve (Fáry 1949, Milnor 1950) — a bridge to <TopicLink id="math.geom.knot-theory">knot theory</TopicLink>.
+
+<Python id="curves_surfaces_total_curvature" />
+
+The second program computes $K$ twice for five surfaces: from the shape in space, $(LN - M^2)/(EG - F^2)$, and from $E, F, G$ alone by Brioschi's formula. It checks that the two agree, and that the catenoid and the helicoid share their first fundamental form. Then it integrates $K\,dA$ numerically over an ellipsoid.
+
+<Python id="curves_surfaces_theorema_egregium" />
+
+Symbolic agreement on five examples is strong evidence that the formulas are right, but it is not the Theorema Egregium. The theorem is a statement about *all* surfaces, proved by the computation sketched above.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: curvature you can see">
+
+Move the point along each curve and watch the osculating circle: large where the curve is nearly straight, small at sharp bends, and switching sides where the curvature changes sign. The total $\int \kappa\, ds$ is shown as a multiple of $2\pi$. Compare the circle and the ellipse (turning number $1$), the limaçon with an inner loop ($2$) and the figure eight ($0$). Slide the limaçon's parameter through $c = 1$ and watch the turning number jump as the curve passes through a cusp, where it stops being regular.
+
+<CurveCurvature curve="ellipse" curves={["circle", "ellipse", "limacon", "lemniscate", "bezier"]} title="Curvature, osculating circles and the turning number" />
+
+Next, triangles on curved surfaces. On the sphere, drag the vertices of a geodesic triangle and compare the angle excess with the area: their ratio is $K = 1/R^2$ (Girard's theorem). In the hyperbolic plane, curvature $-1$, the angle sum falls short of $\pi$ by exactly the area. This is the local Gauss–Bonnet theorem.
+
+<CurvedTriangles mode="sphere" modes={["plane", "sphere", "hyperbolic"]} vertices={{ sphere: [[90, 0], [0, 0], [0, 90]] }} title="Angle sum − π = K × area" />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A cylinder is curved, so its Gaussian curvature is non-zero."** The cylinder bends in one direction only: its principal curvatures are $1/r$ and $0$, and $K = 1/r \cdot 0 = 0$. Intrinsically it is flat — unroll it and it is a rectangle, with all distances preserved. Its mean curvature $H = \pm 1/(2r)$ is non-zero, which is how it differs from a plane *in space*.
+
+</Misconception>
+
+<Misconception>
+
+**"The curvature of a curve and the Gaussian curvature of a surface are the same kind of thing."** The curvature $\kappa$ of a curve measures how fast its tangent turns; it is extrinsic (a curve has no intrinsic geometry: every unit-speed curve looks like an interval from inside). The Gaussian curvature of a surface is a product of two principal curvatures and is intrinsic. A curve drawn on a flat sheet can have large curvature; the sheet still has $K = 0$.
+
+</Misconception>
+
+<Misconception>
+
+**"Mean curvature is intrinsic too."** It is not. A plane and a cylinder are locally isometric (same $E, F, G$), but $H = 0$ for the plane and $H \ne 0$ for the cylinder. Only $K$, the *product* of the principal curvatures, is intrinsic — that is what makes the Theorema Egregium remarkable.
+
+</Misconception>
+
+<Misconception>
+
+**"Geodesics are straight lines."** A geodesic is straight *as seen from the surface*: it has no sideways acceleration. In space it is usually curved — great circles on a sphere, helices on a cylinder. Shortest paths are geodesics, but a geodesic need not be the shortest path: going the long way round a great circle is a geodesic too.
+
+</Misconception>
+
+<Misconception>
+
+**"Changing the shape of a surface changes its total curvature."** Dents and bumps move curvature around, but by Gauss–Bonnet the total $\iint K\, dA$ stays $2\pi\chi$. Every sphere-shaped surface has total curvature $4\pi$, and every torus has total curvature $0$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Intrinsic geometry and the road to Riemann">
+
+The Theorema Egregium says that a surface's geometry is determined by the first fundamental form, its rule for measuring lengths, with no reference to the surrounding space. Bernhard Riemann's habilitation lecture (1854) took the hint: a **Riemannian manifold** is a space of any dimension with an inner product on each tangent space, and curvature becomes the Riemann curvature tensor. In this language Eugenio Beltrami (1868) showed that the **pseudosphere**, with $K = -1$, carries the geometry of a piece of the hyperbolic plane. That made non-Euclidean geometry concrete; see <TopicLink id="math.geom.non-euclidean-geometry">non-Euclidean geometry</TopicLink>. Hilbert (1901) proved that the whole hyperbolic plane cannot be realised as a smooth surface in $\R^3$ (strikingly, it can be as a $C^1$ surface, by the Nash–Kuiper theorem), so abstract surfaces are genuinely needed. See <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink> and <TopicLink id="math.geom.smooth-manifolds">smooth manifolds</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Curvature adds up to topology">
+
+Gauss–Bonnet says the total curvature is a topological invariant, $2\pi\chi(S)$. Geometry cannot change it, and topology constrains geometry: a surface of genus $g \ge 2$ must have negative curvature somewhere, and only a sphere can have $K > 0$ everywhere. A cousin is the **Poincaré–Hopf theorem**: the indices of the zeros of a vector field on $S$ add up to $\chi(S)$. So every vector field on the sphere vanishes somewhere ("you cannot comb a hairy ball"), while the torus has nowhere-vanishing fields. See <TopicLink id="math.geom.surfaces-euler-characteristic">the Euler characteristic</TopicLink>. Shiing-Shen Chern's intrinsic proof (1944) of the Gauss–Bonnet theorem in all even dimensions opened the theory of <TopicLink id="math.geom.vector-bundles-characteristic-classes">characteristic classes</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Curvature as second derivatives">
+
+Near a point, rotate the surface so that the tangent plane is horizontal. Then it is a graph $z = f(x, y)$ with $f(0) = 0$ and $\nabla f(0) = 0$. The second fundamental form is the **Hessian** of $f$ at $0$: $k_1, k_2$ are its eigenvalues, $K = \det \operatorname{Hess} f$ and $H = \frac12 \Delta f$. Curvature is a second-derivative test made geometric. Minimal surfaces ($H = 0$) are solutions of a nonlinear elliptic PDE, the minimal surface equation $(1 + f_y^2) f_{xx} - 2 f_x f_y f_{xy} + (1 + f_x^2) f_{yy} = 0$. They are the critical points of area, and Plateau's problem — to find a minimal surface spanning a given wire loop — was solved by Jesse Douglas and Tibor Radó around 1930. Douglas received one of the first Fields Medals for it in 1936.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="The shape operator is a symmetric matrix">
+
+All the curvatures of a surface at a point are invariants of one linear map, the shape operator $S$. It is self-adjoint for the first fundamental form. By the spectral theorem of <TopicLink id="math.algebra.advanced-linear-algebra">advanced linear algebra</TopicLink>, it has real eigenvalues $k_1, k_2$ (the principal curvatures) and orthogonal eigenvectors (the principal directions). $K = \det S$ and $2H = \operatorname{tr} S$ are its characteristic-polynomial coefficients: $\lambda^2 - 2H\lambda + K$. A point is **umbilic** when $S$ is a multiple of the identity ($k_1 = k_2$); the only connected surfaces made entirely of umbilic points are pieces of planes and spheres.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Soap films, shells and spacetime">
+
+A soap film spanning a wire frame minimises its area, so it is a minimal surface, $H = 0$. A soap bubble encloses air at higher pressure. By the **Young–Laplace law** the pressure difference across the film is proportional to its mean curvature, $\Delta p = 2\sigma |H|$, where $\sigma$ is the tension of the film. So $H$ is constant, and by a theorem of Alexandrov (1950s) a closed embedded surface of constant mean curvature is a round sphere. Thin elastic shells — an eggshell, a pizza slice, a dome — resist bending much less than stretching. So they deform almost isometrically, and the Theorema Egregium makes curved shells stiff. Most dramatically, Einstein's general relativity (1915) describes gravity as the curvature of a four-dimensional spacetime. Gauss's intrinsic curvature, via Riemann, became the language of physical law; see <TopicLink id="math.applied.relativity">relativity</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="computation" title="Discrete curvature">
+
+Computers represent surfaces as triangle meshes, which have no second derivatives. The discrete substitute for Gaussian curvature is the **angle defect** at a vertex: $2\pi$ minus the sum of the angles of the triangles meeting there. Descartes knew (around 1630) that the angle defects of a convex polyhedron add up to $4\pi$. For a cube, each of the $8$ corners has defect $2\pi - 3 \cdot \frac{\pi}{2} = \frac{\pi}{2}$, and $8 \cdot \frac{\pi}{2} = 4\pi$. That is the discrete Gauss–Bonnet theorem: the sum of the defects is $2\pi(V - E + F)$ for any closed triangulated surface, by the same counting as in the proof of Theorem 6. **Discrete differential geometry** builds on this, for computer graphics, architecture (gridshells and curved glass roofs) and simulation.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Curves.** Christiaan Huygens (*Horologium Oscillatorium*, 1673) studied evolutes and the curvature of curves for pendulum clocks; Isaac Newton and Gottfried Leibniz gave the curvature formula of calculus. Leonhard Euler (1760) introduced principal curvatures and Euler's formula, and Jean-Baptiste Meusnier (1776) related normal and curve curvatures. Jean Frenet (thesis 1847) and Joseph Serret (1851) found the frame equations.
+- **Gauss.** Carl Friedrich Gauss's *Disquisitiones generales circa superficies curvas* (1827) introduced the first fundamental form, defined curvature through the Gauss map, proved the Theorema Egregium and the formula for geodesic triangles. It grew out of his geodetic survey of the Kingdom of Hanover in the 1820s, in which he measured large triangles on the Earth's surface.
+- **Global theory.** Albert Girard stated his spherical-triangle theorem in 1629, and Descartes found the angle-defect theorem around 1630. Pierre Ossian Bonnet extended Gauss's formula to arbitrary regions (1848), and Walther von Dyck stated the global form with the Euler characteristic (1888).
+- **Beyond surfaces.** Bernhard Riemann (1854) created intrinsic geometry in all dimensions, and Eugenio Beltrami (1868) realised hyperbolic geometry on the pseudosphere. Shiing-Shen Chern, born in Jiaxing, China, gave an intrinsic proof of the higher-dimensional Gauss–Bonnet theorem (1944). He later founded mathematical institutes in Berkeley and in Tianjin.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Manfredo P. do Carmo, *Differential Geometry of Curves and Surfaces* (1976; 2nd edition 2016) — the standard text, with full proofs of the Theorema Egregium and Gauss–Bonnet.
+- Andrew Pressley, *Elementary Differential Geometry* (2nd edition, 2010) — gentle, with many worked examples.
+- Barrett O'Neill, *Elementary Differential Geometry* (revised 2nd edition, 2006) — uses moving frames and differential forms.
+- David Hilbert and Stephan Cohn-Vossen, *Geometry and the Imagination* (1932; English translation 1952) — curvature with pictures and insight.
+- Michael Spivak, *A Comprehensive Introduction to Differential Geometry*, volumes 2–3 (1970s) — including translations and analysis of Gauss's and Riemann's papers.
+
+</Section>

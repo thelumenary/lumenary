@@ -1,0 +1,456 @@
+---
+slug: low-dimensional-topology
+topic: math.geom.low-dimensional-topology
+title: "Low-dimensional topology: 3- and 4-manifolds"
+subtitle: In dimension 3 every closed manifold is built from geometric pieces; in dimension 4 the smooth and the topological worlds come apart — and both facts are invisible from any other dimension.
+level: research
+ages: Research (graduate background)
+minutes: 130
+order: 8009
+objectives:
+  - Describe closed 3-manifolds by Heegaard splittings and by Dehn surgery on links, computing π₁ and H₁ of lens spaces and of surgeries from the gluing data
+  - Use the arithmetic classification of lens spaces to exhibit 3-manifolds that are homotopy equivalent but not homeomorphic
+  - State the geometrisation theorem and the Poincaré conjecture, describe the eight Thurston geometries, and explain Mostow rigidity for hyperbolic 3-manifolds
+  - Contrast topological and smooth 4-manifolds through intersection forms and the theorems of Freedman, Rokhlin and Donaldson, using the E₈ form
+  - Separate established results from open problems such as the smooth 4-dimensional Poincaré conjecture and the 11/8 conjecture
+narrators: []
+lean:
+  - Lumenary.LowDimensionalTopology.three_sphere_isManifold
+  - Lumenary.LowDimensionalTopology.LensHomeoRel
+  - Lumenary.LowDimensionalTopology.LensHomotopyRel
+  - Lumenary.LowDimensionalTopology.lensHomeoRel_equivalence
+  - Lumenary.LowDimensionalTopology.lensHomotopyRel_of_lensHomeoRel
+  - Lumenary.LowDimensionalTopology.lens_seven
+  - Lumenary.LowDimensionalTopology.lens_five
+  - Lumenary.LowDimensionalTopology.lens_five_four
+  - Lumenary.LowDimensionalTopology.even_form_of_even_diag
+  - Lumenary.LowDimensionalTopology.e8_even
+  - Lumenary.LowDimensionalTopology.e8_unimodular
+  - Lumenary.LowDimensionalTopology.e8_posDef
+compute: [low_dimensional_topology_lens_spaces, low_dimensional_topology_intersection_forms]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why dimensions 3 and 4 are different">
+
+The **generalised Poincaré conjecture** asks: is every closed $n$-manifold homotopy equivalent to the sphere $S^n$ actually homeomorphic to it? The answer is yes in every dimension, but the proofs tell a strange story.
+
+- For $n \ge 5$ Stephen Smale proved it in 1961 by cancelling handles, a method he developed into the **h-cobordism theorem** (1962). The key step, the *Whitney trick*, removes pairs of intersection points of 2-dimensional discs by pushing one disc across an embedded 2-disc; in dimension 5 and above there is room to make that disc embedded.
+- For $n = 4$ there is not quite room. Michael Freedman (1982) found a way round it in the **topological** category — and Simon Donaldson's gauge theory (from 1983) showed that in the **smooth** category the h-cobordism theorem fails. Whether every smooth 4-manifold homotopy equivalent to $S^4$ is *diffeomorphic* to it is still unknown.
+- For $n = 3$ the problem resisted all topological methods. Grigori Perelman solved it in 2002–2003 by proving William Thurston's **geometrisation conjecture**, using Richard Hamilton's Ricci flow: a geometric, analytic proof of a topological statement.
+
+So dimensions 3 and 4 are where "low-dimensional" topology lives. In dimension 3, geometry rules: every closed 3-manifold decomposes into pieces carrying one of eight homogeneous geometries, most of them hyperbolic, and for hyperbolic manifolds the topology determines the geometry completely. In dimension 4, the topological and smooth worlds split: there are topological 4-manifolds with no smooth structure, pairs that are homeomorphic but not diffeomorphic, and uncountably many smooth structures on $\R^4$ — while $\R^n$ has exactly one for every $n \ne 4$.
+
+This lesson is an orientation: how to build and compute with 3-manifolds, what geometrisation says, how intersection forms organise 4-manifolds, and what is known and open.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Building 3-manifolds by gluing">
+
+A **solid torus** $S^1 \times D^2$ has a boundary torus with two special curves: the **meridian** $\mu$, which bounds a disc inside, and a **longitude** $\lambda$, which runs once along. Take two solid tori and glue their boundary tori together by a homeomorphism. What you get depends only on where the meridian of the first goes:
+
+- meridian to longitude: the 3-sphere $S^3$ (think of $S^3 \subset \C^2$ as $\{|z_1| \le |z_2|\} \cup \{|z_1| \ge |z_2|\}$);
+- meridian to meridian: $S^1 \times S^2$;
+- meridian to a curve winding $p$ times along and $q$ times around: the **lens space** $L(p, q)$.
+
+<Figure caption="Schematic of a solid torus. The meridian (red) bounds a disc inside; the longitude (gold) runs once around the hole. Gluing two solid tori along their boundaries, or removing a solid torus around a knot and gluing it back differently (Dehn surgery), is how most 3-manifolds in this lesson are built.">
+<svg viewBox="0 0 320 200" role="img" aria-label="A torus drawn as an outer ellipse with a hole in the middle. A gold ellipse runs around the hole; a small red ellipse circles the tube on the left side, its back half dashed.">
+  <ellipse cx="160" cy="100" rx="135" ry="72" fill="var(--sky-soft)" stroke="var(--ink-2)" strokeWidth="2" />
+  <path d="M 105 98 Q 160 132 215 98" fill="none" stroke="var(--ink-2)" strokeWidth="2" />
+  <path d="M 116 106 Q 160 84 204 106" fill="none" stroke="var(--ink-2)" strokeWidth="2" />
+  <ellipse cx="160" cy="102" rx="98" ry="47" fill="none" stroke="var(--gold)" strokeWidth="3" />
+  <path d="M 66 63 A 13 37 0 0 0 66 137" fill="none" stroke="var(--human)" strokeWidth="3" />
+  <path d="M 66 63 A 13 37 0 0 1 66 137" fill="none" stroke="var(--human)" strokeWidth="2" strokeDasharray="5 4" />
+  <text x="40" y="60" fontSize="14" fill="var(--human)">μ</text>
+  <text x="250" y="70" fontSize="14" fill="var(--gold)">λ</text>
+</svg>
+</Figure>
+
+Two generalisations give every closed orientable 3-manifold. **Heegaard splittings** glue two handlebodies of genus $g$ (solid "pretzels") along their boundary surfaces. **Dehn surgery** removes a solid torus neighbourhood of a knot in $S^3$ and glues it back with the meridian sent to a different curve. A computation of the fundamental group is then a computation with the gluing curves.
+
+In dimension 4 the basic invariant is algebraic: two surfaces in a closed oriented 4-manifold meet in finitely many points, counted with signs, and these counts form a symmetric integer matrix — the **intersection form**. Much of 4-manifold topology is the question of which matrices occur, and for which manifolds.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+All manifolds are compact, connected and orientable unless said otherwise.
+
+<Definition term="handlebody and Heegaard splitting">
+
+A **handlebody of genus $g$** is a regular neighbourhood of a connected graph with first Betti number $g$ in $\R^3$ — a ball with $g$ solid handles attached; its boundary is a closed surface of genus $g$. A **Heegaard splitting** of a closed 3-manifold $M$ is a decomposition $M = V_1 \cup_\Sigma V_2$ into two handlebodies of the same genus with $V_1 \cap V_2 = \partial V_1 = \partial V_2 = \Sigma$. The least such genus is the **Heegaard genus** of $M$.
+
+</Definition>
+
+<Definition term="lens space">
+
+For coprime integers $p \ge 2$ and $q$, the **lens space** $L(p, q)$ is the quotient of $S^3 = \{(z_1, z_2) \in \C^2 : |z_1|^2 + |z_2|^2 = 1\}$ by the free action of $\Z/p$ generated by $(z_1, z_2) \mapsto (\zeta z_1, \zeta^q z_2)$, $\zeta = e^{2\pi i/p}$. It has a genus-1 Heegaard splitting, obtained by gluing two solid tori with the meridian of one sent to a curve of homology class $p\lambda + q\mu$ on the other. (Conventions for the signs differ between books.) $L(2, 1) = \R P^3$.
+
+</Definition>
+
+<Definition term="Dehn surgery">
+
+Let $K \subset S^3$ be a knot with closed tubular neighbourhood $N(K)$, meridian $\mu$ and Seifert longitude $\lambda$ (null-homologous in the complement). For coprime $p, q$, the **$p/q$-surgery** on $K$ is
+$$
+S^3_{p/q}(K) = \big(S^3 \setminus \operatorname{int} N(K)\big) \cup_h (S^1 \times D^2),
+$$
+where $h$ sends the meridian $\{\mathrm{pt}\} \times \partial D^2$ of the new solid torus to a curve of class $p\mu + q\lambda$. Surgery on a link is done component by component; **integral surgery** ($q = 1$) on a link $L$ is described by a **framed link**, an integer for each component, and its **linking matrix** $\Lambda$ has the framings on the diagonal and pairwise linking numbers off it.
+
+</Definition>
+
+<Definition term="geometric 3-manifold, hyperbolic 3-manifold">
+
+A **model geometry** is a simply connected homogeneous Riemannian manifold $X$ with a group of isometries acting transitively with compact stabilisers, maximal among such groups, and admitting a quotient of finite volume. A 3-manifold is **geometric** if its interior is $X/\Gamma$ for a model geometry $X$ and a discrete group $\Gamma$ of isometries acting freely. A **hyperbolic 3-manifold** is one with a complete Riemannian metric of constant sectional curvature $-1$; equivalently $M = \mathbb{H}^3/\Gamma$ for a torsion-free discrete subgroup $\Gamma \subset \mathrm{PSL}(2, \C) \cong \mathrm{Isom}^+(\mathbb{H}^3)$.
+
+</Definition>
+
+<Definition term="intersection form; exotic smooth structure">
+
+For a closed oriented 4-manifold $X$ the **intersection form** is the symmetric bilinear form $Q_X(a, b) = \langle a \smile b, [X] \rangle$ on $H^2(X; \Z)/\text{torsion}$; for classes represented by embedded oriented surfaces it counts their intersection points with signs. By Poincaré duality it is **unimodular** (its matrix has determinant $\pm 1$). Its invariants are the **rank** $b_2$, the **signature** $\sigma$ (number of positive minus negative eigenvalues) and the **parity** (even if $Q(a, a)$ is always even). Two smooth manifolds that are homeomorphic but not diffeomorphic are **exotic** copies of each other.
+
+</Definition>
+
+</Section>
+
+<Section id="examples" kind="examples" title="Examples">
+
+<Example title="Spherical space forms and the Poincaré homology sphere">
+
+The quotient $S^3/\Gamma$ by a finite subgroup $\Gamma \subset \mathrm{SO}(4)$ acting freely is a **spherical** 3-manifold: lens spaces ($\Gamma$ cyclic), prism manifolds, and the **Poincaré homology sphere** $\Sigma = S^3/I^*$, where $I^*$ is the binary icosahedral group of order 120. Poincaré found it in 1904 as a counterexample to his own first conjecture: $H_*(\Sigma) \cong H_*(S^3)$ but $\pi_1(\Sigma) \cong I^*$ is not trivial. It has several other descriptions: the dodecahedral space (opposite faces of a dodecahedron glued with a $\pi/5$ twist), the Brieskorn sphere $\Sigma(2,3,5) = \{z_1^2 + z_2^3 + z_3^5 = 0\} \cap S^5$, $-1$-surgery on the left-handed trefoil, and the boundary of the $E_8$ plumbing (see the computation below).
+
+</Example>
+
+<Example title="$H_1$ of a surgery">
+
+For any knot $K$, $H_1(S^3 \setminus N(K)) \cong \Z$ is generated by the meridian $\mu$, and the Seifert longitude $\lambda$ is null-homologous there. Gluing in the solid torus kills the class of $p\mu + q\lambda$, that is $p[\mu]$. Hence
+$$
+H_1\big(S^3_{p/q}(K)\big) \cong \Z/p
+$$
+for every knot. In particular every $\pm 1/n$-surgery gives a **homology sphere**, and $0$-surgery on the unknot gives $S^1 \times S^2$. For integral surgery on a framed link, $H_1 \cong \operatorname{coker} \Lambda$, so $|H_1| = |\det \Lambda|$ when $\det \Lambda \ne 0$.
+
+</Example>
+
+<Example title="Hyperbolic knot complements">
+
+The complement of the figure-eight knot is hyperbolic: Robert Riley (1975) found a discrete faithful representation of its group into $\mathrm{PSL}(2, \Z[\omega])$, $\omega = e^{2\pi i/3}$, and Thurston showed it is the union of two regular ideal hyperbolic tetrahedra, with volume $2.02988\ldots$ — the smallest volume of a cusped orientable hyperbolic 3-manifold (Cao–Meyerhoff, 2001). The complement of the trefoil is *not* hyperbolic: it is Seifert fibred, with geometry $\widetilde{\mathrm{SL}(2,\R)}$. Thurston proved that a knot complement is hyperbolic unless the knot is a torus knot or a satellite knot. The closed orientable hyperbolic 3-manifold of smallest volume is the Weeks manifold, of volume $0.9427\ldots$ (Gabai–Meyerhoff–Milley, 2009).
+
+</Example>
+
+<Example title="Simply connected 4-manifolds and their forms">
+
+$\C P^2$ has form $\langle 1 \rangle$; $S^2 \times S^2$ has the **hyperbolic form** $H = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}$ (even, signature 0); $\C P^2 \# \overline{\C P^2}$ has $\langle 1 \rangle \oplus \langle -1 \rangle$ (odd, signature 0); the K3 surface $\{z_0^4 + z_1^4 + z_2^4 + z_3^4 = 0\} \subset \C P^3$ has $2(-E_8) \oplus 3H$: rank 22, signature $-16$, even. Here $E_8$ is the Cartan matrix of the Lie algebra $\mathfrak{e}_8$, an even, positive definite, unimodular form of rank 8.
+
+</Example>
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Central theorems">
+
+<Theorem name="Theorem 1 (Heegaard splittings exist)">
+
+Every closed orientable 3-manifold $M$ has a Heegaard splitting.
+
+</Theorem>
+
+<Proof>
+
+By Moise's theorem (1952) $M$ has a triangulation. Let $V_1$ be a regular neighbourhood of its 1-skeleton $T^{(1)}$: a union of balls around the vertices and solid tubes along the edges. Since $M$ is orientable and $T^{(1)}$ is connected, $V_1$ is a handlebody of genus $g = 1 - \chi(T^{(1)}) = E - V + 1$. Its complement $V_2 = M \setminus \operatorname{int} V_1$ is a regular neighbourhood of the **dual** 1-skeleton (a vertex at the centre of each tetrahedron and an edge through each triangle): each tetrahedron minus the neighbourhood of its edges retracts onto a neighbourhood of its centre and the four segments to its faces. So $V_2$ is also a handlebody, and $\partial V_1 = \partial V_2$ forces equal genus.
+
+</Proof>
+
+<Theorem name="Theorem 2 (Lickorish 1962, Wallace 1960)">
+
+Every closed orientable 3-manifold is obtained by integral surgery on a link in $S^3$; one may even take every component unknotted with framing $\pm 1$.
+
+</Theorem>
+
+*Proof sketch.* Two Heegaard splittings of the same genus differ by a homeomorphism of the Heegaard surface. Comparing $M$ with the standard genus-$g$ splitting of $S^3$, $M$ is determined by an element of the mapping class group of the surface. Lickorish proved that this group is generated by Dehn twists along finitely many explicit curves, and each Dehn twist can be realised by a $\pm1$-surgery on a pushed-in copy of its curve. A full proof is in Rolfsen's *Knots and Links*, Chapter 9.
+
+<Theorem name="Proposition 3 (lens spaces)">
+
+$\pi_1(L(p, q)) \cong \Z/p$, so $H_1(L(p, q)) \cong \Z/p$, and all lens spaces with the same $p$ have the same homology groups.
+
+</Theorem>
+
+<Proof>
+
+Write $L(p, q) = V_2 \cup_h V_1$ with $V_1, V_2$ solid tori and $h$ sending the meridian $\mu_1$ of $V_1$ to a curve $c$ of class $p\lambda_2 + q\mu_2$ on $\partial V_2$. $V_1$ is a 2-handle attached along $c$ (a thickened meridian disc) followed by a 3-ball. By the Seifert–van Kampen theorem, attaching a 2-handle along $c$ adds the relation $[c] = 1$, and attaching a 3-ball changes nothing. In $\pi_1(V_2) \cong \Z = \langle \lambda_2 \rangle$ the meridian $\mu_2$ is trivial, so $[c] = \lambda_2^p$, and $\pi_1(L(p, q)) \cong \langle \lambda_2 \mid \lambda_2^p \rangle \cong \Z/p$. Since this group is abelian, $H_1 \cong \pi_1$; Poincaré duality gives $H_2 = 0$ and $H_3 = \Z$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (classification of lens spaces)">
+
+Let $p \ge 2$ and $q, q'$ be coprime to $p$.
+
+1. (Reidemeister 1935, Brody 1960.) $L(p, q) \cong L(p, q')$ (homeomorphic) if and only if $q' \equiv \pm q^{\pm 1} \pmod p$.
+2. (Whitehead 1941.) $L(p, q) \simeq L(p, q')$ (homotopy equivalent) if and only if $qq' \equiv \pm n^2 \pmod p$ for some integer $n$.
+
+</Theorem>
+
+The homeomorphism invariant is **Reidemeister torsion**, built from the chain complex of the universal cover twisted by characters of $\Z/p$; it is the first invariant in topology that is not a homotopy invariant. Arithmetic now does the topology:
+
+<Theorem name="Corollary 5">
+
+$L(7, 1)$ and $L(7, 2)$ are homotopy equivalent but not homeomorphic. $L(5, 1)$ and $L(5, 2)$ have isomorphic fundamental groups and homology, but are not homotopy equivalent.
+
+</Theorem>
+
+<Proof>
+
+Modulo 7: $1 \cdot 2 = 2 \equiv 3^2$, but $2 \not\equiv \pm 1 = \pm 1^{\pm1}$. Modulo 5: the squares of units are $1$ and $4 \equiv -1$, so $\pm n^2 \in \{1, 4\}$, and $1 \cdot 2 = 2$ is not among them. Apply Theorem 4. (Both congruence computations are checked in Lean below.)
+
+</Proof>
+
+<Theorem name="Theorem 6 (geometrisation; Thurston's conjecture, proved by Perelman 2002–2003)">
+
+Every closed orientable 3-manifold $M$ decomposes canonically:
+
+1. (Kneser 1929, Milnor 1962.) $M$ is a connected sum of **prime** 3-manifolds, uniquely up to order.
+2. (Jaco–Shalen, Johannson 1979.) Each prime $M$ contains a minimal collection of disjoint incompressible tori, unique up to isotopy, cutting it into pieces that are Seifert fibred or atoroidal.
+3. (Perelman.) Each piece is geometric, with one of the eight Thurston geometries
+$$
+S^3,\quad \mathbb{E}^3,\quad \mathbb{H}^3,\quad S^2 \times \R,\quad \mathbb{H}^2 \times \R,\quad \widetilde{\mathrm{SL}(2, \R)},\quad \mathrm{Nil},\quad \mathrm{Sol}.
+$$
+
+</Theorem>
+
+Consequences: **elliptisation** (a closed 3-manifold with finite fundamental group is spherical, $S^3/\Gamma$), and in particular the **Poincaré conjecture** (a closed simply connected 3-manifold is homeomorphic to $S^3$); and **hyperbolisation** (a closed prime atoroidal 3-manifold with infinite fundamental group is hyperbolic). Six of the eight geometries describe Seifert fibred spaces, Sol describes torus bundles with Anosov monodromy, and $\mathbb{H}^3$ is the generic case. The proof is a tour de force of geometric analysis (see <TopicLink id="math.analysis.geometric-analysis">geometric analysis</TopicLink>): Ricci flow with surgery, Perelman's entropy and non-collapsing, and the analysis of singularities; complete expositions are by Morgan–Tian and by Kleiner–Lott.
+
+<Theorem name="Theorem 7 (Mostow rigidity 1968; Prasad 1973)">
+
+If $M$ and $N$ are complete hyperbolic manifolds of finite volume and dimension $n \ge 3$, every isomorphism $\pi_1(M) \cong \pi_1(N)$ is induced by an isometry $M \to N$.
+
+</Theorem>
+
+So for hyperbolic 3-manifolds, geometric quantities — volume, lengths of closed geodesics — are topological invariants. In dimension 2 this fails completely: a closed surface of genus $g \ge 2$ has a $(6g - 6)$-dimensional Teichmüller space of hyperbolic metrics.
+
+<Theorem name="Theorem 8 (four-manifolds: Whitehead–Milnor, Freedman 1982, Rokhlin 1952, Donaldson 1983)">
+
+Let $X$ be a closed, simply connected 4-manifold with intersection form $Q$.
+
+1. (Whitehead 1949, Milnor 1958.) The homotopy type of $X$ is determined by $Q$ up to isomorphism.
+2. (Freedman.) Every unimodular symmetric form is the intersection form of a closed simply connected topological 4-manifold. For $Q$ even this manifold is unique up to homeomorphism; for $Q$ odd there are exactly two, distinguished by the Kirby–Siebenmann invariant, and at most one of them is smoothable.
+3. (Rokhlin.) If $X$ is smooth and $Q$ is even, then $\sigma(Q) \equiv 0 \pmod{16}$.
+4. (Donaldson.) If $X$ is smooth and $Q$ is definite, then $Q \cong \pm(\langle 1 \rangle \oplus \cdots \oplus \langle 1 \rangle)$ over $\Z$.
+
+</Theorem>
+
+<Theorem name="Proposition 9 (the E₈ form)">
+
+The $E_8$ form is even, unimodular and positive definite, of signature 8.
+
+</Theorem>
+
+<Proof>
+
+Its diagonal entries are all 2 and it is symmetric, so $x^\top E_8 x = \sum_i 2x_i^2 + 2\sum_{i < j} (E_8)_{ij} x_i x_j$ is even. Its determinant is 1 (by row reduction, or see the Lean below). Completing squares,
+$$
+60\, x^\top E_8 x = 30(2x_0 - x_2)^2 + 30(2x_1 - x_3)^2 + 10(3x_2 - 2x_3)^2 + 2(5x_3 - 6x_4)^2 + 3(4x_4 - 5x_5)^2 + 5(3x_5 - 4x_6)^2 + 10(2x_6 - 3x_7)^2 + 30x_7^2
+$$
+(with the labelling of the nodes used in Mathlib, where node 3 is the branch point). If this vanishes then $x_7 = 0$, then $x_6 = 0$, and so on back to $x_0 = 0$. So the form is positive definite and its signature is its rank, 8.
+
+</Proof>
+
+<Theorem name="Corollary 10 (a topological 4-manifold with no smooth structure)">
+
+There is a closed simply connected topological 4-manifold (Freedman's **$E_8$-manifold**) that admits no smooth structure.
+
+</Theorem>
+
+<Proof>
+
+By Freedman's theorem there is a closed simply connected topological 4-manifold with form $E_8$. If it were smooth, Rokhlin's theorem would force $16 \mid \sigma = 8$, which is false (Donaldson's theorem gives a second obstruction, since $E_8$ is definite but not diagonalisable: a diagonal form $\pm\langle 1 \rangle^{\oplus 8}$ is odd).
+
+</Proof>
+
+The same reasoning applied to $E_8 \oplus E_8$ (signature 16, so Rokhlin is silent) needs Donaldson. And combining Freedman with Donaldson produces **exotic $\R^4$s**: smooth manifolds homeomorphic but not diffeomorphic to $\R^4$ (found in the early 1980s by combining the work of Freedman and Donaldson, with explicit constructions by Gompf); Taubes (1987) showed there are uncountably many. For $n \ne 4$, $\R^n$ has a unique smooth structure.
+
+</Section>
+
+<Section id="landscape" kind="human" title="The landscape: what is known and what is open">
+
+**Established in dimension 3.** Geometrisation (Perelman). The virtual Haken and virtual fibring conjectures: every closed hyperbolic 3-manifold has a finite cover that fibres over the circle (Agol 2013, building on Wise, Kahn–Markovic and Haglund–Wise). Tameness (Agol; Calegari–Gabai, 2006) and the ending lamination theorem (Minsky; Brock–Canary–Minsky), which together describe hyperbolic 3-manifolds with finitely generated fundamental group. Algorithmic results: the homeomorphism problem for closed orientable 3-manifolds is decidable (a consequence of geometrisation, written out by Kuperberg, 2019), unknot recognition is decidable (Haken, 1961) and lies in NP (Hass–Lagarias–Pippenger, 1999).
+
+**Established in dimension 4.** Freedman's classification of simply connected topological 4-manifolds; Donaldson's theorems from Yang–Mills instantons; Seiberg–Witten theory (1994), which simplified and extended them; Furuta's 10/8 theorem (2001): a smooth closed spin 4-manifold with $\sigma \ne 0$ has $b_2 \ge \tfrac{10}{8}|\sigma| + 2$, later sharpened by Hopkins, Lin, Shi and Xu using equivariant stable homotopy theory (see <TopicLink id="math.geom.stable-homotopy-theory">stable homotopy theory</TopicLink>); many exotic structures on closed manifolds (Donaldson, 1987: the Dolgachev surface is homeomorphic but not diffeomorphic to $\C P^2 \# 9\overline{\C P^2}$).
+
+**Open problems.**
+
+- The **smooth 4-dimensional Poincaré conjecture**: is every smooth homotopy 4-sphere diffeomorphic to $S^4$? Equivalently, does $S^4$ have an exotic smooth structure? Likewise open for $\C P^2$ and $S^2 \times S^2$.
+- The **11/8 conjecture** (Matsumoto, 1982): a smooth closed spin 4-manifold has $b_2 \ge \tfrac{11}{8}|\sigma|$. The K3 surface ($b_2 = 22$, $\sigma = -16$) shows it would be sharp.
+- The **L-space conjecture** (Boyer–Gordon–Watson, 2013; Juhász): for an irreducible rational homology 3-sphere, having left-orderable fundamental group, admitting a co-oriented taut foliation, and not being a Heegaard Floer L-space are equivalent.
+- The **volume conjecture** (Kashaev; H. and J. Murakami): the hyperbolic volume of a knot complement is determined by the growth of coloured Jones polynomials.
+- Whether unknot recognition can be done in polynomial time.
+
+**A note on what "low-dimensional" leaves out.** Dimensions $n \ge 5$ are governed by surgery theory (Browder, Novikov, Sullivan, Wall), which reduces classification to homotopy theory and algebra; there the Poincaré conjecture was solved first.
+
+</Section>
+
+<Section id="formal" kind="formal" title="What Lean can say: spheres, congruences and the E₈ lattice">
+
+Mathlib has smooth manifolds and knows that spheres are among them:
+
+<Lean decl="Lumenary.LowDimensionalTopology.three_sphere_isManifold" />
+
+It has no 3-manifold topology (no Heegaard splittings, Dehn surgery, Reidemeister torsion or hyperbolic 3-manifolds) and no 4-manifold theory, so Theorems 4, 6, 7 and 8 are far out of reach. What *can* be formalised is the arithmetic those theorems reduce questions to. The two classification criteria for lens spaces, as relations on $(\Z/p)^\times$:
+
+<Lean decl="Lumenary.LowDimensionalTopology.LensHomeoRel" />
+
+<Lean decl="Lumenary.LowDimensionalTopology.LensHomotopyRel" />
+
+The homeomorphism criterion is an equivalence relation (as it must be, if Theorem 4 is true), and it implies the homotopy criterion (as it must, since homeomorphic spaces are homotopy equivalent) — a consistency check on the theorem's statement:
+
+<Lean decl="Lumenary.LowDimensionalTopology.lensHomeoRel_equivalence" />
+
+<Lean decl="Lumenary.LowDimensionalTopology.lensHomotopyRel_of_lensHomeoRel" />
+
+The congruences of Corollary 5, checked by `decide`:
+
+<Lean decl="Lumenary.LowDimensionalTopology.lens_seven" />
+
+<Lean decl="Lumenary.LowDimensionalTopology.lens_five" />
+
+<Lean decl="Lumenary.LowDimensionalTopology.lens_five_four" />
+
+Proposition 9, in full. Mathlib defines the Cartan matrix $E_8$ and evaluates its determinant; evenness follows from a general lemma, and positive definiteness from the completed squares of the human proof:
+
+<Lean decl="Lumenary.LowDimensionalTopology.even_form_of_even_diag" />
+
+<Lean decl="Lumenary.LowDimensionalTopology.e8_even" />
+
+<Lean decl="Lumenary.LowDimensionalTopology.e8_unimodular" />
+
+<Lean decl="Lumenary.LowDimensionalTopology.e8_posDef" />
+
+**What is not formalised.** Everything topological: that these congruences classify lens spaces, the existence of the $E_8$-manifold (Freedman), and the obstructions of Rokhlin and Donaldson. Those statements live in the prose, attributed to their authors.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Lens spaces and intersection forms by machine">
+
+The first experiment applies Theorem 4 to every lens space with $p \le 15$, counting homeomorphism and homotopy classes, and computes the moduli that enter the Reidemeister torsion: they differ for $L(7, 1)$ and $L(7, 2)$ and agree for $L(7, 2)$ and $L(7, 4)$.
+
+<Python id="low_dimensional_topology_lens_spaces" />
+
+The second computes the invariants of intersection forms exactly — rank, signature by diagonalisation over $\Q$ (Sylvester's law of inertia), determinant and parity — and records what Freedman, Rokhlin and Donaldson say about each form. It also computes $|H_1| = |\det \Lambda|$ for some surgeries, including the $E_8$ plumbing, whose boundary is the Poincaré homology sphere.
+
+<Python id="low_dimensional_topology_intersection_forms" />
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: knots, tori and hyperbolic triangles">
+
+**Knot complements.** The trefoil and the figure-eight knot are the two simplest non-trivial knots. Tricolourability shows the trefoil is knotted; but the deeper difference is geometric: the figure-eight complement is hyperbolic, the trefoil complement is Seifert fibred. Surgery on either produces infinitely many 3-manifolds.
+
+<KnotColoring knot="figureEight" knots={["trefoil", "figureEight"]} subtitle="Both are knotted; only the figure-eight knot has a hyperbolic complement." />
+
+**The Heegaard torus.** A genus-1 Heegaard surface is a torus; the lens space is determined by which curve on it bounds a disc on the other side. The square with opposite sides glued is that torus: a loop running $p$ times across one way and $q$ times the other is the curve along which the meridian disc is glued.
+
+<SurfaceGluing surfaces={["torus"]} title="The Heegaard surface of a lens space" subtitle="Walk around the torus: the two directions are the meridian and the longitude of a solid torus." />
+
+**Hyperbolic geometry, one dimension down.** Thurston's insight was that most 3-manifolds are hyperbolic. In $\mathbb{H}^2$, triangles have angle sum less than $\pi$ and area equal to the defect; the same happens in $\mathbb{H}^3$, where the regular ideal tetrahedron — all vertices at infinity — has volume $1.01494\ldots$, and two of them make the figure-eight knot complement.
+
+<CurvedTriangles mode="hyperbolic" modes={["hyperbolic", "sphere"]} title="Curvature −1 and curvature +1" subtitle="Two of Thurston's eight geometries are built on these: ℍ³ and S³." />
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The Poincaré conjecture was the last big open problem in 3-manifold topology."** Geometrisation transformed the field, and Agol's theorem settled several more central questions, but much remains open: the L-space conjecture, the volume conjecture, the complexity of recognising the unknot, and many questions about hyperbolic 3-manifolds and their volumes. And in dimension 4, the smooth Poincaré conjecture is wide open.
+
+</Misconception>
+
+<Misconception>
+
+**"Manifold theory works the same way in every dimension."** It does not. Surfaces are classified by genus and orientability; dimension 3 is governed by geometry (geometrisation); dimension 4 is the only one in which topological and smooth classification differ this drastically (exotic $\R^4$, non-smoothable manifolds detected by gauge theory); dimensions $\ge 5$ are governed by surgery theory and algebra. The Whitney trick, which works for $n \ge 5$, is exactly what fails in dimension 4.
+
+</Misconception>
+
+<Misconception>
+
+**"Same homology, or even same fundamental group, means the same manifold."** The Poincaré homology sphere has the homology of $S^3$ but $\pi_1$ of order 120. $L(5, 1)$ and $L(5, 2)$ have the same $\pi_1$ and homology but are not homotopy equivalent; $L(7, 1)$ and $L(7, 2)$ are homotopy equivalent but not homeomorphic.
+
+</Misconception>
+
+<Misconception>
+
+**"Every topological 4-manifold can be smoothed, perhaps in several ways."** Freedman's $E_8$-manifold has no smooth structure at all (Rokhlin), and the sum $E_8 \oplus E_8$ is realised by a topological manifold that is not smoothable (Donaldson). In dimensions $\le 3$ every topological manifold has a unique smooth structure (Moise; Radó for surfaces).
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="geometry" title="Thurston's eight geometries">
+
+For a geometer, 3-manifold topology became geometry. Each of the eight geometries is a homogeneous space: the constant-curvature spaces $S^3$, $\mathbb{E}^3$, $\mathbb{H}^3$; the products $S^2 \times \R$ and $\mathbb{H}^2 \times \R$; and three Lie groups with left-invariant metrics, $\widetilde{\mathrm{SL}(2,\R)}$, the Heisenberg group Nil and the solvable group Sol. Hyperbolic geometry is generic, and by Mostow rigidity it is canonical, so geometric invariants — volume, the length spectrum, the shape of cusps — are topological invariants. Computer programs such as SnapPea (Weeks) and its successor SnapPy compute hyperbolic structures by solving Thurston's gluing equations for ideal tetrahedra. See <TopicLink id="math.geom.riemannian-geometry">Riemannian geometry</TopicLink> and <TopicLink id="math.geom.non-euclidean-geometry">non-Euclidean geometry</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="topology" title="Handles, surgery and Kirby calculus">
+
+For a topologist, a manifold is built from handles. A closed 3-manifold is $S^3$ after surgery on a framed link (Theorem 2), and the 4-manifold obtained by attaching 2-handles to $B^4$ along that link has intersection form equal to the linking matrix — which is why $H_1$ of the surgery is $\operatorname{coker}\Lambda$. **Kirby's theorem** (1978) says two framed links give diffeomorphic 3-manifolds exactly when they are related by blow-ups (adding a $\pm1$-framed unknot) and handle slides; this "Kirby calculus" is the working language of 4-manifold topology (Gompf–Stipsicz). It builds on <TopicLink id="math.geom.differential-topology">differential topology</TopicLink>, <TopicLink id="math.geom.algebraic-topology">algebraic topology</TopicLink> and <TopicLink id="math.geom.knot-theory">knot theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="algebra" title="Fundamental groups and lattices">
+
+In dimension 3 the fundamental group is almost everything: by geometrisation, closed prime 3-manifolds other than lens spaces are determined up to homeomorphism by $\pi_1$, and hyperbolic 3-manifold groups are word-hyperbolic, residually finite and (by Agol and Wise) virtually special — they embed in right-angled Artin groups after passing to finite index (see <TopicLink id="math.geom.geometric-group-theory">geometric group theory</TopicLink>). In dimension 4 the algebra is the theory of integral lattices: indefinite unimodular forms are classified by rank, signature and parity (odd: $m\langle 1\rangle \oplus n\langle -1 \rangle$; even: $\pm(aE_8 \oplus bH)$), while definite ones are wild — there are 24 even unimodular positive definite lattices of rank 24 (Niemeier), including the Leech lattice. Donaldson's theorem says smooth geometry sees only the diagonal ones.
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Gauge theory and quantum invariants">
+
+Donaldson's theorem came from physics: he studied the moduli space of anti-self-dual Yang–Mills connections (instantons) on a 4-manifold and showed that for a smooth definite manifold it is a 5-dimensional cobordism between the manifold and a union of copies of $\pm\C P^2$, forcing the form to be diagonal. In 1994 Seiberg and Witten introduced equations from supersymmetric gauge theory whose solution counts give simpler, equally powerful invariants. In dimension 3, Witten (1989) interpreted the Jones polynomial through Chern–Simons quantum field theory, leading to quantum invariants of 3-manifolds; the volume conjecture links these to hyperbolic geometry. The physical derivations are heuristic; the resulting invariants are rigorous mathematics. See <TopicLink id="math.applied.gauge-theory">gauge theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Arithmetic hyperbolic 3-manifolds">
+
+Some of the most important hyperbolic 3-manifolds come from number theory. For an imaginary quadratic field $\Q(\sqrt{-d})$ with ring of integers $\mathcal{O}_d$, the **Bianchi group** $\mathrm{PSL}(2, \mathcal{O}_d)$ is a discrete subgroup of $\mathrm{PSL}(2, \C)$ with finite covolume, and Humbert's formula expresses that covolume through the Dedekind zeta function: $\mathrm{vol}(\mathbb{H}^3/\mathrm{PSL}(2, \mathcal{O}_d)) = |D|^{3/2}\zeta_K(2)/(4\pi^2)$, with $D$ the discriminant. The figure-eight knot complement is a 12-fold cover of $\mathbb{H}^3/\mathrm{PSL}(2, \mathcal{O}_3)$ (Riley); it is the only arithmetic knot complement (Reid, 1991). See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Ricci flow">
+
+Perelman's proof of geometrisation is analysis: evolve a Riemannian metric by Hamilton's Ricci flow $\partial_t g = -2\,\mathrm{Ric}(g)$, a nonlinear heat equation for the metric, which tends to make curvature uniform. Singularities form where the manifold pinches along 2-spheres (necks); Perelman classified them using his entropy functional and non-collapsing estimates, cut along the necks (surgery, in exactly the topologist's sense), and continued the flow. Over long times, what remains decomposes into hyperbolic pieces and graph manifolds — the geometric decomposition. The lesson on <TopicLink id="math.analysis.geometric-analysis">geometric analysis</TopicLink> works out the round-sphere case.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **1898–1935: foundations.** Poul Heegaard (Denmark) introduced Heegaard diagrams in his 1898 thesis. Henri Poincaré (France) found his homology sphere and asked his question in 1904. Heinrich Tietze (Austria) described lens spaces (1908) and Max Dehn (Germany) introduced surgery (1910). Hellmuth Kneser (Germany) proved prime decomposition (1929); Herbert Seifert (Germany) classified Seifert fibred spaces (1933); Kurt Reidemeister (Germany) classified lens spaces with his torsion (1935), and J. H. C. Whitehead (UK) classified them up to homotopy (1941).
+- **1950s–1960s: the tools.** Edwin Moise (USA) proved 3-manifolds triangulable (1952); Christos Papakyriakopoulos (Greece, working in Princeton) proved Dehn's lemma and the sphere theorem (1957); Vladimir Rokhlin (USSR) proved his signature theorem (1952); John Milnor (USA) found exotic 7-spheres (1956); Stephen Smale (USA) proved the h-cobordism theorem and the Poincaré conjecture in dimensions $\ge 5$ (1961); Andrew Wallace (UK, working in North America) and Raymond Lickorish (UK) proved the surgery theorem.
+- **1970s–1990s: geometry and gauge theory.** William Thurston (USA) proved hyperbolisation for Haken manifolds and proposed geometrisation (1982); Robion Kirby (USA) gave his calculus (1978); Michael Freedman (USA) classified simply connected topological 4-manifolds (1982); Simon Donaldson (UK) proved his diagonalisability theorem (1983) and Clifford Taubes (USA) found uncountably many exotic $\R^4$ (1987); Nathan Seiberg and Edward Witten (USA) introduced their equations (1994).
+- **2000s: resolution in dimension 3.** Grigori Perelman (Russia) posted his proof of geometrisation (2002–03), building on Richard Hamilton's (USA) programme; he declined the Fields Medal (2006) and the Clay Millennium Prize (2010). Ian Agol (USA), Daniel Wise (Canada), Jeremy Kahn and Vladimir Markovic proved the virtual Haken conjecture (2012–13).
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+A suggested path: Weeks for intuition; Rolfsen for surgery and knots; Thurston for geometry; Scott's survey for the eight geometries; Gompf–Stipsicz and Scorpan for 4-manifolds.
+
+- Jeffrey R. Weeks, *The Shape of Space* (1985; 3rd edition 2020).
+- Dale Rolfsen, *Knots and Links* (1976).
+- William P. Thurston, *Three-Dimensional Geometry and Topology, Volume 1* (1997).
+- Peter Scott, "The geometries of 3-manifolds", *Bulletin of the London Mathematical Society* 15 (1983).
+- John Hempel, *3-Manifolds* (1976).
+- Matthias Aschenbrenner, Stefan Friedl and Henry Wilton, *3-Manifold Groups* (2015).
+- John Morgan and Gang Tian, *Ricci Flow and the Poincaré Conjecture* (2007).
+- Robert E. Gompf and András I. Stipsicz, *4-Manifolds and Kirby Calculus* (1999).
+- Alexandru Scorpan, *The Wild World of 4-Manifolds* (2005).
+- Michael H. Freedman and Frank Quinn, *Topology of 4-Manifolds* (1990).
+- Jessica S. Purcell, *Hyperbolic Knot Theory* (2020).
+
+</Section>

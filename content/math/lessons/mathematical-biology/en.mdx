@@ -1,0 +1,481 @@
+---
+slug: mathematical-biology
+topic: math.applied.mathematical-biology
+title: Mathematical biology
+subtitle: Populations that grow and saturate, predators and prey that cycle, epidemics that ignite or fizzle — differential equations and maps as instruments for thinking about life, with honest attention to what models cannot do.
+level: ug2
+ages: Undergraduate (second or third year)
+minutes: 120
+order: 6038
+objectives:
+  - Analyse the logistic equation and discrete-time population models, including fixed points, period doubling and the onset of chaos in the logistic map
+  - Find the equilibria of predator–prey, competition and SIR models and classify their stability using the Jacobian and the trace–determinant test
+  - Prove that the Lotka–Volterra model has a conserved quantity, so that its orbits are closed, and that its cycle averages equal the equilibrium
+  - Derive the epidemic threshold $R_0 S(0)/N > 1$, the final-size relation and the herd immunity threshold, and interpret $R_0$ and the assumptions behind it
+  - Explain the limits of models, the difference between projections and forecasts, and why structurally unstable models mislead
+narrators: []
+lean:
+  - Lumenary.MathematicalBiology.logistic_ode_solves
+  - Lumenary.MathematicalBiology.logistic_ode_limit
+  - Lumenary.MathematicalBiology.logisticMap
+  - Lumenary.MathematicalBiology.logistic_fixed_points
+  - Lumenary.MathematicalBiology.logistic_map_deriv
+  - Lumenary.MathematicalBiology.logistic_stable_iff
+  - Lumenary.MathematicalBiology.logistic_period_two
+  - Lumenary.MathematicalBiology.period_two_multiplier
+  - Lumenary.MathematicalBiology.contraction_converges
+  - Lumenary.MathematicalBiology.lotka_volterra_conserved
+  - Lumenary.MathematicalBiology.lotka_volterra_average
+  - Lumenary.MathematicalBiology.sir_total_constant
+  - Lumenary.MathematicalBiology.sir_threshold
+  - Lumenary.MathematicalBiology.sir_invariant
+  - Lumenary.MathematicalBiology.herd_immunity
+  - Lumenary.MathematicalBiology.trace_det_stable
+compute: [mathematical_biology_logistic_map, mathematical_biology_lotka_volterra, mathematical_biology_sir]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Why model life with equations?">
+
+For almost a century the Hudson's Bay Company bought pelts from trappers across northern Canada, and its records show the numbers of lynx and snowshoe hare rising and falling in roughly ten-year cycles. In the Adriatic, the marine biologist Umberto D'Ancona noticed that during the First World War, when fishing was reduced, the proportion of predatory fish in the catch at ports such as Fiume (Rijeka) went up — and asked his father-in-law, the mathematician Vito Volterra, why. During the West African Ebola epidemic of 2014–16, teams of epidemiologists estimated how many people each case was infecting, to plan treatment centres and judge whether interventions were working. In each case a mathematical model turned a vague question into a precise one.
+
+A model is a deliberately simplified description: we decide which quantities matter (population sizes, numbers infected), which processes change them (births, predation, infection), and write those processes as equations. Then mathematics tells us what the assumptions *imply* — equilibria, thresholds, oscillations, chaos — often things nobody expected. Finally the implications are compared with data, and the model is revised. The statistician George Box put the spirit memorably: "all models are wrong, but some are useful".
+
+This lesson uses <TopicLink id="math.analysis.ordinary-differential-equations">ordinary differential equations</TopicLink> (solutions, equilibria, phase portraits) and <TopicLink id="math.algebra.linear-algebra">linear algebra</TopicLink> (eigenvalues, trace and determinant). Stochastic models, in which chance plays a role, connect to <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink>.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Growth with limits">
+
+A population with plentiful resources grows at a rate proportional to its size: $N' = rN$, so $N(t) = N_0e^{rt}$ — Malthusian, exponential growth. No real population can do this for long. Pierre-François Verhulst (1838) proposed that the per-capita growth rate falls linearly as the population approaches a **carrying capacity** $K$:
+
+$$
+N' = rN\Big(1 - \frac NK\Big).
+$$
+
+<VectorField mode="slope" preset="logistic" title="The logistic equation (with r = K = 1)" subtitle="Small populations grow almost exponentially, then level off at the carrying capacity 1. Populations above K decline towards it. Click to draw solutions: none crosses the equilibria N = 0 and N = K." />
+
+The picture already contains the whole qualitative story: two equilibria, $N = 0$ (unstable: a few individuals grow) and $N = K$ (stable: every positive population approaches it), and S-shaped growth in between. The same idea in discrete time — a population counted once per generation — produces something far richer, as we shall see.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Equilibria, stability and the models">
+
+<Definition term="equilibrium, stability, Jacobian">
+
+For an autonomous system $x' = f(x)$ with $f : \R^n \to \R^n$ continuously differentiable, an **equilibrium** is a point $x^*$ with $f(x^*) = 0$. It is **stable** if solutions that start near $x^*$ stay near it for all $t \ge 0$, and **locally asymptotically stable** if moreover they converge to it. The **Jacobian** $J = Df(x^*)$, the matrix of partial derivatives $\partial f_i/\partial x_j$ at $x^*$, defines the **linearisation** $y' = Jy$ for the deviation $y = x - x^*$.
+
+</Definition>
+
+<Definition term="fixed points and cycles of maps">
+
+For a discrete-time model $x_{n+1} = g(x_n)$, a **fixed point** satisfies $g(x^*) = x^*$, and a **$p$-cycle** is a set of $p$ distinct points permuted cyclically by $g$ (fixed points of $g^p$). Stability is defined as for equilibria, with $n \to \infty$ in place of $t \to \infty$; the **multiplier** of a fixed point is $g'(x^*)$, and of a $p$-cycle the product of $g'$ along the cycle.
+
+</Definition>
+
+<Definition term="the classical models">
+
+- **Logistic equation:** $N' = rN(1 - N/K)$, with $r, K > 0$.
+- **Logistic map:** $x_{n+1} = f_r(x_n) = rx_n(1 - x_n)$, with $0 < r \le 4$ and $x \in [0, 1]$.
+- **Lotka–Volterra predator–prey:** prey $x$ and predators $y$ with $x' = \alpha x - \beta xy$, $y' = \delta xy - \gamma y$ ($\alpha, \beta, \gamma, \delta > 0$).
+- **Lotka–Volterra competition** (in scaled units): $x' = x(1 - x - a_{12}y)$, $y' = \rho\,y(1 - y - a_{21}x)$ ($a_{12}, a_{21}, \rho > 0$).
+- **SIR epidemic** (Kermack–McKendrick): a population of $N$ split into susceptible $S$, infectious $I$ and removed $R$, with $S' = -\beta SI/N$, $I' = \beta SI/N - \gamma I$, $R' = \gamma I$. Here $\beta$ is the rate of infectious contacts per infected person and $1/\gamma$ the mean infectious period.
+
+</Definition>
+
+<Definition term="basic reproduction number">
+
+In the simple SIR model, $R_0 = \beta/\gamma$: the expected number of new infections caused by one infectious individual — infecting at rate $\beta$ for an average time $1/\gamma$ — in a population where everyone else is susceptible.
+
+</Definition>
+
+</Section>
+
+<Section id="single" kind="proof" title="One species: logistic growth and harvesting">
+
+<Theorem name="Theorem (the logistic equation)">
+
+For $N_0 > 0$ the logistic equation has the unique solution
+
+$$
+N(t) = \frac{K}{1 + Ce^{-rt}}, \qquad C = \frac{K}{N_0} - 1,
+$$
+
+defined for all $t \ge 0$, and $N(t) \to K$ as $t \to \infty$. The equilibrium $N = 0$ is unstable and $N = K$ is asymptotically stable.
+
+</Theorem>
+
+<Proof>
+
+Separating variables with partial fractions, $\frac{K\,dN}{N(K - N)} = \big(\frac1N + \frac1{K - N}\big)dN = r\,dt$, so $\ln\frac{N}{K - N} = rt + \text{const}$, which rearranges to the formula; differentiating confirms it (this check is formalised in Lean). The right-hand side $rN(1 - N/K)$ is continuously differentiable, hence locally Lipschitz, so by the Picard–Lindelöf theorem the solution is unique. Since $e^{-rt} \to 0$, $N(t) \to K$. For stability, $f(N) = rN(1 - N/K)$ has $f'(0) = r > 0$ and $f'(K) = -r < 0$: near $0$ solutions move away, and near $K$ they move towards it (on each side of $K$ the sign of $f$ pushes $N$ towards $K$).
+
+</Proof>
+
+<Example title="Harvesting and collapse">
+
+A fishery removes a constant catch $H$ per year: $N' = rN(1 - N/K) - H$. Equilibria solve $\frac rK N^2 - rN + H = 0$, with discriminant $r^2 - 4rH/K$. For $H < rK/4$ there are two equilibria: the larger is stable and the smaller unstable (a population pushed below it collapses). At $H = rK/4$ — the **maximum sustainable yield**, the largest value of $rN(1 - N/K)$, attained at $N = K/2$ — they merge, and for $H > rK/4$ there is no equilibrium at all: $N' < 0$ everywhere and the population is driven to extinction. This **saddle-node bifurcation** is a mathematical reason why fisheries managed close to maximum yield can collapse suddenly after a small increase in effort or a bad year, as the cod fishery off Newfoundland did in the early 1990s.
+
+</Example>
+
+</Section>
+
+<Section id="maps" kind="proof" title="Discrete generations: the logistic map and chaos">
+
+Many insects, annual plants and fish breed once a year in non-overlapping generations, so populations are naturally modelled by maps. The logistic map $x_{n+1} = rx_n(1 - x_n)$ is the simplest non-linear one, and Robert May (1976) urged biologists to study it precisely because its behaviour is so rich.
+
+<Theorem name="Theorem (stability of fixed points of maps)">
+
+Let $g$ be continuously differentiable near a fixed point $x^*$. If $|g'(x^*)| < 1$, then $x^*$ is locally asymptotically stable: there is $\varepsilon > 0$ such that $g^n(x_0) \to x^*$ for every $|x_0 - x^*| < \varepsilon$. If $|g'(x^*)| > 1$, it is unstable.
+
+</Theorem>
+
+<Proof>
+
+Choose $k$ with $|g'(x^*)| < k < 1$; by continuity $|g'| \le k$ on an interval $U = [x^* - \varepsilon, x^* + \varepsilon]$. By the mean value theorem, for $x \in U$, $|g(x) - x^*| = |g(x) - g(x^*)| \le k|x - x^*|$, so $g$ maps $U$ into itself and $|g^n(x_0) - x^*| \le k^n|x_0 - x^*| \to 0$ (this is the contraction-mapping argument behind the Banach fixed-point theorem). If $|g'(x^*)| > k > 1$ on $U$, the same estimate in reverse shows that every orbit starting in $U \setminus \{x^*\}$ eventually leaves $U$.
+
+</Proof>
+
+For $f_r(x) = rx(1 - x)$: the fixed points are $x = 0$ and $x^* = 1 - \frac1r$ (in $(0, 1)$ for $r > 1$), with $f_r'(x) = r(1 - 2x)$, so $f_r'(0) = r$ and $f_r'(x^*) = 2 - r$. Hence **extinction is stable for $r < 1$, and the positive equilibrium is stable exactly for $1 < r < 3$**. At $r = 3$ the multiplier passes through $-1$, and a cycle of period two is born.
+
+<Theorem name="Proposition (the period-2 cycle)">
+
+For $r > 3$ the logistic map has exactly one 2-cycle, $\{x_+, x_-\}$ with $x_\pm = \dfrac{r + 1 \pm \sqrt{(r - 3)(r + 1)}}{2r}$. Its multiplier is $f_r'(x_+)f_r'(x_-) = -r^2 + 2r + 4$, so it is stable for $3 < r < 1 + \sqrt 6 \approx 3.449$.
+
+</Theorem>
+
+<Proof>
+
+Points of period two are fixed points of $f_r \circ f_r$ that are not fixed points of $f_r$. The quartic $f_r(f_r(x)) - x$ is divisible by $f_r(x) - x = -x(rx - r + 1)$, and the quotient is, up to a constant factor, $r^2x^2 - r(r + 1)x + (r + 1)$, whose roots are $x_\pm$; they are real and distinct exactly when $(r - 3)(r + 1) > 0$, i.e. $r > 3$. With $s = \sqrt{(r-3)(r+1)}$ we have $1 - 2x_\pm = \frac{-1 \mp s}{r}$, so the multiplier is $r^2\cdot\frac{(1 + s)(1 - s)}{r^2} = 1 - s^2 = -r^2 + 2r + 4$. This lies in $(-1, 1)$ iff $r^2 - 2r - 5 < 0$ and $r^2 - 2r - 3 > 0$, i.e. $3 < r < 1 + \sqrt 6$. (The identities $f_r(x_\pm) = x_\mp$ and the multiplier are verified in Lean.)
+
+</Proof>
+
+<SequenceLab mode="cobweb" params={[{ name: "r", min: 2.5, max: 4, step: 0.01, value: 3.2 }]} x0={0.2} N={80} title="The logistic map: from equilibrium to chaos" subtitle="r = 2.8: the orbit spirals into a fixed point. r = 3.2: a 2-cycle. r = 3.5: a 4-cycle. r = 3.7: no pattern. r = 3.83: a 3-cycle appears out of the chaos." />
+
+**The road to chaos.** As $r$ increases, the 2-cycle loses stability at $r = 1 + \sqrt 6$ and a stable 4-cycle appears, then an 8-cycle, and so on: a **period-doubling cascade** at parameters $r_1 = 3 < r_2 \approx 3.449 < r_3 \approx 3.544 < \cdots$ accumulating at $r_\infty \approx 3.5699$. The gaps shrink geometrically: $\frac{r_n - r_{n-1}}{r_{n+1} - r_n} \to \delta = 4.6692\ldots$. Mitchell Feigenbaum (1978) discovered numerically that the same $\delta$ appears for every smooth unimodal map with a quadratic maximum — a **universal** constant — and Oscar Lanford (1982) proved his conjectures with a computer-assisted proof. Beyond $r_\infty$, chaotic parameters and periodic "windows" interleave; the largest window, containing a stable 3-cycle, opens at $r = 1 + \sqrt 8 \approx 3.828$. By the Li–Yorke theorem (1975), a continuous map of an interval with a point of period three has points of every period (a special case of Sharkovskii's theorem, 1964).
+
+**Chaos at $r = 4$.** Substituting $x = \sin^2(\pi\theta)$ gives $f_4(x) = 4\sin^2(\pi\theta)\cos^2(\pi\theta) = \sin^2(2\pi\theta)$: the logistic map is conjugate to the **doubling map** $\theta \mapsto 2\theta \bmod 1$, which shifts the binary digits of $\theta$ one place to the left. Two starting points that agree to $40$ binary digits disagree completely after about $40$ steps: **sensitive dependence on initial conditions**, with errors doubling at each step (Lyapunov exponent $\ln 2$). A deterministic model with one parameter can thus be unpredictable in practice — a sobering lesson for population forecasting, since field data with noisy, chaotic-looking fluctuations may come from very simple deterministic rules.
+
+</Section>
+
+<Section id="stability" kind="proof" title="Stability by linearisation">
+
+<Theorem name="Theorem (linearised stability)">
+
+Let $x^*$ be an equilibrium of $x' = f(x)$ with $f$ continuously differentiable, and $J = Df(x^*)$. If every eigenvalue of $J$ has negative real part, then $x^*$ is locally asymptotically stable. If some eigenvalue has positive real part, it is unstable.
+
+</Theorem>
+
+<Proof>
+
+*Sketch of the stable case.* Because the eigenvalues of $J$ have negative real parts, $\|e^{tJ}\| \le Ce^{-\mu t}$ for some $C, \mu > 0$, so the matrix $M = \int_0^\infty e^{tJ^\top}e^{tJ}\,dt$ converges; it is symmetric positive definite and satisfies the **Lyapunov equation** $J^\top M + MJ = -I$. Let $V(y) = y^\top My$ for $y = x - x^*$. Along solutions $y' = Jy + o(|y|)$, so $V' = y^\top(J^\top M + MJ)y + o(|y|^2) = -|y|^2 + o(|y|^2) < 0$ for small $y \ne 0$. Since $V$ is comparable to $|y|^2$, $V' \le -cV$ near $0$, and $V$, hence $y$, decays exponentially. (The unstable case and the general theory are in Strogatz, Chapter 6, or Perko's *Differential Equations and Dynamical Systems*.)
+
+</Proof>
+
+The **Hartman–Grobman theorem** says more: if no eigenvalue has zero real part (a **hyperbolic** equilibrium), the phase portrait near $x^*$ is a continuous deformation of that of $y' = Jy$. When some eigenvalue has zero real part — for example a **centre**, with purely imaginary eigenvalues — linearisation is inconclusive, and the nonlinear terms decide.
+
+In the plane, the eigenvalues of $J$ are the roots of $\lambda^2 - \tau\lambda + \Delta$ with $\tau = \operatorname{tr}J$ and $\Delta = \det J$, so **both have negative real part if and only if $\tau < 0$ and $\Delta > 0$** (the trace–determinant test). The "if" direction is proved in Lean: if $\lambda = a + bi$ is a root, the imaginary part of the equation gives $b(2a - \tau) = 0$, so either $a = \tau/2 < 0$, or $b = 0$ and $a^2 - \tau a + \Delta = 0$, which is impossible for $a \ge 0$. A saddle has $\Delta < 0$.
+
+</Section>
+
+<Section id="predator-prey" kind="proof" title="Predators and prey">
+
+In the Lotka–Volterra model, prey grow exponentially without predators ($\alpha x$), predators starve without prey ($-\gamma y$), and encounters, at a rate proportional to $xy$ (the **law of mass action**), remove prey and feed predators. The equilibria are $(0, 0)$ and $(x^*, y^*) = (\gamma/\delta, \alpha/\beta)$, with Jacobians
+
+$$
+J(0, 0) = \begin{pmatrix} \alpha & 0 \\ 0 & -\gamma \end{pmatrix}, \qquad J(x^*, y^*) = \begin{pmatrix} 0 & -\beta\gamma/\delta \\ \alpha\delta/\beta & 0 \end{pmatrix}.
+$$
+
+The origin is a saddle. At the coexistence equilibrium $\tau = 0$ and $\Delta = \alpha\gamma > 0$, so the eigenvalues are $\pm i\sqrt{\alpha\gamma}$: a linear **centre**, and the linearisation theorem says nothing. A conserved quantity settles the question.
+
+<Theorem name="Theorem (Volterra's conserved quantity)">
+
+Along every solution with $x, y > 0$, the function
+
+$$
+V(x, y) = \delta x - \gamma\ln x + \beta y - \alpha\ln y
+$$
+
+is constant. $V$ has a strict global minimum on the open quadrant at $(x^*, y^*)$, and its level sets above the minimum are closed curves around it, so every positive solution other than the equilibrium is **periodic**.
+
+</Theorem>
+
+<Proof>
+
+By the chain rule, $\frac{d}{dt}V = \big(\delta - \frac\gamma x\big)x' + \big(\beta - \frac\alpha y\big)y' = (\delta x - \gamma)(\alpha - \beta y) + (\beta y - \alpha)(\delta x - \gamma) = 0$ (formalised in Lean). Write $V = F(x) + G(y)$ with $F(x) = \delta x - \gamma\ln x$ and $G(y) = \beta y - \alpha\ln y$. Each is strictly convex, tends to $+\infty$ at $0$ and at $\infty$, and has its minimum at $x^*$ (resp. $y^*$). Hence for $c > V(x^*, y^*)$ the set $\{V = c\}$ is a closed curve encircling the equilibrium: on each vertical line $x = x_0$ with $F(x_0) < c - G(y^*)$ it contains exactly two points, merging at the two values of $x_0$ where $F(x_0) = c - G(y^*)$. A solution starting on this compact curve stays on it, contains no equilibrium, and moves with speed bounded below, so it goes round the curve in finite time and repeats.
+
+</Proof>
+
+<VectorField mode="phase" preset="lotkaVolterra" title="Predator–prey cycles" subtitle="Every orbit is a closed curve around the coexistence equilibrium. Prey peaks come before predator peaks. The widget's numerical integrator follows the level curves of V." />
+
+<Theorem name="Theorem (cycle averages)">
+
+If a positive solution has period $T$, then its averages over a period are the equilibrium values: $\frac1T\int_0^T x\,dt = \frac\gamma\delta$ and $\frac1T\int_0^T y\,dt = \frac\alpha\beta$.
+
+</Theorem>
+
+<Proof>
+
+$(\ln y)' = y'/y = \delta x - \gamma$. Integrating over a period, $0 = \ln y(T) - \ln y(0) = \delta\int_0^T x\,dt - \gamma T$. The same argument with $(\ln x)' = \alpha - \beta y$ gives the predator average. (The prey half is formalised in Lean, using the fundamental theorem of calculus.)
+
+</Proof>
+
+This is **Volterra's principle**. Fishing that removes both species in proportion to their numbers changes $\alpha$ to $\alpha - \varepsilon$ and $\gamma$ to $\gamma + \varepsilon$, so the average prey $(\gamma + \varepsilon)/\delta$ rises and the average predators $(\alpha - \varepsilon)/\beta$ fall. Reduced fishing during the war did the opposite — D'Ancona's observation explained. The same principle warns that spraying an insecticide that kills both a pest and its natural enemy can increase the pest on average.
+
+**Structural instability.** The closed orbits are fragile: almost any change to the model destroys them. With self-limiting prey, $x' = \alpha x(1 - x/K) - \beta xy$, the coexistence equilibrium (when it exists) has $\tau < 0$ and $\Delta > 0$ and becomes a stable spiral: oscillations damp out. With a saturating ("Holling type II", 1959) predator response $\beta xy/(1 + hx)$, as in the Rosenzweig–MacArthur model (1963), the equilibrium can lose stability through a Hopf bifurcation and give way to a stable **limit cycle** — robust oscillations of a fixed amplitude, closer to the lynx–hare records. Rosenzweig's "paradox of enrichment" (1971) is a consequence: increasing the prey's carrying capacity can destabilise the system. A model whose qualitative behaviour changes under arbitrarily small perturbations should not be trusted for quantitative predictions.
+
+</Section>
+
+<Section id="competition" kind="proof" title="Competition">
+
+Two species competing for the same resources follow $x' = x(1 - x - a_{12}y)$, $y' = \rho y(1 - y - a_{21}x)$, where $a_{12}$ measures the effect of $y$ on $x$ relative to $x$'s effect on itself. Besides $(0, 0)$, $(1, 0)$ and $(0, 1)$, there may be a coexistence equilibrium
+
+$$
+(x^*, y^*) = \Big(\frac{1 - a_{12}}{1 - a_{12}a_{21}},\ \frac{1 - a_{21}}{1 - a_{12}a_{21}}\Big),
+$$
+
+which is positive when $a_{12}, a_{21}$ are both less than $1$ or both greater than $1$.
+
+<Theorem name="Proposition (coexistence or exclusion)">
+
+If $a_{12} < 1$ and $a_{21} < 1$, the coexistence equilibrium is locally asymptotically stable. If $a_{12} > 1$ and $a_{21} > 1$, it is a saddle, and the two single-species equilibria are both stable (the winner depends on the starting point). If $a_{12} < 1 < a_{21}$, there is no coexistence equilibrium and $(1, 0)$ is stable: species $x$ excludes $y$.
+
+</Theorem>
+
+<Proof>
+
+At a positive equilibrium, $1 - x^* - a_{12}y^* = 0$ and $1 - y^* - a_{21}x^* = 0$, so the Jacobian simplifies to $J = \begin{pmatrix} -x^* & -a_{12}x^* \\ -\rho a_{21}y^* & -\rho y^*\end{pmatrix}$, with $\tau = -(x^* + \rho y^*) < 0$ and $\Delta = \rho x^*y^*(1 - a_{12}a_{21})$. If both $a_{ij} < 1$, then $\Delta > 0$ and the trace–determinant test gives stability; if both exceed $1$, $\Delta < 0$: a saddle. At $(1, 0)$, $J = \begin{pmatrix} -1 & -a_{12} \\ 0 & \rho(1 - a_{21})\end{pmatrix}$ has eigenvalues $-1$ and $\rho(1 - a_{21})$, negative exactly when $a_{21} > 1$; symmetrically for $(0, 1)$. The global statements follow from the nullclines, which divide the quadrant into regions where the direction of motion is fixed.
+
+</Proof>
+
+<VectorField mode="phase" f="x*(1 - x - 1.5*y)" g="y*(1 - y - 1.5*x)" x={[0, 1.4]} y={[0, 1.4]} points={[[0.5, 0.4], [0.4, 0.5], [0.1, 0.12], [1.2, 1.1]]} title="Strong competition: a ≈ 1.5 both ways" subtitle="The coexistence equilibrium (0.4, 0.4) is a saddle; starting points on either side of its stable separatrix lead to the exclusion of one species." />
+
+Coexistence requires that each species limits itself more than it limits its competitor. Georgii Gause's laboratory experiments with *Paramecium* (1934) supported the resulting **competitive exclusion principle**: two species competing for exactly the same limiting resource cannot coexist indefinitely.
+
+</Section>
+
+<Section id="epidemics" kind="proof" title="Epidemics: the SIR model">
+
+The SIR model assumes a closed population (no births, deaths or migration on the time scale of the epidemic), homogeneous mixing (everyone equally likely to meet everyone), infection at rate $\beta SI/N$ (mass action), recovery at constant rate $\gamma$ (an exponentially distributed infectious period with mean $1/\gamma$), and lasting immunity. Adding the three equations, $(S + I + R)' = 0$: the population $N$ is constant.
+
+<Theorem name="Theorem (threshold)">
+
+While $I > 0$, the number infected is increasing exactly when $R_0\,S/N > 1$. In particular, an infection introduced into a fully susceptible population ($S(0) \approx N$) initially grows if and only if $R_0 > 1$; since $S$ decreases, the epidemic peaks exactly when $S$ falls to $N/R_0$ and declines afterwards.
+
+</Theorem>
+
+<Proof>
+
+$I' = \gamma I\big(R_0\frac SN - 1\big)$, and $\gamma I > 0$. Since $S' = -\beta SI/N \le 0$, the factor $R_0S/N - 1$ decreases in time, so $I$ increases while it is positive and decreases once it is negative.
+
+</Proof>
+
+<Theorem name="Theorem (final-size relation)">
+
+Along every solution with $S > 0$, the quantity $S + I - \frac{N}{R_0}\ln S$ is constant. Consequently, if the epidemic starts with $S(0) = S_0$ and negligible $I(0)$, the number $S_\infty = \lim_{t \to \infty}S(t)$ who escape infection satisfies
+
+$$
+\ln\frac{S_\infty}{S_0} = -R_0\,\frac{S_0 - S_\infty}{N}.
+$$
+
+For $S_0 = N$ and $R_0 > 1$, the escaping fraction $s = S_\infty/N$ is the unique root in $(0, 1)$ of $s = e^{-R_0(1 - s)}$.
+
+</Theorem>
+
+<Proof>
+
+The derivative of $S + I - \frac{N}{R_0}\ln S$ is $S' + I' - \frac{\gamma N}{\beta}\frac{S'}{S} = -\gamma I + \frac{\gamma N}{\beta}\cdot\frac{\beta I}{N} = 0$ (formalised in Lean). As $t \to \infty$, $I(t) \to 0$ ($R$ is increasing and bounded, so $\int_0^\infty \gamma I\,dt < \infty$, and $I'$ is bounded). Equating the invariant at $t = 0$ (with $I(0) \approx 0$) and at $t = \infty$ gives the relation. For $S_0 = N$, let $g(s) = s - e^{-R_0(1 - s)}$: $g(0) < 0$, $g(1) = 0$ and $g'(1) = 1 - R_0 < 0$, so $g > 0$ just below $1$ and $g$ has a root in $(0, 1)$; it is unique because $g$ is strictly concave. The root $s = 1$ corresponds to no epidemic.
+
+</Proof>
+
+<FunctionPlot
+  fns={["x", "exp(-R*(1 - x))"]}
+  labels={["s", "exp(−R₀(1 − s))"]}
+  params={[{ name: "R", min: 0.5, max: 5, step: 0.1, value: 2.5, label: "R₀" }]}
+  x={[0, 1]}
+  y={[0, 1.05]}
+  xLabel="s = fraction never infected"
+  title="The final-size relation"
+  subtitle="The curves meet at s = 1 and, when R₀ > 1, at one more point: the fraction that escapes infection. For R₀ = 2.5 about 11% escape, so 89% are eventually infected."
+/>
+
+**Herd immunity and overshoot.** If a fraction $p$ is immune (by vaccination or previous infection), an introduced infection grows only if $R_0(1 - p) > 1$; the **herd immunity threshold** is $p_c = 1 - 1/R_0$ — about $67\%$ for $R_0 = 3$ and $92$–$94\%$ for measles, whose $R_0$ is classically estimated at $12$–$18$. An unchecked epidemic infects *more* than this — $94\%$ for $R_0 = 3$ — because infections already under way continue after $S/N$ has fallen below $1/R_0$. The peak prevalence, from the invariant at the moment $S = N/R_0$, is $I_{\max}/N = 1 - \frac{1 + \ln R_0}{R_0}$ (for $S_0 = N$).
+
+<VectorField mode="phase" f="-0.3*x*y" g="0.3*x*y - 0.1*y" x={[0, 1]} y={[0, 0.5]} points={[[0.999, 0.001], [0.8, 0.01], [0.5, 0.1], [0.3, 0.2]]} title="SIR in the (S, I) plane, R₀ = 3 (N = 1)" subtitle="Infections rise while S > 1/3 and fall afterwards. Each orbit ends on the S-axis at the fraction that escapes; starting from S ≈ 1, about 6%." />
+
+**What $R_0$ is, and is not.** $R_0 = \beta/\gamma$ combines a contact rate and a duration: it depends on how people meet (household size, schools, markets, transport), on the environment (season, ventilation, mosquito density for malaria), on the pathogen, and on behaviour. It is a property of a pathogen *in a population*, not a biological constant. Estimates for the same disease vary widely between settings, and the **effective reproduction number** $R_t$, which accounts for immunity and interventions, is what epidemic monitoring tracks. In 2014 the WHO Ebola Response Team estimated reproduction numbers of roughly $1.5$–$2$ in Guinea, Liberia and Sierra Leone before control measures took hold.
+
+</Section>
+
+<Section id="chance-and-limits" kind="human" title="Chance, space and the limits of models">
+
+**Small numbers and chance.** Deterministic equations describe large populations. When an infection is introduced by one person, chance dominates: each case might infect nobody. In the stochastic SIR model the early phase is a branching process, and with an exponentially distributed infectious period the probability that the introduction **dies out** by chance is $1/R_0$ (for $R_0 > 1$). Small populations also drift genetically and can go extinct by bad luck even when the deterministic model predicts persistence; the Wright–Fisher chain in <TopicLink id="math.prob.markov-chains">Markov chains</TopicLink> is the basic model.
+
+**Space.** Populations spread: Fisher (1937) and Kolmogorov, Petrovsky and Piskunov (1937) showed that $u_t = Du_{xx} + ru(1 - u)$ has travelling waves moving at speed $2\sqrt{rD}$, a model for the spread of advantageous genes and invading species. Alan Turing (1952) showed that two diffusing, reacting chemicals can spontaneously form spatial patterns — a proposed mechanism for spots and stripes on animal coats, now supported in several developmental systems.
+
+**Models are not forecasts.** A model's output is a *conditional* statement: if these mechanisms, with these parameters, then this. Its predictions are only as good as its assumptions, and structural choices (homogeneous mixing versus contact networks, fixed versus changing behaviour) can matter more than parameter values. Epidemic models are often used to compare **scenarios** — what happens with and without an intervention — rather than to forecast the future, and because people change their behaviour in response to an epidemic (and to model projections), a projection that leads to action may never come true, which does not make it wrong. Good practice reports parameter uncertainty, tests sensitivity to assumptions, compares several model structures, and confronts the model with data.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Mathematical biology in Lean and Mathlib">
+
+Mathlib has the calculus needed here — `HasDerivAt`, logarithms and exponentials, the fundamental theorem of calculus — but no library of biological models, and not the linearisation theorem, Hartman–Grobman or Poincaré–Bendixson. The module proves the lesson's computations as theorems about arbitrary solutions: a hypothesis `HasDerivAt x (α * x t - β * x t * y t) t` says that `x` satisfies the prey equation at time `t`.
+
+**Logistic growth**: the explicit solution, verified by differentiation, and its limit:
+
+<Lean decl="Lumenary.MathematicalBiology.logistic_ode_solves" />
+
+<Lean decl="Lumenary.MathematicalBiology.logistic_ode_limit" />
+
+**The logistic map**: fixed points, the multiplier $2 - r$, the stability range $1 < r < 3$, the 2-cycle and its multiplier; and Mathlib's Banach fixed-point theorem, the principle behind the stability criterion:
+
+<Lean decl="Lumenary.MathematicalBiology.logisticMap" />
+
+<Lean decl="Lumenary.MathematicalBiology.logistic_fixed_points" />
+
+<Lean decl="Lumenary.MathematicalBiology.logistic_map_deriv" />
+
+<Lean decl="Lumenary.MathematicalBiology.logistic_stable_iff" />
+
+<Lean decl="Lumenary.MathematicalBiology.logistic_period_two" />
+
+<Lean decl="Lumenary.MathematicalBiology.period_two_multiplier" />
+
+<Lean decl="Lumenary.MathematicalBiology.contraction_converges" />
+
+**Predator and prey**: Volterra's conserved quantity along any positive solution, and the prey average over a cycle, via the fundamental theorem of calculus:
+
+<Lean decl="Lumenary.MathematicalBiology.lotka_volterra_conserved" />
+
+<Lean decl="Lumenary.MathematicalBiology.lotka_volterra_average" />
+
+**Epidemics**: conservation of the population, the threshold, the invariant behind the final-size relation, and the herd immunity threshold:
+
+<Lean decl="Lumenary.MathematicalBiology.sir_total_constant" />
+
+<Lean decl="Lumenary.MathematicalBiology.sir_threshold" />
+
+<Lean decl="Lumenary.MathematicalBiology.sir_invariant" />
+
+<Lean decl="Lumenary.MathematicalBiology.herd_immunity" />
+
+**Linear stability**: the trace–determinant test, for complex roots of the characteristic polynomial:
+
+<Lean decl="Lumenary.MathematicalBiology.trace_det_stable" />
+
+**What is and is not formalised.** Proved here: all the identities and inequalities above — explicit solutions, fixed points and multipliers, the 2-cycle, the conserved quantities, the cycle average of the prey, the SIR threshold and invariant, herd immunity and the trace–determinant test (in the "if" direction). Cited from Mathlib: the Banach fixed-point theorem. Not formalised: existence and uniqueness of solutions for these models (Mathlib's Picard–Lindelöf theorem would provide them), the linearisation theorem, the closedness of the Lotka–Volterra level curves, the final-size limit argument ($I \to 0$), the competition analysis, period doubling beyond period two, Feigenbaum universality and chaos.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Cascades, cycles and epidemics, computed">
+
+First, the logistic map: attractor periods, superstable parameters found by Newton's method with the ratios of their gaps approaching Feigenbaum's constant, and Lyapunov exponents.
+
+<Python id="mathematical_biology_logistic_map" />
+
+Next, the Lotka–Volterra model: Euler's method spirals outward and violates the conservation law; the Runge–Kutta method respects it, and the cycle averages match the equilibrium.
+
+<Python id="mathematical_biology_lotka_volterra" />
+
+Finally, the SIR model solved numerically for several values of $R_0$ and compared with the final-size relation, the peak formula and the herd immunity threshold.
+
+<Python id="mathematical_biology_sir" />
+
+All three are **numerical** evidence (floating-point solutions of model equations). They test our formulas and our numerical methods; whether real populations follow these models is a separate, empirical question.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"A model's prediction is a forecast of what will happen."** A model makes conditional statements: *if* its mechanisms and parameter values are right, *then* this follows. Its outputs inherit every assumption — homogeneous mixing, constant rates, no behavioural change. Projections under different scenarios are tools for comparing choices; when the scenario does not occur (often because people acted on the projection), the model has not been refuted.
+
+</Misconception>
+
+<Misconception>
+
+**"$R_0$ is a fixed biological constant of a disease."** $R_0 = \beta/\gamma$ depends on contact patterns, population density, environment and behaviour as well as on the pathogen. The same infection can have very different $R_0$ in a crowded city and a scattered rural population, or in different seasons; and what changes during an outbreak is the effective reproduction number $R_t$.
+
+</Misconception>
+
+<Misconception>
+
+**"The predator–prey cycles are explained by the linearisation."** At the coexistence equilibrium the linearisation is a centre, which is inconclusive: small nonlinear terms could turn it into a spiral either way. The closed orbits come from the exact conserved quantity $V$ — and they disappear when the model is perturbed, so real cycles need a robust mechanism such as a limit cycle.
+
+</Misconception>
+
+<Misconception>
+
+**"Complicated behaviour needs a complicated model."** The logistic map, with one parameter and one quadratic formula, produces period doubling and chaos. Conversely, irregular data do not prove that the underlying process is random — or that it is chaotic.
+
+</Misconception>
+
+<Misconception>
+
+**"Reaching the herd immunity threshold ends an epidemic at that point."** Once $S/N < 1/R_0$ infections decline, but those already infected keep transmitting, so an uncontrolled epidemic overshoots: with $R_0 = 3$ the threshold is $67\%$, but about $94\%$ are eventually infected.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="topology" title="What the phase plane allows">
+
+Planar dynamics is constrained by topology. Trajectories cannot cross, so by the **Poincaré–Bendixson theorem** a bounded trajectory of a $C^1$ planar system that stays away from equilibria approaches a periodic orbit: two-species continuous-time models cannot be chaotic, which is why chaos in population biology needs discrete generations (as in the logistic map), time delays, seasonal forcing or at least three species. **Index theory** adds another constraint: going once round a periodic orbit, the vector field turns exactly once, and the indices of the equilibria inside add up to $+1$; since a saddle has index $-1$ and a node, spiral or centre $+1$, every predator–prey cycle must enclose an equilibrium that is not a saddle — the coexistence point. The `VectorField` widget's loop mode computes such indices. See <TopicLink id="math.analysis.dynamical-systems">dynamical systems</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Lotka–Volterra is a Hamiltonian system in disguise">
+
+In logarithmic coordinates $u = \ln x$, $v = \ln y$, the predator–prey equations become $u' = \alpha - \beta e^v$, $v' = \delta e^u - \gamma$. With $H(u, v) = \delta e^u - \gamma u + \beta e^v - \alpha v$ — Volterra's $V$ rewritten — these are $u' = -\partial H/\partial v$ and $v' = \partial H/\partial u$: **Hamilton's equations**, as for a frictionless mechanical system. The flow therefore preserves area in the $(u, v)$-plane, which is why there can be no attracting or repelling cycles: an attractor would shrink area. Geometrically, the orbits are the level curves of $H$, a convex function whose sublevel sets are convex discs. Numerical methods that respect this structure (symplectic integrators) keep the orbits closed far better than Euler's method, as the second experiment shows for RK4 versus Euler. See <TopicLink id="math.applied.classical-mechanics">classical mechanics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Lyapunov functions and conservation laws">
+
+The two central tools of the lesson are functions that do not increase along solutions. A **conserved quantity** ($V$ for predator–prey, $S + I - \frac N{R_0}\ln S$ for SIR) confines orbits to its level sets; a **Lyapunov function** — positive except at an equilibrium and decreasing along solutions — proves stability without solving anything, as the quadratic form $y^\top My$ did in the linearisation theorem. For the predator–prey model with self-limiting prey, a function of Volterra's form built from the new equilibrium, $V = \delta(x - x^*\ln x) + \beta(y - y^*\ln y)$, becomes a Lyapunov function: $V' = -\frac{\alpha\delta}{K}(x - x^*)^2 \le 0$, and LaSalle's invariance principle then gives global convergence to the equilibrium. Finding such functions is an art; for large classes of chemical and ecological models, functions of the form $\sum_i (x_i - x_i^*\ln x_i)$ — relative entropies in disguise — do the job.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Branching processes and extinction">
+
+When few individuals are involved, the right model is random. In a **Galton–Watson branching process** each individual independently produces a random number of offspring with mean $m$; the extinction probability $q$ is the smallest root in $[0, 1]$ of $q = \varphi(q)$, where $\varphi$ is the offspring generating function, and $q < 1$ exactly when $m > 1$. For an infection with $R_0 = m$, a deterministic epidemic is replaced by a gamble: with a geometric number of secondary cases (exponential infectious period), $\varphi(s) = \frac{1}{1 + R_0(1 - s)}$ and $q = 1/R_0$. Outbreaks that take off then behave like the deterministic SIR model — a law of large numbers for Markov processes (Kurtz, 1970) makes this precise. The same mathematics governs the survival of a new mutation (Haldane, 1927: a mutation with small selective advantage $s$ survives with probability about $2s$) and the extinction of family names, Galton and Watson's original question (1874).
+
+</Viewpoint>
+
+<Viewpoint lens="physics" title="Mass action and chemical kinetics">
+
+The interaction terms $\beta xy$ and $\beta SI/N$ come from the **law of mass action** of chemical kinetics (Guldberg and Waage, 1864): the rate of a reaction between two well-mixed species is proportional to the product of their concentrations, because it is proportional to the rate of encounters. Lotka, a physical chemist, built his ecological models by analogy with autocatalytic reactions, and the predator–prey equations are formally the kinetics of the reactions $X \to 2X$, $X + Y \to 2Y$, $Y \to \varnothing$. The analogy is heuristic: animals and people do not mix like molecules in a stirred beaker, and network and spatial structure (who meets whom) can change thresholds and dynamics substantially. Chemical oscillators such as the Belousov–Zhabotinsky reaction, by contrast, really are well-mixed, and show the limit cycles that the robust ecological models predict.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Growth.** Leonardo of Pisa's rabbit problem in the *Liber Abaci* (1202) is an early population model. Thomas Malthus's *Essay on the Principle of Population* (1798) contrasted geometric population growth with arithmetic growth of food; Pierre-François Verhulst introduced the logistic equation in 1838, and Raymond Pearl and Lowell Reed rediscovered it in 1920. Patrick Leslie's matrix models for age-structured populations followed in 1945.
+- **Interacting species.** Alfred Lotka (*Elements of Physical Biology*, 1925) and Vito Volterra (1926, prompted by Umberto D'Ancona's Adriatic fishery data) independently proposed the predator–prey equations. Georgii Gause's experiments in Moscow (*The Struggle for Existence*, 1934) tested competition models. Crawford Holling (1959) described predators' functional responses, and Michael Rosenzweig and Robert MacArthur (1963) analysed predator–prey stability graphically.
+- **Epidemics.** Daniel Bernoulli (1760) used a mathematical model to argue for smallpox inoculation. Ronald Ross, who had shown in India (1897) that mosquitoes transmit malaria, argued with a mathematical model (1911) that malaria could be controlled by reducing mosquito numbers below a threshold, without eliminating them; George Macdonald (1957) developed this into the theory of the reproduction number. William Kermack and Anderson McKendrick's 1927 paper introduced the SIR model and the threshold theorem. Roy Anderson and Robert May's *Infectious Diseases of Humans* (1991) synthesised the modern theory, used for HIV, measles, SARS (2003), Ebola (2014–16) and COVID-19 (2020 onwards).
+- **Patterns and chaos.** Ronald Fisher (1937) and Andrei Kolmogorov, Ivan Petrovsky and Nikolai Piskunov (1937) studied travelling waves of advantageous genes; Alan Turing's "The chemical basis of morphogenesis" (1952) proposed reaction–diffusion patterns. Robert May's review "Simple mathematical models with very complicated dynamics" (*Nature*, 1976) brought the logistic map's chaos to biologists; Mitchell Feigenbaum (1978) discovered its universality, and Oleksandr Sharkovsky (1964) and Tien-Yien Li and James Yorke (1975) had found the theorems on periods.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- J. D. Murray, *Mathematical Biology* (1989; 3rd edition in two volumes, 2002–03) — the classic reference, from population dynamics to pattern formation.
+- Leah Edelstein-Keshet, *Mathematical Models in Biology* (1988; reprinted 2005) — discrete and continuous models with a gentle, thorough approach.
+- Steven H. Strogatz, *Nonlinear Dynamics and Chaos* (1994; 2nd edition 2015) — phase planes, bifurcations, the logistic map and chaos, with many biological examples.
+- Fred Brauer and Carlos Castillo-Chavez, *Mathematical Models in Population Biology and Epidemiology* (2001; 2nd edition 2012).
+- Roy M. Anderson and Robert M. May, *Infectious Diseases of Humans: Dynamics and Control* (1991).
+- Matt J. Keeling and Pejman Rohani, *Modeling Infectious Diseases in Humans and Animals* (2008) — with code, stochastic and network models.
+- Sarah P. Otto and Troy Day, *A Biologist's Guide to Mathematical Modeling in Ecology and Evolution* (2007).
+
+</Section>

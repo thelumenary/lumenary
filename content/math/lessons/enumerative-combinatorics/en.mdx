@@ -1,0 +1,479 @@
+---
+slug: enumerative-combinatorics
+topic: math.discrete.enumerative-combinatorics
+title: Enumerative combinatorics
+subtitle: How many? Generating functions turn counting problems into algebra — from integer partitions and derangements to necklaces counted up to symmetry.
+level: ug2
+ages: Undergraduate
+minutes: 120
+order: 6023
+objectives:
+  - Use ordinary generating functions for unlabelled structures and exponential generating functions for labelled ones, including the exponential formula
+  - Derive the derangement formula $D(n) = n! \sum_{k=0}^{n} (-1)^k / k!$ by inclusion–exclusion and from its exponential generating function
+  - Prove Euler's theorem that partitions into odd parts and partitions into distinct parts are equinumerous, by generating functions and by Glaisher's bijection
+  - Prove Burnside's lemma and count colourings up to symmetry with it and with Pólya's cycle index
+  - Relate the cycle structure of permutations to Stirling numbers and to the exponential formula
+narrators: []
+lean:
+  - Lumenary.EnumerativeCombinatorics.card_derangements
+  - Lumenary.EnumerativeCombinatorics.derangements_formula
+  - Lumenary.EnumerativeCombinatorics.derangements_tendsto
+  - Lumenary.EnumerativeCombinatorics.euler_partition
+  - Lumenary.EnumerativeCombinatorics.pow_eq_sum_stirling
+  - Lumenary.EnumerativeCombinatorics.burnside_double_count
+  - Lumenary.EnumerativeCombinatorics.orbit_stabilizer
+  - Lumenary.EnumerativeCombinatorics.burnside
+  - Lumenary.EnumerativeCombinatorics.isCanonical
+  - Lumenary.EnumerativeCombinatorics.necklaces_six
+  - Lumenary.EnumerativeCombinatorics.necklace_fixed_counts
+compute: [enumerative_combinatorics_partitions, enumerative_combinatorics_egf, enumerative_combinatorics_burnside]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Three counting puzzles">
+
+**Secret gifts.** Twelve colleagues in an office in Accra put their names in a bowl, and each draws one to choose a recipient for a secret gift. What is the chance that nobody draws their own name? The answer is $0.36787944\ldots$ — and it barely changes whether there are twelve people or twelve thousand. That number is $1/e$.
+
+**Ways to make change.** In how many ways can $n$ be written as a sum of positive integers, ignoring order? For $n = 4$ there are five: $4$, $3+1$, $2+2$, $2+1+1$, $1+1+1+1$. For $n = 100$ there are $190\,569\,292$. No simple closed formula exists, yet these numbers obey astonishing identities: Euler noticed in 1748 that writing $n$ as a sum of *odd* parts and as a sum of *distinct* parts can always be done in the same number of ways.
+
+**Beadwork.** An artisan strings six beads, each red or white, into a necklace. Two necklaces are the same if one can be rotated into the other. How many different necklaces are there? Not $2^6 / 6$, which is not even an integer: the honest answer, $14$, requires thinking about symmetry.
+
+All three are problems of **enumerative combinatorics**, and the main tools for all three are **generating functions** — power series whose coefficients are the numbers we want — and **group actions**. This lesson builds on <TopicLink id="math.discrete.recurrences-generating-functions">recurrences and generating functions</TopicLink>, <TopicLink id="math.discrete.combinatorics">combinatorics</TopicLink> (binomial coefficients, inclusion–exclusion) and <TopicLink id="math.algebra.groups">groups</TopicLink> (group actions and the orbit–stabiliser theorem).
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="A clothesline for numbers">
+
+Herbert Wilf described a generating function as "a clothesline on which we hang up a sequence of numbers for display". The point is that operations on sequences that are awkward to describe become simple operations on power series. If $a_n$ counts ways to build something of size $n$ from one kind of part and $b_n$ from another, then the number of ways to build something of size $n$ from one of each is $\sum_k a_k b_{n-k}$ — exactly the coefficient of $x^n$ in the product $A(x)B(x)$.
+
+Two flavours matter. When the pieces are **unlabelled** — coins, parts of a partition — we use the **ordinary** generating function $\sum a_n x^n$. When the pieces carry **labels** — people, positions, elements of a set — combining two structures also involves choosing which labels go to which, a factor $\binom{n}{k}$. The **exponential** generating function $\sum a_n x^n / n!$ absorbs those binomial coefficients, so that labelled products again become products of series.
+
+Symmetry is the third idea. Counting necklaces means counting **orbits** of the rotation group acting on colourings. Dividing the number of colourings by the size of the group would be right if every orbit had the same size — but symmetric colourings have small orbits. Burnside's lemma counts orbits correctly by averaging the number of colourings each symmetry fixes.
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="ordinary and exponential generating functions">
+
+The **ordinary generating function (OGF)** of a sequence $(a_n)_{n \ge 0}$ is the formal power series $A(x) = \sum_{n \ge 0} a_n x^n$; its **exponential generating function (EGF)** is $\hat A(x) = \sum_{n \ge 0} a_n \frac{x^n}{n!}$. We write $[x^n] A(x)$ for the coefficient of $x^n$.
+
+</Definition>
+
+"Formal" means that $x$ is a symbol, not a number: we add and multiply series coefficientwise as polynomials, and never ask whether they converge. In the ring $\Q[[x]]$ of formal power series, a series with nonzero constant term has an inverse — for instance $\frac{1}{1 - x} = 1 + x + x^2 + \cdots$ — and infinite sums and products make sense as long as each coefficient is affected by only finitely many terms. For example $\prod_{k \ge 1} (1 + x^k)$ is a well-defined series, because the factor $1 + x^k$ cannot affect coefficients below $x^k$.
+
+<Definition term="partition">
+
+A **partition** of $n$ is a way of writing $n$ as an unordered sum of positive integers, its **parts**; we list the parts in non-increasing order, $\lambda = (\lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_\ell)$ with $\sum \lambda_i = n$. The number of partitions of $n$ is $p(n)$, with $p(0) = 1$ (the empty partition).
+
+</Definition>
+
+<Definition term="derangement, set partition, Stirling and Bell numbers">
+
+A **derangement** of a set is a permutation with no fixed point; $D(n)$ is the number of derangements of an $n$-element set. A **set partition** of a set $S$ is a collection of nonempty, pairwise disjoint **blocks** whose union is $S$. The **Stirling number of the second kind** $S(n, k)$ counts set partitions of $\{1, \dots, n\}$ into $k$ blocks, and the **Bell number** $B(n) = \sum_k S(n, k)$ counts all of them. The **Stirling number of the first kind** $c(n, k)$ counts permutations of $\{1, \dots, n\}$ with exactly $k$ cycles.
+
+</Definition>
+
+<Definition term="group action, orbit, stabiliser, fixed set">
+
+A group $G$ **acts** on a set $X$ if each $g \in G$ gives a map $x \mapsto g \cdot x$ with $e \cdot x = x$ and $g \cdot (h \cdot x) = (gh) \cdot x$. The **orbit** of $x$ is $G \cdot x = \{g \cdot x \mid g \in G\}$, its **stabiliser** is $G_x = \{g \mid g \cdot x = x\}$, and the **fixed set** of $g$ is $\mathrm{Fix}(g) = \{x \mid g \cdot x = x\}$. The orbits partition $X$; $X/G$ denotes the set of orbits.
+
+</Definition>
+
+</Section>
+
+<Section id="partitions" kind="proof" title="Partitions and ordinary generating functions">
+
+<Theorem name="Theorem 1 (Euler)">
+
+$$
+\sum_{n \ge 0} p(n)\, x^n = \prod_{k \ge 1} \frac{1}{1 - x^k}.
+$$
+
+More generally, if $P$ is any set of positive integers, the partitions of $n$ with all parts in $P$ are counted by $\prod_{k \in P} \frac{1}{1 - x^k}$, and those with distinct parts in $P$ by $\prod_{k \in P} (1 + x^k)$.
+
+</Theorem>
+
+<Proof>
+
+Expand each factor as a geometric series: $\frac{1}{1 - x^k} = \sum_{m_k \ge 0} x^{k m_k}$, where $m_k$ will be the number of parts equal to $k$. Multiplying out, a term $x^n$ arises once for each sequence $(m_1, m_2, \dots)$ of non-negative integers, all but finitely many zero, with $\sum_k k\, m_k = n$. Such sequences are exactly the partitions of $n$ ($m_k$ copies of $k$). For distinct parts each $m_k$ is $0$ or $1$, giving the factor $1 + x^k$. Only the factors with $k \le n$ affect $[x^n]$, so all the products are well defined.
+
+</Proof>
+
+<Theorem name="Theorem 2 (Euler 1748)">
+
+For every $n$, the number of partitions of $n$ into odd parts equals the number of partitions of $n$ into distinct parts.
+
+</Theorem>
+
+<Proof>
+
+**By generating functions.** By Theorem 1 we must show $\prod_{k \ge 1} (1 + x^k) = \prod_{k \text{ odd}} \frac{1}{1 - x^k}$. Since $(1 + x^k)(1 - x^k) = 1 - x^{2k}$,
+
+$$
+\prod_{k=1}^{N} (1 + x^k) = \frac{\prod_{k=1}^{N} (1 - x^{2k})}{\prod_{k=1}^{N} (1 - x^k)} = \frac{\prod_{N < j \le 2N,\ j \text{ even}} (1 - x^j)}{\prod_{k \le N,\ k \text{ odd}} (1 - x^k)},
+$$
+
+because the even factors $1 - x^j$ with $j \le N$ cancel between numerator and denominator. The remaining numerator is $1$ plus terms of degree greater than $N$. So the two sides of the claimed identity have the same coefficients up to $x^N$, for every $N$.
+
+**By a bijection (Glaisher 1883).** Given a partition into odd parts in which the odd number $k$ occurs $m$ times, write $m$ in binary, $m = 2^{a_1} + 2^{a_2} + \cdots$ with distinct $a_i$, and replace the $m$ copies of $k$ by the parts $2^{a_1} k, 2^{a_2} k, \dots$. These parts are distinct: two of them, $2^a k$ and $2^b k'$ with $k, k'$ odd, are equal only if $k = k'$ and $a = b$, since every positive integer is uniquely a power of $2$ times an odd number. Conversely, from a partition into distinct parts, split each part $d = 2^a k$ ($k$ odd) into $2^a$ copies of $k$. The two maps are inverse to each other, because binary expansions are unique.
+
+</Proof>
+
+<Example title="Glaisher's bijection for n = 8">
+
+$3 + 3 + 1 + 1 \mapsto 6 + 2$ (two $3$s merge into a $6$, two $1$s into a $2$); $3 + 1 + 1 + 1 + 1 + 1 \mapsto 4 + 3 + 1$ (five $1$s: $5 = 4 + 1$); $1^8 \mapsto 8$. All six partitions of $8$ into odd parts, and their images, are listed by the experiment below.
+
+</Example>
+
+<Example title="Conjugation and Ferrers diagrams">
+
+Draw a partition as left-justified rows of dots, row $i$ having $\lambda_i$ dots (its **Ferrers diagram**). Reflecting in the diagonal gives the **conjugate** partition $\lambda'$, whose parts are the column lengths. Conjugation is a bijection, and it proves at a glance that the number of partitions of $n$ into at most $k$ parts equals the number into parts of size at most $k$.
+
+<Figure caption="The partition 5 + 3 + 3 + 1 of 12 and its conjugate 4 + 3 + 3 + 1 + 1: rows become columns.">
+<svg viewBox="0 0 360 140" role="img" aria-label="Two Ferrers diagrams: rows of 5, 3, 3 and 1 dots, and its reflection with rows of 4, 3, 3, 1 and 1 dots">
+  <g fill="var(--formal)">
+    <circle cx="20" cy="20" r="7" /><circle cx="45" cy="20" r="7" /><circle cx="70" cy="20" r="7" /><circle cx="95" cy="20" r="7" /><circle cx="120" cy="20" r="7" />
+    <circle cx="20" cy="45" r="7" /><circle cx="45" cy="45" r="7" /><circle cx="70" cy="45" r="7" />
+    <circle cx="20" cy="70" r="7" /><circle cx="45" cy="70" r="7" /><circle cx="70" cy="70" r="7" />
+    <circle cx="20" cy="95" r="7" />
+  </g>
+  <g fill="var(--compute)">
+    <circle cx="220" cy="20" r="7" /><circle cx="245" cy="20" r="7" /><circle cx="270" cy="20" r="7" /><circle cx="295" cy="20" r="7" />
+    <circle cx="220" cy="45" r="7" /><circle cx="245" cy="45" r="7" /><circle cx="270" cy="45" r="7" />
+    <circle cx="220" cy="70" r="7" /><circle cx="245" cy="70" r="7" /><circle cx="270" cy="70" r="7" />
+    <circle cx="220" cy="95" r="7" />
+    <circle cx="220" cy="120" r="7" />
+  </g>
+  <text x="170" y="65" fill="var(--ink-2)" fontSize="22" textAnchor="middle">↔</text>
+</svg>
+</Figure>
+
+</Example>
+
+Partitions have no simple closed formula, but a great deal is known about them — all stated here without proof:
+
+- **The pentagonal number theorem** (Euler): $\prod_{k \ge 1} (1 - x^k) = \sum_{j \in \Z} (-1)^j x^{j(3j - 1)/2} = 1 - x - x^2 + x^5 + x^7 - x^{12} - x^{15} + \cdots$. Multiplying by $\sum p(n) x^n$ gives the fast recurrence $p(n) = p(n-1) + p(n-2) - p(n-5) - p(n-7) + \cdots$.
+- **Hardy and Ramanujan (1918)**: $p(n) \sim \frac{1}{4n\sqrt 3} \exp\!\big(\pi \sqrt{2n/3}\big)$ as $n \to \infty$, proved with the circle method; Rademacher (1937) turned their series into an exact convergent formula.
+- **Ramanujan's congruences**: $p(5m + 4) \equiv 0 \pmod 5$, $p(7m + 5) \equiv 0 \pmod 7$ and $p(11m + 6) \equiv 0 \pmod{11}$, found by Ramanujan, who proved the first two in 1919.
+
+</Section>
+
+<Section id="labelled" kind="proof" title="Labelled structures and exponential generating functions">
+
+<Theorem name="Theorem 3 (the product rule for EGFs)">
+
+Let $a_n$ and $b_n$ count two kinds of structures on an $n$-element set of labels. The number $c_n$ of ways to split an $n$-element set into two parts $S_1 \sqcup S_2$ and put a structure of the first kind on $S_1$ and of the second on $S_2$ is $c_n = \sum_k \binom{n}{k} a_k b_{n-k}$, and $\hat C(x) = \hat A(x)\, \hat B(x)$.
+
+</Theorem>
+
+<Proof>
+
+There are $\binom{n}{k}$ choices of $S_1$ with $|S_1| = k$, then $a_k$ and $b_{n-k}$ choices of structures. And $[x^n]\, \hat A(x) \hat B(x) = \sum_k \frac{a_k}{k!} \frac{b_{n-k}}{(n-k)!} = \frac{1}{n!} \sum_k \binom{n}{k} a_k b_{n-k}$.
+
+</Proof>
+
+<Theorem name="Theorem 4 (the exponential formula)">
+
+Let $c_n$ count "connected" structures on an $n$-element set, with $c_0 = 0$, and let $a_n$ count the ways to partition an $n$-element set into blocks and put a connected structure on each block ($a_0 = 1$). Then
+
+$$
+\hat A(x) = \exp\big(\hat C(x)\big) = \sum_{k \ge 0} \frac{\hat C(x)^k}{k!}.
+$$
+
+</Theorem>
+
+<Proof>
+
+By Theorem 3 applied $k - 1$ times, $n!\, [x^n]\, \hat C(x)^k$ counts **ordered** sequences of $k$ connected structures on blocks $S_1, \dots, S_k$ that partition the label set. The blocks are nonempty (since $c_0 = 0$) and disjoint, hence distinct, so each unordered family of $k$ blocks arises from exactly $k!$ orderings. Thus $\hat C(x)^k / k!$ is the EGF of structures with exactly $k$ blocks, and summing over $k$ gives the formula. (The sum makes sense in $\Q[[x]]$ because $\hat C(x)^k$ has no terms below $x^k$.)
+
+</Proof>
+
+<Example title="Four applications of the exponential formula">
+
+- **Set partitions.** A block carries exactly one (trivial) structure on any nonempty set: $\hat C(x) = e^x - 1$. So $\sum_n B(n) \frac{x^n}{n!} = \exp(e^x - 1)$, and $\sum_n S(n, k) \frac{x^n}{n!} = \frac{(e^x - 1)^k}{k!}$.
+- **Permutations.** A permutation is a set of disjoint cycles, and there are $(k - 1)!$ cyclic orders on a $k$-set, so $\hat C(x) = \sum_{k \ge 1} (k-1)! \frac{x^k}{k!} = \sum_{k \ge 1} \frac{x^k}{k} = -\log(1 - x)$. Then $\exp(\hat C) = \frac{1}{1 - x} = \sum n! \frac{x^n}{n!}$: there are $n!$ permutations, as there should be.
+- **Derangements** are permutations with no 1-cycles: $\hat C(x) = -\log(1 - x) - x$, so $\hat D(x) = \frac{e^{-x}}{1 - x}$.
+- **Involutions** ($\sigma^2 = \mathrm{id}$) have cycles of length $1$ and $2$ only: $\exp\big(x + \tfrac{x^2}{2}\big)$.
+
+</Example>
+
+<Theorem name="Theorem 5 (derangements)">
+
+$$
+D(n) = n! \sum_{k=0}^{n} \frac{(-1)^k}{k!}.
+$$
+
+Consequently $D(n)$ is the integer nearest to $n!/e$ for $n \ge 1$, and the probability that a uniformly random permutation is a derangement tends to $1/e$.
+
+</Theorem>
+
+<Proof>
+
+**By the EGF.** $\hat D(x) = e^{-x} \cdot \frac{1}{1 - x}$, and multiplying by $\frac{1}{1-x}$ forms partial sums of coefficients: $[x^n]\, \hat D(x) = \sum_{k=0}^{n} \frac{(-1)^k}{k!}$. Multiply by $n!$.
+
+**By inclusion–exclusion.** Let $A_i$ be the set of permutations of $\{1, \dots, n\}$ fixing $i$. A permutation fixing $k$ prescribed points is a permutation of the other $n - k$, so $|A_{i_1} \cap \cdots \cap A_{i_k}| = (n - k)!$, and
+
+$$
+D(n) = n! - \Big|\bigcup_i A_i\Big| = \sum_{k=0}^{n} (-1)^k \binom{n}{k} (n - k)! = n! \sum_{k=0}^{n} \frac{(-1)^k}{k!}.
+$$
+
+For the consequences: $\frac{n!}{e} - D(n) = n! \sum_{k > n} \frac{(-1)^k}{k!}$, an alternating series with decreasing terms, so its absolute value is at most the first term, $\frac{n!}{(n+1)!} = \frac{1}{n+1} < \frac12$ for $n \ge 1$. Dividing by $n!$, $\big|\frac{D(n)}{n!} - \frac1e\big| \le \frac{1}{(n+1)!} \to 0$.
+
+</Proof>
+
+<Example title="A recurrence, proved by a bijection">
+
+$D(n) = (n - 1)\big(D(n-1) + D(n-2)\big)$ for $n \ge 2$. In a derangement $\sigma$ of $\{1, \dots, n\}$, let $i = \sigma(n)$: there are $n - 1$ choices. If $\sigma(i) = n$, then $\sigma$ swaps $i$ and $n$ and deranges the other $n - 2$ points: $D(n - 2)$ possibilities. Otherwise let $j = \sigma^{-1}(n) \ne i$, and define $\tau$ on $\{1, \dots, n-1\}$ by $\tau(j) = i$ and $\tau = \sigma$ elsewhere. Then $\tau$ is a derangement (since $j \ne i$), and $\sigma \mapsto \tau$ is a bijection onto all derangements of $n - 1$ points: $D(n - 1)$ possibilities. So $D(2), D(3), \dots = 1, 2, 9, 44, 265, 1854, \dots$ — and for twelve colleagues, $D(12)/12! \approx 0.3678794$.
+
+</Example>
+
+<Theorem name="Theorem 6 (cycles of permutations)">
+
+$$
+\sum_{k} c(n, k)\, y^k = y (y + 1) (y + 2) \cdots (y + n - 1).
+$$
+
+In particular the expected number of cycles of a uniformly random permutation of $n$ points is $H_n = 1 + \frac12 + \cdots + \frac1n \sim \ln n$.
+
+</Theorem>
+
+<Proof>
+
+Build a permutation of $\{1, \dots, n\}$ from one of $\{1, \dots, n-1\}$ by inserting $n$: either as a new fixed point (one new cycle, a factor $y$), or immediately after one of the $n - 1$ existing elements in its cycle ($n - 1$ ways, no new cycle). Every permutation of $\{1, \dots, n\}$ arises exactly once, so $P_n(y) = (y + n - 1) P_{n-1}(y)$ with $P_1(y) = y$. For the expectation, differentiate: $\frac{P_n'(1)}{P_n(1)} = \sum_{j=0}^{n-1} \frac{1}{1 + j} = H_n$.
+
+</Proof>
+
+The second-kind numbers also have a clean interpretation: a function from a $k$-set to an $m$-set is determined by the partition of its domain into nonempty fibres and an injective labelling of the fibres, so $m^k = \sum_j S(k, j)\, m(m-1)\cdots(m - j + 1)$.
+
+</Section>
+
+<Section id="symmetry" kind="proof" title="Counting up to symmetry">
+
+<Theorem name="Theorem 7 (Burnside's lemma, also called the Cauchy–Frobenius lemma)">
+
+If a finite group $G$ acts on a finite set $X$, the number of orbits is the average number of fixed points:
+
+$$
+|X / G| = \frac{1}{|G|} \sum_{g \in G} |\mathrm{Fix}(g)|.
+$$
+
+</Theorem>
+
+<Proof>
+
+Count the set $\{(g, x) \in G \times X \mid g \cdot x = x\}$ in two ways. Grouping by $g$ gives $\sum_g |\mathrm{Fix}(g)|$; grouping by $x$ gives $\sum_x |G_x|$. By the orbit–stabiliser theorem $|G_x| = |G| / |G \cdot x|$, so
+
+$$
+\sum_{x \in X} |G_x| = |G| \sum_{x \in X} \frac{1}{|G \cdot x|} = |G| \sum_{\text{orbits } O} \sum_{x \in O} \frac{1}{|O|} = |G| \cdot |X/G|.
+$$
+
+</Proof>
+
+<Theorem name="Corollary 8 (necklaces)">
+
+The number of necklaces of $n$ beads in $k$ colours, up to rotation, is
+
+$$
+N(n, k) = \frac{1}{n} \sum_{d \mid n} \varphi(d)\, k^{n/d},
+$$
+
+where $\varphi$ is Euler's totient function.
+
+</Theorem>
+
+<Proof>
+
+The cyclic group of rotations $\{\rho^0, \dots, \rho^{n-1}\}$ acts on the $k^n$ colourings of the positions $\Z/n\Z$. The rotation $\rho^r$ moves position $i$ to $i + r$; its cycles on positions are the cosets of the subgroup generated by $r$, which has $n / \gcd(r, n)$ elements, so $\rho^r$ has $\gcd(r, n)$ cycles. A colouring is fixed by $\rho^r$ exactly when it is constant on each cycle, so $|\mathrm{Fix}(\rho^r)| = k^{\gcd(r, n)}$. Finally, $\gcd(r, n) = n/d$ for exactly $\varphi(d)$ values of $r \in \{0, \dots, n-1\}$ (write $r = (n/d)\, s$ with $0 \le s < d$ and $\gcd(s, d) = 1$). Burnside's lemma completes the proof.
+
+</Proof>
+
+For $n = 6$ and $k = 2$: the six rotations fix $2^6, 2^1, 2^2, 2^3, 2^2, 2^1$ colourings, so there are $\frac{64 + 2 + 4 + 8 + 4 + 2}{6} = \frac{84}{6} = 14$ necklaces. The naive count $64/6$ fails because, for instance, the all-red colouring is alone in its orbit.
+
+**Pólya's refinement.** The proof of Corollary 8 used only the number of cycles of each symmetry. For a group $G$ of permutations of $m$ positions, let $c_i(g)$ be the number of cycles of length $i$ of $g$, and define the **cycle index**
+
+$$
+Z_G(x_1, \dots, x_m) = \frac{1}{|G|} \sum_{g \in G} x_1^{c_1(g)} x_2^{c_2(g)} \cdots x_m^{c_m(g)}.
+$$
+
+Then the number of colourings with $k$ colours up to symmetry is $Z_G(k, k, \dots, k)$, and — **Pólya's enumeration theorem** (Redfield 1927, Pólya 1937) — substituting $x_i = r^i + b^i + \cdots$ (one variable per colour) gives a polynomial whose coefficient of $r^{\alpha} b^{\beta} \cdots$ is the number of inequivalent colourings using each colour the prescribed number of times. (Proof: apply Burnside's lemma to the $G$-invariant set of colourings with given colour counts; a colouring fixed by $g$ is constant on the cycles of $g$, and a cycle of length $i$ contributes $r^i$ or $b^i$ or ….)
+
+<Example title="Colouring the faces of a cube">
+
+The 24 rotations of a cube permute its 6 faces: the identity ($x_1^6$); 6 quarter turns about face axes ($x_1^2 x_4$); 3 half turns about face axes ($x_1^2 x_2^2$); 8 turns by $120^\circ$ about vertex axes ($x_3^2$); 6 half turns about edge axes ($x_2^3$). So
+
+$$
+Z = \tfrac{1}{24}\big(x_1^6 + 6 x_1^2 x_4 + 3 x_1^2 x_2^2 + 8 x_3^2 + 6 x_2^3\big),
+$$
+
+and with $k$ colours there are $\frac{1}{24}(k^6 + 3k^4 + 12k^3 + 8k^2)$ inequivalent cubes: $10$ for two colours, $57$ for three.
+
+How many cubes have three red and three white faces? Substitute $x_i = r^i + b^i$ and extract the coefficient of $r^3 b^3$ term by term: $x_1^6 = (r + b)^6$ gives $\binom{6}{3} = 20$; $3 x_1^2 x_2^2 = 3 (r + b)^2 (r^2 + b^2)^2$ gives $3 \cdot 4 = 12$ (from $2rb \cdot 2r^2 b^2$); $8 x_3^2 = 8 (r^3 + b^3)^2$ gives $8 \cdot 2 = 16$; and $6 x_1^2 x_4$ and $6 x_2^3$ contain no $r^3 b^3$. So there are $\frac{20 + 12 + 16}{24} = 2$ such cubes: the three red faces either meet at a corner, or two of them are opposite and the third joins them.
+
+</Example>
+
+A useful check on such computations: Burnside's lemma always produces an integer, so a fractional answer signals a missed term.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Counting in Lean and Mathlib">
+
+Mathlib has a good deal of enumerative combinatorics. **Derangements** are a finite type with a recursively computed count; the library proves that the recursion counts them and that $D(n)/n! \to 1/e$. The closed formula of Theorem 5 is proved here by induction from Mathlib's recurrence $D(n+1) = (n+1)D(n) - (-1)^n$:
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.card_derangements" />
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.derangements_formula" />
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.derangements_tendsto" />
+
+**Euler's partition theorem** is in Mathlib, proved — like our first proof — by identifying generating functions, as the case $m = 2$ of Glaisher's theorem; and the Stirling identity at the end of the previous section:
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.euler_partition" />
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.pow_eq_sum_stirling" />
+
+**Burnside's lemma.** The double-counting step of the proof is proved here; orbit–stabiliser and Burnside's lemma itself are quoted from Mathlib, which states the lemma without division, as $\sum_g |\mathrm{Fix}(g)| = |X/G| \cdot |G|$:
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.burnside_double_count" />
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.orbit_stabilizer" />
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.burnside" />
+
+**Necklaces, checked by computation.** Encode a 6-bead necklace as a number below $64$; a rotation class has a unique smallest member. Counting these canonical members gives $14$, and counting fixed colourings of each rotation gives the numbers $2^{\gcd(k,6)}$ used in Corollary 8:
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.isCanonical" />
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.necklaces_six" />
+
+<Lean decl="Lumenary.EnumerativeCombinatorics.necklace_fixed_counts" />
+
+What is **not** formalised here: Glaisher's bijection, the exponential formula, the cycle-index form of Pólya's theorem, and the general necklace formula (only the case $n = 6$ is checked).
+
+</Section>
+
+<Section id="computation" kind="computation" title="Generating functions, computed and checked">
+
+The first program expands the generating functions of Theorem 1 exactly — multiplying by $\frac{1}{1 - x^k}$ is the update $b_i = a_i + b_{i-k}$ — and checks Euler's theorem up to $x^{60}$, runs Glaisher's bijection on all partitions of $8$, and compares $p(n)$ with the Hardy–Ramanujan formula.
+
+<Python id="enumerative_combinatorics_partitions" />
+
+The second computes exponential generating functions with exact fractions, using $\exp(f)$ for a series with no constant term via $g' = f' g$, and compares their coefficients with brute-force counts.
+
+<Python id="enumerative_combinatorics_egf" />
+
+The third counts necklaces, bracelets and coloured cubes twice — by listing colourings and keeping the smallest in each orbit, and by Burnside's lemma — and shows how far off the naive count $k^n / n$ is.
+
+<Python id="enumerative_combinatorics_burnside" />
+
+All three are exact and exhaustive at the sizes shown: strong evidence for the formulas, and a check on our implementations, but not proofs for all $n$.
+
+</Section>
+
+<Section id="visualization" kind="visualization" title="Explore: the derangement probability">
+
+$D(n)/n!$ is the $n$-th partial sum of the series $\sum_{k \ge 0} \frac{(-1)^k}{k!} = e^{-1}$. Watch the partial sums home in on $1/e$:
+
+<SequenceLab mode="series" term="(-1)^(n-1)/(n-1)!" limit="exp(-1)" N={12} title="Partial sums of Σ (−1)^k / k! → 1/e" subtitle="The n-th partial sum is D(n−1)/(n−1)!, the chance that a random permutation of n − 1 objects has no fixed point." />
+
+Things to notice: the partial sums alternate above and below $1/e$, and the error after $n$ terms is smaller than the next term $1/n!$ — which is why the probability is practically constant from about seven people onwards. Change the term to `1/(n-1)!` to see $e$ itself appear: the EGF of the sequence $1, 1, 1, \dots$ is $e^x$.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"To count up to symmetry, divide by the number of symmetries."** That works only when every orbit has full size $|G|$, i.e. when no colouring is fixed by a non-identity symmetry. For two-colour necklaces of four beads, $2^4/4 = 4$, but the true count is $6$: the colourings RRRR, WWWW (fixed by every rotation) and RWRW (fixed by the half-turn) have small orbits. Burnside's lemma corrects for exactly this.
+
+</Misconception>
+
+<Misconception>
+
+**"A generating function must converge to be useful."** Formal power series are algebraic objects; identities between them are identities of coefficients, valid whether or not the series converge. $\sum n!\, x^n$ converges only at $0$, yet it is a perfectly good element of $\Q[[x]]$. Convergence matters only when one wants analytic information, such as asymptotics.
+
+</Misconception>
+
+<Misconception>
+
+**"Ordinary and exponential generating functions are interchangeable."** They encode different combinatorics. OGFs multiply for unlabelled combinations (the coefficient of a product is $\sum a_k b_{n-k}$); EGFs multiply for labelled ones (with $\binom{n}{k}$ built in). Using an OGF for permutations or set partitions gives the wrong convolution.
+
+</Misconception>
+
+<Misconception>
+
+**"The probability of no fixed point goes to zero for large groups, since there are more people to collide with."** More people means more chances for someone to draw their own name, but each chance is smaller; the two effects balance, and the probability tends to $1/e \approx 0.368$, not to $0$.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="algebra" title="Partitions and the symmetric group">
+
+The partitions of $n$ index the conjugacy classes of the symmetric group $S_n$ (by cycle type) — and therefore, since the number of irreducible complex representations of a finite group equals its number of conjugacy classes, also its irreducible representations. Unusually, there is a natural bijection: the partition $\lambda$ gives the **Specht module** $S^\lambda$, whose dimension $f^\lambda$ is the number of standard Young tableaux of shape $\lambda$. The identity $\sum_{\lambda \vdash n} (f^\lambda)^2 = n!$, true for any finite group's representations, has a bijective proof — the **Robinson–Schensted correspondence** between permutations and pairs of tableaux of the same shape. The cycle index of $S_n$ is the generating function of conjugacy classes, and Pólya theory grows into the theory of **symmetric functions**. See <TopicLink id="math.algebra.representation-theory">representation theory</TopicLink> and <TopicLink id="math.algebra.groups">groups</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="Singularities decide asymptotics">
+
+Treated as analytic functions, generating functions reveal how fast their coefficients grow: the coefficients are governed by the singularities nearest the origin. $\hat D(x) = \frac{e^{-x}}{1 - x}$ has a simple pole at $x = 1$ with residue $-e^{-1}$, so $\hat D(x) - \frac{e^{-1}}{1 - x}$ is entire and its coefficients decay faster than any exponential: $D(n)/n! = e^{-1} + o(r^{-n})$ for every $r$, a much stronger statement than Theorem 5. For partitions, $\prod (1 - x^k)^{-1}$ has the whole unit circle as a natural boundary; Hardy and Ramanujan's circle method analyses its behaviour near every root of unity, with the dominant contribution from $x = 1$, giving $p(n) \sim \frac{1}{4n\sqrt3} e^{\pi\sqrt{2n/3}}$. Flajolet and Sedgewick's *Analytic Combinatorics* systematises this "singularity analysis". See <TopicLink id="math.analysis.complex-analysis">complex analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Modular forms behind partitions">
+
+The partition generating function is essentially a modular form. With $q = e^{2\pi i \tau}$, the **Dedekind eta function** $\eta(\tau) = q^{1/24} \prod_{k \ge 1} (1 - q^k)$ satisfies $\eta(-1/\tau) = \sqrt{-i\tau}\, \eta(\tau)$, so $\sum p(n) q^{n - 1/24} = 1/\eta(\tau)$ transforms predictably under $SL_2(\Z)$ — the source of the Hardy–Ramanujan–Rademacher formula. Euler's pentagonal number theorem is the $q$-expansion of $\eta$, a special case of Jacobi's triple product identity. Ramanujan's congruences modulo $5, 7, 11$ come from modular identities such as $\sum_{m} p(5m + 4) q^m = 5 \prod_k \frac{(1 - q^{5k})^5}{(1 - q^k)^6}$; Dyson's rank (1944) and Andrews and Garvan's crank (1988) explain them combinatorially; and Ken Ono (2000) showed that congruences of this kind exist modulo every prime $\ell \ge 5$, though on more complicated arithmetic progressions. See <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Random permutations">
+
+The exponential formula is a probabilistic statement in disguise. For a uniformly random permutation of $n$ points, the number of fixed points converges in distribution to a **Poisson** variable with mean $1$: $\Pr(\text{exactly } j \text{ fixed points}) = \binom{n}{j} \frac{D(n - j)}{n!} \to \frac{e^{-1}}{j!}$. More generally the numbers of cycles of lengths $1, 2, 3, \dots$ converge jointly to *independent* Poisson variables with means $1, \frac12, \frac13, \dots$, reflecting the factorisation $\exp\big(\sum_k x^k/k\big) = \prod_k e^{x^k/k}$. The total number of cycles has mean $H_n \sim \ln n$ (Theorem 6) and is asymptotically normal (Goncharov, 1944). The longest cycle typically covers a positive fraction of all points (about $0.62\,n$ on average — the Golomb–Dickman constant), a fact with a surprising twin in the distribution of the largest prime factor of a random integer. See <TopicLink id="math.prob.probability-theory">probability theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Symmetry groups of solids and molecules">
+
+Burnside's lemma is geometry made countable: the group in the cube example is the rotation group of the cube, isomorphic to $S_4$ acting on the four long diagonals, and the cycle types were read off from its axes of symmetry. Pólya's original motivation (1937) was chemistry: counting **isomers**, molecules with the same formula but different arrangements, such as the substituted benzenes, where the group is the dihedral symmetry group of the hexagonal ring. Replacing the cube by the icosahedron, or the necklace by a crystal lattice, changes only the group and its cycle index. The naive count has a geometric meaning too. Weighting each orbit by $1/|G_x|$ instead of $1$ gives $\sum_{\text{orbits}} 1/|G_x| = |X|/|G|$, the cardinality of the quotient regarded as an **orbifold** (or groupoid), in which a point with symmetry counts only fractionally; for a finite group acting on a finite complex, the orbifold Euler characteristic is likewise $\chi(X)/|G|$. Burnside's lemma is what you need when every orbit must count as exactly one. See <TopicLink id="math.geom.symmetry-transformations">symmetry and transformations</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="categories" title="Species: generating functions as functors">
+
+André Joyal's theory of **combinatorial species** (1981) explains why EGFs work. A species is a functor $F$ from the category of finite sets and bijections to itself: it sends a label set $U$ to the set $F[U]$ of structures on $U$ (all set partitions of $U$, all permutations of $U$, …) and relabels structures along bijections. Its EGF is $\sum |F[n]| \frac{x^n}{n!}$. Operations on species — sum, product (split the label set), composition (partition the labels, put a structure on each block) — correspond to sum, product and composition of EGFs, so Theorem 3 and the exponential formula become functorial statements: the species of sets $E$ has EGF $e^x$, and "sets of connected structures" is the composite $E \circ C$, with EGF $\exp(\hat C(x))$. Counting unlabelled structures uses the cycle index of a species, which unifies Pólya theory with EGFs. See <TopicLink id="math.cat.functors">functors</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and global context">
+
+- **Early combinatorics in India.** Piṅgala's *Chandaḥśāstra* (last centuries BCE) on Sanskrit prosody counted the patterns of short and long syllables, which leads to binary sequences and to the numbers now called binomial coefficients (the *meru-prastāra*); Virahāṅka and later Hemacandra (c. 1150) counted metres of a given total length by what are now called Fibonacci numbers. Bhāskara II's *Līlāvatī* (1150) and Nārāyaṇa Paṇḍita's *Gaṇita Kaumudī* (1356) treat permutations and combinations systematically.
+- **The Islamic world, China and Europe.** Al-Karajī (c. 1000) worked with the binomial coefficients; in Marrakesh in the 13th century Ibn Munʿim counted the words that can be formed from an alphabet and used the arithmetic triangle to do so. In China the triangle appears in Yang Hui's 1261 book, citing Jia Xian (11th century). Levi ben Gershon (1321) proved the formulas for permutations and combinations by induction.
+- **Probability and derangements.** Pierre Rémond de Montmort posed the *problème des rencontres* — how often does no card fall in its own place? — in 1708, and solved it with Nicolaus Bernoulli; the limit $1/e$ emerged from their work and Euler's.
+- **Generating functions.** Abraham de Moivre used generating functions to solve recurrences (1730), and Leonhard Euler's *Introductio in analysin infinitorum* (1748) founded the theory of partitions with them, including the odd/distinct theorem and the pentagonal number theorem (proved 1750). J. W. L. Glaisher gave his bijection in 1883; Percy MacMahon's *Combinatory Analysis* (1915–16) summed up the classical theory. G. H. Hardy and Srinivasa Ramanujan's asymptotic formula (1918), and Ramanujan's congruences (1919), opened the analytic and arithmetic theory of partitions.
+- **Symmetry.** The orbit-counting lemma appears in work of Augustin-Louis Cauchy (1845) and Georg Frobenius (1887); William Burnside's 1897 textbook made it famous, so his name stuck. J. Howard Redfield (1927) and George Pólya (1937) developed the cycle-index method, Pólya with applications to chemical isomers. Gian-Carlo Rota's 1960s programme and André Joyal's species (1981) gave the field its modern foundations.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Richard P. Stanley, *Enumerative Combinatorics, Volume 1* (1986; 2nd edition 2012) and *Volume 2* (1999) — the standard reference; generating functions, partitions and symmetric functions.
+- Herbert S. Wilf, *generatingfunctionology* (1990; 3rd edition 2006) — a lively introduction to generating functions.
+- Philippe Flajolet and Robert Sedgewick, *Analytic Combinatorics* (2009) — symbolic method, EGFs and singularity analysis.
+- George E. Andrews, *The Theory of Partitions* (1976) — the classic text on partitions.
+- George E. Andrews and Kimmo Eriksson, *Integer Partitions* (2004) — an accessible introduction.
+- Peter J. Cameron, *Combinatorics: Topics, Techniques, Algorithms* (1994) — includes Burnside's lemma and Pólya theory.
+
+Next steps in the Lumenary: <TopicLink id="math.algebra.representation-theory">representation theory of finite groups</TopicLink>, where partitions classify the representations of $S_n$; <TopicLink id="math.discrete.probabilistic-method">the probabilistic method</TopicLink>; and <TopicLink id="math.number.analytic-number-theory">analytic number theory</TopicLink>.
+
+</Section>
