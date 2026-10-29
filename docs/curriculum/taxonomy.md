@@ -5,7 +5,7 @@
 This document describes how the mathematics knowledge graph in `content/math/graph/graph.json` is organised: its levels, subjects, topic identifiers, statuses and edges, and the invariants every change must preserve. The graph is validated against `GraphFile` in `src/lib/schema.ts`.
 
 <!-- generated:summary -->
-The graph has **200 topics**, **387 required prerequisite edges** and **317 optional discovery edges** (54 of them walked by a named Wonder Trail). 200 topics are implemented as lessons — every topic in the graph; there are 19 Wonder Trails.
+The graph has **201 topics**, **390 required prerequisite edges** and **318 optional discovery edges** (54 of them walked by a named Wonder Trail). 201 topics are implemented as lessons — every topic in the graph; there are 19 Wonder Trails.
 <!-- /generated:summary -->
 
 ## Levels
@@ -53,9 +53,9 @@ The site draws a map with one lane per subject and one column per level. Current
 | Discrete Mathematics | · | 2 | 1 | 2 | 1 | 2 | 1 | 1 | 10 |
 | Probability & Statistics | 1 | 1 | 2 | 2 | 2 | 1 | 2 | 1 | 12 |
 | Category Theory | 1 | 1 | 2 | 3 | 3 | 6 | 7 | 6 | 29 |
-| Computation | 1 | 1 | 1 | 2 | 3 | 4 | 3 | 1 | 16 |
+| Computation | 1 | 1 | 1 | 2 | 3 | 4 | 3 | 2 | 17 |
 | Applied Mathematics | · | 1 | 1 | 1 | 2 | 3 | 2 | 1 | 11 |
-| **Total** | 9 | 15 | 21 | 27 | 23 | 39 | 44 | 22 | 200 |
+| **Total** | 9 | 15 | 21 | 27 | 23 | 39 | 44 | 23 | 201 |
 <!-- /generated:counts -->
 
 Empty cells are deliberate. For example, there is no kindergarten analysis topic, because forcing one would mean inventing content rather than describing a real precursor. The research column is intentionally light: it lists optional directions, not a syllabus.
@@ -98,9 +98,9 @@ Tags in use:
 | `category-progression` | 31 |
 | `foundations-relationships` | 18 |
 | `geometry-topology-progression` | 39 |
-| `lean` | 4 |
-| `research-direction` | 19 |
-| `research-skills` | 6 |
+| `lean` | 5 |
+| `research-direction` | 20 |
+| `research-skills` | 7 |
 | `set-theory-progression` | 18 |
 <!-- /generated:tags -->
 
@@ -386,6 +386,7 @@ That is all the structure we claim. Discovery edges are not part of this order, 
 | `math.cat.infinity-categories` | ∞-categories | Category Theory | implemented (`infinity-categories`) |
 | `math.cat.stable-infinity-categories` | Stable ∞-categories | Category Theory | implemented (`stable-infinity-categories`) |
 | `math.cat.triangulated-categories` | Triangulated categories | Category Theory | implemented (`triangulated-categories`) |
+| `math.comp.ai-assisted-mathematics` | AI-assisted mathematical research | Computation | implemented (`ai-assisted-mathematics`) |
 | `math.comp.formalising-published-mathematics` | Formalising published mathematics | Computation | implemented (`formalising-published-mathematics`) |
 | `math.discrete.additive-extremal-combinatorics` | Extremal and additive combinatorics | Discrete Mathematics | implemented (`additive-extremal-combinatorics`) |
 | `math.found.homotopy-type-theory` | Homotopy type theory | Foundations | implemented (`homotopy-type-theory`) |

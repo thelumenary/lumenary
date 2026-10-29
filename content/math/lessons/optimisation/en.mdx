@@ -13,7 +13,7 @@ objectives:
   - Apply Lagrange multipliers and the KKT conditions, and prove that the KKT conditions are sufficient for convex problems
   - Implement gradient descent and prove its $O(1/k)$ rate for convex functions with Lipschitz gradient; compare it with Newton's method
   - Treat least-squares data fitting as a convex optimisation problem
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.Optimisation.weak_duality
   - Lumenary.Optimisation.optimality_certificate
@@ -31,7 +31,7 @@ labels: [ai-drafted]
 
 <Section id="motivation" kind="motivation" title="The best possible">
 
-A furniture workshop in Kumasi makes two products. Each uses time in three workshops, each workshop has only so many hours a week, and each product earns a different profit. How many of each should it make? In 1939 Leonid Kantorovich, asked by a plywood trust in Leningrad how to allocate machines to materials, saw that such problems share one mathematical form, and that every solution comes with a set of hidden prices — what an extra hour of each scarce resource is worth. Today the same mathematics schedules airline crews, routes delivery vans through Jakarta, plans electricity generation and allocates vaccines.
+A furniture workshop in Kumasi makes two products. Each uses time in three workshops, each workshop has only so many hours a week, and each product earns a different profit. How many of each should it make? In 1939 Leonid Kantorovich, asked by a plywood trust in Leningrad how to allocate machines to materials, saw that such problems share one mathematical form, and that every solution comes with a set of hidden prices — what an extra hour of each scarce resource is worth. Today the same mathematics schedules airline crews from Atlanta to Amsterdam, routes delivery vans through Jakarta, plans electricity generation and allocates vaccines.
 
 A different kind of optimisation runs on every phone. Training a machine-learning model means choosing millions of numbers to make an error as small as possible. Nobody can search all choices. Instead the computer repeatedly takes a small step downhill — **gradient descent**, an idea Cauchy published in 1847. Does it reach the bottom? How fast? And how could we ever know that a valley we have found is the lowest one, rather than a hollow halfway up the mountain?
 
@@ -189,6 +189,12 @@ If (P) has an optimal solution, then so does (D), and the optimal values are equ
 
 </Proof>
 
+<Narrator who="gideon">
+
+Theorem 4 needs its hypothesis, and Corollary 2(c) is not an equivalence: both problems can be infeasible at once. Take $A = \begin{pmatrix} 1 & -1 \\ -1 & 1 \end{pmatrix}$, $b = (-1, -1)$ and $c = (1, 1)$; adding the two primal constraints gives $0 \le -2$, and adding the two dual constraints gives $0 \ge 2$. So a primal–dual pair has exactly four possible fates: both optimal with equal values, primal unbounded and dual infeasible, the reverse, or both infeasible.
+
+</Narrator>
+
 **The dual as prices.** In the workshop problem the dual solution is $y = (0, \tfrac32, 1)$: one more hour in workshop B would raise the maximum profit by $\tfrac32$, one more in C by $1$, and one more in A by nothing, since A already has slack (complementary slackness). Check: $b^{\mathsf T}y = 4 \cdot 0 + 12 \cdot \tfrac32 + 18 \cdot 1 = 36 = c^{\mathsf T}x^*$. These **shadow prices** are Kantorovich's "objectively determined valuations".
 
 **The simplex method.** An LP in inequality form with $b \ge 0$ starts at the vertex $x = 0$. At each step the method looks for a non-basic variable whose increase improves the objective (a positive **reduced cost**), increases it until the first constraint becomes tight (the **ratio test**), and pivots to that adjacent vertex. If no variable can improve the objective, the vertex is optimal, and the final tableau displays a dual solution satisfying Corollary 2(a). If an improving variable can be increased forever, the LP is unbounded. With Bland's smallest-index rule (1977) the method never cycles, so it terminates. Klee and Minty (1972) built LPs on which the classical rule visits exponentially many vertices, yet in practice the method is very fast, a phenomenon explained by Spielman and Teng's smoothed analysis (2004). Provably polynomial-time algorithms exist: Khachiyan's ellipsoid method (1979) and Karmarkar's interior-point method (1984). The first experiment runs the simplex method in exact arithmetic.
@@ -305,6 +311,12 @@ where the equality is the expansion of $\|x_{k+1} - x^*\|^2 = \|(x_k - x^*) - \f
 
 </Proof>
 
+<Narrator who="chloe">
+
+The key move is to find a quantity that pays for progress. Each step shrinks the squared distance $\|x_k - x^*\|^2$ by at least $\frac2L\big(f(x_{k+1}) - f(x^*)\big)$, and that distance starts at $\|x_0 - x^*\|^2$ and can never become negative — so the total progress is bounded, and the average gap must fall like $1/k$. Many convergence proofs in optimisation are this one idea: a potential that telescopes.
+
+</Narrator>
+
 Three remarks. **Step size.** For $f(x) = \frac L2 x^2$ the iteration is $x_{k+1} = (1 - \eta L)x_k$, which converges exactly when $0 < \eta < 2/L$. Larger steps overshoot and diverge, as the experiment and the cobweb diagram show. **Strong convexity.** If $f$ is also $\mu$-strongly convex, the gap shrinks geometrically, like $(1 - \mu/L)^k$. The ratio $L/\mu$, the **condition number**, governs the speed. **Faster methods.** Nesterov's accelerated gradient method (1983) achieves $O(1/k^2)$, which is optimal for first-order methods on this class. **Newton's method** minimises a quadratic in one step, since it jumps straight to the minimum of the local quadratic model, and converges quadratically near a minimiser with positive definite Hessian; but each step solves a linear system with the Hessian.
 
 **Data fitting.** Fitting a model $Aw \approx y$ to data by **least squares** means minimising $F(w) = \|Aw - y\|^2$, which is convex with gradient $2A^{\mathsf T}(Aw - y)$. By Theorem 6 its minimisers are exactly the solutions of the **normal equations** $A^{\mathsf T}Aw = A^{\mathsf T}y$, unique when $A$ has independent columns. Geometrically $Aw^*$ is the orthogonal projection of $y$ onto the column space of $A$. For huge data sets one runs (stochastic) gradient descent on $F$ instead of solving the normal equations, and the second experiment checks that both give the same line.
@@ -354,6 +366,12 @@ The second program runs gradient descent on a convex quadratic with $\mu = 2$ an
 <Python id="optimisation_gradient_descent" />
 
 The first program is exact for its problems. The second is floating-point evidence: it illustrates the theorems but does not prove them, and its gaps stop shrinking at about $10^{-16}$, the limit of double-precision arithmetic.
+
+<Narrator who="margaret">
+
+Read the descent table against the theorems. At $k = 20$ the gap is about $3 \times 10^{-6}$ while the $O(1/k)$ bound still allows $4$: Theorem 9 is a worst case over all convex $L$-smooth functions, and this one is strongly convex, so the geometric column is the relevant prediction — and the run beats even that. The step $1.9/L$ converges, but along the direction of curvature $L$ it multiplies the error by $1 - 1.9 = -0.9$ at every step, flipping its sign and shrinking it slowly, which is why its gap after 50 steps is still about $2 \times 10^{-3}$.
+
+</Narrator>
 
 </Section>
 

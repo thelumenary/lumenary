@@ -77,6 +77,8 @@ describe("lesson checks", () => {
         expect(rawKeys, "widget message keys missing from the page's message subset").toEqual([]);
         const errors = [...html.matchAll(/class="katex-error"[^>]*title="([^"]*)"/g)].map((m) => m[1]);
         expect(errors, "KaTeX errors in the lesson body").toEqual([]);
+        const rawCaptions = [...html.matchAll(/<figcaption[^>]*>([\s\S]*?)<\/figcaption>/g)].map((m) => m[1].replace(/<[^>]*>/g, "")).filter((c) => /\$[^$\s][^$]*\$/.test(c));
+        expect(rawCaptions, "figure captions with untypeset $…$").toEqual([]);
         // Frontmatter strings are rendered as inline Markdown on the page.
         const f = LessonFrontmatter.parse(doc.data);
         for (const s of [f.subtitle, ...f.objectives]) expect(mdToHtml(s), s).not.toContain("katex-error");

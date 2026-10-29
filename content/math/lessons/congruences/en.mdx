@@ -13,7 +13,7 @@ objectives:
   - State and prove the Chinese remainder theorem, and solve systems of congruences with coprime moduli
   - Prove Fermat's little theorem, Euler's theorem and Wilson's theorem, and use them to compute large powers modulo $n$
   - Explain why the converse of Fermat's theorem fails, using the Carmichael number $561$
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.Congruences.modEq_iff_dvd_sub
   - Lumenary.Congruences.modEq_equivalence
@@ -43,7 +43,7 @@ The *Sunzi Suanjing* ("Master Sun's Mathematical Manual"), a Chinese text from r
 
 > There are certain things whose number is unknown. Counted by threes, two are left over; counted by fives, three are left over; counted by sevens, two are left over. How many things are there?
 
-The answer given is $23$. But why $23$, how would you find it, are there other answers, and would the method work for any remainders and any divisors? Questions about remainders are everywhere: which day of the week 1 January 2050 falls on (remainders on division by $7$), whether a mobile-money account number has been mistyped (check digits use remainders on division by $10$ or $11$), and — the subject of the <TopicLink id="math.applied.cryptography">cryptography</TopicLink> lesson — how a phone in Lagos and a server in Singapore can agree on a secret key in public. This lesson develops the arithmetic of remainders, which Gauss called **congruences**, and proves its four great theorems: the Chinese remainder theorem and the theorems of Fermat, Euler and Wilson.
+The answer given is $23$. But why $23$, how would you find it, are there other answers, and would the method work for any remainders and any divisors? Questions about remainders are everywhere: which day of the week 1 January 2050 falls on (remainders on division by $7$), whether a mobile-money account number or a European bank's IBAN has been mistyped (check digits use remainders on division by $10$, $11$ or $97$), and — the subject of the <TopicLink id="math.applied.cryptography">cryptography</TopicLink> lesson — how a phone in Lagos and a server in Singapore can agree on a secret key in public. This lesson develops the arithmetic of remainders, which Gauss called **congruences**, and proves its four great theorems: the Chinese remainder theorem and the theorems of Fermat, Euler and Wilson.
 
 </Section>
 
@@ -197,6 +197,12 @@ satisfies $x \equiv a \cdot 1 + b \cdot 0 = a \pmod m$ and $x \equiv a \cdot 0 +
 
 </Proof>
 
+<Narrator who="chloe">
+
+The key idea is in the two "switches": $vn$ is $1$ modulo $m$ and $0$ modulo $n$, while $um$ is the other way round, so $a \cdot vn + b \cdot um$ answers each congruence with one switch on and the other off. Lagrange interpolation builds a polynomial through given points from the same kind of switches — no accident, since both are instances of the Chinese remainder theorem in a ring.
+
+</Narrator>
+
 By induction the theorem extends to any number of **pairwise coprime** moduli $n_1, \dots, n_k$: a system $x \equiv a_i \pmod{n_i}$ has a solution, unique modulo $n_1 n_2 \cdots n_k$. (Combine the first two congruences into one modulo $n_1 n_2$, which is coprime to each remaining $n_i$, and repeat.)
 
 <Example title="Sunzi's problem">
@@ -334,6 +340,12 @@ Mathlib writes `a ≡ b [ZMOD n]` for congruence of integers (`[MOD n]` for natu
 
 <Lean decl="Lumenary.Congruences.modEq_mul" />
 
+<Narrator who="gideon">
+
+Notice that `modEq_iff_dvd_sub` has no hypothesis on `n`: Mathlib's definition makes sense for every integer modulus, including $0$ (where Lean's convention $a \,\%\, 0 = a$ makes `a ≡ b [ZMOD 0]` mean $a = b$) and negative ones. The formal theorems are therefore slightly more general than the paper ones, which assume $n \ge 1$ — and it is worth checking, statement by statement, that no proof secretly needs $n > 0$.
+
+</Narrator>
+
 **Inverses and cancellation (Theorem 3).** Mathlib's `IsCoprime a n` means "$ua + vn = 1$ for some $u, v$" — Bézout's form of coprimality — and `Int.isCoprime_iff_gcd_eq_one` connects it to the gcd. The `linear_combination` tactic checks that one equation is a linear combination of others, which is exactly how the two directions are proved on paper.
 
 <Lean decl="Lumenary.Congruences.cancel_fails" />
@@ -381,6 +393,12 @@ The extended Euclidean algorithm is the engine behind Theorems 3, 4 and 5. The f
 The second experiment checks Fermat, Euler and Wilson on every case in a range, then goes hunting for composite numbers that pass Fermat's test. Many composites pass for the single base $2$ — the first is $341 = 11 \cdot 31$ — but are exposed by another base. Only seven below $10\,000$ fool *every* coprime base.
 
 <Python id="congruences_fermat_test" />
+
+<Narrator who="margaret">
+
+Put the numbers side by side: below $10\,000$ more than $1\,200$ primes pass the base-$2$ test and only $22$ composites do. As a filter, Fermat's test is excellent; as a proof, it is worthless — which is why practical software uses the Miller–Rabin strengthening, and why a "probable prime" is reported as exactly that.
+
+</Narrator>
 
 Both experiments are exhaustive within their ranges, and exact. They illustrate the theorems; they do not prove them, and the Carmichael numbers they find show why no amount of checking Fermat's condition proves a number prime.
 

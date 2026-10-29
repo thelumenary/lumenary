@@ -15,6 +15,7 @@ import { makeMdxComponents } from "@/components/lesson/mdx-components";
 import { LensArticle, RecordVisit, Toc } from "@/components/lesson/LessonChrome";
 import { TranslationNotice } from "@/components/lesson/TranslationNotice";
 import { NarratorAvatar } from "@/components/brand/Narrators";
+import { CatToggle } from "@/components/site/CatToggle";
 import { VerificationBadge } from "@/components/ui/Badges";
 
 export const dynamicParams = false;
@@ -95,7 +96,7 @@ export default async function LessonPage({ params }: Params) {
                 <VerificationBadge label="awaiting" text={`${t("verify.mathematically-reviewed")}: ${t("verify.awaitingReview")}`} />
               </div>
               {fm.narrators.length > 0 && (
-                <div className="mt-6 flex items-center gap-3">
+                <div data-cat className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1">
                   <div className="flex -space-x-2 rtl:space-x-reverse">
                     {fm.narrators.map((n) => (
                       <NarratorAvatar key={n} who={n} size={36} className="rounded-full ring-2 ring-paper" />
@@ -104,6 +105,9 @@ export default async function LessonPage({ params }: Params) {
                   <p className="text-sm text-muted">
                     {t("lesson.narrators")}: {fm.narrators.map((n) => t(`narrators.${n}`)).join(", ")}
                   </p>
+                  <span className="no-print">
+                    <CatToggle variant="text" />
+                  </span>
                 </div>
               )}
             </div>

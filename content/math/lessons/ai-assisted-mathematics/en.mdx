@@ -1,0 +1,510 @@
+---
+slug: ai-assisted-mathematics
+topic: math.comp.ai-assisted-mathematics
+title: AI-assisted mathematical research
+subtitle: What AI systems have actually contributed to mathematics from 2021 to October 2026 — and the generate-and-verify loop that decides how much of it to believe.
+level: research
+ages: Research (graduate background; some Lean and Python)
+minutes: 140
+order: 8023
+objectives:
+  - Describe the ways AI systems assist mathematical research — literature search, code and experiments, search for constructions, conjecture generation, proof drafting, autoformalisation and formal proof search — and the generate-and-verify loop behind reliable use
+  - Distinguish a checkable construction (a lower bound) from an optimality or universal claim, and verify a machine-found certificate exactly, in Python and in Lean with `decide`
+  - Read an announcement of an AI-assisted result critically, separating what was announced, independently checked, formally verified and published, and checking novelty against the literature
+  - Summarise the dated record of AI contributions from 2021 to 2026, keeping what is known separate from what is open
+  - Use AI tools in your own research responsibly, with verification, disclosure and fair credit
+narrators: [chloe, margaret, gideon]
+lean:
+  - Lumenary.AiAssistedMathematics.IsSchurColouring
+  - Lumenary.AiAssistedMathematics.searchCertificate
+  - Lumenary.AiAssistedMathematics.searchCertificate_valid
+  - Lumenary.AiAssistedMathematics.pentagonColouring
+  - Lumenary.AiAssistedMathematics.pentagonColouring_valid
+  - Lumenary.AiAssistedMathematics.schur_two_optimal
+  - Lumenary.AiAssistedMathematics.HasTriangleFreeColouring
+  - Lumenary.AiAssistedMathematics.hasTriangleFreeColouring_of_schur
+  - Lumenary.AiAssistedMathematics.three_colours_fourteen_vertices
+  - Lumenary.AiAssistedMathematics.schur_theorem
+compute: [ai_assisted_mathematics_schur_search, ai_assisted_mathematics_cap_sets]
+trails: []
+labels: [ai-drafted]
+---
+
+<Section id="motivation" kind="motivation" title="Three announcements">
+
+**May 2026.** On 20 May 2026 OpenAI announced that an internal model had disproved a conjecture Paul Erdős made in 1946: that $n$ points in the plane determine at most $n^{1 + O(1/\log \log n)}$ pairs at distance exactly $1$. The model's construction gives, for some fixed $\varepsilon > 0$, arbitrarily large point sets $P$ with at least $\lvert P \rvert^{1 + \varepsilon}$ unit distances. Alongside the announcement, nine mathematicians — Noga Alon, Thomas Bloom, Timothy Gowers, Daniel Litt, Will Sawin, Arul Shankar, Jacob Tsimerman, Victor Wang and Melanie Matchett Wood — posted "a short, digested, human-verified version" of the proof, with reflections on it. Gowers wrote that "if a human had written the paper and submitted it to the *Annals of Mathematics* and I had been asked for a quick opinion, I would have recommended acceptance without any hesitation."
+
+**October 2025.** Seven months earlier, posts by OpenAI staff had said that GPT-5 "found solutions" to ten Erdős problems listed as open. Thomas Bloom, who maintains the database of Erdős problems, replied that "open" on his site means only that he did not know of a solution: the model had found existing papers. The most widely shared post was deleted, and OpenAI staff acknowledged that only solutions already in the literature had been found. The search was genuinely useful; the description of it was not accurate.
+
+**February–October 2026.** Eleven mathematicians posed ten research-level problems from their own work, whose solutions they knew but had not published — the *First Proof* experiment — and asked what AI systems could do with them. In later rounds the organisers ran the systems themselves and had the solutions refereed blind, as for a journal. By the third round, in October 2026, they reported that the strongest system solved nine of ten; earlier rounds had shown proofs that skipped the hardest step and citations to papers that do not contain the cited result.
+
+These three episodes contain almost everything this lesson is about: a result that changed a field, a claim that dissolved on inspection, and a careful attempt to measure the difference. Between them lies a practical question for every research mathematician today: **when an AI system proposes a construction, a lemma or a proof, how much should you believe, and how do you check?** The answer this lesson develops is old-fashioned — trust the verifier, not the generator — and the lesson builds on <TopicLink id="math.comp.experimental-mathematics">experimental mathematics</TopicLink>, <TopicLink id="math.comp.formalising-published-mathematics">formalising published mathematics</TopicLink> and <TopicLink id="math.found.research-ethics">research ethics and attribution</TopicLink>.
+
+Everything below about recent events is stated **as of October 2026**, with dates, and with the status of each claim. The field moves fast; the habits of checking do not go out of date.
+
+</Section>
+
+<Section id="intuition" kind="intuition" title="Generators and verifiers">
+
+"AI-assisted" covers activities that differ enormously in how their output can be checked.
+
+1. **Literature search** — finding that a problem was solved in a 1981 paper under another name. Checkable by reading the paper.
+2. **Code and experiments** — writing the search program, the plotting script, the computer-algebra session. Checkable by testing, as in any computation.
+3. **Search for constructions** — a language model proposes programs; an evaluator scores the objects they produce; the best are kept and mutated. FunSearch (2023) and AlphaEvolve (2025) work this way. Checkable exactly: the construction is an object you can test.
+4. **Conjecture generation** — machine learning that suggests a relation between invariants, as in the 2021 knot-theory work of Davies and collaborators. The output is a conjecture: it calls for a proof rather than a check.
+5. **Proof drafting in natural language** — a model writes an argument. Checkable only by an expert reading it line by line.
+6. **Autoformalisation** — translating mathematics into the language of a proof assistant such as Lean.
+7. **Formal proof search** — a system searches for a proof that Lean's kernel accepts, as AlphaProof, Aristotle and Seed Prover do.
+
+What makes AI assistance reliable is an asymmetry familiar from complexity theory: **finding is hard, checking is easy** — at least for the right kind of claim. A colouring with no monochromatic solution of $x + y = z$ may take a long search to find, but checking it takes a few dozen additions. This suggests a loop:
+
+$$
+\text{generator (untrusted)} \;\longrightarrow\; \text{candidate} \;\longrightarrow\; \text{verifier (trusted)} \;\longrightarrow\; \text{accept, or feed back.}
+$$
+
+The generator can be a random search, a human hunch or a language model; it does not matter, because nothing it says is believed until the verifier accepts. **The reliability of the loop is the reliability of its verifier.** There are three kinds of verifier, in decreasing order of reliability: an exact evaluator for a finite object (a program that checks a colouring), a proof assistant's kernel (which checks a formal proof against a formal statement), and a human expert (who checks a natural-language proof). The third is the bottleneck in research mathematics, and it is where errors hide.
+
+<Narrator who="chloe">
+
+The asymmetry has a sharp edge. A construction proves an *existence* statement ("some colouring of $\{1, \dots, 13\}$ works"), so it can be certified by exhibiting it. The matching *universal* statement ("no colouring of $\{1, \dots, 14\}$ works") has no short witness in general; it needs a proof. Ask of every AI-assisted claim which side of that line it is on.
+
+</Narrator>
+
+</Section>
+
+<Section id="definitions" kind="definitions" title="Definitions">
+
+<Definition term="certificate">
+
+A **certificate** for a mathematical claim is an object together with a simple, trusted procedure that checks it: a colouring and the program that tests every relevant triple; a factorisation and a multiplication; a formal proof and a proof assistant's kernel. A claim with a certificate can be believed without trusting whoever produced the certificate.
+
+</Definition>
+
+<Definition term="generate-and-verify loop">
+
+A **generate-and-verify loop** alternates an untrusted *generator*, which proposes candidates, with a trusted *verifier*, which accepts or rejects them (and may return a score or an error message to guide the next proposal).
+
+</Definition>
+
+<Definition term="status of an AI-assisted result">
+
+In this lesson every recent result carries one or more of these labels.
+
+- **Announced:** stated by the developer of the system, or by its users, in a blog post, preprint or social-media post.
+- **Independently checked:** mathematicians outside the developer's team (or a competition's official graders) have checked the argument and said so publicly.
+- **Lean-verified:** a formal proof has been accepted by Lean's kernel. This certifies the *formal statement*; whether that statement says what the informal claim says must still be checked by people.
+- **Published:** accepted by a peer-reviewed journal or refereed venue.
+
+**Self-reported** marks a performance figure that only the developer has measured.
+
+</Definition>
+
+<Definition term="Schur colouring and Schur number">
+
+A colouring $c : \{1, \dots, n\} \to \{1, \dots, k\}$ is a **Schur colouring** if there are no $x, y$ (possibly equal) with $x + y \le n$ and $c(x) = c(y) = c(x + y)$: no colour class contains a solution of $x + y = z$. The **Schur number** $S(k)$ is the largest $n$ that has a Schur colouring with $k$ colours.
+
+</Definition>
+
+<Definition term="multicolour Ramsey number">
+
+$R(3; k)$ is the least $N$ such that every colouring of the edges of the complete graph $K_N$ with $k$ colours contains a triangle whose three edges have the same colour. So $R(3; 1) = 3$ and $R(3; 2) = R(3, 3) = 6$.
+
+</Definition>
+
+<Definition term="autoformalisation and misformalisation">
+
+**Autoformalisation** is machine translation of informal mathematics into the language of a proof assistant. A **misformalisation** is a formal statement that does not say what the informal one says — it drops or adds a hypothesis, changes a quantifier, or is vacuous — so that a correct formal proof of it proves the wrong thing.
+
+</Definition>
+
+</Section>
+
+<Section id="worked-example" kind="examples" title="A search you can check: Schur colourings">
+
+Schur colourings are a good laboratory: finding them is a genuine search problem, checking them is trivial, and the optimal values are known only for $k \le 5$.
+
+<Example title="Two colours, by hand">
+
+Colour $\{1, 4\}$ red and $\{2, 3\}$ blue. The sums to check are $1 + 1 = 2$, $1 + 2 = 3$, $1 + 3 = 4$, $2 + 2 = 4$; in none of them are all three numbers the same colour. So $S(2) \ge 4$. Can we go to $5$? Say $1$ is red. Then $2 = 1 + 1$ is blue, $4 = 2 + 2$ is red, $3$ is blue (as $1 + 3 = 4$), and $5$ can be neither red ($1 + 4 = 5$) nor blue ($2 + 3 = 5$). So $S(2) = 4$. The first half of this example is a **certificate**; the second half is a **proof of optimality**, and it had to consider every colouring.
+
+</Example>
+
+<Example title="Three colours, by search">
+
+For three colours the hand argument becomes tedious, so we let a computer guess. The experiment in the computation section runs a seeded *min-conflicts* local search: start from a random colouring, repeatedly pick a number involved in a monochromatic triple and recolour it to create as few monochromatic triples as possible. After 1800 steps it returns the colour classes
+
+$$
+\{5, 6, 7, 8, 9\}, \qquad \{2, 3, 11, 12\}, \qquad \{1, 4, 10, 13\}.
+$$
+
+Nothing about the search is trusted. The verifier checks the $42$ triples $(x, y, x + y)$ with $x \le y$ and $x + y \le 13$ and finds none monochromatic. That check — and only that check — proves $S(3) \ge 13$. In the formal section Lean's kernel performs the same check.
+
+</Example>
+
+<Figure caption="The 2-colouring of $\{1, 2, 3, 4\}$, lifted to the edges of $K_5$: the edge between vertices $i$ and $j$ gets the colour of $|i - j|$. Differences $1$ and $4$ (solid) form the outer pentagon; differences $2$ and $3$ (dashed) form the pentagram. Neither colour contains a triangle, so $R(3, 3) > 5$.">
+<svg viewBox="0 0 220 210" role="img" aria-label="Five vertices on a circle; the outer pentagon edges are solid and the inner pentagram edges are dashed">
+  <polygon points="110,15 200,80 166,185 54,185 20,80" fill="none" stroke="var(--human)" strokeWidth="3" />
+  <polyline points="110,15 166,185 20,80 200,80 54,185 110,15" fill="none" stroke="var(--compute)" strokeWidth="2" strokeDasharray="6 4" />
+  <circle cx="110" cy="15" r="9" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="200" cy="80" r="9" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="166" cy="185" r="9" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="54" cy="185" r="9" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <circle cx="20" cy="80" r="9" fill="var(--sky-soft)" stroke="var(--ink-2)" />
+  <text x="110" y="19" fontSize="10" textAnchor="middle" fill="var(--ink-2)">0</text>
+  <text x="200" y="84" fontSize="10" textAnchor="middle" fill="var(--ink-2)">1</text>
+  <text x="166" y="189" fontSize="10" textAnchor="middle" fill="var(--ink-2)">2</text>
+  <text x="54" y="189" fontSize="10" textAnchor="middle" fill="var(--ink-2)">3</text>
+  <text x="20" y="84" fontSize="10" textAnchor="middle" fill="var(--ink-2)">4</text>
+</svg>
+</Figure>
+
+<Example title="From a colouring of numbers to a colouring of a graph">
+
+Colour the edge $\{i, j\}$ of the complete graph on $0, 1, \dots, n$ by the colour of $\lvert i - j \rvert$. A triangle $i < j < l$ has edge colours $c(j - i)$, $c(l - j)$, $c(l - i)$, and $(j - i) + (l - j) = l - i$. So a monochromatic triangle would be a monochromatic solution of $x + y = z$. The certificate for $S(3) \ge 13$ therefore also certifies a 3-colouring of the edges of $K_{14}$ with no monochromatic triangle: $R(3; 3) \ge 15$. This is a true theorem that is not sharp — $R(3; 3) = 17$ (Greenwood and Gleason, 1955). A certificate proves what it proves, nothing more.
+
+</Example>
+
+<Example title="What the search cannot tell you">
+
+Asked for four colours, the same search (with a small budget) finds verified Schur colourings of $\{1, \dots, n\}$ for every $n$ up to $35$ and then gives up. That proves $S(4) \ge 35$ and nothing else: in fact $S(4) = 44$, determined by an exhaustive computer search reported by Leonard Baumert in 1965. For five colours, Marijn Heule settled $S(5) = 160$ in 2017 with a SAT solver: the lower bound is a colouring anyone can check, while the upper bound — no 5-colouring of $\{1, \dots, 161\}$ — needed about 14 CPU-years and produced a proof certificate of roughly two petabytes, checked by a formally verified checker. $S(6)$ is unknown. Optimality is a different and much more expensive kind of claim.
+
+</Example>
+
+**Where this meets an Erdős problem.** Since $R(3; k) \ge S(k) + 2$, lower bounds for Schur numbers give lower bounds for multicolour Ramsey numbers, and the proof section shows $S(k) \ge (3^k - 1)/2$ and $R(3; k) \le \lfloor e \cdot k! \rfloor + 1$. Erdős asked how fast $R(3; k)$ grows — specifically for $\lim_{k \to \infty} R(3; k)^{1/k}$ (problem #183 on erdosproblems.com). On 1 August 2026 OpenAI announced, with a Lean certificate, a lower bound $R(3; k) \ge k^{(1/3 - o(1))k}$, which makes the limit infinite. As of October 2026 erdosproblems.com lists the problem as resolved and links a short exposition of the construction by Rob Morris; we know of no refereed publication yet. In the vocabulary above: *announced, Lean-verified, independently expounded*.
+
+</Section>
+
+<Section id="proofs" kind="proof" title="Proofs: constructions, bounds and Schur's theorem">
+
+The worked example rests on four short arguments; they also show the two kinds of claim side by side.
+
+<Theorem name="Proposition 1 (Schur colourings give Ramsey colourings)">
+
+If $\{1, \dots, n\}$ has a Schur colouring with $k$ colours, then the edges of the complete graph on $n + 1$ vertices can be $k$-coloured with no monochromatic triangle. Hence $R(3; k) \ge S(k) + 2$.
+
+</Theorem>
+
+<Proof>
+
+Take vertices $0, \dots, n$ and colour $\{i, j\}$ with $c(\lvert i - j \rvert)$. A triangle $i < j < l$ with all edges of one colour would give $x = j - i$, $y = l - j$, $x + y = l - i$, all in $\{1, \dots, n\}$ and of one colour — impossible. With $n = S(k)$ this colours $K_{S(k) + 1}$, so $R(3; k) > S(k) + 1$.
+
+</Proof>
+
+<Theorem name="Proposition 2 (Schur's tripling construction, 1916)">
+
+$S(k + 1) \ge 3 S(k) + 1$. Consequently $S(k) \ge (3^k - 1)/2$ for all $k \ge 1$.
+
+</Theorem>
+
+<Proof>
+
+Let $c$ be a Schur colouring of $\{1, \dots, m\}$ with colours $1, \dots, k$. Colour $\{1, \dots, 3m + 1\}$ by: $c'(x) = c(x)$ for $x \le m$ (the low block $L$); $c'(x) = k + 1$ for $m + 1 \le x \le 2m + 1$ (the middle block); $c'(x) = c(x - 2m - 1)$ for $2m + 2 \le x \le 3m + 1$ (the high block $H$). Suppose $x \le y$ and $c'(x) = c'(y) = c'(x + y) = i$. If $i = k + 1$ then $x, y \ge m + 1$, so $x + y \ge 2m + 2$ is not in the middle block. Otherwise $x, y, x + y \in L \cup H$. If $x, y \in L$ then $x + y \le 2m$, so $x + y \in L$ and $c$ has a monochromatic triple. If $x \in L$ and $y \in H$, then $x + y \in H$, and $x$, $y - (2m + 1)$ and $(x + y) - (2m + 1)$ are a monochromatic triple for $c$. If $x, y \in H$ then $x + y \ge 4m + 4 > 3m + 1$. Each case is impossible. Starting from $S(1) = 1$, induction gives $S(k) \ge 1 + 3 + \cdots + 3^{k - 1} = (3^k - 1)/2$.
+
+</Proof>
+
+The construction gives $S(2) \ge 4$ and $S(3) \ge 13$, both sharp, and $S(4) \ge 40$, which is not.
+
+<Theorem name="Proposition 3 (an upper bound for Ramsey numbers)">
+
+$R(3; k) \le k \bigl(R(3; k - 1) - 1\bigr) + 2$ for $k \ge 2$, and hence $R(3; k) \le \lfloor e \cdot k! \rfloor + 1$ for $k \ge 1$.
+
+</Theorem>
+
+<Proof>
+
+Let the edges of $K_N$ be $k$-coloured with no monochromatic triangle, and fix a vertex $v$. Its $N - 1$ edges take $k$ colours, so some colour, say red, appears on at least $(N - 1)/k$ of them; let $A$ be the set of their other endpoints. No edge inside $A$ is red (it would form a red triangle with $v$), so the edges inside $A$ are coloured with $k - 1$ colours and no monochromatic triangle, and $\lvert A \rvert \le R(3; k - 1) - 1$. Hence $N - 1 \le k (R(3; k - 1) - 1)$, which is the first claim.
+
+For the second, let $r_k = R(3; k) - 1$, so $r_1 = 2$ and $r_k \le k r_{k - 1} + 1$. By induction $r_k \le k! \sum_{j = 0}^{k} 1/j!$: the case $k = 1$ is $2 \le 2$, and $k \cdot (k - 1)! \sum_{j \le k - 1} 1/j! + 1 = k! \sum_{j \le k} 1/j!$. Finally $k! \sum_{j \le k} 1/j!$ is an integer and $e \cdot k! - k! \sum_{j \le k} 1/j! = \sum_{j > k} k!/j! < \sum_{m \ge 1} (k + 1)^{-m} = 1/k \le 1$, so it equals $\lfloor e \cdot k! \rfloor$.
+
+</Proof>
+
+<Theorem name="Theorem (Schur, 1916; in the form proved here)">
+
+For every $k$, $S(k)$ is finite: $S(k) \le \lfloor e \cdot k! \rfloor - 1$. Equivalently, in every colouring of the positive integers with finitely many colours some colour class contains $x$, $y$ and $x + y$.
+
+</Theorem>
+
+<Proof>
+
+By Propositions 1 and 3, $S(k) + 2 \le R(3; k) \le \lfloor e \cdot k! \rfloor + 1$. For the second form: a $k$-colouring of all positive integers restricts to a $k$-colouring of $\{1, \dots, S(k) + 1\}$, which cannot be a Schur colouring.
+
+</Proof>
+
+So $\tfrac{1}{2} 3^k \lesssim S(k) + 2 \le R(3; k) \le \lfloor e \cdot k! \rfloor + 1$, and the gap between an exponential lower bound and a factorial upper bound left Erdős's question open for decades. Better exponential lower bounds came from computer-found colourings for small $k$, amplified by product constructions — another instance of verified constructions feeding a theorem. The 2026 announcement above, if it stands, shows that the growth is superexponential: $\log R(3; k) \ge (\tfrac13 - o(1))\, k \log k$, against $\log k! \sim k \log k$ for the upper bound.
+
+<Narrator who="gideon">
+
+Notice which of these statements a search could ever establish. Propositions 2 and 3 and Schur's theorem are about *every* $k$ and *every* colouring; no finite computation proves them. A computer can certify $S(3) \ge 13$, and it can certify $S(3) \le 13$ by exhausting a finite space — but the general bounds, like the answer to problem #183, are proofs.
+
+</Narrator>
+
+</Section>
+
+<Section id="record" kind="human" title="A dated record, 2021 to October 2026">
+
+The table lists contributions that are well documented in primary sources, with the status of each claim as defined above. It is a selection, not a census; "preprint" means posted (usually on arXiv) but not, at the time of writing, published in a refereed venue.
+
+| Date | What happened | Status |
+| --- | --- | --- |
+| Dec 2021 | Davies et al. (DeepMind with Juhász, Lackenby, Williamson and others): machine learning suggested a relation between a knot's signature and its hyperbolic geometry (the "natural slope"), which the authors then proved; and a conjectured approach to the combinatorial invariance conjecture for Kazhdan–Lusztig polynomials. | Published (*Nature* 600) |
+| Dec 2023 | FunSearch (Romera-Paredes et al.): language-model program search found a cap set of size 512 in $\mathbb F_3^8$, larger than the previous record of 496, and improved a lower bound for the asymptotic growth of cap sets. | Published (*Nature* 625); constructions checkable |
+| Jan 2024 | AlphaGeometry (Trinh, Wu, Le, He, Luong): solved 25 of 30 olympiad geometry problems in a benchmark, combining a language model with a symbolic deduction engine. | Published (*Nature* 625) |
+| Jul 2024 | AlphaProof and AlphaGeometry 2 at IMO 2024: 28 of 42 points, silver-medal standard. The problems were translated into Lean by people; some solutions took up to three days. Scored by Timothy Gowers and Joseph Myers at DeepMind's invitation. | Announced; graded by outside mathematicians engaged by the developer; Lean-verified (AlphaProof's part); method published in *Nature*, Nov 2025 |
+| Nov 2024 | PatternBoost (Charton, Ellenberg, Wagner, Williamson): local search with a transformer found a counterexample to a roughly 30-year-old conjecture about deleting hypercube edges without increasing the diameter. | Preprint; the counterexample is checkable |
+| Nov 2024 | FrontierMath (Epoch AI): hundreds of new, expert-written problems with automatically checkable answers; at launch, leading models solved under 2%. | Preprint; benchmark |
+| May 2025 | AlphaEvolve (Google DeepMind): an evolutionary coding agent. Multiplied $4 \times 4$ complex matrices with 48 scalar multiplications (Strassen's 1969 method needs 49); raised the kissing-number lower bound in dimension 11 from 592 to 593; on more than 50 open problems, matched the best known constructions in about 75% and improved them in about 20%. | Announced; constructions checkable |
+| Jul 2025 | IMO 2025: Gemini Deep Think scored 35 of 42 (gold-medal standard) in natural language within the time limit, graded by the IMO's coordinators. An OpenAI experimental model also scored 35, graded by three former IMO medallists engaged by OpenAI. Harmonic's Aristotle produced Lean proofs for 5 of 6 problems, from statements formalised by its team. ByteDance reported a score of 30, certified by the IMO, for Lean solutions that Seed Prover produced over several days, and a fifth problem completed later. | Gemini: independently checked (official grading). OpenAI: announced; graded by outside mathematicians engaged by the developer. Aristotle: Lean-verified. Seed Prover: announced; Lean-verified |
+| Aug–Sep 2025 | Individual researchers report GPT-5 contributions: Sébastien Bubeck had GPT-5 Pro improve a step-size bound in convex optimisation from $1/L$ to $1.5/L$ (he checked the proof; the paper's authors closed the gap at the optimal $1.75/L$ in a revised version, with a different proof); Scott Aaronson and Freek Witteveen credit GPT-5 with suggesting a key function in a proof about amplification in QMA (a reader of Aaronson's blog then proposed a better one). | Announced by the mathematicians involved; preprints |
+| Sep 2025 | Math Inc announced that its agent Gauss completed, in about three weeks, the Lean formalisation of the strong prime number theorem that Terence Tao and Alex Kontorovich had set out to formalise. | Announced; Lean-verified |
+| Sep 2025 | Wang, Lai, Gómez-Serrano, Buckmaster and collaborators: neural networks trained to near machine precision found new families of *unstable* self-similar blow-up solutions for the incompressible porous media and 2D Boussinesq equations. | Preprint; high-precision numerical evidence, offered as a route to computer-assisted proof |
+| Oct 2025 | The literature-search episode described in the motivation: "solutions" to ten Erdős problems were existing papers. | Claim withdrawn; the literature search itself was valid |
+| Nov 2025 | Georgiev, Gómez-Serrano, Tao and Wagner, "Mathematical exploration and discovery at scale": AlphaEvolve on 67 problems in analysis, combinatorics, geometry and number theory; it rediscovered the best known constructions in most and improved several. The AlphaProof paper appeared in *Nature*. | Preprint; published (AlphaProof) |
+| Jan 2026 | Erdős problem #728 (on divisibility of factorials, from a 1975 paper of Erdős, Graham, Ruzsa and Straus): GPT-5.2 Pro produced an argument and Harmonic's Aristotle a Lean proof, for the interpretation that erdosproblems.com judged to be intended; Tao described it as solved more or less autonomously by AI. Written up by Nat Sothanaphan (arXiv 2601.07421). | Lean-verified; independently checked |
+| Feb 2026 | First Proof, first round (arXiv 2602.05192): ten unpublished problems from eleven mathematicians, released on 5 February with answers on 13 February. Not formally graded; by the informal consensus of First Proof's reviewers (as reported by Harvard in October 2026), internal models of OpenAI and Google each solved five or six, and seven between them. OpenAI's own account and Google DeepMind's report on its Aletheia agent (six of ten by majority expert assessment) were written by the developers. | Self-reported; informally checked |
+| May 2026 | The unit distance conjecture disproved by an OpenAI internal model (described in the motivation); companion paper arXiv 2605.20695. Will Sawin made the exponent explicit: more than $n^{1.014}$ unit distances among $n$ points, for arbitrarily large $n$ (arXiv 2605.20579). | Announced; independently checked; preprints |
+| May 2026 | AlphaProof Nexus (Google DeepMind, arXiv 2605.22763): Lean-based proof search resolved 9 of the 353 open Erdős problems it attempted and proved 44 of 492 conjectures from the OEIS; a simpler loop alternating a language model with Lean checking reproduced the Erdős results, at higher cost on the hardest problems. Published in *Science* on 8 October 2026. | Lean-verified; published |
+| Jun 2026 | First Proof, second round (arXiv 2606.18119): the organisers ran four systems themselves, one attempt per problem; about thirty referees graded 39 anonymised solutions. Seven of ten problems received at least one passing solution, 17 of the 39 solutions passed, and on one problem no system made substantial progress. | Independently checked |
+| Jul 2026 | IMO 2026 (Shanghai): Huawei and Xiaohongshu said their models scored full marks; Xiaohongshu said its solutions were submitted to the organisers for grading. Other perfect scores were reported from informal tests. We found no official IMO statement on AI results. | Self-reported |
+| Aug 2026 | OpenAI announced ten results from an unreleased model, each with a Lean certificate, including the Ramsey bound for Erdős problem #183 above, two further Erdős problems (#146, #180), and the construction of a non-sofic group. An audit of the published reviews (M. and K. Sienicki, arXiv 2608.14673) found no confirmed substantive error remaining in a principal result, while noting that review depth varied, some dependencies were only partly checked, and one specialist review (of Chapter 8) asked for major revision. | Announced; Lean-verified; partly independently checked |
+| Oct 2026 | First Proof, third round: five systems, including for the first time one built on an open-weight model (Kimi K3), with negative marks for wrong answers. The organisers report that the strongest system, the ProofCouncil harness, solved nine of ten (GPT-6 Astra on its own, seven), that every problem was solved by at least one system, and that the open-weight entrant solved none; citation improved but remained incomplete, and exposition generally weak. | Independently checked |
+
+On 3 August 2026 *Quanta Magazine* asked, in a long report, "Why the legendary Erdős problems are falling to AI". Part of the answer is in Tao's public notes and the community wiki of AI contributions to Erdős problems that he started in his `teorth/erdosproblems` repository (no longer updated; data to 30 June 2026). The wiki separates **primary** contributions — AI alone where no comparable literature is known, AI alongside literature found afterwards, AI building on known literature, AI collaborating with humans — from **secondary** ones: literature search, formalisation, rewriting and computation. It warns that it is not a benchmark, that many problems on the site lack a thorough literature review, that an absence of past progress may reflect obscurity rather than difficulty, and that a solution to an Erdős problem is not automatically a publishable paper. Tao's own summary, at the end of November 2025, was that automated sweeps were beginning to "resolve the lowest hanging fruit" in a long tail of little-studied problems, and would "likely still be mostly confined to the furthest tip of the 'long tail' for now", while helping to isolate the problems that are genuinely difficult. The unit distance disproof, less than six months later, was an event of a different kind.
+
+<Narrator who="chloe">
+
+Read the status column before the "what happened" column. The most-discussed rows are not always the best-checked ones, and the dullest label — "independently checked", or "published" — is the one that tells you a result has been through the process that makes mathematics reliable.
+
+</Narrator>
+
+</Section>
+
+<Section id="known-open" kind="human" title="What is known, and what is open">
+
+**Established, as of October 2026** (each with the status shown in the record):
+
+- When an exact evaluator exists, AI-guided search can improve records for finite constructions — cap sets, kissing configurations, matrix multiplication schemes, extremal graphs. Each such improvement is a verified *lower bound* (or upper bound for a minimisation), not a proof of optimality.
+- On olympiad problems, AI systems reached gold-medal standard in 2025: in natural language under official grading (Gemini Deep Think), and with Lean-verified proofs from human-formalised statements (Aristotle).
+- Formal proof search in Lean can settle some open problems end to end with machine-checked proofs: Erdős #728 and the AlphaProof Nexus results.
+- At least one well-known, long-standing conjecture — Erdős's unit distance conjecture — was disproved by an argument generated by an AI model and then checked and digested by mathematicians.
+- On unpublished research-level lemmas (First Proof), refereed success rates rose across 2026, and the referees' reports document characteristic failures: routine steps treated at length while the hardest step is asserted, appeals to "standard arguments", and citations to papers that do not contain the cited result.
+
+**Open, or not yet settled:**
+
+- How far the capabilities extend. The First Proof organisers note that they have no experiments that measure the ability to formulate good conjectures, definitions or theories — arguably the larger part of research.
+- Which open problems are easier than they look. Daniel Litt, reflecting on the unit distance disproof, compared it with short solutions of well-known problems such as Dvir's proof of the finite field Kakeya conjecture and Huang's proof of the sensitivity conjecture, and asked how common such problems are. Nobody knows.
+- Measurement. Benchmarks saturate, can contain errors, and can leak into training data; competition results are often self-reported; developer-run evaluations may select favourable attempts.
+- Reproducibility and access. Several results came from unreleased models; the First Proof organisers raised the concern that the cost of compute could become a barrier to research.
+- Credit. On the erdosproblems.com forum, participants described disclosure and human responsibility as settled norms and credit as the point of disagreement. Journals and arXiv require disclosure and do not accept AI systems as authors; beyond that, practice is still forming.
+- The mathematics itself: the true growth rate of unit distances (between $n^{1 + \delta}$ and the Spencer–Szemerédi–Trotter bound $O(n^{4/3})$ of 1984), $S(6)$, $R(3; 4)$, and the precise growth of $R(3; k)$.
+
+</Section>
+
+<Section id="failure-modes" kind="human" title="Failure modes, and how to catch them">
+
+- **Hallucinated or misattributed references.** A cited paper that does not exist, or exists and does not contain the cited result. *Check:* open every reference you did not already know, at the theorem number.
+- **Subtle gaps.** The argument is fluent and the hard step is missing or wrong. *Check:* find the step you would have found hardest and read it first; ask for that step in full; try the argument on a small case.
+- **Rediscovery presented as discovery.** The October 2025 episode; and, in Tao's wiki, many solutions later found in the literature. *Check:* search the literature before announcing, and ask the system to search too — literature search is one of the most valuable things these tools do.
+- **Unattributed reuse.** First Proof referees found solutions that reused an author's earlier paper, down to its notation, without citing it — plagiarism if a person had done it. *Check:* ask where each idea comes from, and cite it.
+- **Misformalisation.** A Lean proof of the wrong statement. Erdős #728 as literally stated has trivial solutions (pointed out by the AlphaProof team), so the formal statement had to encode the intended reading. *Check:* read the formal statement and every definition it uses, as in <TopicLink id="math.comp.formalising-published-mathematics">formalising published mathematics</TopicLink>.
+- **Contamination and selection.** A benchmark problem or its solution may be in the training data; "best of several attempts, chosen by a person" is not the same as one attempt. *Check:* ask how many attempts were made and who chose.
+- **Overclaiming.** "Solved" for "found in the literature", "autonomous" for "with substantial human guidance", "verified" for "checked by the model itself". *Check:* apply the status labels.
+
+<Narrator who="margaret">
+
+Run the four-colour Schur search in the computation section and watch it stop at $35$. If you did not know that $S(4) = 44$, it would be tempting to write "computer search suggests $S(4) = 35$". That sentence would be false, and the search would be blameless: a generator that fails has told you only about itself.
+
+</Narrator>
+
+</Section>
+
+<Section id="credit" kind="human" title="Credit, disclosure and responsible use">
+
+The norms here extend those of <TopicLink id="math.found.research-ethics">research ethics and attribution</TopicLink>; three ideas need keeping apart.
+
+1. **Responsibility** stays with people. An AI system cannot be an author, because it cannot take responsibility for the work; arXiv and the major publishers adopted policies to this effect in 2023. Whoever signs the paper vouches for every line, and must be able to explain it.
+2. **Disclosure** says what the tools did: which system, for what (search, code, a lemma, a draft, a formal proof), and how the output was checked. Short "AI use" statements are becoming common in preprints; be specific rather than generic.
+3. **Credit** for ideas belongs to whoever had them — including the authors of the literature the system drew on. The unit distance remarks attribute the key ideas, "at least in retrospect", to Ellenberg–Venkatesh, Golod–Shafarevich and Hajir–Maire–Ramakrishna, and Litt wrote that the implicit social contract between mathematicians and AI companies "deserves further attention". Credit for the AI contribution itself is where practice is least settled; describing exactly what happened is always acceptable.
+
+**Using these tools as a student.** A doctoral student in Kumasi using a model to find references on sum-free sets, a postdoc in Hanoi asking for a Lean proof of a lemma, a group in São Paulo using an evolutionary search for a construction — each should:
+
+- treat output as a *proposal*: verify constructions exactly, check proofs line by line or formally, and test claims on small cases;
+- read every reference before citing it;
+- make sure you could reproduce the key step without the tool before you present it as your own understanding;
+- keep a record of prompts, versions and outputs for anything that enters a paper, and disclose the use;
+- protect unpublished ideas: do not paste a collaborator's unpublished work into a third-party service without permission;
+- keep learning the mathematics. A verifier who understands the subject is the scarce resource.
+
+</Section>
+
+<Section id="formal" kind="formal" title="Checking a machine-found certificate in Lean">
+
+The Lean module formalises the worked example. First the definition, with bounded quantifiers so that Lean can decide it for a concrete colouring:
+
+<Lean decl="Lumenary.AiAssistedMathematics.IsSchurColouring" />
+
+The certificate printed by the search experiment, copied verbatim, and its verification by the kernel:
+
+<Lean decl="Lumenary.AiAssistedMathematics.searchCertificate" />
+
+<Lean decl="Lumenary.AiAssistedMathematics.searchCertificate_valid" />
+
+`decide` asks the kernel to *evaluate* the decision procedure for the proposition and confirm that it returns `true`. The proof term is checked like any other; the search that produced the colouring plays no part in it. This is the generate-and-verify loop in its strongest form: the verifier is Lean's small trusted kernel.
+
+The same for two colours, and then the optimality claim, which is about every colouring and so needs a proof — here a reduction to the $2^5$ colour patterns of $1, \dots, 5$:
+
+<Lean decl="Lumenary.AiAssistedMathematics.pentagonColouring" />
+
+<Lean decl="Lumenary.AiAssistedMathematics.pentagonColouring_valid" />
+
+<Lean decl="Lumenary.AiAssistedMathematics.schur_two_optimal" />
+
+Proposition 1, with the Ramsey property stated directly, and its application to the certificate:
+
+<Lean decl="Lumenary.AiAssistedMathematics.HasTriangleFreeColouring" />
+
+<Lean decl="Lumenary.AiAssistedMathematics.hasTriangleFreeColouring_of_schur" />
+
+<Lean decl="Lumenary.AiAssistedMathematics.three_colours_fourteen_vertices" />
+
+Finally Schur's theorem in its infinite form, deduced from Mathlib's Hindman theorem — a far stronger result, proved in Mathlib with idempotent ultrafilters:
+
+<Lean decl="Lumenary.AiAssistedMathematics.schur_theorem" />
+
+<Narrator who="gideon">
+
+Why `decide` and not `native_decide`? `native_decide` compiles the decision procedure to machine code and trusts the result, which adds the compiler to the trusted base (and shows up in `#print axioms` as an extra axiom). When the whole point is to check a certificate with a small trusted base, we keep the slower, kernel-checked `decide`. And note what is *not* checked: that `IsSchurColouring` means what the definition in the lesson says. Read it.
+
+</Narrator>
+
+**How Lean underpins AI systems.** Several of the systems in the record are generate-and-verify loops whose verifier is Lean's kernel. AlphaProof learns, by reinforcement learning, to produce Lean proofs, and its IMO 2024 problems were formalised by people. Aristotle produces Lean 4 proofs; for IMO 2025 its team formalised the statements. AlphaProof Nexus searched for Lean proofs of formally stated Erdős problems and OEIS conjectures (Google DeepMind maintains a public repository of formalised open conjectures, including many Erdős problems), and OpenAI's August 2026 results came with Lean certificates. In every case the kernel certifies the *formal statement*. The human work moves to the statement: is it faithful, are the definitions the standard ones, does `#print axioms` show only `propext`, `Classical.choice` and `Quot.sound`? That is exactly the trusted base of <TopicLink id="math.comp.formalising-published-mathematics">formalising published mathematics</TopicLink>.
+
+**How far Mathlib reaches here.** The Mathlib version used by this site has Hindman's and the Hales–Jewett theorems, but we found no multicolour Ramsey numbers, Schur numbers or cap sets; the definitions above are home-made and elementary. The Ellenberg–Gijswijt cap set bound was formalised in Lean 3 by Dahmen, Hölzl and Lewis (2019). Not formalised here: $S(3) \le 13$ (an exhaustive search over $3^{14}$ colourings, too large for `decide`), Propositions 2 and 3, and anything about the AI systems themselves.
+
+</Section>
+
+<Section id="computation" kind="computation" title="Experiments: generate, verify, and know the difference">
+
+The first experiment is the worked example: a seeded min-conflicts search proposes Schur colourings, an exact checker verifies them, exhaustive backtracking (with the colours' names factored out) proves $S(2) = 4$ and $S(3) = 13$, each colouring is lifted to a triangle-free edge colouring, and a four-colour search shows a generator falling short.
+
+<Python id="ai_assisted_mathematics_schur_search" />
+
+The second is a miniature of the FunSearch loop for cap sets in $\mathbb F_3^n$: a "program" is a table of priorities, mutated at random; a fixed greedy algorithm turns priorities into a cap set; an exact verifier checks it; the best is kept. There is no language model — FunSearch used one to write and mutate short Python programs — but the loop has the same shape. It reaches the known maxima $4$, $9$ and $20$ for $n = 2, 3, 4$, and falls short of $45$ for $n = 5$.
+
+<Python id="ai_assisted_mathematics_cap_sets" />
+
+What kind of evidence is this? Every object printed is checked exactly, so each is a certificate for a lower bound. The exhaustive searches are proofs by exhaustion, conditional on the code being correct — which is why the $S(2)$ case is also proved in Lean. The heuristic searches prove nothing when they fail. Reaching a known maximum confirms that the search can find it, not that it is the maximum.
+
+</Section>
+
+<Section id="exercises" kind="exercises" title="Exercises">
+
+<Exercises />
+
+</Section>
+
+<Section id="misconceptions" kind="misconceptions" title="Common misconceptions">
+
+<Misconception>
+
+**"The AI found it, so it is new."** Many AI "solutions" of open problems turned out to be in the literature; the October 2025 episode is the clearest case. Novelty is a claim about the literature and is checked by searching it. Finding the earlier paper is itself a useful result — just a different one.
+
+</Misconception>
+
+<Misconception>
+
+**"The proof is long, fluent and confident, so it is probably right."** Fluency is not evidence. First Proof referees repeatedly found routine steps written out in detail and the decisive step asserted. Check the hardest step first.
+
+</Misconception>
+
+<Misconception>
+
+**"Several AI systems agree, so it is verified."** Systems trained on overlapping data with similar methods share blind spots; their agreement is weak evidence (see the agreement model in <TopicLink id="math.found.research-ethics">research ethics</TopicLink>). A verifier is a kernel, an exact check or an expert reader.
+
+</Misconception>
+
+<Misconception>
+
+**"Lean accepted it, so the problem is solved."** Lean accepted the formal statement. Whether it is the problem — with the intended reading, standard definitions and no extra axioms — is checked by people.
+
+</Misconception>
+
+<Misconception>
+
+**"The search found nothing better, so the record is optimal."** A heuristic search that fails says nothing about existence: our search stops at $35$ although $S(4) = 44$. Optimality needs proof — by argument, or by an exhaustive search that is itself certified.
+
+</Misconception>
+
+<Misconception>
+
+**"AI-solved means the problem was hard," or "AI-solved means the problem was easy."** Both are inferences from the solver to the problem, and both are unreliable. Many Erdős problems were open through obscurity rather than difficulty; the unit distance conjecture was neither obscure nor, in the view of most experts beforehand, false. Judge the mathematics, not the solver.
+
+</Misconception>
+
+</Section>
+
+<Section id="viewpoints" kind="viewpoints" title="Many ways of seeing">
+
+<Viewpoint lens="combinatorics" title="Constructions and bounds">
+
+Extremal combinatorics is where AI-guided search has been most productive, because its questions split into a constructive half and a proof half. For cap sets the largest cap in $\mathbb F_3^n$ is known only for $n \le 6$ (sizes 2, 4, 9, 20, 45, 112); FunSearch's 512 in dimension 8 is a lower bound. The upper bound $O(2.756^n)$ of Ellenberg and Gijswijt (2017), by the polynomial method, is the kind of statement no search can produce — it is about every $n$. Schur numbers and $R(3; k)$ have the same shape: computer-found colourings for small $k$, amplified by product constructions such as Proposition 2, give lower bounds; pigeonhole arguments such as Proposition 3 give upper bounds. See <TopicLink id="math.discrete.additive-extremal-combinatorics">extremal and additive combinatorics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="geometry" title="Packings, kissing and unit distances">
+
+The kissing number $\tau(d)$ is the largest number of non-overlapping unit spheres that can touch a central unit sphere in $\R^d$. It is known exactly only in dimensions 1, 2, 3, 4, 8 and 24; in dimension 11, AlphaEvolve's configuration of 593 spheres raised the lower bound from 592, while the best upper bound (868) is far away. A configuration is a certificate: check that the pairwise angles between centres are at least $60°$. The unit distance disproof is geometric in its question and arithmetic in its answer: the points are images in the plane of carefully chosen elements of number fields of growing degree, and the classical upper bound $O(n^{4/3})$ comes from incidence geometry (the Szemerédi–Trotter theorem). Sphere packing shows the split between construction and optimality most sharply: Hales's proof that no packing in $\R^3$ beats the familiar one needed a proof, not a better search — see the Kepler conjecture in <TopicLink id="math.comp.formalising-published-mathematics">formalising published mathematics</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="number-theory" title="Class field towers behind a plane configuration">
+
+Erdős's square grid of $n$ points, rescaled, already gives $n^{1 + c/\log \log n}$ unit distances: choose $m$ with very many representations $m = a^2 + b^2$ (many Gaussian integers $a + bi$ of absolute value $\sqrt m$), and shrink the grid so that the distance $\sqrt m$ becomes $1$. The disproof replaces $\Q(i)$ by CM fields $K$ of degree tending to infinity inside an infinite class field tower of Golod–Shafarevich type — fields of bounded root discriminant — and uses a rational prime that splits completely to produce many elements of absolute value $1$ with bounded denominators. Number fields of growing degree with bounded root discriminant had earlier given good codes and lattice packings (Lenstra; Litsyn and Tsfasman), which is why the companion paper credits the key ideas, in retrospect, to Ellenberg–Venkatesh, Golod–Shafarevich and Hajir–Maire–Ramakrishna. See <TopicLink id="math.number.algebraic-number-theory">algebraic number theory</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="analysis" title="From high-precision numerics to proof">
+
+For partial differential equations the analogue of a certificate is an approximate solution with a *rigorous* error bound. The 2025 work on unstable self-similar singularities trained neural networks to near double-precision accuracy for the porous media and Boussinesq equations — numerical evidence of unusual quality. Turning it into a theorem requires a computer-assisted proof: interval arithmetic to bound the residual, and an analytic argument (typically a fixed-point theorem) that a true solution lies nearby. The same distinction appears in optimisation: an improved step size such as $1.5/L$ is a theorem only once the inequality behind it is proved for every convex $L$-smooth function. See <TopicLink id="math.analysis.functional-analysis">functional analysis</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="probability" title="Randomised search, and what randomness proves">
+
+Min-conflicts search, random restarts, simulated annealing and evolutionary strategies are randomised algorithms with no general guarantee of success; their value lies in what they find, never in what they fail to find. Contrast the probabilistic method, where randomness *proves* existence: a uniformly random 2-colouring of the edges of $K_N$ has, in expectation, fewer than one monochromatic $K_k$ when $\binom{N}{k} 2^{1 - \binom{k}{2}} < 1$, so $R(k, k) > 2^{k/2}$ for $k \ge 3$ — without exhibiting any colouring. Explicit constructions matching that bound remain a challenge. See <TopicLink id="math.discrete.probabilistic-method">the probabilistic method</TopicLink>.
+
+</Viewpoint>
+
+<Viewpoint lens="logic" title="Which claims have short certificates">
+
+A statement of the form "there exists $x$ with decidable property $P(x)$" ($\Sigma_1$) is certified by a witness; its negation ($\Pi_1$) in general is not. Constructions, counterexamples and formal proofs are witnesses, which is why the generate-and-verify loop works so well for them, and why optimality claims and universal theorems are where the work remains. Formal proof search pushes the line outwards: a Lean proof of a $\Pi_1$ statement *is* a witness for the $\Sigma_1$ statement "a proof exists", checkable by the kernel. See <TopicLink id="math.found.incompleteness">the incompleteness theorems</TopicLink>.
+
+</Viewpoint>
+
+</Section>
+
+<Section id="history" kind="history" title="History and context">
+
+- **Computers in proofs.** Appel and Haken's four colour theorem (1976) relied on computer checks of well over a thousand configurations; Hales's proof of the Kepler conjecture (1998, formally verified by the Flyspeck project in 2014) on linear programs and interval arithmetic. See <TopicLink id="math.comp.experimental-mathematics">experimental mathematics</TopicLink>.
+- **Automated discovery before machine learning.** In 1996 William McCune's automated theorem prover EQP proved the Robbins conjecture in Boolean algebra, open since the 1930s. From the 1980s Siemion Fajtlowicz's program Graffiti generated graph-theoretic conjectures, many later proved or refuted by mathematicians. SAT solvers settled the Boolean Pythagorean triples problem (Heule, Kullmann and Marek, 2016) and $S(5) = 160$ (Heule, 2017), with very large certificates.
+- **Machine learning arrives.** In 2021 Adam Zsolt Wagner used reinforcement learning to find counterexamples to conjectures in graph theory; the Ramanujan Machine project at the Technion in Israel (Raayoni et al., *Nature*, 2021) generated conjectural continued-fraction formulas for constants; Davies et al. (2021) used machine learning to guide conjectures in knot theory and representation theory.
+- **2023–2026.** Language models entered the loop as generators of programs (FunSearch, AlphaEvolve), of natural-language proofs and of formal proofs; Lean and Mathlib became the common verifier. The work is international: teams in the United Kingdom, the United States, China, France, Switzerland, Denmark and elsewhere built the systems, and the mathematicians who checked their output, posed the First Proof problems, and maintain the problem databases and formal libraries come from many countries.
+
+</Section>
+
+<Section id="reading" kind="reading" title="Further reading">
+
+- Alex Davies et al., "Advancing mathematics by guiding human intuition with AI", *Nature* 600 (2021), 70–74.
+- Bernardino Romera-Paredes et al., "Mathematical discoveries from program search with large language models", *Nature* 625 (2024), 468–475 (published online December 2023).
+- Trieu H. Trinh, Yuhuai Wu, Quoc V. Le, He He and Thang Luong, "Solving olympiad geometry without human demonstrations", *Nature* 625 (2024), 476–482.
+- Thomas Hubert et al., "Olympiad-level formal mathematical reasoning with reinforcement learning", *Nature* (2025) — the AlphaProof paper.
+- Bogdan Georgiev, Javier Gómez-Serrano, Terence Tao and Adam Zsolt Wagner, "Mathematical exploration and discovery at scale", arXiv:2511.02864 (2025).
+- Mohammed Abouzaid et al., "First Proof", arXiv:2602.05192 (2026); and Abouzaid, Srivastava, Ward and Williams, "First Proof Second Batch", arXiv:2606.18119 (2026); and the organisers' "Third Batch Press Release", 1stproof.org (October 2026).
+- Noga Alon, Thomas F. Bloom, W. T. Gowers, Daniel Litt, Will Sawin, Arul Shankar, Jacob Tsimerman, Victor Wang and Melanie Matchett Wood, "Remarks on the disproof of the unit distance conjecture", arXiv:2605.20695 (2026).
+- George Tsoukalas et al., "Advancing mathematics research with AI-driven formal proof search", arXiv:2605.22763 (2026); *Science* (2026).
+- Nat Sothanaphan, "Resolution of Erdős Problem #728: a writeup of Aristotle's Lean proof", arXiv:2601.07421 (2026).
+- Marijn J. H. Heule, "Schur number five", *Proceedings of AAAI* (2018).
+- Jordan S. Ellenberg and Dion Gijswijt, "On large subsets of $\mathbb F_q^n$ with no three-term arithmetic progression", *Annals of Mathematics* 185 (2017), 339–343.
+- Issai Schur, "Über die Kongruenz $x^m + y^m \equiv z^m \pmod p$", *Jahresbericht der Deutschen Mathematiker-Vereinigung* 25 (1916), 114–117.
+- Terence Tao and contributors, "AI contributions to Erdős problems", wiki of the `teorth/erdosproblems` repository on GitHub (data to 30 June 2026); and Thomas Bloom, erdosproblems.com.
+
+</Section>

@@ -2,21 +2,23 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Compass, GraduationCap, Heart, Library, School, Sparkles, Sprout, Users } from "lucide-react";
 import { getT, resolveLocale, formatNumber } from "@/i18n/server";
 import { LOCALES } from "@/i18n/config";
-import { getComputeReport, getGraph, getLeanReport, getLessonList, getTrailList } from "@/lib/content";
+import { getComputeReport, getGraph, getLeanReport, getLessonsByLevel, getTrailList } from "@/lib/content";
 import { href } from "@/lib/href";
 import { mdInline } from "@/lib/markdown";
 import { HeroConstellation } from "@/components/site/HeroConstellation";
 import { NarratorAvatar } from "@/components/brand/Narrators";
 import { MODE_STYLE } from "@/components/ui/ModeBadge";
 
-const FIRST_SEQUENCE = ["collections", "sets", "integers", "functions", "composition"];
+/** The rising path of the hero illustration: one landmark per stage of the curriculum. */
+const CONSTELLATION_PATH = ["counting", "fractions", "algebra", "calculus", "proof", "topology", "manifolds", "research"];
+/** Side stars branching off the path. */
+const CONSTELLATION_BRANCHES = ["infinities", "groups", "categories", "knots"];
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const locale = await resolveLocale(params);
   const t = await getT(locale);
-  // The first learning sequence shown on the home page (the curriculum has many more lessons).
-  const all = getLessonList(locale).map((l) => l.frontmatter);
-  const lessons = FIRST_SEQUENCE.map((slug) => all.find((l) => l.slug === slug)).filter((l) => l !== undefined);
+  const levels = getLessonsByLevel(locale);
+  const lessonCount = levels.reduce((n, l) => n + l.lessons.length, 0);
   const trails = getTrailList(locale).map((l) => l.frontmatter);
   const graph = getGraph();
   const lean = getLeanReport();
@@ -41,7 +43,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     { key: "educators", Icon: Library, to: "educators" },
   ];
 
-  const future = [t("home.future.categories"), t("home.future.groups"), t("home.future.infinity")];
 
   return (
     <>
@@ -65,7 +66,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
             <p className="mt-8 font-display text-xl italic text-ink-2">{t("meta.tagline")}</p>
           </div>
           <div className="relative mx-auto w-full max-w-xl" dir="ltr">
-            <HeroConstellation lessons={lessons.map((l) => l.title)} future={[...future, t("levels.research")]} />
+            <HeroConstellation path={CONSTELLATION_PATH.map((k) => t(`home.constellation.${k}`))} branches={CONSTELLATION_BRANCHES.map((k) => t(`home.constellation.${k}`))} />
           </div>
         </div>
       </section>
@@ -94,12 +95,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${bg} ${fg}`}>
                     <Icon size={22} aria-hidden="true" />
                   </span>
-                  <NarratorAvatar who={who} size={44} />
+                  <span data-cat>
+                    <NarratorAvatar who={who} size={44} />
+                  </span>
                 </div>
                 <p className={`mt-5 text-xs font-bold uppercase tracking-[0.14em] ${fg}`}>{t(`home.mode${m}`)}</p>
                 <h3 className="mt-1 text-2xl font-semibold text-ink">{t(`home.mode${m}Verb`)}</h3>
                 <p className="mt-3 leading-relaxed text-ink-2">{t(`home.mode${m}Text`)}</p>
-                <p className="mt-5 border-t border-line pt-4 text-sm text-muted">
+                <p data-cat className="mt-5 border-t border-line pt-4 text-sm text-muted">
                   <span className="font-semibold text-ink-2">{t(`narrators.${who}`)}</span>, {t(`narrators.${who}Role`).toLowerCase()}: <em>“{t(`narrators.${who}Q`)}”</em>
                 </p>
               </article>
@@ -108,30 +111,36 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* First path */}
+      {/* The levels of the curriculum */}
       <section className="border-y border-line bg-paper-2/60">
         <div className="container-page py-20">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
-              <h2 className="text-3xl font-semibold text-ink sm:text-4xl">{t("home.sequenceTitle")}</h2>
-              <p className="mt-4 text-lg leading-relaxed text-ink-2">{t("home.sequenceLead")}</p>
+              <h2 className="text-3xl font-semibold text-ink sm:text-4xl">{t("home.levelsTitle")}</h2>
+              <p className="mt-4 text-lg leading-relaxed text-ink-2">{t("home.levelsLead", { lessons: fmt(lessonCount), levels: fmt(levels.length) })}</p>
             </div>
             <Link href={href(locale, "math")} className="btn btn-ghost">
               {t("nav.learn")} <ArrowRight size={16} className="rtl:rotate-180" aria-hidden="true" />
             </Link>
           </div>
-          <ol className="mt-10 grid gap-4 md:grid-cols-5">
-            {lessons.map((l, i) => (
-              <li key={l.slug} className="relative">
-                {i < lessons.length - 1 && <span className="absolute start-[calc(100%-0.5rem)] top-10 z-0 hidden h-px w-6 bg-gold md:block" aria-hidden="true" />}
-                <Link prefetch={false} href={href(locale, `math/lessons/${l.slug}`)} className="card group relative z-10 flex h-full flex-col p-5 transition-shadow hover:shadow-[var(--shadow-lg)]">
-                  <span className="flex items-center justify-between">
+          <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {levels.map(({ level, lessons }, i) => (
+              <li key={level}>
+                <Link href={href(locale, `math#lessons-${level}`)} className="card group flex h-full flex-col p-5 transition-shadow hover:shadow-[var(--shadow-lg)]">
+                  <span className="flex items-center justify-between gap-3">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gold font-display font-bold text-[#1b1406]">{fmt(i + 1)}</span>
-                    <span className="text-xs font-semibold text-muted">{t(`levels.${l.level}`)}</span>
+                    <span className="text-xs font-semibold text-muted">{t("home.levelLessons", { n: fmt(lessons.length) })}</span>
                   </span>
-                  <span className="mt-4 font-display text-xl font-semibold text-ink">{l.title}</span>
-                  <span className="mt-2 line-clamp-4 text-sm leading-relaxed text-ink-2" dangerouslySetInnerHTML={{ __html: mdInline(l.subtitle) }} />
-                  <span className="mt-auto pt-4 text-xs text-muted">{l.ages}</span>
+                  <span className="mt-4 font-display text-xl font-semibold text-ink">{t(`levels.${level}`)}</span>
+                  <span className="mt-2 text-sm leading-relaxed text-ink-2">
+                    {lessons.slice(0, 3).map((l, j) => (
+                      <span key={l.slug} {...(l.translation.status === "canonical" && locale !== "en" ? { lang: "en" } : {})}>
+                        {j > 0 && " · "}
+                        {l.title}
+                      </span>
+                    ))}
+                    {lessons.length > 3 && " …"}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -209,7 +218,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
-              [all.length, t("home.statLessons")],
+              [lessonCount, t("home.statLessons")],
               [trails.length, t("home.statTrails")],
               [graph.topics.length, t("home.statTopics")],
               [leanCompiled, t("home.statLean")],

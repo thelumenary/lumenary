@@ -1,24 +1,25 @@
-"""A curved graph: average speeds of a falling stone over shrinking intervals.
+"""A curved graph: average speeds of a falling capsule over shrinking intervals.
 
-In the idealised model of a stone dropped from rest (no air resistance), it
-has fallen d(t) = 4.9 t^2 metres after t seconds. Its distance-time graph is
-curved, so the average rate of change depends on the interval. The
-experiment computes, with exact fractions, the average speed in each of the
-first four seconds, then the average speed over intervals [2, 2 + h] for
-shrinking h (and for intervals ending at 2), and compares the results with
-the exact formula 19.6 + 4.9h proved in the lesson. As h shrinks the average
-speeds approach 19.6 m/s: a preview of the instantaneous speed (derivative).
+In the idealised model of a research capsule released from rest in a drop
+tower's evacuated tube (no air resistance), it has fallen d(t) = 4.9 t^2
+metres after t seconds. Its distance-time graph is curved, so the average
+rate of change depends on the interval. The experiment computes, with exact
+fractions, the average speed in each of the first four seconds, then the
+average speed over intervals [2, 2 + h] for shrinking h (and for intervals
+ending at 2), and compares the results with the exact formula 19.6 + 4.9h
+proved in the lesson. As h shrinks the average speeds approach 19.6 m/s: a
+preview of the instantaneous speed (derivative).
 """
 
 from fractions import Fraction as F
 
 EXPERIMENT = {
     "id": "graphs_of_change_secants",
-    "title": "A falling stone: average speeds over shrinking intervals",
+    "title": "A falling capsule: average speeds over shrinking intervals",
     "evidence": ["exact"],
     "lessons": ["graphs-of-change"],
     "summary": (
-        "For the idealised falling-stone model d(t) = 4.9 t^2, computes exact "
+        "For the idealised falling-capsule model d(t) = 4.9 t^2, computes exact "
         "average speeds second by second, then over the intervals [2, 2 + h] "
         "for h = 1, 1/10, 1/100, 1/1000 and their negatives, checking each "
         "against the formula 19.6 + 4.9h. The values approach 19.6 m/s, a "

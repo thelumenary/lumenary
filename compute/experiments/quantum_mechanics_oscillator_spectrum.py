@@ -49,8 +49,15 @@ def ground_state_uncertainty(n_points, half_width):
     """sigma_x * sigma_p for the lowest eigenvector (grid approximation)."""
     matrix, x = hamiltonian(n_points, half_width)
     h = x[1] - x[0]
-    _, vecs = np.linalg.eigh(matrix)
-    psi = vecs[:, 0] / np.sqrt(h)
+    # Inverse iteration with a shift just below E_0 = 1/2 (the next level is
+    # near 3/2), much faster than a full eigendecomposition: each step shrinks
+    # the other components by a factor of about 100.
+    shifted = matrix - 0.49 * np.eye(n_points)
+    v = np.ones(n_points)
+    for _ in range(12):
+        v = np.linalg.solve(shifted, v)
+        v /= np.linalg.norm(v)
+    psi = v / np.sqrt(h)
     mean_x = h * np.sum(x * psi ** 2)
     var_x = h * np.sum((x - mean_x) ** 2 * psi ** 2)
     dpsi = np.gradient(psi, h)

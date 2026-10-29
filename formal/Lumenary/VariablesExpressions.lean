@@ -27,7 +27,7 @@ theorem like_terms (a b x : Int) : a * x + b * x = (a + b) * x :=
 
 -- @region variables_expressions.stick_formulas_agree
 -- @provenance independent
-/-- The matchstick pattern: a row of `n` squares needs `3n + 1` sticks. Two other ways of
+/-- The stick pattern: a row of `n` squares needs `3n + 1` sticks. Two other ways of
 counting give `4 + 3(n − 1)` ("first square, then 3 more each time") and `4n − (n − 1)`
 ("4 per square, minus the shared sides"). All three expressions are equivalent: they agree for
 *every* integer `n`, not just for the values we tried. -/

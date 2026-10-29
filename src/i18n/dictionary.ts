@@ -57,7 +57,7 @@ export function makeT(messages: Messages): TFunction {
 }
 
 /** Namespaces every page's client components need (header, language menu, theme). */
-export const CORE_NAMESPACES = ["meta", "nav", "theme", "language", "modes", "common", "levels", "status"] as const;
+export const CORE_NAMESPACES = ["meta", "nav", "theme", "cats", "language", "modes", "common", "levels", "status"] as const;
 
 /** A subset of the catalogue, so each page only ships the strings its client components use. */
 export function pickMessages(messages: Messages, namespaces: readonly string[]): Partial<Messages> {

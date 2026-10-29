@@ -8,6 +8,7 @@ import { useI18n } from "@/i18n/client";
 import { href } from "@/lib/href";
 import { LogoMark, Wordmark } from "@/components/brand/Logo";
 import { LanguageSelector } from "./LanguageSelector";
+import { CatToggle } from "./CatToggle";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
@@ -68,6 +69,7 @@ export function SiteHeader() {
         </nav>
         <div className="ms-auto flex items-center gap-1">
           <LanguageSelector />
+          <CatToggle />
           <ThemeToggle />
           <button
             type="button"

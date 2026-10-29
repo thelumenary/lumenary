@@ -13,7 +13,7 @@ objectives:
   - State the Cook–Levin theorem and explain the idea of its proof
   - Prove NP-completeness by polynomial-time reductions, including 3-SAT to independent set, vertex cover and clique
   - Explain what is known and unknown about P versus NP, and why cryptography rests on unproved hardness assumptions
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.ComplexityTheory.CNF.eval
   - Lumenary.ComplexityTheory.Satisfiable
@@ -35,7 +35,7 @@ labels: [ai-drafted]
 
 A school in Nairobi has to schedule 40 examinations into a few time slots so that no student sits two exams at once. Draw a graph with one vertex per exam and an edge whenever some student takes both: a timetable with $k$ slots is exactly a colouring of the vertices with $k$ colours in which adjacent vertices differ. If someone hands you a proposed timetable, checking it is quick — look at every edge once. Finding one, or proving that none exists with three slots, seems to need a search through up to $3^{40} \approx 1.2 \times 10^{19}$ possibilities.
 
-Compare two puzzles on the same graph. **Euler's problem** — is there a closed walk using every edge exactly once? — is answered instantly by checking that the graph is connected and every degree is even. **Hamilton's problem** — is there a cycle through every *vertex* exactly once? — looks almost the same, yet nobody knows an algorithm that is fundamentally faster than trying exponentially many possibilities.
+Compare two puzzles on the same graph. **Euler's problem** — is there a closed walk using every edge exactly once? (Euler settled questions of this kind in 1736, prompted by the seven bridges of Königsberg.) — is answered instantly by checking that the graph is connected and every degree is even. **Hamilton's problem** — is there a cycle through every *vertex* exactly once? — looks almost the same, yet nobody knows an algorithm that is fundamentally faster than trying exponentially many possibilities.
 
 <TopicLink id="math.comp.computability">Computability</TopicLink> drew the line between what algorithms can and cannot do in principle. Complexity theory draws a finer line, between what they can do **efficiently** and what (we believe) they cannot. Its central question was asked by Kurt Gödel in a 1956 letter to John von Neumann, and in its modern form — **does P equal NP?** — it is one of the seven Millennium Prize Problems. This lesson assumes <TopicLink id="math.comp.algorithm-design">algorithm design and analysis</TopicLink> and basic <TopicLink id="math.discrete.graph-basics">graph theory</TopicLink>.
 
@@ -92,6 +92,12 @@ $$
 The string $y$ is a **certificate** (or witness) for $x$. Equivalently, NP is the class of problems decided in polynomial time by a **nondeterministic** Turing machine, one that may branch at each step and accepts if some branch accepts — hence the name: **N**ondeterministic **P**olynomial time.
 
 </Definition>
+
+<Narrator who="gideon">
+
+The bound $|y| \le q(|x|)$, fixed before $x$ is chosen, is doing all the work. Drop it — let certificates be as long as they like, with $V$ polynomial in the length of $(x, y)$ — and the class becomes all recursively enumerable sets, halting problem included: a certificate can be an entire halting computation, checked step by step. Compare Theorem 6 of the computability lesson, r.e. = projection of decidable.
+
+</Narrator>
 
 <Definition term="coNP, PSPACE, EXPTIME">
 
@@ -251,6 +257,12 @@ The graph has $3m$ vertices and fewer than $(3m)^2$ edges, and is built in polyn
 
 </Proof>
 
+<Narrator who="chloe">
+
+Look at how the reduction is built: one **gadget** per kind of constraint. Each clause becomes a triangle, which forces "choose exactly one literal here", and each complementary pair becomes an edge, which forces "never choose both $x$ and $\neg x$". Most NP-completeness proofs have this shape, so when you meet a new one, ask first what plays the role of the triangle.
+
+</Narrator>
+
 <Theorem name="Corollary 6">
 
 VERTEX COVER and CLIQUE are NP-complete.
@@ -321,6 +333,12 @@ Running the algorithm proves that three pigeons do not fit in two holes. The pig
 
 <Lean decl="Lumenary.ComplexityTheory.php32_unsat" />
 
+<Narrator who="gideon">
+
+`php32_unsat` is a proof by computation: `decide` runs `bruteForce` through all $2^6 = 64$ assignments, and `bruteForce_correct` turns "the search found nothing" into `¬ Satisfiable php32`. The certificate of unsatisfiability is the whole search. That is the coNP side of the story in miniature: a satisfiable formula would need only one assignment, but for unsatisfiable formulas in general no certificate of polynomial size is known.
+
+</Narrator>
+
 **Reductions.** Corollary 6, formalised for Mathlib's `SimpleGraph`. First the complementation fact, proved here and then quoted from Mathlib:
 
 <Lean decl="Lumenary.ComplexityTheory.indepSet_iff_vertexCover_compl" />
@@ -352,6 +370,12 @@ The second program asks where hard instances live. Random 3-CNF formulas with $n
 <Python id="complexity_theory_sat_threshold" />
 
 Notice the column "bad certificates": every "satisfiable" verdict was confirmed by an independent check of the assignment, whereas every "unsatisfiable" verdict is believed only because the search was complete. Certificates exist for one side but — as far as anyone knows — not for the other. That is the difference between NP and coNP, seen in a spreadsheet.
+
+<Narrator who="margaret">
+
+Read the "mean DPLL nodes" column next to "satisfiable": the effort is modest at both ends and peaks around where the satisfiable fraction passes one half — easy, hard, easy. With $20$ variables and $30$ formulas per density the curve is noisy and finite-size effects shift the crossing, so treat $r \approx 4.27$ as the limit the table points towards, not something it measures. The natural next experiment is to double $n$ and watch the transition sharpen.
+
+</Narrator>
 
 </Section>
 

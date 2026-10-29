@@ -13,7 +13,7 @@ objectives:
   - Prove the standard error bound for floating-point summation and use it to choose and justify tolerances
   - Turn numerical results into theorems with interval arithmetic, and make results checkable with certificates
   - Archive code and data with persistent identifiers and cite software properly
-narrators: []
+narrators: [chloe, gideon, margaret]
 lean:
   - Lumenary.ComputationalReproducibility.fsum
   - Lumenary.ComputationalReproducibility.fsum_error
@@ -34,7 +34,7 @@ labels: [ai-drafted]
 
 <Section id="motivation" kind="motivation" title="A result someone else can check">
 
-Amara in Accra and Minh in Hanoi run the same notebook from a published paper. Amara's table agrees with the paper to sixteen digits; Minh's differs in the ninth digit of one entry, and a Monte Carlo figure looks slightly different. Neither of them has made a mistake. Different library versions summed the same numbers in a different order, and the random generator was never seeded. Is the paper's claim wrong? Without more information, nobody can say — and that is the problem.
+Amara in Accra, Minh in Hanoi and Sophie in Lyon run the same notebook from a published paper. Amara's and Minh's tables agree with the paper to sixteen digits; Sophie's differs in the ninth digit of one entry, and her Monte Carlo figure looks slightly different. None of them has made a mistake. Different library versions summed the same numbers in a different order, and the random generator was never seeded. Is the paper's claim wrong? Without more information, nobody can say — and that is the problem.
 
 Mathematics has met this problem at the highest level. Appel and Haken's 1976 proof of the four colour theorem rested on a computer check of 1,936 configurations that no referee could repeat by hand; doubts persisted until Robertson, Sanders, Seymour and Thomas (1997) gave a new proof with new, independently written programs, and Gonthier (2005) checked a complete proof in the Coq proof assistant. The referees of Hales's 1998 proof of the Kepler conjecture reported that they were "99% certain" but could not verify all of the computations; the Flyspeck project then verified the whole proof formally, finishing in 2014.
 
@@ -249,6 +249,12 @@ The conditions say that $a$ is a unit modulo $p$ of multiplicative order exactly
 
 Pratt (1975) observed that the prime factors $q$ can be certified recursively in the same way, giving certificates of polynomial size: primality is in NP (and, by Agrawal, Kayal and Saxena, 2002, in P). The point for reproducibility is that **checking a certificate is far easier than trusting the program that found it**.
 
+<Narrator who="chloe">
+
+Here is the asymmetry at work on $p = 65537 = 2^{16} + 1$. Since $p - 1 = 2^{16}$ has the single prime factor $2$, the whole certificate is the pair of facts $3^{32768} \equiv -1 \not\equiv 1$ and $3^{65536} \equiv 1 \pmod{p}$, which take sixteen squarings to check. However long the search for the witness $a = 3$ took, and whatever program ran it, nobody needs to trust that search.
+
+</Narrator>
+
 For statistical claims, the analogue of an error bound is a probability bound. If $X_1, \dots, X_n$ are independent with values in $[\alpha, \beta]$ and mean $\mu$, **Hoeffding's inequality** (1963) gives $\Pr\big(|\bar X - \mu| \ge \varepsilon\big) \le 2 \exp\!\big(-2 n \varepsilon^2 / (\beta - \alpha)^2\big)$ for every $\varepsilon \gt 0$, a non-asymptotic guarantee for Monte Carlo estimates; the familiar interval $\bar X \pm 1.96\, \hat\sigma/\sqrt n$ is the asymptotic version from the central limit theorem. Either is a statement about the *method*: about 5% of honest 95% intervals miss the truth.
 
 </Section>
@@ -282,6 +288,12 @@ The Lean module proves Theorem 2 in the standard model. Recursive summation with
 The bound, by induction on $n$ with exactly the steps of the proof above:
 
 <Lean decl="Lumenary.ComputationalReproducibility.fsum_error" />
+
+<Narrator who="gideon">
+
+Read the statement carefully: the rounding errors $\delta_k$ are *inputs*, and $|\delta_k| \le u$ is a hypothesis. So this is a theorem about the standard model, not about your processor. The link between the two is Theorem 1 together with the IEEE 754 standard, neither of which is formalised here, and Theorem 1 itself excludes overflow and underflow.
+
+</Narrator>
 
 Interval arithmetic with rational endpoints (exact, so no outward rounding is needed) and Theorem 4 for $+$ and $\times$:
 
@@ -320,6 +332,12 @@ The last proof asks Lean's kernel to evaluate $3^{65536} \bmod 65537$ (`decide +
 The first experiment sums the same 100,000 numbers in several orders. Because every double is a rational number, the exact sum can be computed with integers, so every error is measured exactly. Watch how many different "answers" appear, how small they are compared with the worst-case bound of Theorem 2, and how pairwise and compensated summation do.
 
 <Python id="computational_reproducibility_floating_point" />
+
+<Narrator who="margaret">
+
+Compare the last line with the error column: the proven bound is several orders of magnitude larger than any error actually observed. That is normal. The bound assumes that every rounding error is as large as possible, has the worst sign and is applied to the largest possible partial sum, whereas real errors are smaller and partly cancel. The bound is what you may *claim* for every input; the observed error is what you happened to get on this one.
+
+</Narrator>
 
 The second experiment fixes a seed and checks, with a 64-bit fingerprint of the output, that two runs agree bit for bit; then it shows what different seeds do, and how often the nominal 95% confidence intervals actually contain the exact answer.
 
