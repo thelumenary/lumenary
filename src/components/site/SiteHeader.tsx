@@ -37,6 +37,9 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // The front page lists the three divisions; Lumenary Math's navigation starts on its own front page.
+  const home = pathname === `/${locale}/` || pathname === `/${locale}`;
+
   const isActive = (path: string) => {
     const target = `/${locale}/${path}`;
     if (path === "math") return pathname === `${target}/` || pathname === target;
@@ -54,38 +57,42 @@ export function SiteHeader() {
           <LogoMark size={30} />
           <Wordmark />
         </Link>
-        <nav className="ms-2 hidden items-center gap-0.5 lg:flex" aria-label="Primary">
-          {NAV.map((item) => (
-            <Link
-              key={item.key}
-              href={href(locale, item.path)}
-              aria-current={isActive(item.path) ? "page" : undefined}
-              title={t(`nav.${item.key}`)}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[0.9rem] font-medium transition-colors ${
-                isActive(item.path) ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink"
-              }`}
-            >
-              {t(`nav.short.${item.key}`)}
-            </Link>
-          ))}
-        </nav>
+        {!home && (
+          <nav className="ms-2 hidden items-center gap-0.5 lg:flex" aria-label="Primary">
+            {NAV.map((item) => (
+              <Link
+                key={item.key}
+                href={href(locale, item.path)}
+                aria-current={isActive(item.path) ? "page" : undefined}
+                title={t(`nav.${item.key}`)}
+                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[0.9rem] font-medium transition-colors ${
+                  isActive(item.path) ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink"
+                }`}
+              >
+                {t(`nav.short.${item.key}`)}
+              </Link>
+            ))}
+          </nav>
+        )}
         <div className="ms-auto flex items-center gap-1">
           <LanguageSelector />
           <CatToggle />
           <ThemeToggle />
-          <button
-            type="button"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-2 hover:bg-paper-2 lg:hidden"
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            aria-label={open ? t("nav.close") : t("nav.menu")}
-            onClick={() => setOpen((o) => !o)}
-          >
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          {!home && (
+            <button
+              type="button"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-2 hover:bg-paper-2 lg:hidden"
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              aria-label={open ? t("nav.close") : t("nav.menu")}
+              onClick={() => setOpen((o) => !o)}
+            >
+              {open ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          )}
         </div>
       </div>
-      {open && (
+      {open && !home && (
         <nav id="mobile-nav" className="border-t border-line bg-paper lg:hidden" aria-label="Primary">
           <ul className="container-page grid grid-cols-2 gap-1 py-3 sm:grid-cols-4">
             {[...NAV, { key: "divisions", path: "divisions" }, { key: "progress", path: "progress" }, { key: "languages", path: "languages" }, { key: "contribute", path: "contribute" }, { key: "verification", path: "verification" }].map((item) => (
