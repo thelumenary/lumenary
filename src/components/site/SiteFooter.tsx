@@ -15,6 +15,7 @@ export function SiteFooter({ locale, t }: { locale: Locale; t: TFunction }) {
   ];
   const project = [
     ["about", "about"],
+    ["divisions", "divisions"],
     ["educators", "educators"],
     ["contribute", "contribute"],
     ["languages", "languages"],
