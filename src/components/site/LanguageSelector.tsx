@@ -19,7 +19,7 @@ const STATUS: Record<Locale, "canonical" | "machine-draft"> = {
 
 /** For a page that does not exist in locale `l` (an untranslated lesson, a lab detail page), the nearest page that does. */
 function sectionHref(l: Locale, rest: string): string {
-  if (rest.startsWith("math/lessons/")) return href(l, "math");
+  if (rest.startsWith("math/lessons/")) return href(l, "math/curriculum");
   return href(l, rest.split("/")[0]);
 }
 

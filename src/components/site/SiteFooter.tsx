@@ -6,7 +6,8 @@ import { LogoMark, Wordmark } from "@/components/brand/Logo";
 
 export function SiteFooter({ locale, t }: { locale: Locale; t: TFunction }) {
   const learn = [
-    ["learn", "math"],
+    ["math", "math"],
+    ["learn", "math/curriculum"],
     ["graph", "math/graph"],
     ["trails", "math/trails"],
     ["lab", "lab"],

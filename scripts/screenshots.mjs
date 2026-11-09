@@ -9,13 +9,13 @@ import { serve } from "./serve-static.mjs";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const OUT = path.join(ROOT, "public/educators/screenshots");
 const PAGES = [
-  ["01-home", "/en/", "light"],
+  ["01-home", "/en/math/", "light"],
   ["02-lesson-sets", "/en/math/lessons/sets/", "light"],
   ["03-lesson-composition-dark", "/en/math/lessons/composition/#categories", "dark"],
   ["04-knowledge-graph", "/en/math/graph/", "light"],
   ["05-wonder-trail-clock", "/en/math/trails/clock-arithmetic/", "light"],
   ["06-formal-lab", "/en/formal/", "dark"],
-  ["07-arabic-rtl-home", "/ar/", "light"],
+  ["07-arabic-rtl-home", "/ar/math/", "light"],
   ["08-practice", "/en/practice/", "light"],
 ];
 
