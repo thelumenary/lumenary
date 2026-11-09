@@ -20,6 +20,7 @@ const NAV = [
   { key: "practice", path: "practice" },
   { key: "educators", path: "educators" },
   { key: "about", path: "about" },
+  { key: "divisions", path: "divisions" },
 ] as const;
 
 export function SiteHeader() {
