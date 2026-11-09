@@ -43,7 +43,7 @@ async function withPage(fn, opts = {}) {
 const locales = ["en", "es", "ar", "hi", "zh-Hans", "sw"];
 // Lesson pages exist in English and in each locale the lesson is translated into (collections is
 // translated into every demo locale); other locales link to the English lesson.
-const pages = ["", "math/", "math/graph/", "math/lessons/collections/", "math/trails/clock-arithmetic/", "lab/", "formal/", "practice/", "practice/collections/", "progress/", "educators/", "educators/overview/", "languages/", "verification/", "about/", "contribute/"];
+const pages = ["", "math/", "math/curriculum/", "math/graph/", "math/lessons/collections/", "math/trails/clock-arithmetic/", "lab/", "formal/", "practice/", "practice/collections/", "progress/", "educators/", "educators/overview/", "languages/", "verification/", "about/", "divisions/", "contribute/"];
 
 console.log("Pages render without errors:");
 for (const locale of locales) {

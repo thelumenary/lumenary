@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const paths = [
     "",
     "math/",
+    "math/curriculum/",
     "math/graph/",
     "math/trails/",
     "lab/",
@@ -19,6 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "practice/",
     "educators/",
     "about/",
+    "divisions/",
     "contribute/",
     "languages/",
     "verification/",

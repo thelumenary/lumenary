@@ -12,7 +12,8 @@ import { CatToggle } from "./CatToggle";
 import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
-  { key: "learn", path: "math" },
+  { key: "math", path: "math" },
+  { key: "learn", path: "math/curriculum" },
   { key: "graph", path: "math/graph" },
   { key: "trails", path: "math/trails" },
   { key: "lab", path: "lab" },
@@ -20,7 +21,6 @@ const NAV = [
   { key: "practice", path: "practice" },
   { key: "educators", path: "educators" },
   { key: "about", path: "about" },
-  { key: "divisions", path: "divisions" },
 ] as const;
 
 export function SiteHeader() {
@@ -39,7 +39,8 @@ export function SiteHeader() {
 
   const isActive = (path: string) => {
     const target = `/${locale}/${path}`;
-    if (path === "math") return pathname === `${target}/` || pathname === target || pathname.startsWith(`/${locale}/math/lessons`) || pathname.startsWith(`/${locale}/math/topics`);
+    if (path === "math") return pathname === `${target}/` || pathname === target;
+    if (path === "math/curriculum") return pathname.startsWith(target) || pathname.startsWith(`/${locale}/math/lessons`) || pathname.startsWith(`/${locale}/math/topics`);
     return pathname.startsWith(target);
   };
 
@@ -87,7 +88,7 @@ export function SiteHeader() {
       {open && (
         <nav id="mobile-nav" className="border-t border-line bg-paper lg:hidden" aria-label="Primary">
           <ul className="container-page grid grid-cols-2 gap-1 py-3 sm:grid-cols-4">
-            {[...NAV, { key: "progress", path: "progress" }, { key: "languages", path: "languages" }, { key: "contribute", path: "contribute" }, { key: "verification", path: "verification" }].map((item) => (
+            {[...NAV, { key: "divisions", path: "divisions" }, { key: "progress", path: "progress" }, { key: "languages", path: "languages" }, { key: "contribute", path: "contribute" }, { key: "verification", path: "verification" }].map((item) => (
               <li key={item.key}>
                 <Link
                   href={href(locale, item.path)}

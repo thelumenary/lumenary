@@ -40,8 +40,9 @@ Lean source shown on the site is extracted from the `.lean` files by region mark
 | Route | Page |
 | --- | --- |
 | `/` | Language negotiation (remembered choice → browser preferences → English), with a no-JS fallback list |
-| `/[locale]/` | Home |
-| `/[locale]/math/` | Curriculum browser (filter by level, subject, pathway, status, objective text) |
+| `/[locale]/` | Home: the Lumenary's three divisions (Lumenary Scientia, Lingua and Prep) |
+| `/[locale]/math/` | Lumenary Math's front page (part of Lumenary Scientia) |
+| `/[locale]/math/curriculum/` | Curriculum browser (filter by level, subject, pathway, status, objective text) |
 | `/[locale]/math/graph/` | Interactive knowledge graph (map and accessible list views) |
 | `/[locale]/math/lessons/[slug]/` | Lesson reader |
 | `/[locale]/math/topics/[id]/` | Topic page for every graph node |
@@ -53,7 +54,7 @@ Lean source shown on the site is extracted from the `.lean` files by region mark
 | `/[locale]/educators/`, `…/worksheets/[slug]/`, `…/overview/` | Educator resources and evaluation package |
 | `/[locale]/languages/` | Language and country registries |
 | `/[locale]/verification/` | Verification report |
-| `/[locale]/about/`, `/[locale]/contribute/` | Project pages |
+| `/[locale]/about/`, `/[locale]/divisions/`, `/[locale]/contribute/` | Project pages |
 
 ## Lesson architecture
 

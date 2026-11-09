@@ -70,7 +70,7 @@ export default async function LessonPage({ params }: Params) {
               {t("curriculum.title")}
             </Link>
             <span aria-hidden="true">/</span>
-            <Link href={`${href(locale, "math")}?level=${fm.level}`} className="hover:text-ink">
+            <Link href={`${href(locale, "math/curriculum")}?level=${fm.level}`} className="hover:text-ink">
               {t(`levels.${fm.level}`)}
             </Link>
             <span aria-hidden="true">/</span>
