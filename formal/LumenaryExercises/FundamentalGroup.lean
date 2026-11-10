@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Homotopy and the fundamental group.
+Lumenary Academy — Lean exercises: Homotopy and the fundamental group.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/FundamentalGroup.lean`.
 -/
 import Lumenary.FundamentalGroup

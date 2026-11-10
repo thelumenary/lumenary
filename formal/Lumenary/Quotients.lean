@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Quotient groups and quotient rings: why normal subgroups and ideals are exactly what is needed,
 the universal property, the isomorphism theorems, ℤ/nℤ, the Chinese remainder theorem, and
 fields built as quotients.

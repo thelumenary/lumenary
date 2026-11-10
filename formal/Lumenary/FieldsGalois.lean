@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Fields and Galois theory: degrees and the tower law, minimal polynomials, the impossibility of
 doubling the cube, finite fields, the Galois correspondence, and solvability by radicals.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Mathematical foundations of quantum mechanics.
+Lumenary Academy — Lean exercises: Mathematical foundations of quantum mechanics.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/QuantumMechanics.lean`.
 -/
 import Lumenary.QuantumMechanics

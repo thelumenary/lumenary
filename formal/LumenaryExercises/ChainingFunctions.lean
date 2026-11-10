@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Function machines in sequence.
+Lumenary Academy — Lean exercises: Function machines in sequence.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ChainingFunctions.lean`.
 -/
 import Lumenary.ChainingFunctions

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Vector bundles and characteristic classes.
+Lumenary Academy — Lean exercises: Vector bundles and characteristic classes.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/VectorBundlesCharacteristicClasses.lean`.
 -/

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Graphs of change: the average rate of change, what its sign says about a graph, how the rates
 over two intervals combine, and two classic surprises about average speed.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Quivers and path algebras (lengths of paths, idempotents).
+Lumenary Academy — Lean exercises: Quivers and path algebras (lengths of paths, idempotents).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/PathAlgebras.lean`.
 -/
 import Lumenary.PathAlgebras

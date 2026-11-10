@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Research ethics and attribution: what a proof assistant can and cannot check about the record.
 
 Ethics is not a formal subject, but several claims in the lesson are mathematical and can be

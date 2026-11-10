@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Projective geometry: homogeneous coordinates, the line through two points and the point on two
 lines (cross products), invariance of the cross-ratio, the theorems of Desargues and Pappus in
 coordinates, and the projective equivalence of conics.

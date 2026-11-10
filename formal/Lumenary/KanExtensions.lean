@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Kan extensions: left and right Kan extensions, their pointwise formulas, limits and adjoints
 as Kan extensions.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Markov chains on finite state spaces: stochastic matrices and n-step transitions, detailed
 balance, the two-state chain, gambler's ruin, Doeblin's contraction (the engine of the
 convergence theorem), and the divergence of return probabilities of simple random walk in one

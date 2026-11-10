@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: the coordinate plane.
+Lumenary Academy — Lean exercises: the coordinate plane.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/CoordinatePlane.lean`.
 -/
 import Lumenary.CoordinatePlane

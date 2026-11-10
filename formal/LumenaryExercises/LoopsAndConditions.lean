@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Repetition and decisions.
+Lumenary Academy — Lean exercises: Repetition and decisions.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LoopsAndConditions.lean`.
 -/
 import Lumenary.LoopsAndConditions

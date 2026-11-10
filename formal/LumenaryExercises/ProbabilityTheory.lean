@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Probability theory.
+Lumenary Academy — Lean exercises: Probability theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ProbabilityTheory.lean`.
 -/
 import Lumenary.ProbabilityTheory

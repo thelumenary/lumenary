@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Algorithm design and analysis.
+Lumenary Academy — Lean exercises: Algorithm design and analysis.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AlgorithmDesign.lean`.
 -/
 import Lumenary.AlgorithmDesign

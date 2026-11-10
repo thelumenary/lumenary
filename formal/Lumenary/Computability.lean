@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Computability: Turing machines, diagonal arguments, the halting problem, reductions and
 Rice's theorem.
 

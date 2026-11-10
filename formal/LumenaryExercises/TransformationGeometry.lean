@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Transformation geometry.
+Lumenary Academy — Lean exercises: Transformation geometry.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/TransformationGeometry.lean`.
 -/
 import Lumenary.TransformationGeometry

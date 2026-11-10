@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Rings.
+Lumenary Academy — Lean exercises: Rings.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Rings.lean`.
 -/
 import Lumenary.Rings

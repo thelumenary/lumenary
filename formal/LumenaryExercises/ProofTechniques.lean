@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Proof techniques.
+Lumenary Academy — Lean exercises: Proof techniques.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ProofTechniques.lean`.
 -/
 import Lumenary.ProofTechniques

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Linear algebra: solution sets of linear systems, linear maps and matrices, rank–nullity,
 determinants, eigenvectors and a matrix that cannot be diagonalised.
 

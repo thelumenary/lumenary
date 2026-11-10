@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Enriched categories: Lawvere's metric spaces as categories enriched in `([0, ∞], ≥, +, 0)`,
 preorders as categories enriched in truth values, ordinary categories as `Set`-enriched
 categories, and rings as one-object `Ab`-enriched categories.

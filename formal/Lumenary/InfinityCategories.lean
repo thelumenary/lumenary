@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 ∞-categories as quasi-categories: inner horn filling, nerves of categories, Kan complexes, and
 why the nerve of a non-groupoid is a quasi-category but not a Kan complex.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: the Yoneda lemma.
+Lumenary Academy — Lean exercises: the Yoneda lemma.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Yoneda.lean`.
 -/
 import Lumenary.Yoneda

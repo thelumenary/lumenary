@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Proof theory: a one-sided (Tait-style) sequent calculus for classical propositional logic, its
 soundness, the completeness of its *cut-free* fragment, and hence the admissibility of cut and
 the consistency of the calculus; a glimpse of Curry–Howard; and the ordinal ε₀.

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Monoidal categories: the pentagon and triangle axioms, Kelly's identity `λ_I = ρ_I`, the
 commutativity of `End(I)`, the Eckmann–Hilton argument, coherence, symmetric braidings,
 monoid objects, and a twisted associator on graded vector spaces.

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Real analysis.
+Lumenary Academy — Lean exercises: Real analysis.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RealAnalysis.lean`.
 -/
 import Lumenary.RealAnalysis

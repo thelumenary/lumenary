@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Modules (free modules and lifting).
+Lumenary Academy — Lean exercises: Modules (free modules and lifting).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Modules.lean`.
 -/
 import Lumenary.Modules

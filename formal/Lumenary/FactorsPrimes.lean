@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Factors, multiples and primes: factor lists, prime numbers, divisibility tests, factor trees,
 and Euclid's proof that the primes never run out.
 

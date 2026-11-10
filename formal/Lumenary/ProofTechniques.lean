@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Proof techniques: direct proof, proof by cases, contrapositive, contradiction, ordinary and
 strong induction, and the well-ordering principle.
 

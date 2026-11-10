@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Constructing ℤ, ℚ and ℝ.
+Lumenary Academy — Lean exercises: Constructing ℤ, ℚ and ℝ.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/NumberSystemConstructions.lean`.
 -/
 import Lumenary.NumberSystemConstructions

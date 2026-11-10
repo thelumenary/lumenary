@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Dynamical systems and chaos: fixed points and periodic orbits of the logistic map, their
 stability, the attracting fixed point theorem, contractions, expansion of the doubling map, and
 a Lyapunov function for a planar linear system.

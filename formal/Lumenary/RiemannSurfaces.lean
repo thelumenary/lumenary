@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Riemann surfaces: the square root has no continuous branch on `ℂ ∖ {0}` (so it lives on a
 two-sheeted surface), holomorphic functions on a compact Riemann surface are constant, doubly
 periodic entire functions are constant, holomorphic maps between complex tori lift to affine

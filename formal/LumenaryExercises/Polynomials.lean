@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Polynomials.
+Lumenary Academy — Lean exercises: Polynomials.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Polynomials.lean`.
 -/
 import Lumenary.Polynomials

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: First steps in Lean.
+Lumenary Academy — Lean exercises: First steps in Lean.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/IntroLean.lean`.
 You can try these in the Lean web editor; each one needs only a few lines.
 -/

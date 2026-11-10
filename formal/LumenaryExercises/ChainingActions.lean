@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: One thing after another.
+Lumenary Academy — Lean exercises: One thing after another.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ChainingActions.lean`.
 -/
 import Lumenary.ChainingActions

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Low-dimensional topology: the 3-sphere, the arithmetic of lens spaces, and the E₈ form.
 
 What is proved here. Mathlib knows that the 3-sphere `S³ ⊂ ℝ⁴` is a smooth (indeed analytic)

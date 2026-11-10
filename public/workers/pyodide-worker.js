@@ -1,4 +1,4 @@
-/* The Lumenary — Python sandbox worker.
+/* Lumenary Academy — Python sandbox worker.
  * Loads Pyodide (CPython compiled to WebAssembly) from a pinned CDN version and
  * executes code in an isolated namespace. The main thread enforces time limits
  * by terminating this worker. No network access is used by learner code paths

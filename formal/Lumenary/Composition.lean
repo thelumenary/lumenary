@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Composition of functions: associativity, identities, and how composition interacts with
 injective, surjective and bijective functions.
 

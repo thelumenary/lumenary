@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Fields and Galois theory.
+Lumenary Academy — Lean exercises: Fields and Galois theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/FieldsGalois.lean`.
 -/
 import Lumenary.FieldsGalois

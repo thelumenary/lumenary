@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Statistical inference.
+Lumenary Academy — Lean exercises: Statistical inference.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Statistics.lean`.
 -/
 import Lumenary.Statistics

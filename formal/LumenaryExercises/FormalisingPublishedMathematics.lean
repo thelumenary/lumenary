@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: formalising published mathematics.
+Lumenary Academy — Lean exercises: formalising published mathematics.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/FormalisingPublishedMathematics.lean`.
 -/

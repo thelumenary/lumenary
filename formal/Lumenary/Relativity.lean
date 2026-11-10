@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 The geometry of spacetime: Lorentz boosts, the twin paradox as a reverse triangle inequality, and
 circular orbits around a Schwarzschild black hole.
 

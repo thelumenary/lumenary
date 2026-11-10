@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Measure theory and integration: Lebesgue measure, null sets, Markov's inequality, the convergence
 theorems, a sequence whose mass escapes, Tonelli's theorem and the completeness of `Lᵖ`.
 

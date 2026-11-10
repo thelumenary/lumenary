@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Random structures.
+Lumenary Academy — Lean exercises: Random structures.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RandomGeometry.lean`.
 -/
 import Lumenary.RandomGeometry

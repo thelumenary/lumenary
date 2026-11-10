@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Categorical representation theory.
+Lumenary Academy — Lean exercises: Categorical representation theory.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/CategoricalRepresentationTheory.lean`.
 -/

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Cryptography: fast modular exponentiation, the correctness of RSA, Diffie–Hellman key
 agreement, the malleability of textbook RSA, and the one-time pad.
 

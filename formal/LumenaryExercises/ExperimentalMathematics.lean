@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Experimental mathematics.
+Lumenary Academy — Lean exercises: Experimental mathematics.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/ExperimentalMathematics.lean`.
 -/

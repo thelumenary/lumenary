@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Linear equations and inequalities.
+Lumenary Academy — Lean exercises: Linear equations and inequalities.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LinearEquations.lean`.
 -/
 import Lumenary.LinearEquations

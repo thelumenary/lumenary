@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Functional analysis: bounded operators, the Riesz representation theorem, the "big three"
 theorems on Banach spaces, Hahn–Banach, non-compactness of the unit ball in infinite dimensions,
 and the spectral theorem for compact self-adjoint operators.

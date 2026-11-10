@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Mathematical foundations of quantum mechanics: observables as symmetric operators, the
 uncertainty relation, ladder operators, and why the canonical commutation relation needs
 unbounded operators.

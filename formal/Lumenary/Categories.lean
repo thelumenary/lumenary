@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Categories: the axioms, examples (matrices, preorders, monoids), isomorphisms and the uniqueness
 of inverses, monomorphisms and epimorphisms in sets, the epimorphism `ℤ → ℚ` of rings, and duality.
 

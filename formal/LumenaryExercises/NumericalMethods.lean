@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Numerical methods.
+Lumenary Academy — Lean exercises: Numerical methods.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/NumericalMethods.lean`.
 -/
 import Lumenary.NumericalMethods

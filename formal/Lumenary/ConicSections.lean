@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Conic sections: focus–directrix and two-focus descriptions, standard equations, the reflective
 property of the parabola, and the classification of quadratic curves by `B² − 4AC`.
 

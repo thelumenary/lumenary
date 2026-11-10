@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Euclidean geometry and proof.
+Lumenary Academy — Lean exercises: Euclidean geometry and proof.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/EuclideanGeometry.lean`.
 -/
 import Lumenary.EuclideanGeometry

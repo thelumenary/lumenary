@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Sequences and series.
+Lumenary Academy — Lean exercises: Sequences and series.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/SequencesSeries.lean`.
 -/
 import Lumenary.SequencesSeries

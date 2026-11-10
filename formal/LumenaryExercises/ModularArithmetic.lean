@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: clock arithmetic.
+Lumenary Academy — Lean exercises: clock arithmetic.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ModularArithmetic.lean`.
 -/
 import Lumenary.ModularArithmetic

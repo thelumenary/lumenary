@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: research ethics and attribution.
+Lumenary Academy — Lean exercises: research ethics and attribution.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ResearchEthics.lean`.
 -/
 import Lumenary.ResearchEthics

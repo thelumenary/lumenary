@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Derived categories (chain homotopies).
+Lumenary Academy — Lean exercises: Derived categories (chain homotopies).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/DerivedCategories.lean`.
 -/
 import Lumenary.DerivedCategories

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Functors.
+Lumenary Academy — Lean exercises: Functors.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Functors.lean`.
 -/
 import Lumenary.Functors

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Optimisation.
+Lumenary Academy — Lean exercises: Optimisation.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Optimisation.lean`.
 -/
 import Lumenary.Optimisation

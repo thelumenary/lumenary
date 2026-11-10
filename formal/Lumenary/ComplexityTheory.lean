@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Computational complexity: Boolean satisfiability, certificates, brute-force search, and
 polynomial-time reductions between graph problems.
 

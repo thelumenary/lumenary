@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Stochastic processes.
+Lumenary Academy — Lean exercises: Stochastic processes.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/StochasticProcesses.lean`.
 -/
 import Lumenary.StochasticProcesses

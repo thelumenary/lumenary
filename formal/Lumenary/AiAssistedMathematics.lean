@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 AI-assisted mathematical research: checking machine-found certificates.
 
 What is proved here. A search program (see the lesson's Python experiment) proposed a colouring

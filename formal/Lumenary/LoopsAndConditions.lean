@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Repetition and decisions ("for grown-ups" companion to the Grades 3–5 lesson).
 
 A floor robot follows instructions; `repeatBlock n block` is the loop "repeat `n` times:

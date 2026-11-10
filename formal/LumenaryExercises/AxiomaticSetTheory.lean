@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: axiomatic set theory.
+Lumenary Academy — Lean exercises: axiomatic set theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AxiomaticSetTheory.lean`.
 -/
 import Lumenary.AxiomaticSetTheory

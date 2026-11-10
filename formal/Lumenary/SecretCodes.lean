@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Secret codes ("for grown-ups" companion to the Grades 3–5 lesson).
 
 Number the letters A = 0, B = 1, …, Z = 25. A Caesar shift by `k` sends letter number `n` to

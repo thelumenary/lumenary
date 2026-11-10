@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Variables and algebraic expressions.
+Lumenary Academy — Lean exercises: Variables and algebraic expressions.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/VariablesExpressions.lean`.
 -/
 import Lumenary.VariablesExpressions

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Triangulated categories: Verdier's axioms, long exact Hom sequences, split monomorphisms,
 and t-structures.
 

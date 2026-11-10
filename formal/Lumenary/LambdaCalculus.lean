@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 The λ-calculus: terms with de Bruijn indices, capture-avoiding substitution, β-reduction,
 a term without a normal form, fixed-point combinators, Church numerals, and the
 Church–Rosser theorem.

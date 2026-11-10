@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Universal properties.
+Lumenary Academy — Lean exercises: Universal properties.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/UniversalProperties.lean`.
 -/
 import Lumenary.UniversalProperties

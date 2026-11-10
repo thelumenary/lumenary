@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Partial differential equations and Fourier series: separated solutions of the heat, wave and
 Laplace equations, d'Alembert's travelling waves, orthogonality of sines, a discrete maximum
 principle for the explicit heat scheme, and Mathlib's Fourier theory on the circle.

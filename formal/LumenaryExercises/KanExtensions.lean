@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Kan extensions.
+Lumenary Academy — Lean exercises: Kan extensions.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/KanExtensions.lean`.
 -/
 import Lumenary.KanExtensions

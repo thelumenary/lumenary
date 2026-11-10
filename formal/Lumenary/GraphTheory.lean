@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Graph theory: the handshake lemma, Hall's marriage theorem, the edge bounds behind the
 non-planarity of K₅ and K₃,₃, Mantel's and Turán's theorems, and the Ramsey number R(3, 3) = 6.
 

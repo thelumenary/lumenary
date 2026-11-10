@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Algebraic geometry: algebraic sets and the Zariski topology, the algebra–geometry dictionary,
 the cusp and its normalisation, points of the projective plane over a finite field, and affine
 schemes.

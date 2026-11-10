@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 The Yoneda lemma: natural transformations out of a representable functor are elements, the
 Yoneda embedding is full and faithful, an object is determined by the arrows out of it (or
 into it), and Cayley's theorem as the one-object case.

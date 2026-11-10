@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Smooth manifolds: stereographic charts on spheres and their smooth transition map, the regular
 value computation that makes the orthogonal group a manifold, the chain rule as functoriality of
 the tangent map, and the first de Rham cohomology of the circle, computed through periodic

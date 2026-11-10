@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: representable functors.
+Lumenary Academy — Lean exercises: representable functors.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RepresentableFunctors.lean`.
 -/
 import Lumenary.RepresentableFunctors

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Quotients.
+Lumenary Academy — Lean exercises: Quotients.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Quotients.lean`.
 -/
 import Lumenary.Quotients

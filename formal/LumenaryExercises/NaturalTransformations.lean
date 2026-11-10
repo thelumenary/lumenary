@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Natural transformations.
+Lumenary Academy — Lean exercises: Natural transformations.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/NaturalTransformations.lean`.
 -/
 import Lumenary.NaturalTransformations

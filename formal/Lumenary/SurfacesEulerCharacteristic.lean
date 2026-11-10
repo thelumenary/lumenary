@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Surfaces, polyhedra and the Euler characteristic.
 
 Euler's formula itself — `V - E + F = 2` for a connected graph drawn in the plane — needs the

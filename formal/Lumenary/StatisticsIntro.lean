@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Statistics: the mean as a balance point, how the mean and the median react to an outlier,
 shifting and scaling data, and why the mean is the best centre for squared distances.
 

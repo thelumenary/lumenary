@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Mathematical biology.
+Lumenary Academy — Lean exercises: Mathematical biology.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/MathematicalBiology.lean`.
 -/
 import Lumenary.MathematicalBiology

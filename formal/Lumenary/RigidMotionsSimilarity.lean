@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Rigid motions, congruence and similarity in the coordinate plane.
 
 Transformations are functions `Point → Point` on points with rational coordinates. We prove

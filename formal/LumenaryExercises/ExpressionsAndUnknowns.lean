@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Expressions, unknowns and rules.
+Lumenary Academy — Lean exercises: Expressions, unknowns and rules.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ExpressionsAndUnknowns.lean`.
 -/
 import Lumenary.ExpressionsAndUnknowns

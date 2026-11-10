@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Gödel's incompleteness theorems.
+Lumenary Academy — Lean exercises: Gödel's incompleteness theorems.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Incompleteness.lean`.
 -/
 import Lumenary.Incompleteness

@@ -1,10 +1,10 @@
 # Design system
 
-The Lumenary should feel like a well-lit study: warm paper and deep ink by day, a night sky and lamplight by night. It should be calm, scholarly and joyful, never noisy.
+Lumenary Academy should feel like a well-lit study: warm paper and deep ink by day, a night sky and lamplight by night. It should be calm, scholarly and joyful, never noisy.
 
 ## Brand
 
-- **Name:** The Lumenary (public brand). Mathematics curriculum: **Lumenary Math**.
+- **Name:** Lumenary Academy (public brand). Mathematics curriculum: **Lumenary Math**.
 - **Mark:** a four-pointed star of light inside a ring (`src/components/brand/Logo.tsx`). It reads as a lamp, a compass rose or a point of wonder, and it works at 16 px.
 - **Mottos:** "One mathematics. Many languages. Every nation." · "Understand. Prove. Compute. Verify." · "Master the present. Glimpse the future. Never require the future to understand the present."
 

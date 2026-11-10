@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Orders, lattices and well-orders.
+Lumenary Academy — Lean exercises: Orders, lattices and well-orders.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/OrderTheory.lean`.
 -/
 import Lumenary.OrderTheory

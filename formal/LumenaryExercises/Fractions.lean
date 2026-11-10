@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Fractions and decimals.
+Lumenary Academy — Lean exercises: Fractions and decimals.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Fractions.lean`.
 -/
 import Lumenary.Fractions

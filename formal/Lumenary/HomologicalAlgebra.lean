@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Homological algebra: chain complexes and homology, the long exact sequence, projective
 resolutions and the comparison theorem, Ext and Tor.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Computational reproducibility: what it takes for a computation to count as evidence, and how
 to turn a computation into a theorem.
 

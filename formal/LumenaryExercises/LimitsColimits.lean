@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Limits and colimits.
+Lumenary Academy — Lean exercises: Limits and colimits.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LimitsColimits.lean`.
 -/
 import Lumenary.LimitsColimits

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Reading the mathematical literature.
+Lumenary Academy — Lean exercises: Reading the mathematical literature.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ReadingLiterature.lean`.
 -/
 import Lumenary.ReadingLiterature

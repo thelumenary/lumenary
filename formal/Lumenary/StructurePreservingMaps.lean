@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Structure-preserving maps: homomorphisms and isomorphisms.
 
 Proved here (`@provenance independent`), mirroring the lesson: composites of operation-preserving

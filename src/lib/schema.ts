@@ -288,7 +288,7 @@ export const CountryEntry = z.object({
   officialLanguages: z.array(z.string()),
   /** Languages used nationally/administratively when there is no de jure official language. */
   deFactoLanguages: z.array(z.string()).default([]),
-  /** The language the Lumenary will use for this country first. */
+  /** The language Lumenary Academy will use for this country first. */
   primaryLumenaryLanguage: z.string(),
   notes: z.string().optional(),
   needsReview: z.boolean().default(false),

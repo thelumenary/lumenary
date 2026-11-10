@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Probability theory: expectation and variance, linearity and indicators, independence,
 Chebyshev's inequality, the weak law of large numbers, and Mathlib's strong law and central
 limit theorem.

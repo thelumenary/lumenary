@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Statistical inference: unbiased estimation (the sample mean and Bessel's correction), the
 bias–variance decomposition of mean squared error, consistency, the Bernoulli maximum likelihood
 estimator, least squares and the normal equations, and multiple testing.

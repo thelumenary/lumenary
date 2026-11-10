@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Sets.
+Lumenary Academy — Lean exercises: Sets.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Sets.lean`
 (the `@solution` line names the solved theorem).
 -/

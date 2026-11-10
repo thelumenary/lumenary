@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Euclidean geometry and proof: the parallel postulate, congruence, triangle and circle theorems.
 
 Mathlib does not start from Euclid's or Hilbert's axioms. It models the plane (or space of any

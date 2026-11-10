@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Estimation and rounding: rounding to the nearest ten or hundred, how far rounding can move a
 number, upper and lower bounds, and how rounding errors add up.
 

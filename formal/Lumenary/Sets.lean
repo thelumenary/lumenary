@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Sets: sets as predicates, the basic operations, and their first laws.
 
 We build sets from scratch in core Lean 4: a set of `α`s is a property of `α`s, and `x ∈ A`

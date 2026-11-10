@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Rational numbers.
+Lumenary Academy — Lean exercises: Rational numbers.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RationalNumbers.lean`.
 -/
 import Lumenary.RationalNumbers

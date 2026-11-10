@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Computational reproducibility.
+Lumenary Academy — Lean exercises: Computational reproducibility.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/ComputationalReproducibility.lean`.
 -/

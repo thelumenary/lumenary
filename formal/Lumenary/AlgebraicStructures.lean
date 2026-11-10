@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Algebraic structures: binary operations, monoids, groups, rings and fields, and the
 homomorphisms between them.
 

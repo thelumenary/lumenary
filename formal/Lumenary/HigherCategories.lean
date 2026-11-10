@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Higher categories: the interchange law for natural transformations, the Eckmann–Hilton
 argument, and why 2-endomorphisms of an identity 1-morphism commute in any bicategory.
 

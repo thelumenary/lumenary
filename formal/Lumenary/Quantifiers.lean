@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Set-builder notation, quantifiers and infinite sets.
 
 Lean's logic is built from exactly the quantifiers of this lesson: `∀ x, P x` ("for all") and

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Collections: lists as collections ("for grown-ups" companion to the K–2 lesson on collections).
 
 A *list* is an ordered collection: it remembers the order of its members and how often each

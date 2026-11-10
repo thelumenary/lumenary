@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: The Langlands programme.
+Lumenary Academy — Lean exercises: The Langlands programme.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LanglandsProgramme.lean`.
 -/
 import Lumenary.LanglandsProgramme

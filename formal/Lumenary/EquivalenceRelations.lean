@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Relations, equivalence relations and partitions.
 
 A relation on a type `α` is a function `R : α → α → Prop`: `R a b` is the statement "a is

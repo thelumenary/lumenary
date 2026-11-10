@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Arithmetic geometry and elliptic curves.
+Lumenary Academy — Lean exercises: Arithmetic geometry and elliptic curves.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ArithmeticGeometry.lean`.
 -/
 import Lumenary.ArithmeticGeometry

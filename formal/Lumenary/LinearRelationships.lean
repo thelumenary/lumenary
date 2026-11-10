@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Linear relationships and simultaneous equations: slope, the form `y = m·x + b`, constant rate
 of change, where two lines meet, and why a system of linear equations has one solution, none,
 or infinitely many.

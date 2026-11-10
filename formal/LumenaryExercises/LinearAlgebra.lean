@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Linear algebra.
+Lumenary Academy — Lean exercises: Linear algebra.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LinearAlgebra.lean`.
 -/
 import Lumenary.LinearAlgebra

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Whole-number arithmetic: the laws of multiplication, why the written methods work, and
 division with remainder.
 

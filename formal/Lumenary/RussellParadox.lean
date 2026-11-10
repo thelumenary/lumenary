@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Russell's paradox and why sets need axioms.
 
 Proved here (`@provenance independent`): the heart of the paradox is a theorem of pure logic —

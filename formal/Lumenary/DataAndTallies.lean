@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Data, tallies and picture graphs ("for grown-ups" companion to the K–2 lesson).
 
 A class survey — "How did you come to school today?" — is written as a Lean list of answers,

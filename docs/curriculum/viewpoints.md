@@ -25,6 +25,6 @@ A viewpoint is mathematics, not a slogan. It names a precise statement, example 
 | Incompleteness | Computation | No algorithm decides all arithmetic truths; incompleteness and the halting problem are two faces of diagonalisation. |
 | Euler characteristic | Analysis | Gauss–Bonnet: ∫K dA = 2πχ — an integral of curvature computes a topological invariant. |
 
-## Why this matters to the Lumenary's values
+## Why this matters to Lumenary Academy's values
 
 Intellectual humility includes recognising that one's own preferred language is not the only way to see the truth. Giving learners many viewpoints respects different mathematical temperaments and helps them recognise structure across fields — the habit behind many of the deepest discoveries in mathematics.

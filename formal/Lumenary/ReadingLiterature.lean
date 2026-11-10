@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Reading the mathematical literature: reconstructing a published proof, step by step.
 
 Zagier's "one-sentence proof" (American Mathematical Monthly, 1990) that every prime `p ≡ 1

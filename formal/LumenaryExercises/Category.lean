@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Category (products of types).
+Lumenary Academy — Lean exercises: Category (products of types).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Category.lean`.
 -/
 import Lumenary.Category

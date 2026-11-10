@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Algebraic geometry (the cusp and the Zariski topology).
+Lumenary Academy — Lean exercises: Algebraic geometry (the cusp and the Zariski topology).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AlgebraicGeometry.lean`.
 -/
 import Lumenary.AlgebraicGeometry

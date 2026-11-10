@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Ratios, rates and proportional reasoning: equivalent ratios, proportional relationships
 `y = k·x`, ratio tables, and percentage change.
 

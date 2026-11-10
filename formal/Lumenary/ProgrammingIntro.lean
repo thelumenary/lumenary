@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Programming for mathematics: loops, recursion, testing versus proving, and binary numbers.
 
 Lean is a programming language as well as a proof checker: a `def` is a program that Lean can

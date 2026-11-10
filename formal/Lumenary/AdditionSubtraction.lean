@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Addition, subtraction and place value to 100 ("for grown-ups" companion to the K–2 lesson).
 
 In core Lean the natural numbers are built from `0` by repeatedly taking "the next number", and

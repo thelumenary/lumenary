@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 One thing after another ("for grown-ups" companion to the Grades 3–5 lesson).
 
 An action is a function from things to things, and "do `f`, then do `g`" is the chain

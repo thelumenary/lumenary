@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Monads: the list monad and its algebras, the "maybe" monad, Kleisli composition, and the general
 theory (adjunctions, Kleisli and Eilenberg–Moore categories, Beck's theorem) from Mathlib.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Measure-theoretic probability.
+Lumenary Academy — Lean exercises: Measure-theoretic probability.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/MeasureTheoreticProbability.lean`.
 -/

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Cryptography.
+Lumenary Academy — Lean exercises: Cryptography.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Cryptography.lean`.
 -/
 import Lumenary.Cryptography

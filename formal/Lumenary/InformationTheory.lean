@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Information theory: entropy, relative entropy and Gibbs' inequality, the bounds
 `0 ≤ H ≤ log |𝒳|`, Kraft's inequality for prefix codes, the source coding bounds, the
 capacity of the binary symmetric channel, and the impossibility of compressing every file.

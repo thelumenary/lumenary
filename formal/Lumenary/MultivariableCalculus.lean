@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Multivariable and vector calculus: the derivative as a linear map, directional derivatives and
 the gradient, a function with partial derivatives that is not differentiable, the gradient
 theorem for line integrals, Lagrange multipliers, change of variables in polar coordinates,

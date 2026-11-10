@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Representation theory (Schur's lemma, a shear of order 2).
+Lumenary Academy — Lean exercises: Representation theory (Schur's lemma, a shear of order 2).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RepresentationTheory.lean`.
 -/
 import Lumenary.RepresentationTheory

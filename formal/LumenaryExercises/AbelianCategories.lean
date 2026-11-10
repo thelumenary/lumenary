@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Abelian categories (the free abelian group counterexample).
+Lumenary Academy — Lean exercises: Abelian categories (the free abelian group counterexample).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AbelianCategories.lean`.
 -/
 import Lumenary.AbelianCategories

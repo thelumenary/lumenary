@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Quiver representations (Tits forms and reflections).
+Lumenary Academy — Lean exercises: Quiver representations (Tits forms and reflections).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/QuiverRepresentations.lean`.
 -/
 import Lumenary.QuiverRepresentations

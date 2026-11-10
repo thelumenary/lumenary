@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Projective geometry.
+Lumenary Academy — Lean exercises: Projective geometry.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ProjectiveGeometry.lean`.
 -/
 import Lumenary.ProjectiveGeometry

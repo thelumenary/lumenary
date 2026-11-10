@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Numerical analysis.
+Lumenary Academy — Lean exercises: Numerical analysis.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/NumericalAnalysis.lean`.
 -/
 import Lumenary.NumericalAnalysis

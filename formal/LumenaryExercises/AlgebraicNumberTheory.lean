@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Algebraic number theory (units of quadratic rings).
+Lumenary Academy — Lean exercises: Algebraic number theory (units of quadratic rings).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AlgebraicNumberTheory.lean`.
 -/
 import Lumenary.AlgebraicNumberTheory

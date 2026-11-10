@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Integers.
+Lumenary Academy — Lean exercises: Integers.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Integers.lean`.
 -/
 import Lumenary.Integers

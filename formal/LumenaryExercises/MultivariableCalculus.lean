@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Multivariable and vector calculus.
+Lumenary Academy — Lean exercises: Multivariable and vector calculus.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/MultivariableCalculus.lean`.
 -/
 import Lumenary.MultivariableCalculus

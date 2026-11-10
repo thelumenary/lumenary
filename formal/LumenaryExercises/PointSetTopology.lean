@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Metric spaces and point-set topology.
+Lumenary Academy — Lean exercises: Metric spaces and point-set topology.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/PointSetTopology.lean`.
 -/
 import Lumenary.PointSetTopology

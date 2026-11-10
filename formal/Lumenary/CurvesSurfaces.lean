@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Differential geometry of curves and surfaces: unit-speed parametrisation and curvature of a
 circle, curvature and torsion of a helix, the first and second fundamental forms and Gaussian
 curvature of the sphere, the torus and the cylinder, and Gauss–Bonnet checked on the sphere and

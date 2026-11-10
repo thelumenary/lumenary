@@ -1,4 +1,4 @@
-# Contributing to The Lumenary
+# Contributing to Lumenary Academy
 
 Thank you! The most valuable contributions right now are **mathematical reviews**, **pedagogical reviews** and **translation reviews** — no content has yet been reviewed by a human. See the Contribute page on the site (`content/pages/contribute/en.mdx`) for details.
 

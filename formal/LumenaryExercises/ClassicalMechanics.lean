@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Classical mechanics.
+Lumenary Academy — Lean exercises: Classical mechanics.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ClassicalMechanics.lean`.
 -/
 import Lumenary.ClassicalMechanics

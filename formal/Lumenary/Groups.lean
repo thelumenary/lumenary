@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Groups: cosets and Lagrange's theorem, cyclic, dihedral and alternating groups, homomorphisms
 and normal subgroups, group actions, orbit–stabiliser, Burnside's lemma and Cayley's theorem.
 

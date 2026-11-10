@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Estimation and rounding.
+Lumenary Academy — Lean exercises: Estimation and rounding.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Estimation.lean`.
 -/
 import Lumenary.Estimation

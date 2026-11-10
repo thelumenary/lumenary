@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Recurrences and generating functions.
+Lumenary Academy — Lean exercises: Recurrences and generating functions.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/RecurrencesGeneratingFunctions.lean`.
 -/

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 First-order logic: signatures, terms and formulas, structures and satisfaction, a natural
 deduction system, the soundness theorem, and invariance of truth under isomorphism.
 
@@ -18,7 +18,7 @@ of the lesson can be read in Lean:
   sentences (proved here).
 
 Gödel's completeness theorem (the converse of soundness) is stated in the lesson but not proved:
-see the Lumenary lesson on completeness. Mathlib has its own first-order logic
+see the Lumenary Academy lesson on completeness. Mathlib has its own first-order logic
 (`FirstOrder.Language`, `BoundedFormula`, `Sentence.Realize`), with isomorphism invariance
 (`FirstOrder.Language.StrongHomClass.realize_sentence`, cited below); at this version it has no
 proof calculus, which is one reason we build ours here.

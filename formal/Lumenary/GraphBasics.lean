@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Graphs: degrees and the handshake lemma, Euler trails and circuits (with the Königsberg bridges),
 trees, and graph isomorphism.
 

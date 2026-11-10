@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Categorical representation theory: categorification and decategorification, Grothendieck
 groups, and the tensor category of representations of a group.
 

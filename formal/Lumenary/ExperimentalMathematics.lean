@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Experimental mathematics: conjectures, counterexamples, integer relations and proofs.
 
 What is proved here. Two famous conjectures refuted by computation, with the refutations

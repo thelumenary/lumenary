@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Area, perimeter and angles ("for grown-ups" companion to the Grades 3–5 lesson).
 
 A shape drawn on squared paper is a list of unit squares, each named by its column and row.

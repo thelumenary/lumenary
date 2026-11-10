@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Dynamical systems and chaos.
+Lumenary Academy — Lean exercises: Dynamical systems and chaos.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/DynamicalSystems.lean`.
 -/
 import Lumenary.DynamicalSystems

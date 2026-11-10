@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Ordinals and cardinals: rigidity of well-orders, transfinite induction, ordinal arithmetic,
 Cantor's theorem, the Schröder–Bernstein theorem and the first facts of cardinal arithmetic.
 

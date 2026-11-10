@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Mathematical modelling with functions.
+Lumenary Academy — Lean exercises: Mathematical modelling with functions.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ModellingWithFunctions.lean`.
 -/
 import Lumenary.ModellingWithFunctions

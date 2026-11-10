@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Vector bundles and characteristic classes: the Möbius line bundle has no nowhere-zero section,
 odd-dimensional spheres carry a nowhere-zero tangent vector field, `S³` is parallelisable, and
 the mod-2 polynomial arithmetic behind the Stiefel–Whitney classes of projective spaces.

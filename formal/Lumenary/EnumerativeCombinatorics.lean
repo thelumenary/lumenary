@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Enumerative combinatorics: derangements, integer partitions, Stirling numbers, and counting
 up to symmetry with Burnside's lemma.
 

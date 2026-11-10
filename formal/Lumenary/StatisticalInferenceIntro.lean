@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Sampling and statistical reasoning: the algebra behind least squares, correlation and the
 1/√n law.
 

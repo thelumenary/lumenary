@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Analytic number theory (Möbius inversion and the 3–4–1 trick).
+Lumenary Academy — Lean exercises: Analytic number theory (Möbius inversion and the 3–4–1 trick).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AnalyticNumberTheory.lean`.
 -/
 import Lumenary.AnalyticNumberTheory

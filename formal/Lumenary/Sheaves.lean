@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Sheaves: presheaves on the open sets of a space, the gluing condition, why constant presheaves
 fail it, why continuous functions satisfy it, and why a section of a sheaf is determined by its
 germs.

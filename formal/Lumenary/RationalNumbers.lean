@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Rational numbers: quotients of integers, closure, reciprocals, density, decimal expansions,
 and a number that is not rational.
 

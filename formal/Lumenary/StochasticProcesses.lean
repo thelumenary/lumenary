@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Stochastic processes: Poisson processes, continuous-time Markov chains, Brownian motion and the
 first steps of Itô calculus.
 

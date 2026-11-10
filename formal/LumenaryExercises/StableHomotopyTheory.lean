@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Stable homotopy theory.
+Lumenary Academy — Lean exercises: Stable homotopy theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/StableHomotopyTheory.lean`.
 -/
 import Lumenary.StableHomotopyTheory

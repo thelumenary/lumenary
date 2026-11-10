@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Calculus of one variable: ε–δ continuity, the mean value theorem and its consequences, the
 fundamental theorem of calculus, series, Taylor's theorem and a smooth function that is not
 the sum of its Taylor series.

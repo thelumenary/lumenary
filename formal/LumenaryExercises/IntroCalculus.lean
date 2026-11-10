@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Introductory calculus.
+Lumenary Academy — Lean exercises: Introductory calculus.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/IntroCalculus.lean`.
 -/
 import Lumenary.IntroCalculus

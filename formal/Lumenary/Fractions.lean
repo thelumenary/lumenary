@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Fractions and decimals: equivalent fractions, comparing, adding, decimals, and why 1/3 has
 no finite decimal.
 

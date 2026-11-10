@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Groups.
+Lumenary Academy — Lean exercises: Groups.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Groups.lean`.
 -/
 import Lumenary.Groups

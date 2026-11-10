@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: the geometry of spacetime.
+Lumenary Academy — Lean exercises: the geometry of spacetime.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Relativity.lean`.
 -/
 import Lumenary.Relativity

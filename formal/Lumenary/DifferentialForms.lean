@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Differential forms and Stokes' theorem: the wedge product of 1-forms, `d ∘ d = 0`, the
 fundamental theorem of calculus and Green's theorem as cases of Stokes, and the angle form
 `dθ = (x dy - y dx)/(x² + y²)` on the punctured plane, which is closed but not exact.

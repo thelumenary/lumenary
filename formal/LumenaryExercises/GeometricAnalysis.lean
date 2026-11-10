@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Geometric analysis.
+Lumenary Academy — Lean exercises: Geometric analysis.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/GeometricAnalysis.lean`.
 -/
 import Lumenary.GeometricAnalysis

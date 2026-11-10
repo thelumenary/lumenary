@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Categorical logic.
+Lumenary Academy — Lean exercises: Categorical logic.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/CategoricalLogic.lean`.
 -/
 import Lumenary.CategoricalLogic

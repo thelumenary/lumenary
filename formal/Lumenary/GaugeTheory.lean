@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Gauge theory: lattice gauge fields, gauge covariance of parallel transport and gauge invariance of
 Wilson loops (for any structure group); the gauge invariance of the electromagnetic field strength
 and the Bianchi identity (`F = dA`, `d(A + dχ) = dA`, `dF = 0`); and the pointwise algebra behind

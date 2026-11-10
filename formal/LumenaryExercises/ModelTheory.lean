@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Model theory.
+Lumenary Academy — Lean exercises: Model theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ModelTheory.lean`.
 -/
 import Lumenary.ModelTheory

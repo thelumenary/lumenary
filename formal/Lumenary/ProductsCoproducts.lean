@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Products, coproducts, initial and terminal objects.
 
 What is proved here. We state the universal property of a binary product by hand

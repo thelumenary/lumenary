@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Shapes: squares, rectangles and triangles drawn on a dot grid ("for grown-ups" companion to
 the K–2 lesson on shapes).
 

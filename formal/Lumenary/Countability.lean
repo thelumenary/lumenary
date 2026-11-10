@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Countability and Cantor's diagonal argument: comparing infinite sets by bijections.
 
 Proved here (`@provenance independent`): the even numbers are in bijection with `ℕ`; the zigzag

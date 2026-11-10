@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Complex analysis.
+Lumenary Academy — Lean exercises: Complex analysis.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ComplexAnalysis.lean`.
 -/
 import Lumenary.ComplexAnalysis

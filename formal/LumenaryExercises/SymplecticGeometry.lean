@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Symplectic geometry.
+Lumenary Academy — Lean exercises: Symplectic geometry.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/SymplecticGeometry.lean`.
 -/
 import Lumenary.SymplecticGeometry
