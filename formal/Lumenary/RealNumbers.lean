@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Real numbers and irrationality: √2 is irrational, rational + irrational is irrational, the
 triangle inequality, and why the rational numbers are not complete.
 

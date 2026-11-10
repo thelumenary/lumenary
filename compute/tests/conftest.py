@@ -1,4 +1,4 @@
-"""Shared pytest configuration for the Lumenary compute experiments.
+"""Shared pytest configuration for the Lumenary Academy compute experiments.
 
 Puts ``compute/experiments`` (and ``compute`` itself, for ``verify.py``) on
 ``sys.path`` so tests can ``import set_identities`` etc. exactly as the

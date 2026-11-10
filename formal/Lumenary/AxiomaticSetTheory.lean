@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Axiomatic set theory: the cumulative hierarchy `V_α`, rank and foundation, cofinality and König's
 theorem `cf(2^κ) > κ`, and the generalised continuum hypothesis.
 

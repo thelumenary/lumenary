@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Analytic number theory: Möbius inversion, the Euler product, the Riemann zeta function, its
 functional equation and zeros, Chebyshev's bounds, and Dirichlet's theorem.
 

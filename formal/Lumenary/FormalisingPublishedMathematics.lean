@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Formalising published mathematics: a worked example. Don Zagier's paper "A one-sentence proof
 that every prime p ≡ 1 (mod 4) is a sum of two squares" (American Mathematical Monthly 97, 1990,
 p. 144) consists of one sentence:

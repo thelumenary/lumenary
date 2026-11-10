@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Rings, ideals and fields: units and zero divisors, finite integral domains, kernels and ideals,
 prime and irreducible elements, and the hierarchy Euclidean domain ⇒ PID ⇒ UFD, with ℤ[√−5]
 as a ring where unique factorisation fails.

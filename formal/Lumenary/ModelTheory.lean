@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Model theory: elementary equivalence, ultraproducts and Łoś's theorem, compactness, quantifier
 elimination for dense linear orders, and the Ax–Grothendieck theorem.
 

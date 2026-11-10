@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: rigid motions, congruence and similarity.
+Lumenary Academy — Lean exercises: rigid motions, congruence and similarity.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RigidMotionsSimilarity.lean`.
 -/
 import Lumenary.RigidMotionsSimilarity

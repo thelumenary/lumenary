@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Ratios, rates and proportional reasoning.
+Lumenary Academy — Lean exercises: Ratios, rates and proportional reasoning.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RatiosProportions.lean`.
 -/
 import Lumenary.RatiosProportions

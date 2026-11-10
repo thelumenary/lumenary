@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: The probabilistic method (counting principles).
+Lumenary Academy — Lean exercises: The probabilistic method (counting principles).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ProbabilisticMethod.lean`.
 -/
 import Lumenary.ProbabilisticMethod

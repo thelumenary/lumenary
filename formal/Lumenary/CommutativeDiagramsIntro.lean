@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Diagrams where paths agree: commuting squares and triangles of functions.
 
 A square of functions

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Complex and Kähler geometry.
+Lumenary Academy — Lean exercises: Complex and Kähler geometry.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ComplexKahlerGeometry.lean`.
 -/
 import Lumenary.ComplexKahlerGeometry

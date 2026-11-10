@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Check digits and error detection: ISBN-10, ISBN-13, the Luhn scheme and parity bits.
 
 A code number is a list of digits. A *weighted check sum* multiplies the digit in position `k`

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Vectors and coordinate geometry: the dot product, the Cauchy–Schwarz and triangle
 inequalities, perpendicularity, projections, lines, and geometry proved with vectors.
 

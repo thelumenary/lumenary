@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Measure-theoretic probability: the Borel–Cantelli lemmas, the weak and strong laws of large
 numbers, conditional expectation, martingales and the central limit theorem.
 

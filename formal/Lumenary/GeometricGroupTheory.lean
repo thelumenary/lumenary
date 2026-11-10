@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Geometric group theory: word metrics, quasi-isometries, growth, and a free subgroup of SL(2, ℤ)
 found by playing ping-pong.
 

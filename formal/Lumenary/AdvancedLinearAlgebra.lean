@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Advanced linear algebra: the spectral theorem, Cayley–Hamilton, Jordan blocks and generalised
 eigenspaces, dual spaces and the natural map to the double dual, and tensor products.
 

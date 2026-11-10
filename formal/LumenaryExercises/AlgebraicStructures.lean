@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Algebraic structures.
+Lumenary Academy — Lean exercises: Algebraic structures.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AlgebraicStructures.lean`.
 -/
 import Lumenary.AlgebraicStructures

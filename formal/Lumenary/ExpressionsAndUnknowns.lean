@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Expressions, unknowns and rules ("for grown-ups" companion to the Grades 3–5 lesson).
 
 Lean reads `2 + 3 * 4` with the same convention as the lesson: brackets first, then

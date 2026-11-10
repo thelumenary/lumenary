@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Systematic listing and counting ("for grown-ups" companion to the Grades 3–5 lesson).
 
 An organised list is a recipe that a computer can follow. Here the recipes are Lean functions:

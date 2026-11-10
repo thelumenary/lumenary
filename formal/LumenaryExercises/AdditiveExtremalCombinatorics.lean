@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Extremal and additive combinatorics.
+Lumenary Academy — Lean exercises: Extremal and additive combinatorics.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/AdditiveExtremalCombinatorics.lean`.
 -/

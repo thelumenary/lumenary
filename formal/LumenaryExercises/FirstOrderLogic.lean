@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: First-order logic.
+Lumenary Academy — Lean exercises: First-order logic.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/FirstOrderLogic.lean`.
 -/
 import Lumenary.FirstOrderLogic

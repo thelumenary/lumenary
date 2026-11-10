@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 First steps in Lean: propositions and proofs, rewriting, induction, reading Mathlib, and what a
 machine check does and does not guarantee.
 

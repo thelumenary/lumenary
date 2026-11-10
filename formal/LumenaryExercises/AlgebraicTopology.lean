@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Algebraic topology.
+Lumenary Academy — Lean exercises: Algebraic topology.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AlgebraicTopology.lean`.
 -/
 import Lumenary.AlgebraicTopology

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Computability.
+Lumenary Academy — Lean exercises: Computability.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Computability.lean`.
 -/
 import Lumenary.Computability

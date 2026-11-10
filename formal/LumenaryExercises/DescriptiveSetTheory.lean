@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: descriptive set theory.
+Lumenary Academy — Lean exercises: descriptive set theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/DescriptiveSetTheory.lean`.
 -/
 import Lumenary.DescriptiveSetTheory

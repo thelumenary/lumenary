@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Trigonometry: degrees and radians, the Pythagorean identity, exact values, the addition
 formulas, and the laws of cosines and sines.
 

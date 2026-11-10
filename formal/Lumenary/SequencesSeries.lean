@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Sequences and series: arithmetic and geometric sums, recursive sequences, infinite geometric
 series (including 0.999… = 1), the term test, and the divergence of the harmonic series.
 

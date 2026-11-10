@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Symplectic geometry: Hamiltonian flows conserve energy, the linear algebra of symplectic forms
 (even dimension, area in the plane, divergence-free linear Hamiltonian fields), and a complete
 proof of the *linear* non-squeezing theorem in ℝ⁴, contrasted with a volume-preserving map that

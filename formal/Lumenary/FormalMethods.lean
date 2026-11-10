@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Formal methods: the operational semantics of a small imperative language, Hoare logic and its
 soundness, a verified program, type soundness by progress and preservation, model checking as a
 fixed-point computation, and Rice's theorem.

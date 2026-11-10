@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Trigonometry.
+Lumenary Academy — Lean exercises: Trigonometry.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Trigonometry.lean`.
 -/
 import Lumenary.Trigonometry

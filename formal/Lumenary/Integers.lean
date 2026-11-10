@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Integers: additive inverses, why "negative times negative is positive", and which integers
 have multiplicative inverses.
 

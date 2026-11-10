@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Large cardinals: inaccessible and measurable cardinals, the universe `V_κ`, and κ-complete
 ultrafilters.
 

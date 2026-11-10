@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Combinatorics.
+Lumenary Academy — Lean exercises: Combinatorics.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Combinatorics.lean`.
 -/
 import Lumenary.Combinatorics

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Networks and puzzles: dots and lines, degrees, the handshake rule, and one-stroke tracing
 ("for grown-ups" companion to the Grades 3–5 lesson on networks).
 

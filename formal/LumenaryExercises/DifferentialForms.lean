@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Differential forms and Stokes' theorem.
+Lumenary Academy — Lean exercises: Differential forms and Stokes' theorem.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/DifferentialForms.lean`.
 -/
 import Lumenary.DifferentialForms

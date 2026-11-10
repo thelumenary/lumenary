@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Differential topology: Sard's theorem in equal dimensions, the ingredients of the hairy ball
 theorem (a nowhere-vanishing tangent field on odd spheres, the rotation homotopy from the
 identity to the antipodal map, the sign of the antipodal map), the one-dimensional no-retraction

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Non-Euclidean geometry: the sphere and the hyperbolic plane.
 
 Spherical geometry is done with vectors in `ℝ³` (Mathlib's `Fin 3 → ℝ`, with the dot product

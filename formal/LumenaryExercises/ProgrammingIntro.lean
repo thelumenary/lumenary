@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Programming for mathematics.
+Lumenary Academy — Lean exercises: Programming for mathematics.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ProgrammingIntro.lean`.
 -/
 import Lumenary.ProgrammingIntro

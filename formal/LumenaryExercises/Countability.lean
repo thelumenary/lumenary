@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Countability and Cantor's diagonal argument.
+Lumenary Academy — Lean exercises: Countability and Cantor's diagonal argument.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Countability.lean`.
 -/
 import Lumenary.Countability

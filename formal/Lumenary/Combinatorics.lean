@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Combinatorics: binomial coefficients as counts of subsets, Pascal's rule, the binomial theorem,
 the pigeonhole principle and inclusion–exclusion.
 

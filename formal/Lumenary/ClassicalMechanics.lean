@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Classical mechanics: projectiles, conservation of energy for conservative forces (in any
 dimension), conservation of angular momentum and planar motion under central forces, Kepler
 orbits as conic sections, and the damped harmonic oscillator.

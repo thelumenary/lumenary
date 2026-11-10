@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Completeness, compactness and Löwenheim–Skolem.
 
 Mathlib has first-order syntax and semantics (`FirstOrder.Language`, `Theory`, `⊨`) and proves the

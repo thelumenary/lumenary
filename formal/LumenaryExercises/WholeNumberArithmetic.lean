@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Whole-number arithmetic.
+Lumenary Academy — Lean exercises: Whole-number arithmetic.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/WholeNumberArithmetic.lean`.
 -/
 import Lumenary.WholeNumberArithmetic

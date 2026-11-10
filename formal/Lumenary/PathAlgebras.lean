@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Quivers and path algebras: paths and their concatenation, the multiplication of the path
 algebra on basis elements, when a quiver has finitely many paths, the linearly oriented quiver
 `Aₙ`, and representations as functors out of the free category.

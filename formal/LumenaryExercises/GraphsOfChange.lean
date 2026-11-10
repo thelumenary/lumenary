@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Graphs of change.
+Lumenary Academy — Lean exercises: Graphs of change.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/GraphsOfChange.lean`.
 -/
 import Lumenary.GraphsOfChange

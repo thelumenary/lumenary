@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Counting principles.
+Lumenary Academy — Lean exercises: Counting principles.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/CountingPrinciples.lean`.
 -/
 import Lumenary.CountingPrinciples

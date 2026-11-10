@@ -3,7 +3,7 @@
 **One mathematics. Many languages. Every nation.**
 **Understand. Prove. Compute. Verify.**
 
-Lumenary Math is the first subject of **Lumenary Scientia**, the Lumenary's free and open-source division for the sciences (see [The Lumenary](../../README.md)). It runs from kindergarten counting to first-year graduate mathematics, with optional research pathways. Every lesson is taught in three connected modes: **H**uman (intuition and proof), **F**ormal (Lean 4 + Mathlib) and **C**omputational (Python). It is online at [lumenary.academy/en/math/](https://lumenary.academy/en/math/).
+Lumenary Math is the first subject of **Lumenary Scientia**, Lumenary Academy's free and open-source division for the sciences (see [Lumenary Academy](../../README.md)). It runs from kindergarten counting to first-year graduate mathematics, with optional research pathways. Every lesson is taught in three connected modes: **H**uman (intuition and proof), **F**ormal (Lean 4 + Mathlib) and **C**omputational (Python). It is online at [lumenary.academy/en/math/](https://lumenary.academy/en/math/).
 
 Every topic in the curriculum now has a **first-draft lesson**. None has yet been reviewed by a human mathematician or teacher — see the honesty notes below.
 
@@ -11,7 +11,7 @@ Every topic in the curriculum now has a **first-draft lesson**. None has yet bee
 
 | Area | Status |
 | --- | --- |
-| Website | Part of the Lumenary's static Next.js 16 site at [lumenary.academy](https://lumenary.academy), 6 demo interface locales (en, es, ar RTL, hi, zh-Hans, sw), light/dark themes, works without accounts |
+| Website | Part of Lumenary Academy's static Next.js 16 site at [lumenary.academy](https://lumenary.academy), 6 demo interface locales (en, es, ar RTL, hi, zh-Hans, sw), light/dark themes, works without accounts |
 | Lessons | **201 lessons**, one for every topic in the knowledge graph, from K–2 counting and shapes to graduate topics and research directions; each with exercises, a Lean module and tested Python experiments |
 | Viewpoints | From early undergraduate level every lesson shows its subject through several mathematicians' eyes — topologist, geometer, analyst, algebraist, number theorist, probabilist, logician, physicist — as well as through set theory and category theory |
 | Wonder Trails | 19 optional trails, toward algebraic structures, modular arithmetic, quotients, foundations, countability, category theory, topology, curvature, infinite sums, primes, random walks, computability and planetary orbits |

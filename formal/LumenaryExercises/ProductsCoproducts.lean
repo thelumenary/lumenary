@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Products, coproducts, initial and terminal objects.
+Lumenary Academy — Lean exercises: Products, coproducts, initial and terminal objects.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ProductsCoproducts.lean`.
 -/
 import Lumenary.ProductsCoproducts

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Set-builder notation, quantifiers and infinite sets.
+Lumenary Academy — Lean exercises: Set-builder notation, quantifiers and infinite sets.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Quantifiers.lean`.
 -/
 import Lumenary.Quantifiers

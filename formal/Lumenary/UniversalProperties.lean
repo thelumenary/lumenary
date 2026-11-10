@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Universal properties: universal arrows and their uniqueness up to unique isomorphism; products
 of sets, groups and spaces; quotient sets and quotient groups; the free monoid as finite words;
 the field of fractions `ℚ` of `ℤ`; and the non-existence of a product of `𝔽₂` and `𝔽₃` among

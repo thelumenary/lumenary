@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Riemannian geometry: the algebra of curvature tensors (pair symmetry from the Bianchi
 identity), the curvature tensor of constant curvature `k` with its sectional and Ricci
 curvatures, Jacobi fields and conjugate points in constant curvature, the index-form computation

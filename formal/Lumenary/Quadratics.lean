@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Quadratic equations and functions: completing the square, the quadratic formula, the
 discriminant, Vieta's formulas, the vertex and axis of symmetry, and an optimisation problem.
 

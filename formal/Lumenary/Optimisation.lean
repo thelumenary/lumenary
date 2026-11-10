@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Optimisation: weak duality, optimality certificates and complementary slackness for linear
 programs; local minima of convex functions are global; a least-norm problem solved by the
 Lagrange condition; and the O(1/k) convergence rate of gradient descent.

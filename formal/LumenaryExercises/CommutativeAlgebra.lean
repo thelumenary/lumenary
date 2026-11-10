@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Commutative algebra (prime versus maximal, radicals).
+Lumenary Academy — Lean exercises: Commutative algebra (prime versus maximal, radicals).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/CommutativeAlgebra.lean`.
 -/
 import Lumenary.CommutativeAlgebra

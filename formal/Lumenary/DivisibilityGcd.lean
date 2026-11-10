@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Divisibility, Euclid's algorithm, Bézout's identity and unique factorisation.
 
 Proved here (`@provenance independent`), following the lesson: a common divisor of `a` and `b`

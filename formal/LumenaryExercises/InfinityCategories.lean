@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: ∞-categories.
+Lumenary Academy — Lean exercises: ∞-categories.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/InfinityCategories.lean`.
 -/
 import Lumenary.InfinityCategories

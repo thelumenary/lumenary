@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Categorical logic: the simply typed λ-calculus interpreted in a cartesian closed category,
 quantifiers as adjoints, and Heyting algebras as models of intuitionistic logic.
 

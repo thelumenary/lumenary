@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: the Pythagorean theorem.
+Lumenary Academy — Lean exercises: the Pythagorean theorem.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/PythagoreanTheorem.lean`.
 -/
 import Lumenary.PythagoreanTheorem

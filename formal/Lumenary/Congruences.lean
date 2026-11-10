@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Congruences: congruence modulo n as an equivalence relation compatible with + and ×,
 inverses modulo n, the Chinese remainder theorem, and the theorems of Fermat, Euler and Wilson.
 

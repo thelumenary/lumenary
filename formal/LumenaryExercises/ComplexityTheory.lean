@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Computational complexity.
+Lumenary Academy — Lean exercises: Computational complexity.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ComplexityTheory.lean`.
 -/
 import Lumenary.ComplexityTheory

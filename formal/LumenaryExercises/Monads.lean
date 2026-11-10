@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Monads (algebras for the list monad).
+Lumenary Academy — Lean exercises: Monads (algebras for the list monad).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Monads.lean`.
 -/
 import Lumenary.Monads

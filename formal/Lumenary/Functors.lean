@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Functors: functors preserve isomorphisms; the power-set functors (covariant and contravariant),
 the list (free monoid) functor and hom functors; functoriality as a tool for impossibility
 proofs; and a functor that does not reflect isomorphisms.
@@ -19,7 +19,7 @@ non-invertible morphism is invertible. Defined here (`definition`, with the func
 the covariant and contravariant power-set functors, the list functor and the hom functors.
 Mathlib provides (`library`): `Functor.map_isIso`, `Functor.assoc`, and the free-monoid functor
 `MonCat.free`. The fundamental group functor and `π₁(S¹) ≅ ℤ` are in Mathlib too
-(`FundamentalGroup`, `AddCircle.windingNumberIso`); they are used in the Lumenary lesson on the
+(`FundamentalGroup`, `AddCircle.windingNumberIso`); they are used in the Lumenary Academy lesson on the
 fundamental group, not here.
 -/
 import Mathlib.CategoryTheory.Types.Basic

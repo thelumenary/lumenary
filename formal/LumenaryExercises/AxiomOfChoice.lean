@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: The axiom of choice.
+Lumenary Academy — Lean exercises: The axiom of choice.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AxiomOfChoice.lean`
 (the `@solution` line names the solved theorem). Try to solve them without using
 `Classical.choice`: check with `#print axioms` afterwards.

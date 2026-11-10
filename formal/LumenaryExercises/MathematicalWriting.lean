@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Mathematical writing.
+Lumenary Academy — Lean exercises: Mathematical writing.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/MathematicalWriting.lean`.
 -/
 import Lumenary.MathematicalWriting

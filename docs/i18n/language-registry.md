@@ -1,4 +1,4 @@
-# The Lumenary language registry
+# Lumenary Academy language registry
 
 `content/registry/languages.json` is the machine-readable list of languages the
 Lumenary knows about. Each mathematical terminology glossary lives in
@@ -6,7 +6,7 @@ Lumenary knows about. Each mathematical terminology glossary lives in
 `LanguagesFile` / `GlossaryFile` in `src/lib/schema.ts`.
 
 The registry is a planning and labelling tool. **Listing a language does not mean
-the Lumenary is available in it.** The status fields show what actually exists.
+Lumenary Academy is available in it.** The status fields show what actually exists.
 At the time of writing (October 2026) that is:
 
 - English is the canonical source language. All of its content is AI-drafted and
@@ -189,7 +189,7 @@ Requirements for the site:
   bidi-isolated (`<span dir="ltr">`, `<bdi>`, or `unicode-bidi: isolate`) so that
   surrounding punctuation and numbers are not reordered. In plain strings (UI
   messages, alt text) use the Unicode isolates FSI/LRI … PDI.
-- **Mathematical notation direction varies, and the Lumenary must not assume one
+- **Mathematical notation direction varies, and Lumenary Academy must not assume one
   convention.** The W3C Interest Group Note
   [*Arabic mathematical notation*](https://www.w3.org/TR/arabic-math/) (31 January
   2006) describes several styles. It stresses that "there are no clearly defined
@@ -210,7 +210,7 @@ Requirements for the site:
   higher education in the region. Right-to-left Arabic-letter notation is used in
   some school systems. The note dates from 2006 and practice varies by country,
   level and textbook series, so it must be confirmed with educators in each
-  country before the Lumenary describes or defaults to any national convention.
+  country before Lumenary Academy describes or defaults to any national convention.
   Hebrew and Urdu materials generally embed left-to-right notation in
   right-to-left text.
 

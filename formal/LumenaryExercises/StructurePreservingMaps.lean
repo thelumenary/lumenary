@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Structure-preserving maps.
+Lumenary Academy — Lean exercises: Structure-preserving maps.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/StructurePreservingMaps.lean`.
 -/
 import Lumenary.StructurePreservingMaps

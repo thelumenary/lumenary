@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: the λ-calculus.
+Lumenary Academy — Lean exercises: the λ-calculus.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LambdaCalculus.lean`.
 -/
 import Lumenary.LambdaCalculus

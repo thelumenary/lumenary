@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Propositional logic and truth tables.
+Lumenary Academy — Lean exercises: Propositional logic and truth tables.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/PropositionalLogic.lean`.
 -/
 import Lumenary.PropositionalLogic

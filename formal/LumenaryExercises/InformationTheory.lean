@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Information theory.
+Lumenary Academy — Lean exercises: Information theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/InformationTheory.lean`.
 -/
 import Lumenary.InformationTheory

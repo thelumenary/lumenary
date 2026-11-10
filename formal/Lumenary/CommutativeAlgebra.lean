@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Commutative algebra: prime and maximal ideals, Noetherian rings and Hilbert's basis theorem,
 Nakayama's lemma, localisation, the Nullstellensatz and Krull dimension.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Numerical analysis: the condition number and the perturbation bound for linear systems, LU
 factorisation with and without pivoting, Euler's method (one-step error, discrete Gronwall
 inequality, first-order global error bound), and the stability of explicit and implicit Euler

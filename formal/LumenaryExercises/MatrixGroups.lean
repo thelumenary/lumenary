@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Matrix groups and continuous symmetry.
+Lumenary Academy — Lean exercises: Matrix groups and continuous symmetry.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/MatrixGroups.lean`.
 -/
 import Lumenary.MatrixGroups

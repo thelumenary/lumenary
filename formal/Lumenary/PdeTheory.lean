@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Partial differential equations, modern theory: the Lax–Milgram theorem and the stability of
 weak solutions, weak derivatives, the maximum principle, the mean value property and Hadamard's
 example of an ill-posed problem.

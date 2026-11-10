@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Complex numbers.
+Lumenary Academy — Lean exercises: Complex numbers.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ComplexNumbers.lean`.
 -/
 import Lumenary.ComplexNumbers

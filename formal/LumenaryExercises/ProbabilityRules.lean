@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Conditional probability and independence.
+Lumenary Academy — Lean exercises: Conditional probability and independence.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ProbabilityRules.lean`.
 -/
 import Lumenary.ProbabilityRules

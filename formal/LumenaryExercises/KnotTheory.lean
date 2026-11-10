@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Knot theory.
+Lumenary Academy — Lean exercises: Knot theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/KnotTheory.lean`.
 -/
 import Lumenary.KnotTheory

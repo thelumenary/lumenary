@@ -1,6 +1,6 @@
 # Formal mathematics (Lean 4)
 
-This is the **F — Formal mathematics** strand of the Lumenary: a small Lean 4 library of
+This is the **F — Formal mathematics** strand of Lumenary Academy: a small Lean 4 library of
 definitions and machine-checked proofs that the website shows next to human-written lessons,
 plus Lean exercises for learners.
 

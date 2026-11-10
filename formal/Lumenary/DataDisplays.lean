@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Data displays and the mean as a fair share ("for grown-ups" companion to the Grades 3–5 lesson).
 
 A data set is a list of whole numbers — for example the number of cubes in each child's tower.

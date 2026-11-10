@@ -36,7 +36,7 @@ function Division({ Icon, accent, name, what, badge, text, children, action }: {
   );
 }
 
-/** The Lumenary's front page: its three divisions. Lumenary Math's own front page is /math/. */
+/** Lumenary Academy's front page: its three divisions. Lumenary Math's own front page is /math/. */
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const locale = await resolveLocale(params);
   const t = await getT(locale);

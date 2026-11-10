@@ -1,6 +1,6 @@
 # Roadmap
 
-The Lumenary is built in reviewable increments. Small and trustworthy comes before large and unverified.
+Lumenary Academy is built in reviewable increments. Small and trustworthy comes before large and unverified.
 
 ## Phase A — Architecture ✅ (this repository)
 

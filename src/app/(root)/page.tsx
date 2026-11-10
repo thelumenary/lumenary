@@ -22,7 +22,7 @@ export default function RootPage() {
       <meta httpEquiv="refresh" content="2;url=/en/" />
       <script dangerouslySetInnerHTML={{ __html: script }} />
       <main style={{ fontFamily: "system-ui, sans-serif", maxWidth: 560, margin: "15vh auto", padding: 16, textAlign: "center" }}>
-        <h1 style={{ fontWeight: 600 }}>The Lumenary</h1>
+        <h1 style={{ fontWeight: 600 }}>Lumenary Academy</h1>
         <p>One mathematics. Many languages. Every nation.</p>
         <ul style={{ listStyle: "none", padding: 0, display: "flex", flexWrap: "wrap", gap: 12, justifyContent: "center" }}>
           {LOCALES.map((l) => (

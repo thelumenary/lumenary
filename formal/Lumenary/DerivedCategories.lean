@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Derived categories: chain homotopies, quasi-isomorphisms, and the derived category `D(A)`.
 
 Mathlib constructs the homotopy category `K(A)` (`HomotopyCategory`), the derived category

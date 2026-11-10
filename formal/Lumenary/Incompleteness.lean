@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Gödel's incompleteness theorems: the diagonal argument behind them, Tarski's undefinability of
 truth, and an incompleteness theorem derived from the unsolvability of the halting problem.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Variables and algebraic expressions: equivalent expressions, the distributive law, the square
 of a sum, and the laws of exponents for whole-number powers.
 

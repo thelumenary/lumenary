@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Random structures: the analytic heart of Pólya's recurrence theorem in dimensions 1 and 2, the
 45° rotation that turns the planar walk into two independent walks, the Nash-Williams bound
 behind recurrence of ℤ², Peierls' counting argument for percolation, and the absence of a giant

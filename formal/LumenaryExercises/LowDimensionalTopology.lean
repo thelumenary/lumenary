@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Low-dimensional topology.
+Lumenary Academy — Lean exercises: Low-dimensional topology.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LowDimensionalTopology.lean`.
 -/
 import Lumenary.LowDimensionalTopology

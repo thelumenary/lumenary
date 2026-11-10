@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Surfaces, polyhedra and the Euler characteristic.
+Lumenary Academy — Lean exercises: Surfaces, polyhedra and the Euler characteristic.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/SurfacesEulerCharacteristic.lean`.
 -/

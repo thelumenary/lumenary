@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Adjunctions (Galois connections).
+Lumenary Academy — Lean exercises: Adjunctions (Galois connections).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Adjunctions.lean`.
 -/
 import Lumenary.Adjunctions

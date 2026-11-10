@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Products by maps, a first universal property.
+Lumenary Academy — Lean exercises: Products by maps, a first universal property.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/IntroUniversalProperties.lean`.
 -/
 import Lumenary.IntroUniversalProperties

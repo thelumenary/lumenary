@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Mathematical modelling with functions: recognising linear, quadratic and exponential models from
 tables, fitting a line, doubling times, and two theorems about the limits of fitting data.
 

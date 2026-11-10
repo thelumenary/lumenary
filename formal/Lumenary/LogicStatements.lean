@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 True, false, and, or, not ("for grown-ups" companion to the Grades 3–5 lesson).
 
 A statement is a sentence that is either true or false. Lean can check a statement about small

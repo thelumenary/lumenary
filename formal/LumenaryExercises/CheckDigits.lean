@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: check digits and parity bits.
+Lumenary Academy — Lean exercises: check digits and parity bits.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/CheckDigits.lean`.
 -/
 import Lumenary.CheckDigits

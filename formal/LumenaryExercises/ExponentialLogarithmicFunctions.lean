@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Exponential and logarithmic functions.
+Lumenary Academy — Lean exercises: Exponential and logarithmic functions.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/ExponentialLogarithmicFunctions.lean`.
 -/

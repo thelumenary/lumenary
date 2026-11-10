@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the Lumenary compute experiments and write the compute report.
+"""Verify the Lumenary Academy compute experiments and write the compute report.
 
 What it does, in order:
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Elementary topos theory.
+Lumenary Academy — Lean exercises: Elementary topos theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ElementaryTopoi.lean`.
 -/
 import Lumenary.ElementaryTopoi

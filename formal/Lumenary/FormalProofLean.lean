@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Formalising mathematics in Lean and Mathlib: sets and functions, quantifier reasoning, an
 ε–N definition checked against Mathlib's, structures and type classes, Mathlib's algebraic
 hierarchy, and the conventions (division by zero, truncated subtraction) that formal statements

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Polynomials: special products, the remainder and factor theorems, the division algorithm, and
 the bound "a non-zero polynomial of degree n has at most n roots".
 

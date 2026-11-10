@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Function machines in sequence: chaining functions, the identity function, and undoing.
 
 "Do `f`, then `g`" is the function `a ↦ g (f a)`. Lean only accepts the chain when the output

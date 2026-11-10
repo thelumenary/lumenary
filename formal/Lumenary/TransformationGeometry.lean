@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Transformation geometry: the classification of plane isometries, affine maps and the
 cross-ratio.
 

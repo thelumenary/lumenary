@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Counting principles: the addition and multiplication principles, factorials, ordered
 selections, arrangements, complementary counting and the overlap rule.
 

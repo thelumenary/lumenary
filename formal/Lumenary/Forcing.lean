@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Forcing: the combinatorial heart of Cohen's method. Conditions are finite binary strings,
 dense sets are the "requirements" a generic object must meet, and a filter meeting countably many
 of them exists (the Rasiowa–Sikorski lemma) and produces a *new* real.

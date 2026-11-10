@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Formal methods.
+Lumenary Academy — Lean exercises: Formal methods.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/FormalMethods.lean`.
 -/
 import Lumenary.FormalMethods

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: True, false, and, or, not.
+Lumenary Academy — Lean exercises: True, false, and, or, not.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LogicStatements.lean`.
 -/
 import Lumenary.LogicStatements

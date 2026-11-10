@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 The probabilistic method: the union bound and averaging principles, Markov's inequality, and a
 complete formal proof of Erdős's 1947 lower bound for diagonal Ramsey numbers.
 

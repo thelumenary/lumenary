@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Stable homotopy theory: why stable groups are abelian, formal group laws and chromatic height,
 Stiefel–Whitney numbers of projective spaces, and the Bernoulli numbers behind π₃ˢ and π₇ˢ.
 

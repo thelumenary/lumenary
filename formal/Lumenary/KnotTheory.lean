@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Knot theory: Fox colourings and their behaviour under Reidemeister moves, the dihedral quandle,
 linking numbers, and the Kauffman bracket and Jones polynomial computed from planar diagram
 codes — enough to see by computation that the trefoil's polynomial differs from its mirror's.

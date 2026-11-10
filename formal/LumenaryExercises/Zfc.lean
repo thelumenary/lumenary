@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: ZFC.
+Lumenary Academy — Lean exercises: ZFC.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Zfc.lean`
 (the `@solution` line names the solved theorem).
 -/

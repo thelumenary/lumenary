@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Calculus of one variable.
+Lumenary Academy — Lean exercises: Calculus of one variable.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/SingleVariableCalculus.lean`.
 -/
 import Lumenary.SingleVariableCalculus

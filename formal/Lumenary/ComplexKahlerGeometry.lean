@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Complex and Kähler geometry: the compatible triple (metric, complex structure, Kähler form) at a
 point, the combinatorial core of "odd Betti numbers of compact Kähler manifolds are even", the
 Hodge numbers of complex tori, and the rigidity of holomorphic functions on compact manifolds.

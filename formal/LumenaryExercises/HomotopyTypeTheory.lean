@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Homotopy type theory.
+Lumenary Academy — Lean exercises: Homotopy type theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/HomotopyTypeTheory.lean`.
 -/
 import Lumenary.HomotopyTypeTheory

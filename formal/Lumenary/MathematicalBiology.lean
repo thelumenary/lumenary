@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Mathematical biology: the logistic equation and the logistic map (fixed points, stability, the
 period-2 cycle), the Lotka–Volterra conserved quantity and cycle averages, the SIR epidemic
 model (conservation, the threshold `R₀ S/N > 1`, the invariant behind the final-size

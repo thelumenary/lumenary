@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Metric spaces and point-set topology: open balls, ε–δ continuity versus open-set continuity,
 compactness and connectedness under continuous maps, Heine–Borel, Tychonoff, clopen sets in `ℚ`,
 and why a continuous bijection need not be a homeomorphism.

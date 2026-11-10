@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Gauge theory.
+Lumenary Academy — Lean exercises: Gauge theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/GaugeTheory.lean`.
 -/
 import Lumenary.GaugeTheory

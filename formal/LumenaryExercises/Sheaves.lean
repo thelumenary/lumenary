@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Sheaves.
+Lumenary Academy — Lean exercises: Sheaves.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Sheaves.lean`.
 -/
 import Lumenary.Sheaves

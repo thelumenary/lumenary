@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Numerical methods: the spacing of binary floating-point numbers (machine epsilon), the
 amplification of rounding errors by cancellation, bisection, Newton's method for square roots,
 the error identity behind quadratic convergence, and the exactness and error of the trapezoidal

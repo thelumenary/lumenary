@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Elementary topos theory: the subobject classifier of the Sierpiński topos, done by hand, and
 Mathlib's theorem that every presheaf category is an elementary topos.
 

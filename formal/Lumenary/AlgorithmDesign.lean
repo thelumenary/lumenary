@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Algorithm design and analysis: mergesort (correctness and a comparison bound), the
 decision-tree lower bound for sorting, dynamic programming for the longest common subsequence,
 a greedy algorithm that fails, and the graph facts behind Kruskal's algorithm.

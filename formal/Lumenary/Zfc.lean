@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 ZFC: the axioms of set theory, used inside Lean.
 
 Lean is *not* founded on ZFC: its logic is a dependent type theory. Mathlib nevertheless builds a

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Stable ∞-categories: why stability is invisible to ordinary categories, and the triangulated
 shadow that a stable ∞-category leaves on its homotopy category.
 

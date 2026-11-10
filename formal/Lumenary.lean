@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics library (core Lean 4, no Mathlib).
+Lumenary Academy — formal mathematics library (core Lean 4, no Mathlib).
 Importing `Lumenary` brings in every checked module. See `docs/formal.md`.
 -/
 import Lumenary.Collections

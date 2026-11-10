@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Homotopy type theory: identity types as path spaces, path induction, transport, and why Lean's
 own type theory is *not* homotopy type theory (it validates uniqueness of identity proofs, so
 univalence fails in it).

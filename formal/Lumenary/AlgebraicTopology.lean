@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Algebraic topology: chain complexes, cycles and boundaries, chain homotopies, the
 Euler–Poincaré formula, the cellular homology of ℝP², and the functorial "no retraction"
 argument behind the Brouwer fixed-point theorem.

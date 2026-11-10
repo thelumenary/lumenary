@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Graphs.
+Lumenary Academy — Lean exercises: Graphs.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/GraphBasics.lean`.
 -/
 import Lumenary.GraphBasics

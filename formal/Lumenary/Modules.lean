@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Modules: exact sequences, free and projective modules, the structure theorem over a PID, and
 tensor products that are right exact but not exact.
 

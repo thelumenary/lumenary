@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Higher categories.
+Lumenary Academy — Lean exercises: Higher categories.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/HigherCategories.lean`.
 -/
 import Lumenary.HigherCategories

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Adjunctions: currying, free monoids, Galois connections, units and counits, and the
 preservation of limits by right adjoints.
 

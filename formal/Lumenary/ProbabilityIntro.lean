@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Probability with equally likely outcomes: sample spaces, events, the complement and addition
 rules, the product rule for two independent stages, and exact dice calculations.
 

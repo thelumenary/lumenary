@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Category: a first, minimal look at categories (a preview for the category-theory Wonder Trails).
 
 * `Category`: objects, morphisms, identities, composition and the three laws.

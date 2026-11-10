@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Constructing ℤ, ℚ and ℝ: integers as classes of pairs of naturals, fractions as classes of
 pairs, and real numbers as Dedekind cuts, with the least-upper-bound property.
 

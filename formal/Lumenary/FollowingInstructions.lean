@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Following and giving precise instructions: programs for moving on a grid ("for grown-ups"
 companion to the K–2 lesson).
 

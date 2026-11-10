@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Monoidal categories (the Eckmann–Hilton argument).
+Lumenary Academy — Lean exercises: Monoidal categories (the Eckmann–Hilton argument).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/MonoidalCategories.lean`.
 -/
 import Lumenary.MonoidalCategories

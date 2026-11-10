@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Russell's paradox.
+Lumenary Academy — Lean exercises: Russell's paradox.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RussellParadox.lean`.
 -/
 import Lumenary.RussellParadox

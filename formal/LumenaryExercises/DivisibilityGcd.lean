@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Divisibility, Euclid's algorithm and unique factorisation.
+Lumenary Academy — Lean exercises: Divisibility, Euclid's algorithm and unique factorisation.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/DivisibilityGcd.lean`.
 -/
 import Lumenary.DivisibilityGcd

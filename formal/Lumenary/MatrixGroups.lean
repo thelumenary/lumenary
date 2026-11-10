@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Matrix groups and continuous symmetry: orthogonal matrices, SO(2) and SO(3), Euler's rotation
 theorem, the matrix exponential and one-parameter subgroups, the tangent space of O(n) at the
 identity, and unit quaternions acting on ℝ³.

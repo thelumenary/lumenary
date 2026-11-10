@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Vectors and coordinate geometry.
+Lumenary Academy — Lean exercises: Vectors and coordinate geometry.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Vectors.lean`.
 -/
 import Lumenary.Vectors

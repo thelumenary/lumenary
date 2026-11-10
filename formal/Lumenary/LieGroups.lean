@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Lie groups and Lie algebras: the commutator bracket and the Jacobi identity, one-parameter
 subgroups `t ↦ exp(tX)`, the exponential of a skew-symmetric matrix is orthogonal, the Lie
 algebras `so(3)` and `su(2)` have the same structure constants, the relations of `sl(2)`, the

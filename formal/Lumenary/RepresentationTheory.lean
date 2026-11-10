@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Representation theory of finite groups: Maschke's theorem and its failure in characteristic
 `p`, Schur's lemma, characters as class functions, the orthogonality relations, character tables
 of `S₃` and of the groups of order `8`, and Frobenius reciprocity.

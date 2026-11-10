@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Non-Euclidean geometry.
+Lumenary Academy — Lean exercises: Non-Euclidean geometry.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/NonEuclideanGeometry.lean`.
 -/
 import Lumenary.NonEuclideanGeometry

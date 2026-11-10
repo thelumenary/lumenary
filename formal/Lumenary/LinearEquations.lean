@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Linear equations and inequalities: equivalent equations, the moves that keep the solutions
 the same, the three possible outcomes for `a·x = b`, and why multiplying an inequality by a
 negative number reverses it.

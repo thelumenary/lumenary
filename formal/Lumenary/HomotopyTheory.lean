@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Homotopy theory: the Eckmann–Hilton argument (why higher homotopy groups are abelian), the
 Hopf map `S³ → S²` and its circle fibres, and the algebra of exact sequences used to compute
 `π₃(S²)`.

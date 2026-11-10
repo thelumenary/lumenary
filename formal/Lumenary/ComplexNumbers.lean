@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Complex numbers: arithmetic with i² = −1, the modulus, polar form and De Moivre's theorem,
 roots of unity, quadratics with negative discriminant, and why ℂ cannot be ordered.
 

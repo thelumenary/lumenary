@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: large cardinals.
+Lumenary Academy — Lean exercises: large cardinals.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LargeCardinals.lean`.
 -/
 import Lumenary.LargeCardinals

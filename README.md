@@ -1,8 +1,8 @@
-# The Lumenary
+# Lumenary Academy
 
 **One mathematics. Many languages. Every nation.**
 
-The Lumenary is a Christian-inspired education project in three divisions. This repository holds its website, [lumenary.academy](https://lumenary.academy), and the first subject of Lumenary Scientia, **Lumenary Math**.
+Lumenary Academy is a Christian-inspired education project in three divisions. This repository holds its website, [lumenary.academy](https://lumenary.academy), and the first subject of Lumenary Scientia, **Lumenary Math**.
 
 ## The three divisions
 
@@ -67,4 +67,4 @@ docs/                architecture, curriculum, i18n, design, testing, licensing,
 
 Software, Lean proofs and Python experiments: [Apache-2.0](LICENSE). Educational content (text, exercises, diagrams): [CC BY-SA 4.0](LICENSE-CONTENT). See [docs/licensing.md](docs/licensing.md).
 
-The Lumenary is an independent project. No institutional endorsement is implied.
+Lumenary Academy is an independent project. No institutional endorsement is implied.

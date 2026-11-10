@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Partial differential equations and Fourier series.
+Lumenary Academy — Lean exercises: Partial differential equations and Fourier series.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/PdeIntro.lean`.
 -/
 import Lumenary.PdeIntro

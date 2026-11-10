@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Ordinary differential equations: exponential growth and its uniqueness, the integrating factor,
 the logistic equation, finite-time blow-up, non-uniqueness for `x' = √|x|`, the harmonic
 oscillator and its energy, matrix exponentials, and the Picard–Lindelöf theorem.

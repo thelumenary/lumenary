@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Conditional probability and independence: the addition and multiplication rules, Bayes' theorem,
 the law of total probability, and why "independent" and "mutually exclusive" are different.
 

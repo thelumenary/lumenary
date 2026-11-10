@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Complex analysis: complex differentiability and the Cauchy–Riemann equations, Cauchy's theorem
 and integral formula on discs, holomorphic functions are analytic, Liouville's theorem and the
 fundamental theorem of algebra.

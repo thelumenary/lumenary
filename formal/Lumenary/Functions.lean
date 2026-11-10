@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Functions: injective ("one-to-one"), surjective ("onto") and bijective functions, with
 examples and non-examples on the integers, plus the set-theoretic view of a function as its
 graph.

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Relations, equivalence relations and partitions.
+Lumenary Academy — Lean exercises: Relations, equivalence relations and partitions.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/EquivalenceRelations.lean`.
 -/
 import Lumenary.EquivalenceRelations

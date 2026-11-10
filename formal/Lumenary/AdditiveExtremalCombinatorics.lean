@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Extremal and additive combinatorics: Turán's theorem, Ramsey numbers, sumsets, three-term
 progressions, Roth's theorem and Szemerédi's regularity lemma.
 

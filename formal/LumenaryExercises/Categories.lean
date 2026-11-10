@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Categories.
+Lumenary Academy — Lean exercises: Categories.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Categories.lean`.
 Remember that Mathlib writes composition in diagrammatic order: `f ≫ g` is "first `f`, then `g`".
 -/

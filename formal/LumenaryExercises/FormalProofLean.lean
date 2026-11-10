@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Formalising mathematics in Lean and Mathlib.
+Lumenary Academy — Lean exercises: Formalising mathematics in Lean and Mathlib.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/FormalProofLean.lean`.
 -/
 import Lumenary.FormalProofLean

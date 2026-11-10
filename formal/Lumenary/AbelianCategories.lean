@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Abelian categories: why monomorphisms that are epimorphisms are isomorphisms, why the free
 abelian groups do not form an abelian category, the short five lemma for modules, and Mathlib's
 abelian categories, five lemma, snake lemma and Freyd–Mitchell embedding theorem.

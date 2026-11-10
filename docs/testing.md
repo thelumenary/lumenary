@@ -1,6 +1,6 @@
 # Testing strategy
 
-The Lumenary has four layers of automated checks. Together they back every verification label shown on the site. None of them is a substitute for human review.
+Lumenary Academy has four layers of automated checks. Together they back every verification label shown on the site. None of them is a substitute for human review.
 
 | Layer | Command | What it checks |
 | --- | --- | --- |

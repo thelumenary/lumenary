@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Clock arithmetic: remainders and modular arithmetic.
 
 `a % n` is Lean's name for "the remainder of `a` on division by `n`". We prove, mirroring the

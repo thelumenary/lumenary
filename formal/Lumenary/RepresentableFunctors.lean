@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Representable functors: the power-set functor is represented by a two-element set, the
 forgetful functor on groups by ℤ, products and quotients by their universal properties, and
 representations correspond exactly to universal elements, which are unique up to unique

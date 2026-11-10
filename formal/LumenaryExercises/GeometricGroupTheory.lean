@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Geometric group theory.
+Lumenary Academy — Lean exercises: Geometric group theory.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/GeometricGroupTheory.lean`.
 -/
 import Lumenary.GeometricGroupTheory

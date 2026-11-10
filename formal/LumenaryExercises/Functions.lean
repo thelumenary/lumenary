@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Functions and composition.
+Lumenary Academy — Lean exercises: Functions and composition.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Composition.lean`.
 -/
 import Lumenary.Composition

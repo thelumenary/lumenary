@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Counting: one number word for each object, why the last word tells how many, and comparing
 collections by pairing ("for grown-ups" companion to the K–2 lesson on counting).
 

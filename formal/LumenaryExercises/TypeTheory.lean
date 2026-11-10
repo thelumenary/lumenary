@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: type theory and propositions as types.
+Lumenary Academy — Lean exercises: type theory and propositions as types.
 Replace each `sorry` with a proof term or tactic proof. Worked solutions are in
 `Lumenary/TypeTheory.lean`.
 -/

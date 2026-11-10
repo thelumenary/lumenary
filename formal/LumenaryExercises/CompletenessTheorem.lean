@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Completeness, compactness and Löwenheim–Skolem.
+Lumenary Academy — Lean exercises: Completeness, compactness and Löwenheim–Skolem.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/CompletenessTheorem.lean`
 (the `@solution` line names the solved theorem).
 -/

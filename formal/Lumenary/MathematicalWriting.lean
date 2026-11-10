@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Mathematical writing: what a proof assistant forces a writer to make explicit.
 
 A formal statement must declare every symbol and its type, state every hypothesis, fix the order

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Diagrams where paths agree.
+Lumenary Academy — Lean exercises: Diagrams where paths agree.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/CommutativeDiagramsIntro.lean`.
 -/
 import Lumenary.CommutativeDiagramsIntro

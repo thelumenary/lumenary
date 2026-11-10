@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Arithmetic geometry and elliptic curves: the chord-and-tangent construction, the group of
 points, torsion, point counts over finite fields, the reduction of Mordell–Weil to its weak
 form, and Fermat's Last Theorem for small exponents.

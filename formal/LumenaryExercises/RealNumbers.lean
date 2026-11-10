@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Real numbers and irrationality.
+Lumenary Academy — Lean exercises: Real numbers and irrationality.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/RealNumbers.lean`.
 -/
 import Lumenary.RealNumbers

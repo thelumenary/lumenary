@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Algebraic number theory: failure of unique factorisation in `ℤ[√−5]`, units of quadratic rings,
 unique factorisation of ideals, the class group, Dirichlet's unit theorem and cyclotomic integers.
 

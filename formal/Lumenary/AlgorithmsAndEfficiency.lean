@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Algorithms, correctness and efficiency.
 
 Proved here (`@provenance independent`), mirroring the lesson: linear search is correct and

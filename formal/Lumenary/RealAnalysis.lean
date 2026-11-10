@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Real analysis: ε–N limits, Cauchy sequences, monotone convergence, the intermediate value theorem
 from completeness, uniform versus pointwise convergence, and the fundamental theorem of calculus.
 

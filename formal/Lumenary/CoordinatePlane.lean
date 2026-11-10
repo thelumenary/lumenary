@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 The coordinate plane: points as ordered pairs, quadrants, reflections in the axes, and
 distances along grid lines.
 

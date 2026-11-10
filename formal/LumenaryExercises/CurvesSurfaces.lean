@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Differential geometry of curves and surfaces.
+Lumenary Academy — Lean exercises: Differential geometry of curves and surfaces.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/CurvesSurfaces.lean`.
 -/
 import Lumenary.CurvesSurfaces

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Introductory calculus: limits, the derivative as a limit of difference quotients, the power
 rule, critical points, Riemann sums and the fundamental theorem of calculus.
 

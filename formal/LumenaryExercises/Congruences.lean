@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Congruences.
+Lumenary Academy — Lean exercises: Congruences.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Congruences.lean`.
 -/
 import Lumenary.Congruences

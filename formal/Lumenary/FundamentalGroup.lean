@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Homotopy and the fundamental group: straight-line homotopies, simply connected spaces, the
 covering `ℝ → ℝ/ℤ`, path lifting, `π₁(S¹) ≅ ℤ`, the circle is not a retract of a simply
 connected space, the one-dimensional Brouwer theorem, and a non-abelian free group.

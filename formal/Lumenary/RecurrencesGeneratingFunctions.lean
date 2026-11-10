@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Recurrences and generating functions: second-order linear recurrences and their characteristic
 roots, Binet's formula, the Tower of Hanoi and a divide-and-conquer recurrence, formal power
 series (the generating function of the Fibonacci numbers, and a divergent series that is still

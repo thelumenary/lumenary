@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Doing and undoing: actions, the action of doing nothing, and actions that can or cannot be
 undone ("for grown-ups" companion to the K–2 lesson).
 

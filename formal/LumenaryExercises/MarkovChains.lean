@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Markov chains.
+Lumenary Academy — Lean exercises: Markov chains.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/MarkovChains.lean`.
 -/
 import Lumenary.MarkovChains

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 The Langlands programme: an orientation. Reciprocity laws from quadratic reciprocity to
 cyclotomic fields, Dirichlet's theorem, and modular forms.
 

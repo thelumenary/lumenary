@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Descriptive set theory: Polish spaces, the bottom of the Borel hierarchy, analytic sets, Suslin's
 theorem and the perfect set property for closed sets.
 

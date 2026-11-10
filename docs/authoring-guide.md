@@ -109,7 +109,7 @@ All are used as JSX tags inside MDX (leave blank lines around block content so M
 
 ## 5. Viewpoints: many ways of seeing
 
-The Lumenary teaches set theory as the language of early mathematics and category theory as a major structural language of higher mathematics. **Neither is the only way to see.** A topologist, a geometer, an analyst, an algebraist, a number theorist, a probabilist, a logician, a combinatorialist and a physicist each notice different things about the same idea, and higher mathematics is the conversation between them.
+Lumenary Academy teaches set theory as the language of early mathematics and category theory as a major structural language of higher mathematics. **Neither is the only way to see.** A topologist, a geometer, an analyst, an algebraist, a number theorist, a probabilist, a logician, a combinatorialist and a physicist each notice different things about the same idea, and higher mathematics is the conversation between them.
 
 From early undergraduate onwards every lesson has a `viewpoints` section of `<Viewpoint>` blocks:
 
@@ -137,7 +137,7 @@ The Lean project lives in `formal/` (Lean `v4.35.0`, Mathlib `v4.35.0`). The web
 
 ```lean
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Point-set topology: open sets in metric spaces, continuity, compactness.
 
 What is proved here and what Mathlib already provides — one short paragraph for learners.

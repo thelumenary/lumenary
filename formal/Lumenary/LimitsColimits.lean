@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Limits and colimits: equalisers, pullbacks, coequalisers, cones as natural transformations,
 limits from products and equalisers, completeness, preservation by hom functors, the p-adic
 integers as an inverse limit, and a forgetful functor that does not preserve coproducts.

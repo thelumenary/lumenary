@@ -1,6 +1,6 @@
-# Computational mathematics in the Lumenary
+# Computational mathematics in Lumenary Academy
 
-This is the **C** mode of the Lumenary's three modes of reasoning (Human, Formal,
+This is the **C** mode of Lumenary Academy's three modes of reasoning (Human, Formal,
 Computational). The `compute/` folder holds small Python experiments that
 learners run in their own browser. Each one is honest about what kind of evidence
 it gives, and none of them claims that a computation is a proof when it is not.
@@ -158,7 +158,7 @@ Every experiment declares one or more of these (`EVIDENCE_TYPES` in
 
 A **mathematical proof** is a chain of reasoning from definitions and axioms
 that covers every case, including the infinitely many that no program can
-visit. In the Lumenary, proofs live in the lesson (H mode) and, where possible,
+visit. In Lumenary Academy, proofs live in the lesson (H mode) and, where possible,
 in Lean (F mode, reported separately in `lean-report.json`). The experiments are
 there to build intuition, test conjectures, find counterexamples and check
 calculations.

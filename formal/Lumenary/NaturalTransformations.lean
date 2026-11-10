@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Natural transformations: naturality squares, uniformity, the double dual, the determinant,
 functor categories and equivalences of categories.
 

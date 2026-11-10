@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Fourier and harmonic analysis: orthogonality of characters, Parseval, the Riemann–Lebesgue
 lemma, Plancherel, the self-dual Gaussian, Poisson summation and the theta functional equation.
 

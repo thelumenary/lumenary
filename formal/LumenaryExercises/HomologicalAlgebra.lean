@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Homological algebra (d ∘ d = 0, a non-split extension).
+Lumenary Academy — Lean exercises: Homological algebra (d ∘ d = 0, a non-split extension).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/HomologicalAlgebra.lean`.
 -/
 import Lumenary.HomologicalAlgebra

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 The axiom of choice: equivalent forms, Zorn's lemma at work, and Diaconescu's theorem.
 
 Lean's logic *includes* a choice principle, the axiom `Classical.choice`, so in Lean the axiom of

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Propositional logic and truth tables: formulas, valuations, the truth-table method, and the
 laws of the conditional (contrapositive, converse, negation) and De Morgan.
 

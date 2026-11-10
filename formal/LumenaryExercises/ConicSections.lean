@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Conic sections.
+Lumenary Academy — Lean exercises: Conic sections.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/ConicSections.lean`.
 -/
 import Lumenary.ConicSections

@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Sampling and statistical reasoning.
+Lumenary Academy — Lean exercises: Sampling and statistical reasoning.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/StatisticalInferenceIntro.lean`.
 -/
 import Lumenary.StatisticalInferenceIntro

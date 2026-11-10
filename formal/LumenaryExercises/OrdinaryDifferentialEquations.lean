@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Ordinary differential equations.
+Lumenary Academy — Lean exercises: Ordinary differential equations.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/OrdinaryDifferentialEquations.lean`.
 -/

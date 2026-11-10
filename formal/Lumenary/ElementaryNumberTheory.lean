@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Number theory: primitive roots, quadratic residues and quadratic reciprocity, arithmetic
 functions and Möbius inversion, sums of two squares, and Pell's equation.
 

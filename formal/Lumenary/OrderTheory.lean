@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Orders, lattices and well-orders: divisibility as a partial order, maximal versus greatest
 elements, maximal elements of finite posets, the lattice of subsets, the well-ordering of ℕ,
 Knaster–Tarski, and Zorn's lemma.

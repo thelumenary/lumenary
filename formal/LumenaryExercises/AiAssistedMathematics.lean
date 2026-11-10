@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: AI-assisted mathematical research.
+Lumenary Academy — Lean exercises: AI-assisted mathematical research.
 Replace each `sorry` with a proof. Worked solutions are in
 `Lumenary/AiAssistedMathematics.lean`.
 -/

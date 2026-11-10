@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Ergodic theory: Poincaré recurrence, Birkhoff sums of coboundaries, von Neumann's mean ergodic
 theorem, and ergodicity of the doubling map and of irrational rotations.
 

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Patterns: repeating and growing patterns ("for grown-ups" companion to the K–2 lesson).
 
 A pattern is a rule that gives the item at each position 1, 2, 3, …, so in Lean it is a

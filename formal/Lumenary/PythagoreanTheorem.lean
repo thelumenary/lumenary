@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 The Pythagorean theorem: the algebra of the rearrangement proofs, the theorem and its converse
 in coordinates, Pythagorean triples, and two common mistakes.
 

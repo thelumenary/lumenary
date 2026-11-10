@@ -13,7 +13,7 @@ This document covers three things:
 
 ### Purpose
 
-The registry lets the Lumenary:
+The registry lets Lumenary Academy:
 
 - pick a first language for each country (`primaryLumenaryLanguage`) and show
   learners the languages relevant to them;

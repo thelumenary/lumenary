@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Symmetry: slides, turns and flips ("for grown-ups" companion to the Grades 3–5 lesson).
 
 Points of squared paper are pairs of whole numbers `(x, y)`, which may be negative. Slides,

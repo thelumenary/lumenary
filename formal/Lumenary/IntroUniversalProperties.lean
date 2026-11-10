@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Products by maps: a first universal property.
 
 Proved here (`@provenance independent`), mirroring the lesson: the pairing `⟨f, g⟩` of two

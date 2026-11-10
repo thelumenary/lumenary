@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Secret codes.
+Lumenary Academy — Lean exercises: Secret codes.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/SecretCodes.lean`.
 -/
 import Lumenary.SecretCodes

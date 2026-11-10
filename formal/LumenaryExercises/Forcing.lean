@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: forcing.
+Lumenary Academy — Lean exercises: forcing.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Forcing.lean`.
 -/
 import Lumenary.Forcing

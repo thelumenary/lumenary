@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Linear relationships and simultaneous equations.
+Lumenary Academy — Lean exercises: Linear relationships and simultaneous equations.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/LinearRelationships.lean`.
 -/
 import Lumenary.LinearRelationships

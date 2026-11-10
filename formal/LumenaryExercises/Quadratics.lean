@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Quadratics.
+Lumenary Academy — Lean exercises: Quadratics.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Quadratics.lean`.
 -/
 import Lumenary.Quadratics

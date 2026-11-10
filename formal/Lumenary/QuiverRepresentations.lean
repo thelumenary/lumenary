@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Quiver representations: representations as prefunctors, Tits forms, reflections and the
 positive roots of the Dynkin diagram D₄.
 

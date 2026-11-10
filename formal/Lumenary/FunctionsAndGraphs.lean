@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Functions and their graphs (precalculus): graphs as sets of points, transformations
 y = a f(b(x − h)) + k, inverse functions and their graphs, monotonicity, even and odd functions,
 and the end behaviour of a rational function.

@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Measurement: comparing lengths, units, rulers, bent strings and clocks ("for grown-ups"
 companion to the K–2 lesson on measuring length and time).
 

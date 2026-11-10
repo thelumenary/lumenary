@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Modular (clock) arithmetic: wrapping around, inverses that exist and inverses that don't,
 and congruence modulo `k` as an equivalence relation.
 

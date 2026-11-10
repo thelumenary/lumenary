@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Type theory and propositions as types: Lean's own logic read as programs, Π and Σ types,
 inductive types with their induction principles, and the Curry–Howard correspondence for the
 simply typed λ-calculus proved as a theorem.

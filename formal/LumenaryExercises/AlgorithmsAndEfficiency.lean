@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Algorithms, correctness and efficiency.
+Lumenary Academy — Lean exercises: Algorithms, correctness and efficiency.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/AlgorithmsAndEfficiency.lean`.
 -/
 import Lumenary.AlgorithmsAndEfficiency

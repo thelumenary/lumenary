@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Factors, multiples and primes.
+Lumenary Academy — Lean exercises: Factors, multiples and primes.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/FactorsPrimes.lean`.
 -/
 import Lumenary.FactorsPrimes

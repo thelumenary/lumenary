@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Triangulated categories.
+Lumenary Academy — Lean exercises: Triangulated categories.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/TriangulatedCategories.lean`.
 -/
 import Lumenary.TriangulatedCategories

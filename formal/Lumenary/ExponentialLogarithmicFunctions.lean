@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Exponential and logarithmic functions: why the laws of exponents force a⁰ = 1, a⁻ˣ = 1/aˣ and
 the values at fractions; the laws of logarithms; logarithms as inverse functions; the
 irrationality of log₂ 3; exponential versus polynomial growth; and the number e.

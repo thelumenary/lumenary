@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Ordinals and cardinals.
+Lumenary Academy — Lean exercises: Ordinals and cardinals.
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/Cardinals.lean`
 (the `@solution` line names the solved theorem).
 -/

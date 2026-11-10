@@ -1,5 +1,5 @@
 /-
-The Lumenary — formal mathematics
+Lumenary Academy — formal mathematics
 Geometric analysis: the catenoid and Scherk's surface are minimal, Ricci flow shrinks a round
 sphere to a point in finite time, a discrete maximum principle, and the mean value property.
 

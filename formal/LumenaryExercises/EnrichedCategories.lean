@@ -1,5 +1,5 @@
 /-
-The Lumenary — Lean exercises: Enriched categories (Lawvere metric spaces).
+Lumenary Academy — Lean exercises: Enriched categories (Lawvere metric spaces).
 Replace each `sorry` with a proof. Worked solutions are in `Lumenary/EnrichedCategories.lean`.
 -/
 import Lumenary.EnrichedCategories

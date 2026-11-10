@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: (await getT(await resolveLocale(params)))("curriculum.title") };
 }
 
-/** Lumenary Math's front page (the Lumenary's own front page lists its divisions). */
+/** Lumenary Math's front page (Lumenary Academy's own front page lists its divisions). */
 export default async function MathHomePage({ params }: { params: Promise<{ locale: string }> }) {
   const locale = await resolveLocale(params);
   const t = await getT(locale);
